@@ -1,0 +1,444 @@
+import { CONFIG } from "../../core/constants.js";
+import { EventStrategy } from "./EventStrategy.js";
+import { EVENT_NAMES } from "./eventNames.js";
+import { HOOKS } from "../hookNames.js";
+import { stylePool } from "../../styles/index.js";
+
+/**
+ * 键盘交互策略
+ * 处理以下键盘操作：
+ * - 方向键导航（支持 Shift 扩展选区）
+ * - Enter/F2 进入编辑
+ * - Tab 切换单元格
+ * - Delete/Backspace 批量清空选区内容
+ * - Ctrl+A 全选
+ * - Ctrl+Z/Y 撤销/重做
+ * - Ctrl+B/I/U 加粗/斜体/下划线（批量格式化）
+ * - Ctrl+C/V 复制/粘贴
+ * - 直接输入字符进入批量赋值模式
+ */
+export class KeyboardStrategy extends EventStrategy {
+    #keyDownHandler = null;
+
+    constructor(handler) {
+        super(handler);
+    }
+
+    init() {
+        this.#bindKeyboard();
+    }
+
+    destroy() {
+        document.removeEventListener(EVENT_NAMES.KEYDOWN, this.#keyDownHandler);
+    }
+
+    #bindKeyboard() {
+        this.#keyDownHandler = (e) => this.#handleKeyDown(e);
+        document.addEventListener(EVENT_NAMES.KEYDOWN, this.#keyDownHandler);
+    }
+
+    /**
+     * 键盘事件总入口
+     * 根据当前编辑状态分发到不同的处理方法
+     */
+    #handleKeyDown(e) {
+        if (!this.enabled) return;
+
+        const { sheet, editor } = this.handler;
+        if (!sheet || !editor) return;
+
+        /**
+         * 检查编辑器是否正在显示
+         * editor.editor → TextEditor 实例
+         * editor.editor.editor → DOM <input> 元素
+         * 需要检查 DOM 元素的 display 样式
+         */
+        const textEditor = editor.editor;
+        const inputEl = textEditor?.editor;
+        if (inputEl && inputEl.style && inputEl.style.display === "block") {
+            this.#handleEditingKey(e);
+            return;
+        }
+
+        this.#handleNavigationKey(e);
+    }
+
+    /** 编辑状态下的按键处理（预留扩展） */
+    #handleEditingKey(e) {
+    }
+
+    /**
+     * 非编辑状态下的按键处理
+     * 处理导航、删除、格式化、批量赋值等操作
+     */
+    #handleNavigationKey(e) {
+        const { sheet, editor, renderEngine } = this.handler;
+        const [r, c] = sheet.selection.getActive();
+
+        switch (e.key) {
+            case "ArrowDown":
+                e.preventDefault();
+                this.#handleArrowDown(r, c, e.shiftKey);
+                break;
+            case "ArrowUp":
+                e.preventDefault();
+                this.#handleArrowUp(r, c, e.shiftKey);
+                break;
+            case "ArrowRight":
+                e.preventDefault();
+                this.#handleArrowRight(r, c, e.shiftKey);
+                break;
+            case "ArrowLeft":
+                e.preventDefault();
+                this.#handleArrowLeft(r, c, e.shiftKey);
+                break;
+            case "Enter":
+            case "F2":
+                e.preventDefault();
+                editor.show(r, c);
+                break;
+            case "Tab":
+                e.preventDefault();
+                this.#handleTab(r, c, e.shiftKey);
+                break;
+            case "z":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    sheet.undo();
+                    this.handler.render();
+                }
+                break;
+            case "y":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    sheet.redo();
+                    this.handler.render();
+                }
+                break;
+            case "a":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    const rc = sheet.rowColManager;
+                    sheet.selection.selectAll(rc.rowCount - 1, rc.colCount - 1);
+                    this.handler.render();
+                }
+                break;
+            case "b":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    this.#handleToggleBold();
+                }
+                break;
+            case "i":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    this.#handleToggleItalic();
+                }
+                break;
+            case "u":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    this.#handleToggleUnderline();
+                }
+                break;
+            case "Delete":
+            case "Backspace":
+                e.preventDefault();
+                this.#handleDelete();
+                break;
+            default:
+                /**
+                 * 直接输入可打印字符 → 进入批量赋值模式
+                 * 选中区域后直接输入，所有选中单元格填充相同值
+                 * 这是 Excel 的标准行为：
+                 * - 选中 A1:C3 → 输入 "hello" → A1:C3 全部变为 "hello"
+                 * - 输入后光标自动进入编辑状态，位于活动单元格
+                 */
+                if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    this.#handleDirectInput(e);
+                }
+                break;
+        }
+    }
+
+    /**
+     * 批量删除（Delete / Backspace）
+     * 清空选区内所有非禁用单元格的内容
+     * 触发 beforeChange 和 afterChange 钩子
+     */
+    #handleDelete() {
+        const { sheet } = this.handler;
+        const range = sheet.selection.getRange();
+
+        const changes = [];
+        for (let r = range.topRow; r <= range.bottomRow; r++) {
+            for (let c = range.topCol; c <= range.bottomCol; c++) {
+                if (!sheet.isDisabled(r, c)) {
+                    const oldCell = sheet.cellStore.get(r, c);
+                    if (oldCell && oldCell.value !== "") {
+                        changes.push({ row: r, col: c, oldValue: oldCell.value, newValue: "" });
+                    }
+                }
+            }
+        }
+
+        if (changes.length === 0) return;
+
+        this.handler.runHooks(HOOKS.BEFORE_CHANGE, changes);
+
+        for (const { row, col } of changes) {
+            const oldCell = sheet.cellStore.get(row, col);
+            sheet.setCell(row, col, "", oldCell?.styleId || 0);
+        }
+
+        this.handler.runHooks(HOOKS.AFTER_CHANGE, changes);
+        this.handler.render();
+    }
+
+    /**
+     * 直接输入字符 → 批量赋值模式
+     * 选中区域后直接输入可打印字符：
+     * 1. 先清空选区所有单元格
+     * 2. 将输入的字符作为初始值进入编辑状态
+     * 3. 编辑完成（blur/Enter）时，将值填充到整个选区
+     *
+     * 行为与 Excel 一致：
+     * - 选中 A1:C3 → 输入 "hello" → A1:C3 全部变为 "hello"
+     * - 选中 A1:A3 → 输入 1 → A1:A3 全部变为 "1"
+     */
+    #handleDirectInput(e) {
+        const { sheet, editor } = this.handler;
+        const range = sheet.selection.getRange();
+
+        /**
+         * 显示编辑器，但先清空输入框
+         * show() 会将当前单元格值填入 input，
+         * 我们需要用输入的字符替换它
+         */
+        const [ar, ac] = sheet.selection.getActive();
+        editor.show(ar, ac);
+
+        const textEditor = editor.editor;
+        const inputEl = textEditor?.editor;
+        if (inputEl) {
+            inputEl.value = e.key;
+            inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
+        }
+
+        /**
+         * 标记当前为批量赋值模式
+         * TextEditor 在 blur 时会检查此标记，
+         * 如果是批量模式，则将值填充到整个选区
+         */
+        this.#markBatchFill(sheet, range);
+    }
+
+    /**
+     * 标记批量赋值模式
+     * 在 sheet 上存储批量填充信息，
+     * TextEditor blur 时读取并执行批量填充
+     *
+     * @param {import("../../workbook/Sheet.js").Sheet} sheet
+     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range
+     */
+    #markBatchFill(sheet, range) {
+        sheet._batchFillRange = {
+            topRow: range.topRow,
+            topCol: range.topCol,
+            bottomRow: range.bottomRow,
+            bottomCol: range.bottomCol,
+        };
+    }
+
+    /**
+     * 切换加粗（Ctrl+B）
+     * 对选区内所有单元格切换 fontWeight: bold / normal
+     */
+    #handleToggleBold() {
+        const { sheet } = this.handler;
+        const range = sheet.selection.getRange();
+        this.#toggleStyleProperty(range, "fontWeight", "bold", "normal");
+        this.handler.render();
+    }
+
+    /**
+     * 切换斜体（Ctrl+I）
+     * 对选区内所有单元格切换 fontStyle: italic / normal
+     */
+    #handleToggleItalic() {
+        const { sheet } = this.handler;
+        const range = sheet.selection.getRange();
+        this.#toggleStyleProperty(range, "fontStyle", "italic", "normal");
+        this.handler.render();
+    }
+
+    /**
+     * 切换下划线（Ctrl+U）
+     * 对选区内所有单元格切换 textDecoration: underline / none
+     */
+    #handleToggleUnderline() {
+        const { sheet } = this.handler;
+        const range = sheet.selection.getRange();
+        this.#toggleStyleProperty(range, "textDecoration", "underline", "none");
+        this.handler.render();
+    }
+
+    /**
+     * 通用样式属性切换
+     * 遍历选区内所有单元格，检查当前值：
+     * - 如果所有单元格都是 activeValue → 全部切换为 inactiveValue
+     * - 否则 → 全部切换为 activeValue
+     *
+     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range - 选区范围
+     * @param {string} prop - 样式属性名（如 "fontWeight"）
+     * @param {string} activeValue - 激活值（如 "bold"）
+     * @param {string} inactiveValue - 未激活值（如 "normal"）
+     */
+    #toggleStyleProperty(range, prop, activeValue, inactiveValue) {
+        const { sheet } = this.handler;
+
+        let allActive = true;
+        const cellCount = (range.bottomRow - range.topRow + 1) * (range.bottomCol - range.topCol + 1);
+        let checkedCount = 0;
+
+        /**
+         * 第一遍：检查是否所有单元格都已经是 activeValue
+         * 空单元格视为 inactiveValue
+         */
+        for (let r = range.topRow; r <= range.bottomRow; r++) {
+            for (let c = range.topCol; c <= range.bottomCol; c++) {
+                const cell = sheet.cellStore.get(r, c);
+                const currentStyle = cell?.styleId ? stylePool.getStyle(cell.styleId) : {};
+                if (currentStyle[prop] !== activeValue) {
+                    allActive = false;
+                }
+                checkedCount++;
+                if (!allActive) break;
+            }
+            if (!allActive) break;
+        }
+
+        const newValue = allActive ? inactiveValue : activeValue;
+
+        /**
+         * 第二遍：应用新样式
+         * 合并现有样式 + 切换的属性，生成新的 styleId
+         */
+        for (let r = range.topRow; r <= range.bottomRow; r++) {
+            for (let c = range.topCol; c <= range.bottomCol; c++) {
+                if (sheet.isDisabled(r, c)) continue;
+
+                const cell = sheet.cellStore.get(r, c);
+                const currentStyleId = cell?.styleId || 0;
+                const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
+                const mergedStyle = { ...currentStyle, [prop]: newValue };
+                const newStyleId = stylePool.getStyleId(mergedStyle);
+                const value = cell?.value ?? "";
+                sheet.setCell(r, c, value, newStyleId);
+            }
+        }
+    }
+
+    #handleArrowDown(row, col, shiftKey) {
+        const { sheet, renderEngine } = this.handler;
+        const rc = sheet.rowColManager;
+        let nextRow = Math.min(rc.rowCount - 1, row + 1);
+        const merge = sheet.getMerge(row, col);
+        if (merge && row + 1 <= merge.bottomRow) {
+            nextRow = merge.bottomRow + 1;
+        }
+        nextRow = Math.min(CONFIG.MAX_ROWS - 1, nextRow);
+        const target = this.#getTopLeft(nextRow, col);
+
+        if (shiftKey) {
+            const [focusRow, focusCol] = sheet.selection.getFocus();
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, col);
+        } else {
+            sheet.selection.setActive(target.row, col);
+        }
+        renderEngine.scrollToCell(target.row, col);
+        this.handler.render();
+    }
+
+    #handleArrowUp(row, col, shiftKey) {
+        const { sheet, renderEngine } = this.handler;
+        let prevRow = Math.max(0, row - 1);
+        const merge = sheet.getMerge(row, col);
+        if (merge && row - 1 >= merge.topRow) {
+            prevRow = merge.topRow - 1;
+        }
+        const target = this.#getTopLeft(prevRow, col);
+
+        if (shiftKey) {
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, col);
+        } else {
+            sheet.selection.setActive(target.row, col);
+        }
+        renderEngine.scrollToCell(target.row, col);
+        this.handler.render();
+    }
+
+    #handleArrowRight(row, col, shiftKey) {
+        const { sheet, renderEngine } = this.handler;
+        const rc = sheet.rowColManager;
+        let nextCol = Math.min(rc.colCount - 1, col + 1);
+        const merge = sheet.getMerge(row, col);
+        if (merge && col + 1 <= merge.bottomCol) {
+            nextCol = merge.bottomCol + 1;
+        }
+        nextCol = Math.min(CONFIG.MAX_COLS - 1, nextCol);
+        const target = this.#getTopLeft(row, nextCol);
+
+        if (shiftKey) {
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], row, target.col);
+        } else {
+            sheet.selection.setActive(row, target.col);
+        }
+        renderEngine.scrollToCell(row, target.col);
+        this.handler.render();
+    }
+
+    #handleArrowLeft(row, col, shiftKey) {
+        const { sheet, renderEngine } = this.handler;
+        let prevCol = Math.max(0, col - 1);
+        const merge = sheet.getMerge(row, col);
+        if (merge && col - 1 >= merge.topCol) {
+            prevCol = merge.topCol - 1;
+        }
+        const target = this.#getTopLeft(row, prevCol);
+
+        if (shiftKey) {
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], row, target.col);
+        } else {
+            sheet.selection.setActive(row, target.col);
+        }
+        renderEngine.scrollToCell(row, target.col);
+        this.handler.render();
+    }
+
+    #handleTab(row, col, shiftPressed) {
+        const { sheet, renderEngine } = this.handler;
+        const rc = sheet.rowColManager;
+        const nextCol = shiftPressed ? Math.max(0, col - 1) : Math.min(rc.colCount - 1, col + 1);
+        const target = this.#getTopLeft(row, nextCol);
+        sheet.selection.setActive(row, target.col);
+        renderEngine.scrollToCell(row, target.col);
+        this.handler.render();
+    }
+
+    /**
+     * 获取合并单元格的左上角位置
+     * 如果 (row, col) 在合并区域内，返回合并区域的左上角
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {{ row: number, col: number }}
+     */
+    #getTopLeft(row, col) {
+        const merge = this.handler.sheet?.getMerge(row, col);
+        if (merge) {
+            return { row: merge.topRow, col: merge.topCol };
+        }
+        return { row, col };
+    }
+}

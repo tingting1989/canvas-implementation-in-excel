@@ -1,0 +1,30 @@
+
+node_modules
+dist
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.dist
+
+dist/
+
+cache
+
+# Test coverage
+tests/coverage/
+junit.xml
+
+# Test environment
+.env.test
+
+.eslintcache
+docs/.vitepress/cache
