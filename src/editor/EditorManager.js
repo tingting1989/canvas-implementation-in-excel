@@ -38,11 +38,12 @@ export class EditorManager {
      *
      * @param {number} row - 行号
      * @param {number} col - 列号
+     * @param {'select'|'end'} cursorMode - 光标模式（透传给 TextEditor）
      */
-    show(row, col) {
+    show(row, col, cursorMode = 'select') {
         const textEditor = this.editors.get('text');
         if (textEditor) {
-            textEditor.show(row, col);
+            textEditor.show(row, col, cursorMode);
         }
     }
 

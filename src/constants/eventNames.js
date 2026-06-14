@@ -19,3 +19,20 @@ export const EVENT_NAMES = {
     COMPOSITIONSTART: 'compositionstart',
     COMPOSITIONEND: 'compositionend',
 };
+
+/**
+ * 事件委托键常量
+ * 格式: "target:eventType"
+ * 用于 EventHandler 统一绑定和策略 getEventHandlers() 声明
+ */
+export const DELEGATE_KEYS = {
+    CANVAS_MOUSEDOWN: 'canvas:mousedown',
+    CANVAS_MOUSEMOVE: 'canvas:mousemove',
+    CANVAS_MOUSEUP: 'canvas:mouseup',
+    CANVAS_DBLCLICK: 'canvas:dblclick',
+    CANVAS_CONTEXTMENU: 'canvas:contextmenu',
+    DOCUMENT_MOUSEMOVE: 'document:mousemove',
+    DOCUMENT_MOUSEUP: 'document:mouseup',
+    DOCUMENT_MOUSEDOWN: 'document:mousedown',
+    DOCUMENT_KEYDOWN: 'document:keydown',
+};

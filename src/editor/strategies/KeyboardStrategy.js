@@ -1,7 +1,8 @@
 import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { stylePool } from "../../styles/index.js";
-import {CONFIG} from "../../constants/config";
+import { CONFIG } from "../../constants/config";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
  * 键盘交互策略
@@ -29,7 +30,7 @@ export class KeyboardStrategy extends EventStrategy {
 
     getEventHandlers() {
         return {
-            "document:keydown": (e) => this.#handleKeyDown(e),
+            [DELEGATE_KEYS.DOCUMENT_KEYDOWN]: (e) => this.#handleKeyDown(e),
         };
     }
 
@@ -91,7 +92,7 @@ export class KeyboardStrategy extends EventStrategy {
             case "Enter":
             case "F2":
                 e.preventDefault();
-                editor.show(r, c);
+                editor.show(r, c, 'end');
                 break;
             case "Tab":
                 e.preventDefault();

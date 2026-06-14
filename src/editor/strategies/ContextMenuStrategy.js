@@ -1,5 +1,6 @@
 import { EventStrategy } from "./EventStrategy.js";
-import {HIT_TYPE} from "../../constants/hitType";
+import { HIT_TYPE } from "../../constants/hitType";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
  * 右键菜单策略
@@ -35,8 +36,8 @@ export class ContextMenuStrategy extends EventStrategy {
 
     getEventHandlers() {
         return {
-            "canvas:contextmenu": (e) => this.#handleContextMenu(e),
-            "document:mousedown": (e) => this.#handleDismiss(e),
+            [DELEGATE_KEYS.CANVAS_CONTEXTMENU]: (e) => this.#handleContextMenu(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEDOWN]: (e) => this.#handleDismiss(e),
         };
     }
 

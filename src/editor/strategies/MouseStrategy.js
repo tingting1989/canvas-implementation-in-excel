@@ -1,6 +1,7 @@
 import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { HIT_TYPE } from "../../constants/hitType";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { debounce } from "lodash-es";
 
 /**
@@ -47,10 +48,10 @@ export class MouseStrategy extends EventStrategy {
 
     getEventHandlers() {
         return {
-            "canvas:mousedown": (e) => this.#handleMouseDown(e),
-            "canvas:dblclick": (e) => this.#handleDoubleClick(e),
-            "document:mousemove": (e) => this.#handleMouseMove(e),
-            "document:mouseup": (e) => this.#handleMouseUp(e),
+            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#handleMouseDown(e),
+            [DELEGATE_KEYS.CANVAS_DBLCLICK]: (e) => this.#handleDoubleClick(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEMOVE]: (e) => this.#handleMouseMove(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEUP]: (e) => this.#handleMouseUp(e),
         };
     }
 
@@ -144,7 +145,7 @@ export class MouseStrategy extends EventStrategy {
         } else {
             this.handler.sheet.selection.setActive(row, col);
         }
-        this.handler.editor.show(row, col);
+        this.handler.editor.show(row, col, 'end');
     }
 
     #getTopLeft(row, col) {

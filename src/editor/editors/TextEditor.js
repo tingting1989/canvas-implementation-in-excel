@@ -50,8 +50,11 @@ export class TextEditor extends CellEditor {
      *
      * @param {number} row - 行号
      * @param {number} col - 列号
+     * @param {'select'|'end'} cursorMode - 光标模式
+     *   'select': 全选文本（默认，用于直接输入等场景）
+     *   'end': 光标定位到末尾（用于双击、F2 进入编辑）
      */
-    show(row, col) {
+    show(row, col, cursorMode = 'select') {
         if (!this.sheet || this.sheet.isDisabled(row, col)) return;
         this.activeRow = row;
         this.activeCol = col;
@@ -69,7 +72,13 @@ export class TextEditor extends CellEditor {
         const cell = this.sheet.cellStore.get(row, col);
         this.editor.value = cell?.value ?? "";
         this.editor.focus();
-        this.editor.select();
+
+        if (cursorMode === 'end') {
+            const len = this.editor.value.length;
+            this.editor.setSelectionRange(len, len);
+        } else {
+            this.editor.select();
+        }
     }
 
     /**

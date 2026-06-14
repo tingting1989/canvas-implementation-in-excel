@@ -1,4 +1,5 @@
 import { EventStrategy } from "./EventStrategy.js";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
  * 自动填充策略（AutoFill）
@@ -36,10 +37,10 @@ export class AutoFillStrategy extends EventStrategy {
 
     getEventHandlers() {
         return {
-            "canvas:mousedown": (e) => this.#onMouseDown(e),
-            "canvas:mousemove": (e) => this.#onCursorCheck(e),
-            "document:mousemove": (e) => this.#onMouseMove(e),
-            "document:mouseup": (e) => this.#onMouseUp(e),
+            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#onMouseDown(e),
+            [DELEGATE_KEYS.CANVAS_MOUSEMOVE]: (e) => this.#onCursorCheck(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEMOVE]: (e) => this.#onMouseMove(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEUP]: (e) => this.#onMouseUp(e),
         };
     }
 

@@ -1,6 +1,7 @@
 import { EventStrategy } from "./EventStrategy.js";
-import {CONFIG} from "../../constants/config";
-import {HIT_TYPE} from "../../constants/hitType";
+import { CONFIG } from "../../constants/config";
+import { HIT_TYPE } from "../../constants/hitType";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
  * 列宽/行高拖拽调整策略
@@ -34,9 +35,9 @@ export class ResizeStrategy extends EventStrategy {
 
     getEventHandlers() {
         return {
-            "canvas:mousedown": (e) => this.#onMouseDown(e),
-            "document:mousemove": (e) => this.#onMouseMove(e),
-            "document:mouseup": (e) => this.#onMouseUp(e),
+            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#onMouseDown(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEMOVE]: (e) => this.#onMouseMove(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEUP]: (e) => this.#onMouseUp(e),
         };
     }
 
