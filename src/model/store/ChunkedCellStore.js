@@ -246,4 +246,26 @@ export class ChunkedCellStore {
             yield chunk;
         }
     }
+
+    getMaxRow() {
+        let maxRow = -1;
+        for (const chunk of this.#chunks.values()) {
+            if (chunk.cells.size > 0) {
+                const chunkMax = chunk.rowStart + CONFIG.CHUNK_ROW_SIZE - 1;
+                if (chunkMax > maxRow) maxRow = chunkMax;
+            }
+        }
+        return maxRow;
+    }
+
+    getMaxCol() {
+        let maxCol = -1;
+        for (const chunk of this.#chunks.values()) {
+            if (chunk.cells.size > 0) {
+                const chunkMax = chunk.colStart + CONFIG.CHUNK_COL_SIZE - 1;
+                if (chunkMax > maxCol) maxCol = chunkMax;
+            }
+        }
+        return maxCol;
+    }
 }
