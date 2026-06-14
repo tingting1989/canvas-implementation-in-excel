@@ -57,6 +57,10 @@ export const HOOKS = Object.freeze({
     BEFORE_PASTE: "beforePaste",
     AFTER_PASTE: "afterPaste",
 
+    /** 列移动相关 */
+    BEFORE_COLUMN_MOVE: "beforeColumnMove",
+    AFTER_COLUMN_MOVE: "afterColumnMove",
+
     /** 生命周期相关 */
     INIT: "init",
     DESTROY: "destroy",

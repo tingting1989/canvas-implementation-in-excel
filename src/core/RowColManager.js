@@ -152,6 +152,14 @@ export class RowColManager {
         this.#colPrefixDirty = true;
     }
 
+    moveCol(fromCol, toCol) {
+        if (fromCol === toCol) return;
+        this.ensureSize(0, Math.max(fromCol, toCol) + 1);
+        const [width] = this.#colWidths.splice(fromCol, 1);
+        this.#colWidths.splice(toCol, 0, width);
+        this.#colPrefixDirty = true;
+    }
+
     getVisibleRange(viewX, viewY, viewW, viewH) {
         const sc = this.colAt(viewX);
         const sr = this.rowAt(viewY);

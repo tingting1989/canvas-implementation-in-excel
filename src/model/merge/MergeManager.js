@@ -297,4 +297,54 @@ export class MergeManager {
             this.merge(topRow, topCol, bottomRow, bottomCol);
         }
     }
+
+    moveCol(fromCol, toCol) {
+        if (fromCol === toCol) return;
+
+        const toUpdate = [];
+        const toRemove = [];
+
+        for (const [key, info] of this.merges) {
+            toRemove.push(key);
+            let newTopCol = info.topCol;
+            let newBottomCol = info.bottomCol;
+
+            if (fromCol < toCol) {
+                if (info.topCol === fromCol) newTopCol = toCol;
+                else if (info.topCol > fromCol && info.topCol <= toCol) newTopCol--;
+
+                if (info.bottomCol === fromCol) newBottomCol = toCol;
+                else if (info.bottomCol > fromCol && info.bottomCol <= toCol) newBottomCol--;
+            } else {
+                if (info.topCol === fromCol) newTopCol = toCol;
+                else if (info.topCol >= toCol && info.topCol < fromCol) newTopCol++;
+
+                if (info.bottomCol === fromCol) newBottomCol = toCol;
+                else if (info.bottomCol >= toCol && info.bottomCol < fromCol) newBottomCol++;
+            }
+
+            toUpdate.push({
+                topRow: info.topRow,
+                topCol: newTopCol,
+                bottomRow: info.bottomRow,
+                bottomCol: newBottomCol,
+            });
+        }
+
+        for (const key of toRemove) {
+            const info = this.merges.get(key);
+            for (let r = info.topRow; r <= info.bottomRow; r++) {
+                for (let c = info.topCol; c <= info.bottomCol; c++) {
+                    this.cellMap.delete(`${r}:${c}`);
+                }
+            }
+            this.merges.delete(key);
+        }
+
+        for (const { topRow, topCol, bottomRow, bottomCol } of toUpdate) {
+            if (topCol <= bottomCol) {
+                this.merge(topRow, topCol, bottomRow, bottomCol);
+            }
+        }
+    }
 }

@@ -1,0 +1,155 @@
+import {EventStrategy} from "./EventStrategy.js";
+import {HIT_TYPE} from "../../constants/hitType";
+import {DELEGATE_KEYS} from "../../constants/eventNames.js";
+import {HOOKS} from "../../constants/hookNames.js";
+import {CONFIG} from "../../constants/config";
+
+const DRAG_THRESHOLD = 3;
+
+export class ColumnMoveStrategy extends EventStrategy {
+    priority = 80;
+
+    #moving = false;
+    #dragStarted = false;
+    #sourceCol = -1;
+    #targetCol = -1;
+    #dragStartX = 0;
+    #mouseDownX = 0;
+
+    constructor(handler) {
+        super(handler);
+    }
+
+    init() {}
+
+    destroy() {
+        this.#clearIndicator();
+    }
+
+    getEventHandlers() {
+        return {
+            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#onMouseDown(e),
+            [DELEGATE_KEYS.CANVAS_MOUSEMOVE]: (e) => this.#onHover(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEMOVE]: (e) => this.#onMouseMove(e),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEUP]: (e) => this.#onMouseUp(e),
+        };
+    }
+
+    #onMouseDown(e) {
+        if (!this.enabled || !this.handler.sheet) return;
+        if (e.button !== 0) return;
+
+        const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        if (resizeHit) return;
+
+        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        if (!hit || hit.type !== HIT_TYPE.COL_HEADER) return;
+
+        this.#moving = true;
+        this.#dragStarted = false;
+        this.#sourceCol = hit.index;
+        this.#targetCol = hit.index;
+
+        const rect = this.handler.canvas.getBoundingClientRect();
+        this.#mouseDownX = e.clientX;
+        this.#dragStartX = e.clientX - rect.left;
+    }
+
+    #onHover(e) {
+        if (!this.enabled || !this.handler.sheet) return;
+        if (this.#moving) return;
+
+        const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        if (resizeHit) {
+            return;
+        }
+
+        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        if (hit && hit.type === HIT_TYPE.COL_HEADER) {
+            this.handler.canvas.style.cursor = "grab";
+        } else {
+            this.handler.canvas.style.cursor = "";
+        }
+    }
+
+    #onMouseMove(e) {
+        if (!this.#moving) return;
+
+        if (!this.#dragStarted) {
+            const dx = Math.abs(e.clientX - this.#mouseDownX);
+            if (dx < DRAG_THRESHOLD) return;
+
+            this.#dragStarted = true;
+            this.handler.canvas.style.cursor = "grabbing";
+        }
+
+        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        if (hit && (hit.type === HIT_TYPE.COL_HEADER || hit.type === HIT_TYPE.CELL)) {
+            this.#targetCol = hit.type === HIT_TYPE.COL_HEADER ? hit.index : hit.col;
+        }
+
+        const rc = this.handler.sheet.rowColManager;
+        const rect = this.handler.canvas.getBoundingClientRect();
+        const dragX = e.clientX - rect.left;
+
+        const headerRenderer = this.handler.renderEngine.headerRenderer;
+        headerRenderer.setColumnMoveState({
+            sourceCol: this.#sourceCol,
+            targetCol: this.#targetCol,
+            dragX: dragX,
+            dragStartX: this.#dragStartX,
+            headerW: CONFIG.HEADER_WIDTH,
+            scrollX: this.handler.renderEngine.scrollX,
+            colX: rc.getColX(this.#sourceCol),
+            colW: rc.getColWidth(this.#sourceCol),
+        });
+
+        this.handler.renderEngine.invalidateAll();
+        this.handler.render();
+
+        return false;
+    }
+
+    #onMouseUp(e) {
+        if (!this.#moving) return;
+        this.#moving = false;
+        this.handler.canvas.style.cursor = "";
+
+        this.#clearIndicator();
+
+        if (this.#dragStarted && this.#sourceCol !== this.#targetCol && this.#targetCol >= 0) {column-movingconst cancelled = this.handler.runHooksUntil(HOOKS.BEFORE_COLUMN_MOVE, this.#sourceCol, this.#targetCol);
+            if (cancelled === false) {
+                this.#sourceCol = -1;
+                this.#targetCol = -1;
+                this.#dragStarted = false;
+                this.handler.renderEngine.invalidateAll();
+                this.handler.render();
+                return;
+            }
+
+            this.handler.sheet.moveCol(this.#sourceCol, this.#targetCol);
+
+            const sheet = this.handler.sheet;
+            const range = sheet.selection.getRange();
+            const delta = this.#targetCol - this.#sourceCol;
+            const newTopCol = Math.max(0, range.topCol + (delta > 0 ? 1 : 0));
+            const newBottomCol = Math.max(0, range.bottomCol + (delta > 0 ? 1 : 0));
+            sheet.selection.setRange(range.topRow, newTopCol, range.bottomRow, newBottomCol);
+
+            this.handler.runHooks(HOOKS.AFTER_COLUMN_MOVE, this.#sourceCol, this.#targetCol);
+        }
+
+        this.#sourceCol = -1;
+        this.#targetCol = -1;
+        this.#dragStarted = false;
+
+        this.handler.renderEngine.invalidateAll();
+        this.handler.render();
+    }
+
+    #clearIndicator() {
+        if (this.handler.renderEngine?.headerRenderer) {
+            this.handler.renderEngine.headerRenderer.setColumnMoveState(null);
+        }
+    }
+}

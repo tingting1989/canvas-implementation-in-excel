@@ -134,6 +134,7 @@ export class MouseStrategy extends EventStrategy {
 
         const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
         if (!hit) return;
+        if (hit.type !== HIT_TYPE.CELL) return;
 
         const { row, col } = this.#getTopLeft(hit.row, hit.col);
 

@@ -185,6 +185,57 @@ export class ChunkedCellStore {
         }
     }
 
+    moveCol(fromCol, toCol) {
+        if (fromCol === toCol) return;
+
+        const colCells = new Map();
+        for (const chunk of this.#chunks.values()) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (col === fromCol) {
+                    colCells.set(row, cell);
+                }
+            }
+        }
+
+        for (const [row] of colCells) {
+            this.delete(row, fromCol);
+        }
+
+        if (fromCol < toCol) {
+            const shiftCols = [];
+            for (const chunk of this.#chunks.values()) {
+                for (const { row, col, cell } of chunk.iterate()) {
+                    if (col > fromCol && col <= toCol) {
+                        shiftCols.push({ row, col, cell });
+                    }
+                }
+            }
+            shiftCols.sort((a, b) => a.col - b.col);
+            for (const { row, col, cell } of shiftCols) {
+                this.delete(row, col);
+                this.set(row, col - 1, cell);
+            }
+        } else {
+            const shiftCols = [];
+            for (const chunk of this.#chunks.values()) {
+                for (const { row, col, cell } of chunk.iterate()) {
+                    if (col >= toCol && col < fromCol) {
+                        shiftCols.push({ row, col, cell });
+                    }
+                }
+            }
+            shiftCols.sort((a, b) => b.col - a.col);
+            for (const { row, col, cell } of shiftCols) {
+                this.delete(row, col);
+                this.set(row, col + 1, cell);
+            }
+        }
+
+        for (const [row, cell] of colCells) {
+            this.set(row, toCol, cell);
+        }
+    }
+
     /**
      * 遍历所有块（生成器方法）
      *

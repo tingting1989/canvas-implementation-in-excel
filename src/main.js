@@ -2,6 +2,7 @@
 import { stylePool } from "./styles/index.js";
 import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
+import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 
 const initApp = () => {
@@ -9,6 +10,7 @@ const initApp = () => {
 
   Workbook.registerPlugin('autoFill', AutoFillPlugin);
   Workbook.registerPlugin('contextMenu', ContextMenuPlugin);
+  Workbook.registerPlugin('columnMove', ColumnMovePlugin);
 
   const wb = new Workbook('grid', {
     data: [
@@ -22,7 +24,7 @@ const initApp = () => {
     colWidths: [120, 80, 100, 100, 100, 100],
     startRows: 100,
     startCols: 26,
-    plugins: ['autoFill', 'contextMenu'],
+    plugins: ['autoFill', 'contextMenu', 'columnMove'],
     conditionalStyles: [
       {
         range: { sr: 0, sc: 0, er: 10000000, ec: 25 },

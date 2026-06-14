@@ -272,4 +272,20 @@ export class Sheet {
         this.mergeManager.deleteCol(atCol);
         this.#invalidateAll();
     }
+
+    moveCol(fromCol, toCol) {
+        if (fromCol === toCol || fromCol < 0 || toCol < 0) return;
+        if (fromCol >= CONFIG.MAX_COLS || toCol >= CONFIG.MAX_COLS) return;
+
+        this.cellStore.moveCol(fromCol, toCol);
+        this.rowColManager.moveCol(fromCol, toCol);
+        this.mergeManager.moveCol(fromCol, toCol);
+
+        if (Array.isArray(this.colHeaders) && this.colHeaders.length > Math.max(fromCol, toCol)) {
+            const [header] = this.colHeaders.splice(fromCol, 1);
+            this.colHeaders.splice(toCol, 0, header);
+        }
+
+        this.#invalidateAll();
+    }
 }

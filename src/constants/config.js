@@ -20,6 +20,8 @@ export const CONFIG = {
     ZEBRA_LIGHT: "#fff",
     ZEBRA_DARK: "#fafafa",
     HEADER_BG: "#f0f0f0",
+    HEADER_HIGHLIGHT_BG: "#dcdcdc",
+    HEADER_HIGHLIGHT_COLOR: "#217346",
     GRID_COLOR: "#ddd",
     CANVAS_ID: "grid",
     WRAP_ID: "wrap",
