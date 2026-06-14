@@ -16,44 +16,40 @@ import {CONFIG} from "../constants/config";
 import {STYLE_LEVEL} from "../constants/styleLevel";
 
 export class Sheet {
+    #renderEngine = null;
+
     constructor(name, renderEngine) {
         this.name = name;
+        this.workbook = null;
+        this.visible = true;
+
         this.cellStore = new ChunkedCellStore();
         this.selection = new SelectionManager();
         this.history = new HistoryStack();
         this.mergeManager = new MergeManager();
-        this.conditionalRules = [];
-        this.visible = true;
-        this.renderEngine = renderEngine;
-        /** 所属工作簿引用（由 Workbook.addSheet 设置） */
-        this.workbook = null;
-
-        /**
-         * 自定义列头标签
-         * 支持三种形式：
-         * - true: 使用默认字母标签 (A, B, C...)
-         * - string[]: 数组映射，如 ['Name', 'Age', 'City']
-         * - Function: (colIndex) => string
-         * 默认为 true
-         */
-        this.colHeaders = true;
-
-        /**
-         * 自定义行头标签
-         * 支持三种形式：
-         * - true: 使用默认数字标签 (1, 2, 3...)
-         * - string[]: 数组映射，如 ['Row1', 'Row2']
-         * - Function: (rowIndex) => string
-         * 默认为 true
-         */
-        this.rowHeaders = true;
-
         this.rowColManager = new RowColManager();
-
+        this.conditionalRules = [];
         this.rowStyles = new Map();
         this.colStyles = new Map();
-
         this.dataBindings = new Map();
+
+        this.colHeaders = true;
+        this.rowHeaders = true;
+
+        if (renderEngine) this.#renderEngine = renderEngine;
+    }
+
+    get renderEngine() { return this.#renderEngine; }
+    set renderEngine(engine) { this.#renderEngine = engine; }
+
+    #invalidateAll() {
+        const re = this.#renderEngine;
+        if (re && typeof re.invalidateAll === 'function') re.invalidateAll();
+    }
+
+    #invalidateCell(r, c) {
+        const re = this.#renderEngine;
+        if (re && typeof re.invalidateCell === 'function') re.invalidateCell(r, c);
     }
 
     setCell(r, c, value, styleId = 0) {
@@ -62,9 +58,7 @@ export class Sheet {
         const cell = new Cell(value, styleId);
         this.history.push(new SetCellCommand(this.cellStore, r, c, old, cell));
         this.cellStore.set(r, c, cell);
-        if (this.renderEngine && typeof this.renderEngine.invalidateCell === 'function') {
-            this.renderEngine.invalidateCell(r, c);
-        }
+        this.#invalidateCell(r, c);
     }
 
     disableCell(r, c) {
@@ -78,9 +72,7 @@ export class Sheet {
         }
         this.history.push(new ToggleDisableCommand(this.cellStore, r, c, oldState));
         this.cellStore.set(r, c, cell);
-        if (this.renderEngine && typeof this.renderEngine.invalidateCell === 'function') {
-            this.renderEngine.invalidateCell(r, c);
-        }
+        this.#invalidateCell(r, c);
     }
 
     enableCell(r, c) {
@@ -89,9 +81,7 @@ export class Sheet {
         const oldState = cell.disabled;
         cell.disabled = false;
         this.history.push(new ToggleDisableCommand(this.cellStore, r, c, oldState));
-        if (this.renderEngine && typeof this.renderEngine.invalidateCell === 'function') {
-            this.renderEngine.invalidateCell(r, c);
-        }
+        this.#invalidateCell(r, c);
     }
 
     isDisabled(r, c) {
@@ -128,49 +118,22 @@ export class Sheet {
         return fn(cell?.value);
     }
 
-    /**
-     * 获取列头标签文本
-     * 根据 colHeaders 配置返回对应列的标签
-     *
-     * @param {number} col - 列索引
-     * @returns {string}
-     */
     getColHeader(col) {
-        if (this.colHeaders === true || this.colHeaders == null) {
-            return this.#defaultColLabel(col);
-        }
-        if (Array.isArray(this.colHeaders)) {
-            return col < this.colHeaders.length ? this.colHeaders[col] : this.#defaultColLabel(col);
-        }
-        if (typeof this.colHeaders === 'function') {
-            return this.colHeaders(col);
-        }
+        const ch = this.colHeaders;
+        if (ch === true || ch == null) return this.#defaultColLabel(col);
+        if (Array.isArray(ch)) return col < ch.length ? ch[col] : this.#defaultColLabel(col);
+        if (typeof ch === 'function') return ch(col);
         return this.#defaultColLabel(col);
     }
 
-    /**
-     * 获取行头标签文本
-     * 根据 rowHeaders 配置返回对应行的标签
-     *
-     * @param {number} row - 行索引
-     * @returns {string}
-     */
     getRowHeader(row) {
-        if (this.rowHeaders === true || this.rowHeaders == null) {
-            return String(row + 1);
-        }
-        if (Array.isArray(this.rowHeaders)) {
-            return row < this.rowHeaders.length ? this.rowHeaders[row] : String(row + 1);
-        }
-        if (typeof this.rowHeaders === 'function') {
-            return this.rowHeaders(row);
-        }
+        const rh = this.rowHeaders;
+        if (rh === true || rh == null) return String(row + 1);
+        if (Array.isArray(rh)) return row < rh.length ? rh[row] : String(row + 1);
+        if (typeof rh === 'function') return rh(row);
         return String(row + 1);
     }
 
-    /**
-     * 默认列头标签（A, B, C, ... Z, AA, AB, ...）
-     */
     #defaultColLabel(col) {
         let label = "";
         let n = col;
@@ -181,26 +144,21 @@ export class Sheet {
         return label;
     }
 
-    /**
-     * 批量加载数据（二维数组）
-     * 对齐 Handsontable 的 data 选项
-     *
-     * @param {Array<Array<*>>} data - 二维数组，data[row][col] = value
-     *
-     * @example
-     * sheet.loadData([
-     *   ['Name', 'Age', 'City'],
-     *   ['Zhang San', 25, 'Beijing'],
-     *   ['Li Si', 30, 'Shanghai'],
-     * ]);
-     */
     loadData(data) {
         if (!Array.isArray(data)) return;
         const rows = data.length;
-        const cols = rows > 0 ? Math.max(...data.map(r => Array.isArray(r) ? r.length : 0)) : 0;
-        if (rows === 0 || cols === 0) return;
+        if (rows === 0) return;
 
-        this.rowColManager.ensureSize(rows, cols);
+        let maxCols = 0;
+        for (let r = 0; r < rows; r++) {
+            const row = data[r];
+            if (Array.isArray(row) && row.length > maxCols) {
+                maxCols = row.length;
+            }
+        }
+        if (maxCols === 0) return;
+
+        this.rowColManager.ensureSize(rows, maxCols);
 
         for (let r = 0; r < rows; r++) {
             const row = data[r];
@@ -212,29 +170,22 @@ export class Sheet {
             }
         }
 
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-            this.renderEngine.invalidateAll();
-        }
+        this.#invalidateAll();
     }
 
     resolveStyle(r, c) {
-        let style = stylePool.getStyle(DEFAULT_STYLE_ID);
-
+        const base = stylePool.getStyle(DEFAULT_STYLE_ID);
         const colStyleId = this.colStyles.get(c);
-        if (colStyleId) {
-            style = {...style, ...stylePool.getStyle(colStyleId)};
-        }
-
         const rowStyleId = this.rowStyles.get(r);
-        if (rowStyleId) {
-            style = {...style, ...stylePool.getStyle(rowStyleId)};
-        }
-
         const cell = this.cellStore.get(r, c);
-        if (cell?.styleId) {
-            style = {...style, ...stylePool.getStyle(cell.styleId)};
-        }
+        const cellStyleId = cell?.styleId;
 
+        if (!colStyleId && !rowStyleId && !cellStyleId) return base;
+
+        let style = base;
+        if (colStyleId) style = {...style, ...stylePool.getStyle(colStyleId)};
+        if (rowStyleId) style = {...style, ...stylePool.getStyle(rowStyleId)};
+        if (cellStyleId) style = {...style, ...stylePool.getStyle(cellStyleId)};
         return style;
     }
 
@@ -243,9 +194,7 @@ export class Sheet {
         cmd.redo();
         if (cmd.succeeded) {
             this.history.push(cmd);
-            if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-                this.renderEngine.invalidateAll();
-            }
+            this.#invalidateAll();
         }
         return cmd.succeeded;
     }
@@ -255,9 +204,7 @@ export class Sheet {
         cmd.redo();
         if (cmd.oldMerge) {
             this.history.push(cmd);
-            if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-                this.renderEngine.invalidateAll();
-            }
+            this.#invalidateAll();
             return true;
         }
         return false;
@@ -280,95 +227,49 @@ export class Sheet {
     }
 
     render() {
-        if (this.renderEngine && typeof this.renderEngine.render === 'function') {
-            this.renderEngine.render(this);
-        }
+        const re = this.#renderEngine;
+        if (re && typeof re.render === 'function') re.render(this);
     }
 
     undo() {
         this.history.undo();
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-            this.renderEngine.invalidateAll();
-        }
+        this.#invalidateAll();
     }
 
     redo() {
         this.history.redo();
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-            this.renderEngine.invalidateAll();
-        }
+        this.#invalidateAll();
     }
 
-    /**
-     * 插入行
-     * 在指定行号处插入一个空行，该行及以下所有数据下移一行
-     * 协调 RowColManager、ChunkedCellStore、MergeManager 三者
-     *
-     * @param {number} atRow - 插入位置的行号（新行将出现在此位置）
-     */
     insertRow(atRow) {
         if (atRow < 0 || atRow >= CONFIG.MAX_ROWS) return;
-
         this.rowColManager.insertRow(atRow);
         this.cellStore.insertRow(atRow);
         this.mergeManager.insertRow(atRow);
-
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-            this.renderEngine.invalidateAll();
-        }
+        this.#invalidateAll();
     }
 
-    /**
-     * 插入列
-     * 在指定列号处插入一个空列，该列及右侧所有数据右移一列
-     *
-     * @param {number} atCol - 插入位置的列号（新列将出现在此位置）
-     */
     insertCol(atCol) {
         if (atCol < 0 || atCol >= CONFIG.MAX_COLS) return;
-
         this.rowColManager.insertCol(atCol);
         this.cellStore.insertCol(atCol);
         this.mergeManager.insertCol(atCol);
-
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-            this.renderEngine.invalidateAll();
-        }
+        this.#invalidateAll();
     }
 
-    /**
-     * 删除行
-     * 删除指定行号处的行，该行以下所有数据上移一行
-     *
-     * @param {number} atRow - 要删除的行号
-     */
     deleteRow(atRow) {
         if (atRow < 0 || atRow >= CONFIG.MAX_ROWS) return;
-
         this.rowColManager.deleteRow(atRow);
         this.cellStore.deleteRow(atRow);
         this.mergeManager.deleteRow(atRow);
-
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-            this.renderEngine.invalidateAll();
-        }
+        this.#invalidateAll();
     }
 
-    /**
-     * 删除列
-     * 删除指定列号处的列，该列右侧所有数据左移一列
-     *
-     * @param {number} atCol - 要删除的列号
-     */
     deleteCol(atCol) {
         if (atCol < 0 || atCol >= CONFIG.MAX_COLS) return;
-
         this.rowColManager.deleteCol(atCol);
         this.cellStore.deleteCol(atCol);
         this.mergeManager.deleteCol(atCol);
-
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
-            this.renderEngine.invalidateAll();
-        }
+        this.#invalidateAll();
     }
 }
