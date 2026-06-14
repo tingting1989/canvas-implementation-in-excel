@@ -216,6 +216,14 @@ export class RowColManager {
         this.#colPrefixDirty = true;
     }
 
+    moveRow(fromRow, toRow) {
+        if (fromRow === toRow) return;
+        this.ensureSize(Math.max(fromRow, toRow) + 1, 0);
+        const [height] = this.#rowHeights.splice(fromRow, 1);
+        this.#rowHeights.splice(toRow, 0, height);
+        this.#rowPrefixDirty = true;
+    }
+
     getVisibleRange(viewX, viewY, viewW, viewH) {
         const sc = this.colAt(viewX);
         const sr = this.rowAt(viewY);

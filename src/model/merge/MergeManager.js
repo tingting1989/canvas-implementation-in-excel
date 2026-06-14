@@ -347,4 +347,54 @@ export class MergeManager {
             }
         }
     }
+
+    moveRow(fromRow, toRow) {
+        if (fromRow === toRow) return;
+
+        const toUpdate = [];
+        const toRemove = [];
+
+        for (const [key, info] of this.merges) {
+            toRemove.push(key);
+            let newTopRow = info.topRow;
+            let newBottomRow = info.bottomRow;
+
+            if (fromRow < toRow) {
+                if (info.topRow === fromRow) newTopRow = toRow;
+                else if (info.topRow > fromRow && info.topRow <= toRow) newTopRow--;
+
+                if (info.bottomRow === fromRow) newBottomRow = toRow;
+                else if (info.bottomRow > fromRow && info.bottomRow <= toRow) newBottomRow--;
+            } else {
+                if (info.topRow === fromRow) newTopRow = toRow;
+                else if (info.topRow >= toRow && info.topRow < fromRow) newTopRow++;
+
+                if (info.bottomRow === fromRow) newBottomRow = toRow;
+                else if (info.bottomRow >= toRow && info.bottomRow < fromRow) newBottomRow++;
+            }
+
+            toUpdate.push({
+                topRow: newTopRow,
+                topCol: info.topCol,
+                bottomRow: newBottomRow,
+                bottomCol: info.bottomCol,
+            });
+        }
+
+        for (const key of toRemove) {
+            const info = this.merges.get(key);
+            for (let r = info.topRow; r <= info.bottomRow; r++) {
+                for (let c = info.topCol; c <= info.bottomCol; c++) {
+                    this.cellMap.delete(`${r}:${c}`);
+                }
+            }
+            this.merges.delete(key);
+        }
+
+        for (const { topRow, topCol, bottomRow, bottomCol } of toUpdate) {
+            if (topRow <= bottomRow) {
+                this.merge(topRow, topCol, bottomRow, bottomCol);
+            }
+        }
+    }
 }

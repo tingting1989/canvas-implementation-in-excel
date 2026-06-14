@@ -61,6 +61,10 @@ export const HOOKS = Object.freeze({
     BEFORE_COLUMN_MOVE: "beforeColumnMove",
     AFTER_COLUMN_MOVE: "afterColumnMove",
 
+    /** 行移动相关 */
+    BEFORE_ROW_MOVE: "beforeRowMove",
+    AFTER_ROW_MOVE: "afterRowMove",
+
     /** 分页相关 */
     AFTER_PAGE_CHANGE: "afterPageChange",
     AFTER_PAGE_SIZE_CHANGE: "afterPageSizeChange",

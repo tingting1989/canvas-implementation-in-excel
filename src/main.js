@@ -6,6 +6,7 @@ import {ColumnMovePlugin} from "./plugins/ColumnMovePlugin.js";
 import {ExportFilePlugin} from "./plugins/ExportFilePlugin.js";
 import {PaginationPlugin} from "./plugins/PaginationPlugin.js";
 import {HiddenColumnsPlugin} from "./plugins/HiddenColumnsPlugin.js";
+import {RowMovePlugin} from "./plugins/RowMovePlugin.js";
 import {HOOKS} from "./constants/hookNames.js";
 
 const initApp = () => {
@@ -17,6 +18,7 @@ const initApp = () => {
     Workbook.registerPlugin('exportFile', ExportFilePlugin);
     Workbook.registerPlugin('pagination', PaginationPlugin);
     Workbook.registerPlugin('hiddenColumns', HiddenColumnsPlugin);
+    Workbook.registerPlugin('rowMove', RowMovePlugin);
 
     const wb = new Workbook('grid', {
         data: [
@@ -30,10 +32,11 @@ const initApp = () => {
         colWidths: [120, 80, 100, 100, 100, 100],
         startRows: 100,
         startCols: 26,
-        plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'pagination', 'hiddenColumns'],
+        plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'pagination', 'hiddenColumns', 'rowMove'],
         pluginOptions: {
             pagination: { pageSize: 50 },
             hiddenColumns: { columns: [2] },
+            // rowMove: { enabled: false }
         },
         conditionalStyles: [
             {

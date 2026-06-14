@@ -1,18 +1,84 @@
 ﻿import {CONFIG} from "../constants/config";
 import {HIT_TYPE} from "../constants/hitType";
 
-export class HeaderRenderer {
-    #resizeLine = null;
-    #columnMoveState = null;
+/** 拖拽幽灵行/列的半透明填充色 */
+const GHOST_FILL = "rgba(76, 139, 245, 0.15)";
+/** 拖拽幽灵行/列的边框色（复用选区色） */
+const GHOST_STROKE = CONFIG.SELECTION_COLOR;
+/** 拖拽源行头/列头的半透明高亮色 */
+const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";
+/** 插入指示器宽度（像素） */
+const INDICATOR_WIDTH = 3;
+/** 插入指示器半偏移（使其居中于边界线） */
+const INDICATOR_HALF = 1;
+/** 普通表头文字颜色 */
+const HEADER_TEXT_COLOR = "#555";
+/** 幽灵行头/列头文字颜色 */
+const GHOST_TEXT_COLOR = "#fff";
+/** 表头字体 */
+const HEADER_FONT = "12px sans-serif";
 
+/**
+ * 表头渲染器
+ *
+ * 负责绘制：
+ * - 列头区域（顶部横条）
+ * - 行头区域（左侧竖条）
+ * - 左上角交叉区域
+ * - 列宽/行高调整线（虚线）
+ * - 列拖拽移动指示器（幽灵列 + 插入线）
+ * - 行拖拽移动指示器（幽灵行 + 插入线）
+ *
+ * 渲染层次（从底到顶）：
+ * 1. 列头背景 + 文字
+ * 2. 行头背景 + 文字
+ * 3. 左上角
+ * 4. 调整线
+ * 5. 移动指示器（最顶层）
+ */
+export class HeaderRenderer {
+    /** 行高/列宽调整线状态 { type, index, position } */
+    #resizeLine = null;
+    /** 列拖拽移动状态 */
+    #columnMoveState = null;
+    /** 行拖拽移动状态 */
+    #rowMoveState = null;
+
+    /**
+     * 设置调整线状态
+     * @param {string|null} type - HIT_TYPE.COL_RESIZE / HIT_TYPE.ROW_RESIZE / null(清除)
+     * @param {number} index - 被调整的行/列索引
+     * @param {number} position - 调整线在 canvas 上的像素位置
+     */
     setResizeLine(type, index, position) {
         this.#resizeLine = type ? { type, index, position } : null;
     }
 
+    /**
+     * 设置列拖拽移动状态
+     * @param {Object|null} state - 列移动状态对象，null 清除
+     */
     setColumnMoveState(state) {
         this.#columnMoveState = state;
     }
 
+    /**
+     * 设置行拖拽移动状态
+     * @param {Object|null} state - 行移动状态对象，null 清除
+     */
+    setRowMoveState(state) {
+        this.#rowMoveState = state;
+    }
+
+    /**
+     * 主渲染入口
+     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
+     * @param {Sheet} sheet - 当前工作表
+     * @param {number} scrollX - 水平滚动偏移
+     * @param {number} scrollY - 垂直滚动偏移
+     * @param {number} viewW - 可视区域宽度
+     * @param {number} viewH - 可视区域高度
+     */
     render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
         const range = sheet.selection.getRange();
 
@@ -21,8 +87,14 @@ export class HeaderRenderer {
         this.#renderCorner(ctx, range);
         this.#renderResizeLine(ctx, viewW, viewH);
         this.#renderColumnMoveIndicator(ctx, sheet, scrollX, viewW, viewH);
+        this.#renderRowMoveIndicator(ctx, sheet, scrollY, viewW, viewH);
     }
 
+    /**
+     * 渲染列头区域
+     * - 背景填充 → 逐列绘制（跳过隐藏列）→ 选区高亮底线
+     * - 拖拽中时源列显示蓝色半透明高亮，隐藏选区底线
+     */
     #renderColumnHeaders(ctx, sheet, scrollX, viewW, range) {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
@@ -33,49 +105,35 @@ export class HeaderRenderer {
 
         const sc = rc.colAt(scrollX);
         const ec = rc.colAt(scrollX + viewW - headerW) + 1;
+
         for (let c = sc; c < ec; c++) {
             const w = rc.getColWidth(c);
             if (w <= 0) continue;
 
             const x = headerW + rc.getColX(c) - scrollX;
+            const isSource = this.#columnMoveState && c === this.#columnMoveState.sourceCol;
             const highlighted = c >= range.topCol && c <= range.bottomCol;
 
-            if (this.#columnMoveState && c === this.#columnMoveState.sourceCol) {
-                ctx.fillStyle = "rgba(76, 139, 245, 0.3)";
-                ctx.fillRect(x, 0, w, headerH);
-                ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
-            } else if (highlighted) {
-                ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_BG;
-                ctx.fillRect(x, 0, w, headerH);
-                ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
-            } else {
-                ctx.fillStyle = "#555";
-            }
-
-            ctx.font = "12px sans-serif";
-            ctx.textAlign = "left";
-            ctx.fillText(sheet.getColHeader(c), x + 4, headerH - 8);
-
-            ctx.strokeStyle = CONFIG.GRID_COLOR;
-            ctx.beginPath();
-            ctx.moveTo(x + w, 0);
-            ctx.lineTo(x + w, headerH);
-            ctx.stroke();
+            this.#drawHeaderCell(ctx, x, 0, w, headerH, isSource, highlighted);
+            this.#drawHeaderText(ctx, sheet.getColHeader(c), x + 4, headerH - 8);
+            this.#drawSeparator(ctx, x + w, 0, x + w, headerH);
         }
 
         if (!this.#columnMoveState) {
-            ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-            ctx.lineWidth = 2;
-            const selX = headerW + rc.getColX(range.topCol) - scrollX;
-            const selW = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - rc.getColX(range.topCol);
-            ctx.beginPath();
-            ctx.moveTo(selX, headerH);
-            ctx.lineTo(selX + selW, headerH);
-            ctx.stroke();
-            ctx.lineWidth = 1;
+            this.#drawSelectionLine(ctx,
+                headerW + rc.getColX(range.topCol) - scrollX,
+                headerH,
+                rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - rc.getColX(range.topCol),
+                true
+            );
         }
     }
 
+    /**
+     * 渲染行头区域
+     * - 背景填充 → 逐行绘制 → 选区高亮右线
+     * - 拖拽中时源行显示蓝色半透明高亮，隐藏选区右线
+     */
     #renderRowHeaders(ctx, sheet, scrollY, viewH, range) {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
@@ -86,58 +144,52 @@ export class HeaderRenderer {
 
         const sr = rc.rowAt(scrollY);
         const er = rc.rowAt(scrollY + viewH - headerH) + 1;
+
         for (let r = sr; r < er; r++) {
             const y = headerH + rc.getRowY(r) - scrollY;
             const h = rc.getRowHeight(r);
+            const isSource = this.#rowMoveState && r === this.#rowMoveState.sourceRow;
             const highlighted = r >= range.topRow && r <= range.bottomRow;
 
-            if (highlighted) {
-                ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_BG;
-                ctx.fillRect(0, y, headerW, h);
-                ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
-            } else {
-                ctx.fillStyle = "#555";
-            }
-
-            ctx.font = "12px sans-serif";
-            ctx.textAlign = "left";
-            ctx.fillText(sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4);
-
-            ctx.strokeStyle = CONFIG.GRID_COLOR;
-            ctx.beginPath();
-            ctx.moveTo(0, y + h);
-            ctx.lineTo(headerW, y + h);
-            ctx.stroke();
+            this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted);
+            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4);
+            this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
         }
 
-        ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 2;
-        const selY = headerH + rc.getRowY(range.topRow) - scrollY;
-        const selH = rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - rc.getRowY(range.topRow);
-        ctx.beginPath();
-        ctx.moveTo(headerW, selY);
-        ctx.lineTo(headerW, selY + selH);
-        ctx.stroke();
-        ctx.lineWidth = 1;
+        if (!this.#rowMoveState) {
+            this.#drawSelectionLine(ctx,
+                headerW,
+                headerH + rc.getRowY(range.topRow) - scrollY,
+                rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - rc.getRowY(range.topRow),
+                false
+            );
+        }
     }
 
+    /**
+     * 渲染左上角交叉区域
+     * 全选时高亮
+     */
     #renderCorner(ctx, range) {
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
         const allSelected = range.topRow === 0 && range.topCol === 0;
 
-        if (allSelected) {
-            ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_BG;
-            ctx.fillRect(0, 0, headerW, headerH);
-        } else {
-            ctx.fillStyle = CONFIG.HEADER_BG;
-            ctx.fillRect(0, 0, headerW, headerH);
-        }
+        ctx.fillStyle = allSelected ? CONFIG.HEADER_HIGHLIGHT_BG : CONFIG.HEADER_BG;
+        ctx.fillRect(0, 0, headerW, headerH);
 
         ctx.strokeStyle = CONFIG.GRID_COLOR;
         ctx.strokeRect(0, 0, headerW, headerH);
     }
 
+    /**
+     * 渲染列拖拽移动指示器
+     *
+     * 包含三个视觉元素：
+     * 1. 幽灵列 — 半透明矩形跟随鼠标水平移动，覆盖整个数据区域高度
+     * 2. 幽灵列头 — 在列头区域显示源列标签
+     * 3. 插入指示线 — 竖线标记目标插入位置
+     */
     #renderColumnMoveIndicator(ctx, sheet, scrollX, viewW, viewH) {
         const state = this.#columnMoveState;
         if (!state) return;
@@ -150,37 +202,77 @@ export class HeaderRenderer {
         const ghostLeft = state.dragX - (state.dragStartX - colScreenX);
 
         ctx.save();
-        ctx.fillStyle = "rgba(76, 139, 245, 0.15)";
-        ctx.fillRect(ghostLeft, headerH, state.colW, viewH - headerH);
 
-        ctx.strokeStyle = CONFIG.SELECTION_COLOR;
+        // 幽灵列（数据区域）
+        ctx.fillStyle = GHOST_FILL;
+        ctx.fillRect(ghostLeft, headerH, state.colW, viewH - headerH);
+        ctx.strokeStyle = GHOST_STROKE;
         ctx.lineWidth = 1;
         ctx.strokeRect(ghostLeft, headerH, state.colW, viewH - headerH);
 
-        ctx.fillStyle = "rgba(76, 139, 245, 0.3)";
+        // 幽灵列头
+        ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(ghostLeft, 0, state.colW, headerH);
-        ctx.fillStyle = "#fff";
-        ctx.font = "12px sans-serif";
-        ctx.textAlign = "left";
-        ctx.fillText(sheet.getColHeader(state.sourceCol), ghostLeft + 4, headerH - 8);
+        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + 4, headerH - 8, GHOST_TEXT_COLOR);
 
-        const targetCol = state.targetCol;
-        if (targetCol >= 0 && targetCol !== state.sourceCol) {
-            let indicatorX;
-            if (targetCol > state.sourceCol) {
-                indicatorX = headerW + rc.getColX(targetCol) + rc.getColWidth(targetCol) - scrollX;
-            } else {
-                indicatorX = headerW + rc.getColX(targetCol) - scrollX;
-            }
-
+        // 插入指示线
+        if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
+            const indicatorX = this.#calcMoveIndicatorX(rc, state.sourceCol, state.targetCol, scrollX);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
-            ctx.fillRect(indicatorX - 1, 0, 3, headerH);
-            ctx.fillRect(indicatorX - 1, headerH, 3, viewH - headerH);
+            ctx.fillRect(indicatorX - INDICATOR_HALF, 0, INDICATOR_WIDTH, headerH);
+            ctx.fillRect(indicatorX - INDICATOR_HALF, headerH, INDICATOR_WIDTH, viewH - headerH);
         }
 
         ctx.restore();
     }
 
+    /**
+     * 渲染行拖拽移动指示器
+     *
+     * 包含三个视觉元素：
+     * 1. 幽灵行 — 半透明矩形跟随鼠标垂直移动，覆盖整个数据区域宽度
+     * 2. 幽灵行头 — 在行头区域显示源行标签
+     * 3. 插入指示线 — 横线标记目标插入位置
+     */
+    #renderRowMoveIndicator(ctx, sheet, scrollY, viewW, viewH) {
+        const state = this.#rowMoveState;
+        if (!state) return;
+
+        const rc = sheet.rowColManager;
+        const headerW = CONFIG.HEADER_WIDTH;
+        const headerH = CONFIG.HEADER_HEIGHT;
+
+        const rowScreenY = headerH + state.rowY - state.scrollY;
+        const ghostTop = state.dragY - (state.dragStartY - rowScreenY);
+
+        ctx.save();
+
+        // 幽灵行（数据区域）
+        ctx.fillStyle = GHOST_FILL;
+        ctx.fillRect(headerW, ghostTop, viewW - headerW, state.rowH);
+        ctx.strokeStyle = GHOST_STROKE;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(headerW, ghostTop, viewW - headerW, state.rowH);
+
+        // 幽灵行头
+        ctx.fillStyle = MOVE_SOURCE_FILL;
+        ctx.fillRect(0, ghostTop, headerW, state.rowH);
+        this.#drawHeaderText(ctx, sheet.getRowHeader(state.sourceRow), 6, ghostTop + state.rowH / 2 + 4, GHOST_TEXT_COLOR);
+
+        // 插入指示线
+        if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
+            const indicatorY = this.#calcMoveIndicatorY(rc, state.sourceRow, state.targetRow, scrollY);
+            ctx.fillStyle = CONFIG.SELECTION_COLOR;
+            ctx.fillRect(0, indicatorY - INDICATOR_HALF, headerW, INDICATOR_WIDTH);
+            ctx.fillRect(headerW, indicatorY - INDICATOR_HALF, viewW - headerW, INDICATOR_WIDTH);
+        }
+
+        ctx.restore();
+    }
+
+    /**
+     * 渲染行高/列宽调整线（虚线）
+     */
     #renderResizeLine(ctx, viewW, viewH) {
         if (!this.#resizeLine) return;
 
@@ -204,5 +296,118 @@ export class HeaderRenderer {
         }
 
         ctx.restore();
+    }
+
+    // ─── 通用绘制工具方法 ──────────────────────────────────
+
+    /**
+     * 绘制单个表头单元格背景
+     * 优先级：拖拽源高亮 > 选区高亮 > 默认
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} x - 左上角 x
+     * @param {number} y - 左上角 y
+     * @param {number} w - 宽度
+     * @param {number} h - 高度
+     * @param {boolean} isSource - 是否为拖拽源行/列
+     * @param {boolean} highlighted - 是否在选区内
+     */
+    #drawHeaderCell(ctx, x, y, w, h, isSource, highlighted) {
+        if (isSource) {
+            ctx.fillStyle = MOVE_SOURCE_FILL;
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
+        } else if (highlighted) {
+            ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_BG;
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
+        } else {
+            ctx.fillStyle = HEADER_TEXT_COLOR;
+        }
+    }
+
+    /**
+     * 绘制表头文字
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {string} text - 文字内容
+     * @param {number} x - 文字 x 坐标
+     * @param {number} y - 文字 y 坐标（基线）
+     * @param {string} [color] - 文字颜色，默认当前 fillStyle
+     */
+    #drawHeaderText(ctx, text, x, y, color) {
+        ctx.font = HEADER_FONT;
+        ctx.textAlign = "left";
+        if (color) ctx.fillStyle = color;
+        ctx.fillText(text, x, y);
+    }
+
+    /**
+     * 绘制分隔线
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} x1 - 起点 x
+     * @param {number} y1 - 起点 y
+     * @param {number} x2 - 终点 x
+     * @param {number} y2 - 终点 y
+     */
+    #drawSeparator(ctx, x1, y1, x2, y2) {
+        ctx.strokeStyle = CONFIG.GRID_COLOR;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+    }
+
+    /**
+     * 绘制选区高亮线
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} origin - 线起始坐标（列头为 x，行头为 y）
+     * @param {number} origin2 - 线的第二个坐标（列头为 headerH，行头为 headerW）
+     * @param {number} length - 线长度
+     * @param {boolean} horizontal - true=水平线（列头底线），false=垂直线（行头右线）
+     */
+    #drawSelectionLine(ctx, origin, origin2, length, horizontal) {
+        ctx.strokeStyle = CONFIG.SELECTION_COLOR;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (horizontal) {
+            ctx.moveTo(origin, origin2);
+            ctx.lineTo(origin + length, origin2);
+        } else {
+            ctx.moveTo(origin, origin2);
+            ctx.lineTo(origin, origin2 + length);
+        }
+        ctx.stroke();
+        ctx.lineWidth = 1;
+    }
+
+    /**
+     * 计算列移动插入指示器的 x 坐标
+     * @param {RowColManager} rc
+     * @param {number} sourceCol - 源列号
+     * @param {number} targetCol - 目标列号
+     * @param {number} scrollX - 水平滚动偏移
+     * @returns {number} 指示器在 canvas 上的 x 坐标
+     */
+    #calcMoveIndicatorX(rc, sourceCol, targetCol, scrollX) {
+        const headerW = CONFIG.HEADER_WIDTH;
+        if (targetCol > sourceCol) {
+            return headerW + rc.getColX(targetCol) + rc.getColWidth(targetCol) - scrollX;
+        }
+        return headerW + rc.getColX(targetCol) - scrollX;
+    }
+
+    /**
+     * 计算行移动插入指示器的 y 坐标
+     * @param {RowColManager} rc
+     * @param {number} sourceRow - 源行号
+     * @param {number} targetRow - 目标行号
+     * @param {number} scrollY - 垂直滚动偏移
+     * @returns {number} 指示器在 canvas 上的 y 坐标
+     */
+    #calcMoveIndicatorY(rc, sourceRow, targetRow, scrollY) {
+        const headerH = CONFIG.HEADER_HEIGHT;
+        if (targetRow > sourceRow) {
+            return headerH + rc.getRowY(targetRow) + rc.getRowHeight(targetRow) - scrollY;
+        }
+        return headerH + rc.getRowY(targetRow) - scrollY;
     }
 }

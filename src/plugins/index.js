@@ -5,3 +5,4 @@ export { ContextMenuPlugin } from "./ContextMenuPlugin.js";
 export { ExportFilePlugin } from "./ExportFilePlugin.js";
 export { PaginationPlugin } from "./PaginationPlugin.js";
 export { HiddenColumnsPlugin } from "./HiddenColumnsPlugin.js";
+export { RowMovePlugin } from "./RowMovePlugin.js";

@@ -236,6 +236,57 @@ export class ChunkedCellStore {
         }
     }
 
+    moveRow(fromRow, toRow) {
+        if (fromRow === toRow) return;
+
+        const rowCells = new Map();
+        for (const chunk of this.#chunks.values()) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (row === fromRow) {
+                    rowCells.set(col, cell);
+                }
+            }
+        }
+
+        for (const [col] of rowCells) {
+            this.delete(fromRow, col);
+        }
+
+        if (fromRow < toRow) {
+            const shiftRows = [];
+            for (const chunk of this.#chunks.values()) {
+                for (const { row, col, cell } of chunk.iterate()) {
+                    if (row > fromRow && row <= toRow) {
+                        shiftRows.push({ row, col, cell });
+                    }
+                }
+            }
+            shiftRows.sort((a, b) => a.row - b.row);
+            for (const { row, col, cell } of shiftRows) {
+                this.delete(row, col);
+                this.set(row - 1, col, cell);
+            }
+        } else {
+            const shiftRows = [];
+            for (const chunk of this.#chunks.values()) {
+                for (const { row, col, cell } of chunk.iterate()) {
+                    if (row >= toRow && row < fromRow) {
+                        shiftRows.push({ row, col, cell });
+                    }
+                }
+            }
+            shiftRows.sort((a, b) => b.row - a.row);
+            for (const { row, col, cell } of shiftRows) {
+                this.delete(row, col);
+                this.set(row + 1, col, cell);
+            }
+        }
+
+        for (const [col, cell] of rowCells) {
+            this.set(toRow, col, cell);
+        }
+    }
+
     /**
      * 遍历所有块（生成器方法）
      *
