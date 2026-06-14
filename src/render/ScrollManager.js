@@ -80,7 +80,7 @@ export class ScrollManager {
             const thumbH = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackH * (viewH2 / totalH)));
             vThumb.style.height = thumbH + "px";
             const ratio = this.#scrollY / this.#maxScrollY;
-            vThumb.style.top = (CONFIG.HEADER_HEIGHT + ratio * (trackH - thumbH)) + "px";
+            vThumb.style.top = (ratio * (trackH - thumbH)) + "px";
         }
 
         if (hThumb && this.#maxScrollX > 0) {
@@ -90,7 +90,7 @@ export class ScrollManager {
             const thumbW = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackW * (viewW2 / totalW)));
             hThumb.style.width = thumbW + "px";
             const ratio = this.#scrollX / this.#maxScrollX;
-            hThumb.style.left = (CONFIG.HEADER_WIDTH + ratio * (trackW - thumbW)) + "px";
+            hThumb.style.left = (ratio * (trackW - thumbW)) + "px";
         }
     }
 
