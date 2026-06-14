@@ -153,6 +153,20 @@ canvas {
   <button onclick="exportTSV()">导出 TSV</button>
   <span class="separator"></span>
   <button onclick="loadMillionData()">加载百万数据</button>
+  <span class="separator"></span>
+  <button onclick="pgFirst()">首页</button>
+  <button onclick="pgPrev()">上一页</button>
+  <button onclick="pgNext()">下一页</button>
+  <button onclick="pgLast()">末页</button>
+  <select id="pg-size-select" onchange="pgSetSize(this.value)" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;">
+    <option value="10">10行/页</option>
+    <option value="25">25行/页</option>
+    <option value="50" selected>50行/页</option>
+    <option value="100">100行/页</option>
+    <option value="200">200行/页</option>
+  </select>
+  <span class="info" id="pg-info">第 1 / 1 页</span>
+  <span class="separator"></span>
   <span class="info" id="status-info">就绪</span>
 </div>
 
@@ -195,6 +209,9 @@ function loadMillionData() {
   const elapsed = (performance.now() - start).toFixed(0);
   info.textContent = `已加载 ${ROWS.toLocaleString()} 行 × ${COLS} 列 (${elapsed}ms)`;
   wb.render();
+
+  const pg = wb.getPlugin('pagination');
+  if (pg) { pg.refresh(); updatePgInfo(); }
 }
 
 function exportCSV() {
@@ -216,6 +233,24 @@ function exportTSV() {
   const elapsed = (performance.now() - start).toFixed(0);
   info.textContent = `TSV 导出完成 (${elapsed}ms)`;
 }
+
+function getPagination() {
+  return wb.getPlugin('pagination');
+}
+
+function updatePgInfo() {
+  const pg = getPagination();
+  if (!pg) return;
+  const data = pg.getPaginationData();
+  document.getElementById('pg-info').textContent =
+    `第 ${data.currentPage} / ${data.totalPages} 页 (共 ${data.totalRows} 行)`;
+}
+
+function pgFirst() { getPagination()?.firstPage(); updatePgInfo(); }
+function pgPrev()  { getPagination()?.prevPage();  updatePgInfo(); }
+function pgNext()  { getPagination()?.nextPage();  updatePgInfo(); }
+function pgLast()  { getPagination()?.lastPage();  updatePgInfo(); }
+function pgSetSize(val) { getPagination()?.setPageSize(parseInt(val)); updatePgInfo(); }
 
 (function initScrollbarDrag() {
   document.addEventListener('DOMContentLoaded', () => {

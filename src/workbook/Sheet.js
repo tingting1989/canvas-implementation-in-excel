@@ -42,6 +42,16 @@ export class Sheet {
     get renderEngine() { return this.#renderEngine; }
     set renderEngine(engine) { this.#renderEngine = engine; }
 
+    toRealRow(pageRow) {
+        const offset = this.rowColManager.pageStartRow;
+        return offset >= 0 ? offset + pageRow : pageRow;
+    }
+
+    toPageRow(realRow) {
+        const offset = this.rowColManager.pageStartRow;
+        return offset >= 0 ? realRow - offset : realRow;
+    }
+
     #invalidateAll() {
         const re = this.#renderEngine;
         if (re && typeof re.invalidateAll === 'function') re.invalidateAll();
@@ -53,39 +63,43 @@ export class Sheet {
     }
 
     setCell(r, c, value, styleId = 0) {
-        this.rowColManager.ensureSize(r + 1, c + 1);
-        const old = this.cellStore.get(r, c);
+        const realR = this.toRealRow(r);
+        this.rowColManager.ensureSize(realR + 1, c + 1);
+        const old = this.cellStore.get(realR, c);
         const cell = new Cell(value, styleId);
-        this.history.push(new SetCellCommand(this.cellStore, r, c, old, cell));
-        this.cellStore.set(r, c, cell);
-        this.#invalidateCell(r, c);
+        this.history.push(new SetCellCommand(this.cellStore, realR, c, old, cell));
+        this.cellStore.set(realR, c, cell);
+        this.#invalidateCell(realR, c);
     }
 
     disableCell(r, c) {
-        this.rowColManager.ensureSize(r + 1, c + 1);
-        let cell = this.cellStore.get(r, c);
+        const realR = this.toRealRow(r);
+        this.rowColManager.ensureSize(realR + 1, c + 1);
+        let cell = this.cellStore.get(realR, c);
         const oldState = cell?.disabled || false;
         if (!cell) {
             cell = new Cell("", 0, true);
         } else {
             cell.disabled = true;
         }
-        this.history.push(new ToggleDisableCommand(this.cellStore, r, c, oldState));
-        this.cellStore.set(r, c, cell);
-        this.#invalidateCell(r, c);
+        this.history.push(new ToggleDisableCommand(this.cellStore, realR, c, oldState));
+        this.cellStore.set(realR, c, cell);
+        this.#invalidateCell(realR, c);
     }
 
     enableCell(r, c) {
-        const cell = this.cellStore.get(r, c);
+        const realR = this.toRealRow(r);
+        const cell = this.cellStore.get(realR, c);
         if (!cell) return;
         const oldState = cell.disabled;
         cell.disabled = false;
-        this.history.push(new ToggleDisableCommand(this.cellStore, r, c, oldState));
-        this.#invalidateCell(r, c);
+        this.history.push(new ToggleDisableCommand(this.cellStore, realR, c, oldState));
+        this.#invalidateCell(realR, c);
     }
 
     isDisabled(r, c) {
-        return this.cellStore.get(r, c)?.disabled === true;
+        const realR = this.toRealRow(r);
+        return this.cellStore.get(realR, c)?.disabled === true;
     }
 
     setRowStyle(row, styleId) {
@@ -101,8 +115,9 @@ export class Sheet {
     }
 
     matchConditionalStyle(r, c, cell) {
+        const realR = this.toRealRow(r);
         for (const rule of this.conditionalRules) {
-            if (rule.match(r, c, cell)) return rule.styleId;
+            if (rule.match(realR, c, cell)) return rule.styleId;
         }
         return null;
     }
@@ -112,9 +127,10 @@ export class Sheet {
     }
 
     getDataBindStyle(r, c) {
+        const realR = this.toRealRow(r);
         const fn = this.dataBindings.get(c);
         if (!fn) return null;
-        const cell = this.cellStore.get(r, c);
+        const cell = this.cellStore.get(realR, c);
         return fn(cell?.value);
     }
 
@@ -171,13 +187,22 @@ export class Sheet {
         }
 
         this.#invalidateAll();
+        this.#refreshPagination();
+    }
+
+    #refreshPagination() {
+        const pg = this.workbook?.getPlugin('pagination');
+        if (pg && pg.active) {
+            pg.refresh();
+        }
     }
 
     resolveStyle(r, c) {
+        const realR = this.toRealRow(r);
         const base = stylePool.getStyle(DEFAULT_STYLE_ID);
         const colStyleId = this.colStyles.get(c);
-        const rowStyleId = this.rowStyles.get(r);
-        const cell = this.cellStore.get(r, c);
+        const rowStyleId = this.rowStyles.get(realR);
+        const cell = this.cellStore.get(realR, c);
         const cellStyleId = cell?.styleId;
 
         if (!colStyleId && !rowStyleId && !cellStyleId) return base;
@@ -211,15 +236,26 @@ export class Sheet {
     }
 
     getMerge(row, col) {
-        return this.mergeManager.getMerge(row, col);
+        const realRow = this.toRealRow(row);
+        const merge = this.mergeManager.getMerge(realRow, col);
+        if (!merge) return null;
+        const offset = this.rowColManager.pageStartRow;
+        if (offset < 0) return merge;
+        return {
+            ...merge,
+            topRow: merge.topRow - offset,
+            bottomRow: merge.bottomRow - offset,
+        };
     }
 
     isMergeTopLeft(row, col) {
-        return this.mergeManager.isTopLeft(row, col);
+        const realRow = this.toRealRow(row);
+        return this.mergeManager.isTopLeft(realRow, col);
     }
 
     isMergedCell(row, col) {
-        return this.mergeManager.isMerged(row, col);
+        const realRow = this.toRealRow(row);
+        return this.mergeManager.isMerged(realRow, col);
     }
 
     getAllMerges() {

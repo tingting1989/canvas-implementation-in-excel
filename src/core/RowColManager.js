@@ -10,7 +10,15 @@ export class RowColManager {
     #allocatedHeight = 0;
     #allocatedWidth = 0;
 
+    #pageStartRow = -1;
+    #pageEndRow = -1;
+
     get totalHeight() {
+        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
+            const startY = this.#rawGetRowY(this.#pageStartRow);
+            const endY = this.#rawGetRowY(this.#pageEndRow);
+            return endY - startY;
+        }
         this.#ensureRowPrefix();
         return this.#allocatedHeight + (CONFIG.MAX_ROWS - this.#rowHeights.length) * CONFIG.DEFAULT_ROW_HEIGHT;
     }
@@ -21,6 +29,9 @@ export class RowColManager {
     }
 
     get rowCount() {
+        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
+            return this.#pageEndRow - this.#pageStartRow;
+        }
         return CONFIG.MAX_ROWS;
     }
 
@@ -70,6 +81,11 @@ export class RowColManager {
     }
 
     getRowHeight(row) {
+        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
+            const realRow = this.#pageStartRow + row;
+            if (realRow >= 0 && realRow < this.#rowHeights.length) return this.#rowHeights[realRow];
+            return CONFIG.DEFAULT_ROW_HEIGHT;
+        }
         if (row >= 0 && row < this.#rowHeights.length) return this.#rowHeights[row];
         return CONFIG.DEFAULT_ROW_HEIGHT;
     }
@@ -80,6 +96,15 @@ export class RowColManager {
     }
 
     getRowY(row) {
+        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
+            const realRow = this.#pageStartRow + row;
+            const pageStartY = this.#rawGetRowY(this.#pageStartRow);
+            return this.#rawGetRowY(realRow) - pageStartY;
+        }
+        return this.#rawGetRowY(row);
+    }
+
+    #rawGetRowY(row) {
         if (row <= 0) return 0;
         this.#ensureRowPrefix();
         if (row <= this.#rowHeights.length) {
@@ -98,6 +123,16 @@ export class RowColManager {
     }
 
     rowAt(y) {
+        if (y < 0) return 0;
+        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
+            const pageStartY = this.#rawGetRowY(this.#pageStartRow);
+            const realRow = this.#rawRowAt(y + pageStartY);
+            return Math.max(0, Math.min(realRow - this.#pageStartRow, this.#pageEndRow - this.#pageStartRow - 1));
+        }
+        return this.#rawRowAt(y);
+    }
+
+    #rawRowAt(y) {
         if (y < 0) return 0;
         this.#ensureRowPrefix();
         if (y < this.#allocatedHeight) {
@@ -163,10 +198,25 @@ export class RowColManager {
     getVisibleRange(viewX, viewY, viewW, viewH) {
         const sc = this.colAt(viewX);
         const sr = this.rowAt(viewY);
-        const ec = Math.min(CONFIG.MAX_COLS, this.colAt(viewX + viewW) + 1);
-        const er = Math.min(CONFIG.MAX_ROWS, this.rowAt(viewY + viewH) + 1);
+        const ec = Math.min(this.colCount, this.colAt(viewX + viewW) + 1);
+        const er = Math.min(this.rowCount, this.rowAt(viewY + viewH) + 1);
         return { sr, sc, er, ec };
     }
+
+    setPaginationBounds(startRow, endRow) {
+        this.#pageStartRow = startRow;
+        this.#pageEndRow = endRow;
+        this.#rowPrefixDirty = true;
+    }
+
+    clearPaginationBounds() {
+        this.#pageStartRow = -1;
+        this.#pageEndRow = -1;
+        this.#rowPrefixDirty = true;
+    }
+
+    get pageStartRow() { return this.#pageStartRow; }
+    get pageEndRow() { return this.#pageEndRow; }
 
     #ensureRowPrefix() {
         if (!this.#rowPrefixDirty) return;

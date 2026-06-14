@@ -65,8 +65,10 @@ export class TileRenderer {
 
             if (localY + rowH <= 0 || localY >= tileSize) continue;
 
+            const realR = sheet.toRealRow(r);
+
             for (let c = sc; c < ec; c++) {
-                if (sheet.isMergedCell(r, c)) continue;
+                if (sheet.isMergedCell(realR, c)) continue;
 
                 const colX = rc.getColX(c);
                 const colW = rc.getColWidth(c);
@@ -74,17 +76,19 @@ export class TileRenderer {
 
                 if (localX + colW <= 0 || localX >= tileSize) continue;
 
-                const cell = sheet.cellStore.get(r, c);
+                const cell = sheet.cellStore.get(realR, c);
                 const merge = sheet.getMerge(r, c);
+                const mergeTopRow = merge ? merge.topRow : r;
+                const mergeBottomRow = merge ? merge.bottomRow : r;
                 const w = merge ? (rc.getColX(merge.topCol + merge.colSpan) - rc.getColX(merge.topCol)) : colW;
-                const h = merge ? (rc.getRowY(merge.topRow + merge.rowSpan) - rc.getRowY(merge.topRow)) : rowH;
+                const h = merge ? (rc.getRowY(mergeBottomRow) + rc.getRowHeight(mergeBottomRow) - rc.getRowY(mergeTopRow)) : rowH;
 
                 const drawX = merge ? (rc.getColX(merge.topCol) - pixelX0) : localX;
-                const drawY = merge ? (rc.getRowY(merge.topRow) - pixelY0) : localY;
+                const drawY = merge ? (rc.getRowY(mergeTopRow) - pixelY0) : localY;
 
-                this.#drawCellBackground(tileCtx, sheet, r, c, cell, drawX, drawY, w, h);
+                this.#drawCellBackground(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h);
                 this.#drawCellBorder(tileCtx, merge, drawX, drawY, w, h);
-                this.#drawCellText(tileCtx, sheet, r, c, cell, drawX, drawY, w, h);
+                this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h);
             }
         }
     }

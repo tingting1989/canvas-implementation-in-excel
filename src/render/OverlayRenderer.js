@@ -37,16 +37,26 @@ export class OverlayRenderer {
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
         ctx.lineWidth = 2;
 
+        const pageStart = sheet.rowColManager.pageStartRow;
+        const pageEnd = sheet.rowColManager.pageEndRow;
+
         for (const merge of sheet.getAllMerges()) {
             const { topRow, topCol, bottomRow, bottomCol } = merge;
             const rc = sheet.rowColManager;
             const headerW = CONFIG.HEADER_WIDTH;
             const headerH = CONFIG.HEADER_HEIGHT;
 
+            if (pageStart >= 0 && pageEnd > pageStart) {
+                if (bottomRow < pageStart || topRow >= pageEnd) continue;
+            }
+
+            const pageTopRow = sheet.toPageRow(topRow);
+            const pageBottomRow = sheet.toPageRow(bottomRow);
+
             const x1 = rc.getColX(topCol);
-            const y1 = rc.getRowY(topRow);
+            const y1 = rc.getRowY(pageTopRow);
             const x2 = rc.getColX(bottomCol) + rc.getColWidth(bottomCol);
-            const y2 = rc.getRowY(bottomRow) + rc.getRowHeight(bottomRow);
+            const y2 = rc.getRowY(pageBottomRow) + rc.getRowHeight(pageBottomRow);
 
             const drawX = headerW + x1 - scrollX;
             const drawY = headerH + y1 - scrollY;

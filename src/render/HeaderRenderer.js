@@ -99,7 +99,7 @@ export class HeaderRenderer {
 
             ctx.font = "12px sans-serif";
             ctx.textAlign = "left";
-            ctx.fillText(sheet.getRowHeader(r), 6, y + h / 2 + 4);
+            ctx.fillText(sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4);
 
             ctx.strokeStyle = CONFIG.GRID_COLOR;
             ctx.beginPath();
