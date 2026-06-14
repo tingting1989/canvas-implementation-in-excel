@@ -2,26 +2,15 @@
 
 export class HeaderRenderer {
     #resizeLine = null;
-    #nestedHeadersPlugin = null;
 
     setResizeLine(type, index, position) {
         this.#resizeLine = type ? { type, index, position } : null;
     }
 
-    setNestedHeadersPlugin(plugin) {
-        this.#nestedHeadersPlugin = plugin;
-    }
-
     render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
-        if (this.renderColumnHeadersPatched) {
-            this.renderColumnHeadersPatched(ctx, sheet, scrollX, viewW);
-            this.#renderRowHeaders(ctx, sheet, scrollY, viewH);
-            this.#renderCorner(ctx);
-        } else {
-            this.#renderColumnHeaders(ctx, sheet, scrollX, viewW);
-            this.#renderRowHeaders(ctx, sheet, scrollY, viewH);
-            this.#renderCorner(ctx);
-        }
+        this.#renderColumnHeaders(ctx, sheet, scrollX, viewW);
+        this.#renderRowHeaders(ctx, sheet, scrollY, viewH);
+        this.#renderCorner(ctx);
         this.#renderResizeLine(ctx, viewW, viewH);
     }
 
@@ -56,10 +45,6 @@ export class HeaderRenderer {
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
 
-        const extraH = this.#nestedHeadersPlugin
-            ? (this.#nestedHeadersPlugin.levels - 1) * headerH
-            : 0;
-
         ctx.fillStyle = CONFIG.HEADER_BG;
         ctx.fillRect(0, 0, headerW, viewH);
 
@@ -70,7 +55,7 @@ export class HeaderRenderer {
         const sr = rc.rowAt(scrollY);
         const er = rc.rowAt(scrollY + viewH - headerH) + 1;
         for (let r = sr; r < er; r++) {
-            const y = headerH + extraH + rc.getRowY(r) - scrollY;
+            const y = headerH + rc.getRowY(r) - scrollY;
             const h = rc.getRowHeight(r);
             ctx.fillText(String(r + 1), 6, y + h / 2 + 4);
             ctx.strokeStyle = CONFIG.GRID_COLOR;
@@ -82,14 +67,10 @@ export class HeaderRenderer {
     }
 
     #renderCorner(ctx) {
-        const headerH = this.#nestedHeadersPlugin
-            ? this.#nestedHeadersPlugin.totalHeaderHeight
-            : CONFIG.HEADER_HEIGHT;
-
         ctx.fillStyle = CONFIG.HEADER_BG;
-        ctx.fillRect(0, 0, CONFIG.HEADER_WIDTH, headerH);
+        ctx.fillRect(0, 0, CONFIG.HEADER_WIDTH, CONFIG.HEADER_HEIGHT);
         ctx.strokeStyle = CONFIG.GRID_COLOR;
-        ctx.strokeRect(0, 0, CONFIG.HEADER_WIDTH, headerH);
+        ctx.strokeRect(0, 0, CONFIG.HEADER_WIDTH, CONFIG.HEADER_HEIGHT);
     }
 
     #renderResizeLine(ctx, viewW, viewH) {

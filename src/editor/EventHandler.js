@@ -1,10 +1,13 @@
-import { MouseStrategy, KeyboardStrategy, ResizeStrategy, ContextMenuStrategy, AutoFillStrategy } from "./strategies/index.js";
+import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "./strategies/index.js";
 import { Hooks } from "./Hooks.js";
 
 /**
  * 事件处理器
- * 统一管理所有交互策略（鼠标、键盘、拖拽调整、右键菜单、自动填充）
- * 以及钩子系统（Hooks）
+ * 统一管理所有交互策略（鼠标、键盘、拖拽调整）以及钩子系统（Hooks）
+ *
+ * 可选功能（右键菜单、自动填充）通过插件系统加载：
+ * - AutoFillPlugin → 注册 autoFill 策略
+ * - ContextMenuPlugin → 注册 contextMenu 策略
  */
 export class EventHandler {
     /**
@@ -27,15 +30,15 @@ export class EventHandler {
     }
 
     /**
-     * 初始化所有交互策略
+     * 初始化核心交互策略
      * 注册顺序决定了事件处理的优先级
+     *
+     * 可选策略（autoFill、contextMenu）由对应插件通过 addStrategy 注册
      */
     #initStrategies() {
         this.addStrategy("mouse", new MouseStrategy(this));
         this.addStrategy("keyboard", new KeyboardStrategy(this));
         this.addStrategy("resize", new ResizeStrategy(this));
-        this.addStrategy("autoFill", new AutoFillStrategy(this));
-        this.addStrategy("contextMenu", new ContextMenuStrategy(this));
     }
 
     /**

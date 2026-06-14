@@ -15,6 +15,8 @@ import { CONFIG } from "../../core/constants.js";
 export class ContextMenuStrategy extends EventStrategy {
     /** contextmenu 事件处理器引用 */
     #contextmenuHandler = null;
+    /** 点击菜单外部关闭的 mousedown 处理器引用 */
+    #dismissHandler = null;
     /** 右键菜单 DOM 元素 */
     #menuEl = null;
     /** 右键点击时的行号 */
@@ -34,6 +36,7 @@ export class ContextMenuStrategy extends EventStrategy {
 
     destroy() {
         this.handler.canvas.removeEventListener(EVENT_NAMES.CONTEXTMENU, this.#contextmenuHandler);
+        document.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#dismissHandler);
         this.#menuEl?.remove();
         this.#menuEl = null;
     }
@@ -113,11 +116,12 @@ export class ContextMenuStrategy extends EventStrategy {
 
     /** 绑定点击菜单外部自动关闭 */
     #bindDismiss() {
-        document.addEventListener("mousedown", (e) => {
+        this.#dismissHandler = (e) => {
             if (this.#menuEl && !this.#menuEl.contains(e.target)) {
                 this.#hideMenu();
             }
-        });
+        };
+        document.addEventListener(EVENT_NAMES.MOUSEDOWN, this.#dismissHandler);
     }
 
     /**
@@ -131,7 +135,9 @@ export class ContextMenuStrategy extends EventStrategy {
         e.preventDefault();
 
         const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
-        if (hit) {
+        if (!hit) return;
+
+        if (hit.type === "cell") {
             const merge = this.handler.sheet.getMerge(hit.row, hit.col);
             const row = merge ? merge.topRow : hit.row;
             const col = merge ? merge.topCol : hit.col;
@@ -142,12 +148,9 @@ export class ContextMenuStrategy extends EventStrategy {
             }
 
             this.#showMenu(e.clientX, e.clientY, row, col);
-        } else {
-            const headerHit = this.handler.renderEngine.headerClickTest(e.clientX, e.clientY);
-            if (headerHit) {
-                const [ar, ac] = this.handler.sheet.selection.getActive();
-                this.#showMenu(e.clientX, e.clientY, ar, ac);
-            }
+        } else if (hit.type === "corner" || hit.type === "col-header" || hit.type === "row-header") {
+            const [ar, ac] = this.handler.sheet.selection.getActive();
+            this.#showMenu(e.clientX, e.clientY, ar, ac);
         }
     }
 

@@ -72,16 +72,13 @@ export class MouseStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
 
-        /* 优先检测行头/列头点击 */
-        const headerHit = this.handler.renderEngine.headerClickTest(e.clientX, e.clientY);
-        if (headerHit) {
-            this.#handleHeaderClick(headerHit);
-            return;
-        }
-
-        /* 数据区域命中测试 */
         const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
         if (!hit) return;
+
+        if (hit.type === "corner" || hit.type === "col-header" || hit.type === "row-header") {
+            this.#handleHeaderClick(hit);
+            return;
+        }
 
         const { row, col } = this.#getTopLeft(hit.row, hit.col);
 

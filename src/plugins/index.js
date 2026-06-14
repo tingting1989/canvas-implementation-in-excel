@@ -2,14 +2,3 @@
 export { PluginManager } from "./PluginManager.js";
 export { AutoFillPlugin } from "./AutoFillPlugin.js";
 export { ContextMenuPlugin } from "./ContextMenuPlugin.js";
-export { ColumnHeaderPlugin } from "./ColumnHeaderPlugin.js";
-export { ColumnWidthPlugin } from "./ColumnWidthPlugin.js";
-export { NestedHeadersPlugin } from "./NestedHeadersPlugin.js";
-export { CollapsibleColumnsPlugin } from "./CollapsibleColumnsPlugin.js";
-export { ColumnMenuPlugin } from "./ColumnMenuPlugin.js";
-export { ColumnMovePlugin } from "./ColumnMovePlugin.js";
-export { ColumnSortPlugin } from "./ColumnSortPlugin.js";
-export { ColumnFilterPlugin } from "./ColumnFilterPlugin.js";
-export { ColumnSummaryPlugin } from "./ColumnSummaryPlugin.js";
-export { ColumnHidingPlugin } from "./ColumnHidingPlugin.js";
-export { ColumnFreezePlugin } from "./ColumnFreezePlugin.js";

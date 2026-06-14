@@ -2,17 +2,6 @@
 import { stylePool } from "./styles/index.js";
 import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
-import { ColumnHeaderPlugin } from "./plugins/ColumnHeaderPlugin.js";
-import { ColumnWidthPlugin } from "./plugins/ColumnWidthPlugin.js";
-import { NestedHeadersPlugin } from "./plugins/NestedHeadersPlugin.js";
-import { CollapsibleColumnsPlugin } from "./plugins/CollapsibleColumnsPlugin.js";
-import { ColumnMenuPlugin } from "./plugins/ColumnMenuPlugin.js";
-import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
-import { ColumnSortPlugin } from "./plugins/ColumnSortPlugin.js";
-import { ColumnFilterPlugin } from "./plugins/ColumnFilterPlugin.js";
-import { ColumnSummaryPlugin } from "./plugins/ColumnSummaryPlugin.js";
-import { ColumnHidingPlugin } from "./plugins/ColumnHidingPlugin.js";
-import { ColumnFreezePlugin } from "./plugins/ColumnFreezePlugin.js";
 import { HOOKS } from "./editor/hookNames.js";
 
 const initApp = () => {
@@ -67,66 +56,13 @@ const initApp = () => {
   s2.setCell(0, 1, 123);
   s2.setCell(2, 0, "Switch to Sheet1 to paste");
 
-  /* Register plugins globally */
   Workbook.registerPlugin('autoFill', AutoFillPlugin);
   Workbook.registerPlugin('contextMenu', ContextMenuPlugin);
-  Workbook.registerPlugin('columnHeader', ColumnHeaderPlugin);
-  Workbook.registerPlugin('columnWidth', ColumnWidthPlugin);
-  Workbook.registerPlugin('nestedHeaders', NestedHeadersPlugin);
-  Workbook.registerPlugin('collapsibleColumns', CollapsibleColumnsPlugin);
-  Workbook.registerPlugin('columnMenu', ColumnMenuPlugin);
-  Workbook.registerPlugin('columnMove', ColumnMovePlugin);
-  Workbook.registerPlugin('columnSort', ColumnSortPlugin);
-  Workbook.registerPlugin('columnFilter', ColumnFilterPlugin);
-  Workbook.registerPlugin('columnSummary', ColumnSummaryPlugin);
-  Workbook.registerPlugin('columnHiding', ColumnHidingPlugin);
-  Workbook.registerPlugin('columnFreeze', ColumnFreezePlugin);
 
-  /* Initialize rendering */
   wb.initRender();
 
-  /* Load base plugins */
   wb.loadPlugin('autoFill');
   wb.loadPlugin('contextMenu');
-
-  /* Load Columns series plugins */
-  wb.loadPlugin('columnHeader', {
-    labels: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"]
-  });
-
-  wb.loadPlugin('columnWidth', {
-    widths: [80, 60, 80, 100, 80, 100]
-  });
-
-  wb.loadPlugin('columnSort');
-  wb.loadPlugin('columnMenu');
-  wb.loadPlugin('columnMove');
-  wb.loadPlugin('columnFilter');
-  wb.loadPlugin('columnHiding');
-  wb.loadPlugin('columnFreeze', { fixedColumnsStart: 1 });
-
-  wb.loadPlugin('columnSummary', {
-    summaries: [
-      { col: 1, type: "average", resultRow: 50, label: "Avg" },
-      { col: 4, type: "sum", resultRow: 50, label: "Total" },
-    ]
-  });
-
-  /* Load NestedHeaders plugin */
-  wb.loadPlugin('nestedHeaders', {
-    headers: [
-      [
-        { label: "Basic Info", colspan: 3 },
-        { label: "Work Info", colspan: 3 }
-      ],
-      ["Name", "Age", "City", "Dept", "Salary", "Hire Date"]
-    ]
-  });
-
-  /* Load CollapsibleColumns plugin */
-  wb.loadPlugin('collapsibleColumns', {
-    collapsible: true
-  });
 
   wb.render();
 
@@ -140,7 +76,7 @@ const initApp = () => {
   });
 
   console.log("Loaded plugins:", wb.pluginManager.getLoadedNames());
-  console.log("App started! Tile Rendering + Plugin System + Columns ready.");
+  console.log("App started! Tile Rendering + Plugin System ready.");
 };
 
 document.addEventListener("DOMContentLoaded", initApp);
