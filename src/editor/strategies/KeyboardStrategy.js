@@ -1,6 +1,5 @@
 import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
-import { stylePool } from "../../styles/index.js";
 import { CONFIG } from "../../constants/config";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
@@ -301,9 +300,8 @@ export class KeyboardStrategy extends EventStrategy {
 
     /**
      * 通用样式属性切换
-     * 遍历选区内所有单元格，检查当前值：
-     * - 如果所有单元格都是 activeValue → 全部切换为 inactiveValue
-     * - 否则 → 全部切换为 activeValue
+     * 以锚点单元格的当前样式判断切换方向，对整个选区统一应用
+     * 避免遍历所有单元格检查，提升大范围选区性能
      *
      * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range - 选区范围
      * @param {string} prop - 样式属性名（如 "fontWeight"）
@@ -313,35 +311,11 @@ export class KeyboardStrategy extends EventStrategy {
     #toggleStyleProperty(range, prop, activeValue, inactiveValue) {
         const { sheet } = this.handler;
 
-        let allActive = true;
+        const [ar, ac] = sheet.selection.getActive();
+        const anchorStyle = sheet.resolveStyle(ar, ac);
+        const newValue = anchorStyle[prop] === activeValue ? inactiveValue : activeValue;
 
-        for (let r = range.topRow; r <= range.bottomRow; r++) {
-            for (let c = range.topCol; c <= range.bottomCol; c++) {
-                const cell = sheet.cellStore.get(r, c);
-                const currentStyle = cell?.styleId ? stylePool.getStyle(cell.styleId) : {};
-                if (currentStyle[prop] !== activeValue) {
-                    allActive = false;
-                }
-                if (!allActive) break;
-            }
-            if (!allActive) break;
-        }
-
-        const newValue = allActive ? inactiveValue : activeValue;
-
-        for (let r = range.topRow; r <= range.bottomRow; r++) {
-            for (let c = range.topCol; c <= range.bottomCol; c++) {
-                if (sheet.isDisabled(r, c)) continue;
-
-                const cell = sheet.cellStore.get(r, c);
-                const currentStyleId = cell?.styleId || 0;
-                const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
-                const mergedStyle = { ...currentStyle, [prop]: newValue };
-                const newStyleId = stylePool.getStyleId(mergedStyle);
-                const value = cell?.value ?? "";
-                sheet.setCell(r, c, value, newStyleId);
-            }
-        }
+        sheet.setRangeStyle(range, { [prop]: newValue });
 
         this.handler.runHooks(HOOKS.AFTER_CHANGE, []);
     }

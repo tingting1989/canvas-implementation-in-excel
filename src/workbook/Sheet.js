@@ -38,6 +38,12 @@ export class Sheet {
     #renderEngine = null;
     /** 工作表默认样式 ID（覆盖全局 DEFAULT_STYLE_ID） */
     #defaultStyleId = DEFAULT_STYLE_ID;
+    /** resolveStyle 缓存：key = "r,c" → value = 合并后的样式对象 */
+    #styleCache = new Map();
+    /** 样式缓存版本号，每次样式变更递增，渲染帧内使用版本号判断是否过期 */
+    #styleCacheVersion = 0;
+    /** 当前渲染帧的缓存版本，帧内相同版本直接命中缓存 */
+    #styleCacheFrameVersion = -1;
 
     /**
      * @param {string} name - 工作表名称
@@ -136,12 +142,15 @@ export class Sheet {
     #invalidateAll() {
         const re = this.#renderEngine;
         if (re && typeof re.invalidateAll === 'function') re.invalidateAll();
+        this.#styleCacheVersion++;
     }
 
     /** 标记指定单元格需要重绘 */
     #invalidateCell(r, c) {
         const re = this.#renderEngine;
         if (re && typeof re.invalidateCell === 'function') re.invalidateCell(r, c);
+        this.#styleCache.delete(`${r},${c}`);
+        this.#styleCacheVersion++;
     }
 
     /**
@@ -260,22 +269,51 @@ export class Sheet {
         const newStyleId = stylePool.getStyleId(mergedStyle);
         const value = cell?.value ?? "";
         this.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
-        this.#invalidateCell(realR, c);
     }
 
     /**
-     * 批量设置选区样式
-     * 遍历选区内所有单元格，合并指定样式属性
+     * 批量设置选区样式（高性能版本）
+     *
+     * 优化策略：
+     * 1. 整行覆盖 → 使用 rowStyles（O(行数)）
+     * 2. 整列覆盖 → 使用 colStyles（O(列数)）
+     * 3. 混合选区 → 逐单元格设置，但只调用一次 invalidateAll
+     *
      * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range - 选区范围
      * @param {object} styleObj - 样式对象
      */
     setRangeStyle(range, styleObj) {
+        const styleId = stylePool.getStyleId(styleObj);
+        const totalCols = this.rowColManager.totalCols;
+        const isFullRow = (range.topCol === 0 && range.bottomCol >= totalCols - 1);
+
+        if (isFullRow) {
+            for (let r = range.topRow; r <= range.bottomRow; r++) {
+                const realR = this.toRealRow(r);
+                this.rowStyles.set(realR, styleId);
+            }
+            this.#invalidateAll();
+            return;
+        }
+
+        const totalRows = this.rowColManager.totalRows;
+        const isFullCol = (range.topRow === 0 && range.bottomRow >= totalRows - 1);
+
+        if (isFullCol) {
+            for (let c = range.topCol; c <= range.bottomCol; c++) {
+                this.colStyles.set(c, styleId);
+            }
+            this.#invalidateAll();
+            return;
+        }
+
         for (let r = range.topRow; r <= range.bottomRow; r++) {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (this.isDisabled(r, c)) continue;
                 this.setCellStyle(r, c, styleObj);
             }
         }
+        this.#invalidateAll();
     }
 
     /**
@@ -421,26 +459,48 @@ export class Sheet {
     }
 
     /**
-     * 解析单元格最终样式
+     * 解析单元格最终样式（带帧级缓存）
+     *
      * 优先级：默认样式 < 列样式 < 行样式 < 单元格样式（后者覆盖前者）
+     *
+     * 缓存策略：
+     * - 同一渲染帧内，相同 (r,c) 直接返回缓存结果，避免重复对象展开
+     * - 样式变更时 #styleCacheVersion 递增，下一帧自动失效
+     * - 帧切换时清空缓存，防止内存泄漏
+     *
      * @param {number} r - 行号
      * @param {number} c - 列号
      * @returns {object} 合并后的样式对象
      */
     resolveStyle(r, c) {
         const realR = this.toRealRow(r);
+        const key = `${realR},${c}`;
+
+        if (this.#styleCacheFrameVersion === this.#styleCacheVersion) {
+            const cached = this.#styleCache.get(key);
+            if (cached !== undefined) return cached;
+        } else {
+            this.#styleCacheFrameVersion = this.#styleCacheVersion;
+            this.#styleCache.clear();
+        }
+
         const base = stylePool.getStyle(this.#defaultStyleId);
         const colStyleId = this.colStyles.get(c);
         const rowStyleId = this.rowStyles.get(realR);
         const cell = this.cellStore.get(realR, c);
         const cellStyleId = cell?.styleId;
 
-        if (!colStyleId && !rowStyleId && !cellStyleId) return base;
+        if (!colStyleId && !rowStyleId && !cellStyleId) {
+            this.#styleCache.set(key, base);
+            return base;
+        }
 
         let style = base;
         if (colStyleId) style = {...style, ...stylePool.getStyle(colStyleId)};
         if (rowStyleId) style = {...style, ...stylePool.getStyle(rowStyleId)};
         if (cellStyleId) style = {...style, ...stylePool.getStyle(cellStyleId)};
+
+        this.#styleCache.set(key, style);
         return style;
     }
 

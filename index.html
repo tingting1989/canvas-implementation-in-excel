@@ -355,8 +355,7 @@ function toggleBold() {
   const range = sheet.selection.getRange();
   const [r, c] = sheet.selection.getActive();
   const currentStyle = sheet.resolveStyle(r, c);
-  const allBold = isRangeAllActive(sheet, range, "fontWeight", "bold");
-  const newWeight = allBold ? "normal" : "bold";
+  const newWeight = currentStyle.fontWeight === "bold" ? "normal" : "bold";
   sheet.setRangeStyle(range, { fontWeight: newWeight });
   wb.render();
   updateToolbarStyleState();
@@ -366,8 +365,9 @@ function toggleItalic() {
   const sheet = wb.getActiveSheet();
   if (!sheet) return;
   const range = sheet.selection.getRange();
-  const allItalic = isRangeAllActive(sheet, range, "fontStyle", "italic");
-  const newStyle = allItalic ? "normal" : "italic";
+  const [r, c] = sheet.selection.getActive();
+  const currentStyle = sheet.resolveStyle(r, c);
+  const newStyle = currentStyle.fontStyle === "italic" ? "normal" : "italic";
   sheet.setRangeStyle(range, { fontStyle: newStyle });
   wb.render();
   updateToolbarStyleState();
@@ -377,21 +377,12 @@ function toggleUnderline() {
   const sheet = wb.getActiveSheet();
   if (!sheet) return;
   const range = sheet.selection.getRange();
-  const allUnderline = isRangeAllActive(sheet, range, "textDecoration", "underline");
-  const newDecoration = allUnderline ? "none" : "underline";
+  const [r, c] = sheet.selection.getActive();
+  const currentStyle = sheet.resolveStyle(r, c);
+  const newDecoration = currentStyle.textDecoration === "underline" ? "none" : "underline";
   sheet.setRangeStyle(range, { textDecoration: newDecoration });
   wb.render();
   updateToolbarStyleState();
-}
-
-function isRangeAllActive(sheet, range, prop, activeValue) {
-  for (let r = range.topRow; r <= range.bottomRow; r++) {
-    for (let c = range.topCol; c <= range.bottomCol; c++) {
-      const style = sheet.resolveStyle(r, c);
-      if (style[prop] !== activeValue) return false;
-    }
-  }
-  return true;
 }
 
 function updateToolbarStyleState() {

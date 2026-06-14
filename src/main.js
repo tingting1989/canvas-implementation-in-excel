@@ -32,9 +32,11 @@ const initApp = () => {
         colWidths: [120, 80, 100, 100, 100, 100],
         startRows: 100,
         startCols: 26,
-        plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'pagination', 'hiddenColumns', 'rowMove'],
+        // plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'pagination', 'hiddenColumns', 'rowMove'],
+
+        plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'hiddenColumns', 'rowMove'],
         pluginOptions: {
-            pagination: { pageSize: 50 },
+           //  pagination: { pageSize: 50 },
             hiddenColumns: { columns: [2] },
             // rowMove: { enabled: false }
         },
