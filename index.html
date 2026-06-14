@@ -149,6 +149,9 @@ canvas {
   <button onclick="wb.disableCell()">禁用</button>
   <button onclick="wb.enableCell()">启用</button>
   <span class="separator"></span>
+  <button onclick="exportCSV()">导出 CSV</button>
+  <button onclick="exportTSV()">导出 TSV</button>
+  <span class="separator"></span>
   <button onclick="loadMillionData()">加载百万数据</button>
   <span class="info" id="status-info">就绪</span>
 </div>
@@ -192,6 +195,26 @@ function loadMillionData() {
   const elapsed = (performance.now() - start).toFixed(0);
   info.textContent = `已加载 ${ROWS.toLocaleString()} 行 × ${COLS} 列 (${elapsed}ms)`;
   wb.render();
+}
+
+function exportCSV() {
+  const info = document.getElementById('status-info');
+  const start = performance.now();
+
+  wb.downloadFile('csv', { filename: 'data' });
+
+  const elapsed = (performance.now() - start).toFixed(0);
+  info.textContent = `CSV 导出完成 (${elapsed}ms)`;
+}
+
+function exportTSV() {
+  const info = document.getElementById('status-info');
+  const start = performance.now();
+
+  wb.downloadFile('tsv', { filename: 'data' });
+
+  const elapsed = (performance.now() - start).toFixed(0);
+  info.textContent = `TSV 导出完成 (${elapsed}ms)`;
 }
 
 (function initScrollbarDrag() {

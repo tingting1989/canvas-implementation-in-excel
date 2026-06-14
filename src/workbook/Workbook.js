@@ -441,6 +441,22 @@ export class Workbook {
         }
     }
 
+    #getExportPlugin() {
+        return this.getPlugin('exportFile');
+    }
+
+    exportAsString(format, options) {
+        return this.#getExportPlugin()?.exportAsString(format, options) ?? "";
+    }
+
+    exportAsBlob(format, options) {
+        return this.#getExportPlugin()?.exportAsBlob(format, options) ?? null;
+    }
+
+    downloadFile(format, options) {
+        this.#getExportPlugin()?.downloadFile(format, options);
+    }
+
     destroy() {
         this.pluginManager?.destroyAll();
         this.pluginManager = null;
