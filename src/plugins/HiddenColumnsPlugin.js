@@ -3,15 +3,12 @@
  * 参考 Handsontable HiddenColumns API 设计
  * https://handsontable.com/docs/javascript-data-grid/api/hidden-columns/
  *
- * 核心原理：
- *   通过 RowColManager 的 setHiddenColumns(cols) 设置隐藏列集合，
- *   RowColManager 在坐标计算（getColX / colAt / totalWidth / colCount）中自动跳过隐藏列，
- *   Sheet.toRealCol / toVisibleCol 负责可视列号与实际列号的双向转换。
- *
- * 列号体系：
- *   实际列号（realCol）  — 数据在 CellStore 中的真实列索引，不受隐藏影响
- *   可视列号（visibleCol）— 渲染/交互层使用的列索引，隐藏列被跳过
- *   例如：列 1 隐藏时，realCol 0→visibleCol 0, realCol 1→隐藏, realCol 2→visibleCol 1
+ * 核心原理（宽度=0 方案）：
+ *   隐藏列时将列宽设为 0，显示时恢复原始宽度。
+ *   无需维护双坐标体系（realCol/visibleCol），所有坐标计算自然适配：
+ *   - getColX / getColWidth / totalWidth 自动跳过宽度为 0 的列
+ *   - colAt 在二分查找后跳过隐藏列
+ *   - 渲染循环中跳过宽度 <= 0 的列
  *
  * 使用示例：
  * ```js
@@ -29,8 +26,6 @@ import { HOOKS } from "../constants/hookNames.js";
 export class HiddenColumnsPlugin extends BasePlugin {
     static get PLUGIN_NAME() { return 'hiddenColumns'; }
 
-    /** 隐藏列集合（存储实际列号） */
-    #hiddenSet = new Set();
     /** 插件是否激活 */
     #active = false;
 
@@ -41,15 +36,18 @@ export class HiddenColumnsPlugin extends BasePlugin {
      */
     init(options = {}) {
         super.init(options);
-
+        console.log('HiddenColumnsPlugin init', options);
         if (Array.isArray(options.columns)) {
             for (const col of options.columns) {
-                if (col >= 0) this.#hiddenSet.add(col);
+                if (col >= 0) this.sheet.rowColManager.hideColumn(col);
             }
         }
 
         this.#active = true;
-        this.#applyHiddenColumns();
+        this.#adjustSelection();
+
+        this.renderEngine?.invalidateAll();
+        this.render();
     }
 
     /** 插件是否激活 */
@@ -57,31 +55,34 @@ export class HiddenColumnsPlugin extends BasePlugin {
 
     /** 获取所有隐藏列索引（升序数组） */
     get hiddenColumns() {
-        return [...this.#hiddenSet].sort((a, b) => a - b);
+        return this.sheet ? this.sheet.rowColManager.getHiddenColumns() : [];
     }
 
     /** 隐藏列数量 */
     get hiddenCount() {
-        return this.#hiddenSet.size;
+        return this.sheet ? this.sheet.rowColManager.getHiddenColumns().length : 0;
     }
 
     /**
      * 隐藏指定列
-     * @param {number} col - 要隐藏的列索引（实际列号）
+     * @param {number} col - 要隐藏的列索引
      * @fires afterHideColumn
      */
     hideColumn(col) {
-        if (col < 0 || this.#hiddenSet.has(col)) return;
+        if (col < 0 || this.isHidden(col)) return;
 
-        this.#hiddenSet.add(col);
-        this.#applyHiddenColumns();
+        this.sheet.rowColManager.hideColumn(col);
+        this.#adjustSelection();
+
+        this.renderEngine?.invalidateAll();
+        this.render();
 
         this.hooks?.runHooks(HOOKS.AFTER_HIDE_COLUMN, col, true);
     }
 
     /**
      * 隐藏多列
-     * @param {number[]} cols - 要隐藏的列索引数组（实际列号）
+     * @param {number[]} cols - 要隐藏的列索引数组
      * @fires afterHideColumn
      */
     hideColumns(cols) {
@@ -89,13 +90,15 @@ export class HiddenColumnsPlugin extends BasePlugin {
 
         let changed = false;
         for (const col of cols) {
-            if (col >= 0 && !this.#hiddenSet.has(col)) {
-                this.#hiddenSet.add(col);
+            if (col >= 0 && !this.isHidden(col)) {
+                this.sheet.rowColManager.hideColumn(col);
                 changed = true;
             }
         }
         if (changed) {
-            this.#applyHiddenColumns();
+            this.#adjustSelection();
+            this.renderEngine?.invalidateAll();
+            this.render();
             for (const col of cols) {
                 this.hooks?.runHooks(HOOKS.AFTER_HIDE_COLUMN, col, true);
             }
@@ -104,21 +107,22 @@ export class HiddenColumnsPlugin extends BasePlugin {
 
     /**
      * 显示指定列
-     * @param {number} col - 要显示的列索引（实际列号）
+     * @param {number} col - 要显示的列索引
      * @fires afterShowColumn
      */
     showColumn(col) {
-        if (!this.#hiddenSet.has(col)) return;
+        if (!this.isHidden(col)) return;
 
-        this.#hiddenSet.delete(col);
-        this.#applyHiddenColumns();
+        this.sheet.rowColManager.showColumn(col);
+        this.renderEngine?.invalidateAll();
+        this.render();
 
         this.hooks?.runHooks(HOOKS.AFTER_SHOW_COLUMN, col, false);
     }
 
     /**
      * 显示多列
-     * @param {number[]} cols - 要显示的列索引数组（实际列号）
+     * @param {number[]} cols - 要显示的列索引数组
      * @fires afterShowColumn
      */
     showColumns(cols) {
@@ -126,13 +130,14 @@ export class HiddenColumnsPlugin extends BasePlugin {
 
         let changed = false;
         for (const col of cols) {
-            if (this.#hiddenSet.has(col)) {
-                this.#hiddenSet.delete(col);
+            if (this.isHidden(col)) {
+                this.sheet.rowColManager.showColumn(col);
                 changed = true;
             }
         }
         if (changed) {
-            this.#applyHiddenColumns();
+            this.renderEngine?.invalidateAll();
+            this.render();
             for (const col of cols) {
                 this.hooks?.runHooks(HOOKS.AFTER_SHOW_COLUMN, col, false);
             }
@@ -141,11 +146,11 @@ export class HiddenColumnsPlugin extends BasePlugin {
 
     /**
      * 判断指定列是否隐藏
-     * @param {number} col - 列索引（实际列号）
+     * @param {number} col - 列索引
      * @returns {boolean}
      */
     isHidden(col) {
-        return this.#hiddenSet.has(col);
+        return this.sheet ? this.sheet.rowColManager.isColumnHidden(col) : false;
     }
 
     /**
@@ -156,47 +161,9 @@ export class HiddenColumnsPlugin extends BasePlugin {
         return this.hiddenColumns;
     }
 
-    /**
-     * 将可视列号转换为实际列号
-     * @param {number} visibleCol - 可视列号
-     * @returns {number} 实际列号
-     */
-    toRealCol(visibleCol) {
-        const sheet = this.sheet;
-        if (!sheet) return visibleCol;
-        return sheet.toRealCol(visibleCol);
-    }
-
-    /**
-     * 将实际列号转换为可视列号
-     * @param {number} realCol - 实际列号
-     * @returns {number} 可视列号（如果该列隐藏则返回 -1）
-     */
-    toVisibleCol(realCol) {
-        const sheet = this.sheet;
-        if (!sheet) return realCol;
-        return sheet.toVisibleCol(realCol);
-    }
-
     /** 获取可视列总数（排除隐藏列） */
     get visibleColCount() {
-        const sheet = this.sheet;
-        if (!sheet) return 0;
-        return sheet.rowColManager.visibleColCount;
-    }
-
-    /**
-     * 将隐藏列配置应用到 RowColManager
-     */
-    #applyHiddenColumns() {
-        const sheet = this.sheet;
-        if (!sheet) return;
-
-        sheet.rowColManager.setHiddenColumns(this.#hiddenSet);
-        this.#adjustSelection();
-
-        this.renderEngine?.invalidateAll();
-        this.render();
+        return this.sheet ? this.sheet.rowColManager.visibleColCount : 0;
     }
 
     /**
@@ -207,11 +174,12 @@ export class HiddenColumnsPlugin extends BasePlugin {
         const sheet = this.sheet;
         if (!sheet) return;
 
+        const rc = sheet.rowColManager;
         const selection = sheet.selection;
         const range = selection.getRange();
         const [focusRow, focusCol] = selection.getFocus();
 
-        if (!this.#hiddenSet.has(focusCol) && !this.#hiddenSet.has(range.topCol) && !this.#hiddenSet.has(range.bottomCol)) {
+        if (!rc.isColumnHidden(focusCol) && !rc.isColumnHidden(range.topCol) && !rc.isColumnHidden(range.bottomCol)) {
             return;
         }
 
@@ -229,26 +197,26 @@ export class HiddenColumnsPlugin extends BasePlugin {
 
     /**
      * 从指定列开始，向右再向左查找最近的可见列
-     * @param {number} col - 起始列号（实际列号）
+     * @param {number} col - 起始列号
      * @returns {number} 最近的可见列号，找不到返回 -1
      */
     #findNearestVisibleCol(col) {
-        if (!this.#hiddenSet.has(col)) return col;
+        const rc = this.sheet.rowColManager;
+        if (!rc.isColumnHidden(col)) return col;
 
         for (let c = col + 1; c < col + 100; c++) {
-            if (!this.#hiddenSet.has(c)) return c;
+            if (!rc.isColumnHidden(c)) return c;
         }
         for (let c = col - 1; c >= 0; c--) {
-            if (!this.#hiddenSet.has(c)) return c;
+            if (!rc.isColumnHidden(c)) return c;
         }
         return -1;
     }
 
-    /** 启用插件，应用隐藏列配置 */
+    /** 启用插件 */
     enable() {
         super.enable();
         this.#active = true;
-        this.#applyHiddenColumns();
     }
 
     /** 禁用插件，清除所有隐藏列，恢复全量显示 */

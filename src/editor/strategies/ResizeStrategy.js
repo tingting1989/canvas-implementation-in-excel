@@ -56,8 +56,7 @@ export class ResizeStrategy extends EventStrategy {
         const rc = sheet.rowColManager;
         if (hit.type === HIT_TYPE.COL_RESIZE) {
             this.#startPos = e.clientX;
-            const visCol = sheet.toVisibleCol(hit.index);
-            this.#startSize = rc.getColWidth(visCol);
+            this.#startSize = rc.getColWidth(hit.index);
         } else {
             this.#startPos = e.clientY;
             this.#startSize = rc.getRowHeight(hit.index);

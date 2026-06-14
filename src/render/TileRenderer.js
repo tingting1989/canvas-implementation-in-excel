@@ -68,17 +68,17 @@ export class TileRenderer {
             const realR = sheet.toRealRow(r);
 
             for (let c = sc; c < ec; c++) {
-                const realC = sheet.toRealCol(c);
+                const colW = rc.getColWidth(c);
+                if (colW <= 0) continue;
 
-                if (sheet.isMergedCell(realR, realC)) continue;
+                if (sheet.isMergedCell(realR, c)) continue;
 
                 const colX = rc.getColX(c);
-                const colW = rc.getColWidth(c);
                 const localX = colX - pixelX0;
 
                 if (localX + colW <= 0 || localX >= tileSize) continue;
 
-                const cell = sheet.cellStore.get(realR, realC);
+                const cell = sheet.cellStore.get(realR, c);
                 const merge = sheet.getMerge(r, c);
                 let w = colW;
                 let h = rowH;
@@ -86,22 +86,15 @@ export class TileRenderer {
                 let drawY = localY;
 
                 if (merge) {
-                    const mergeTopRow = merge.topRow;
-                    const mergeBottomRow = merge.bottomRow;
-                    const mergeTopCol = sheet.toVisibleCol(merge.topCol);
-                    const mergeBottomCol = sheet.toVisibleCol(merge.bottomCol);
-
-                    if (mergeTopCol >= 0 && mergeBottomCol >= 0) {
-                        w = rc.getColX(mergeBottomCol) + rc.getColWidth(mergeBottomCol) - rc.getColX(mergeTopCol);
-                        h = rc.getRowY(mergeBottomRow) + rc.getRowHeight(mergeBottomRow) - rc.getRowY(mergeTopRow);
-                        drawX = rc.getColX(mergeTopCol) - pixelX0;
-                        drawY = rc.getRowY(mergeTopRow) - pixelY0;
-                    }
+                    w = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol) - rc.getColX(merge.topCol);
+                    h = rc.getRowY(merge.bottomRow) + rc.getRowHeight(merge.bottomRow) - rc.getRowY(merge.topRow);
+                    drawX = rc.getColX(merge.topCol) - pixelX0;
+                    drawY = rc.getRowY(merge.topRow) - pixelY0;
                 }
 
-                this.#drawCellBackground(tileCtx, sheet, realR, realC, cell, drawX, drawY, w, h);
+                this.#drawCellBackground(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h);
                 this.#drawCellBorder(tileCtx, merge, drawX, drawY, w, h);
-                this.#drawCellText(tileCtx, sheet, realR, realC, cell, drawX, drawY, w, h);
+                this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h);
             }
         }
     }

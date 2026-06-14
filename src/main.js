@@ -31,8 +31,10 @@ const initApp = () => {
         startRows: 100,
         startCols: 26,
         plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'pagination', 'hiddenColumns'],
-        pagination: { pageSize: 50 },
-        hiddenColumns: { columns: [] },
+        pluginOptions: {
+            pagination: { pageSize: 50 },
+            hiddenColumns: { columns: [2] },
+        },
         conditionalStyles: [
             {
                 range: {sr: 0, sc: 0, er: 10000000, ec: 25},

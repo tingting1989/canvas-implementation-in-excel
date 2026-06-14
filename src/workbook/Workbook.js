@@ -182,8 +182,9 @@ export class Workbook {
         this.#applySheetSettings(this.activeSheet, opts);
 
         if (opts.plugins && Array.isArray(opts.plugins)) {
+            const pluginOptions = opts.pluginOptions || {};
             for (const name of opts.plugins) {
-                const pluginOpts = opts[name] || {};
+                const pluginOpts = pluginOptions[name] || {};
                 this.loadPlugin(name, pluginOpts);
             }
         }

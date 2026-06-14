@@ -112,24 +112,17 @@ export class RenderEngine {
         if (mergeInfo) {
             const pageTopRow = sheet ? sheet.toPageRow(mergeInfo.topRow) : mergeInfo.topRow;
             const pageBottomRow = sheet ? sheet.toPageRow(mergeInfo.bottomRow) : mergeInfo.bottomRow;
-            const visTopCol = sheet ? sheet.toVisibleCol(mergeInfo.topCol) : mergeInfo.topCol;
-            const visBottomCol = sheet ? sheet.toVisibleCol(mergeInfo.bottomCol) : mergeInfo.bottomCol;
 
-            if (visTopCol < 0 || visBottomCol < 0) return { x: 0, y: 0, w: 0, h: 0 };
-
-            const x = headerW + rc.getColX(visTopCol) - sx;
+            const x = headerW + rc.getColX(mergeInfo.topCol) - sx;
             const y = headerH + rc.getRowY(pageTopRow) - sy;
-            const w = rc.getColX(visBottomCol) + rc.getColWidth(visBottomCol) - rc.getColX(visTopCol);
+            const w = rc.getColX(mergeInfo.bottomCol) + rc.getColWidth(mergeInfo.bottomCol) - rc.getColX(mergeInfo.topCol);
             const h = rc.getRowY(pageBottomRow) + rc.getRowHeight(pageBottomRow) - rc.getRowY(pageTopRow);
             return { x, y, w, h };
         }
 
-        const visCol = sheet ? sheet.toVisibleCol(col) : col;
-        if (visCol < 0) return { x: 0, y: 0, w: 0, h: 0 };
-
-        const x = headerW + rc.getColX(visCol) - sx;
+        const x = headerW + rc.getColX(col) - sx;
         const y = headerH + rc.getRowY(row) - sy;
-        const w = rc.getColWidth(visCol);
+        const w = rc.getColWidth(col);
         const h = rc.getRowHeight(row);
         return { x, y, w, h };
     }
@@ -150,10 +143,9 @@ export class RenderEngine {
             const rc = sheet ? sheet.rowColManager : null;
             if (!rc) return null;
             const dataX = px - headerW + this.scrollMgr.scrollX;
-            const visCol = rc.colAt(dataX);
-            if (visCol >= 0 && visCol < rc.colCount) {
-                const realCol = sheet ? sheet.toRealCol(visCol) : visCol;
-                return { type: HIT_TYPE.COL_HEADER, index: realCol };
+            const col = rc.colAt(dataX);
+            if (col >= 0 && col < rc.colCount) {
+                return { type: HIT_TYPE.COL_HEADER, index: col };
             }
         }
 
@@ -172,11 +164,10 @@ export class RenderEngine {
             if (!rc) return null;
             const dataX = px - headerW + this.scrollMgr.scrollX;
             const dataY = py - headerH + this.scrollMgr.scrollY;
-            const visCol = rc.colAt(dataX);
+            const col = rc.colAt(dataX);
             const row = rc.rowAt(dataY);
-            if (row >= 0 && row < rc.rowCount && visCol >= 0 && visCol < rc.colCount) {
-                const realCol = sheet ? sheet.toRealCol(visCol) : visCol;
-                return { type: HIT_TYPE.CELL, row, col: realCol };
+            if (row >= 0 && row < rc.rowCount && col >= 0 && col < rc.colCount) {
+                return { type: HIT_TYPE.CELL, row, col };
             }
         }
 
@@ -199,11 +190,10 @@ export class RenderEngine {
 
         if (py >= 0 && py <= headerH && px > headerW) {
             const dataX = px - headerW + sx;
-            const visCol = rc.colAt(dataX);
-            const colRight = rc.getColX(visCol) + rc.getColWidth(visCol);
+            const col = rc.colAt(dataX);
+            const colRight = rc.getColX(col) + rc.getColWidth(col);
             if (Math.abs(dataX - colRight) <= hitArea) {
-                const realCol = sheet ? sheet.toRealCol(visCol) : visCol;
-                return { type: HIT_TYPE.COL_RESIZE, index: realCol };
+                return { type: HIT_TYPE.COL_RESIZE, index: col };
             }
         }
 
@@ -234,8 +224,7 @@ export class RenderEngine {
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
 
-        const visBottomCol = sheet.toVisibleCol(range.bottomCol);
-        const x2 = headerW + rc.getColX(visBottomCol) + rc.getColWidth(visBottomCol) - sx;
+        const x2 = headerW + rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - sx;
         const y2 = headerH + rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - sy;
 
         const handleSize = 6;
@@ -246,9 +235,7 @@ export class RenderEngine {
     scrollToCell(row, col) {
         const sheet = this.#currentSheet;
         const rc = sheet ? sheet.rowColManager : null;
-        const visCol = sheet ? sheet.toVisibleCol(col) : col;
-        if (visCol < 0) return;
-        this.scrollMgr.scrollToCell(row, visCol, rc);
+        this.scrollMgr.scrollToCell(row, col, rc);
     }
 
     get maxScrollX() { return this.scrollMgr.maxScrollX; }

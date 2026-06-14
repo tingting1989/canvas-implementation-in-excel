@@ -53,11 +53,11 @@ export class Sheet {
     }
 
     toRealCol(visibleCol) {
-        return this.rowColManager.toRealCol(visibleCol);
+        return visibleCol;
     }
 
     toVisibleCol(realCol) {
-        return this.rowColManager.toVisibleCol(realCol);
+        return realCol;
     }
 
     #invalidateAll() {

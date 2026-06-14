@@ -404,7 +404,7 @@ export class KeyboardStrategy extends EventStrategy {
         }
         nextCol = Math.min(CONFIG.MAX_COLS - 1, nextCol);
 
-        while (sheet.toVisibleCol(nextCol) < 0 && nextCol < CONFIG.MAX_COLS - 1) {
+        while (sheet.rowColManager.isColumnHidden(nextCol) && nextCol < CONFIG.MAX_COLS - 1) {
             nextCol++;
         }
 
@@ -427,7 +427,7 @@ export class KeyboardStrategy extends EventStrategy {
             prevCol = merge.topCol - 1;
         }
 
-        while (sheet.toVisibleCol(prevCol) < 0 && prevCol > 0) {
+        while (sheet.rowColManager.isColumnHidden(prevCol) && prevCol > 0) {
             prevCol--;
         }
 
@@ -447,7 +447,7 @@ export class KeyboardStrategy extends EventStrategy {
         const rc = sheet.rowColManager;
         let nextCol = shiftPressed ? Math.max(0, col - 1) : Math.min(rc.colCount - 1, col + 1);
 
-        while (sheet.toVisibleCol(nextCol) < 0) {
+        while (sheet.rowColManager.isColumnHidden(nextCol)) {
             if (shiftPressed) {
                 if (nextCol <= 0) break;
                 nextCol--;
