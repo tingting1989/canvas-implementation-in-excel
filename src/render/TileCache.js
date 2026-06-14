@@ -80,18 +80,13 @@ export class TileCache {
 
     #evictIfNeeded() {
         if (this.tiles.size < this.maxSize) return;
-        let oldest = null;
-        let oldestTime = Infinity;
-        for (const [key, tile] of this.tiles) {
-            if (tile.lastUsed < oldestTime) {
-                oldestTime = tile.lastUsed;
-                oldest = key;
-            }
-        }
-        if (oldest) {
-            const tile = this.tiles.get(oldest);
-            if (tile) tile.destroy();
-            this.tiles.delete(oldest);
+        const evictCount = Math.max(1, Math.floor(this.maxSize * 0.25));
+        const entries = [...this.tiles.entries()];
+        entries.sort((a, b) => a[1].lastUsed - b[1].lastUsed);
+        for (let i = 0; i < Math.min(evictCount, entries.length); i++) {
+            const [key, tile] = entries[i];
+            tile.destroy();
+            this.tiles.delete(key);
         }
     }
 }

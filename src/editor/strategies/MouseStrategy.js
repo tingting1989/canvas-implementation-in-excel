@@ -90,7 +90,12 @@ export class MouseStrategy extends EventStrategy {
             this.handler.sheet.selection.setRange(anchorRow, anchorCol, row, col);
         } else {
             /* 普通单击：设置新的活动单元格，进入拖拽准备状态 */
-            this.handler.sheet.selection.setActive(row, col);
+            const merge = this.handler.sheet.getMerge(row, col);
+            if (merge) {
+                this.handler.sheet.selection.setRange(merge.topRow, merge.topCol, merge.bottomRow, merge.bottomCol);
+            } else {
+                this.handler.sheet.selection.setActive(row, col);
+            }
             this.#dragAnchorRow = row;
             this.#dragAnchorCol = col;
             this.#dragging = true;
@@ -111,10 +116,13 @@ export class MouseStrategy extends EventStrategy {
 
         const { row, col } = this.#getTopLeft(hit.row, hit.col);
 
-        /* 仅在焦点位置变化时更新，避免不必要的渲染 */
-        if (row !== this.handler.sheet.selection.getFocus()[0] ||
-            col !== this.handler.sheet.selection.getFocus()[1]) {
-            this.handler.sheet.selection.setRange(this.#dragAnchorRow, this.#dragAnchorCol, row, col);
+        const merge = this.handler.sheet.getMerge(row, col);
+        const focusRow = merge ? merge.bottomRow : row;
+        const focusCol = merge ? merge.bottomCol : col;
+
+        if (focusRow !== this.handler.sheet.selection.getFocus()[0] ||
+            focusCol !== this.handler.sheet.selection.getFocus()[1]) {
+            this.handler.sheet.selection.setRange(this.#dragAnchorRow, this.#dragAnchorCol, focusRow, focusCol);
             this.handler.render();
         }
     }
@@ -162,7 +170,12 @@ export class MouseStrategy extends EventStrategy {
 
         this.handler.runHooks(HOOKS.ON_CELL_DBL_CLICK, row, col, e);
 
-        this.handler.sheet.selection.setActive(row, col);
+        const merge = this.handler.sheet.getMerge(row, col);
+        if (merge) {
+            this.handler.sheet.selection.setRange(merge.topRow, merge.topCol, merge.bottomRow, merge.bottomCol);
+        } else {
+            this.handler.sheet.selection.setActive(row, col);
+        }
         this.handler.editor.show(row, col);
     }
 

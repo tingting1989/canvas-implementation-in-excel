@@ -13,8 +13,8 @@ import { stylePool } from "../../styles/index.js";
  * - Delete/Backspace 批量清空选区内容
  * - Ctrl+A 全选
  * - Ctrl+Z/Y 撤销/重做
- * - Ctrl+B/I/U 加粗/斜体/下划线（批量格式化）
  * - Ctrl+C/V 复制/粘贴
+ * - Ctrl+B/I/U 格式化加粗/斜体/下划线（批量格式化）
  * - 直接输入字符进入批量赋值模式
  */
 export class KeyboardStrategy extends EventStrategy {
@@ -113,6 +113,25 @@ export class KeyboardStrategy extends EventStrategy {
                     e.preventDefault();
                     sheet.redo();
                     this.handler.render();
+                }
+                break;
+            case "c":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    this.handler.clipboard.copy(sheet);
+                }
+                break;
+            case "v":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    this.handler.clipboard.paste(sheet);
+                }
+                break;
+            case "x":
+                if (e.ctrlKey || e.metaKey) {
+                    e.preventDefault();
+                    this.handler.clipboard.copy(sheet);
+                    this.#handleDelete();
                 }
                 break;
             case "a":
@@ -354,7 +373,7 @@ export class KeyboardStrategy extends EventStrategy {
             const [focusRow, focusCol] = sheet.selection.getFocus();
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, col);
         } else {
-            sheet.selection.setActive(target.row, col);
+            this.#selectCellOrMerge(sheet, target.row, col);
         }
         renderEngine.scrollToCell(target.row, col);
         this.handler.render();
@@ -372,7 +391,7 @@ export class KeyboardStrategy extends EventStrategy {
         if (shiftKey) {
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, col);
         } else {
-            sheet.selection.setActive(target.row, col);
+            this.#selectCellOrMerge(sheet, target.row, col);
         }
         renderEngine.scrollToCell(target.row, col);
         this.handler.render();
@@ -392,7 +411,7 @@ export class KeyboardStrategy extends EventStrategy {
         if (shiftKey) {
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], row, target.col);
         } else {
-            sheet.selection.setActive(row, target.col);
+            this.#selectCellOrMerge(sheet, row, target.col);
         }
         renderEngine.scrollToCell(row, target.col);
         this.handler.render();
@@ -410,7 +429,7 @@ export class KeyboardStrategy extends EventStrategy {
         if (shiftKey) {
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], row, target.col);
         } else {
-            sheet.selection.setActive(row, target.col);
+            this.#selectCellOrMerge(sheet, row, target.col);
         }
         renderEngine.scrollToCell(row, target.col);
         this.handler.render();
@@ -421,9 +440,18 @@ export class KeyboardStrategy extends EventStrategy {
         const rc = sheet.rowColManager;
         const nextCol = shiftPressed ? Math.max(0, col - 1) : Math.min(rc.colCount - 1, col + 1);
         const target = this.#getTopLeft(row, nextCol);
-        sheet.selection.setActive(row, target.col);
+        this.#selectCellOrMerge(sheet, row, target.col);
         renderEngine.scrollToCell(row, target.col);
         this.handler.render();
+    }
+
+    #selectCellOrMerge(sheet, row, col) {
+        const merge = sheet.getMerge(row, col);
+        if (merge) {
+            sheet.selection.setRange(merge.topRow, merge.topCol, merge.bottomRow, merge.bottomCol);
+        } else {
+            sheet.selection.setActive(row, col);
+        }
     }
 
     /**

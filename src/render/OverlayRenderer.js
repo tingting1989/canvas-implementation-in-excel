@@ -141,8 +141,8 @@ export class OverlayRenderer {
         if (merge) {
             x = rc.getColX(merge.topCol);
             y = rc.getRowY(merge.topRow);
-            w = rc.getColX(merge.topCol + merge.colSpan) - x;
-            h = rc.getRowY(merge.topRow + merge.rowSpan) - y;
+            w = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol) - x;
+            h = rc.getRowY(merge.bottomRow) + rc.getRowHeight(merge.bottomRow) - y;
         } else {
             x = rc.getColX(actualCol);
             y = rc.getRowY(actualRow);

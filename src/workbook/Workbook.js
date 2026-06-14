@@ -133,7 +133,7 @@ export class Workbook {
         this.renderEngine = new RenderEngine("grid");
         this.editor = new EditorManager(this.renderEngine, this.activeSheet);
 
-        this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor);
+        this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
 
         /** 初始化插件管理器 */
         this.pluginManager = new PluginManager(this);
@@ -177,9 +177,6 @@ export class Workbook {
             }
         };
 
-        this.#bindToolbar();
-
-        /** 加载待加载队列中的插件 */
         this.#flushPendingPlugins();
     }
 
@@ -414,21 +411,5 @@ export class Workbook {
         this.eventHandler = null;
         this.sheets.clear();
         this.activeSheet = null;
-    }
-
-    #bindToolbar() {
-        window.switchSheet = (name) => this.switchTo(name);
-        window.copySheet = () => this.copy();
-        window.pasteSheet = () => this.paste();
-        window.undoSheet = () => this.undo();
-        window.redoSheet = () => this.redo();
-        window.disableCell = () => this.disableCell();
-        window.enableCell = () => this.enableCell();
-        window.mergeCells = (tr, tc, br, bc) => this.mergeCells(tr, tc, br, bc);
-        window.unmergeCells = () => this.unmergeCells();
-        window.insertRow = (atRow) => this.insertRow(atRow);
-        window.insertCol = (atCol) => this.insertCol(atCol);
-        window.deleteRow = (atRow) => this.deleteRow(atRow);
-        window.deleteCol = (atCol) => this.deleteCol(atCol);
     }
 }

@@ -107,10 +107,10 @@ export class RenderEngine {
         const sy = this.scrollMgr.scrollY;
 
         if (mergeInfo) {
-            const x = headerW + rc.getColX(mergeInfo.startCol) - sx;
-            const y = headerH + rc.getRowY(mergeInfo.startRow) - sy;
-            const w = rc.getColX(mergeInfo.endCol) + rc.getColWidth(mergeInfo.endCol) - rc.getColX(mergeInfo.startCol);
-            const h = rc.getRowY(mergeInfo.endRow) + rc.getRowHeight(mergeInfo.endRow) - rc.getRowY(mergeInfo.startRow);
+            const x = headerW + rc.getColX(mergeInfo.topCol) - sx;
+            const y = headerH + rc.getRowY(mergeInfo.topRow) - sy;
+            const w = rc.getColX(mergeInfo.bottomCol) + rc.getColWidth(mergeInfo.bottomCol) - rc.getColX(mergeInfo.topCol);
+            const h = rc.getRowY(mergeInfo.bottomRow) + rc.getRowHeight(mergeInfo.bottomRow) - rc.getRowY(mergeInfo.topRow);
             return { x, y, w, h };
         }
 
@@ -226,6 +226,14 @@ export class RenderEngine {
     scrollToCell(row, col) {
         const rc = this.#currentSheet ? this.#currentSheet.rowColManager : null;
         this.scrollMgr.scrollToCell(row, col, rc);
+    }
+
+    get maxScrollX() { return this.scrollMgr.maxScrollX; }
+    get maxScrollY() { return this.scrollMgr.maxScrollY; }
+
+    setScrollPosition(x, y) {
+        this.scrollMgr.setScrollPosition(x, y);
+        this.requestRender();
     }
 
     invalidateCell(row, col) {

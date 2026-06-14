@@ -230,18 +230,16 @@ function loadMillionData() {
         const maxScroll = wb.renderEngine.maxScrollX;
         const totalContent = maxScroll + wrap.clientWidth - 46;
         const ratio = totalContent > 0 ? trackW / totalContent : 1;
-        wb.renderEngine.scrollX = Math.max(0, Math.min(maxScroll, startScroll + dx / ratio));
-        wb.renderEngine.requestRender();
-        wb.renderEngine._updateScrollbars();
+        const newX = Math.max(0, Math.min(maxScroll, startScroll + dx / ratio));
+        wb.renderEngine.setScrollPosition(newX, wb.renderEngine.scrollY);
       } else if (dragging === 'v') {
         const dy = e.clientY - startMouse;
         const trackH = wrap.clientHeight - 28 - 14;
         const maxScroll = wb.renderEngine.maxScrollY;
         const totalContent = maxScroll + wrap.clientHeight - 28;
         const ratio = totalContent > 0 ? trackH / totalContent : 1;
-        wb.renderEngine.scrollY = Math.max(0, Math.min(maxScroll, startScroll + dy / ratio));
-        wb.renderEngine.requestRender();
-        wb.renderEngine._updateScrollbars();
+        const newY = Math.max(0, Math.min(maxScroll, startScroll + dy / ratio));
+        wb.renderEngine.setScrollPosition(wb.renderEngine.scrollX, newY);
       }
     }
 

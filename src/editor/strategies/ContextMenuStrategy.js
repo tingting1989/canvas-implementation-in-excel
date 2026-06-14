@@ -143,7 +143,11 @@ export class ContextMenuStrategy extends EventStrategy {
             const col = merge ? merge.topCol : hit.col;
 
             if (!this.handler.sheet.selection.contains(row, col)) {
-                this.handler.sheet.selection.setActive(row, col);
+                if (merge) {
+                    this.handler.sheet.selection.setRange(merge.topRow, merge.topCol, merge.bottomRow, merge.bottomCol);
+                } else {
+                    this.handler.sheet.selection.setActive(row, col);
+                }
                 this.handler.render();
             }
 

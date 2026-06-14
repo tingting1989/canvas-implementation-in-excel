@@ -18,6 +18,8 @@ export class ScrollManager {
 
     get scrollX() { return this.#scrollX; }
     get scrollY() { return this.#scrollY; }
+    get maxScrollX() { return this.#maxScrollX; }
+    get maxScrollY() { return this.#maxScrollY; }
 
     get onScrollCallback() { return this.#onScrollCallback; }
     set onScrollCallback(fn) { this.#onScrollCallback = fn; }
@@ -54,6 +56,13 @@ export class ScrollManager {
         this.#maxScrollY = Math.max(0, totalH - viewH + CONFIG.HEADER_HEIGHT);
         this.#scrollX = Math.min(this.#scrollX, this.#maxScrollX);
         this.#scrollY = Math.min(this.#scrollY, this.#maxScrollY);
+    }
+
+    setScrollPosition(x, y) {
+        this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, x));
+        this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, y));
+        if (this.#onScrollCallback) this.#onScrollCallback();
+        if (this.#onAfterScroll) this.#onAfterScroll();
     }
 
     updateScrollbars(viewW, viewH) {

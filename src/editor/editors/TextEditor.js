@@ -14,6 +14,8 @@ import {HOOKS} from "../hookNames.js";
 export class TextEditor extends CellEditor {
     /** 是否因滚动而隐藏（此时 blur 不应提交值） */
     #scrollHiding = false;
+    /** 是否正在 IME 组合输入中 */
+    #composing = false;
 
     createEditor() {
         this.editor = document.createElement("input");
@@ -33,10 +35,12 @@ export class TextEditor extends CellEditor {
         this.#bindEvents();
     }
 
-    /** 绑定 blur 和 keydown 事件 */
+    /** 绑定 blur、keydown 和 IME 事件 */
     #bindEvents() {
         this.editor.addEventListener("blur", () => this.#onBlur());
         this.editor.addEventListener("keydown", (e) => this.#onKeyDown(e));
+        this.editor.addEventListener("compositionstart", () => { this.#composing = true; });
+        this.editor.addEventListener("compositionend", () => { this.#composing = false; });
     }
 
     /**
@@ -101,6 +105,7 @@ export class TextEditor extends CellEditor {
      */
     #onBlur() {
         if (this.#scrollHiding) return;
+        if (this.#composing) return;
         if (this.activeRow < 0 || !this.sheet) return;
 
         const newValue = this.editor.value;
@@ -172,20 +177,28 @@ export class TextEditor extends CellEditor {
      */
     #onKeyDown(e) {
         if (!this.sheet) return;
+        if (this.#composing) return;
 
         switch (e.key) {
             case "Enter":
                 e.preventDefault();
+                const enterRow = this.activeRow;
+                const enterCol = this.activeCol;
                 this.editor.blur();
-                let nextRow = this.activeRow + 1;
-                const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
+                let nextRow = enterRow + 1;
+                const merge = this.sheet.getMerge(enterRow, enterCol);
                 if (merge && nextRow <= merge.bottomRow) {
                     nextRow = merge.bottomRow + 1;
                 }
                 nextRow = Math.min(this.sheet.rowColManager.rowCount - 1, Math.max(0, nextRow));
-                const {row: targetRow} = this.#getTopLeft(nextRow, this.activeCol);
-                this.sheet.selection.setActive(targetRow, this.activeCol);
-                this.renderEngine.scrollToCell(targetRow, this.activeCol);
+                const {row: targetRow} = this.#getTopLeft(nextRow, enterCol);
+                const targetMerge = this.sheet.getMerge(targetRow, enterCol);
+                if (targetMerge) {
+                    this.sheet.selection.setRange(targetMerge.topRow, targetMerge.topCol, targetMerge.bottomRow, targetMerge.bottomCol);
+                } else {
+                    this.sheet.selection.setActive(targetRow, enterCol);
+                }
+                this.renderEngine.scrollToCell(targetRow, enterCol);
                 this.#render();
                 break;
             case "Escape":
@@ -196,9 +209,11 @@ export class TextEditor extends CellEditor {
                 break;
             case "Tab":
                 e.preventDefault();
+                const tabRow = this.activeRow;
+                const tabCol = this.activeCol;
                 this.editor.blur();
-                const nextCol = e.shiftKey ? this.activeCol - 1 : this.activeCol + 1;
-                const colMerge = this.sheet.getMerge(this.activeRow, this.activeCol);
+                const nextCol = e.shiftKey ? tabCol - 1 : tabCol + 1;
+                const colMerge = this.sheet.getMerge(tabRow, tabCol);
                 let targetCol = nextCol;
                 if (colMerge) {
                     if (e.shiftKey && nextCol >= colMerge.topCol) {
@@ -208,9 +223,14 @@ export class TextEditor extends CellEditor {
                     }
                 }
                 targetCol = Math.min(this.sheet.rowColManager.colCount - 1, Math.max(0, targetCol));
-                const {col: finalCol} = this.#getTopLeft(this.activeRow, targetCol);
-                this.sheet.selection.setActive(this.activeRow, finalCol);
-                this.renderEngine.scrollToCell(this.activeRow, finalCol);
+                const {col: finalCol} = this.#getTopLeft(tabRow, targetCol);
+                const tabTargetMerge = this.sheet.getMerge(tabRow, finalCol);
+                if (tabTargetMerge) {
+                    this.sheet.selection.setRange(tabTargetMerge.topRow, tabTargetMerge.topCol, tabTargetMerge.bottomRow, tabTargetMerge.bottomCol);
+                } else {
+                    this.sheet.selection.setActive(tabRow, finalCol);
+                }
+                this.renderEngine.scrollToCell(tabRow, finalCol);
                 this.#render();
                 break;
         }
