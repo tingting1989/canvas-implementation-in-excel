@@ -4,7 +4,7 @@ import {EditorManager} from "../editor/EditorManager.js";
 import {EventHandler} from "../editor/EventHandler.js";
 import {ClipboardManager} from "../editor/ClipboardManager.js";
 import {PluginManager} from "../plugins/PluginManager.js";
-
+import {stylePool} from "../styles/index.js";
 import {CONFIG} from "../constants/config";
 
 /**
@@ -24,18 +24,65 @@ export class Workbook {
     /** 全局插件注册表（静态，所有 Workbook 实例共享） */
     static #pluginRegistry = new Map();
 
-    constructor() {
+    /**
+     * 创建工作簿
+     * 对齐 Handsontable 的 new Handsontable(container, options) 模式
+     *
+     * @param {string} containerId - Canvas 元素 ID
+     * @param {object} [options={}] - 配置选项
+     *
+     * @param {Array<Array<*>>} [options.data] - 初始数据（二维数组）
+     * @param {string} [options.sheetName='Sheet1'] - 初始工作表名称
+     * @param {true|string[]|Function} [options.colHeaders=true] - 列头标签
+     * @param {true|string[]|Function} [options.rowHeaders=true] - 行头标签
+     * @param {number} [options.width] - 画布宽度（px），默认自适应容器
+     * @param {number} [options.height] - 画布高度（px），默认自适应容器
+     * @param {number|number[]} [options.rowHeights] - 行高配置
+     *   number: 统一行高；number[]: 逐行指定
+     * @param {number|number[]} [options.colWidths] - 列宽配置
+     *   number: 统一列宽；number[]: 逐列指定
+     * @param {number} [options.startRows=100] - 初始行数
+     * @param {number} [options.startCols=26] - 初始列数
+     * @param {string[]} [options.plugins] - 要加载的插件名称列表
+     * @param {object} [options.hooks] - 事件钩子映射 { hookName: callback }
+     * @param {Array<{row:number,col:number,rowspan:number,colspan:number}>} [options.mergeCells] - 合并单元格配置
+     * @param {Array<{range:object,condition:Function,style:object}>} [options.conditionalStyles] - 条件样式
+     * @param {Function} [options.afterInit] - 初始化完成回调
+     *
+     * @example
+     * const wb = new Workbook('grid', {
+     *   data: [
+     *     ['Name', 'Age', 'City'],
+     *     ['Zhang San', 25, 'Beijing'],
+     *     ['Li Si', 30, 'Shanghai'],
+     *   ],
+     *   colHeaders: ['Name', 'Age', 'City'],
+     *   rowHeaders: true,
+     *   colWidths: [120, 80, 100],
+     *   plugins: ['autoFill', 'contextMenu'],
+     *   hooks: {
+     *     ON_CELL_CLICK: (row, col) => console.log(row, col),
+     *   },
+     * });
+     */
+    constructor(containerId, options = {}) {
         this.sheets = new Map();
         this.clipboard = new ClipboardManager();
 
         this.renderEngine = null;
         this.editor = null;
         this.eventHandler = null;
-        /** 插件管理器实例 */
         this.pluginManager = null;
-        /** 待加载的插件队列（initRender 之前通过 loadPlugin 注册的） */
         this.#pendingPlugins = [];
+
+        this.#containerId = containerId || CONFIG.CANVAS_ID;
+        this.#initOptions = options;
     }
+
+    /** Canvas 元素 ID */
+    #containerId;
+    /** 初始化配置 */
+    #initOptions;
 
     /**
      * 全局注册插件类
@@ -131,15 +178,18 @@ export class Workbook {
     initRender() {
         if (this.renderEngine) return;
 
-        this.renderEngine = new RenderEngine("grid");
+        if (this.sheets.size === 0) {
+            const sheetName = this.#initOptions?.sheetName || 'Sheet1';
+            this.addSheet(sheetName);
+        }
+
+        this.renderEngine = new RenderEngine(this.#containerId);
         this.editor = new EditorManager(this.renderEngine, this.activeSheet);
 
         this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
 
-        /** 初始化插件管理器 */
         this.pluginManager = new PluginManager(this);
 
-        /** 将全局注册表同步到 PluginManager */
         for (const [name, PluginClass] of Workbook.#pluginRegistry) {
             PluginManager.register(name, PluginClass);
         }
@@ -147,6 +197,8 @@ export class Workbook {
         for (const sheet of this.sheets.values()) {
             sheet.renderEngine = this.renderEngine;
         }
+
+        this.#applyInitOptions();
 
         this.renderEngine.onScrollCallback = () => {
             const textEditor = this.editor?.getEditor('text');
@@ -181,6 +233,95 @@ export class Workbook {
         this.#flushPendingPlugins();
     }
 
+    /**
+     * 应用构造函数传入的初始化配置
+     * 在 initRender 中调用，此时 renderEngine 和 eventHandler 已就绪
+     */
+    #applyInitOptions() {
+        const opts = this.#initOptions;
+        if (!opts || Object.keys(opts).length === 0) return;
+
+        if (!this.activeSheet) return;
+        const sheet = this.activeSheet;
+
+        if (opts.colHeaders !== undefined) {
+            sheet.colHeaders = opts.colHeaders;
+        }
+        if (opts.rowHeaders !== undefined) {
+            sheet.rowHeaders = opts.rowHeaders;
+        }
+
+        if (opts.data) {
+            sheet.loadData(opts.data);
+        }
+
+        if (opts.rowHeights !== undefined) {
+            if (typeof opts.rowHeights === 'number') {
+                const count = opts.startRows || 100;
+                sheet.rowColManager.ensureSize(count, 0);
+                for (let r = 0; r < count; r++) {
+                    sheet.rowColManager.setRowHeight(r, opts.rowHeights);
+                }
+            } else if (Array.isArray(opts.rowHeights)) {
+                sheet.rowColManager.ensureSize(opts.rowHeights.length, 0);
+                for (let r = 0; r < opts.rowHeights.length; r++) {
+                    sheet.rowColManager.setRowHeight(r, opts.rowHeights[r]);
+                }
+            }
+        }
+
+        if (opts.colWidths !== undefined) {
+            if (typeof opts.colWidths === 'number') {
+                const count = opts.startCols || 26;
+                sheet.rowColManager.ensureSize(0, count);
+                for (let c = 0; c < count; c++) {
+                    sheet.rowColManager.setColWidth(c, opts.colWidths);
+                }
+            } else if (Array.isArray(opts.colWidths)) {
+                sheet.rowColManager.ensureSize(0, opts.colWidths.length);
+                for (let c = 0; c < opts.colWidths.length; c++) {
+                    sheet.rowColManager.setColWidth(c, opts.colWidths[c]);
+                }
+            }
+        }
+
+        if (opts.mergeCells && Array.isArray(opts.mergeCells)) {
+            for (const m of opts.mergeCells) {
+                if (m.row !== undefined && m.col !== undefined &&
+                    m.rowspan !== undefined && m.colspan !== undefined) {
+                    sheet.mergeCells(m.row, m.col, m.row + m.rowspan - 1, m.col + m.colspan - 1);
+                }
+            }
+        }
+
+        if (opts.conditionalStyles && Array.isArray(opts.conditionalStyles)) {
+            for (const cs of opts.conditionalStyles) {
+                if (cs.range && cs.condition && cs.style) {
+                    const styleId = stylePool.getStyleId(cs.style);
+                    sheet.addConditionalRule(cs.range, cs.condition, styleId);
+                }
+            }
+        }
+
+        if (opts.plugins && Array.isArray(opts.plugins)) {
+            for (const name of opts.plugins) {
+                this.loadPlugin(name);
+            }
+        }
+
+        if (opts.hooks && typeof opts.hooks === 'object') {
+            for (const [hookName, callback] of Object.entries(opts.hooks)) {
+                if (typeof callback === 'function') {
+                    this.addHook(hookName, callback);
+                }
+            }
+        }
+
+        if (typeof opts.afterInit === 'function') {
+            opts.afterInit(this);
+        }
+    }
+
     /** 加载待加载队列中的插件 */
     #flushPendingPlugins() {
         for (const pending of this.#pendingPlugins) {
@@ -197,6 +338,12 @@ export class Workbook {
         const engine = this.renderEngine || {canvas: {width: 0, height: 0}};
         const sheet = new Sheet(name, engine);
         sheet.workbook = this;
+
+        const opts = this.#initOptions;
+        const startRows = opts?.startRows || 100;
+        const startCols = opts?.startCols || 26;
+        sheet.rowColManager.ensureSize(startRows, startCols);
+
         this.sheets.set(name, sheet);
 
         if (!this.activeSheet) {
@@ -406,35 +553,77 @@ export class Workbook {
      * 支持运行时修改工作表配置，修改后自动重新渲染
      *
      * 支持的配置项：
+     * - data: Array<Array<*>> — 重新加载数据
      * - colHeaders: true | string[] | Function — 自定义列头标签
      * - rowHeaders: true | string[] | Function — 自定义行头标签
+     * - rowHeights: number | number[] — 行高配置
+     * - colWidths: number | number[] — 列宽配置
+     * - mergeCells: Array<{row,col,rowspan,colspan}> — 合并单元格
+     * - conditionalStyles: Array<{range,condition,style}> — 条件样式
      *
      * @param {object} settings - 配置项
      *
      * @example
-     * // 数组方式自定义列头
      * wb.updateSettings({ colHeaders: ['Name', 'Age', 'City'] });
-     *
-     * @example
-     * // 函数方式自定义列头
-     * wb.updateSettings({ colHeaders: (index) => 'Column ' + (index + 1) });
-     *
-     * @example
-     * // 恢复默认列头
-     * wb.updateSettings({ colHeaders: true });
-     *
-     * @example
-     * // 自定义行头
-     * wb.updateSettings({ rowHeaders: ['甲', '乙', '丙', '丁'] });
+     * wb.updateSettings({ colWidths: [120, 80, 100] });
+     * wb.updateSettings({ rowHeights: 30 });
      */
     updateSettings(settings = {}) {
         if (!this.activeSheet) return;
+        const sheet = this.activeSheet;
 
         if ('colHeaders' in settings) {
-            this.activeSheet.colHeaders = settings.colHeaders;
+            sheet.colHeaders = settings.colHeaders;
         }
         if ('rowHeaders' in settings) {
-            this.activeSheet.rowHeaders = settings.rowHeaders;
+            sheet.rowHeaders = settings.rowHeaders;
+        }
+        if (settings.data) {
+            sheet.loadData(settings.data);
+        }
+        if (settings.rowHeights !== undefined) {
+            if (typeof settings.rowHeights === 'number') {
+                const count = sheet.rowColManager.allocatedRowCount || 100;
+                sheet.rowColManager.ensureSize(count, 0);
+                for (let r = 0; r < count; r++) {
+                    sheet.rowColManager.setRowHeight(r, settings.rowHeights);
+                }
+            } else if (Array.isArray(settings.rowHeights)) {
+                sheet.rowColManager.ensureSize(settings.rowHeights.length, 0);
+                for (let r = 0; r < settings.rowHeights.length; r++) {
+                    sheet.rowColManager.setRowHeight(r, settings.rowHeights[r]);
+                }
+            }
+        }
+        if (settings.colWidths !== undefined) {
+            if (typeof settings.colWidths === 'number') {
+                const count = sheet.rowColManager.allocatedColCount || 26;
+                sheet.rowColManager.ensureSize(0, count);
+                for (let c = 0; c < count; c++) {
+                    sheet.rowColManager.setColWidth(c, settings.colWidths);
+                }
+            } else if (Array.isArray(settings.colWidths)) {
+                sheet.rowColManager.ensureSize(0, settings.colWidths.length);
+                for (let c = 0; c < settings.colWidths.length; c++) {
+                    sheet.rowColManager.setColWidth(c, settings.colWidths[c]);
+                }
+            }
+        }
+        if (settings.mergeCells && Array.isArray(settings.mergeCells)) {
+            for (const m of settings.mergeCells) {
+                if (m.row !== undefined && m.col !== undefined &&
+                    m.rowspan !== undefined && m.colspan !== undefined) {
+                    sheet.mergeCells(m.row, m.col, m.row + m.rowspan - 1, m.col + m.colspan - 1);
+                }
+            }
+        }
+        if (settings.conditionalStyles && Array.isArray(settings.conditionalStyles)) {
+            for (const cs of settings.conditionalStyles) {
+                if (cs.range && cs.condition && cs.style) {
+                    const styleId = stylePool.getStyleId(cs.style);
+                    sheet.addConditionalRule(cs.range, cs.condition, styleId);
+                }
+            }
         }
 
         this.render();

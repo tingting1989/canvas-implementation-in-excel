@@ -181,6 +181,42 @@ export class Sheet {
         return label;
     }
 
+    /**
+     * 批量加载数据（二维数组）
+     * 对齐 Handsontable 的 data 选项
+     *
+     * @param {Array<Array<*>>} data - 二维数组，data[row][col] = value
+     *
+     * @example
+     * sheet.loadData([
+     *   ['Name', 'Age', 'City'],
+     *   ['Zhang San', 25, 'Beijing'],
+     *   ['Li Si', 30, 'Shanghai'],
+     * ]);
+     */
+    loadData(data) {
+        if (!Array.isArray(data)) return;
+        const rows = data.length;
+        const cols = rows > 0 ? Math.max(...data.map(r => Array.isArray(r) ? r.length : 0)) : 0;
+        if (rows === 0 || cols === 0) return;
+
+        this.rowColManager.ensureSize(rows, cols);
+
+        for (let r = 0; r < rows; r++) {
+            const row = data[r];
+            if (!Array.isArray(row)) continue;
+            for (let c = 0; c < row.length; c++) {
+                if (row[c] !== undefined && row[c] !== null && row[c] !== '') {
+                    this.cellStore.set(r, c, new Cell(row[c], 0));
+                }
+            }
+        }
+
+        if (this.renderEngine && typeof this.renderEngine.invalidateAll === 'function') {
+            this.renderEngine.invalidateAll();
+        }
+    }
+
     resolveStyle(r, c) {
         let style = stylePool.getStyle(DEFAULT_STYLE_ID);
 
