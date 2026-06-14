@@ -89,8 +89,11 @@ export class ColumnMoveStrategy extends EventStrategy {
         }
 
         const rc = this.handler.sheet.rowColManager;
+        const sheet = this.handler.sheet;
         const rect = this.handler.canvas.getBoundingClientRect();
         const dragX = e.clientX - rect.left;
+
+        const visSourceCol = sheet.toVisibleCol(this.#sourceCol);
 
         const headerRenderer = this.handler.renderEngine.headerRenderer;
         headerRenderer.setColumnMoveState({
@@ -100,8 +103,8 @@ export class ColumnMoveStrategy extends EventStrategy {
             dragStartX: this.#dragStartX,
             headerW: CONFIG.HEADER_WIDTH,
             scrollX: this.handler.renderEngine.scrollX,
-            colX: rc.getColX(this.#sourceCol),
-            colW: rc.getColWidth(this.#sourceCol),
+            colX: rc.getColX(visSourceCol),
+            colW: rc.getColWidth(visSourceCol),
         });
 
         this.handler.renderEngine.invalidateAll();

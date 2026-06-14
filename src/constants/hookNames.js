@@ -65,6 +65,10 @@ export const HOOKS = Object.freeze({
     AFTER_PAGE_CHANGE: "afterPageChange",
     AFTER_PAGE_SIZE_CHANGE: "afterPageSizeChange",
 
+    /** 隐藏列相关 */
+    AFTER_HIDE_COLUMN: "afterHideColumn",
+    AFTER_SHOW_COLUMN: "afterShowColumn",
+
     /** 生命周期相关 */
     INIT: "init",
     DESTROY: "destroy",

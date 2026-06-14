@@ -52,10 +52,12 @@ export class ResizeStrategy extends EventStrategy {
         this.#resizeType = hit.type;
         this.#resizeIndex = hit.index;
 
-        const rc = this.handler.sheet.rowColManager;
+        const sheet = this.handler.sheet;
+        const rc = sheet.rowColManager;
         if (hit.type === HIT_TYPE.COL_RESIZE) {
             this.#startPos = e.clientX;
-            this.#startSize = rc.getColWidth(hit.index);
+            const visCol = sheet.toVisibleCol(hit.index);
+            this.#startSize = rc.getColWidth(visCol);
         } else {
             this.#startPos = e.clientY;
             this.#startSize = rc.getRowHeight(hit.index);
@@ -74,7 +76,8 @@ export class ResizeStrategy extends EventStrategy {
     }
 
     #handleDrag(e) {
-        const rc = this.handler.sheet.rowColManager;
+        const sheet = this.handler.sheet;
+        const rc = sheet.rowColManager;
         const headerRenderer = this.handler.renderEngine.headerRenderer;
 
         if (this.#resizeType === HIT_TYPE.COL_RESIZE) {

@@ -135,7 +135,7 @@ export class KeyboardStrategy extends EventStrategy {
                 if (e.ctrlKey || e.metaKey) {
                     e.preventDefault();
                     const rc = sheet.rowColManager;
-                    sheet.selection.selectAll(rc.rowCount - 1, rc.colCount - 1);
+                    sheet.selection.selectAll(rc.rowCount - 1, rc.realColCount - 1);
                     this.handler.render();
                 }
                 break;
@@ -403,6 +403,11 @@ export class KeyboardStrategy extends EventStrategy {
             nextCol = merge.bottomCol + 1;
         }
         nextCol = Math.min(CONFIG.MAX_COLS - 1, nextCol);
+
+        while (sheet.toVisibleCol(nextCol) < 0 && nextCol < CONFIG.MAX_COLS - 1) {
+            nextCol++;
+        }
+
         const target = this.#getTopLeft(row, nextCol);
 
         if (shiftKey) {
@@ -421,6 +426,11 @@ export class KeyboardStrategy extends EventStrategy {
         if (merge && col - 1 >= merge.topCol) {
             prevCol = merge.topCol - 1;
         }
+
+        while (sheet.toVisibleCol(prevCol) < 0 && prevCol > 0) {
+            prevCol--;
+        }
+
         const target = this.#getTopLeft(row, prevCol);
 
         if (shiftKey) {
@@ -435,7 +445,18 @@ export class KeyboardStrategy extends EventStrategy {
     #handleTab(row, col, shiftPressed) {
         const { sheet, renderEngine } = this.handler;
         const rc = sheet.rowColManager;
-        const nextCol = shiftPressed ? Math.max(0, col - 1) : Math.min(rc.colCount - 1, col + 1);
+        let nextCol = shiftPressed ? Math.max(0, col - 1) : Math.min(rc.colCount - 1, col + 1);
+
+        while (sheet.toVisibleCol(nextCol) < 0) {
+            if (shiftPressed) {
+                if (nextCol <= 0) break;
+                nextCol--;
+            } else {
+                if (nextCol >= rc.colCount - 1) break;
+                nextCol++;
+            }
+        }
+
         const target = this.#getTopLeft(row, nextCol);
         this.#selectCellOrMerge(sheet, row, target.col);
         renderEngine.scrollToCell(row, target.col);

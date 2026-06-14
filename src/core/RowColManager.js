@@ -13,6 +13,23 @@ export class RowColManager {
     #pageStartRow = -1;
     #pageEndRow = -1;
 
+    /** 隐藏列集合（存储实际列号） */
+    #hiddenCols = new Set();
+    /** 可视列前缀和（仅包含非隐藏列的宽度累加） */
+    #visibleColPrefixSum = null;
+    /** 可视列宽度数组（仅包含非隐藏列） */
+    #visibleColWidths = null;
+    /** 可视列 → 实际列 映射表 */
+    #visibleToRealMap = null;
+    /** 实际列 → 可视列 映射表（隐藏列为 -1） */
+    #realToVisibleMap = null;
+    /** 可视列前缀和是否需要重建 */
+    #visibleColDirty = true;
+    /** 可视列总宽度缓存 */
+    #visibleTotalWidth = 0;
+    /** 可视列数量缓存 */
+    #visibleColCountCache = 0;
+
     get totalHeight() {
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             const startY = this.#rawGetRowY(this.#pageStartRow);
@@ -24,6 +41,10 @@ export class RowColManager {
     }
 
     get totalWidth() {
+        if (this.#hiddenCols.size > 0) {
+            this.#ensureVisibleColPrefix();
+            return this.#visibleTotalWidth;
+        }
         this.#ensureColPrefix();
         return this.#allocatedWidth + (CONFIG.MAX_COLS - this.#colWidths.length) * CONFIG.DEFAULT_COL_WIDTH;
     }
@@ -36,6 +57,23 @@ export class RowColManager {
     }
 
     get colCount() {
+        if (this.#hiddenCols.size > 0) {
+            this.#ensureVisibleColPrefix();
+            return this.#visibleColCountCache;
+        }
+        return CONFIG.MAX_COLS;
+    }
+
+    get realColCount() {
+        return CONFIG.MAX_COLS;
+    }
+
+    /** 可视列总数（排除隐藏列） */
+    get visibleColCount() {
+        if (this.#hiddenCols.size > 0) {
+            this.#ensureVisibleColPrefix();
+            return this.#visibleColCountCache;
+        }
         return CONFIG.MAX_COLS;
     }
 
@@ -61,6 +99,7 @@ export class RowColManager {
             this.#colWidths.length = cols;
             this.#colWidths.fill(CONFIG.DEFAULT_COL_WIDTH, oldLen, cols);
             this.#colPrefixDirty = true;
+            this.#visibleColDirty = true;
         }
     }
 
@@ -77,6 +116,7 @@ export class RowColManager {
         if (this.#colWidths[col] !== width) {
             this.#colWidths[col] = width;
             this.#colPrefixDirty = true;
+            this.#visibleColDirty = true;
         }
     }
 
@@ -90,7 +130,16 @@ export class RowColManager {
         return CONFIG.DEFAULT_ROW_HEIGHT;
     }
 
+    /**
+     * 获取列宽
+     * @param {number} col - 列索引（有隐藏列时为可视列号，否则为实际列号）
+     */
     getColWidth(col) {
+        if (this.#hiddenCols.size > 0) {
+            this.#ensureVisibleColPrefix();
+            if (col >= 0 && col < this.#visibleColWidths.length) return this.#visibleColWidths[col];
+            return CONFIG.DEFAULT_COL_WIDTH;
+        }
         if (col >= 0 && col < this.#colWidths.length) return this.#colWidths[col];
         return CONFIG.DEFAULT_COL_WIDTH;
     }
@@ -113,8 +162,21 @@ export class RowColManager {
         return this.#allocatedHeight + (row - this.#rowHeights.length) * CONFIG.DEFAULT_ROW_HEIGHT;
     }
 
+    /**
+     * 获取列的 X 坐标
+     * @param {number} col - 列索引（有隐藏列时为可视列号，否则为实际列号）
+     */
     getColX(col) {
         if (col <= 0) return 0;
+
+        if (this.#hiddenCols.size > 0) {
+            this.#ensureVisibleColPrefix();
+            if (col <= this.#visibleColPrefixSum.length) {
+                return this.#visibleColPrefixSum[col - 1];
+            }
+            return this.#visibleTotalWidth + (col - this.#visibleColPrefixSum.length) * CONFIG.DEFAULT_COL_WIDTH;
+        }
+
         this.#ensureColPrefix();
         if (col <= this.#colWidths.length) {
             return this.#colPrefixSum[col - 1];
@@ -142,8 +204,26 @@ export class RowColManager {
         return this.#rowHeights.length + Math.floor(virtualY / CONFIG.DEFAULT_ROW_HEIGHT);
     }
 
+    /**
+     * 根据 X 坐标获取列索引
+     * @param {number} x - 像素坐标
+     * @returns {number} 列索引（有隐藏列时返回可视列号）
+     */
     colAt(x) {
         if (x < 0) return 0;
+
+        if (this.#hiddenCols.size > 0) {
+            this.#ensureVisibleColPrefix();
+            if (x < this.#visibleTotalWidth && this.#visibleColPrefixSum.length > 0) {
+                return this.#binarySearch(this.#visibleColPrefixSum, x);
+            }
+            if (x >= this.#visibleTotalWidth) {
+                const virtualX = x - this.#visibleTotalWidth;
+                return this.#visibleColPrefixSum.length + Math.floor(virtualX / CONFIG.DEFAULT_COL_WIDTH);
+            }
+            return 0;
+        }
+
         this.#ensureColPrefix();
         if (x < this.#allocatedWidth) {
             return this.#binarySearch(this.#colPrefixSum, x);
@@ -173,6 +253,7 @@ export class RowColManager {
         this.ensureSize(0, atCol + 1);
         this.#colWidths.splice(atCol, 0, CONFIG.DEFAULT_COL_WIDTH);
         this.#colPrefixDirty = true;
+        this.#visibleColDirty = true;
     }
 
     deleteRow(row) {
@@ -185,6 +266,7 @@ export class RowColManager {
         if (col < 0 || col >= this.#colWidths.length) return;
         this.#colWidths.splice(col, 1);
         this.#colPrefixDirty = true;
+        this.#visibleColDirty = true;
     }
 
     moveCol(fromCol, toCol) {
@@ -193,6 +275,7 @@ export class RowColManager {
         const [width] = this.#colWidths.splice(fromCol, 1);
         this.#colWidths.splice(toCol, 0, width);
         this.#colPrefixDirty = true;
+        this.#visibleColDirty = true;
     }
 
     getVisibleRange(viewX, viewY, viewW, viewH) {
@@ -217,6 +300,133 @@ export class RowColManager {
 
     get pageStartRow() { return this.#pageStartRow; }
     get pageEndRow() { return this.#pageEndRow; }
+
+    /**
+     * 设置隐藏列集合
+     * @param {Set<number>} hiddenSet - 隐藏列的实际列号集合
+     */
+    setHiddenColumns(hiddenSet) {
+        this.#hiddenCols = hiddenSet ? new Set(hiddenSet) : new Set();
+        this.#visibleColDirty = true;
+        this.#colPrefixDirty = true;
+    }
+
+    /** 清除所有隐藏列，恢复全量显示 */
+    clearHiddenColumns() {
+        this.#hiddenCols = new Set();
+        this.#visibleColDirty = true;
+        this.#colPrefixDirty = true;
+    }
+
+    /** 隐藏列集合是否非空 */
+    get hasHiddenColumns() {
+        return this.#hiddenCols.size > 0;
+    }
+
+    /**
+     * 可视列号 → 实际列号
+     * @param {number} visibleCol - 可视列号
+     * @returns {number} 实际列号
+     */
+    toRealCol(visibleCol) {
+        if (this.#hiddenCols.size === 0) return visibleCol;
+        this.#ensureVisibleColPrefix();
+        if (visibleCol >= 0 && visibleCol < this.#visibleToRealMap.length) {
+            return this.#visibleToRealMap[visibleCol];
+        }
+        const lastMapped = this.#visibleToRealMap.length > 0
+            ? this.#visibleToRealMap[this.#visibleToRealMap.length - 1]
+            : -1;
+        const hiddenAfter = this.#countHiddenAfter(lastMapped + 1, visibleCol - this.#visibleToRealMap.length + 1);
+        return lastMapped + 1 + hiddenAfter + (visibleCol - this.#visibleToRealMap.length);
+    }
+
+    /**
+     * 实际列号 → 可视列号
+     * @param {number} realCol - 实际列号
+     * @returns {number} 可视列号（如果该列隐藏则返回 -1）
+     */
+    toVisibleCol(realCol) {
+        if (this.#hiddenCols.size === 0) return realCol;
+        if (this.#hiddenCols.has(realCol)) return -1;
+        this.#ensureVisibleColPrefix();
+        if (realCol >= 0 && realCol < this.#realToVisibleMap.length) {
+            return this.#realToVisibleMap[realCol];
+        }
+        const lastMapped = this.#realToVisibleMap.length > 0
+            ? this.#realToVisibleMap.length - 1
+            : -1;
+        let visible = this.#realToVisibleMap.length > 0 ? this.#realToVisibleMap[lastMapped] + 1 : 0;
+        for (let c = lastMapped + 1; c <= realCol; c++) {
+            if (!this.#hiddenCols.has(c)) visible++;
+        }
+        return visible - 1;
+    }
+
+    /**
+     * 计算从 start 开始，前 count 个非隐藏列中隐藏列的数量
+     */
+    #countHiddenAfter(start, count) {
+        let hidden = 0;
+        let found = 0;
+        let c = start;
+        while (found < count) {
+            if (this.#hiddenCols.has(c)) {
+                hidden++;
+            } else {
+                found++;
+            }
+            c++;
+        }
+        return hidden;
+    }
+
+    /**
+     * 构建可视列的前缀和和映射表
+     * 遍历所有已分配列，跳过隐藏列，构建：
+     * - #visibleColWidths: 可视列宽度数组
+     * - #visibleColPrefixSum: 可视列前缀和
+     * - #visibleToRealMap: 可视列号 → 实际列号
+     * - #realToVisibleMap: 实际列号 → 可视列号（隐藏列为 -1）
+     * - #visibleTotalWidth: 可视列总宽度
+     * - #visibleColCountCache: 可视列总数
+     */
+    #ensureVisibleColPrefix() {
+        if (!this.#visibleColDirty) return;
+
+        this.#ensureColPrefix();
+
+        const n = this.#colWidths.length;
+        const widths = [];
+        const prefixSum = [];
+        const v2r = [];
+        const r2v = new Int32Array(n).fill(-1);
+
+        let sum = 0;
+        let visibleIdx = 0;
+        for (let c = 0; c < n; c++) {
+            if (this.#hiddenCols.has(c)) {
+                r2v[c] = -1;
+                continue;
+            }
+            const w = this.#colWidths[c];
+            widths.push(w);
+            sum += w;
+            prefixSum.push(sum);
+            v2r.push(c);
+            r2v[c] = visibleIdx;
+            visibleIdx++;
+        }
+
+        this.#visibleColWidths = widths;
+        this.#visibleColPrefixSum = prefixSum;
+        this.#visibleToRealMap = v2r;
+        this.#realToVisibleMap = r2v;
+        this.#visibleTotalWidth = sum + (CONFIG.MAX_COLS - n + this.#hiddenCols.size) * CONFIG.DEFAULT_COL_WIDTH;
+        this.#visibleColCountCache = CONFIG.MAX_COLS - this.#hiddenCols.size;
+
+        this.#visibleColDirty = false;
+    }
 
     #ensureRowPrefix() {
         if (!this.#rowPrefixDirty) return;

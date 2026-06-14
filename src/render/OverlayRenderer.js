@@ -52,10 +52,14 @@ export class OverlayRenderer {
 
             const pageTopRow = sheet.toPageRow(topRow);
             const pageBottomRow = sheet.toPageRow(bottomRow);
+            const visTopCol = sheet.toVisibleCol(topCol);
+            const visBottomCol = sheet.toVisibleCol(bottomCol);
 
-            const x1 = rc.getColX(topCol);
+            if (visTopCol < 0 || visBottomCol < 0) continue;
+
+            const x1 = rc.getColX(visTopCol);
             const y1 = rc.getRowY(pageTopRow);
-            const x2 = rc.getColX(bottomCol) + rc.getColWidth(bottomCol);
+            const x2 = rc.getColX(visBottomCol) + rc.getColWidth(visBottomCol);
             const y2 = rc.getRowY(pageBottomRow) + rc.getRowHeight(pageBottomRow);
 
             const drawX = headerW + x1 - scrollX;
@@ -92,11 +96,18 @@ export class OverlayRenderer {
         const range = sheet.selection.getRange();
         const [focusRow, focusCol] = sheet.selection.getFocus();
 
-        this.#renderRangeHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH);
-        this.#renderHeaderHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH, viewW, viewH);
+        const visRange = {
+            topRow: range.topRow,
+            bottomRow: range.bottomRow,
+            topCol: sheet.toVisibleCol(range.topCol),
+            bottomCol: sheet.toVisibleCol(range.bottomCol),
+        };
+
+        this.#renderRangeHighlight(ctx, rc, visRange, scrollX, scrollY, headerW, headerH);
+        this.#renderHeaderHighlight(ctx, rc, visRange, scrollX, scrollY, headerW, headerH, viewW, viewH);
         this.#renderActiveCell(ctx, rc, focusRow, focusCol, scrollX, scrollY, headerW, headerH, sheet);
-        this.#renderRangeBorder(ctx, rc, range, scrollX, scrollY, headerW, headerH);
-        this.#renderFillHandle(ctx, rc, range, scrollX, scrollY, headerW, headerH);
+        this.#renderRangeBorder(ctx, rc, visRange, scrollX, scrollY, headerW, headerH);
+        this.#renderFillHandle(ctx, rc, visRange, scrollX, scrollY, headerW, headerH);
 
         if (this.#resizeLine) {
             this.#renderResizeLine(ctx, this.#resizeLine, headerW, headerH, viewW, viewH);
@@ -107,6 +118,8 @@ export class OverlayRenderer {
      * 渲染选区范围高亮（浅蓝色半透明背景）
      */
     #renderRangeHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH) {
+        if (range.topCol < 0 || range.bottomCol < 0) return;
+
         const x1 = rc.getColX(range.topCol);
         const y1 = rc.getRowY(range.topRow);
         const x2 = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol);
@@ -126,6 +139,8 @@ export class OverlayRenderer {
      * 选区对应的列头和行头区域显示蓝色高亮
      */
     #renderHeaderHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH, viewW, viewH) {
+        if (range.topCol < 0 || range.bottomCol < 0) return;
+
         ctx.fillStyle = "rgba(76, 139, 245, 0.18)";
 
         /* 列头高亮 */
@@ -150,14 +165,19 @@ export class OverlayRenderer {
 
         let x, y, w, h;
         if (merge) {
-            x = rc.getColX(merge.topCol);
+            const visTopCol = sheet.toVisibleCol(merge.topCol);
+            const visBottomCol = sheet.toVisibleCol(merge.bottomCol);
+            if (visTopCol < 0 || visBottomCol < 0) return;
+            x = rc.getColX(visTopCol);
             y = rc.getRowY(merge.topRow);
-            w = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol) - x;
+            w = rc.getColX(visBottomCol) + rc.getColWidth(visBottomCol) - x;
             h = rc.getRowY(merge.bottomRow) + rc.getRowHeight(merge.bottomRow) - y;
         } else {
-            x = rc.getColX(actualCol);
+            const visCol = sheet.toVisibleCol(actualCol);
+            if (visCol < 0) return;
+            x = rc.getColX(visCol);
             y = rc.getRowY(actualRow);
-            w = rc.getColWidth(actualCol);
+            w = rc.getColWidth(visCol);
             h = rc.getRowHeight(actualRow);
         }
 
@@ -172,6 +192,8 @@ export class OverlayRenderer {
      * 渲染选区边框（蓝色粗线）
      */
     #renderRangeBorder(ctx, rc, range, scrollX, scrollY, headerW, headerH) {
+        if (range.topCol < 0 || range.bottomCol < 0) return;
+
         const x1 = rc.getColX(range.topCol);
         const y1 = rc.getRowY(range.topRow);
         const x2 = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol);
@@ -193,6 +215,8 @@ export class OverlayRenderer {
      * 选区右下角的绿色小方块，拖拽可触发自动填充
      */
     #renderFillHandle(ctx, rc, range, scrollX, scrollY, headerW, headerH) {
+        if (range.topCol < 0 || range.bottomCol < 0) return;
+
         const x2 = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol);
         const y2 = rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow);
 

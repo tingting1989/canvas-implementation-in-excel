@@ -36,9 +36,10 @@ export class HeaderRenderer {
         for (let c = sc; c < ec; c++) {
             const x = headerW + rc.getColX(c) - scrollX;
             const w = rc.getColWidth(c);
-            const highlighted = c >= range.topCol && c <= range.bottomCol;
+            const realC = sheet.toRealCol(c);
+            const highlighted = realC >= range.topCol && realC <= range.bottomCol;
 
-            if (this.#columnMoveState && c === this.#columnMoveState.sourceCol) {
+            if (this.#columnMoveState && realC === this.#columnMoveState.sourceCol) {
                 ctx.fillStyle = "rgba(76, 139, 245, 0.3)";
                 ctx.fillRect(x, 0, w, headerH);
                 ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
@@ -52,7 +53,7 @@ export class HeaderRenderer {
 
             ctx.font = "12px sans-serif";
             ctx.textAlign = "left";
-            ctx.fillText(sheet.getColHeader(c), x + 4, headerH - 8);
+            ctx.fillText(sheet.getColHeader(realC), x + 4, headerH - 8);
 
             ctx.strokeStyle = CONFIG.GRID_COLOR;
             ctx.beginPath();
@@ -64,12 +65,16 @@ export class HeaderRenderer {
         if (!this.#columnMoveState) {
             ctx.strokeStyle = CONFIG.SELECTION_COLOR;
             ctx.lineWidth = 2;
-            const selX = headerW + rc.getColX(range.topCol) - scrollX;
-            const selW = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - rc.getColX(range.topCol);
-            ctx.beginPath();
-            ctx.moveTo(selX, headerH);
-            ctx.lineTo(selX + selW, headerH);
-            ctx.stroke();
+            const visTopCol = sheet.toVisibleCol(range.topCol);
+            const visBottomCol = sheet.toVisibleCol(range.bottomCol);
+            if (visTopCol >= 0 && visBottomCol >= 0) {
+                const selX = headerW + rc.getColX(visTopCol) - scrollX;
+                const selW = rc.getColX(visBottomCol) + rc.getColWidth(visBottomCol) - rc.getColX(visTopCol);
+                ctx.beginPath();
+                ctx.moveTo(selX, headerH);
+                ctx.lineTo(selX + selW, headerH);
+                ctx.stroke();
+            }
             ctx.lineWidth = 1;
         }
     }
@@ -164,16 +169,19 @@ export class HeaderRenderer {
 
         const targetCol = state.targetCol;
         if (targetCol >= 0 && targetCol !== state.sourceCol) {
+            const visTargetCol = sheet.toVisibleCol(targetCol);
             let indicatorX;
-            if (targetCol > state.sourceCol) {
-                indicatorX = headerW + rc.getColX(targetCol) + rc.getColWidth(targetCol) - scrollX;
-            } else {
-                indicatorX = headerW + rc.getColX(targetCol) - scrollX;
-            }
+            if (visTargetCol >= 0) {
+                if (targetCol > state.sourceCol) {
+                    indicatorX = headerW + rc.getColX(visTargetCol) + rc.getColWidth(visTargetCol) - scrollX;
+                } else {
+                    indicatorX = headerW + rc.getColX(visTargetCol) - scrollX;
+                }
 
-            ctx.fillStyle = CONFIG.SELECTION_COLOR;
-            ctx.fillRect(indicatorX - 1, 0, 3, headerH);
-            ctx.fillRect(indicatorX - 1, headerH, 3, viewH - headerH);
+                ctx.fillStyle = CONFIG.SELECTION_COLOR;
+                ctx.fillRect(indicatorX - 1, 0, 3, headerH);
+                ctx.fillRect(indicatorX - 1, headerH, 3, viewH - headerH);
+            }
         }
 
         ctx.restore();

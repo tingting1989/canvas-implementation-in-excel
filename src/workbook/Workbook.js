@@ -183,7 +183,8 @@ export class Workbook {
 
         if (opts.plugins && Array.isArray(opts.plugins)) {
             for (const name of opts.plugins) {
-                this.loadPlugin(name);
+                const pluginOpts = opts[name] || {};
+                this.loadPlugin(name, pluginOpts);
             }
         }
 

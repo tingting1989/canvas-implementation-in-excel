@@ -232,7 +232,7 @@ export class TextEditor extends CellEditor {
                         targetCol = colMerge.bottomCol + 1;
                     }
                 }
-                targetCol = Math.min(this.sheet.rowColManager.colCount - 1, Math.max(0, targetCol));
+                targetCol = Math.min(this.sheet.rowColManager.realColCount - 1, Math.max(0, targetCol));
                 const {col: finalCol} = this.#getTopLeft(tabRow, targetCol);
                 const tabTargetMerge = this.sheet.getMerge(tabRow, finalCol);
                 if (tabTargetMerge) {

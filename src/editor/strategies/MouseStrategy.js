@@ -117,11 +117,11 @@ export class MouseStrategy extends EventStrategy {
         const rc = sheet.rowColManager;
 
         if (headerHit.type === HIT_TYPE.CORNER) {
-            sheet.selection.selectAll(rc.rowCount - 1, rc.colCount - 1);
+            sheet.selection.selectAll(rc.rowCount - 1, rc.realColCount - 1);
         } else if (headerHit.type === HIT_TYPE.COL_HEADER) {
             sheet.selection.selectCol(headerHit.index, rc.rowCount - 1);
         } else if (headerHit.type === HIT_TYPE.ROW_HEADER) {
-            sheet.selection.selectRow(headerHit.index, rc.colCount - 1);
+            sheet.selection.selectRow(headerHit.index, rc.realColCount - 1);
         }
 
         this.handler.render();

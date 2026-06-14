@@ -152,6 +152,11 @@ canvas {
   <button onclick="exportCSV()">导出 CSV</button>
   <button onclick="exportTSV()">导出 TSV</button>
   <span class="separator"></span>
+  <button onclick="hideCol()">隐藏列</button>
+  <button onclick="showCol()">显示列</button>
+  <button onclick="showAllCols()">显示所有列</button>
+  <span class="info" id="hidden-col-info"></span>
+  <span class="separator"></span>
   <button onclick="loadMillionData()">加载百万数据</button>
   <span class="separator"></span>
   <button onclick="pgFirst()">首页</button>
@@ -251,6 +256,49 @@ function pgPrev()  { getPagination()?.prevPage();  updatePgInfo(); }
 function pgNext()  { getPagination()?.nextPage();  updatePgInfo(); }
 function pgLast()  { getPagination()?.lastPage();  updatePgInfo(); }
 function pgSetSize(val) { getPagination()?.setPageSize(parseInt(val)); updatePgInfo(); }
+
+function getHiddenColumns() {
+  return wb.getPlugin('hiddenColumns');
+}
+
+function updateHiddenColInfo() {
+  const hc = getHiddenColumns();
+  if (!hc) return;
+  const hidden = hc.getHiddenColumns();
+  const info = document.getElementById('hidden-col-info');
+  if (hidden.length === 0) {
+    info.textContent = '';
+  } else {
+    const labels = hidden.map(c => wb.getActiveSheet().getColHeader(c));
+    info.textContent = `已隐藏: ${labels.join(', ')}`;
+  }
+}
+
+function hideCol() {
+  const hc = getHiddenColumns();
+  if (!hc) return;
+  const [, col] = wb.getActiveSheet().selection.getActive();
+  hc.hideColumn(col);
+  updateHiddenColInfo();
+}
+
+function showCol() {
+  const hc = getHiddenColumns();
+  if (!hc) return;
+  const [, col] = wb.getActiveSheet().selection.getActive();
+  hc.showColumn(col);
+  updateHiddenColInfo();
+}
+
+function showAllCols() {
+  const hc = getHiddenColumns();
+  if (!hc) return;
+  const hidden = hc.getHiddenColumns();
+  if (hidden.length > 0) {
+    hc.showColumns(hidden);
+  }
+  updateHiddenColInfo();
+}
 
 (function initScrollbarDrag() {
   document.addEventListener('DOMContentLoaded', () => {

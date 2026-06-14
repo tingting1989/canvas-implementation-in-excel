@@ -52,6 +52,14 @@ export class Sheet {
         return offset >= 0 ? realRow - offset : realRow;
     }
 
+    toRealCol(visibleCol) {
+        return this.rowColManager.toRealCol(visibleCol);
+    }
+
+    toVisibleCol(realCol) {
+        return this.rowColManager.toVisibleCol(realCol);
+    }
+
     #invalidateAll() {
         const re = this.#renderEngine;
         if (re && typeof re.invalidateAll === 'function') re.invalidateAll();
