@@ -35,6 +35,9 @@ export class RowMoveStrategy extends EventStrategy {
     /** mousedown 时鼠标在屏幕上的 Y 坐标（用于计算阈值） */
     #mouseDownY = 0;
 
+    /** 是否由本策略设置了光标（用于光标所有权管理） */
+    #cursorOwned = false;
+
     constructor(handler) {
         super(handler);
     }
@@ -61,7 +64,6 @@ export class RowMoveStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
 
-        // 如果点击的是行高调整区域，不启动拖拽
         const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
         if (resizeHit) return;
 
@@ -81,6 +83,10 @@ export class RowMoveStrategy extends EventStrategy {
     /**
      * 鼠标悬停：在行头区域显示 grab 光标
      * 拖拽进行中时不处理
+     *
+     * 光标所有权机制：
+     * - 设置光标时 return false 阻止低优先级策略覆盖
+     * - 仅在本策略曾设置光标时才清除，避免误清其他策略的光标
      */
     #onHover(e) {
         if (!this.enabled || !this.handler.sheet) return;
@@ -92,8 +98,13 @@ export class RowMoveStrategy extends EventStrategy {
         const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
         if (hit && hit.type === HIT_TYPE.ROW_HEADER) {
             this.handler.canvas.style.cursor = "grab";
-        } else if (!this.handler.canvas.style.cursor || this.handler.canvas.style.cursor === "grab") {
+            this.#cursorOwned = true;
+            return false;
+        }
+
+        if (this.#cursorOwned) {
             this.handler.canvas.style.cursor = "";
+            this.#cursorOwned = false;
         }
     }
 

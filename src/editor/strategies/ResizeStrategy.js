@@ -71,7 +71,7 @@ export class ResizeStrategy extends EventStrategy {
             return false;
         }
 
-        this.#handleHover(e);
+        return this.#handleHover(e);
     }
 
     #handleDrag(e) {
@@ -101,6 +101,13 @@ export class ResizeStrategy extends EventStrategy {
         this.handler.render();
     }
 
+    /**
+     * 光标悬停检测
+     *
+     * 光标所有权机制：
+     * - 设置光标时 return false 阻止低优先级策略覆盖
+     * - 仅在本策略曾设置光标时才清除，避免误清其他策略的光标
+     */
     #handleHover(e) {
         const hit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
 
@@ -108,7 +115,10 @@ export class ResizeStrategy extends EventStrategy {
             this.handler.canvas.style.cursor =
                 hit.type === HIT_TYPE.COL_RESIZE ? "col-resize" : "row-resize";
             this.#hoverType = hit.type;
-        } else if (this.#hoverType) {
+            return false;
+        }
+
+        if (this.#hoverType) {
             this.handler.canvas.style.cursor = "";
             this.#hoverType = null;
         }

@@ -16,6 +16,9 @@ export class ColumnMoveStrategy extends EventStrategy {
     #dragStartX = 0;
     #mouseDownX = 0;
 
+    /** 是否由本策略设置了光标（用于光标所有权管理） */
+    #cursorOwned = false;
+
     constructor(handler) {
         super(handler);
     }
@@ -55,20 +58,31 @@ export class ColumnMoveStrategy extends EventStrategy {
         this.#dragStartX = e.clientX - rect.left;
     }
 
+    /**
+     * 鼠标悬停：在列头区域显示 grab 光标
+     * 拖拽进行中时不处理
+     *
+     * 光标所有权机制：
+     * - 设置光标时 return false 阻止低优先级策略覆盖
+     * - 仅在本策略曾设置光标时才清除，避免误清其他策略的光标
+     */
     #onHover(e) {
         if (!this.enabled || !this.handler.sheet) return;
         if (this.#moving) return;
 
         const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
-        if (resizeHit) {
-            return;
-        }
+        if (resizeHit) return;
 
         const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
         if (hit && hit.type === HIT_TYPE.COL_HEADER) {
             this.handler.canvas.style.cursor = "grab";
-        } else {
+            this.#cursorOwned = true;
+            return false;
+        }
+
+        if (this.#cursorOwned) {
             this.handler.canvas.style.cursor = "";
+            this.#cursorOwned = false;
         }
     }
 

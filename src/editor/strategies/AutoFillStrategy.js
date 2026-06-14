@@ -27,6 +27,9 @@ export class AutoFillStrategy extends EventStrategy {
     /** 填充目标终点列号 */
     #fillEndCol = 0;
 
+    /** 是否由本策略设置了光标（用于光标所有权管理） */
+    #cursorOwned = false;
+
     constructor(handler) {
         super(handler);
     }
@@ -48,6 +51,10 @@ export class AutoFillStrategy extends EventStrategy {
      * 光标样式检测
      * 鼠标悬停在填充手柄上时切换为十字光标（crosshair）
      * 拖拽过程中保持十字光标，离开时恢复默认
+     *
+     * 光标所有权机制：
+     * - 设置光标时 return false 阻止低优先级策略覆盖
+     * - 仅在本策略曾设置光标时才清除，避免误清其他策略的光标
      */
     #onCursorCheck(e) {
         if (!this.enabled || !this.handler.sheet) return;
@@ -55,11 +62,20 @@ export class AutoFillStrategy extends EventStrategy {
         const canvas = this.handler.canvas;
         if (this.#filling) {
             canvas.style.cursor = "crosshair";
-            return;
+            return false;
         }
 
         const isFillHandle = this.handler.renderEngine.fillHandleHitTest(e.clientX, e.clientY);
-        canvas.style.cursor = isFillHandle ? "crosshair" : "";
+        if (isFillHandle) {
+            canvas.style.cursor = "crosshair";
+            this.#cursorOwned = true;
+            return false;
+        }
+
+        if (this.#cursorOwned) {
+            canvas.style.cursor = "";
+            this.#cursorOwned = false;
+        }
     }
 
     /**
