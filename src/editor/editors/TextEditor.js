@@ -11,6 +11,7 @@ import {CONFIG} from "../../constants/config";
  * - Enter/Tab 确认后自动跳转
  * - Escape 取消编辑
  * - 滚动时自动隐藏/恢复
+ * - 编辑时同步单元格字体样式
  */
 export class TextEditor extends CellEditor {
     /** 是否因滚动而隐藏（此时 blur 不应提交值） */
@@ -47,6 +48,7 @@ export class TextEditor extends CellEditor {
     /**
      * 显示编辑器
      * 将 input 定位到目标单元格上方，填入当前值并聚焦
+     * 同时同步单元格的字体样式到编辑器
      *
      * @param {number} row - 行号
      * @param {number} col - 列号
@@ -69,6 +71,8 @@ export class TextEditor extends CellEditor {
         this.editor.style.width = rect.w + "px";
         this.editor.style.height = rect.h + "px";
 
+        this.#syncFontStyle(row, col, rect.h);
+
         const cell = this.sheet.cellStore.get(row, col);
         this.editor.value = cell?.value ?? "";
         this.editor.focus();
@@ -79,6 +83,28 @@ export class TextEditor extends CellEditor {
         } else {
             this.editor.select();
         }
+    }
+
+    /**
+     * 同步单元格字体样式到编辑器
+     * 读取 resolveStyle 的结果，构建 CSS font 属性
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {number} cellH - 单元格高度（用于计算 line-height）
+     */
+    #syncFontStyle(row, col, cellH) {
+        const style = this.sheet.resolveStyle(row, col);
+        const fontStyle = style.fontStyle === "italic" ? "italic" : "normal";
+        const fontWeight = style.fontWeight || "normal";
+        const fontSize = style.fontSize || 12;
+        const fontFamily = style.fontFamily || "Segoe UI";
+        const lineHeight = cellH || 28;
+
+        this.editor.style.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight}px ${fontFamily}`;
+        this.editor.style.textAlign = style.textAlign || "left";
+        this.editor.style.color = style.color || "#222";
+        this.editor.style.backgroundColor = style.backgroundColor && style.backgroundColor !== "transparent"
+            ? style.backgroundColor : "#fff";
     }
 
     /**

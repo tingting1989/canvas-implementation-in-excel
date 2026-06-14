@@ -149,6 +149,37 @@ canvas {
   <button onclick="wb.disableCell()">禁用</button>
   <button onclick="wb.enableCell()">启用</button>
   <span class="separator"></span>
+  <select id="font-family-select" onchange="applyFontFamily(this.value)" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;width:120px;">
+    <option value="Segoe UI">Segoe UI</option>
+    <option value="Arial">Arial</option>
+    <option value="Courier New">Courier New</option>
+    <option value="Georgia">Georgia</option>
+    <option value="Times New Roman">Times New Roman</option>
+    <option value="Verdana">Verdana</option>
+    <option value="Microsoft YaHei">微软雅黑</option>
+    <option value="SimSun">宋体</option>
+    <option value="KaiTi">楷体</option>
+  </select>
+  <select id="font-size-select" onchange="applyFontSize(this.value)" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;width:70px;">
+    <option value="8">8</option>
+    <option value="9">9</option>
+    <option value="10">10</option>
+    <option value="11">11</option>
+    <option value="12" selected>12</option>
+    <option value="14">14</option>
+    <option value="16">16</option>
+    <option value="18">18</option>
+    <option value="20">20</option>
+    <option value="24">24</option>
+    <option value="28">28</option>
+    <option value="36">36</option>
+    <option value="48">48</option>
+    <option value="72">72</option>
+  </select>
+  <button onclick="toggleBold()" title="加粗 Ctrl+B" style="font-weight:bold;">B</button>
+  <button onclick="toggleItalic()" title="斜体 Ctrl+I" style="font-style:italic;">I</button>
+  <button onclick="toggleUnderline()" title="下划线 Ctrl+U" style="text-decoration:underline;">U</button>
+  <span class="separator"></span>
   <button onclick="exportCSV()">导出 CSV</button>
   <button onclick="exportTSV()">导出 TSV</button>
   <span class="separator"></span>
@@ -299,6 +330,97 @@ function showAllCols() {
   }
   updateHiddenColInfo();
 }
+
+function applyFontSize(size) {
+  const sheet = wb.getActiveSheet();
+  if (!sheet) return;
+  const range = sheet.selection.getRange();
+  sheet.setRangeStyle(range, { fontSize: parseInt(size) });
+  wb.render();
+  updateToolbarStyleState();
+}
+
+function applyFontFamily(family) {
+  const sheet = wb.getActiveSheet();
+  if (!sheet) return;
+  const range = sheet.selection.getRange();
+  sheet.setRangeStyle(range, { fontFamily: family });
+  wb.render();
+  updateToolbarStyleState();
+}
+
+function toggleBold() {
+  const sheet = wb.getActiveSheet();
+  if (!sheet) return;
+  const range = sheet.selection.getRange();
+  const [r, c] = sheet.selection.getActive();
+  const currentStyle = sheet.resolveStyle(r, c);
+  const allBold = isRangeAllActive(sheet, range, "fontWeight", "bold");
+  const newWeight = allBold ? "normal" : "bold";
+  sheet.setRangeStyle(range, { fontWeight: newWeight });
+  wb.render();
+  updateToolbarStyleState();
+}
+
+function toggleItalic() {
+  const sheet = wb.getActiveSheet();
+  if (!sheet) return;
+  const range = sheet.selection.getRange();
+  const allItalic = isRangeAllActive(sheet, range, "fontStyle", "italic");
+  const newStyle = allItalic ? "normal" : "italic";
+  sheet.setRangeStyle(range, { fontStyle: newStyle });
+  wb.render();
+  updateToolbarStyleState();
+}
+
+function toggleUnderline() {
+  const sheet = wb.getActiveSheet();
+  if (!sheet) return;
+  const range = sheet.selection.getRange();
+  const allUnderline = isRangeAllActive(sheet, range, "textDecoration", "underline");
+  const newDecoration = allUnderline ? "none" : "underline";
+  sheet.setRangeStyle(range, { textDecoration: newDecoration });
+  wb.render();
+  updateToolbarStyleState();
+}
+
+function isRangeAllActive(sheet, range, prop, activeValue) {
+  for (let r = range.topRow; r <= range.bottomRow; r++) {
+    for (let c = range.topCol; c <= range.bottomCol; c++) {
+      const style = sheet.resolveStyle(r, c);
+      if (style[prop] !== activeValue) return false;
+    }
+  }
+  return true;
+}
+
+function updateToolbarStyleState() {
+  const sheet = wb.getActiveSheet();
+  if (!sheet) return;
+  const [r, c] = sheet.selection.getActive();
+  const style = sheet.resolveStyle(r, c);
+
+  const fontSizeSelect = document.getElementById('font-size-select');
+  const fontFamilySelect = document.getElementById('font-family-select');
+
+  const currentSize = style.fontSize || 12;
+  const sizeOption = fontSizeSelect.querySelector(`option[value="${currentSize}"]`);
+  if (sizeOption) {
+    fontSizeSelect.value = currentSize;
+  } else {
+    fontSizeSelect.value = "12";
+  }
+
+  const currentFamily = style.fontFamily || "Segoe UI";
+  const familyOption = fontFamilySelect.querySelector(`option[value="${currentFamily}"]`);
+  if (familyOption) {
+    fontFamilySelect.value = currentFamily;
+  } else {
+    fontFamilySelect.value = "Segoe UI";
+  }
+}
+
+window.updateToolbarStyleState = updateToolbarStyleState;
 
 (function initScrollbarDrag() {
   document.addEventListener('DOMContentLoaded', () => {

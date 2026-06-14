@@ -368,6 +368,60 @@ export class Workbook {
     }
 
     /**
+     * 设置单元格样式
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {object} styleObj - 样式对象，如 { fontSize: 16, fontWeight: "bold", color: "#ff0000" }
+     */
+    setCellStyle(row, col, styleObj) {
+        if (!this.activeSheet) return;
+        this.activeSheet.setCellStyle(row, col, styleObj);
+        this.render();
+    }
+
+    /**
+     * 批量设置选区样式
+     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range - 选区范围
+     * @param {object} styleObj - 样式对象
+     */
+    setRangeStyle(range, styleObj) {
+        if (!this.activeSheet) return;
+        this.activeSheet.setRangeStyle(range, styleObj);
+        this.render();
+    }
+
+    /**
+     * 获取单元格最终解析样式
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {object} 合并后的样式对象
+     */
+    getCellStyle(row, col) {
+        if (!this.activeSheet) return {};
+        return this.activeSheet.getCellStyle(row, col);
+    }
+
+    /**
+     * 设置当前工作表默认样式
+     * 影响所有未单独设置样式的单元格
+     * @param {object} styleObj - 样式对象，如 { fontSize: 14, fontFamily: "Arial" }
+     */
+    setDefaultStyle(styleObj) {
+        if (!this.activeSheet) return;
+        this.activeSheet.setDefaultStyle(styleObj);
+        this.render();
+    }
+
+    /**
+     * 获取当前工作表默认样式
+     * @returns {object} 默认样式对象
+     */
+    getDefaultStyle() {
+        if (!this.activeSheet) return {};
+        return this.activeSheet.getDefaultStyle();
+    }
+
+    /**
      * 统一的 Sheet 配置应用方法
      * 被 #applyInitOptions 和 updateSettings 共用，消除重复代码
      */
@@ -380,6 +434,9 @@ export class Workbook {
         }
         if (settings.data) {
             sheet.loadData(settings.data);
+        }
+        if (settings.defaultStyle) {
+            sheet.setDefaultStyle(settings.defaultStyle);
         }
         if (settings.rowHeights !== undefined) {
             this.#applyRowHeights(sheet, settings.rowHeights);

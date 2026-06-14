@@ -15,8 +15,6 @@ const INDICATOR_HALF = 1;
 const HEADER_TEXT_COLOR = "#555";
 /** 幽灵行头/列头文字颜色 */
 const GHOST_TEXT_COLOR = "#fff";
-/** 表头字体 */
-const HEADER_FONT = "12px sans-serif";
 
 /**
  * 表头渲染器
@@ -99,6 +97,8 @@ export class HeaderRenderer {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
+        const defaultStyle = sheet.getDefaultStyle();
+        const headerFont = this.#buildHeaderFont(defaultStyle);
 
         ctx.fillStyle = CONFIG.HEADER_BG;
         ctx.fillRect(headerW, 0, viewW - headerW, headerH);
@@ -114,8 +114,8 @@ export class HeaderRenderer {
             const isSource = this.#columnMoveState && c === this.#columnMoveState.sourceCol;
             const highlighted = c >= range.topCol && c <= range.bottomCol;
 
-            this.#drawHeaderCell(ctx, x, 0, w, headerH, isSource, highlighted);
-            this.#drawHeaderText(ctx, sheet.getColHeader(c), x + 4, headerH - 8);
+            this.#drawHeaderCell(ctx, x, 0, w, headerH, isSource, highlighted, defaultStyle);
+            this.#drawHeaderText(ctx, sheet.getColHeader(c), x + 4, headerH - 8, null, headerFont);
             this.#drawSeparator(ctx, x + w, 0, x + w, headerH);
         }
 
@@ -138,6 +138,8 @@ export class HeaderRenderer {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
+        const defaultStyle = sheet.getDefaultStyle();
+        const headerFont = this.#buildHeaderFont(defaultStyle);
 
         ctx.fillStyle = CONFIG.HEADER_BG;
         ctx.fillRect(0, headerH, headerW, viewH - headerH);
@@ -151,8 +153,8 @@ export class HeaderRenderer {
             const isSource = this.#rowMoveState && r === this.#rowMoveState.sourceRow;
             const highlighted = r >= range.topRow && r <= range.bottomRow;
 
-            this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted);
-            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4);
+            this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, defaultStyle);
+            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4, null, headerFont);
             this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
         }
 
@@ -197,25 +199,23 @@ export class HeaderRenderer {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
+        const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
         const colScreenX = headerW + state.colX - state.scrollX;
         const ghostLeft = state.dragX - (state.dragStartX - colScreenX);
 
         ctx.save();
 
-        // 幽灵列（数据区域）
         ctx.fillStyle = GHOST_FILL;
         ctx.fillRect(ghostLeft, headerH, state.colW, viewH - headerH);
         ctx.strokeStyle = GHOST_STROKE;
         ctx.lineWidth = 1;
         ctx.strokeRect(ghostLeft, headerH, state.colW, viewH - headerH);
 
-        // 幽灵列头
         ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(ghostLeft, 0, state.colW, headerH);
-        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + 4, headerH - 8, GHOST_TEXT_COLOR);
+        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + 4, headerH - 8, GHOST_TEXT_COLOR, headerFont);
 
-        // 插入指示线
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
             const indicatorX = this.#calcMoveIndicatorX(rc, state.sourceCol, state.targetCol, scrollX);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
@@ -241,25 +241,23 @@ export class HeaderRenderer {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
+        const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
         const rowScreenY = headerH + state.rowY - state.scrollY;
         const ghostTop = state.dragY - (state.dragStartY - rowScreenY);
 
         ctx.save();
 
-        // 幽灵行（数据区域）
         ctx.fillStyle = GHOST_FILL;
         ctx.fillRect(headerW, ghostTop, viewW - headerW, state.rowH);
         ctx.strokeStyle = GHOST_STROKE;
         ctx.lineWidth = 1;
         ctx.strokeRect(headerW, ghostTop, viewW - headerW, state.rowH);
 
-        // 幽灵行头
         ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(0, ghostTop, headerW, state.rowH);
-        this.#drawHeaderText(ctx, sheet.getRowHeader(state.sourceRow), 6, ghostTop + state.rowH / 2 + 4, GHOST_TEXT_COLOR);
+        this.#drawHeaderText(ctx, sheet.getRowHeader(state.sourceRow), 6, ghostTop + state.rowH / 2 + 4, GHOST_TEXT_COLOR, headerFont);
 
-        // 插入指示线
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
             const indicatorY = this.#calcMoveIndicatorY(rc, state.sourceRow, state.targetRow, scrollY);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
@@ -303,6 +301,7 @@ export class HeaderRenderer {
     /**
      * 绘制单个表头单元格背景
      * 优先级：拖拽源高亮 > 选区高亮 > 默认
+     * 普通状态下文字颜色跟随 defaultStyle.color
      * @param {CanvasRenderingContext2D} ctx
      * @param {number} x - 左上角 x
      * @param {number} y - 左上角 y
@@ -310,8 +309,9 @@ export class HeaderRenderer {
      * @param {number} h - 高度
      * @param {boolean} isSource - 是否为拖拽源行/列
      * @param {boolean} highlighted - 是否在选区内
+     * @param {object} [defaultStyle] - 工作表默认样式
      */
-    #drawHeaderCell(ctx, x, y, w, h, isSource, highlighted) {
+    #drawHeaderCell(ctx, x, y, w, h, isSource, highlighted, defaultStyle) {
         if (isSource) {
             ctx.fillStyle = MOVE_SOURCE_FILL;
             ctx.fillRect(x, y, w, h);
@@ -321,7 +321,7 @@ export class HeaderRenderer {
             ctx.fillRect(x, y, w, h);
             ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
         } else {
-            ctx.fillStyle = HEADER_TEXT_COLOR;
+            ctx.fillStyle = defaultStyle?.color || HEADER_TEXT_COLOR;
         }
     }
 
@@ -331,13 +331,27 @@ export class HeaderRenderer {
      * @param {string} text - 文字内容
      * @param {number} x - 文字 x 坐标
      * @param {number} y - 文字 y 坐标（基线）
-     * @param {string} [color] - 文字颜色，默认当前 fillStyle
+     * @param {string} [color] - 文字颜色，null 则使用当前 fillStyle
+     * @param {string} [font] - 字体 CSS 字符串，默认 "12px sans-serif"
      */
-    #drawHeaderText(ctx, text, x, y, color) {
-        ctx.font = HEADER_FONT;
+    #drawHeaderText(ctx, text, x, y, color, font) {
+        ctx.font = font || "12px sans-serif";
         ctx.textAlign = "left";
         if (color) ctx.fillStyle = color;
         ctx.fillText(text, x, y);
+    }
+
+    /**
+     * 根据默认样式构建表头字体 CSS 字符串
+     * @param {object} defaultStyle - 工作表默认样式对象
+     * @returns {string} CSS font 字符串，如 "bold 14px Arial"
+     */
+    #buildHeaderFont(defaultStyle) {
+        const fontStyle = defaultStyle?.fontStyle === "italic" ? "italic" : "";
+        const fontWeight = defaultStyle?.fontWeight === "bold" ? "bold" : "";
+        const fontSize = defaultStyle?.fontSize || 12;
+        const fontFamily = defaultStyle?.fontFamily || "sans-serif";
+        return [fontStyle, fontWeight, `${fontSize}px`, fontFamily].filter(Boolean).join(" ");
     }
 
     /**

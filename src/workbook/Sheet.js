@@ -36,6 +36,8 @@ import {STYLE_LEVEL} from "../constants/styleLevel";
 export class Sheet {
     /** 渲染引擎引用（由 Workbook.initRender 时注入） */
     #renderEngine = null;
+    /** 工作表默认样式 ID（覆盖全局 DEFAULT_STYLE_ID） */
+    #defaultStyleId = DEFAULT_STYLE_ID;
 
     /**
      * @param {string} name - 工作表名称
@@ -224,6 +226,69 @@ export class Sheet {
     }
 
     /**
+     * 设置工作表默认样式
+     * 覆盖全局 DEFAULT_STYLE_ID，影响所有未设置行/列/单元格样式的单元格
+     * @param {object} styleObj - 样式对象，如 { fontSize: 14, fontFamily: "Arial" }
+     */
+    setDefaultStyle(styleObj) {
+        this.#defaultStyleId = stylePool.getStyleId(styleObj);
+        this.#invalidateAll();
+    }
+
+    /**
+     * 获取工作表默认样式
+     * @returns {object} 默认样式对象
+     */
+    getDefaultStyle() {
+        return stylePool.getStyle(this.#defaultStyleId);
+    }
+
+    /**
+     * 设置单个单元格样式
+     * 保留单元格原有值，仅更新样式
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {object} styleObj - 样式对象，如 { fontSize: 16, fontWeight: "bold" }
+     */
+    setCellStyle(r, c, styleObj) {
+        const realR = this.toRealRow(r);
+        this.rowColManager.ensureSize(realR + 1, c + 1);
+        const cell = this.cellStore.get(realR, c);
+        const currentStyleId = cell?.styleId || 0;
+        const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
+        const mergedStyle = {...currentStyle, ...styleObj};
+        const newStyleId = stylePool.getStyleId(mergedStyle);
+        const value = cell?.value ?? "";
+        this.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
+        this.#invalidateCell(realR, c);
+    }
+
+    /**
+     * 批量设置选区样式
+     * 遍历选区内所有单元格，合并指定样式属性
+     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range - 选区范围
+     * @param {object} styleObj - 样式对象
+     */
+    setRangeStyle(range, styleObj) {
+        for (let r = range.topRow; r <= range.bottomRow; r++) {
+            for (let c = range.topCol; c <= range.bottomCol; c++) {
+                if (this.isDisabled(r, c)) continue;
+                this.setCellStyle(r, c, styleObj);
+            }
+        }
+    }
+
+    /**
+     * 获取单元格最终解析样式
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {object} 合并后的样式对象
+     */
+    getCellStyle(r, c) {
+        return this.resolveStyle(r, c);
+    }
+
+    /**
      * 添加条件格式规则
      * @param {object} range - 适用范围
      * @param {Function} conditionFn - 条件判断函数
@@ -357,14 +422,14 @@ export class Sheet {
 
     /**
      * 解析单元格最终样式
-     * 优先级：列样式 < 行样式 < 单元格样式（后者覆盖前者）
+     * 优先级：默认样式 < 列样式 < 行样式 < 单元格样式（后者覆盖前者）
      * @param {number} r - 行号
      * @param {number} c - 列号
      * @returns {object} 合并后的样式对象
      */
     resolveStyle(r, c) {
         const realR = this.toRealRow(r);
-        const base = stylePool.getStyle(DEFAULT_STYLE_ID);
+        const base = stylePool.getStyle(this.#defaultStyleId);
         const colStyleId = this.colStyles.get(c);
         const rowStyleId = this.rowStyles.get(realR);
         const cell = this.cellStore.get(realR, c);

@@ -314,13 +314,7 @@ export class KeyboardStrategy extends EventStrategy {
         const { sheet } = this.handler;
 
         let allActive = true;
-        const cellCount = (range.bottomRow - range.topRow + 1) * (range.bottomCol - range.topCol + 1);
-        let checkedCount = 0;
 
-        /**
-         * 第一遍：检查是否所有单元格都已经是 activeValue
-         * 空单元格视为 inactiveValue
-         */
         for (let r = range.topRow; r <= range.bottomRow; r++) {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 const cell = sheet.cellStore.get(r, c);
@@ -328,7 +322,6 @@ export class KeyboardStrategy extends EventStrategy {
                 if (currentStyle[prop] !== activeValue) {
                     allActive = false;
                 }
-                checkedCount++;
                 if (!allActive) break;
             }
             if (!allActive) break;
@@ -336,10 +329,6 @@ export class KeyboardStrategy extends EventStrategy {
 
         const newValue = allActive ? inactiveValue : activeValue;
 
-        /**
-         * 第二遍：应用新样式
-         * 合并现有样式 + 切换的属性，生成新的 styleId
-         */
         for (let r = range.topRow; r <= range.bottomRow; r++) {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (sheet.isDisabled(r, c)) continue;
@@ -353,6 +342,8 @@ export class KeyboardStrategy extends EventStrategy {
                 sheet.setCell(r, c, value, newStyleId);
             }
         }
+
+        this.handler.runHooks(HOOKS.AFTER_CHANGE, []);
     }
 
     #handleArrowDown(row, col, shiftKey) {

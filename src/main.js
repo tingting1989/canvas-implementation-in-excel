@@ -45,9 +45,18 @@ const initApp = () => {
                 style: {backgroundColor: "#ffcccc"},
             },
         ],
+        // 统一默认样式 — 所有单元格的基础字体
+        defaultStyle: {
+            fontSize: 14,
+            fontFamily: "Microsoft YaHei",
+            color: "#000",
+        },
         hooks: {
             [HOOKS.ON_CELL_CLICK]: (row, col) => {
                 console.log("Cell clicked: (" + row + ", " + col + ")");
+                if (typeof updateToolbarStyleState === 'function') {
+                    updateToolbarStyleState();
+                }
             },
         },
         afterInit(wb) {
@@ -65,13 +74,17 @@ const initApp = () => {
 
     wb.initRender();
     wb.render();
-// 监听列移动前，返回 false 可阻止
-    wb.addHook(HOOKS.BEFORE_COLUMN_MOVE, (sourceCol, targetCol) => {
-        console.log(`即将移动列 ${sourceCol} → ${targetCol}`);
-        // return false; // 取消移动
+
+    wb.addHook(HOOKS.AFTER_CHANGE, () => {
+        if (typeof window.updateToolbarStyleState === 'function') {
+            window.updateToolbarStyleState();
+        }
     });
 
-// 监听列移动后
+    wb.addHook(HOOKS.BEFORE_COLUMN_MOVE, (sourceCol, targetCol) => {
+        console.log(`即将移动列 ${sourceCol} → ${targetCol}`);
+    });
+
     wb.addHook(HOOKS.AFTER_COLUMN_MOVE, (sourceCol, targetCol) => {
         console.log(`列移动完成 ${sourceCol} → ${targetCol}`);
     });
