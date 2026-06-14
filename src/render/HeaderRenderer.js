@@ -32,7 +32,7 @@ export class HeaderRenderer {
         for (let c = sc; c < ec; c++) {
             const x = headerW + rc.getColX(c) - scrollX;
             const w = rc.getColWidth(c);
-            ctx.fillText(this.#colLabel(c), x + 4, headerH - 8);
+            ctx.fillText(sheet.getColHeader(c), x + 4, headerH - 8);
             ctx.strokeStyle = CONFIG.GRID_COLOR;
             ctx.beginPath();
             ctx.moveTo(x + w, 0);
@@ -58,7 +58,7 @@ export class HeaderRenderer {
         for (let r = sr; r < er; r++) {
             const y = headerH + rc.getRowY(r) - scrollY;
             const h = rc.getRowHeight(r);
-            ctx.fillText(String(r + 1), 6, y + h / 2 + 4);
+            ctx.fillText(sheet.getRowHeader(r), 6, y + h / 2 + 4);
             ctx.strokeStyle = CONFIG.GRID_COLOR;
             ctx.beginPath();
             ctx.moveTo(0, y + h);
@@ -97,15 +97,5 @@ export class HeaderRenderer {
         }
 
         ctx.restore();
-    }
-
-    #colLabel(col) {
-        let label = "";
-        let n = col;
-        do {
-            label = String.fromCharCode(65 + (n % 26)) + label;
-            n = Math.floor(n / 26) - 1;
-        } while (n >= 0);
-        return label;
     }
 }

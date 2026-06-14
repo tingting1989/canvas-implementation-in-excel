@@ -28,6 +28,26 @@ export class Sheet {
         /** 所属工作簿引用（由 Workbook.addSheet 设置） */
         this.workbook = null;
 
+        /**
+         * 自定义列头标签
+         * 支持三种形式：
+         * - true: 使用默认字母标签 (A, B, C...)
+         * - string[]: 数组映射，如 ['Name', 'Age', 'City']
+         * - Function: (colIndex) => string
+         * 默认为 true
+         */
+        this.colHeaders = true;
+
+        /**
+         * 自定义行头标签
+         * 支持三种形式：
+         * - true: 使用默认数字标签 (1, 2, 3...)
+         * - string[]: 数组映射，如 ['Row1', 'Row2']
+         * - Function: (rowIndex) => string
+         * 默认为 true
+         */
+        this.rowHeaders = true;
+
         this.rowColManager = new RowColManager();
 
         this.rowStyles = new Map();
@@ -106,6 +126,59 @@ export class Sheet {
         if (!fn) return null;
         const cell = this.cellStore.get(r, c);
         return fn(cell?.value);
+    }
+
+    /**
+     * 获取列头标签文本
+     * 根据 colHeaders 配置返回对应列的标签
+     *
+     * @param {number} col - 列索引
+     * @returns {string}
+     */
+    getColHeader(col) {
+        if (this.colHeaders === true || this.colHeaders == null) {
+            return this.#defaultColLabel(col);
+        }
+        if (Array.isArray(this.colHeaders)) {
+            return col < this.colHeaders.length ? this.colHeaders[col] : this.#defaultColLabel(col);
+        }
+        if (typeof this.colHeaders === 'function') {
+            return this.colHeaders(col);
+        }
+        return this.#defaultColLabel(col);
+    }
+
+    /**
+     * 获取行头标签文本
+     * 根据 rowHeaders 配置返回对应行的标签
+     *
+     * @param {number} row - 行索引
+     * @returns {string}
+     */
+    getRowHeader(row) {
+        if (this.rowHeaders === true || this.rowHeaders == null) {
+            return String(row + 1);
+        }
+        if (Array.isArray(this.rowHeaders)) {
+            return row < this.rowHeaders.length ? this.rowHeaders[row] : String(row + 1);
+        }
+        if (typeof this.rowHeaders === 'function') {
+            return this.rowHeaders(row);
+        }
+        return String(row + 1);
+    }
+
+    /**
+     * 默认列头标签（A, B, C, ... Z, AA, AB, ...）
+     */
+    #defaultColLabel(col) {
+        let label = "";
+        let n = col;
+        do {
+            label = String.fromCharCode(65 + (n % 26)) + label;
+            n = Math.floor(n / 26) - 1;
+        } while (n >= 0);
+        return label;
     }
 
     resolveStyle(r, c) {

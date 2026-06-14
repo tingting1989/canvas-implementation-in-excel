@@ -64,6 +64,10 @@ const initApp = () => {
   wb.loadPlugin('autoFill');
   wb.loadPlugin('contextMenu');
 
+  wb.updateSettings({
+    colHeaders: ['Name', 'Age', 'City', 'Dept', 'Salary', 'Hire Date'],
+  });
+
   wb.render();
 
   window.wb = wb;

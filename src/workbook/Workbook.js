@@ -401,6 +401,45 @@ export class Workbook {
         return this.eventHandler?.runHooks(hookName, ...args);
     }
 
+    /**
+     * 更新配置（对齐 Handsontable 的 updateSettings API）
+     * 支持运行时修改工作表配置，修改后自动重新渲染
+     *
+     * 支持的配置项：
+     * - colHeaders: true | string[] | Function — 自定义列头标签
+     * - rowHeaders: true | string[] | Function — 自定义行头标签
+     *
+     * @param {object} settings - 配置项
+     *
+     * @example
+     * // 数组方式自定义列头
+     * wb.updateSettings({ colHeaders: ['Name', 'Age', 'City'] });
+     *
+     * @example
+     * // 函数方式自定义列头
+     * wb.updateSettings({ colHeaders: (index) => 'Column ' + (index + 1) });
+     *
+     * @example
+     * // 恢复默认列头
+     * wb.updateSettings({ colHeaders: true });
+     *
+     * @example
+     * // 自定义行头
+     * wb.updateSettings({ rowHeaders: ['甲', '乙', '丙', '丁'] });
+     */
+    updateSettings(settings = {}) {
+        if (!this.activeSheet) return;
+
+        if ('colHeaders' in settings) {
+            this.activeSheet.colHeaders = settings.colHeaders;
+        }
+        if ('rowHeaders' in settings) {
+            this.activeSheet.rowHeaders = settings.rowHeaders;
+        }
+
+        this.render();
+    }
+
     destroy() {
         this.pluginManager?.destroyAll();
         this.pluginManager = null;
