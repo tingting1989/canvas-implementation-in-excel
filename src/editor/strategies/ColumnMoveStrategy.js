@@ -117,7 +117,8 @@ export class ColumnMoveStrategy extends EventStrategy {
 
         this.#clearIndicator();
 
-        if (this.#dragStarted && this.#sourceCol !== this.#targetCol && this.#targetCol >= 0) {column-movingconst cancelled = this.handler.runHooksUntil(HOOKS.BEFORE_COLUMN_MOVE, this.#sourceCol, this.#targetCol);
+        if (this.#dragStarted && this.#sourceCol !== this.#targetCol && this.#targetCol >= 0) {
+            const cancelled = this.handler.runHooksUntil(HOOKS.BEFORE_COLUMN_MOVE, this.#sourceCol, this.#targetCol);
             if (cancelled === false) {
                 this.#sourceCol = -1;
                 this.#targetCol = -1;
