@@ -1,4 +1,3 @@
-import {CONFIG, STYLE_LEVEL} from "../core/constants.js";
 import {stylePool, DEFAULT_STYLE_ID} from "../styles/index.js";
 import {
     ChunkedCellStore,
@@ -13,6 +12,8 @@ import {
     Cell,
 } from "../model/index.js";
 import {RowColManager} from "../core/RowColManager.js";
+import {CONFIG} from "../constants/config";
+import {STYLE_LEVEL} from "../constants/styleLevel";
 
 export class Sheet {
     constructor(name, renderEngine) {

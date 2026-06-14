@@ -1,5 +1,5 @@
-import { CONFIG } from "../core/constants.js";
 import { stylePool } from "../styles/index.js";
+import {CONFIG} from "../constants/config";
 
 export class TileRenderer {
     constructor(tileCache) {

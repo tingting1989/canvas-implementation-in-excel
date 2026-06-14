@@ -4,7 +4,8 @@ import {EditorManager} from "../editor/EditorManager.js";
 import {EventHandler} from "../editor/EventHandler.js";
 import {ClipboardManager} from "../editor/ClipboardManager.js";
 import {PluginManager} from "../plugins/PluginManager.js";
-import {CONFIG} from "../core/constants.js";
+
+import {CONFIG} from "../constants/config";
 
 /**
  * 工作簿

@@ -1,6 +1,7 @@
-import {CONFIG} from "../../core/constants.js";
 import {CellEditor} from "./CellEditor.js";
-import {HOOKS} from "../hookNames.js";
+import {HOOKS} from "../../constants/hookNames.js";
+import {EVENT_NAMES} from "../../constants/eventNames.js";
+import {CONFIG} from "../../constants/config";
 
 /**
  * 文本编辑器
@@ -37,10 +38,10 @@ export class TextEditor extends CellEditor {
 
     /** 绑定 blur、keydown 和 IME 事件 */
     #bindEvents() {
-        this.editor.addEventListener("blur", () => this.#onBlur());
-        this.editor.addEventListener("keydown", (e) => this.#onKeyDown(e));
-        this.editor.addEventListener("compositionstart", () => { this.#composing = true; });
-        this.editor.addEventListener("compositionend", () => { this.#composing = false; });
+        this.editor.addEventListener(EVENT_NAMES.BLUR, () => this.#onBlur());
+        this.editor.addEventListener(EVENT_NAMES.KEYDOWN, (e) => this.#onKeyDown(e));
+        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONSTART, () => { this.#composing = true; });
+        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONEND, () => { this.#composing = false; });
     }
 
     /**

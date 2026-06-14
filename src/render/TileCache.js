@@ -1,5 +1,5 @@
-import { CONFIG } from "../core/constants.js";
 import { Tile } from "./Tile.js";
+import {CONFIG} from "../constants/config";
 
 export class TileCache {
     constructor(dpr = 1) {

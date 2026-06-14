@@ -1,4 +1,5 @@
-﻿import { CONFIG } from "../core/constants.js";
+﻿import {CONFIG} from "../constants/config";
+import {HIT_TYPE} from "../constants/hitType";
 
 export class HeaderRenderer {
     #resizeLine = null;
@@ -81,7 +82,7 @@ export class HeaderRenderer {
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 3]);
 
-        if (this.#resizeLine.type === "col-resize") {
+        if (this.#resizeLine.type === HIT_TYPE.COL_RESIZE) {
             const x = this.#resizeLine.position;
             ctx.beginPath();
             ctx.moveTo(x, 0);

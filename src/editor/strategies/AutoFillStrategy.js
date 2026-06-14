@@ -1,5 +1,5 @@
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "./eventNames.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 /**
  * 自动填充策略（AutoFill）

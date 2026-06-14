@@ -1,4 +1,4 @@
-import {CONFIG} from "../../core/constants.js";
+import {CONFIG} from "../../constants/config";
 
 /**
  * 单元格编辑器基类

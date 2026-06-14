@@ -1,4 +1,5 @@
-import { CONFIG } from "../core/constants.js";
+import { EVENT_NAMES } from "../constants/eventNames.js";
+import {CONFIG} from "../constants/config";
 
 export class ScrollManager {
     #scrollX = 0;
@@ -46,7 +47,7 @@ export class ScrollManager {
                 this.#onAfterScroll();
             }
         };
-        this.wrap.addEventListener("wheel", this.#wheelHandler, { passive: false });
+        this.wrap.addEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler, { passive: false });
     }
 
     updateScrollBounds(totalW, totalH, viewW, viewH) {
@@ -121,7 +122,7 @@ export class ScrollManager {
 
     destroy() {
         if (this.#wheelHandler) {
-            this.wrap.removeEventListener("wheel", this.#wheelHandler);
+            this.wrap.removeEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler);
             this.#wheelHandler = null;
         }
         this.wrap = null;

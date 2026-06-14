@@ -1,9 +1,11 @@
-﻿import { CONFIG } from "../core/constants.js";
-import { TileCache } from "./TileCache.js";
+﻿import { TileCache } from "./TileCache.js";
 import { ScrollManager } from "./ScrollManager.js";
 import { TileRenderer } from "./TileRenderer.js";
 import { OverlayRenderer } from "./OverlayRenderer.js";
 import { HeaderRenderer } from "./HeaderRenderer.js";
+import { EVENT_NAMES } from "../constants/eventNames.js";
+import {CONFIG} from "../constants/config";
+import {HIT_TYPE} from "../constants/hitType";
 
 export class RenderEngine {
     #currentSheet = null;
@@ -59,7 +61,7 @@ export class RenderEngine {
             this.#initCanvasSize();
             this.requestRender();
         };
-        window.addEventListener("resize", this.#resizeHandler);
+        window.addEventListener(EVENT_NAMES.RESIZE, this.#resizeHandler);
     }
 
     requestRender() {
@@ -129,7 +131,7 @@ export class RenderEngine {
         const headerH = CONFIG.HEADER_HEIGHT;
 
         if (px >= 0 && px <= headerW && py >= 0 && py <= headerH) {
-            return { type: "corner" };
+            return { type: HIT_TYPE.CORNER };
         }
 
         if (py >= 0 && py <= headerH && px > headerW) {
@@ -138,7 +140,7 @@ export class RenderEngine {
             const dataX = px - headerW + this.scrollMgr.scrollX;
             const col = rc.colAt(dataX);
             if (col >= 0 && col < rc.colCount) {
-                return { type: "col-header", index: col };
+                return { type: HIT_TYPE.COL_HEADER, index: col };
             }
         }
 
@@ -148,7 +150,7 @@ export class RenderEngine {
             const dataY = py - headerH + this.scrollMgr.scrollY;
             const row = rc.rowAt(dataY);
             if (row >= 0 && row < rc.rowCount) {
-                return { type: "row-header", index: row };
+                return { type: HIT_TYPE.ROW_HEADER, index: row };
             }
         }
 
@@ -160,7 +162,7 @@ export class RenderEngine {
             const col = rc.colAt(dataX);
             const row = rc.rowAt(dataY);
             if (row >= 0 && row < rc.rowCount && col >= 0 && col < rc.colCount) {
-                return { type: "cell", row, col };
+                return { type: HIT_TYPE.CELL, row, col };
             }
         }
 
@@ -185,7 +187,7 @@ export class RenderEngine {
             const col = rc.colAt(dataX);
             const colRight = rc.getColX(col) + rc.getColWidth(col);
             if (Math.abs(dataX - colRight) <= hitArea) {
-                return { type: "col-resize", index: col };
+                return { type: HIT_TYPE.COL_RESIZE, index: col };
             }
         }
 
@@ -194,7 +196,7 @@ export class RenderEngine {
             const row = rc.rowAt(dataY);
             const rowBottom = rc.getRowY(row) + rc.getRowHeight(row);
             if (Math.abs(dataY - rowBottom) <= hitArea) {
-                return { type: "row-resize", index: row };
+                return { type: HIT_TYPE.ROW_RESIZE, index: row };
             }
         }
 
@@ -251,6 +253,6 @@ export class RenderEngine {
         }
         this.scrollMgr.destroy();
         this.tileRenderer.destroy();
-        window.removeEventListener("resize", this.#resizeHandler);
+        window.removeEventListener(EVENT_NAMES.RESIZE, this.#resizeHandler);
     }
 }

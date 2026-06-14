@@ -1,6 +1,7 @@
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "./eventNames.js";
-import { CONFIG } from "../../core/constants.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import {CONFIG} from "../../constants/config";
+import {HIT_TYPE} from "../../constants/hitType";
 
 /**
  * 右键菜单策略
@@ -137,7 +138,7 @@ export class ContextMenuStrategy extends EventStrategy {
         const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
         if (!hit) return;
 
-        if (hit.type === "cell") {
+        if (hit.type === HIT_TYPE.CELL) {
             const merge = this.handler.sheet.getMerge(hit.row, hit.col);
             const row = merge ? merge.topRow : hit.row;
             const col = merge ? merge.topCol : hit.col;
@@ -152,7 +153,7 @@ export class ContextMenuStrategy extends EventStrategy {
             }
 
             this.#showMenu(e.clientX, e.clientY, row, col);
-        } else if (hit.type === "corner" || hit.type === "col-header" || hit.type === "row-header") {
+        } else if (hit.type === HIT_TYPE.CORNER || hit.type === HIT_TYPE.COL_HEADER || hit.type === HIT_TYPE.ROW_HEADER) {
             const [ar, ac] = this.handler.sheet.selection.getActive();
             this.#showMenu(e.clientX, e.clientY, ar, ac);
         }

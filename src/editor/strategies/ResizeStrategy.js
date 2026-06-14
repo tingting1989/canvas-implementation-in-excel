@@ -1,6 +1,7 @@
-import { CONFIG } from "../../core/constants.js";
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "./eventNames.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import {CONFIG} from "../../constants/config";
+import {HIT_TYPE} from "../../constants/hitType";
 
 export class ResizeStrategy extends EventStrategy {
     #mouseDownHandler = null;
@@ -52,7 +53,7 @@ export class ResizeStrategy extends EventStrategy {
         this.#resizeIndex = hit.index;
 
         const rc = this.handler.sheet.rowColManager;
-        if (hit.type === "col-resize") {
+        if (hit.type === HIT_TYPE.COL_RESIZE) {
             this.#startPos = e.clientX;
             this.#startSize = rc.getColWidth(hit.index);
         } else {
@@ -74,14 +75,14 @@ export class ResizeStrategy extends EventStrategy {
         const rc = this.handler.sheet.rowColManager;
         const headerRenderer = this.handler.renderEngine.headerRenderer;
 
-        if (this.#resizeType === "col-resize") {
+        if (this.#resizeType === HIT_TYPE.COL_RESIZE) {
             const delta = e.clientX - this.#startPos;
             const newWidth = Math.max(CONFIG.MIN_COL_WIDTH, this.#startSize + delta);
             rc.setColWidth(this.#resizeIndex, newWidth);
 
             const rect = this.handler.canvas.getBoundingClientRect();
             const lineX = e.clientX - rect.left;
-            headerRenderer.setResizeLine("col-resize", this.#resizeIndex, lineX);
+            headerRenderer.setResizeLine(HIT_TYPE.COL_RESIZE, this.#resizeIndex, lineX);
         } else {
             const delta = e.clientY - this.#startPos;
             const newHeight = Math.max(CONFIG.MIN_ROW_HEIGHT, this.#startSize + delta);
@@ -89,7 +90,7 @@ export class ResizeStrategy extends EventStrategy {
 
             const rect = this.handler.canvas.getBoundingClientRect();
             const lineY = e.clientY - rect.top;
-            headerRenderer.setResizeLine("row-resize", this.#resizeIndex, lineY);
+            headerRenderer.setResizeLine(HIT_TYPE.ROW_RESIZE, this.#resizeIndex, lineY);
         }
 
         this.handler.renderEngine.invalidateAll();
@@ -101,7 +102,7 @@ export class ResizeStrategy extends EventStrategy {
 
         if (hit) {
             this.handler.canvas.style.cursor =
-                hit.type === "col-resize" ? "col-resize" : "row-resize";
+                hit.type === HIT_TYPE.COL_RESIZE ? "col-resize" : "row-resize";
             this.#hoverType = hit.type;
         } else if (this.#hoverType) {
             this.handler.canvas.style.cursor = "";

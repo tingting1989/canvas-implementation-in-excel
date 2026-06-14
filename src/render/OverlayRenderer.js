@@ -1,4 +1,5 @@
-import { CONFIG } from "../core/constants.js";
+import {CONFIG} from "../constants/config";
+import {HIT_TYPE} from "../constants/hitType";
 
 /**
  * 叠加层渲染器
@@ -12,7 +13,7 @@ export class OverlayRenderer {
     /**
      * 设置拖拽参考线
      *
-     * @param {string} type - "col-resize" 或 "row-resize"
+     * @param {string} type - HIT_TYPE.COL_RESIZE 或 HIT_TYPE.ROW_RESIZE
      * @param {number} position - 参考线在视口中的像素位置
      */
     setResizeLine(type, position) {
@@ -201,13 +202,13 @@ export class OverlayRenderer {
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 3]);
 
-        if (line.type === "col-resize") {
+        if (line.type === HIT_TYPE.COL_RESIZE) {
             const x = headerW + line.position;
             ctx.beginPath();
             ctx.moveTo(x, headerH);
             ctx.lineTo(x, viewH);
             ctx.stroke();
-        } else if (line.type === "row-resize") {
+        } else if (line.type === HIT_TYPE.ROW_RESIZE) {
             const y = headerH + line.position;
             ctx.beginPath();
             ctx.moveTo(headerW, y);

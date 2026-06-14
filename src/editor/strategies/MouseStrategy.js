@@ -1,7 +1,8 @@
-import { CONFIG } from "../../core/constants.js";
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "./eventNames.js";
-import { HOOKS } from "../hookNames.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { HOOKS } from "../../constants/hookNames.js";
+import {CONFIG} from "../../constants/config";
+import {HIT_TYPE} from "../../constants/hitType";
 
 /**
  * 鼠标交互策略
@@ -75,7 +76,7 @@ export class MouseStrategy extends EventStrategy {
         const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
         if (!hit) return;
 
-        if (hit.type === "corner" || hit.type === "col-header" || hit.type === "row-header") {
+        if (hit.type === HIT_TYPE.CORNER || hit.type === HIT_TYPE.COL_HEADER || hit.type === HIT_TYPE.ROW_HEADER) {
             this.#handleHeaderClick(hit);
             return;
         }
@@ -145,11 +146,11 @@ export class MouseStrategy extends EventStrategy {
         const sheet = this.handler.sheet;
         const rc = sheet.rowColManager;
 
-        if (headerHit.type === "corner") {
+        if (headerHit.type === HIT_TYPE.CORNER) {
             sheet.selection.selectAll(rc.rowCount - 1, rc.colCount - 1);
-        } else if (headerHit.type === "col-header") {
+        } else if (headerHit.type === HIT_TYPE.COL_HEADER) {
             sheet.selection.selectCol(headerHit.index, rc.rowCount - 1);
-        } else if (headerHit.type === "row-header") {
+        } else if (headerHit.type === HIT_TYPE.ROW_HEADER) {
             sheet.selection.selectRow(headerHit.index, rc.colCount - 1);
         }
 

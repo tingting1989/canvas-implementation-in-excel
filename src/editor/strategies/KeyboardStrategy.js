@@ -1,8 +1,8 @@
-import { CONFIG } from "../../core/constants.js";
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "./eventNames.js";
-import { HOOKS } from "../hookNames.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { HOOKS } from "../../constants/hookNames.js";
 import { stylePool } from "../../styles/index.js";
+import {CONFIG} from "../../constants/config";
 
 /**
  * 键盘交互策略

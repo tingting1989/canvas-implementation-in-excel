@@ -2,7 +2,7 @@
 import { stylePool } from "./styles/index.js";
 import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
-import { HOOKS } from "./editor/hookNames.js";
+import { HOOKS } from "./constants/hookNames.js";
 
 const initApp = () => {
   console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");

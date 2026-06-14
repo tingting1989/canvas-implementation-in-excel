@@ -1,5 +1,5 @@
-import { CONFIG } from "../../core/constants.js";
 import { Chunk } from "./Chunk.js";
+import {CONFIG} from "../../constants/config";
 
 /**
  * 分块单元格存储

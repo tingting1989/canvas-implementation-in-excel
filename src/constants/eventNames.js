@@ -9,7 +9,13 @@ export const EVENT_NAMES = {
     MOUSEMOVE: 'mousemove',
     MOUSEUP: 'mouseup',
     KEYDOWN: 'keydown',
+    KEYUP: 'keyup',
     SCROLL: 'scroll',
+    WHEEL: 'wheel',
     BLUR: 'blur',
-    CONTEXTMENU: 'contextmenu'
+    FOCUS: 'focus',
+    CONTEXTMENU: 'contextmenu',
+    RESIZE: 'resize',
+    COMPOSITIONSTART: 'compositionstart',
+    COMPOSITIONEND: 'compositionend',
 };

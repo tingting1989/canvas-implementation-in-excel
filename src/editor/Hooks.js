@@ -1,4 +1,4 @@
-import { HOOKS } from "./hookNames.js";
+import { HOOKS } from "../constants/hookNames.js";
 
 /**
  * Hooks 系统
