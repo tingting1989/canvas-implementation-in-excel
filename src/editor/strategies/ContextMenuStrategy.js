@@ -1,12 +1,11 @@
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
-import {CONFIG} from "../../constants/config";
 import {HIT_TYPE} from "../../constants/hitType";
 
 /**
  * 右键菜单策略
+ * 优先级 0（默认），contextmenu 事件无与其他策略冲突
+ *
  * 整合了右键菜单的 DOM 渲染和事件处理
- * 之前 ContextMenu.js 与 ContextMenuStrategy.js 强耦合，现已合并为单一类
  *
  * 职责：
  * 1. 监听 canvas 的 contextmenu 事件
@@ -14,10 +13,6 @@ import {HIT_TYPE} from "../../constants/hitType";
  * 3. 处理菜单项点击操作（插入/删除行列、合并/取消合并、清空内容）
  */
 export class ContextMenuStrategy extends EventStrategy {
-    /** contextmenu 事件处理器引用 */
-    #contextmenuHandler = null;
-    /** 点击菜单外部关闭的 mousedown 处理器引用 */
-    #dismissHandler = null;
     /** 右键菜单 DOM 元素 */
     #menuEl = null;
     /** 右键点击时的行号 */
@@ -31,15 +26,18 @@ export class ContextMenuStrategy extends EventStrategy {
 
     init() {
         this.#createMenu();
-        this.#bindContextMenu();
-        this.#bindDismiss();
     }
 
     destroy() {
-        this.handler.canvas.removeEventListener(EVENT_NAMES.CONTEXTMENU, this.#contextmenuHandler);
-        document.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#dismissHandler);
         this.#menuEl?.remove();
         this.#menuEl = null;
+    }
+
+    getEventHandlers() {
+        return {
+            "canvas:contextmenu": (e) => this.#handleContextMenu(e),
+            "document:mousedown": (e) => this.#handleDismiss(e),
+        };
     }
 
     /**
@@ -109,20 +107,13 @@ export class ContextMenuStrategy extends EventStrategy {
         document.body.appendChild(this.#menuEl);
     }
 
-    /** 绑定 contextmenu 事件 */
-    #bindContextMenu() {
-        this.#contextmenuHandler = (e) => this.#handleContextMenu(e);
-        this.handler.canvas.addEventListener(EVENT_NAMES.CONTEXTMENU, this.#contextmenuHandler);
-    }
-
-    /** 绑定点击菜单外部自动关闭 */
-    #bindDismiss() {
-        this.#dismissHandler = (e) => {
-            if (this.#menuEl && !this.#menuEl.contains(e.target)) {
-                this.#hideMenu();
-            }
-        };
-        document.addEventListener(EVENT_NAMES.MOUSEDOWN, this.#dismissHandler);
+    /**
+     * 点击菜单外部自动关闭
+     */
+    #handleDismiss(e) {
+        if (this.#menuEl && !this.#menuEl.contains(e.target)) {
+            this.#hideMenu();
+        }
     }
 
     /**

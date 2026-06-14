@@ -3,13 +3,24 @@ import { Hooks } from "./Hooks.js";
 
 /**
  * 事件处理器
- * 统一管理所有交互策略（鼠标、键盘、拖拽调整）以及钩子系统（Hooks）
+ * 统一管理所有交互策略以及钩子系统（Hooks）
+ *
+ * 事件委托机制：
+ * - 每个 target+eventType 只绑定一个 DOM 监听器
+ * - 策略通过 getEventHandlers() 声明需要监听的事件
+ * - 策略通过 priority 属性声明优先级（数值越大越先处理）
+ * - EventHandler 按优先级排序分发，处理器返回 false 可阻止后续策略接收
  *
  * 可选功能（右键菜单、自动填充）通过插件系统加载：
  * - AutoFillPlugin → 注册 autoFill 策略
  * - ContextMenuPlugin → 注册 contextMenu 策略
  */
 export class EventHandler {
+    /** 事件委托映射表 target:eventType → [{name, handler, priority}] */
+    #delegateMap = new Map();
+    /** 已绑定的 DOM 监听器 target:eventType → boundListener */
+    #boundListeners = new Map();
+
     /**
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
      * @param {import("../render/RenderEngine.js").RenderEngine} renderEngine - 渲染引擎
@@ -28,23 +39,25 @@ export class EventHandler {
         this.hooks.init();
 
         this.strategies = new Map();
+
         this.#initStrategies();
     }
 
     /**
      * 初始化核心交互策略
-     * 注册顺序决定了事件处理的优先级
+     * 注册顺序不影响优先级，优先级由策略的 priority 属性决定
      *
      * 可选策略（autoFill、contextMenu）由对应插件通过 addStrategy 注册
      */
     #initStrategies() {
+        this.addStrategy("resize", new ResizeStrategy(this));
         this.addStrategy("mouse", new MouseStrategy(this));
         this.addStrategy("keyboard", new KeyboardStrategy(this));
-        this.addStrategy("resize", new ResizeStrategy(this));
     }
 
     /**
      * 注册一个策略并初始化
+     * 自动收集策略声明的事件处理器，按优先级插入统一委托
      *
      * @param {string} name - 策略名称
      * @param {import("./strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
@@ -52,6 +65,7 @@ export class EventHandler {
     addStrategy(name, strategy) {
         this.strategies.set(name, strategy);
         strategy.init();
+        this.#registerStrategyHandlers(name, strategy);
     }
 
     /**
@@ -66,12 +80,14 @@ export class EventHandler {
 
     /**
      * 移除并销毁策略
+     * 自动清理该策略注册的事件处理器
      *
      * @param {string} name - 策略名称
      */
     removeStrategy(name) {
         const strategy = this.strategies.get(name);
         if (strategy) {
+            this.#unregisterStrategyHandlers(name);
             strategy.destroy();
             this.strategies.delete(name);
         }
@@ -145,8 +161,112 @@ export class EventHandler {
         return this.hooks.hasHook(hookName);
     }
 
+    /**
+     * 注册策略的事件处理器到统一委托
+     * 收集策略声明的所有事件，按 target:eventType 分组
+     * 同一组内按优先级降序排列（priority 越大越先处理）
+     *
+     * @param {string} name - 策略名称
+     * @param {import("./strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
+     */
+    #registerStrategyHandlers(name, strategy) {
+        const handlers = strategy.getEventHandlers();
+        const priority = strategy.priority || 0;
+
+        for (const [key, handler] of Object.entries(handlers)) {
+            if (!this.#delegateMap.has(key)) {
+                this.#delegateMap.set(key, []);
+
+                const [targetName, eventType] = key.split(":");
+                const target = this.#resolveTarget(targetName);
+                if (!target) continue;
+
+                const boundListener = (e) => {
+                    const entries = this.#delegateMap.get(key);
+                    if (!entries) return;
+                    for (const { handler: h } of entries) {
+                        const result = h(e);
+                        if (result === false) break;
+                    }
+                };
+
+                this.#boundListeners.set(key, boundListener);
+                target.addEventListener(eventType, boundListener);
+            }
+
+            const entries = this.#delegateMap.get(key);
+            const entry = { name, handler, priority };
+
+            let insertIdx = entries.length;
+            for (let i = 0; i < entries.length; i++) {
+                if (priority > entries[i].priority) {
+                    insertIdx = i;
+                    break;
+                }
+            }
+            entries.splice(insertIdx, 0, entry);
+        }
+    }
+
+    /**
+     * 从统一委托中移除策略的事件处理器
+     * 如果某个 target:eventType 下已无处理器，自动解绑 DOM 监听
+     *
+     * @param {string} name - 策略名称
+     */
+    #unregisterStrategyHandlers(name) {
+        const strategy = this.strategies.get(name);
+        if (!strategy) return;
+
+        const handlers = strategy.getEventHandlers();
+        for (const [key] of Object.entries(handlers)) {
+            const entries = this.#delegateMap.get(key);
+            if (!entries) continue;
+
+            const idx = entries.findIndex(e => e.name === name);
+            if (idx !== -1) entries.splice(idx, 1);
+
+            if (entries.length === 0) {
+                const [targetName, eventType] = key.split(":");
+                const target = this.#resolveTarget(targetName);
+                const boundListener = this.#boundListeners.get(key);
+                if (target && boundListener) {
+                    target.removeEventListener(eventType, boundListener);
+                }
+                this.#delegateMap.delete(key);
+                this.#boundListeners.delete(key);
+            }
+        }
+    }
+
+    /**
+     * 根据名称解析事件目标
+     *
+     * @param {string} name - 目标名称（canvas / document / window / wrap）
+     * @returns {EventTarget|null}
+     */
+    #resolveTarget(name) {
+        switch (name) {
+            case "canvas": return this.canvas;
+            case "document": return document;
+            case "window": return window;
+            case "wrap": return this.wrap;
+            default: return null;
+        }
+    }
+
     /** 销毁事件处理器，释放所有资源 */
     destroy() {
+        for (const [key, boundListener] of this.#boundListeners) {
+            const [targetName, eventType] = key.split(":");
+            const target = this.#resolveTarget(targetName);
+            if (target) {
+                target.removeEventListener(eventType, boundListener);
+            }
+        }
+        this.#delegateMap.clear();
+        this.#boundListeners.clear();
+
         for (const [, strategy] of this.strategies) {
             strategy.destroy();
         }

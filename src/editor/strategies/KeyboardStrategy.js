@@ -1,11 +1,12 @@
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { stylePool } from "../../styles/index.js";
 import {CONFIG} from "../../constants/config";
 
 /**
  * 键盘交互策略
+ * 优先级 0（默认），无与其他策略的事件冲突
+ *
  * 处理以下键盘操作：
  * - 方向键导航（支持 Shift 扩展选区）
  * - Enter/F2 进入编辑
@@ -18,23 +19,18 @@ import {CONFIG} from "../../constants/config";
  * - 直接输入字符进入批量赋值模式
  */
 export class KeyboardStrategy extends EventStrategy {
-    #keyDownHandler = null;
-
     constructor(handler) {
         super(handler);
     }
 
-    init() {
-        this.#bindKeyboard();
-    }
+    init() {}
 
-    destroy() {
-        document.removeEventListener(EVENT_NAMES.KEYDOWN, this.#keyDownHandler);
-    }
+    destroy() {}
 
-    #bindKeyboard() {
-        this.#keyDownHandler = (e) => this.#handleKeyDown(e);
-        document.addEventListener(EVENT_NAMES.KEYDOWN, this.#keyDownHandler);
+    getEventHandlers() {
+        return {
+            "document:keydown": (e) => this.#handleKeyDown(e),
+        };
     }
 
     /**

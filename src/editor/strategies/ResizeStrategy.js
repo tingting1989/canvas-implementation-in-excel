@@ -1,12 +1,18 @@
 import { EventStrategy } from "./EventStrategy.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
 import {CONFIG} from "../../constants/config";
 import {HIT_TYPE} from "../../constants/hitType";
 
+/**
+ * 列宽/行高拖拽调整策略
+ * 优先级最高（100），确保调整手柄事件不被其他策略消费
+ *
+ * 处理以下操作：
+ * - 悬停在列/行边界时切换光标样式
+ * - 拖拽调整列宽/行高
+ * - 实时显示调整参考线
+ */
 export class ResizeStrategy extends EventStrategy {
-    #mouseDownHandler = null;
-    #mouseMoveHandler = null;
-    #mouseUpHandler = null;
+    priority = 100;
 
     #resizing = false;
     #resizeType = null;
@@ -20,25 +26,18 @@ export class ResizeStrategy extends EventStrategy {
         super(handler);
     }
 
-    init() {
-        this.#bindEvents();
-    }
+    init() {}
 
     destroy() {
-        this.handler.canvas.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#mouseDownHandler);
-        document.removeEventListener(EVENT_NAMES.MOUSEMOVE, this.#mouseMoveHandler);
-        document.removeEventListener(EVENT_NAMES.MOUSEUP, this.#mouseUpHandler);
         this.#clearResizeLine();
     }
 
-    #bindEvents() {
-        this.#mouseDownHandler = (e) => this.#onMouseDown(e);
-        this.#mouseMoveHandler = (e) => this.#onMouseMove(e);
-        this.#mouseUpHandler = (e) => this.#onMouseUp(e);
-
-        this.handler.canvas.addEventListener(EVENT_NAMES.MOUSEDOWN, this.#mouseDownHandler);
-        document.addEventListener(EVENT_NAMES.MOUSEMOVE, this.#mouseMoveHandler);
-        document.addEventListener(EVENT_NAMES.MOUSEUP, this.#mouseUpHandler);
+    getEventHandlers() {
+        return {
+            "canvas:mousedown": (e) => this.#onMouseDown(e),
+            "document:mousemove": (e) => this.#onMouseMove(e),
+            "document:mouseup": (e) => this.#onMouseUp(e),
+        };
     }
 
     #onMouseDown(e) {
@@ -60,12 +59,14 @@ export class ResizeStrategy extends EventStrategy {
             this.#startPos = e.clientY;
             this.#startSize = rc.getRowHeight(hit.index);
         }
+
+        return false;
     }
 
     #onMouseMove(e) {
         if (this.#resizing) {
             this.#handleDrag(e);
-            return;
+            return false;
         }
 
         this.#handleHover(e);
