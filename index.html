@@ -1,342 +1,372 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-<meta charset="UTF-8" />
-<title>Canvas 在线表格编辑器 - Tile Rendering</title>
-<style>
-:root {
-  --sheet-bg: #ffffff;
-  --sheet-text: #222;
-  --sheet-border: #ddd;
-  --sheet-header-bg: #f0f0f0;
-}
+    <meta charset="UTF-8"/>
+    <title>Canvas 在线表格编辑器 - Tile Rendering</title>
+    <style>
+        :root {
+            --sheet-bg: #ffffff;
+            --sheet-text: #222;
+            --sheet-border: #ddd;
+            --sheet-header-bg: #f0f0f0;
+        }
 
-* { margin:0; padding:0; box-sizing:border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-body {
-  font-family: "Segoe UI", sans-serif;
-  background: #fafafa;
-}
+        body {
+            font-family: "Segoe UI", sans-serif;
+            background: #fafafa;
+        }
 
-#toolbar {
-  display: flex;
-  gap: 8px;
-  padding: 8px 12px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #ccc;
-  align-items: center;
-  flex-wrap: wrap;
-}
+        #toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #ccc;
+            align-items: center;
+            flex-wrap: wrap;
+        }
 
-#toolbar button {
-  padding: 5px 14px;
-  cursor: pointer;
-  border: 1px solid #bbb;
-  border-radius: 4px;
-  background: #fff;
-  font-size: 13px;
-  transition: background .15s;
-}
+        #toolbar button {
+            padding: 5px 14px;
+            cursor: pointer;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+            background: #fff;
+            font-size: 13px;
+            transition: background .15s;
+        }
 
-#toolbar button:hover {
-  background: #e8f4fd;
-}
+        #toolbar button:hover {
+            background: #e8f4fd;
+        }
 
-#toolbar .separator {
-  width: 1px;
-  height: 20px;
-  background: #ccc;
-}
+        #toolbar .separator {
+            width: 1px;
+            height: 20px;
+            background: #ccc;
+        }
 
-#toolbar .info {
-  font-size: 12px;
-  color: #666;
-  margin-left: 8px;
-}
+        #toolbar .info {
+            font-size: 12px;
+            color: #666;
+            margin-left: 8px;
+        }
 
-#wrap {
-  width: 90vw;
-  height: 80vh;
-  overflow: hidden;
-  border: 1px solid #bbb;
-  margin: 20px auto;
-  background: var(--sheet-bg);
-  position: relative;
-}
+        #wrap {
+            width: 90vw;
+            height: 80vh;
+            overflow: hidden;
+            border: 1px solid #bbb;
+            margin: 20px auto;
+            background: var(--sheet-bg);
+            position: relative;
+        }
 
-canvas {
-  display: block;
-}
-</style>
+        canvas {
+            display: block;
+        }
+    </style>
 </head>
 <body>
 
 <div id="toolbar">
-  <button onclick="wb.copy()">复制</button>
-  <button onclick="wb.paste()">粘贴</button>
-  <span class="separator"></span>
-  <button onclick="wb.undo()">撤销</button>
-  <button onclick="wb.redo()">重做</button>
-  <span class="separator"></span>
-  <button onclick="wb.disableCell()">禁用</button>
-  <button onclick="wb.enableCell()">启用</button>
-  <span class="separator"></span>
-  <select id="font-family-select" onchange="applyFontFamily(this.value)" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;width:120px;">
-    <option value="Segoe UI">Segoe UI</option>
-    <option value="Arial">Arial</option>
-    <option value="Courier New">Courier New</option>
-    <option value="Georgia">Georgia</option>
-    <option value="Times New Roman">Times New Roman</option>
-    <option value="Verdana">Verdana</option>
-    <option value="Microsoft YaHei">微软雅黑</option>
-    <option value="SimSun">宋体</option>
-    <option value="KaiTi">楷体</option>
-  </select>
-  <select id="font-size-select" onchange="applyFontSize(this.value)" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;width:70px;">
-    <option value="8">8</option>
-    <option value="9">9</option>
-    <option value="10">10</option>
-    <option value="11">11</option>
-    <option value="12" selected>12</option>
-    <option value="14">14</option>
-    <option value="16">16</option>
-    <option value="18">18</option>
-    <option value="20">20</option>
-    <option value="24">24</option>
-    <option value="28">28</option>
-    <option value="36">36</option>
-    <option value="48">48</option>
-    <option value="72">72</option>
-  </select>
-  <button onclick="toggleBold()" title="加粗 Ctrl+B" style="font-weight:bold;">B</button>
-  <button onclick="toggleItalic()" title="斜体 Ctrl+I" style="font-style:italic;">I</button>
-  <button onclick="toggleUnderline()" title="下划线 Ctrl+U" style="text-decoration:underline;">U</button>
-  <span class="separator"></span>
-  <button onclick="exportCSV()">导出 CSV</button>
-  <button onclick="exportTSV()">导出 TSV</button>
-  <span class="separator"></span>
-  <button onclick="hideCol()">隐藏列</button>
-  <button onclick="showCol()">显示列</button>
-  <button onclick="showAllCols()">显示所有列</button>
-  <span class="info" id="hidden-col-info"></span>
-  <span class="separator"></span>
-  <button onclick="loadMillionData()">加载百万数据</button>
-  <span class="separator"></span>
-  <button onclick="pgFirst()">首页</button>
-  <button onclick="pgPrev()">上一页</button>
-  <button onclick="pgNext()">下一页</button>
-  <button onclick="pgLast()">末页</button>
-  <select id="pg-size-select" onchange="pgSetSize(this.value)" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;">
-    <option value="10">10行/页</option>
-    <option value="25">25行/页</option>
-    <option value="50" selected>50行/页</option>
-    <option value="100">100行/页</option>
-    <option value="200">200行/页</option>
-  </select>
-  <span class="info" id="pg-info">第 1 / 1 页</span>
-  <span class="separator"></span>
-  <span class="info" id="status-info">就绪</span>
+    <button onclick="wb.copy()">复制</button>
+    <button onclick="wb.paste()">粘贴</button>
+    <span class="separator"></span>
+    <button onclick="wb.undo()">撤销</button>
+    <button onclick="wb.redo()">重做</button>
+    <span class="separator"></span>
+    <button onclick="wb.disableCell()">禁用</button>
+    <button onclick="wb.enableCell()">启用</button>
+    <span class="separator"></span>
+    <select id="font-family-select" onchange="applyFontFamily(this.value)"
+            style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;width:120px;">
+        <option value="Segoe UI">Segoe UI</option>
+        <option value="Arial">Arial</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Microsoft YaHei">微软雅黑</option>
+        <option value="SimSun">宋体</option>
+        <option value="KaiTi">楷体</option>
+    </select>
+    <select id="font-size-select" onchange="applyFontSize(this.value)"
+            style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;width:70px;">
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+        <option value="11">11</option>
+        <option value="12" selected>12</option>
+        <option value="14">14</option>
+        <option value="16">16</option>
+        <option value="18">18</option>
+        <option value="20">20</option>
+        <option value="24">24</option>
+        <option value="28">28</option>
+        <option value="36">36</option>
+        <option value="48">48</option>
+        <option value="72">72</option>
+    </select>
+    <button onclick="toggleBold()" title="加粗 Ctrl+B" style="font-weight:bold;">B</button>
+    <button onclick="toggleItalic()" title="斜体 Ctrl+I" style="font-style:italic;">I</button>
+    <button onclick="toggleUnderline()" title="下划线 Ctrl+U" style="text-decoration:underline;">U</button>
+    <span class="separator"></span>
+    <button onclick="exportCSV()">导出 CSV</button>
+    <button onclick="exportTSV()">导出 TSV</button>
+    <span class="separator"></span>
+    <button onclick="hideCol()">隐藏列</button>
+    <button onclick="showCol()">显示列</button>
+    <button onclick="showAllCols()">显示所有列</button>
+    <span class="info" id="hidden-col-info"></span>
+    <span class="separator"></span>
+    <button onclick="loadMillionData()">加载百万数据</button>
+    <span class="separator"></span>
+    <button onclick="pgFirst()">首页</button>
+    <button onclick="pgPrev()">上一页</button>
+    <button onclick="pgNext()">下一页</button>
+    <button onclick="pgLast()">末页</button>
+    <select id="pg-size-select" onchange="pgSetSize(this.value)"
+            style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;">
+        <option value="10">10行/页</option>
+        <option value="25">25行/页</option>
+        <option value="50" selected>50行/页</option>
+        <option value="100">100行/页</option>
+        <option value="200">200行/页</option>
+    </select>
+    <span class="info" id="pg-info">第 1 / 1 页</span>
+    <span class="separator"></span>
+    <span class="info" id="status-info">就绪</span>
 </div>
 
 <div id="wrap">
-  <canvas id="grid"></canvas>
+    <canvas id="grid"></canvas>
 </div>
 
 <script>
-function loadMillionData() {
-  const info = document.getElementById('status-info');
-  info.textContent = '加载中...';
-  const start = performance.now();
+    function loadMillionData() {
+        const info = document.getElementById('status-info');
+        info.textContent = '加载中...';
+        const start = performance.now();
 
-  const sheet = wb.getActiveSheet();
-  const ROWS = 100000;
-  const COLS = 26;
+        const sheet = wb.getActiveSheet();
+        const ROWS = 100000;
+        const COLS = 26;
 
-  sheet.rowColManager.ensureSize(ROWS, COLS);
+        sheet.rowColManager.ensureSize(ROWS, COLS);
 
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      if (c === 0) {
-        sheet.setCell(r, c, `行${r + 1}`);
-      } else if (c === 1) {
-        sheet.setCell(r, c, Math.floor(Math.random() * 10000));
-      } else if (c === 2) {
-        const cities = ['北京','上海','广州','深圳','杭州','成都','武汉','南京','西安','重庆'];
-        sheet.setCell(r, c, cities[r % cities.length]);
-      }
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                if (c === 0) {
+                    sheet.setCell(r, c, `行${r + 1}`);
+                } else if (c === 1) {
+                    sheet.setCell(r, c, Math.floor(Math.random() * 10000));
+                } else if (c === 2) {
+                    const cities = ['北京', '上海', '广州', '深圳', '杭州', '成都', '武汉', '南京', '西安', '重庆'];
+                    sheet.setCell(r, c, cities[r % cities.length]);
+                }
+            }
+        }
+
+        const elapsed = (performance.now() - start).toFixed(0);
+        info.textContent = `已加载 ${ROWS.toLocaleString()} 行 × ${COLS} 列 (${elapsed}ms)`;
+        wb.render();
+
+        const pg = wb.getPlugin('pagination');
+        if (pg) {
+            pg.refresh();
+            updatePgInfo();
+        }
     }
-  }
 
-  const elapsed = (performance.now() - start).toFixed(0);
-  info.textContent = `已加载 ${ROWS.toLocaleString()} 行 × ${COLS} 列 (${elapsed}ms)`;
-  wb.render();
+    function exportCSV() {
+        const info = document.getElementById('status-info');
+        const start = performance.now();
 
-  const pg = wb.getPlugin('pagination');
-  if (pg) { pg.refresh(); updatePgInfo(); }
-}
+        wb.downloadFile('csv', {filename: 'data'});
 
-function exportCSV() {
-  const info = document.getElementById('status-info');
-  const start = performance.now();
+        const elapsed = (performance.now() - start).toFixed(0);
+        info.textContent = `CSV 导出完成 (${elapsed}ms)`;
+    }
 
-  wb.downloadFile('csv', { filename: 'data' });
+    function exportTSV() {
+        const info = document.getElementById('status-info');
+        const start = performance.now();
 
-  const elapsed = (performance.now() - start).toFixed(0);
-  info.textContent = `CSV 导出完成 (${elapsed}ms)`;
-}
+        wb.downloadFile('tsv', {filename: 'data'});
 
-function exportTSV() {
-  const info = document.getElementById('status-info');
-  const start = performance.now();
+        const elapsed = (performance.now() - start).toFixed(0);
+        info.textContent = `TSV 导出完成 (${elapsed}ms)`;
+    }
 
-  wb.downloadFile('tsv', { filename: 'data' });
+    function getPagination() {
+        return wb.getPlugin('pagination');
+    }
 
-  const elapsed = (performance.now() - start).toFixed(0);
-  info.textContent = `TSV 导出完成 (${elapsed}ms)`;
-}
+    function updatePgInfo() {
+        const pg = getPagination();
+        if (!pg) return;
+        const data = pg.getPaginationData();
+        document.getElementById('pg-info').textContent =
+            `第 ${data.currentPage} / ${data.totalPages} 页 (共 ${data.totalRows} 行)`;
+    }
 
-function getPagination() {
-  return wb.getPlugin('pagination');
-}
+    function pgFirst() {
+        getPagination()?.firstPage();
+        updatePgInfo();
+    }
 
-function updatePgInfo() {
-  const pg = getPagination();
-  if (!pg) return;
-  const data = pg.getPaginationData();
-  document.getElementById('pg-info').textContent =
-    `第 ${data.currentPage} / ${data.totalPages} 页 (共 ${data.totalRows} 行)`;
-}
+    function pgPrev() {
+        getPagination()?.prevPage();
+        updatePgInfo();
+    }
 
-function pgFirst() { getPagination()?.firstPage(); updatePgInfo(); }
-function pgPrev()  { getPagination()?.prevPage();  updatePgInfo(); }
-function pgNext()  { getPagination()?.nextPage();  updatePgInfo(); }
-function pgLast()  { getPagination()?.lastPage();  updatePgInfo(); }
-function pgSetSize(val) { getPagination()?.setPageSize(parseInt(val)); updatePgInfo(); }
+    function pgNext() {
+        console.log(getPagination())
+        getPagination()?.nextPage();
+        updatePgInfo();
+    }
 
-function getHiddenColumns() {
-  return wb.getPlugin('hiddenColumns');
-}
+    function pgLast() {
+        getPagination()?.lastPage();
+        updatePgInfo();
+    }
 
-function updateHiddenColInfo() {
-  const hc = getHiddenColumns();
-  if (!hc) return;
-  const hidden = hc.getHiddenColumns();
-  const info = document.getElementById('hidden-col-info');
-  if (hidden.length === 0) {
-    info.textContent = '';
-  } else {
-    const labels = hidden.map(c => wb.getActiveSheet().getColHeader(c));
-    info.textContent = `已隐藏: ${labels.join(', ')}`;
-  }
-}
+    function pgSetSize(val) {
+        getPagination()?.setPageSize(parseInt(val));
+        updatePgInfo();
+    }
 
-function hideCol() {
-  const hc = getHiddenColumns();
-  if (!hc) return;
-  const [, col] = wb.getActiveSheet().selection.getActive();
-  hc.hideColumn(col);
-  updateHiddenColInfo();
-}
+    function getHiddenColumns() {
+        return wb.getPlugin('hiddenColumns');
+    }
 
-function showCol() {
-  const hc = getHiddenColumns();
-  if (!hc) return;
-  const [, col] = wb.getActiveSheet().selection.getActive();
-  hc.showColumn(col);
-  updateHiddenColInfo();
-}
+    function updateHiddenColInfo() {
+        const hc = getHiddenColumns();
+        if (!hc) return;
+        const hidden = hc.getHiddenColumns();
+        const info = document.getElementById('hidden-col-info');
+        if (hidden.length === 0) {
+            info.textContent = '';
+        } else {
+            const labels = hidden.map(c => wb.getActiveSheet().getColHeader(c));
+            info.textContent = `已隐藏: ${labels.join(', ')}`;
+        }
+    }
 
-function showAllCols() {
-  const hc = getHiddenColumns();
-  if (!hc) return;
-  const hidden = hc.getHiddenColumns();
-  if (hidden.length > 0) {
-    hc.showColumns(hidden);
-  }
-  updateHiddenColInfo();
-}
+    function hideCol() {
+        const hc = getHiddenColumns();
+        if (!hc) return;
+        const [, col] = wb.getActiveSheet().selection.getActive();
+        hc.hideColumn(col);
+        updateHiddenColInfo();
+    }
 
-function applyFontSize(size) {
-  const sheet = wb.getActiveSheet();
-  if (!sheet) return;
-  const range = sheet.selection.getRange();
-  sheet.setRangeStyle(range, { fontSize: parseInt(size) });
-  wb.render();
-  updateToolbarStyleState();
-}
+    function showCol() {
+        const hc = getHiddenColumns();
+        if (!hc) return;
+        const [, col] = wb.getActiveSheet().selection.getActive();
+        hc.showColumn(col);
+        updateHiddenColInfo();
+    }
 
-function applyFontFamily(family) {
-  const sheet = wb.getActiveSheet();
-  if (!sheet) return;
-  const range = sheet.selection.getRange();
-  sheet.setRangeStyle(range, { fontFamily: family });
-  wb.render();
-  updateToolbarStyleState();
-}
+    function showAllCols() {
+        const hc = getHiddenColumns();
+        if (!hc) return;
+        const hidden = hc.getHiddenColumns();
+        if (hidden.length > 0) {
+            hc.showColumns(hidden);
+        }
+        updateHiddenColInfo();
+    }
 
-function toggleBold() {
-  const sheet = wb.getActiveSheet();
-  if (!sheet) return;
-  const range = sheet.selection.getRange();
-  const [r, c] = sheet.selection.getActive();
-  const currentStyle = sheet.resolveStyle(r, c);
-  const newWeight = currentStyle.fontWeight === "bold" ? "normal" : "bold";
-  sheet.setRangeStyle(range, { fontWeight: newWeight });
-  wb.render();
-  updateToolbarStyleState();
-}
+    function applyFontSize(size) {
+        const sheet = wb.getActiveSheet();
+        if (!sheet) return;
+        const range = sheet.selection.getRange();
+        sheet.setRangeStyle(range, {fontSize: parseInt(size)});
+        wb.render();
+        updateToolbarStyleState();
+    }
 
-function toggleItalic() {
-  const sheet = wb.getActiveSheet();
-  if (!sheet) return;
-  const range = sheet.selection.getRange();
-  const [r, c] = sheet.selection.getActive();
-  const currentStyle = sheet.resolveStyle(r, c);
-  const newStyle = currentStyle.fontStyle === "italic" ? "normal" : "italic";
-  sheet.setRangeStyle(range, { fontStyle: newStyle });
-  wb.render();
-  updateToolbarStyleState();
-}
+    function applyFontFamily(family) {
+        const sheet = wb.getActiveSheet();
+        if (!sheet) return;
+        const range = sheet.selection.getRange();
+        sheet.setRangeStyle(range, {fontFamily: family});
+        wb.render();
+        updateToolbarStyleState();
+    }
 
-function toggleUnderline() {
-  const sheet = wb.getActiveSheet();
-  if (!sheet) return;
-  const range = sheet.selection.getRange();
-  const [r, c] = sheet.selection.getActive();
-  const currentStyle = sheet.resolveStyle(r, c);
-  const newDecoration = currentStyle.textDecoration === "underline" ? "none" : "underline";
-  sheet.setRangeStyle(range, { textDecoration: newDecoration });
-  wb.render();
-  updateToolbarStyleState();
-}
+    function toggleBold() {
+        const sheet = wb.getActiveSheet();
+        if (!sheet) return;
+        const range = sheet.selection.getRange();
+        const [r, c] = sheet.selection.getActive();
+        const currentStyle = sheet.resolveStyle(r, c);
+        const newWeight = currentStyle.fontWeight === "bold" ? "normal" : "bold";
+        sheet.setRangeStyle(range, {fontWeight: newWeight});
+        wb.render();
+        updateToolbarStyleState();
+    }
 
-function updateToolbarStyleState() {
-  const sheet = wb.getActiveSheet();
-  if (!sheet) return;
-  const [r, c] = sheet.selection.getActive();
-  const style = sheet.resolveStyle(r, c);
+    function toggleItalic() {
+        const sheet = wb.getActiveSheet();
+        if (!sheet) return;
+        const range = sheet.selection.getRange();
+        const [r, c] = sheet.selection.getActive();
+        const currentStyle = sheet.resolveStyle(r, c);
+        const newStyle = currentStyle.fontStyle === "italic" ? "normal" : "italic";
+        sheet.setRangeStyle(range, {fontStyle: newStyle});
+        wb.render();
+        updateToolbarStyleState();
+    }
 
-  const fontSizeSelect = document.getElementById('font-size-select');
-  const fontFamilySelect = document.getElementById('font-family-select');
+    function toggleUnderline() {
+        const sheet = wb.getActiveSheet();
+        if (!sheet) return;
+        const range = sheet.selection.getRange();
+        const [r, c] = sheet.selection.getActive();
+        const currentStyle = sheet.resolveStyle(r, c);
+        const newDecoration = currentStyle.textDecoration === "underline" ? "none" : "underline";
+        sheet.setRangeStyle(range, {textDecoration: newDecoration});
+        wb.render();
+        updateToolbarStyleState();
+    }
 
-  const currentSize = style.fontSize || 12;
-  const sizeOption = fontSizeSelect.querySelector(`option[value="${currentSize}"]`);
-  if (sizeOption) {
-    fontSizeSelect.value = currentSize;
-  } else {
-    fontSizeSelect.value = "12";
-  }
+    function updateToolbarStyleState() {
+        const sheet = wb.getActiveSheet();
+        if (!sheet) return;
+        const [r, c] = sheet.selection.getActive();
+        const style = sheet.resolveStyle(r, c);
 
-  const currentFamily = style.fontFamily || "Segoe UI";
-  const familyOption = fontFamilySelect.querySelector(`option[value="${currentFamily}"]`);
-  if (familyOption) {
-    fontFamilySelect.value = currentFamily;
-  } else {
-    fontFamilySelect.value = "Segoe UI";
-  }
-}
+        const fontSizeSelect = document.getElementById('font-size-select');
+        const fontFamilySelect = document.getElementById('font-family-select');
 
-window.updateToolbarStyleState = updateToolbarStyleState;
+        const currentSize = style.fontSize || 12;
+        const sizeOption = fontSizeSelect.querySelector(`option[value="${currentSize}"]`);
+        if (sizeOption) {
+            fontSizeSelect.value = currentSize;
+        } else {
+            fontSizeSelect.value = "12";
+        }
+
+        const currentFamily = style.fontFamily || "Segoe UI";
+        const familyOption = fontFamilySelect.querySelector(`option[value="${currentFamily}"]`);
+        if (familyOption) {
+            fontFamilySelect.value = currentFamily;
+        } else {
+            fontFamilySelect.value = "Segoe UI";
+        }
+    }
+
+    window.updateToolbarStyleState = updateToolbarStyleState;
 </script>
 
 </body>
