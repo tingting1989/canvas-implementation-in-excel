@@ -27,6 +27,7 @@ export const CONFIG = {
     WRAP_ID: "wrap",
     SCROLLBAR_WIDTH: 14,
     SCROLLBAR_MIN_SIZE: 30,
+    SHEET_TAB_HEIGHT: 30,
     RESIZE_HIT_AREA: 5,
     MIN_COL_WIDTH: 30,
     MIN_ROW_HEIGHT: 10,

@@ -147,6 +147,7 @@ export class Workbook {
 
         this.#applyInitOptions();
         this.#setupScrollCallback();
+        this.#setupSheetTabBar();
         this.#flushPendingPlugins();
     }
 
@@ -159,8 +160,8 @@ export class Workbook {
             const { activeRow: row, activeCol: col } = textEditor;
             const headerW = CONFIG.HEADER_WIDTH;
             const headerH = CONFIG.HEADER_HEIGHT;
-            const viewW = this.renderEngine.canvas.width - headerW;
-            const viewH = this.renderEngine.canvas.height - headerH;
+            const viewW = this.renderEngine.canvas.width / (window.devicePixelRatio || 1) - headerW;
+            const viewH = this.renderEngine.canvas.height / (window.devicePixelRatio || 1) - headerH - CONFIG.SHEET_TAB_HEIGHT;
 
             const cellX = rc.getColX(col);
             const cellY = rc.getRowY(row);
@@ -177,6 +178,41 @@ export class Workbook {
                 textEditor.restoreFromScroll();
             }
         };
+    }
+
+    #setupSheetTabBar() {
+        const tabBar = this.renderEngine.sheetTabBar;
+        tabBar.workbook = this;
+        tabBar.onSwitch = (name) => {
+            this.switchTo(name);
+            tabBar.scrollToTab(name);
+        };
+        tabBar.onAdd = () => {
+            const newName = this.#generateSheetName();
+            this.addSheet(newName);
+            this.switchTo(newName);
+            tabBar.refresh();
+            tabBar.scrollToTab(newName);
+        };
+        tabBar.onRemove = (name) => {
+            this.removeSheet(name);
+            tabBar.refresh();
+        };
+        tabBar.onRename = (oldName, newName) => {
+            this.renameSheet(oldName, newName);
+            tabBar.refresh();
+        };
+        tabBar.refresh();
+    }
+
+    #generateSheetName() {
+        let idx = this.sheets.size + 1;
+        let name = `Sheet${idx}`;
+        while (this.sheets.has(name)) {
+            idx++;
+            name = `Sheet${idx}`;
+        }
+        return name;
     }
 
     #applyInitOptions() {
@@ -232,11 +268,51 @@ export class Workbook {
             if (this.editor) this.editor.sheet = sheet;
             if (this.eventHandler) this.eventHandler.sheet = sheet;
         }
+
+        if (this.renderEngine?.sheetTabBar) {
+            this.renderEngine.sheetTabBar.refresh();
+        }
+
         return sheet;
+    }
+
+    removeSheet(name) {
+        if (!this.sheets.has(name)) return false;
+        if (this.sheets.size <= 1) return false;
+
+        const removed = this.sheets.get(name);
+        this.sheets.delete(name);
+
+        if (this.activeSheet === removed) {
+            const firstKey = this.sheets.keys().next().value;
+            this.switchTo(firstKey);
+        }
+
+        if (this.renderEngine?.sheetTabBar) {
+            this.renderEngine.sheetTabBar.refresh();
+        }
+
+        return true;
+    }
+
+    renameSheet(oldName, newName) {
+        if (!this.sheets.has(oldName)) return false;
+        if (!newName || !newName.trim()) return false;
+        newName = newName.trim();
+        if (oldName === newName) return false;
+        if (this.sheets.has(newName)) return false;
+
+        const sheet = this.sheets.get(oldName);
+        this.sheets.delete(oldName);
+        sheet.name = newName;
+        this.sheets.set(newName, sheet);
+
+        return true;
     }
 
     switchTo(name) {
         if (!this.sheets.has(name)) return;
+        if (this.activeSheet === this.sheets.get(name)) return;
         this.activeSheet = this.sheets.get(name);
         if (this.editor) this.editor.sheet = this.activeSheet;
         if (this.eventHandler) this.eventHandler.sheet = this.activeSheet;
@@ -245,6 +321,10 @@ export class Workbook {
             this.renderEngine.invalidateAll();
         }
         this.render();
+
+        if (this.renderEngine?.sheetTabBar) {
+            this.renderEngine.sheetTabBar.refresh();
+        }
     }
 
     getActiveSheet() {

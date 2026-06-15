@@ -1,5 +1,6 @@
 ﻿import { TileCache } from "./TileCache.js";
 import { ScrollManager } from "./ScrollManager.js";
+import { SheetTabBar } from "./SheetTabBar.js";
 import { TileRenderer } from "./TileRenderer.js";
 import { OverlayRenderer } from "./OverlayRenderer.js";
 import { HeaderRenderer } from "./HeaderRenderer.js";
@@ -56,6 +57,7 @@ export class RenderEngine {
         this.wrap.appendChild(this.canvas);
 
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
+        this.sheetTabBar = new SheetTabBar(this.wrap, null);
         this.tileRenderer = new TileRenderer(new TileCache(this.#dpr));
         this.overlayRenderer = new OverlayRenderer();
         this.headerRenderer = new HeaderRenderer();
@@ -183,7 +185,8 @@ export class RenderEngine {
         this.#currentSheet = sheet;
 
         const rc = sheet.rowColManager;
-        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH);
+        const effectiveH = this.#viewH - CONFIG.SHEET_TAB_HEIGHT;
+        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, effectiveH);
 
         const ctx = this.ctx;
         const viewW = this.#viewW;
@@ -194,12 +197,12 @@ export class RenderEngine {
         ctx.setTransform(this.#dpr, 0, 0, this.#dpr, 0, 0);
         ctx.clearRect(0, 0, viewW, viewH);
 
-        this.tileRenderer.render(ctx, sheet, sx, sy, viewW, viewH);
+        this.tileRenderer.render(ctx, sheet, sx, sy, viewW, effectiveH);
         this.overlayRenderer.renderMerges(ctx, sheet, sx, sy);
-        this.overlayRenderer.renderSelection(ctx, sheet, sx, sy, viewW, viewH);
-        this.headerRenderer.render(ctx, sheet, sx, sy, viewW, viewH);
+        this.overlayRenderer.renderSelection(ctx, sheet, sx, sy, viewW, effectiveH);
+        this.headerRenderer.render(ctx, sheet, sx, sy, viewW, effectiveH);
 
-        this.scrollMgr.updateScrollbars(this.#viewW, this.#viewH);
+        this.scrollMgr.updateScrollbars(this.#viewW, effectiveH);
     }
 
     /**
@@ -253,7 +256,10 @@ export class RenderEngine {
         const py = clientY - rect.top;
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
+        const effectiveH = this.#viewH - CONFIG.SHEET_TAB_HEIGHT;
         const sheet = this.#currentSheet;
+
+        if (py > effectiveH) return null;
 
         if (px >= 0 && px <= headerW && py >= 0 && py <= headerH) {
             return { type: HIT_TYPE.CORNER };
@@ -315,6 +321,9 @@ export class RenderEngine {
         const hitArea = CONFIG.RESIZE_HIT_AREA;
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
+        const effectiveH = this.#viewH - CONFIG.SHEET_TAB_HEIGHT;
+
+        if (py > effectiveH) return null;
 
         if (py >= 0 && py <= headerH && px > headerW) {
             const dataX = px - headerW + sx;
@@ -423,6 +432,7 @@ export class RenderEngine {
             cancelAnimationFrame(this.#rafId);
         }
         this.scrollMgr.destroy();
+        this.sheetTabBar.destroy();
         this.tileRenderer.destroy();
         window.removeEventListener(EVENT_NAMES.RESIZE, this.#resizeHandler);
         if (this.wrap && this.outerWrap) {

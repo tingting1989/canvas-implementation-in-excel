@@ -6,17 +6,30 @@ import { TextEditor } from "./editors/index.js";
  * 对外提供 show/hide/getEditor 等接口，隐藏编辑器实现细节
  */
 export class EditorManager {
+    #sheet = null;
+
     /**
      * @param {import("../render/RenderEngine.js").RenderEngine} renderEngine - 渲染引擎
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
      */
     constructor(renderEngine, sheet) {
         this.renderEngine = renderEngine;
-        this.sheet = sheet;
+        this.#sheet = sheet;
         /** 已注册的编辑器映射表，key 为编辑器类型名 */
         this.editors = new Map();
 
         this.#initEditors();
+    }
+
+    get sheet() {
+        return this.#sheet;
+    }
+
+    set sheet(value) {
+        this.#sheet = value;
+        for (const editor of this.editors.values()) {
+            editor.sheet = value;
+        }
     }
 
     /** 初始化默认编辑器 */
