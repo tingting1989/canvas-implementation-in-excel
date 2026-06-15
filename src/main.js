@@ -1,13 +1,13 @@
-﻿import {Workbook} from "./workbook/Workbook.js";
-import {stylePool} from "./styles/index.js";
-import {AutoFillPlugin} from "./plugins/AutoFillPlugin.js";
-import {ContextMenuPlugin} from "./plugins/ContextMenuPlugin.js";
-import {ColumnMovePlugin} from "./plugins/ColumnMovePlugin.js";
-import {ExportFilePlugin} from "./plugins/ExportFilePlugin.js";
-import {PaginationPlugin} from "./plugins/PaginationPlugin.js";
-import {HiddenColumnsPlugin} from "./plugins/HiddenColumnsPlugin.js";
-import {RowMovePlugin} from "./plugins/RowMovePlugin.js";
-import {HOOKS} from "./constants/hookNames.js";
+﻿import { Workbook } from "./workbook/Workbook.js";
+import { stylePool } from "./styles/index.js";
+import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
+import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
+import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
+import { ExportFilePlugin } from "./plugins/ExportFilePlugin.js";
+import { PaginationPlugin } from "./plugins/PaginationPlugin.js";
+import { HiddenColumnsPlugin } from "./plugins/HiddenColumnsPlugin.js";
+import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
+import { HOOKS } from "./constants/hookNames.js";
 
 const initApp = () => {
     console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -39,14 +39,15 @@ const initApp = () => {
         plugins: ["autoFill", "contextMenu", "columnMove", "pagination", "exportFile", "hiddenColumns", "rowMove"],
         pluginOptions: {
             //  pagination: { pageSize: 50 },
-            hiddenColumns: {columns: [2]},
+            hiddenColumns: { columns: [2] },
+            contextMenu: { enabled: false },
             // rowMove: { enabled: false }
         },
         conditionalStyles: [
             {
-                range: {sr: 0, sc: 0, er: 10000000, ec: 25},
+                range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
                 condition: (v) => typeof v === "number" && v > 25,
-                style: {backgroundColor: "#ffcccc"},
+                style: { backgroundColor: "#ffcccc" },
             },
         ],
         // 统一默认样式 — 所有单元格的基础字体
@@ -66,8 +67,8 @@ const initApp = () => {
         afterInit(wb) {
             console.log("afterInit");
             const sheet = wb.getActiveSheet();
-            sheet.setRowStyle(0, stylePool.getStyleId({backgroundColor: "#e8f4fd"}));
-            sheet.setColStyle(0, stylePool.getStyleId({textAlign: "center", fontWeight: "bold"}));
+            sheet.setRowStyle(0, stylePool.getStyleId({ backgroundColor: "#e8f4fd" }));
+            sheet.setColStyle(0, stylePool.getStyleId({ textAlign: "center", fontWeight: "bold" }));
 
             const s2 = wb.addSheet("Sheet2");
             s2.setCell(0, 0, "Sheet2 Data");

@@ -214,6 +214,42 @@ export class RowColManager {
         this.ensureSize(0, Math.max(fromCol, toCol) + 1);
         const [width] = this.#colWidths.splice(fromCol, 1);
         this.#colWidths.splice(toCol, 0, width);
+
+        if (this.#hiddenCols.has(fromCol)) {
+            this.#hiddenCols.delete(fromCol);
+            this.#hiddenCols.add(toCol);
+        } else {
+            let updated = new Set();
+            for (const c of this.#hiddenCols) {
+                if (fromCol < toCol) {
+                    if (c > fromCol && c <= toCol) updated.add(c - 1);
+                    else updated.add(c);
+                } else {
+                    if (c >= toCol && c < fromCol) updated.add(c + 1);
+                    else updated.add(c);
+                }
+            }
+            this.#hiddenCols = updated;
+        }
+
+        if (this.#originalColWidths.has(fromCol)) {
+            const origW = this.#originalColWidths.get(fromCol);
+            this.#originalColWidths.delete(fromCol);
+            this.#originalColWidths.set(toCol, origW);
+        } else {
+            let updated2 = new Map();
+            for (const [c, w] of this.#originalColWidths) {
+                if (fromCol < toCol) {
+                    if (c > fromCol && c <= toCol) updated2.set(c - 1, w);
+                    else updated2.set(c, w);
+                } else {
+                    if (c >= toCol && c < fromCol) updated2.set(c + 1, w);
+                    else updated2.set(c, w);
+                }
+            }
+            this.#originalColWidths = updated2;
+        }
+
         this.#colPrefixDirty = true;
     }
 
