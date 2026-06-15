@@ -194,6 +194,8 @@ export class RowColManager {
     insertCol(atCol) {
         this.ensureSize(0, atCol + 1);
         this.#colWidths.splice(atCol, 0, CONFIG.DEFAULT_COL_WIDTH);
+        this.#hiddenCols = new Set([...this.#hiddenCols].map(c => c >= atCol ? c + 1 : c));
+        this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [c >= atCol ? c + 1 : c, w]));
         this.#colPrefixDirty = true;
     }
 
@@ -206,7 +208,19 @@ export class RowColManager {
     deleteCol(col) {
         if (col < 0 || col >= this.#colWidths.length) return;
         this.#colWidths.splice(col, 1);
+        this.#hiddenCols.delete(col);
+        this.#originalColWidths.delete(col);
+        this.#hiddenCols = new Set([...this.#hiddenCols].map(c => c > col ? c - 1 : c));
+        this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [c > col ? c - 1 : c, w]));
         this.#colPrefixDirty = true;
+    }
+
+    #shiftIndex(idx, from, to) {
+        if (idx === from) return to;
+        if (from < to) {
+            return (idx > from && idx <= to) ? idx - 1 : idx;
+        }
+        return (idx >= to && idx < from) ? idx + 1 : idx;
     }
 
     moveCol(fromCol, toCol) {
@@ -215,40 +229,8 @@ export class RowColManager {
         const [width] = this.#colWidths.splice(fromCol, 1);
         this.#colWidths.splice(toCol, 0, width);
 
-        if (this.#hiddenCols.has(fromCol)) {
-            this.#hiddenCols.delete(fromCol);
-            this.#hiddenCols.add(toCol);
-        } else {
-            let updated = new Set();
-            for (const c of this.#hiddenCols) {
-                if (fromCol < toCol) {
-                    if (c > fromCol && c <= toCol) updated.add(c - 1);
-                    else updated.add(c);
-                } else {
-                    if (c >= toCol && c < fromCol) updated.add(c + 1);
-                    else updated.add(c);
-                }
-            }
-            this.#hiddenCols = updated;
-        }
-
-        if (this.#originalColWidths.has(fromCol)) {
-            const origW = this.#originalColWidths.get(fromCol);
-            this.#originalColWidths.delete(fromCol);
-            this.#originalColWidths.set(toCol, origW);
-        } else {
-            let updated2 = new Map();
-            for (const [c, w] of this.#originalColWidths) {
-                if (fromCol < toCol) {
-                    if (c > fromCol && c <= toCol) updated2.set(c - 1, w);
-                    else updated2.set(c, w);
-                } else {
-                    if (c >= toCol && c < fromCol) updated2.set(c + 1, w);
-                    else updated2.set(c, w);
-                }
-            }
-            this.#originalColWidths = updated2;
-        }
+        this.#hiddenCols = new Set([...this.#hiddenCols].map(c => this.#shiftIndex(c, fromCol, toCol)));
+        this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [this.#shiftIndex(c, fromCol, toCol), w]));
 
         this.#colPrefixDirty = true;
     }
@@ -352,39 +334,33 @@ export class RowColManager {
         return this.#hiddenCols.size > 0;
     }
 
-    #ensureRowPrefix() {
-        if (!this.#rowPrefixDirty) return;
-        const n = this.#rowHeights.length;
+    #rebuildPrefix(sizes, dirtyFlag) {
+        const n = sizes.length;
         if (n > 0) {
-            this.#rowPrefixSum = new Float64Array(n);
+            const prefix = new Float64Array(n);
             let sum = 0;
             for (let i = 0; i < n; i++) {
-                sum += this.#rowHeights[i];
-                this.#rowPrefixSum[i] = sum;
+                sum += sizes[i];
+                prefix[i] = sum;
             }
-            this.#allocatedHeight = sum;
-        } else {
-            this.#rowPrefixSum = new Float64Array(0);
-            this.#allocatedHeight = 0;
+            return { prefix, allocated: sum };
         }
+        return { prefix: new Float64Array(0), allocated: 0 };
+    }
+
+    #ensureRowPrefix() {
+        if (!this.#rowPrefixDirty) return;
+        const { prefix, allocated } = this.#rebuildPrefix(this.#rowHeights);
+        this.#rowPrefixSum = prefix;
+        this.#allocatedHeight = allocated;
         this.#rowPrefixDirty = false;
     }
 
     #ensureColPrefix() {
         if (!this.#colPrefixDirty) return;
-        const n = this.#colWidths.length;
-        if (n > 0) {
-            this.#colPrefixSum = new Float64Array(n);
-            let sum = 0;
-            for (let i = 0; i < n; i++) {
-                sum += this.#colWidths[i];
-                this.#colPrefixSum[i] = sum;
-            }
-            this.#allocatedWidth = sum;
-        } else {
-            this.#colPrefixSum = new Float64Array(0);
-            this.#allocatedWidth = 0;
-        }
+        const { prefix, allocated } = this.#rebuildPrefix(this.#colWidths);
+        this.#colPrefixSum = prefix;
+        this.#allocatedWidth = allocated;
         this.#colPrefixDirty = false;
     }
 }

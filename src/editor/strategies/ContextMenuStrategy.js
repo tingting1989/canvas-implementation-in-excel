@@ -6,34 +6,146 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
  * 右键菜单策略
  * 优先级 0（默认），contextmenu 事件无与其他策略冲突
  *
- * 整合了右键菜单的 DOM 渲染和事件处理
+ * 根据右击区域显示不同菜单：
+ * - 单元格（cell）：完整菜单（行/列操作 + 合并 + 清空 + 自定义项）
+ * - 行头（rowHeader）：行操作菜单（插入行/删除行/清空内容）
+ * - 列头（colHeader）：列操作菜单（插入列/删除列/清空内容）
+ * - 左上角（corner）：不弹出菜单
  *
- * 职责：
- * 1. 监听 canvas 的 contextmenu 事件
- * 2. 创建和管理右键菜单 DOM
- * 3. 处理菜单项点击操作（插入/删除行列、合并/取消合并、清空内容）
+ * 事件委托模式：
+ * - hover 效果由内嵌 CSS :hover 伪类处理，无需 JS 监听
+ * - click 事件委托到 #menuEl 容器，通过 data-key + #menuItemMap 查找目标项
+ * - 菜单项增减不影响监听器数量，始终只有 1 个 click 委托监听器
+ *
+ * 自定义菜单项配置（customItems）：
+ * - label: string        — 菜单项文本
+ * - action: Function     — 点击回调 (row, col, sheet) => void
+ * - key: string          — 可选，唯一标识，默认 custom_${index}
+ * - contexts: string[]   — 可选，在哪些上下文中显示，默认 ["cell"]
+ *                          可选值："cell" | "rowHeader" | "colHeader"
+ * - type: "separator"    — 可选，插入分隔线
+ *
+ * 禁用内置菜单项（disabledItems）：
+ * - 传入内置项 key 数组，如 ["mergeCells", "unmergeCells"]
+ *
+ * @example
+ * new ContextMenuStrategy(handler, {
+ *     customItems: [
+ *         { label: "高亮行", contexts: ["cell", "rowHeader"], action: (r, c, s) => s.setRowStyle(r, styleId) },
+ *         { type: "separator" },
+ *         { label: "导出", contexts: ["cell"], action: (r, c, s) => exportSheet(s) },
+ *     ],
+ *     disabledItems: ["mergeCells", "unmergeCells"],
+ * })
  */
 export class ContextMenuStrategy extends EventStrategy {
-    /** 右键菜单 DOM 元素 */
+    /** 右键菜单 DOM 容器 */
     #menuEl = null;
     /** 右键点击时的行号 */
     #row = -1;
     /** 右键点击时的列号 */
     #col = -1;
+    /** 当前右击上下文：cell / rowHeader / colHeader */
+    #context = "cell";
+    /**
+     * 所有菜单项 key → {label, action} 映射
+     * 包含内置项（未被 disabledItems 过滤）和自定义项
+     * 用于 click 委托时 O(1) 查找目标菜单项
+     */
+    #menuItemMap = new Map();
+    /** 被禁用的内置菜单项 key 集合 */
+    #disabledKeys = new Set();
+    /** 自定义菜单项原始配置（保留 contexts 等信息用于按上下文过滤） */
+    #customItems = [];
 
-    constructor(handler) {
+    /**
+     * 各上下文对应的内置菜单项排列顺序
+     * null 表示分隔线，字符串为 #menuItemMap 中的 key
+     */
+    static #CONTEXT_ITEMS = {
+        cell: [
+            "insertRowAbove", "insertRowBelow", "insertColLeft", "insertColRight",
+            null,
+            "deleteRow", "deleteCol",
+            null,
+            "mergeCells", "unmergeCells",
+            null,
+            "clearContent",
+        ],
+        rowHeader: [
+            "insertRowAbove", "insertRowBelow",
+            null,
+            "deleteRow",
+            null,
+            "clearContent",
+        ],
+        colHeader: [
+            "insertColLeft", "insertColRight",
+            null,
+            "deleteCol",
+            null,
+            "clearContent",
+        ],
+    };
+
+    /**
+     * @param {EventHandler} handler - 事件处理器实例
+     * @param {object} [options={}] - 菜单配置
+     * @param {Array} [options.customItems=[]] - 自定义菜单项
+     * @param {string[]} [options.disabledItems=[]] - 禁用的内置菜单项 key
+     */
+    constructor(handler, options = {}) {
         super(handler);
+        this.#buildMenuItems(options);
     }
 
+    /**
+     * 构建菜单项映射
+     * 将内置项和自定义项统一注册到 #menuItemMap，供委托查找
+     *
+     * @param {object} options - 同构造函数 options
+     */
+    #buildMenuItems(options) {
+        const builtIn = this._buildBuiltInItems();
+        const disabledItems = options.disabledItems || [];
+        this.#customItems = options.customItems || [];
+
+        for (const key of disabledItems) {
+            this.#disabledKeys.add(key);
+        }
+
+        // 注册未被禁用的内置菜单项
+        for (const [key, item] of Object.entries(builtIn)) {
+            if (!this.#disabledKeys.has(key)) {
+                this.#menuItemMap.set(key, item);
+            }
+        }
+
+        // 注册自定义菜单项（分隔线不需要注册，仅保留在 #customItems 中用于渲染）
+        for (let i = 0; i < this.#customItems.length; i++) {
+            const ci = this.#customItems[i];
+            if (ci.type === "separator") continue;
+            const key = ci.key || `custom_${i}`;
+            this.#menuItemMap.set(key, { label: ci.label, action: ci.action });
+        }
+    }
+
+    /** 初始化：创建菜单 DOM 容器 */
     init() {
         this.#createMenu();
     }
 
+    /** 销毁：移除菜单 DOM */
     destroy() {
         this.#menuEl?.remove();
         this.#menuEl = null;
     }
 
+    /**
+     * 注册 canvas 级别的事件处理器
+     * - contextmenu：右键弹出菜单
+     * - mousedown：点击菜单外部关闭
+     */
     getEventHandlers() {
         return {
             [DELEGATE_KEYS.CANVAS_CONTEXTMENU]: (e) => this.#handleContextMenu(e),
@@ -42,8 +154,79 @@ export class ContextMenuStrategy extends EventStrategy {
     }
 
     /**
-     * 创建右键菜单 DOM
-     * 包含：插入行/列、删除行/列、合并/取消合并、清空内容
+     * 构建内置菜单项定义
+     * 每个 action 签名为 (row, col, sheet) => void
+     * row/col 为右击位置，sheet 为当前工作表
+     *
+     * @returns {Object<string, {label: string, action: Function}>}
+     */
+    _buildBuiltInItems() {
+        return {
+            insertRowAbove: {
+                label: "在上方插入行",
+                action: (r, c, sheet) => sheet.insertRow(r),
+            },
+            insertRowBelow: {
+                label: "在下方插入行",
+                action: (r, c, sheet) => sheet.insertRow(r + 1),
+            },
+            deleteRow: {
+                label: "删除行",
+                action: (r, c, sheet) => {
+                    const range = sheet.selection.getRange();
+                    for (let i = range.bottomRow; i >= range.topRow; i--) {
+                        sheet.deleteRow(i);
+                    }
+                },
+            },
+            insertColLeft: {
+                label: "在左侧插入列",
+                action: (r, c, sheet) => sheet.insertCol(c),
+            },
+            insertColRight: {
+                label: "在右侧插入列",
+                action: (r, c, sheet) => sheet.insertCol(c + 1),
+            },
+            deleteCol: {
+                label: "删除列",
+                action: (r, c, sheet) => {
+                    const range = sheet.selection.getRange();
+                    for (let i = range.bottomCol; i >= range.topCol; i--) {
+                        sheet.deleteCol(i);
+                    }
+                },
+            },
+            mergeCells: {
+                label: "合并单元格",
+                action: (r, c, sheet) => {
+                    const range = sheet.selection.getRange();
+                    sheet.mergeCells(range.topRow, range.topCol, range.bottomRow, range.bottomCol);
+                },
+            },
+            unmergeCells: {
+                label: "取消合并",
+                action: (r, c, sheet) => sheet.unmergeCells(r, c),
+            },
+            clearContent: {
+                label: "清空内容",
+                action: (r, c, sheet) => {
+                    const range = sheet.selection.getRange();
+                    for (let row = range.topRow; row <= range.bottomRow; row++) {
+                        for (let col = range.topCol; col <= range.bottomCol; col++) {
+                            if (!sheet.isDisabled(row, col)) {
+                                sheet.setCell(row, col, "", 0);
+                            }
+                        }
+                    }
+                },
+            },
+        };
+    }
+
+    /**
+     * 创建右键菜单 DOM 容器（一次性）
+     * - 内嵌 <style> 处理 .ctx-item:hover 效果，替代 JS mouseenter/mouseleave
+     * - click 事件委托到容器，通过 data-key 查找 #menuItemMap
      */
     #createMenu() {
         this.#menuEl = document.createElement("div");
@@ -63,53 +246,100 @@ export class ContextMenuStrategy extends EventStrategy {
             userSelect: "none",
         });
 
-        const items = [
-            { label: "插入行（上方）", action: () => this.#insertRowAbove() },
-            { label: "插入行（下方）", action: () => this.#insertRowBelow() },
-            { label: "插入列（左侧）", action: () => this.#insertColLeft() },
-            { label: "插入列（右侧）", action: () => this.#insertColRight() },
-            { type: "separator" },
-            { label: "删除行", action: () => this.#deleteRow() },
-            { label: "删除列", action: () => this.#deleteCol() },
-            { type: "separator" },
-            { label: "合并单元格", action: () => this.#mergeCells() },
-            { label: "取消合并", action: () => this.#unmergeCells() },
-            { type: "separator" },
-            { label: "清空内容", action: () => this.#clearContent() },
-        ];
+        // 内嵌 CSS：hover 效果由浏览器原生 :hover 处理，无需 JS 监听
+        const style = document.createElement("style");
+        style.textContent = `.ctx-menu .ctx-item:hover{background:#f0f4ff}`;
+        this.#menuEl.appendChild(style);
 
-        for (const item of items) {
-            if (item.type === "separator") {
-                const sep = document.createElement("div");
-                Object.assign(sep.style, {
-                    height: "1px",
-                    background: "#e0e0e0",
-                    margin: "4px 8px",
-                });
-                this.#menuEl.appendChild(sep);
-            } else {
-                const el = document.createElement("div");
-                el.textContent = item.label;
-                Object.assign(el.style, {
-                    padding: "6px 16px",
-                    cursor: "pointer",
-                    color: "#333",
-                });
-                el.addEventListener("mouseenter", () => (el.style.background = "#f0f4ff"));
-                el.addEventListener("mouseleave", () => (el.style.background = "transparent"));
-                el.addEventListener("click", () => {
-                    item.action();
-                    this.#hideMenu();
-                });
-                this.#menuEl.appendChild(el);
-            }
-        }
+        // 事件委托：所有菜单项的 click 统一由容器处理
+        this.#menuEl.addEventListener("click", (e) => {
+            const el = e.target.closest(".ctx-item");
+            if (!el) return;
+            const item = this.#menuItemMap.get(el.dataset.key);
+            if (!item?.action) return;
+            item.action(this.#row, this.#col, this.handler.sheet);
+            this.handler.render();
+            this.#hideMenu();
+        });
 
         document.body.appendChild(this.#menuEl);
     }
 
     /**
+     * 根据当前上下文 (#context) 动态渲染菜单项
+     * 每次显示菜单时调用，清空旧内容后重新构建
+     *
+     * 渲染顺序：
+     * 1. 按 #CONTEXT_ITEMS[context] 定义的顺序渲染内置项
+     * 2. 过滤出当前上下文匹配的自定义项，追加到末尾
+     */
+    #renderMenuItems() {
+        // 保留内嵌 <style>，清空其余子元素
+        const styleEl = this.#menuEl.querySelector("style");
+        this.#menuEl.innerHTML = "";
+        if (styleEl) this.#menuEl.appendChild(styleEl);
+
+        // 渲染当前上下文的内置菜单项
+        const order = ContextMenuStrategy.#CONTEXT_ITEMS[this.#context] || ContextMenuStrategy.#CONTEXT_ITEMS.cell;
+        for (const key of order) {
+            if (key === null) {
+                this.#appendSeparator();
+            } else {
+                const item = this.#menuItemMap.get(key);
+                if (item) this.#appendItem(key, item.label);
+            }
+        }
+
+        let hasCustom = false;
+        for (let i = 0; i < this.#customItems.length; i++) {
+            const ci = this.#customItems[i];
+            if (ci.type === "separator") {
+                if (hasCustom) this.#appendSeparator();
+                continue;
+            }
+            const ctxs = ci.contexts || ["cell"];
+            if (!ctxs.includes(this.#context)) continue;
+            if (!hasCustom) {
+                this.#appendSeparator();
+                hasCustom = true;
+            }
+            const key = ci.key || `custom_${i}`;
+            this.#appendItem(key, ci.label);
+        }
+    }
+
+    /** 追加分隔线到菜单容器 */
+    #appendSeparator() {
+        const sep = document.createElement("div");
+        Object.assign(sep.style, {
+            height: "1px",
+            background: "#e0e0e0",
+            margin: "4px 8px",
+        });
+        this.#menuEl.appendChild(sep);
+    }
+
+    /**
+     * 追加菜单项到菜单容器
+     * @param {string} key - 菜单项 key（对应 #menuItemMap）
+     * @param {string} label - 显示文本
+     */
+    #appendItem(key, label) {
+        const el = document.createElement("div");
+        el.className = "ctx-item";
+        el.dataset.key = key;
+        el.textContent = label;
+        Object.assign(el.style, {
+            padding: "6px 16px",
+            cursor: "pointer",
+            color: "#333",
+        });
+        this.#menuEl.appendChild(el);
+    }
+
+    /**
      * 点击菜单外部自动关闭
+     * @param {MouseEvent} e
      */
     #handleDismiss(e) {
         if (this.#menuEl && !this.#menuEl.contains(e.target)) {
@@ -118,10 +348,10 @@ export class ContextMenuStrategy extends EventStrategy {
     }
 
     /**
-     * 右键菜单事件处理
-     * 1. 阻止浏览器默认右键菜单
-     * 2. 如果右键的单元格不在当前选区内，先选中它
-     * 3. 显示自定义右键菜单
+     * 右键菜单事件入口
+     * 阻止浏览器默认右键菜单，根据 hit 类型分发处理
+     *
+     * @param {MouseEvent} e - contextmenu 事件
      */
     #handleContextMenu(e) {
         if (!this.enabled || !this.handler.sheet) return;
@@ -131,39 +361,100 @@ export class ContextMenuStrategy extends EventStrategy {
         if (!hit) return;
 
         if (hit.type === HIT_TYPE.CELL) {
-            const merge = this.handler.sheet.getMerge(hit.row, hit.col);
-            const row = merge ? merge.topRow : hit.row;
-            const col = merge ? merge.topCol : hit.col;
-
-            if (!this.handler.sheet.selection.contains(row, col)) {
-                if (merge) {
-                    this.handler.sheet.selection.setRange(merge.topRow, merge.topCol, merge.bottomRow, merge.bottomCol);
-                } else {
-                    this.handler.sheet.selection.setActive(row, col);
-                }
-                this.handler.render();
-            }
-
-            this.#showMenu(e.clientX, e.clientY, row, col);
-        } else if (hit.type === HIT_TYPE.CORNER || hit.type === HIT_TYPE.COL_HEADER || hit.type === HIT_TYPE.ROW_HEADER) {
-            const [ar, ac] = this.handler.sheet.selection.getActive();
-            this.#showMenu(e.clientX, e.clientY, ar, ac);
+            this.#handleCellHit(hit, e);
+        } else if (hit.type === HIT_TYPE.ROW_HEADER) {
+            this.#handleRowHeaderHit(hit, e);
+        } else if (hit.type === HIT_TYPE.COL_HEADER) {
+            this.#handleColHeaderHit(hit, e);
         }
+        // HIT_TYPE.CORNER（左上角）不弹出菜单
+    }
+
+    /**
+     * 处理单元格右击
+     * 如果右击的单元格不在当前选区内，先选中它（合并单元格则选中整个合并区）
+     *
+     * @param {object} hit - hitTest 结果 {type, row, col}
+     * @param {MouseEvent} e - 原始事件（用于获取坐标）
+     */
+    #handleCellHit(hit, e) {
+        const sheet = this.handler.sheet;
+        const merge = sheet.getMerge(hit.row, hit.col);
+        const row = merge ? merge.topRow : hit.row;
+        const col = merge ? merge.topCol : hit.col;
+
+        if (!sheet.selection.contains(row, col)) {
+            if (merge) {
+                sheet.selection.setRange(merge.topRow, merge.topCol, merge.bottomRow, merge.bottomCol);
+            } else {
+                sheet.selection.setActive(row, col);
+            }
+            this.handler.render();
+        }
+
+        this.#context = "cell";
+        this.#showMenu(e.clientX, e.clientY, row, col);
+    }
+
+    /**
+     * 处理行头右击
+     * 自动选中整行（从第 0 列到最后一列）
+     *
+     * @param {object} hit - hitTest 结果 {type, index}
+     * @param {MouseEvent} e - 原始事件
+     */
+    #handleRowHeaderHit(hit, e) {
+        const sheet = this.handler.sheet;
+        const row = hit.index;
+        const totalCols = sheet.rowColManager.totalCols;
+
+        if (!sheet.selection.contains(row, 0)) {
+            sheet.selection.setRange(row, 0, row, totalCols - 1);
+            this.handler.render();
+        }
+
+        this.#context = "rowHeader";
+        this.#showMenu(e.clientX, e.clientY, row, 0);
+    }
+
+    /**
+     * 处理列头右击
+     * 自动选中整列（从第 0 行到最后一行）
+     *
+     * @param {object} hit - hitTest 结果 {type, index}
+     * @param {MouseEvent} e - 原始事件
+     */
+    #handleColHeaderHit(hit, e) {
+        const sheet = this.handler.sheet;
+        const col = hit.index;
+        const totalRows = sheet.rowColManager.totalRows;
+
+        if (!sheet.selection.contains(0, col)) {
+            sheet.selection.setRange(0, col, totalRows - 1, col);
+            this.handler.render();
+        }
+
+        this.#context = "colHeader";
+        this.#showMenu(e.clientX, e.clientY, 0, col);
     }
 
     /**
      * 显示右键菜单
-     * 自动调整位置防止超出视口
+     * 先根据上下文渲染菜单项，再计算位置（自动调整防止超出视口）
      *
      * @param {number} clientX - 鼠标 X 坐标
      * @param {number} clientY - 鼠标 Y 坐标
-     * @param {number} row - 右键点击的行号
-     * @param {number} col - 右键点击的列号
+     * @param {number} row - 右击行号
+     * @param {number} col - 右击列号
      */
     #showMenu(clientX, clientY, row, col) {
         this.#row = row;
         this.#col = col;
 
+        // 根据上下文动态渲染菜单内容
+        this.#renderMenuItems();
+
+        // 计算菜单位置，防止超出视口
         this.#menuEl.style.display = "block";
         const menuW = this.#menuEl.offsetWidth;
         const menuH = this.#menuEl.offsetHeight;
@@ -184,74 +475,5 @@ export class ContextMenuStrategy extends EventStrategy {
         if (this.#menuEl) {
             this.#menuEl.style.display = "none";
         }
-    }
-
-    /** 在当前行上方插入一行 */
-    #insertRowAbove() {
-        this.handler.sheet.insertRow(this.#row);
-        this.handler.render();
-    }
-
-    /** 在当前行下方插入一行 */
-    #insertRowBelow() {
-        this.handler.sheet.insertRow(this.#row + 1);
-        this.handler.render();
-    }
-
-    /** 在当前列左侧插入一列 */
-    #insertColLeft() {
-        this.handler.sheet.insertCol(this.#col);
-        this.handler.render();
-    }
-
-    /** 在当前列右侧插入一列 */
-    #insertColRight() {
-        this.handler.sheet.insertCol(this.#col + 1);
-        this.handler.render();
-    }
-
-    /** 删除选区内的所有行（从下往上删，避免行号偏移） */
-    #deleteRow() {
-        const range = this.handler.sheet.selection.getRange();
-        for (let i = range.bottomRow; i >= range.topRow; i--) {
-            this.handler.sheet.deleteRow(i);
-        }
-        this.handler.render();
-    }
-
-    /** 删除选区内的所有列（从右往左删，避免列号偏移） */
-    #deleteCol() {
-        const range = this.handler.sheet.selection.getRange();
-        for (let i = range.bottomCol; i >= range.topCol; i--) {
-            this.handler.sheet.deleteCol(i);
-        }
-        this.handler.render();
-    }
-
-    /** 合并选区内的单元格 */
-    #mergeCells() {
-        const range = this.handler.sheet.selection.getRange();
-        this.handler.sheet.mergeCells(range.topRow, range.topCol, range.bottomRow, range.bottomCol);
-        this.handler.render();
-    }
-
-    /** 取消合并当前单元格 */
-    #unmergeCells() {
-        const [r, c] = this.handler.sheet.selection.getActive();
-        this.handler.sheet.unmergeCells(r, c);
-        this.handler.render();
-    }
-
-    /** 清空选区内所有单元格的内容 */
-    #clearContent() {
-        const range = this.handler.sheet.selection.getRange();
-        for (let r = range.topRow; r <= range.bottomRow; r++) {
-            for (let c = range.topCol; c <= range.bottomCol; c++) {
-                if (!this.handler.sheet.isDisabled(r, c)) {
-                    this.handler.sheet.setCell(r, c, "", 0);
-                }
-            }
-        }
-        this.handler.render();
     }
 }

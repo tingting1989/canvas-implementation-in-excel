@@ -45,7 +45,7 @@ export class ContextMenuPlugin extends BasePlugin {
     init(options = {}) {
         super.init(options);
 
-        this.#strategy = new ContextMenuStrategy(this.eventHandler);
+        this.#strategy = new ContextMenuStrategy(this.eventHandler, options);
         this.addStrategy("contextMenu", this.#strategy);
 
         if (options.enabled === false) {

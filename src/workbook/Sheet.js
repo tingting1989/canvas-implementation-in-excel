@@ -227,6 +227,7 @@ export class Sheet {
      */
     setRowStyle(row, styleId) {
         this.rowStyles.set(row, styleId);
+        this.#invalidateAll();
     }
 
     /**
@@ -236,6 +237,7 @@ export class Sheet {
      */
     setColStyle(col, styleId) {
         this.colStyles.set(col, styleId);
+        this.#invalidateAll();
     }
 
     /**
@@ -273,6 +275,44 @@ export class Sheet {
         const newStyleId = stylePool.getStyleId(mergedStyle);
         const value = cell?.value ?? "";
         this.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
+        this.#invalidateAll();
+    }
+
+    /**
+     * 清除单元格样式
+     * 将单元格 styleId 重置为 0（默认样式），保留值和禁用状态
+     *
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     */
+    clearCellStyle(r, c) {
+        const realR = this.toRealRow(r);
+        const cell = this.cellStore.get(realR, c);
+        if (!cell || cell.styleId === 0) return;
+        this.cellStore.set(realR, c, new Cell(cell.value, 0, cell.disabled));
+        this.#invalidateAll();
+    }
+
+    /**
+     * 清除行级样式
+     *
+     * @param {number} row - 行号
+     */
+    clearRowStyle(row) {
+        if (!this.rowStyles.has(row)) return;
+        this.rowStyles.delete(row);
+        this.#invalidateAll();
+    }
+
+    /**
+     * 清除列级样式
+     *
+     * @param {number} col - 列号
+     */
+    clearColStyle(col) {
+        if (!this.colStyles.has(col)) return;
+        this.colStyles.delete(col);
+        this.#invalidateAll();
     }
 
     /**

@@ -1,13 +1,13 @@
-﻿import { Workbook } from "./workbook/Workbook.js";
-import { stylePool } from "./styles/index.js";
-import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
-import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
-import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
-import { ExportFilePlugin } from "./plugins/ExportFilePlugin.js";
-import { PaginationPlugin } from "./plugins/PaginationPlugin.js";
-import { HiddenColumnsPlugin } from "./plugins/HiddenColumnsPlugin.js";
-import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
-import { HOOKS } from "./constants/hookNames.js";
+﻿import {Workbook} from "./workbook/Workbook.js";
+import {stylePool} from "./styles/index.js";
+import {AutoFillPlugin} from "./plugins/AutoFillPlugin.js";
+import {ContextMenuPlugin} from "./plugins/ContextMenuPlugin.js";
+import {ColumnMovePlugin} from "./plugins/ColumnMovePlugin.js";
+import {ExportFilePlugin} from "./plugins/ExportFilePlugin.js";
+import {PaginationPlugin} from "./plugins/PaginationPlugin.js";
+import {HiddenColumnsPlugin} from "./plugins/HiddenColumnsPlugin.js";
+import {RowMovePlugin} from "./plugins/RowMovePlugin.js";
+import {HOOKS} from "./constants/hookNames.js";
 
 const initApp = () => {
     console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -39,15 +39,68 @@ const initApp = () => {
         plugins: ["autoFill", "contextMenu", "columnMove", "pagination", "exportFile", "hiddenColumns", "rowMove"],
         pluginOptions: {
             //  pagination: { pageSize: 50 },
-            hiddenColumns: { columns: [2] },
-            contextMenu: { enabled: false },
+            hiddenColumns: {columns: [2]},
+            contextMenu: {
+                enabled: true,
+                customItems: [
+                    {
+                        label: "高亮选中行",
+                        // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
+                        contexts: ["cell", "rowHeader"],
+                        action: (row, col, sheet) => {
+                            sheet.setRowStyle(row, stylePool.getStyleId({backgroundColor: "yellow"}));
+                            wb.render();
+                        },
+                    },
+                    {
+                        label: "设置单元格样式",
+                        contexts: ["cell"],
+                        action: (row, col, sheet) => {
+                            const range = sheet.selection.getRange();
+                            const styleObj = {backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724"};
+                            for (let r = range.topRow; r <= range.bottomRow; r++) {
+                                for (let c = range.topCol; c <= range.bottomCol; c++) {
+                                    if (!sheet.isDisabled(r, c)) {
+                                        sheet.setCellStyle(r, c, styleObj);
+                                    }
+                                }
+                            }
+                            wb.render();
+                        },
+                    },
+                    {
+                        label: "取消单元格样式",
+                        contexts: ["cell", "rowHeader", "colHeader"],
+                        action: (row, col, sheet) => {
+                            console.log("Clear cell style")
+                            const range = sheet.selection.getRange();
+                            for (let r = range.topRow; r <= range.bottomRow; r++) {
+                                sheet.clearRowStyle(r);
+                                for (let c = range.topCol; c <= range.bottomCol; c++) {
+                                    sheet.clearCellStyle(r, c);
+                                }
+                            }
+                            wb.render();
+                        },
+                    },
+                    {type: "separator"},
+                    {
+                        label: "导出选中区域",
+                        action: (row, col, sheet) => {
+                            console.log("Export from", row, col);
+                            alert("导出功能（示例）");
+                        },
+                    },
+                ],
+                disabledItems: ["mergeCells", "unmergeCells"]
+            },
             // rowMove: { enabled: false }
         },
         conditionalStyles: [
             {
-                range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
+                range: {sr: 0, sc: 0, er: 10000000, ec: 25},
                 condition: (v) => typeof v === "number" && v > 25,
-                style: { backgroundColor: "#ffcccc" },
+                style: {backgroundColor: "#ffcccc"},
             },
         ],
         // 统一默认样式 — 所有单元格的基础字体
@@ -67,8 +120,8 @@ const initApp = () => {
         afterInit(wb) {
             console.log("afterInit");
             const sheet = wb.getActiveSheet();
-            sheet.setRowStyle(0, stylePool.getStyleId({ backgroundColor: "#e8f4fd" }));
-            sheet.setColStyle(0, stylePool.getStyleId({ textAlign: "center", fontWeight: "bold" }));
+            sheet.setRowStyle(0, stylePool.getStyleId({backgroundColor: "#e8f4fd"}));
+            sheet.setColStyle(0, stylePool.getStyleId({textAlign: "center", fontWeight: "bold"}));
 
             const s2 = wb.addSheet("Sheet2");
             s2.setCell(0, 0, "Sheet2 Data");

@@ -100,6 +100,12 @@ export class TileRenderer {
         ctx.fillStyle = bgColor;
         ctx.fillRect(drawX, drawY, w, h);
 
+        const resolvedStyle = sheet.resolveStyle(r, c);
+        if (resolvedStyle.backgroundColor) {
+            ctx.fillStyle = resolvedStyle.backgroundColor;
+            ctx.fillRect(drawX, drawY, w, h);
+        }
+
         const cfStyleId = sheet.matchConditionalStyle(r, c, cell);
         if (cfStyleId !== null) {
             const cfStyle = stylePool.getStyle(cfStyleId);
