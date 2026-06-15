@@ -128,6 +128,11 @@ export class Workbook {
         }
 
         this.renderEngine = new RenderEngine(this.#containerId);
+
+        if (this.#initOptions?.width != null || this.#initOptions?.height != null) {
+            this.renderEngine.setCanvasSize(this.#initOptions?.width, this.#initOptions?.height);
+        }
+
         this.editor = new EditorManager(this.renderEngine, this.activeSheet);
         this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
         this.pluginManager = new PluginManager(this);
@@ -448,6 +453,9 @@ export class Workbook {
         }
         if (Array.isArray(settings.conditionalStyles)) {
             this.#applyConditionalStyles(sheet, settings.conditionalStyles);
+        }
+        if (settings.width != null || settings.height != null) {
+            this.renderEngine?.setCanvasSize(settings.width, settings.height);
         }
     }
 

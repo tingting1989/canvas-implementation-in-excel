@@ -9,9 +9,6 @@
   --sheet-text: #222;
   --sheet-border: #ddd;
   --sheet-header-bg: #f0f0f0;
-  --scrollbar-bg: #f1f1f1;
-  --scrollbar-thumb: #c1c1c1;
-  --scrollbar-thumb-hover: #a8a8a8;
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -69,68 +66,6 @@ body {
 
 canvas {
   display: block;
-}
-
-.scrollbar-h {
-  position: absolute;
-  bottom: 0;
-  left: 46px;
-  right: 14px;
-  height: 14px;
-  background: var(--scrollbar-bg);
-  border-top: 1px solid #ddd;
-  z-index: 10;
-}
-
-.scrollbar-h-thumb {
-  position: absolute;
-  top: 1px;
-  height: 12px;
-  min-width: 30px;
-  background: var(--scrollbar-thumb);
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.scrollbar-h-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-
-.scrollbar-v {
-  position: absolute;
-  top: 28px;
-  right: 0;
-  bottom: 14px;
-  width: 14px;
-  background: var(--scrollbar-bg);
-  border-left: 1px solid #ddd;
-  z-index: 10;
-}
-
-.scrollbar-v-thumb {
-  position: absolute;
-  left: 1px;
-  width: 12px;
-  min-height: 30px;
-  background: var(--scrollbar-thumb);
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.scrollbar-v-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-}
-
-.scrollbar-corner {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 14px;
-  height: 14px;
-  background: var(--scrollbar-bg);
-  border-top: 1px solid #ddd;
-  border-left: 1px solid #ddd;
-  z-index: 11;
 }
 </style>
 </head>
@@ -208,13 +143,6 @@ canvas {
 
 <div id="wrap">
   <canvas id="grid"></canvas>
-  <div class="scrollbar-h">
-    <div class="scrollbar-h-thumb"></div>
-  </div>
-  <div class="scrollbar-v">
-    <div class="scrollbar-v-thumb"></div>
-  </div>
-  <div class="scrollbar-corner"></div>
 </div>
 
 <script>
@@ -412,66 +340,6 @@ function updateToolbarStyleState() {
 }
 
 window.updateToolbarStyleState = updateToolbarStyleState;
-
-(function initScrollbarDrag() {
-  document.addEventListener('DOMContentLoaded', () => {
-    const wrap = document.getElementById('wrap');
-    const hThumb = wrap.querySelector('.scrollbar-h-thumb');
-    const vThumb = wrap.querySelector('.scrollbar-v-thumb');
-
-    let dragging = null;
-    let startMouse = 0;
-    let startScroll = 0;
-
-    function onHThumbDown(e) {
-      e.preventDefault();
-      dragging = 'h';
-      startMouse = e.clientX;
-      startScroll = wb.renderEngine.scrollX;
-      document.addEventListener('mousemove', onDragMove);
-      document.addEventListener('mouseup', onDragEnd);
-    }
-
-    function onVThumbDown(e) {
-      e.preventDefault();
-      dragging = 'v';
-      startMouse = e.clientY;
-      startScroll = wb.renderEngine.scrollY;
-      document.addEventListener('mousemove', onDragMove);
-      document.addEventListener('mouseup', onDragEnd);
-    }
-
-    function onDragMove(e) {
-      if (!wb.renderEngine) return;
-      if (dragging === 'h') {
-        const dx = e.clientX - startMouse;
-        const trackW = wrap.clientWidth - 46 - 14;
-        const maxScroll = wb.renderEngine.maxScrollX;
-        const totalContent = maxScroll + wrap.clientWidth - 46;
-        const ratio = totalContent > 0 ? trackW / totalContent : 1;
-        const newX = Math.max(0, Math.min(maxScroll, startScroll + dx / ratio));
-        wb.renderEngine.setScrollPosition(newX, wb.renderEngine.scrollY);
-      } else if (dragging === 'v') {
-        const dy = e.clientY - startMouse;
-        const trackH = wrap.clientHeight - 28 - 14;
-        const maxScroll = wb.renderEngine.maxScrollY;
-        const totalContent = maxScroll + wrap.clientHeight - 28;
-        const ratio = totalContent > 0 ? trackH / totalContent : 1;
-        const newY = Math.max(0, Math.min(maxScroll, startScroll + dy / ratio));
-        wb.renderEngine.setScrollPosition(wb.renderEngine.scrollX, newY);
-      }
-    }
-
-    function onDragEnd() {
-      dragging = null;
-      document.removeEventListener('mousemove', onDragMove);
-      document.removeEventListener('mouseup', onDragEnd);
-    }
-
-    hThumb.addEventListener('mousedown', onHThumbDown);
-    vThumb.addEventListener('mousedown', onVThumbDown);
-  });
-})();
 </script>
 
 </body>
