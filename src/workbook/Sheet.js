@@ -75,6 +75,19 @@ export class Sheet {
         this.colStyles = new Map();
         /** 数据绑定映射 col → mapperFn(cellValue) → styleId */
         this.dataBindings = new Map();
+        /**
+         * cell 配置：数组，每个元素指定 {row, col, style?, disabled?, readOnly?, value?}
+         * 静态声明式配置，初始化时一次性应用
+         * 参考 Handsontable 的 cell 选项
+         */
+        this.cellConfig = [];
+        /**
+         * cells 配置：函数 (row, col) => {style?, disabled?, readOnly?, value?}
+         * 动态计算式配置，每次 resolveCellProperties 时调用
+         * 优先级高于 cell 配置
+         * 参考 Handsontable 的 cells 选项
+         */
+        this.cellsFn = null;
 
         /**
          * 列头配置：
@@ -217,6 +230,8 @@ export class Sheet {
      */
     isDisabled(r, c) {
         const realR = this.toRealRow(r);
+        const cellProps = this.resolveCellProperties(r, c);
+        if (cellProps?.disabled === true || cellProps?.readOnly === true) return true;
         return this.cellStore.get(realR, c)?.disabled === true;
     }
 
@@ -534,7 +549,7 @@ export class Sheet {
         const cell = this.cellStore.get(realR, c);
         const cellStyleId = cell?.styleId;
 
-        if (!colStyleId && !rowStyleId && !cellStyleId) {
+        if (!colStyleId && !rowStyleId && !cellStyleId && !this.cellsFn) {
             this.#styleCache.set(key, base);
             return base;
         }
@@ -544,8 +559,59 @@ export class Sheet {
         if (rowStyleId) style = { ...style, ...stylePool.getStyle(rowStyleId) };
         if (cellStyleId) style = { ...style, ...stylePool.getStyle(cellStyleId) };
 
+        const cellProps = this.resolveCellProperties(r, c);
+        if (cellProps?.style) style = { ...style, ...cellProps.style };
+
         this.#styleCache.set(key, style);
         return style;
+    }
+
+    /**
+     * 应用 cell 配置（静态声明式）
+     * 遍历 cellConfig 数组，逐项应用属性到对应单元格
+     * 支持：style（样式对象）、disabled/readOnly（禁用）、value（初始值）
+     */
+    applyCellConfig() {
+        for (const item of this.cellConfig) {
+            if (item.row == null || item.col == null) continue;
+            const r = item.row;
+            const c = item.col;
+            this.rowColManager.ensureSize(r + 1, c + 1);
+
+            if (item.value !== undefined) {
+                const cell = this.cellStore.get(r, c);
+                const styleId = item.style ? stylePool.getStyleId(item.style) : cell?.styleId || 0;
+                const disabled = item.disabled ?? item.readOnly ?? cell?.disabled ?? false;
+                this.cellStore.set(r, c, new Cell(item.value, styleId, disabled));
+            } else if (item.style) {
+                this.setCellStyle(r, c, item.style);
+            }
+
+            if (item.disabled === true || item.readOnly === true) {
+                const cell = this.cellStore.get(r, c);
+                if (cell && !cell.disabled) {
+                    this.cellStore.set(r, c, new Cell(cell.value, cell.styleId, true));
+                }
+            }
+        }
+        this.#invalidateAll();
+    }
+
+    /**
+     * 解析单元格属性（动态计算式，由 cellsFn 驱动）
+     * 每次调用时执行 cellsFn(row, col) 获取属性
+     *
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {{style?: object, disabled?: boolean, readOnly?: boolean, value?: *}|null}
+     */
+    resolveCellProperties(r, c) {
+        if (typeof this.cellsFn !== "function") return null;
+        try {
+            return this.cellsFn(r, c);
+        } catch {
+            return null;
+        }
     }
 
     /**

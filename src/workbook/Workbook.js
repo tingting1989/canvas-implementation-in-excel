@@ -50,6 +50,15 @@ export class Workbook {
      * @param {object} [options.hooks] - 事件钩子映射 { hookName: callback }
      * @param {Array<{row:number,col:number,rowspan:number,colspan:number}>} [options.mergeCells] - 合并单元格配置
      * @param {Array<{range:object,condition:Function,style:object}>} [options.conditionalStyles] - 条件样式
+     * @param {Array<{row:number,col:number,style?:object,disabled?:boolean,readOnly?:boolean,value?:*}>} [options.cell]
+     *   静态单元格配置（参考 Handsontable cell 选项）
+     *   - style: 样式对象，如 { backgroundColor: "yellow", fontWeight: "bold" }
+     *   - disabled / readOnly: 禁用单元格（不可编辑）
+     *   - value: 初始值
+     * @param {Function} [options.cells]
+     *   动态单元格属性函数（参考 Handsontable cells 选项）
+     *   签名: (row, col) => { style?, disabled?, readOnly?, value? }
+     *   优先级高于 cell 配置，每次渲染时动态计算
      * @param {Function} [options.afterInit] - 初始化完成回调
      *
      * @example
@@ -534,6 +543,12 @@ export class Workbook {
         if (Array.isArray(settings.conditionalStyles)) {
             this.#applyConditionalStyles(sheet, settings.conditionalStyles);
         }
+        if (Array.isArray(settings.cell)) {
+            this.#applyCellConfig(sheet, settings.cell);
+        }
+        if (typeof settings.cells === "function") {
+            sheet.cellsFn = settings.cells;
+        }
         if (settings.width != null || settings.height != null) {
             this.renderEngine?.setCanvasSize(settings.width, settings.height);
         }
@@ -584,6 +599,11 @@ export class Workbook {
                 sheet.addConditionalRule(cs.range, cs.condition, styleId);
             }
         }
+    }
+
+    #applyCellConfig(sheet, cellConfig) {
+        sheet.cellConfig = cellConfig;
+        sheet.applyCellConfig();
     }
 
     #getExportPlugin() {

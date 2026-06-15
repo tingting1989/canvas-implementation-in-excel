@@ -103,6 +103,19 @@ const initApp = () => {
                 style: { backgroundColor: "#ffcccc" },
             },
         ],
+        cell: [
+            { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
+            { row: 1, col: 3, disabled: true },
+            { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
+        ],
+        cells: (row, col) => {
+            if (row === 0) {
+                return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
+            }
+            if (col === 0 && row > 0) {
+                return { style: { textAlign: "right", fontWeight: "bold" } };
+            }
+        },
         // 统一默认样式 — 所有单元格的基础字体
         defaultStyle: {
             fontSize: 14,
@@ -120,8 +133,6 @@ const initApp = () => {
         afterInit(wb) {
             console.log("afterInit");
             const sheet = wb.getActiveSheet();
-            sheet.setRowStyle(0, stylePool.getStyleId({ backgroundColor: "#e8f4fd" }));
-            sheet.setColStyle(0, stylePool.getStyleId({ textAlign: "center", fontWeight: "bold" }));
 
             const s2 = wb.addSheet("Sheet2");
             s2.setCell(0, 0, "Sheet2 Data");
