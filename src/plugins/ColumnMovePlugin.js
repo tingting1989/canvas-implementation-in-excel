@@ -1,15 +1,17 @@
-import {BasePlugin} from "./BasePlugin.js";
-import {ColumnMoveStrategy} from "../editor/strategies/ColumnMoveStrategy.js";
+import { BasePlugin } from "./BasePlugin.js";
+import { ColumnMoveStrategy } from "../editor/strategies/ColumnMoveStrategy.js";
 
 export class ColumnMovePlugin extends BasePlugin {
-    static get PLUGIN_NAME() { return 'columnMove'; }
+    static get PLUGIN_NAME() {
+        return "columnMove";
+    }
 
     #strategy = null;
 
     init(options = {}) {
         super.init(options);
         this.#strategy = new ColumnMoveStrategy(this.eventHandler);
-        this.addStrategy('columnMove', this.#strategy);
+        this.addStrategy("columnMove", this.#strategy);
 
         if (options.enabled === false) {
             this.disable();

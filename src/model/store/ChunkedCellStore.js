@@ -1,5 +1,5 @@
 import { Chunk } from "./Chunk.js";
-import {CONFIG} from "../../constants/config";
+import { CONFIG } from "../../constants/config";
 
 /**
  * 分块单元格存储
@@ -10,8 +10,7 @@ export class ChunkedCellStore {
     /** 块映射表：chunkKey → Chunk 实例 */
     #chunks = new Map();
 
-    constructor() {
-    }
+    constructor() {}
 
     /**
      * 计算块键

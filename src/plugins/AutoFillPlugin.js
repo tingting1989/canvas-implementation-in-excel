@@ -28,7 +28,9 @@ import { AutoFillStrategy } from "../editor/strategies/AutoFillStrategy.js";
  * ```
  */
 export class AutoFillPlugin extends BasePlugin {
-    static get PLUGIN_NAME() { return 'autoFill'; }
+    static get PLUGIN_NAME() {
+        return "autoFill";
+    }
 
     /** @type {AutoFillStrategy|null} */
     #strategy = null;
@@ -44,7 +46,7 @@ export class AutoFillPlugin extends BasePlugin {
         super.init(options);
 
         this.#strategy = new AutoFillStrategy(this.eventHandler);
-        this.addStrategy('autoFill', this.#strategy);
+        this.addStrategy("autoFill", this.#strategy);
 
         if (options.enabled === false) {
             this.disable();

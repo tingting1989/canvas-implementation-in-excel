@@ -50,7 +50,7 @@ export class StylePool {
         const key = this.#normalize(obj);
         if (this.styleToId.has(key)) return this.styleToId.get(key);
         const id = this.nextId++;
-        this.idToStyle.set(id, {...obj});
+        this.idToStyle.set(id, { ...obj });
         this.styleToId.set(key, id);
         return id;
     }
@@ -77,7 +77,7 @@ export class StylePool {
  * 边框样式
  */
 export class BorderStyle {
-    constructor({width = 1, style = "solid", color = "#000"} = {}) {
+    constructor({ width = 1, style = "solid", color = "#000" } = {}) {
         this.width = width;
         this.style = style;
         this.color = color;
@@ -89,15 +89,15 @@ export class BorderStyle {
  */
 export class CellStyle {
     constructor({
-                    fontFamily = "Segoe UI",
-                    fontSize = 12,
-                    fontWeight = "normal",
-                    color = "#000",
-                    backgroundColor = "transparent",
-                    textAlign = "left",
-                    verticalAlign = "middle",
-                    border = null,
-                } = {}) {
+        fontFamily = "Segoe UI",
+        fontSize = 12,
+        fontWeight = "normal",
+        color = "#000",
+        backgroundColor = "transparent",
+        textAlign = "left",
+        verticalAlign = "middle",
+        border = null,
+    } = {}) {
         this.fontFamily = fontFamily;
         this.fontSize = fontSize;
         this.fontWeight = fontWeight;

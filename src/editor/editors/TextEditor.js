@@ -1,7 +1,7 @@
-import {CellEditor} from "./CellEditor.js";
-import {HOOKS} from "../../constants/hookNames.js";
-import {EVENT_NAMES} from "../../constants/eventNames.js";
-import {CONFIG} from "../../constants/config";
+import { CellEditor } from "./CellEditor.js";
+import { HOOKS } from "../../constants/hookNames.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { CONFIG } from "../../constants/config";
 
 /**
  * 文本编辑器
@@ -41,8 +41,12 @@ export class TextEditor extends CellEditor {
     #bindEvents() {
         this.editor.addEventListener(EVENT_NAMES.BLUR, () => this.#onBlur());
         this.editor.addEventListener(EVENT_NAMES.KEYDOWN, (e) => this.#onKeyDown(e));
-        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONSTART, () => { this.#composing = true; });
-        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONEND, () => { this.#composing = false; });
+        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONSTART, () => {
+            this.#composing = true;
+        });
+        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONEND, () => {
+            this.#composing = false;
+        });
     }
 
     /**
@@ -56,7 +60,7 @@ export class TextEditor extends CellEditor {
      *   'select': 全选文本（默认，用于直接输入等场景）
      *   'end': 光标定位到末尾（用于双击、F2 进入编辑）
      */
-    show(row, col, cursorMode = 'select') {
+    show(row, col, cursorMode = "select") {
         if (!this.sheet || this.sheet.isDisabled(row, col)) return;
         this.activeRow = row;
         this.activeCol = col;
@@ -77,7 +81,7 @@ export class TextEditor extends CellEditor {
         this.editor.value = cell?.value ?? "";
         this.editor.focus();
 
-        if (cursorMode === 'end') {
+        if (cursorMode === "end") {
             const len = this.editor.value.length;
             this.editor.setSelectionRange(len, len);
         } else {
@@ -103,8 +107,7 @@ export class TextEditor extends CellEditor {
         this.editor.style.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight}px ${fontFamily}`;
         this.editor.style.textAlign = style.textAlign || "left";
         this.editor.style.color = style.color || "#222";
-        this.editor.style.backgroundColor = style.backgroundColor && style.backgroundColor !== "transparent"
-            ? style.backgroundColor : "#fff";
+        this.editor.style.backgroundColor = style.backgroundColor && style.backgroundColor !== "transparent" ? style.backgroundColor : "#fff";
     }
 
     /**
@@ -227,7 +230,7 @@ export class TextEditor extends CellEditor {
                     nextRow = merge.bottomRow + 1;
                 }
                 nextRow = Math.min(this.sheet.rowColManager.rowCount - 1, Math.max(0, nextRow));
-                const {row: targetRow} = this.#getTopLeft(nextRow, enterCol);
+                const { row: targetRow } = this.#getTopLeft(nextRow, enterCol);
                 const targetMerge = this.sheet.getMerge(targetRow, enterCol);
                 if (targetMerge) {
                     this.sheet.selection.setRange(targetMerge.topRow, targetMerge.topCol, targetMerge.bottomRow, targetMerge.bottomCol);
@@ -259,7 +262,7 @@ export class TextEditor extends CellEditor {
                     }
                 }
                 targetCol = Math.min(this.sheet.rowColManager.realColCount - 1, Math.max(0, targetCol));
-                const {col: finalCol} = this.#getTopLeft(tabRow, targetCol);
+                const { col: finalCol } = this.#getTopLeft(tabRow, targetCol);
                 const tabTargetMerge = this.sheet.getMerge(tabRow, finalCol);
                 if (tabTargetMerge) {
                     this.sheet.selection.setRange(tabTargetMerge.topRow, tabTargetMerge.topCol, tabTargetMerge.bottomRow, tabTargetMerge.bottomCol);
@@ -282,14 +285,14 @@ export class TextEditor extends CellEditor {
     #getTopLeft(row, col) {
         const merge = this.sheet?.getMerge(row, col);
         if (merge) {
-            return {row: merge.topRow, col: merge.topCol};
+            return { row: merge.topRow, col: merge.topCol };
         }
-        return {row, col};
+        return { row, col };
     }
 
     /** 触发重新渲染 */
     #render() {
-        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === 'function') {
+        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === "function") {
             this.renderEngine.render(this.sheet);
         }
     }

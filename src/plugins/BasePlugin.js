@@ -55,38 +55,58 @@ export class BasePlugin {
      * @returns {string}
      */
     static get PLUGIN_NAME() {
-        throw new Error('PLUGIN_NAME must be overridden in subclass');
+        throw new Error("PLUGIN_NAME must be overridden in subclass");
     }
 
     /** 获取 Workbook 实例 */
-    get workbook() { return this.#workbook; }
+    get workbook() {
+        return this.#workbook;
+    }
 
     /** 获取当前活动工作表 */
-    get sheet() { return this.#workbook?.activeSheet; }
+    get sheet() {
+        return this.#workbook?.activeSheet;
+    }
 
     /** 获取渲染引擎 */
-    get renderEngine() { return this.#workbook?.renderEngine; }
+    get renderEngine() {
+        return this.#workbook?.renderEngine;
+    }
 
     /** 获取事件处理器 */
-    get eventHandler() { return this.#workbook?.eventHandler; }
+    get eventHandler() {
+        return this.#workbook?.eventHandler;
+    }
 
     /** 获取编辑器管理器 */
-    get editor() { return this.#workbook?.editor; }
+    get editor() {
+        return this.#workbook?.editor;
+    }
 
     /** 获取钩子系统 */
-    get hooks() { return this.#workbook?.eventHandler?.hooks; }
+    get hooks() {
+        return this.#workbook?.eventHandler?.hooks;
+    }
 
     /** 获取剪贴板管理器 */
-    get clipboard() { return this.#workbook?.clipboard; }
+    get clipboard() {
+        return this.#workbook?.clipboard;
+    }
 
     /** 获取插件配置 */
-    get options() { return this.#options; }
+    get options() {
+        return this.#options;
+    }
 
     /** 插件是否已初始化 */
-    get initialized() { return this.#initialized; }
+    get initialized() {
+        return this.#initialized;
+    }
 
     /** 插件是否已启用 */
-    get enabled() { return this.#enabled; }
+    get enabled() {
+        return this.#enabled;
+    }
 
     /**
      * 初始化插件
@@ -148,9 +168,7 @@ export class BasePlugin {
     addHookOnce(hookName, callback) {
         const onceCallback = (...args) => {
             callback(...args);
-            this.#registeredHooks = this.#registeredHooks.filter(
-                h => h.hookName !== hookName || h.callback !== onceCallback
-            );
+            this.#registeredHooks = this.#registeredHooks.filter((h) => h.hookName !== hookName || h.callback !== onceCallback);
         };
         this.hooks?.addHook(hookName, onceCallback);
         this.#registeredHooks.push({ hookName, callback: onceCallback });

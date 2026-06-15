@@ -1,5 +1,5 @@
 import { stylePool } from "../styles/index.js";
-import {CONFIG} from "../constants/config";
+import { CONFIG } from "../constants/config";
 
 export class TileRenderer {
     constructor(tileCache) {
@@ -32,11 +32,7 @@ export class TileRenderer {
                 const drawX = headerW + tc * tileSize - scrollX;
                 const drawY = headerH + tr * tileSize - scrollY;
 
-                ctx.drawImage(
-                    tile.canvas,
-                    0, 0, tile.canvas.width, tile.canvas.height,
-                    drawX, drawY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE
-                );
+                ctx.drawImage(tile.canvas, 0, 0, tile.canvas.width, tile.canvas.height, drawX, drawY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
             }
         }
     }

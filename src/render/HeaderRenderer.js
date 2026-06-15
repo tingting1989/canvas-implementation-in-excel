@@ -1,5 +1,5 @@
-﻿import {CONFIG} from "../constants/config";
-import {HIT_TYPE} from "../constants/hitType";
+﻿import { CONFIG } from "../constants/config";
+import { HIT_TYPE } from "../constants/hitType";
 
 /** 拖拽幽灵行/列的半透明填充色 */
 const GHOST_FILL = "rgba(76, 139, 245, 0.15)";
@@ -120,11 +120,12 @@ export class HeaderRenderer {
         }
 
         if (!this.#columnMoveState) {
-            this.#drawSelectionLine(ctx,
+            this.#drawSelectionLine(
+                ctx,
                 headerW + rc.getColX(range.topCol) - scrollX,
                 headerH,
                 rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - rc.getColX(range.topCol),
-                true
+                true,
             );
         }
     }
@@ -159,11 +160,12 @@ export class HeaderRenderer {
         }
 
         if (!this.#rowMoveState) {
-            this.#drawSelectionLine(ctx,
+            this.#drawSelectionLine(
+                ctx,
                 headerW,
                 headerH + rc.getRowY(range.topRow) - scrollY,
                 rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - rc.getRowY(range.topRow),
-                false
+                false,
             );
         }
     }

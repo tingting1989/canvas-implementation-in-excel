@@ -1,8 +1,8 @@
-import {EventStrategy} from "./EventStrategy.js";
-import {HIT_TYPE} from "../../constants/hitType";
-import {DELEGATE_KEYS} from "../../constants/eventNames.js";
-import {HOOKS} from "../../constants/hookNames.js";
-import {CONFIG} from "../../constants/config";
+import { EventStrategy } from "./EventStrategy.js";
+import { HIT_TYPE } from "../../constants/hitType";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { HOOKS } from "../../constants/hookNames.js";
+import { CONFIG } from "../../constants/config";
 
 const DRAG_THRESHOLD = 3;
 

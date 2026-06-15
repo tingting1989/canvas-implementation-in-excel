@@ -109,8 +109,7 @@ export class SelectionManager {
      */
     contains(row, col) {
         const range = this.getRange();
-        return row >= range.topRow && row <= range.bottomRow &&
-               col >= range.topCol && col <= range.bottomCol;
+        return row >= range.topRow && row <= range.bottomRow && col >= range.topCol && col <= range.bottomCol;
     }
 
     /**

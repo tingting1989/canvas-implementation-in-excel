@@ -60,8 +60,7 @@ export class KeyboardStrategy extends EventStrategy {
     }
 
     /** 编辑状态下的按键处理（预留扩展） */
-    #handleEditingKey(e) {
-    }
+    #handleEditingKey(e) {}
 
     /**
      * 非编辑状态下的按键处理
@@ -91,7 +90,7 @@ export class KeyboardStrategy extends EventStrategy {
             case "Enter":
             case "F2":
                 e.preventDefault();
-                editor.show(r, c, 'end');
+                editor.show(r, c, "end");
                 break;
             case "Tab":
                 e.preventDefault();

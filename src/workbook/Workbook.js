@@ -1,11 +1,11 @@
-import {Sheet} from "./Sheet.js";
-import {RenderEngine} from "../render/RenderEngine.js";
-import {EditorManager} from "../editor/EditorManager.js";
-import {EventHandler} from "../editor/EventHandler.js";
-import {ClipboardManager} from "../editor/ClipboardManager.js";
-import {PluginManager} from "../plugins/PluginManager.js";
-import {stylePool} from "../styles/index.js";
-import {CONFIG} from "../constants/config";
+import { Sheet } from "./Sheet.js";
+import { RenderEngine } from "../render/RenderEngine.js";
+import { EditorManager } from "../editor/EditorManager.js";
+import { EventHandler } from "../editor/EventHandler.js";
+import { ClipboardManager } from "../editor/ClipboardManager.js";
+import { PluginManager } from "../plugins/PluginManager.js";
+import { stylePool } from "../styles/index.js";
+import { CONFIG } from "../constants/config";
 
 /**
  * 工作簿
@@ -90,7 +90,7 @@ export class Workbook {
 
     loadPlugin(name, options = {}) {
         if (!this.pluginManager) {
-            this.#pendingPlugins.push({ type: 'name', name, options });
+            this.#pendingPlugins.push({ type: "name", name, options });
             return null;
         }
         return this.pluginManager.loadPlugin(name, options);
@@ -98,7 +98,7 @@ export class Workbook {
 
     loadPluginClass(PluginClass, options = {}) {
         if (!this.pluginManager) {
-            this.#pendingPlugins.push({ type: 'class', PluginClass, options });
+            this.#pendingPlugins.push({ type: "class", PluginClass, options });
             return null;
         }
         return this.pluginManager.loadPluginClass(PluginClass, options);
@@ -124,7 +124,7 @@ export class Workbook {
         if (this.renderEngine) return;
 
         if (this.sheets.size === 0) {
-            this.addSheet(this.#initOptions?.sheetName || 'Sheet1');
+            this.addSheet(this.#initOptions?.sheetName || "Sheet1");
         }
 
         this.renderEngine = new RenderEngine(this.#containerId);
@@ -147,7 +147,7 @@ export class Workbook {
 
     #setupScrollCallback() {
         this.renderEngine.onScrollCallback = () => {
-            const textEditor = this.editor?.getEditor('text');
+            const textEditor = this.editor?.getEditor("text");
             if (!textEditor || textEditor.activeRow < 0) return;
 
             const rc = this.activeSheet.rowColManager;
@@ -164,8 +164,7 @@ export class Workbook {
             const sx = this.renderEngine.scrollX;
             const sy = this.renderEngine.scrollY;
 
-            const outOfView = cellX + cellW <= sx || cellX >= sx + viewW ||
-                cellY + cellH <= sy || cellY >= sy + viewH;
+            const outOfView = cellX + cellW <= sx || cellX >= sx + viewW || cellY + cellH <= sy || cellY >= sy + viewH;
 
             if (outOfView) {
                 textEditor.hideForScroll();
@@ -189,24 +188,24 @@ export class Workbook {
             }
         }
 
-        if (opts.hooks && typeof opts.hooks === 'object') {
+        if (opts.hooks && typeof opts.hooks === "object") {
             for (const [hookName, callback] of Object.entries(opts.hooks)) {
-                if (typeof callback === 'function') {
+                if (typeof callback === "function") {
                     this.addHook(hookName, callback);
                 }
             }
         }
 
-        if (typeof opts.afterInit === 'function') {
+        if (typeof opts.afterInit === "function") {
             opts.afterInit(this);
         }
     }
 
     #flushPendingPlugins() {
         for (const pending of this.#pendingPlugins) {
-            if (pending.type === 'name') {
+            if (pending.type === "name") {
                 this.pluginManager.loadPlugin(pending.name, pending.options);
-            } else if (pending.type === 'class') {
+            } else if (pending.type === "class") {
                 this.pluginManager.loadPluginClass(pending.PluginClass, pending.options);
             }
         }
@@ -214,7 +213,7 @@ export class Workbook {
     }
 
     addSheet(name) {
-        const engine = this.renderEngine || {canvas: {width: 0, height: 0}};
+        const engine = this.renderEngine || { canvas: { width: 0, height: 0 } };
         const sheet = new Sheet(name, engine);
         sheet.workbook = this;
 
@@ -453,7 +452,7 @@ export class Workbook {
     }
 
     #applyRowHeights(sheet, rowHeights) {
-        if (typeof rowHeights === 'number') {
+        if (typeof rowHeights === "number") {
             const count = sheet.rowColManager.allocatedRowCount || 100;
             sheet.rowColManager.ensureSize(count, 0);
             for (let r = 0; r < count; r++) {
@@ -468,7 +467,7 @@ export class Workbook {
     }
 
     #applyColWidths(sheet, colWidths) {
-        if (typeof colWidths === 'number') {
+        if (typeof colWidths === "number") {
             const count = sheet.rowColManager.allocatedColCount || 26;
             sheet.rowColManager.ensureSize(0, count);
             for (let c = 0; c < count; c++) {
@@ -484,8 +483,7 @@ export class Workbook {
 
     #applyMergeCells(sheet, mergeCells) {
         for (const m of mergeCells) {
-            if (m.row !== undefined && m.col !== undefined &&
-                m.rowspan !== undefined && m.colspan !== undefined) {
+            if (m.row !== undefined && m.col !== undefined && m.rowspan !== undefined && m.colspan !== undefined) {
                 sheet.mergeCells(m.row, m.col, m.row + m.rowspan - 1, m.col + m.colspan - 1);
             }
         }
@@ -501,7 +499,7 @@ export class Workbook {
     }
 
     #getExportPlugin() {
-        return this.getPlugin('exportFile');
+        return this.getPlugin("exportFile");
     }
 
     exportAsString(format, options) {

@@ -1,4 +1,4 @@
-import {stylePool, DEFAULT_STYLE_ID} from "../styles/index.js";
+import { stylePool, DEFAULT_STYLE_ID } from "../styles/index.js";
 import {
     ChunkedCellStore,
     ConditionalRule,
@@ -11,9 +11,9 @@ import {
     UnmergeCommand,
     Cell,
 } from "../model/index.js";
-import {RowColManager} from "../core/RowColManager.js";
-import {CONFIG} from "../constants/config";
-import {STYLE_LEVEL} from "../constants/styleLevel";
+import { RowColManager } from "../core/RowColManager.js";
+import { CONFIG } from "../constants/config";
+import { STYLE_LEVEL } from "../constants/styleLevel";
 
 /**
  * 工作表
@@ -94,8 +94,12 @@ export class Sheet {
         if (renderEngine) this.#renderEngine = renderEngine;
     }
 
-    get renderEngine() { return this.#renderEngine; }
-    set renderEngine(engine) { this.#renderEngine = engine; }
+    get renderEngine() {
+        return this.#renderEngine;
+    }
+    set renderEngine(engine) {
+        this.#renderEngine = engine;
+    }
 
     /**
      * 页面行号 → 实际行号
@@ -141,14 +145,14 @@ export class Sheet {
     /** 标记整个视图需要重绘 */
     #invalidateAll() {
         const re = this.#renderEngine;
-        if (re && typeof re.invalidateAll === 'function') re.invalidateAll();
+        if (re && typeof re.invalidateAll === "function") re.invalidateAll();
         this.#styleCacheVersion++;
     }
 
     /** 标记指定单元格需要重绘 */
     #invalidateCell(r, c) {
         const re = this.#renderEngine;
-        if (re && typeof re.invalidateCell === 'function') re.invalidateCell(r, c);
+        if (re && typeof re.invalidateCell === "function") re.invalidateCell(r, c);
         this.#styleCache.delete(`${r},${c}`);
         this.#styleCacheVersion++;
     }
@@ -265,7 +269,7 @@ export class Sheet {
         const cell = this.cellStore.get(realR, c);
         const currentStyleId = cell?.styleId || 0;
         const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
-        const mergedStyle = {...currentStyle, ...styleObj};
+        const mergedStyle = { ...currentStyle, ...styleObj };
         const newStyleId = stylePool.getStyleId(mergedStyle);
         const value = cell?.value ?? "";
         this.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
@@ -285,7 +289,7 @@ export class Sheet {
     setRangeStyle(range, styleObj) {
         const styleId = stylePool.getStyleId(styleObj);
         const totalCols = this.rowColManager.totalCols;
-        const isFullRow = (range.topCol === 0 && range.bottomCol >= totalCols - 1);
+        const isFullRow = range.topCol === 0 && range.bottomCol >= totalCols - 1;
 
         if (isFullRow) {
             for (let r = range.topRow; r <= range.bottomRow; r++) {
@@ -297,7 +301,7 @@ export class Sheet {
         }
 
         const totalRows = this.rowColManager.totalRows;
-        const isFullCol = (range.topRow === 0 && range.bottomRow >= totalRows - 1);
+        const isFullCol = range.topRow === 0 && range.bottomRow >= totalRows - 1;
 
         if (isFullCol) {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
@@ -383,7 +387,7 @@ export class Sheet {
         const ch = this.colHeaders;
         if (ch === true || ch == null) return this.#defaultColLabel(col);
         if (Array.isArray(ch)) return col < ch.length ? ch[col] : this.#defaultColLabel(col);
-        if (typeof ch === 'function') return ch(col);
+        if (typeof ch === "function") return ch(col);
         return this.#defaultColLabel(col);
     }
 
@@ -396,7 +400,7 @@ export class Sheet {
         const rh = this.rowHeaders;
         if (rh === true || rh == null) return String(row + 1);
         if (Array.isArray(rh)) return row < rh.length ? rh[row] : String(row + 1);
-        if (typeof rh === 'function') return rh(row);
+        if (typeof rh === "function") return rh(row);
         return String(row + 1);
     }
 
@@ -440,7 +444,7 @@ export class Sheet {
             const row = data[r];
             if (!Array.isArray(row)) continue;
             for (let c = 0; c < row.length; c++) {
-                if (row[c] !== undefined && row[c] !== null && row[c] !== '') {
+                if (row[c] !== undefined && row[c] !== null && row[c] !== "") {
                     this.cellStore.set(r, c, new Cell(row[c], 0));
                 }
             }
@@ -452,7 +456,7 @@ export class Sheet {
 
     /** 刷新分页插件（数据加载后可能需要重新分页） */
     #refreshPagination() {
-        const pg = this.workbook?.getPlugin('pagination');
+        const pg = this.workbook?.getPlugin("pagination");
         if (pg && pg.active) {
             pg.refresh();
         }
@@ -496,9 +500,9 @@ export class Sheet {
         }
 
         let style = base;
-        if (colStyleId) style = {...style, ...stylePool.getStyle(colStyleId)};
-        if (rowStyleId) style = {...style, ...stylePool.getStyle(rowStyleId)};
-        if (cellStyleId) style = {...style, ...stylePool.getStyle(cellStyleId)};
+        if (colStyleId) style = { ...style, ...stylePool.getStyle(colStyleId) };
+        if (rowStyleId) style = { ...style, ...stylePool.getStyle(rowStyleId) };
+        if (cellStyleId) style = { ...style, ...stylePool.getStyle(cellStyleId) };
 
         this.#styleCache.set(key, style);
         return style;
@@ -588,7 +592,7 @@ export class Sheet {
     /** 触发渲染 */
     render() {
         const re = this.#renderEngine;
-        if (re && typeof re.render === 'function') re.render(this);
+        if (re && typeof re.render === "function") re.render(this);
     }
 
     /** 撤销上一步操作 */

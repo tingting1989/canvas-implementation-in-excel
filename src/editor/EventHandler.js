@@ -223,7 +223,7 @@ export class EventHandler {
             const entries = this.#delegateMap.get(key);
             if (!entries) continue;
 
-            const idx = entries.findIndex(e => e.name === name);
+            const idx = entries.findIndex((e) => e.name === name);
             if (idx !== -1) entries.splice(idx, 1);
 
             if (entries.length === 0) {
@@ -247,11 +247,16 @@ export class EventHandler {
      */
     #resolveTarget(name) {
         switch (name) {
-            case "canvas": return this.canvas;
-            case "document": return document;
-            case "window": return window;
-            case "wrap": return this.wrap;
-            default: return null;
+            case "canvas":
+                return this.canvas;
+            case "document":
+                return document;
+            case "window":
+                return window;
+            case "wrap":
+                return this.wrap;
+            default:
+                return null;
         }
     }
 

@@ -261,7 +261,7 @@ export class AutoFillStrategy extends EventStrategy {
     }
 
     #detectStep(values) {
-        const nums = values.filter(v => typeof v === "number");
+        const nums = values.filter((v) => typeof v === "number");
         if (nums.length < values.length) return 0;
         if (nums.length === 1) return 1;
 

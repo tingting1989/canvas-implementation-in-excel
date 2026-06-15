@@ -1,4 +1,4 @@
-import {CONFIG} from "../constants/config";
+import { CONFIG } from "../constants/config";
 
 export class Tile {
     constructor(tileRow, tileCol, dpr = 1) {

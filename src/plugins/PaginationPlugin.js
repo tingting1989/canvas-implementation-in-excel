@@ -31,7 +31,9 @@ import { CONFIG } from "../constants/config.js";
 const DEFAULT_PAGE_SIZE = 50;
 
 export class PaginationPlugin extends BasePlugin {
-    static get PLUGIN_NAME() { return 'pagination'; }
+    static get PLUGIN_NAME() {
+        return "pagination";
+    }
 
     /** 每页行数 */
     #pageSize = DEFAULT_PAGE_SIZE;
@@ -68,21 +70,29 @@ export class PaginationPlugin extends BasePlugin {
     }
 
     /** 分页是否激活 */
-    get active() { return this.#active; }
+    get active() {
+        return this.#active;
+    }
     /** 每页行数 */
-    get pageSize() { return this.#pageSize; }
+    get pageSize() {
+        return this.#pageSize;
+    }
     /** 当前页码（从 1 开始） */
-    get currentPage() { return this.#currentPage; }
+    get currentPage() {
+        return this.#currentPage;
+    }
     /** 可选的每页行数列表（返回副本） */
-    get pageSizeList() { return [...this.#pageSizeList]; }
+    get pageSizeList() {
+        return [...this.#pageSizeList];
+    }
     /** 是否自动计算每页行数 */
-    get autoPageSize() { return this.#autoPageSize; }
+    get autoPageSize() {
+        return this.#autoPageSize;
+    }
 
     /** 总页数 */
     get totalPages() {
-        return this.#pageSize > 0
-            ? Math.max(1, Math.ceil(this.#totalRows / this.#pageSize))
-            : 1;
+        return this.#pageSize > 0 ? Math.max(1, Math.ceil(this.#totalRows / this.#pageSize)) : 1;
     }
 
     /** 当前页在总数据中的起始行偏移量 */
@@ -93,9 +103,7 @@ export class PaginationPlugin extends BasePlugin {
     /** 当前页实际显示的行数（最后一页可能不足 pageSize） */
     get pageRowCount() {
         if (this.#totalRows <= 0) return 0;
-        return this.#currentPage < this.totalPages
-            ? this.#pageSize
-            : Math.max(0, this.#totalRows - this.rowOffset);
+        return this.#currentPage < this.totalPages ? this.#pageSize : Math.max(0, this.#totalRows - this.rowOffset);
     }
 
     /**
@@ -105,7 +113,10 @@ export class PaginationPlugin extends BasePlugin {
      */
     #updateTotalRows() {
         const sheet = this.sheet;
-        if (!sheet) { this.#totalRows = 0; return; }
+        if (!sheet) {
+            this.#totalRows = 0;
+            return;
+        }
 
         const allocated = sheet.rowColManager.allocatedRowCount;
         const maxDataRow = sheet.cellStore.getMaxRow();
@@ -194,13 +205,21 @@ export class PaginationPlugin extends BasePlugin {
     }
 
     /** 跳转到下一页 */
-    nextPage() { this.setPage(this.#currentPage + 1); }
+    nextPage() {
+        this.setPage(this.#currentPage + 1);
+    }
     /** 跳转到上一页 */
-    prevPage() { this.setPage(this.#currentPage - 1); }
+    prevPage() {
+        this.setPage(this.#currentPage - 1);
+    }
     /** 跳转到第一页 */
-    firstPage() { this.setPage(1); }
+    firstPage() {
+        this.setPage(1);
+    }
     /** 跳转到最后一页 */
-    lastPage() { this.setPage(this.totalPages); }
+    lastPage() {
+        this.setPage(this.totalPages);
+    }
 
     /**
      * 手动刷新分页状态

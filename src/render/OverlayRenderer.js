@@ -1,5 +1,5 @@
-import {CONFIG} from "../constants/config";
-import {HIT_TYPE} from "../constants/hitType";
+import { CONFIG } from "../constants/config";
+import { HIT_TYPE } from "../constants/hitType";
 
 /**
  * 叠加层渲染器

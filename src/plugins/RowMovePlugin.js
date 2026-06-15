@@ -1,5 +1,5 @@
-import {BasePlugin} from "./BasePlugin.js";
-import {RowMoveStrategy} from "../editor/strategies/RowMoveStrategy.js";
+import { BasePlugin } from "./BasePlugin.js";
+import { RowMoveStrategy } from "../editor/strategies/RowMoveStrategy.js";
 
 /**
  * 行拖拽移动插件
@@ -20,7 +20,9 @@ import {RowMoveStrategy} from "../editor/strategies/RowMoveStrategy.js";
  * ```
  */
 export class RowMovePlugin extends BasePlugin {
-    static get PLUGIN_NAME() { return 'rowMove'; }
+    static get PLUGIN_NAME() {
+        return "rowMove";
+    }
 
     /** 行移动交互策略实例 */
     #strategy = null;
@@ -33,7 +35,7 @@ export class RowMovePlugin extends BasePlugin {
     init(options = {}) {
         super.init(options);
         this.#strategy = new RowMoveStrategy(this.eventHandler);
-        this.addStrategy('rowMove', this.#strategy);
+        this.addStrategy("rowMove", this.#strategy);
 
         if (options.enabled === false) {
             this.disable();

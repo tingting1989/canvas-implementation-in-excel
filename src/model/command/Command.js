@@ -1,7 +1,5 @@
 export class Command {
-    redo() {
-    }
+    redo() {}
 
-    undo() {
-    }
+    undo() {}
 }

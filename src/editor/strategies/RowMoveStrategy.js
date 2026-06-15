@@ -1,8 +1,8 @@
-import {EventStrategy} from "./EventStrategy.js";
-import {HIT_TYPE} from "../../constants/hitType";
-import {DELEGATE_KEYS} from "../../constants/eventNames.js";
-import {HOOKS} from "../../constants/hookNames.js";
-import {CONFIG} from "../../constants/config";
+import { EventStrategy } from "./EventStrategy.js";
+import { HIT_TYPE } from "../../constants/hitType";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { HOOKS } from "../../constants/hookNames.js";
+import { CONFIG } from "../../constants/config";
 
 /** 拖拽启动阈值（像素），鼠标移动超过此距离才视为拖拽开始 */
 const DRAG_THRESHOLD = 3;

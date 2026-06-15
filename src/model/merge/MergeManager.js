@@ -20,7 +20,7 @@ export class MergeManager {
             bottomRow,
             bottomCol,
             rowSpan: bottomRow - topRow + 1,
-            colSpan: bottomCol - topCol + 1
+            colSpan: bottomCol - topCol + 1,
         };
 
         this.merges.set(key, mergeInfo);
@@ -36,10 +36,7 @@ export class MergeManager {
 
     #hasOverlap(topRow, topCol, bottomRow, bottomCol) {
         for (const [, info] of this.merges) {
-            if (
-                !(bottomRow < info.topRow || topRow > info.bottomRow) &&
-                !(bottomCol < info.topCol || topCol > info.bottomCol)
-            ) {
+            if (!(bottomRow < info.topRow || topRow > info.bottomRow) && !(bottomCol < info.topCol || topCol > info.bottomCol)) {
                 return true;
             }
         }
@@ -98,10 +95,7 @@ export class MergeManager {
         const topLeftMerge = this.getMerge(topRow, topCol);
         if (!topLeftMerge) return false;
 
-        return (
-            bottomRow <= topLeftMerge.bottomRow &&
-            bottomCol <= topLeftMerge.bottomCol
-        );
+        return bottomRow <= topLeftMerge.bottomRow && bottomCol <= topLeftMerge.bottomCol;
     }
 
     /**

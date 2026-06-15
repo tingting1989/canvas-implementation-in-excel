@@ -9,12 +9,7 @@ export class MergeCommand {
     }
 
     redo() {
-        this.succeeded = this.manager.merge(
-            this.topRow,
-            this.topCol,
-            this.bottomRow,
-            this.bottomCol
-        );
+        this.succeeded = this.manager.merge(this.topRow, this.topCol, this.bottomRow, this.bottomCol);
     }
 
     undo() {

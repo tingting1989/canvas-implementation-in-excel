@@ -95,8 +95,8 @@ export class ContextMenuStrategy extends EventStrategy {
                     cursor: "pointer",
                     color: "#333",
                 });
-                el.addEventListener("mouseenter", () => el.style.background = "#f0f4ff");
-                el.addEventListener("mouseleave", () => el.style.background = "transparent");
+                el.addEventListener("mouseenter", () => (el.style.background = "#f0f4ff"));
+                el.addEventListener("mouseleave", () => (el.style.background = "transparent"));
                 el.addEventListener("click", () => {
                     item.action();
                     this.#hideMenu();

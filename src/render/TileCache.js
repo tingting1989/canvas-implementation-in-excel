@@ -1,5 +1,5 @@
 import { Tile } from "./Tile.js";
-import {CONFIG} from "../constants/config";
+import { CONFIG } from "../constants/config";
 
 export class TileCache {
     constructor(dpr = 1) {
@@ -51,8 +51,7 @@ export class TileCache {
             const tileStartCol = tile.tileCol;
             const tileEndRow = tileStartRow + tileSize;
             const tileEndCol = tileStartCol + tileSize;
-            if (tileEndRow >= startRow && tileStartRow <= endRow &&
-                tileEndCol >= startCol && tileStartCol <= endCol) {
+            if (tileEndRow >= startRow && tileStartRow <= endRow && tileEndCol >= startCol && tileStartCol <= endCol) {
                 tile.markDirty();
             }
         }

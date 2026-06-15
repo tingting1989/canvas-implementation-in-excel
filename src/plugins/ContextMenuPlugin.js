@@ -28,7 +28,9 @@ import { ContextMenuStrategy } from "../editor/strategies/ContextMenuStrategy.js
  * ```
  */
 export class ContextMenuPlugin extends BasePlugin {
-    static get PLUGIN_NAME() { return 'contextMenu'; }
+    static get PLUGIN_NAME() {
+        return "contextMenu";
+    }
 
     /** @type {ContextMenuStrategy|null} */
     #strategy = null;
@@ -44,7 +46,7 @@ export class ContextMenuPlugin extends BasePlugin {
         super.init(options);
 
         this.#strategy = new ContextMenuStrategy(this.eventHandler);
-        this.addStrategy('contextMenu', this.#strategy);
+        this.addStrategy("contextMenu", this.#strategy);
 
         if (options.enabled === false) {
             this.disable();

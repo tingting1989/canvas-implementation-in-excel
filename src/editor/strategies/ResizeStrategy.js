@@ -112,8 +112,7 @@ export class ResizeStrategy extends EventStrategy {
         const hit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
 
         if (hit) {
-            this.handler.canvas.style.cursor =
-                hit.type === HIT_TYPE.COL_RESIZE ? "col-resize" : "row-resize";
+            this.handler.canvas.style.cursor = hit.type === HIT_TYPE.COL_RESIZE ? "col-resize" : "row-resize";
             this.#hoverType = hit.type;
             return false;
         }

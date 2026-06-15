@@ -1,5 +1,5 @@
 import { EVENT_NAMES } from "../constants/eventNames.js";
-import {CONFIG} from "../constants/config";
+import { CONFIG } from "../constants/config";
 
 export class ScrollManager {
     #scrollX = 0;
@@ -17,16 +17,32 @@ export class ScrollManager {
         this.canvas = canvas;
     }
 
-    get scrollX() { return this.#scrollX; }
-    get scrollY() { return this.#scrollY; }
-    get maxScrollX() { return this.#maxScrollX; }
-    get maxScrollY() { return this.#maxScrollY; }
+    get scrollX() {
+        return this.#scrollX;
+    }
+    get scrollY() {
+        return this.#scrollY;
+    }
+    get maxScrollX() {
+        return this.#maxScrollX;
+    }
+    get maxScrollY() {
+        return this.#maxScrollY;
+    }
 
-    get onScrollCallback() { return this.#onScrollCallback; }
-    set onScrollCallback(fn) { this.#onScrollCallback = fn; }
+    get onScrollCallback() {
+        return this.#onScrollCallback;
+    }
+    set onScrollCallback(fn) {
+        this.#onScrollCallback = fn;
+    }
 
-    get onAfterScroll() { return this.#onAfterScroll; }
-    set onAfterScroll(fn) { this.#onAfterScroll = fn; }
+    get onAfterScroll() {
+        return this.#onAfterScroll;
+    }
+    set onAfterScroll(fn) {
+        this.#onAfterScroll = fn;
+    }
 
     setViewSize(w, h) {
         this.#viewW = w;
@@ -80,7 +96,7 @@ export class ScrollManager {
             const thumbH = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackH * (viewH2 / totalH)));
             vThumb.style.height = thumbH + "px";
             const ratio = this.#scrollY / this.#maxScrollY;
-            vThumb.style.top = (ratio * (trackH - thumbH)) + "px";
+            vThumb.style.top = ratio * (trackH - thumbH) + "px";
         }
 
         if (hThumb && this.#maxScrollX > 0) {
@@ -90,7 +106,7 @@ export class ScrollManager {
             const thumbW = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackW * (viewW2 / totalW)));
             hThumb.style.width = thumbW + "px";
             const ratio = this.#scrollX / this.#maxScrollX;
-            hThumb.style.left = (ratio * (trackW - thumbW)) + "px";
+            hThumb.style.left = ratio * (trackW - thumbW) + "px";
         }
     }
 

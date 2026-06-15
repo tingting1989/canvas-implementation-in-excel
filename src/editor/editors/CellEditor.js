@@ -1,4 +1,4 @@
-import {CONFIG} from "../../constants/config";
+import { CONFIG } from "../../constants/config";
 
 /**
  * 单元格编辑器基类
@@ -20,16 +20,14 @@ export class CellEditor {
     /**
      * 创建编辑器 DOM
      */
-    createEditor() {
-    }
+    createEditor() {}
 
     /**
      * 显示编辑器
      * @param {number} row
      * @param {number} col
      */
-    show(row, col) {
-    }
+    show(row, col) {}
 
     /**
      * 隐藏编辑器

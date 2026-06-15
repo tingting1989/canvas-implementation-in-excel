@@ -33,10 +33,7 @@ export class ClipboardManager {
     }
 
     #writeSystemClipboard(cells) {
-        const text = cells.map(row =>
-            row.map(cell => cell ? String(cell.value ?? "") : "")
-                .join("\t")
-        ).join("\n");
+        const text = cells.map((row) => row.map((cell) => (cell ? String(cell.value ?? "") : "")).join("\t")).join("\n");
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).catch(() => {
@@ -53,23 +50,28 @@ export class ClipboardManager {
         ta.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
         document.body.appendChild(ta);
         ta.select();
-        try { document.execCommand("copy"); } catch (_) {}
+        try {
+            document.execCommand("copy");
+        } catch (_) {}
         document.body.removeChild(ta);
     }
 
     #readSystemClipboard(sheet) {
         if (navigator.clipboard && navigator.clipboard.readText) {
-            navigator.clipboard.readText().then(text => {
-                if (text) {
-                    this.#pasteText(sheet, text);
-                } else if (this.#data) {
-                    this.#pasteInternal(sheet);
-                }
-            }).catch(() => {
-                if (this.#data) {
-                    this.#pasteInternal(sheet);
-                }
-            });
+            navigator.clipboard
+                .readText()
+                .then((text) => {
+                    if (text) {
+                        this.#pasteText(sheet, text);
+                    } else if (this.#data) {
+                        this.#pasteInternal(sheet);
+                    }
+                })
+                .catch(() => {
+                    if (this.#data) {
+                        this.#pasteInternal(sheet);
+                    }
+                });
         } else if (this.#data) {
             this.#pasteInternal(sheet);
         }

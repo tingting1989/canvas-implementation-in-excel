@@ -1,4 +1,4 @@
-import {CONFIG} from "../constants/config";
+import { CONFIG } from "../constants/config";
 
 export class RowColManager {
     #rowHeights = [];
@@ -175,7 +175,8 @@ export class RowColManager {
 
     #binarySearch(prefixSum, pos) {
         if (prefixSum.length === 0 || pos < prefixSum[0]) return 0;
-        let lo = 0, hi = prefixSum.length - 1;
+        let lo = 0,
+            hi = prefixSum.length - 1;
         while (lo < hi) {
             const mid = (lo + hi + 1) >> 1;
             if (prefixSum[mid] <= pos) lo = mid;
@@ -244,8 +245,12 @@ export class RowColManager {
         this.#rowPrefixDirty = true;
     }
 
-    get pageStartRow() { return this.#pageStartRow; }
-    get pageEndRow() { return this.#pageEndRow; }
+    get pageStartRow() {
+        return this.#pageStartRow;
+    }
+    get pageEndRow() {
+        return this.#pageEndRow;
+    }
 
     /**
      * 隐藏指定列（将宽度设为 0）

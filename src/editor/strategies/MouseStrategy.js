@@ -101,8 +101,7 @@ export class MouseStrategy extends EventStrategy {
         const focusRow = merge ? merge.bottomRow : row;
         const focusCol = merge ? merge.bottomCol : col;
 
-        if (focusRow !== this.handler.sheet.selection.getFocus()[0] ||
-            focusCol !== this.handler.sheet.selection.getFocus()[1]) {
+        if (focusRow !== this.handler.sheet.selection.getFocus()[0] || focusCol !== this.handler.sheet.selection.getFocus()[1]) {
             this.handler.sheet.selection.setRange(this.#dragAnchorRow, this.#dragAnchorCol, focusRow, focusCol);
             this.handler.render();
         }
@@ -146,7 +145,7 @@ export class MouseStrategy extends EventStrategy {
         } else {
             this.handler.sheet.selection.setActive(row, col);
         }
-        this.handler.editor.show(row, col, 'end');
+        this.handler.editor.show(row, col, "end");
     }
 
     #getTopLeft(row, col) {

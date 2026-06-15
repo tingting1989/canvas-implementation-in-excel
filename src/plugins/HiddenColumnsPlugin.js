@@ -24,7 +24,9 @@ import { BasePlugin } from "./BasePlugin.js";
 import { HOOKS } from "../constants/hookNames.js";
 
 export class HiddenColumnsPlugin extends BasePlugin {
-    static get PLUGIN_NAME() { return 'hiddenColumns'; }
+    static get PLUGIN_NAME() {
+        return "hiddenColumns";
+    }
 
     /** 插件是否激活 */
     #active = false;
@@ -36,7 +38,7 @@ export class HiddenColumnsPlugin extends BasePlugin {
      */
     init(options = {}) {
         super.init(options);
-        console.log('HiddenColumnsPlugin init', options);
+        console.log("HiddenColumnsPlugin init", options);
         if (Array.isArray(options.columns)) {
             for (const col of options.columns) {
                 if (col >= 0) this.sheet.rowColManager.hideColumn(col);
@@ -51,7 +53,9 @@ export class HiddenColumnsPlugin extends BasePlugin {
     }
 
     /** 插件是否激活 */
-    get active() { return this.#active; }
+    get active() {
+        return this.#active;
+    }
 
     /** 获取所有隐藏列索引（升序数组） */
     get hiddenColumns() {

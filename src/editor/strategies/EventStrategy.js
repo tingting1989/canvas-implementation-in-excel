@@ -23,14 +23,12 @@ export class EventStrategy {
     /**
      * 初始化策略（子类可覆盖，用于非事件相关的初始化）
      */
-    init() {
-    }
+    init() {}
 
     /**
      * 销毁策略（子类可覆盖，用于清理非事件资源）
      */
-    destroy() {
-    }
+    destroy() {}
 
     /**
      * 启用策略

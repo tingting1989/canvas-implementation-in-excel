@@ -28,7 +28,7 @@ export class Hooks {
 
         const defaultHookNames = Object.values(HOOKS);
 
-        defaultHookNames.forEach(hookName => {
+        defaultHookNames.forEach((hookName) => {
             this.hooks.set(hookName, []);
         });
 
@@ -42,8 +42,8 @@ export class Hooks {
      * @param {Function} callback - 回调函数
      */
     addHook(hookName, callback) {
-        if (typeof callback !== 'function') {
-            throw new Error('Hook callback must be a function');
+        if (typeof callback !== "function") {
+            throw new Error("Hook callback must be a function");
         }
 
         if (!this.hooks.has(hookName)) {
@@ -60,8 +60,8 @@ export class Hooks {
      * @param {Function} callback - 回调函数
      */
     addHookOnce(hookName, callback) {
-        if (typeof callback !== 'function') {
-            throw new Error('Hook callback must be a function');
+        if (typeof callback !== "function") {
+            throw new Error("Hook callback must be a function");
         }
 
         const onceCallback = (...args) => {

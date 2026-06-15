@@ -21,13 +21,13 @@ export class Chunk {
         this.cells.delete(this.#key(row, col));
     }
 
-    * iterate() {
+    *iterate() {
         for (const [key, cell] of this.cells) {
             const [rowOffset, colOffset] = key.split(":").map(Number);
             yield {
                 row: this.rowStart + rowOffset,
                 col: this.colStart + colOffset,
-                cell
+                cell,
             };
         }
     }

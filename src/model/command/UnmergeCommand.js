@@ -15,12 +15,7 @@ export class UnmergeCommand {
 
     undo() {
         if (this.oldMerge) {
-            this.manager.merge(
-                this.oldMerge.topRow,
-                this.oldMerge.topCol,
-                this.oldMerge.bottomRow,
-                this.oldMerge.bottomCol
-            );
+            this.manager.merge(this.oldMerge.topRow, this.oldMerge.topCol, this.oldMerge.bottomRow, this.oldMerge.bottomCol);
         }
     }
 }

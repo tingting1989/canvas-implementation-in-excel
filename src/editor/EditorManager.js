@@ -21,8 +21,8 @@ export class EditorManager {
 
     /** 初始化默认编辑器 */
     #initEditors() {
-        this.editors.set('text', new TextEditor(this.renderEngine, this.sheet));
-        this.editors.get('text').createEditor();
+        this.editors.set("text", new TextEditor(this.renderEngine, this.sheet));
+        this.editors.get("text").createEditor();
     }
 
     /**
@@ -30,7 +30,7 @@ export class EditorManager {
      * 兼容旧接口
      */
     get editor() {
-        return this.editors.get('text');
+        return this.editors.get("text");
     }
 
     /**
@@ -40,8 +40,8 @@ export class EditorManager {
      * @param {number} col - 列号
      * @param {'select'|'end'} cursorMode - 光标模式（透传给 TextEditor）
      */
-    show(row, col, cursorMode = 'select') {
-        const textEditor = this.editors.get('text');
+    show(row, col, cursorMode = "select") {
+        const textEditor = this.editors.get("text");
         if (textEditor) {
             textEditor.show(row, col, cursorMode);
         }

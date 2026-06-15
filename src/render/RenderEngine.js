@@ -4,8 +4,8 @@ import { TileRenderer } from "./TileRenderer.js";
 import { OverlayRenderer } from "./OverlayRenderer.js";
 import { HeaderRenderer } from "./HeaderRenderer.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
-import {CONFIG} from "../constants/config";
-import {HIT_TYPE} from "../constants/hitType";
+import { CONFIG } from "../constants/config";
+import { HIT_TYPE } from "../constants/hitType";
 
 export class RenderEngine {
     #currentSheet = null;
@@ -31,15 +31,31 @@ export class RenderEngine {
         this.#bindEvents();
     }
 
-    get scrollX() { return this.scrollMgr.scrollX; }
-    get scrollY() { return this.scrollMgr.scrollY; }
-    get viewW() { return this.#viewW; }
-    get viewH() { return this.#viewH; }
-    get dpr() { return this.#dpr; }
-    get currentSheet() { return this.#currentSheet; }
+    get scrollX() {
+        return this.scrollMgr.scrollX;
+    }
+    get scrollY() {
+        return this.scrollMgr.scrollY;
+    }
+    get viewW() {
+        return this.#viewW;
+    }
+    get viewH() {
+        return this.#viewH;
+    }
+    get dpr() {
+        return this.#dpr;
+    }
+    get currentSheet() {
+        return this.#currentSheet;
+    }
 
-    get onScrollCallback() { return this.scrollMgr.onScrollCallback; }
-    set onScrollCallback(fn) { this.scrollMgr.onScrollCallback = fn; }
+    get onScrollCallback() {
+        return this.scrollMgr.onScrollCallback;
+    }
+    set onScrollCallback(fn) {
+        this.scrollMgr.onScrollCallback = fn;
+    }
 
     #initCanvasSize() {
         const rect = this.wrap.getBoundingClientRect();
@@ -228,8 +244,7 @@ export class RenderEngine {
         const y2 = headerH + rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - sy;
 
         const handleSize = 6;
-        return px >= x2 - handleSize && px <= x2 &&
-               py >= y2 - handleSize && py <= y2;
+        return px >= x2 - handleSize && px <= x2 && py >= y2 - handleSize && py <= y2;
     }
 
     scrollToCell(row, col) {
@@ -238,8 +253,12 @@ export class RenderEngine {
         this.scrollMgr.scrollToCell(row, col, rc);
     }
 
-    get maxScrollX() { return this.scrollMgr.maxScrollX; }
-    get maxScrollY() { return this.scrollMgr.maxScrollY; }
+    get maxScrollX() {
+        return this.scrollMgr.maxScrollX;
+    }
+    get maxScrollY() {
+        return this.scrollMgr.maxScrollY;
+    }
 
     setScrollPosition(x, y) {
         this.scrollMgr.setScrollPosition(x, y);

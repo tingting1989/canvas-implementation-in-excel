@@ -26,15 +26,15 @@
  * - bom           {boolean} 是否添加 UTF-8 BOM（Excel 打开中文不乱码），默认 true
  * - range         {object}  导出范围 {startRow, startCol, endRow, endCol}，默认自动检测
  */
-import {BasePlugin} from "./BasePlugin.js";
+import { BasePlugin } from "./BasePlugin.js";
 
 /**
  * 格式预设：每种格式对应的分隔符、MIME 类型和文件扩展名
  * 扩展新格式只需在此添加一行
  */
 const FORMAT_PRESETS = {
-    csv: {separator: ",", mimeType: "text/csv", fileExtension: "csv"},
-    tsv: {separator: "\t", mimeType: "text/tab-separated-values", fileExtension: "tsv"},
+    csv: { separator: ",", mimeType: "text/csv", fileExtension: "csv" },
+    tsv: { separator: "\t", mimeType: "text/tab-separated-values", fileExtension: "tsv" },
 };
 
 /** 默认导出选项 */
@@ -57,7 +57,7 @@ const DEFAULT_OPTIONS = {
  */
 function buildOptions(format, userOptions) {
     const preset = FORMAT_PRESETS[format] || FORMAT_PRESETS.csv;
-    return {...DEFAULT_OPTIONS, ...preset, ...userOptions};
+    return { ...DEFAULT_OPTIONS, ...preset, ...userOptions };
 }
 
 /**
@@ -106,15 +106,13 @@ function getDataRange(sheet) {
     let maxCol = -1;
 
     for (const chunk of sheet.cellStore.chunks()) {
-        for (const {row, col} of chunk.iterate()) {
+        for (const { row, col } of chunk.iterate()) {
             if (row > maxRow) maxRow = row;
             if (col > maxCol) maxCol = col;
         }
     }
 
-    return maxRow >= 0
-        ? {startRow: 0, startCol: 0, endRow: maxRow, endCol: maxCol}
-        : null;
+    return maxRow >= 0 ? { startRow: 0, startCol: 0, endRow: maxRow, endCol: maxCol } : null;
 }
 
 /**
@@ -129,7 +127,7 @@ function getDataRange(sheet) {
 function buildRows(sheet, opts, range) {
     if (!range) return [];
 
-    const {startRow, startCol, endRow, endCol} = range;
+    const { startRow, startCol, endRow, endCol } = range;
     const rows = [];
 
     if (opts.columnHeaders) {
@@ -162,9 +160,7 @@ function buildRows(sheet, opts, range) {
  * @returns {string} 序列化后的字符串
  */
 function serialize(rows, separator) {
-    return rows
-        .map(row => row.map(v => escapeField(v, separator)).join(separator))
-        .join("\r\n");
+    return rows.map((row) => row.map((v) => escapeField(v, separator)).join(separator)).join("\r\n");
 }
 
 /**
@@ -176,8 +172,8 @@ function serialize(rows, separator) {
  * @returns {Blob} Blob 对象
  */
 function toBlob(str, opts) {
-    const content = (opts.bom && opts.encoding === "utf-8") ? "\uFEFF" + str : str;
-    return new Blob([content], {type: `${opts.mimeType};charset=${opts.encoding}`});
+    const content = opts.bom && opts.encoding === "utf-8" ? "\uFEFF" + str : str;
+    return new Blob([content], { type: `${opts.mimeType};charset=${opts.encoding}` });
 }
 
 /**
@@ -210,7 +206,9 @@ function triggerDownload(blob, filename) {
  * - downloadFile(format, options)   → 直接触发浏览器下载
  */
 export class ExportFilePlugin extends BasePlugin {
-    static get PLUGIN_NAME() { return 'exportFile'; }
+    static get PLUGIN_NAME() {
+        return "exportFile";
+    }
 
     init(options = {}) {
         super.init(options);
@@ -232,17 +230,17 @@ export class ExportFilePlugin extends BasePlugin {
 
         const range = options.range
             ? {
-                startRow: options.range.startRow ?? 0,
-                startCol: options.range.startCol ?? 0,
-                endRow: options.range.endRow ?? 0,
-                endCol: options.range.endCol ?? 0,
-            }
+                  startRow: options.range.startRow ?? 0,
+                  startCol: options.range.startCol ?? 0,
+                  endRow: options.range.endRow ?? 0,
+                  endCol: options.range.endCol ?? 0,
+              }
             : getDataRange(sheet);
 
         const rows = buildRows(sheet, opts, range);
         const str = serialize(rows, opts.separator);
 
-        return {opts, str};
+        return { opts, str };
     }
 
     /**
@@ -280,7 +278,7 @@ export class ExportFilePlugin extends BasePlugin {
         const result = this.#prepare(format, options);
         if (!result) return;
 
-        const {opts, str} = result;
+        const { opts, str } = result;
         const blob = toBlob(str, opts);
         const filename = `${opts.filename}.${opts.fileExtension}`;
         triggerDownload(blob, filename);
