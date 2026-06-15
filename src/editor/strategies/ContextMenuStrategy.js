@@ -64,28 +64,21 @@ export class ContextMenuStrategy extends EventStrategy {
      */
     static #CONTEXT_ITEMS = {
         cell: [
-            "insertRowAbove", "insertRowBelow", "insertColLeft", "insertColRight",
-            null,
-            "deleteRow", "deleteCol",
-            null,
-            "mergeCells", "unmergeCells",
-            null,
-            "clearContent",
-        ],
-        rowHeader: [
-            "insertRowAbove", "insertRowBelow",
+            "insertRowAbove",
+            "insertRowBelow",
+            "insertColLeft",
+            "insertColRight",
             null,
             "deleteRow",
-            null,
-            "clearContent",
-        ],
-        colHeader: [
-            "insertColLeft", "insertColRight",
-            null,
             "deleteCol",
             null,
+            "mergeCells",
+            "unmergeCells",
+            null,
             "clearContent",
         ],
+        rowHeader: ["insertRowAbove", "insertRowBelow", null, "deleteRow", null, "clearContent"],
+        colHeader: ["insertColLeft", "insertColRight", null, "deleteCol", null, "clearContent"],
     };
 
     /**

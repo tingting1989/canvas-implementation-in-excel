@@ -194,7 +194,7 @@ export class RowColManager {
     insertCol(atCol) {
         this.ensureSize(0, atCol + 1);
         this.#colWidths.splice(atCol, 0, CONFIG.DEFAULT_COL_WIDTH);
-        this.#hiddenCols = new Set([...this.#hiddenCols].map(c => c >= atCol ? c + 1 : c));
+        this.#hiddenCols = new Set([...this.#hiddenCols].map((c) => (c >= atCol ? c + 1 : c)));
         this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [c >= atCol ? c + 1 : c, w]));
         this.#colPrefixDirty = true;
     }
@@ -210,7 +210,7 @@ export class RowColManager {
         this.#colWidths.splice(col, 1);
         this.#hiddenCols.delete(col);
         this.#originalColWidths.delete(col);
-        this.#hiddenCols = new Set([...this.#hiddenCols].map(c => c > col ? c - 1 : c));
+        this.#hiddenCols = new Set([...this.#hiddenCols].map((c) => (c > col ? c - 1 : c)));
         this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [c > col ? c - 1 : c, w]));
         this.#colPrefixDirty = true;
     }
@@ -218,9 +218,9 @@ export class RowColManager {
     #shiftIndex(idx, from, to) {
         if (idx === from) return to;
         if (from < to) {
-            return (idx > from && idx <= to) ? idx - 1 : idx;
+            return idx > from && idx <= to ? idx - 1 : idx;
         }
-        return (idx >= to && idx < from) ? idx + 1 : idx;
+        return idx >= to && idx < from ? idx + 1 : idx;
     }
 
     moveCol(fromCol, toCol) {
@@ -229,7 +229,7 @@ export class RowColManager {
         const [width] = this.#colWidths.splice(fromCol, 1);
         this.#colWidths.splice(toCol, 0, width);
 
-        this.#hiddenCols = new Set([...this.#hiddenCols].map(c => this.#shiftIndex(c, fromCol, toCol)));
+        this.#hiddenCols = new Set([...this.#hiddenCols].map((c) => this.#shiftIndex(c, fromCol, toCol)));
         this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [this.#shiftIndex(c, fromCol, toCol), w]));
 
         this.#colPrefixDirty = true;
