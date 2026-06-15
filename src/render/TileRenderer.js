@@ -125,11 +125,15 @@ export class TileRenderer {
     }
 
     #drawCellBorder(ctx, merge, drawX, drawY, w, h) {
+        if (merge) return;
         ctx.strokeStyle = CONFIG.GRID_COLOR;
         ctx.lineWidth = 1;
-        if (!merge) {
-            ctx.strokeRect(drawX + 0.5, drawY + 0.5, w - 1, h - 1);
-        }
+        ctx.beginPath();
+        ctx.moveTo(drawX + w - 0.5, drawY);
+        ctx.lineTo(drawX + w - 0.5, drawY + h);
+        ctx.moveTo(drawX, drawY + h - 0.5);
+        ctx.lineTo(drawX + w, drawY + h - 0.5);
+        ctx.stroke();
     }
 
     #drawCellText(ctx, sheet, r, c, cell, drawX, drawY, w, h) {

@@ -20,7 +20,11 @@ import { HIT_TYPE } from "../constants/hitType";
  * - 使用 requestAnimationFrame 合并渲染请求，避免重复绘制
  */
 export class RenderEngine {
-    /** @type {Sheet|null} 当前正在渲染的工作表 */
+    /**
+     * @type {Sheet|null} 当前正在渲染的工作表
+     *
+     * */
+
     #currentSheet = null;
     /** @type {number|null} requestAnimationFrame 回调 ID，用于取消未执行的渲染帧 */
     #rafId = null;
@@ -115,12 +119,14 @@ export class RenderEngine {
         const rect = this.outerWrap.getBoundingClientRect();
         const w = width ?? rect.width;
         const h = height ?? rect.height;
-        this.#viewW = w;
-        this.#viewH = h;
-        this.canvas.width = w * this.#dpr;
-        this.canvas.height = h * this.#dpr;
-        this.canvas.style.width = w + "px";
-        this.canvas.style.height = h + "px";
+        const canvasW = w - CONFIG.SCROLLBAR_WIDTH;
+        const canvasH = h - CONFIG.SHEET_TAB_HEIGHT;
+        this.#viewW = canvasW;
+        this.#viewH = canvasH;
+        this.canvas.width = canvasW * this.#dpr;
+        this.canvas.height = canvasH * this.#dpr;
+        this.canvas.style.width = canvasW + "px";
+        this.canvas.style.height = canvasH + "px";
         this.wrap.style.width = w + "px";
         this.wrap.style.height = h + "px";
     }
@@ -185,8 +191,7 @@ export class RenderEngine {
         this.#currentSheet = sheet;
 
         const rc = sheet.rowColManager;
-        const effectiveH = this.#viewH - CONFIG.SHEET_TAB_HEIGHT;
-        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, effectiveH);
+        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH);
 
         const ctx = this.ctx;
         const viewW = this.#viewW;
@@ -196,13 +201,14 @@ export class RenderEngine {
 
         ctx.setTransform(this.#dpr, 0, 0, this.#dpr, 0, 0);
         ctx.clearRect(0, 0, viewW, viewH);
-
-        this.tileRenderer.render(ctx, sheet, sx, sy, viewW, effectiveH);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        this.tileRenderer.render(ctx, sheet, sx, sy, viewW, viewH);
         this.overlayRenderer.renderMerges(ctx, sheet, sx, sy);
-        this.overlayRenderer.renderSelection(ctx, sheet, sx, sy, viewW, effectiveH);
-        this.headerRenderer.render(ctx, sheet, sx, sy, viewW, effectiveH);
+        this.overlayRenderer.renderSelection(ctx, sheet, sx, sy, viewW, viewH);
+        this.headerRenderer.render(ctx, sheet, sx, sy, viewW, viewH);
 
-        this.scrollMgr.updateScrollbars(this.#viewW, effectiveH);
+        this.scrollMgr.updateScrollbars(this.#viewW, this.#viewH);
     }
 
     /**
@@ -256,10 +262,9 @@ export class RenderEngine {
         const py = clientY - rect.top;
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
-        const effectiveH = this.#viewH - CONFIG.SHEET_TAB_HEIGHT;
         const sheet = this.#currentSheet;
 
-        if (py > effectiveH) return null;
+        if (px > this.#viewW || py > this.#viewH) return null;
 
         if (px >= 0 && px <= headerW && py >= 0 && py <= headerH) {
             return { type: HIT_TYPE.CORNER };
@@ -321,9 +326,7 @@ export class RenderEngine {
         const hitArea = CONFIG.RESIZE_HIT_AREA;
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
-        const effectiveH = this.#viewH - CONFIG.SHEET_TAB_HEIGHT;
-
-        if (py > effectiveH) return null;
+        if (px > this.#viewW || py > this.#viewH) return null;
 
         if (py >= 0 && py <= headerH && px > headerW) {
             const dataX = px - headerW + sx;

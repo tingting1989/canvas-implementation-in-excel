@@ -13,7 +13,7 @@ function injectSheetTabStyles() {
   position: absolute;
   bottom: 0;
   left: 0;
-  right: 50%;
+  width: calc((100% - ${CONFIG.SCROLLBAR_WIDTH}px) / 2);
   height: ${CONFIG.SHEET_TAB_HEIGHT}px;
   background: #f5f5f5;
   border-top: 1px solid #ddd;
@@ -23,7 +23,7 @@ function injectSheetTabStyles() {
   user-select: none;
 }
 .cs-sheet-add-btn {
-  width: ${CONFIG.SHEET_TAB_HEIGHT}px;
+  width: ${CONFIG.HEADER_WIDTH}px;
   height: ${CONFIG.SHEET_TAB_HEIGHT}px;
   display: flex;
   align-items: center;
@@ -54,7 +54,7 @@ function injectSheetTabStyles() {
 .cs-sheet-tab {
   display: inline-flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 8px;
   height: 100%;
   font-size: 12px;
   color: #444;

@@ -12,7 +12,7 @@ function injectScrollbarStyles() {
 .cs-scrollbar-h {
   position: absolute;
   bottom: 0;
-  left: 50%;
+  left: calc((100% - ${CONFIG.SCROLLBAR_WIDTH}px) / 2);
   right: ${CONFIG.SCROLLBAR_WIDTH}px;
   height: ${CONFIG.SHEET_TAB_HEIGHT}px;
   background: #f1f1f1;
@@ -141,7 +141,7 @@ export class ScrollManager {
         const onDragMove = (e) => {
             if (dragging === "h") {
                 const dx = e.clientX - startMouse;
-                const trackW = this.#viewW / 2 - CONFIG.SCROLLBAR_WIDTH;
+                const trackW = this.#viewW / 2;
                 const viewW = this.#viewW - CONFIG.HEADER_WIDTH;
                 const totalContent = this.#maxScrollX + viewW;
                 const ratio = totalContent > 0 ? trackW / totalContent : 1;
@@ -251,7 +251,7 @@ export class ScrollManager {
         }
 
         if (this.#hThumb && this.#maxScrollX > 0) {
-            const trackW = this.#viewW / 2 - CONFIG.SCROLLBAR_WIDTH;
+            const trackW = this.#viewW / 2;
             const viewW2 = this.#viewW - CONFIG.HEADER_WIDTH;
             const totalW = this.#maxScrollX + viewW2;
             const thumbW = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackW * (viewW2 / totalW)));
