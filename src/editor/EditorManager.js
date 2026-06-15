@@ -1,8 +1,10 @@
 import { TextEditor } from "./editors/index.js";
+import { NumericEditor } from "./editors/NumericEditor.js";
 
 /**
  * 编辑器管理器（门面模式）
- * 统一管理所有类型的单元格编辑器（文本、公式等）
+ * 统一管理所有类型的单元格编辑器（文本、数字等）
+ * 根据列类型自动路由到对应的编辑器
  * 对外提供 show/hide/getEditor 等接口，隐藏编辑器实现细节
  */
 export class EditorManager {
@@ -34,8 +36,23 @@ export class EditorManager {
 
     /** 初始化默认编辑器 */
     #initEditors() {
-        this.editors.set("text", new TextEditor(this.renderEngine, this.sheet));
-        this.editors.get("text").createEditor();
+        const textEditor = new TextEditor(this.renderEngine, this.#sheet);
+        textEditor.createEditor();
+        this.editors.set("text", textEditor);
+
+        const numericEditor = new NumericEditor(this.renderEngine, this.#sheet);
+        numericEditor.createEditor();
+        this.editors.set("numeric", numericEditor);
+    }
+
+    /**
+     * 根据列类型获取对应的编辑器
+     * @param {number} col - 列号
+     * @returns {import("./editors/CellEditor.js").CellEditor}
+     */
+    #getEditorForColumn(col) {
+        const type = this.#sheet?.getColumnType(col) || "text";
+        return this.editors.get(type) || this.editors.get("text");
     }
 
     /**
@@ -48,15 +65,17 @@ export class EditorManager {
 
     /**
      * 显示指定单元格的编辑器
+     * 根据列类型自动选择对应的编辑器
      *
      * @param {number} row - 行号
      * @param {number} col - 列号
-     * @param {'select'|'end'} cursorMode - 光标模式（透传给 TextEditor）
+     * @param {'select'|'end'} cursorMode - 光标模式（透传给编辑器）
      */
     show(row, col, cursorMode = "select") {
-        const textEditor = this.editors.get("text");
-        if (textEditor) {
-            textEditor.show(row, col, cursorMode);
+        const editor = this.#getEditorForColumn(col);
+        if (editor) {
+            this.hide();
+            editor.show(row, col, cursorMode);
         }
     }
 
@@ -86,6 +105,17 @@ export class EditorManager {
      */
     getEditor(type) {
         return this.editors.get(type) || null;
+    }
+
+    /**
+     * 获取当前正在显示的编辑器
+     * @returns {import("./editors/CellEditor.js").CellEditor|null}
+     */
+    getActiveEditor() {
+        for (const editor of this.editors.values()) {
+            if (editor.activeRow >= 0) return editor;
+        }
+        return null;
     }
 
     /** 销毁所有编辑器，释放资源 */

@@ -90,6 +90,22 @@ export class Sheet {
         this.cellsFn = null;
 
         /**
+         * 列配置映射 col → ColumnConfig
+         * 参考 Handsontable 的 columns 选项
+         *
+         * ColumnConfig 支持的属性：
+         * - type: 'text' | 'numeric' | 'date' — 列类型，决定编辑器和渲染方式
+         * - width: number — 列宽
+         * - style: object — 列默认样式
+         * - disabled / readOnly: boolean — 整列禁用
+         * - numericFormat: { pattern: string, culture: string } — 数字格式化配置
+         * - validator: Function — 值验证函数 (value) => boolean | string
+         * - allowInvalid: boolean — 是否允许无效值
+         * - source: Array — 下拉列表数据源（type='dropdown' 时使用）
+         */
+        this.columnsConfig = new Map();
+
+        /**
          * 列头配置：
          * - true / null → 使用默认 A/B/C... 标签
          * - string[] → 自定义标签数组
@@ -230,6 +246,8 @@ export class Sheet {
      */
     isDisabled(r, c) {
         const realR = this.toRealRow(r);
+        const colConfig = this.columnsConfig.get(c);
+        if (colConfig?.disabled === true || colConfig?.readOnly === true) return true;
         const cellProps = this.resolveCellProperties(r, c);
         if (cellProps?.disabled === true || cellProps?.readOnly === true) return true;
         return this.cellStore.get(realR, c)?.disabled === true;
@@ -549,7 +567,7 @@ export class Sheet {
         const cell = this.cellStore.get(realR, c);
         const cellStyleId = cell?.styleId;
 
-        if (!colStyleId && !rowStyleId && !cellStyleId && !this.cellsFn) {
+        if (!colStyleId && !rowStyleId && !cellStyleId && !this.cellsFn && !this.columnsConfig.get(c)?.style) {
             this.#styleCache.set(key, base);
             return base;
         }
@@ -558,6 +576,11 @@ export class Sheet {
         if (colStyleId) style = { ...style, ...stylePool.getStyle(colStyleId) };
         if (rowStyleId) style = { ...style, ...stylePool.getStyle(rowStyleId) };
         if (cellStyleId) style = { ...style, ...stylePool.getStyle(cellStyleId) };
+
+        const colConfig = this.columnsConfig.get(c);
+        if (colConfig?.type === "numeric" && !style.textAlign) {
+            style = { ...style, textAlign: "right" };
+        }
 
         const cellProps = this.resolveCellProperties(r, c);
         if (cellProps?.style) style = { ...style, ...cellProps.style };
@@ -803,5 +826,169 @@ export class Sheet {
         }
 
         this.#invalidateAll();
+    }
+
+    /**
+     * 获取指定列的配置
+     * @param {number} col - 列号
+     * @returns {object|null} 列配置对象
+     */
+    getColumnConfig(col) {
+        return this.columnsConfig.get(col) || null;
+    }
+
+    /**
+     * 获取指定列的类型
+     * @param {number} col - 列号
+     * @returns {string} 列类型，默认 'text'
+     */
+    getColumnType(col) {
+        return this.columnsConfig.get(col)?.type || "text";
+    }
+
+    /**
+     * 应用 columns 配置
+     * 遍历列配置数组，逐列应用属性
+     *
+     * @param {Array<Function|object>} columnsConfig - 列配置数组
+     *   数组元素为对象时：直接作为该列的配置
+     *   数组元素为函数时：(col) => ColumnConfig，动态计算列配置
+     */
+    applyColumnsConfig(columnsConfig) {
+        if (!Array.isArray(columnsConfig)) return;
+
+        for (let c = 0; c < columnsConfig.length; c++) {
+            let config = columnsConfig[c];
+
+            if (typeof config === "function") {
+                try {
+                    config = config(c);
+                } catch {
+                    continue;
+                }
+            }
+
+            if (!config || typeof config !== "object") continue;
+
+            this.columnsConfig.set(c, config);
+
+            if (config.width != null) {
+                this.rowColManager.setColWidth(c, config.width);
+            }
+
+            if (config.style) {
+                this.colStyles.set(c, stylePool.getStyleId(config.style));
+            }
+
+            if (config.disabled === true || config.readOnly === true) {
+                this.rowColManager.ensureSize(1, c + 1);
+            }
+        }
+
+        this.#invalidateAll();
+    }
+
+    /**
+     * 格式化单元格显示值
+     * 根据列类型的 numericFormat 等配置，将原始值转换为显示文本
+     *
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {*} value - 原始值
+     * @returns {string} 格式化后的显示文本
+     */
+    formatCellValue(r, c, value) {
+        if (value === undefined || value === null) return "";
+
+        const colConfig = this.columnsConfig.get(c);
+        if (!colConfig) return String(value);
+
+        switch (colConfig.type) {
+            case "numeric":
+                return this.#formatNumeric(value, colConfig.numericFormat);
+            default:
+                return String(value);
+        }
+    }
+
+    /**
+     * 数字格式化
+     * @param {*} value - 原始值
+     * @param {object} [numericFormat] - 格式化配置
+     * @param {string} [numericFormat.pattern] - 格式模式，如 '0,0.00'、'0.00%'、'$0,0.00'
+     * @param {string} [numericFormat.culture] - 区域设置（预留）
+     * @returns {string}
+     */
+    #formatNumeric(value, numericFormat) {
+        const num = typeof value === "number" ? value : parseFloat(value);
+        if (isNaN(num)) return String(value);
+
+        if (!numericFormat || !numericFormat.pattern) {
+            return String(num);
+        }
+
+        const pattern = numericFormat.pattern;
+
+        if (pattern === "0,0.00" || pattern === "0,0.0" || pattern === "0,0") {
+            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
+            return num.toLocaleString("en-US", {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals,
+            });
+        }
+
+        if (pattern === "0.00%" || pattern === "0.0%" || pattern === "0%") {
+            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
+            return (num * 100).toLocaleString("en-US", {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals,
+            }) + "%";
+        }
+
+        if (pattern.startsWith("$") || pattern.startsWith("€") || pattern.startsWith("¥")) {
+            const symbol = pattern[0];
+            const rest = pattern.slice(1);
+            const decimals = rest.includes(".00") ? 2 : rest.includes(".0") ? 1 : 0;
+            const hasGroup = rest.includes(",");
+            const formatted = hasGroup
+                ? num.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+                : num.toFixed(decimals);
+            return symbol + formatted;
+        }
+
+        if (pattern === "0.00" || pattern === "0.0" || pattern === "0") {
+            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
+            return num.toFixed(decimals);
+        }
+
+        return String(num);
+    }
+
+    /**
+     * 验证单元格值是否符合列配置的 validator
+     * @param {number} c - 列号
+     * @param {*} value - 待验证的值
+     * @returns {boolean|string} true=有效, false=无效, string=错误消息
+     */
+    validateCellValue(c, value) {
+        const colConfig = this.columnsConfig.get(c);
+        if (!colConfig) return true;
+
+        if (colConfig.type === "numeric" && value !== "" && value !== undefined && value !== null) {
+            const num = typeof value === "number" ? value : parseFloat(value);
+            if (isNaN(num)) {
+                return colConfig.allowInvalid ? "invalid" : false;
+            }
+        }
+
+        if (typeof colConfig.validator === "function") {
+            try {
+                return colConfig.validator(value);
+            } catch {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

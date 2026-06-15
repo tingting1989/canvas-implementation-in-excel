@@ -59,6 +59,13 @@ export class Workbook {
      *   动态单元格属性函数（参考 Handsontable cells 选项）
      *   签名: (row, col) => { style?, disabled?, readOnly?, value? }
      *   优先级高于 cell 配置，每次渲染时动态计算
+     * @param {Array<object|Function>} [options.columns]
+     *   列配置数组（参考 Handsontable columns 选项）
+     *   数组索引对应列号，每个元素可以是对象或函数：
+     *   - 对象形式: { type, width, style, disabled, readOnly, numericFormat, validator, allowInvalid, source }
+     *   - 函数形式: (col) => ColumnConfig
+     *   type 支持的值: 'text'（默认）, 'numeric'
+     *   numericFormat: { pattern: '0,0.00' | '0.00%' | '$0,0.00' | '0.00' | '0' }
      * @param {Function} [options.afterInit] - 初始化完成回调
      *
      * @example
@@ -162,11 +169,11 @@ export class Workbook {
 
     #setupScrollCallback() {
         this.renderEngine.onScrollCallback = () => {
-            const textEditor = this.editor?.getEditor("text");
-            if (!textEditor || textEditor.activeRow < 0) return;
+            const activeEditor = this.editor?.getActiveEditor();
+            if (!activeEditor || activeEditor.activeRow < 0) return;
 
             const rc = this.activeSheet.rowColManager;
-            const { activeRow: row, activeCol: col } = textEditor;
+            const { activeRow: row, activeCol: col } = activeEditor;
             const headerW = CONFIG.HEADER_WIDTH;
             const headerH = CONFIG.HEADER_HEIGHT;
             const viewW = this.renderEngine.canvas.width / (window.devicePixelRatio || 1) - headerW;
@@ -182,9 +189,9 @@ export class Workbook {
             const outOfView = cellX + cellW <= sx || cellX >= sx + viewW || cellY + cellH <= sy || cellY >= sy + viewH;
 
             if (outOfView) {
-                textEditor.hideForScroll();
+                activeEditor.hideForScroll();
             } else {
-                textEditor.restoreFromScroll();
+                activeEditor.restoreFromScroll();
             }
         };
     }
@@ -549,6 +556,9 @@ export class Workbook {
         if (typeof settings.cells === "function") {
             sheet.cellsFn = settings.cells;
         }
+        if (Array.isArray(settings.columns)) {
+            this.#applyColumnsConfig(sheet, settings.columns);
+        }
         if (settings.width != null || settings.height != null) {
             this.renderEngine?.setCanvasSize(settings.width, settings.height);
         }
@@ -604,6 +614,10 @@ export class Workbook {
     #applyCellConfig(sheet, cellConfig) {
         sheet.cellConfig = cellConfig;
         sheet.applyCellConfig();
+    }
+
+    #applyColumnsConfig(sheet, columnsConfig) {
+        sheet.applyColumnsConfig(columnsConfig);
     }
 
     #getExportPlugin() {

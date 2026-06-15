@@ -148,12 +148,6 @@ export class TileRenderer {
         const finalStyle = sheet.resolveStyle(r, c);
         ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || "#222";
 
-        /**
-         * 构建字体字符串
-         * 格式：[fontStyle] [fontWeight] [fontSize]px [fontFamily]
-         * fontStyle: italic / normal
-         * fontWeight: bold / normal
-         */
         const fontStyle = finalStyle.fontStyle === "italic" ? "italic" : "";
         const fontWeight = finalStyle.fontWeight || "normal";
         const fontSize = finalStyle.fontSize || 12;
@@ -163,6 +157,8 @@ export class TileRenderer {
         const textAlign = finalStyle.textAlign || "left";
         ctx.textAlign = textAlign;
 
+        const displayValue = sheet.formatCellValue(r, c, cell.value);
+
         let textX = drawX + 4;
         if (textAlign === "center") {
             textX = drawX + w / 2;
@@ -170,15 +166,14 @@ export class TileRenderer {
             textX = drawX + w - 4;
         }
 
-        ctx.fillText(String(cell.value), textX, drawY + h / 2 + 4);
+        ctx.fillText(displayValue, textX, drawY + h / 2 + 4);
 
         /**
          * 绘制下划线
          * textDecoration: underline 时在文字下方绘制一条线
          */
         if (finalStyle.textDecoration === "underline") {
-            const text = String(cell.value);
-            const textWidth = ctx.measureText(text).width;
+            const textWidth = ctx.measureText(displayValue).width;
             let lineX = textX;
             if (textAlign === "center") {
                 lineX = textX - textWidth / 2;

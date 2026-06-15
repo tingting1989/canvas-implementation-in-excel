@@ -43,15 +43,8 @@ export class KeyboardStrategy extends EventStrategy {
         const { sheet, editor } = this.handler;
         if (!sheet || !editor) return;
 
-        /**
-         * 检查编辑器是否正在显示
-         * editor.editor → TextEditor 实例
-         * editor.editor.editor → DOM <input> 元素
-         * 需要检查 DOM 元素的 display 样式
-         */
-        const textEditor = editor.editor;
-        const inputEl = textEditor?.editor;
-        if (inputEl && inputEl.style && inputEl.style.display === "block") {
+        const activeEditor = editor.getActiveEditor();
+        if (activeEditor && activeEditor.editor && activeEditor.editor.style.display === "block") {
             this.#handleEditingKey(e);
             return;
         }
@@ -224,26 +217,16 @@ export class KeyboardStrategy extends EventStrategy {
         const { sheet, editor } = this.handler;
         const range = sheet.selection.getRange();
 
-        /**
-         * 显示编辑器，但先清空输入框
-         * show() 会将当前单元格值填入 input，
-         * 我们需要用输入的字符替换它
-         */
         const [ar, ac] = sheet.selection.getActive();
         editor.show(ar, ac);
 
-        const textEditor = editor.editor;
-        const inputEl = textEditor?.editor;
+        const activeEditor = editor.getActiveEditor();
+        const inputEl = activeEditor?.editor;
         if (inputEl) {
             inputEl.value = e.key;
             inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
         }
 
-        /**
-         * 标记当前为批量赋值模式
-         * TextEditor 在 blur 时会检查此标记，
-         * 如果是批量模式，则将值填充到整个选区
-         */
         this.#markBatchFill(sheet, range);
     }
 

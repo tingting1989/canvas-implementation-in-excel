@@ -22,14 +22,12 @@ const initApp = () => {
 
     const wb = new Workbook("grid", {
         data: [
-            ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
             ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
             ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
             ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
         ],
         colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
         rowHeaders: false,
-        colWidths: [120, 80, 100, 100, 100, 100],
         width: 400,
         height: 300,
         startRows: 100,
@@ -116,6 +114,14 @@ const initApp = () => {
                 return { style: { textAlign: "right", fontWeight: "bold" } };
             }
         },
+        columns: [
+            { type: "text", width: 120, style: { textAlign: "left" } },
+            { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
+            { type: "text", width: 100 },
+            { type: "text", width: 100 },
+            { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
+            { type: "text", width: 100 },
+        ],
         // 统一默认样式 — 所有单元格的基础字体
         defaultStyle: {
             fontSize: 14,
