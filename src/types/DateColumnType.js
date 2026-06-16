@@ -1,4 +1,4 @@
-import { ColumnType } from './ColumnType.js';
+import { ColumnType } from "./ColumnType.js";
 
 /**
  * 日期列类型
@@ -18,15 +18,15 @@ import { ColumnType } from './ColumnType.js';
  */
 export class DateColumnType extends ColumnType {
     get name() {
-        return 'date';
+        return "date";
     }
 
     get editorType() {
-        return 'date';
+        return "date";
     }
 
     getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: 'center' };
+        return { ...baseStyle, textAlign: "center" };
     }
 
     /**
@@ -35,22 +35,22 @@ export class DateColumnType extends ColumnType {
      * @returns {string}
      */
     format(value) {
-        if (value === undefined || value === null) return '';
+        if (value === undefined || value === null) return "";
 
         const date = this.#toDate(value);
         if (!date || isNaN(date.getTime())) return String(value);
 
-        const pattern = this.options?.dateFormat?.pattern || 'YYYY-MM-DD';
+        const pattern = this.options?.dateFormat?.pattern || "YYYY-MM-DD";
 
         return this.#formatDate(date, pattern);
     }
 
     validate(value) {
-        if (value === '' || value === undefined || value === null) return true;
+        if (value === "" || value === undefined || value === null) return true;
 
         const date = this.#toDate(value);
         if (!date || isNaN(date.getTime())) {
-            return this.options?.allowInvalid ? 'invalid' : false;
+            return this.options?.allowInvalid ? "invalid" : false;
         }
 
         const min = this.options?.min;
@@ -68,7 +68,7 @@ export class DateColumnType extends ColumnType {
     }
 
     parse(input) {
-        if (!input || !input.trim()) return '';
+        if (!input || !input.trim()) return "";
         const trimmed = input.trim();
 
         // 尝试多种常见日期格式
@@ -131,12 +131,12 @@ export class DateColumnType extends ColumnType {
         return input;
     }
 
-    compare(a, b, order = 'asc') {
+    compare(a, b, order = "asc") {
         const da = this.#toDate(a);
         const db = this.#toDate(b);
         const ta = da && !isNaN(da.getTime()) ? da.getTime() : -Infinity;
         const tb = db && !isNaN(db.getTime()) ? db.getTime() : -Infinity;
-        return order === 'asc' ? ta - tb : tb - ta;
+        return order === "asc" ? ta - tb : tb - ta;
     }
 
     /**
@@ -146,8 +146,8 @@ export class DateColumnType extends ColumnType {
      */
     #toDate(value) {
         if (value instanceof Date) return value;
-        if (typeof value === 'number') return new Date(value);
-        if (typeof value === 'string') {
+        if (typeof value === "number") return new Date(value);
+        if (typeof value === "string") {
             const d = new Date(value);
             return isNaN(d.getTime()) ? null : d;
         }
@@ -162,25 +162,24 @@ export class DateColumnType extends ColumnType {
      */
     #formatDate(date, pattern) {
         const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        const h = String(date.getHours()).padStart(2, '0');
-        const mi = String(date.getMinutes()).padStart(2, '0');
-        const s = String(date.getSeconds()).padStart(2, '0');
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        const h = String(date.getHours()).padStart(2, "0");
+        const mi = String(date.getMinutes()).padStart(2, "0");
+        const s = String(date.getSeconds()).padStart(2, "0");
 
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
         return pattern
-            .replace('YYYY', String(y))
-            .replace('YY', String(y).slice(-2))
-            .replace('MM', m)
-            .replace('M', String(date.getMonth() + 1))
-            .replace('DD', d)
-            .replace('D', String(date.getDate()))
-            .replace('HH', h)
-            .replace('mm', mi)
-            .replace('ss', s)
-            .replace('Mon', monthNames[date.getMonth()]);
+            .replace("YYYY", String(y))
+            .replace("YY", String(y).slice(-2))
+            .replace("MM", m)
+            .replace("M", String(date.getMonth() + 1))
+            .replace("DD", d)
+            .replace("D", String(date.getDate()))
+            .replace("HH", h)
+            .replace("mm", mi)
+            .replace("ss", s)
+            .replace("Mon", monthNames[date.getMonth()]);
     }
 }

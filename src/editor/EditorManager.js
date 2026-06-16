@@ -1,7 +1,7 @@
-import { TextEditor } from './editors/index.js';
-import { NumericEditor } from './editors/NumericEditor.js';
-import { DateEditor } from './editors/DateEditor.js';
-import { SelectEditor } from './editors/SelectEditor.js';
+import { TextEditor } from "./editors/index.js";
+import { NumericEditor } from "./editors/NumericEditor.js";
+import { DateEditor } from "./editors/DateEditor.js";
+import { SelectEditor } from "./editors/SelectEditor.js";
 
 /**
  * 编辑器管理器（门面模式）
@@ -41,22 +41,22 @@ export class EditorManager {
         // 文本编辑器
         const textEditor = new TextEditor(this.renderEngine, this.#sheet);
         textEditor.createEditor();
-        this.editors.set('text', textEditor);
+        this.editors.set("text", textEditor);
 
         // 数字编辑器
         const numericEditor = new NumericEditor(this.renderEngine, this.#sheet);
         numericEditor.createEditor();
-        this.editors.set('numeric', numericEditor);
+        this.editors.set("numeric", numericEditor);
 
         // 日期编辑器
         const dateEditor = new DateEditor(this.renderEngine, this.#sheet);
         dateEditor.createEditor();
-        this.editors.set('date', dateEditor);
+        this.editors.set("date", dateEditor);
 
         // 下拉选择编辑器
         const selectEditor = new SelectEditor(this.renderEngine, this.#sheet);
         selectEditor.createEditor();
-        this.editors.set('select', selectEditor);
+        this.editors.set("select", selectEditor);
     }
 
     /**
@@ -78,7 +78,7 @@ export class EditorManager {
         }
 
         // 回退：默认 text 编辑器
-        return this.editors.get('text');
+        return this.editors.get("text");
     }
 
     /**
@@ -86,7 +86,7 @@ export class EditorManager {
      * 兼容旧接口
      */
     get editor() {
-        return this.editors.get('text');
+        return this.editors.get("text");
     }
 
     /**
@@ -97,7 +97,7 @@ export class EditorManager {
      * @param {number} col - 列号
      * @param {'select'|'end'} cursorMode - 光标模式（透传给编辑器）
      */
-    show(row, col, cursorMode = 'select') {
+    show(row, col, cursorMode = "select") {
         const editor = this.#getEditorForCell(row, col);
         if (editor) {
             this.hide();

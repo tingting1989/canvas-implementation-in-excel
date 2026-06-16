@@ -17,21 +17,11 @@ export class CellType {
      * @param {*} [options.defaultValue] - 该类型的默认值
      * @param {Function} [options.compareFn] - 排序比较函数 (a, b, order) => number
      */
-    constructor({
-        name,
-        editorType,
-        format,
-        validate,
-        parse,
-        getDefaultStyle,
-        editorOptions,
-        defaultValue,
-        compareFn,
-    } = {}) {
-        this.name = name || 'text';
-        this.editorType = editorType || 'text';
+    constructor({ name, editorType, format, validate, parse, getDefaultStyle, editorOptions, defaultValue, compareFn } = {}) {
+        this.name = name || "text";
+        this.editorType = editorType || "text";
         this.editorOptions = editorOptions || {};
-        this.defaultValue = defaultValue !== undefined ? defaultValue : '';
+        this.defaultValue = defaultValue !== undefined ? defaultValue : "";
         this._formatFn = format || null;
         this._validateFn = validate || null;
         this._parseFn = parse || null;
@@ -46,7 +36,7 @@ export class CellType {
      */
     format(value) {
         if (this._formatFn) return this._formatFn(value);
-        if (value === undefined || value === null) return '';
+        if (value === undefined || value === null) return "";
         return String(value);
     }
 
@@ -87,12 +77,12 @@ export class CellType {
      * @param {'asc'|'desc'} order - 排序方向
      * @returns {number} 负数=a在前, 正数=b在前
      */
-    compare(a, b, order = 'asc') {
+    compare(a, b, order = "asc") {
         if (this._compareFn) return this._compareFn(a, b, order);
 
-        const sa = String(a ?? '');
-        const sb = String(b ?? '');
+        const sa = String(a ?? "");
+        const sb = String(b ?? "");
         const result = sa.localeCompare(sb, undefined, { numeric: true });
-        return order === 'desc' ? -result : result;
+        return order === "desc" ? -result : result;
     }
 }

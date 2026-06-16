@@ -144,7 +144,7 @@ export class Workbook {
     }
 
     initRender() {
-        console.log(123)
+        console.log(123);
         if (this.renderEngine) return;
 
         if (this.sheets.size === 0) {

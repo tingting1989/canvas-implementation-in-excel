@@ -1,4 +1,4 @@
-import { ColumnType } from './ColumnType.js';
+import { ColumnType } from "./ColumnType.js";
 
 /**
  * 文本列类型
@@ -10,20 +10,20 @@ import { ColumnType } from './ColumnType.js';
  */
 export class TextColumnType extends ColumnType {
     get name() {
-        return 'text';
+        return "text";
     }
 
     get editorType() {
-        return 'text';
+        return "text";
     }
 
     format(value) {
-        if (value === undefined || value === null) return '';
+        if (value === undefined || value === null) return "";
         return String(value);
     }
 
     validate(value) {
-        if (value === '' || value === undefined || value === null) return true;
+        if (value === "" || value === undefined || value === null) return true;
         const str = String(value);
         const maxLength = this.options?.maxLength;
         if (maxLength != null && str.length > maxLength) {
@@ -44,7 +44,7 @@ export class TextColumnType extends ColumnType {
     getDefaultStyle(baseStyle) {
         // 文本默认左对齐
         if (!baseStyle?.textAlign) {
-            return { ...baseStyle, textAlign: 'left' };
+            return { ...baseStyle, textAlign: "left" };
         }
         return baseStyle;
     }

@@ -1,4 +1,4 @@
-import { ColumnType } from './ColumnType.js';
+import { ColumnType } from "./ColumnType.js";
 
 /**
  * 数字列类型
@@ -11,20 +11,20 @@ import { ColumnType } from './ColumnType.js';
  */
 export class NumericColumnType extends ColumnType {
     get name() {
-        return 'numeric';
+        return "numeric";
     }
 
     get editorType() {
-        return 'numeric';
+        return "numeric";
     }
 
     getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: 'right' };
+        return { ...baseStyle, textAlign: "right" };
     }
 
     format(value) {
-        if (value === undefined || value === null) return '';
-        const num = typeof value === 'number' ? value : parseFloat(value);
+        if (value === undefined || value === null) return "";
+        const num = typeof value === "number" ? value : parseFloat(value);
         if (isNaN(num)) return String(value);
 
         const pattern = this.options?.numericFormat?.pattern;
@@ -34,11 +34,11 @@ export class NumericColumnType extends ColumnType {
     }
 
     validate(value) {
-        if (value === '' || value === undefined || value === null) return true;
+        if (value === "" || value === undefined || value === null) return true;
 
-        const num = typeof value === 'number' ? value : parseFloat(value);
+        const num = typeof value === "number" ? value : parseFloat(value);
         if (isNaN(num)) {
-            return this.options?.allowInvalid ? 'invalid' : false;
+            return this.options?.allowInvalid ? "invalid" : false;
         }
 
         const min = this.options?.min;
@@ -54,61 +54,61 @@ export class NumericColumnType extends ColumnType {
     }
 
     parse(input) {
-        if (!input) return '';
-        const cleaned = String(input).replace(/[,\s]+/g, '');
+        if (!input) return "";
+        const cleaned = String(input).replace(/[,\s]+/g, "");
         const num = parseFloat(cleaned);
         return isNaN(num) ? input : num;
     }
 
-    compare(a, b, order = 'asc') {
-        const na = typeof a === 'number' ? a : parseFloat(a);
-        const nb = typeof b === 'number' ? b : parseFloat(b);
+    compare(a, b, order = "asc") {
+        const na = typeof a === "number" ? a : parseFloat(a);
+        const nb = typeof b === "number" ? b : parseFloat(b);
         const va = isNaN(na) ? -Infinity : na;
         const vb = isNaN(nb) ? -Infinity : nb;
-        return order === 'asc' ? va - vb : vb - va;
+        return order === "asc" ? va - vb : vb - va;
     }
 
     #formatByPattern(num, pattern) {
         // 千分位格式: 0,0.00 / 0,0.0 / 0,0
-        if (pattern === '0,0.00' || pattern === '0,0.0' || pattern === '0,0') {
-            const decimals = pattern.includes('.00') ? 2 : pattern.includes('.0') ? 1 : 0;
-            return num.toLocaleString('en-US', {
+        if (pattern === "0,0.00" || pattern === "0,0.0" || pattern === "0,0") {
+            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
+            return num.toLocaleString("en-US", {
                 minimumFractionDigits: decimals,
                 maximumFractionDigits: decimals,
             });
         }
 
         // 百分比格式: 0.00% / 0.0% / 0%
-        if (pattern === '0.00%' || pattern === '0.0%' || pattern === '0%') {
-            const decimals = pattern.includes('.00') ? 2 : pattern.includes('.0') ? 1 : 0;
+        if (pattern === "0.00%" || pattern === "0.0%" || pattern === "0%") {
+            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
             return (
-                (num * 100).toLocaleString('en-US', {
+                (num * 100).toLocaleString("en-US", {
                     minimumFractionDigits: decimals,
                     maximumFractionDigits: decimals,
-                }) + '%'
+                }) + "%"
             );
         }
 
         // 货币格式: $0,0.00 / €0,0.00 / ¥0,0.00 等
-        if (pattern.startsWith('$') || pattern.startsWith('\u20AC') || pattern.startsWith('\u00A5')) {
+        if (pattern.startsWith("$") || pattern.startsWith("\u20AC") || pattern.startsWith("\u00A5")) {
             const symbol = pattern[0];
             const rest = pattern.slice(1);
-            const decimals = rest.includes('.00') ? 2 : rest.includes('.0') ? 1 : 0;
-            const hasGroup = rest.includes(',');
+            const decimals = rest.includes(".00") ? 2 : rest.includes(".0") ? 1 : 0;
+            const hasGroup = rest.includes(",");
             const formatted = hasGroup
-                ? num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+                ? num.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
                 : num.toFixed(decimals);
             return symbol + formatted;
         }
 
         // 小数格式: 0.00 / 0.0 / 0
-        if (pattern === '0.00' || pattern === '0.0' || pattern === '0') {
-            const decimals = pattern.includes('.00') ? 2 : pattern.includes('.0') ? 1 : 0;
+        if (pattern === "0.00" || pattern === "0.0" || pattern === "0") {
+            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
             return num.toFixed(decimals);
         }
 
         // 科学计数法: 0.00E+00
-        if (pattern === '0.00E+00') {
+        if (pattern === "0.00E+00") {
             return num.toExponential(2);
         }
 

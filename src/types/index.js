@@ -1,9 +1,9 @@
-import { ColumnType } from './ColumnType.js';
-import { TextColumnType } from './TextColumnType.js';
-import { NumericColumnType } from './NumericColumnType.js';
-import { DateColumnType } from './DateColumnType.js';
-import { BooleanColumnType } from './BooleanColumnType.js';
-import { SelectColumnType } from './SelectColumnType.js';
+import { ColumnType } from "./ColumnType.js";
+import { TextColumnType } from "./TextColumnType.js";
+import { NumericColumnType } from "./NumericColumnType.js";
+import { DateColumnType } from "./DateColumnType.js";
+import { BooleanColumnType } from "./BooleanColumnType.js";
+import { SelectColumnType } from "./SelectColumnType.js";
 
 /**
  * 全局类型注册表
@@ -11,11 +11,11 @@ import { SelectColumnType } from './SelectColumnType.js';
  * value: ColumnType 实例（作为原型/模板）
  */
 const registry = new Map();
-registry.set('text', new TextColumnType());
-registry.set('numeric', new NumericColumnType());
-registry.set('date', new DateColumnType());
-registry.set('boolean', new BooleanColumnType());
-registry.set('select', new SelectColumnType());
+registry.set("text", new TextColumnType());
+registry.set("numeric", new NumericColumnType());
+registry.set("date", new DateColumnType());
+registry.set("boolean", new BooleanColumnType());
+registry.set("select", new SelectColumnType());
 
 /**
  * 获取指定名称的类型实例
@@ -29,7 +29,7 @@ export function getType(name, options = undefined) {
     const base = registry.get(name);
     if (!base) {
         console.warn(`Type "${name}" not registered, falling back to text`);
-        return registry.get('text');
+        return registry.get("text");
     }
     if (!options) return base;
     return new base.constructor(options);
@@ -52,7 +52,7 @@ export function getType(name, options = undefined) {
  */
 export function registerType(typeInstance) {
     if (!typeInstance || !typeInstance.name) {
-        console.warn('Invalid type instance, registration skipped');
+        console.warn("Invalid type instance, registration skipped");
         return;
     }
     registry.set(typeInstance.name, typeInstance);
@@ -93,7 +93,7 @@ function extractTypeOptions(config) {
  */
 export function getColumnTypeFromConfig(colConfig) {
     if (!colConfig?.type) {
-        return registry.get('text');
+        return registry.get("text");
     }
     return getType(colConfig.type, extractTypeOptions(colConfig));
 }
@@ -127,14 +127,7 @@ export function resolveCellType(r, c, cellTypes, columnsConfig) {
     }
 
     // 3. 默认 text 类型
-    return registry.get('text');
+    return registry.get("text");
 }
 
-export {
-    ColumnType,
-    TextColumnType,
-    NumericColumnType,
-    DateColumnType,
-    BooleanColumnType,
-    SelectColumnType,
-};
+export { ColumnType, TextColumnType, NumericColumnType, DateColumnType, BooleanColumnType, SelectColumnType };

@@ -1,4 +1,4 @@
-import { ColumnType } from './ColumnType.js';
+import { ColumnType } from "./ColumnType.js";
 
 /**
  * 下拉选择列类型
@@ -15,20 +15,20 @@ import { ColumnType } from './ColumnType.js';
  */
 export class SelectColumnType extends ColumnType {
     get name() {
-        return 'select';
+        return "select";
     }
 
     get editorType() {
-        return 'select';
+        return "select";
     }
 
     format(value) {
-        if (value === undefined || value === null) return '';
+        if (value === undefined || value === null) return "";
         return String(value);
     }
 
     validate(value) {
-        if (value === '' || value === undefined || value === null) return true;
+        if (value === "" || value === undefined || value === null) return true;
 
         const source = this.options?.source;
         if (!Array.isArray(source) || source.length === 0) return true;
@@ -44,7 +44,7 @@ export class SelectColumnType extends ColumnType {
     }
 
     parse(input) {
-        if (input === '' || input === undefined || input === null) return '';
+        if (input === "" || input === undefined || input === null) return "";
 
         const source = this.options?.source;
         if (!Array.isArray(source) || source.length === 0) return String(input);
@@ -57,7 +57,7 @@ export class SelectColumnType extends ColumnType {
 
         // 如果不允许无效值，返回空字符串
         if (!this.options?.allowInvalid) {
-            return '';
+            return "";
         }
 
         return strInput;
@@ -71,10 +71,10 @@ export class SelectColumnType extends ColumnType {
         };
     }
 
-    compare(a, b, order = 'asc') {
+    compare(a, b, order = "asc") {
         const source = this.options?.source || [];
-        const sa = String(a ?? '');
-        const sb = String(b ?? '');
+        const sa = String(a ?? "");
+        const sb = String(b ?? "");
 
         // 如果提供了 source，按 source 中的顺序排序
         if (source.length > 0) {
@@ -82,7 +82,7 @@ export class SelectColumnType extends ColumnType {
             const ib = source.findIndex((item) => String(item) === sb);
             const va = ia >= 0 ? ia : Infinity;
             const vb = ib >= 0 ? ib : Infinity;
-            return order === 'asc' ? va - vb : vb - va;
+            return order === "asc" ? va - vb : vb - va;
         }
 
         return sa.localeCompare(sb, undefined, { numeric: true });

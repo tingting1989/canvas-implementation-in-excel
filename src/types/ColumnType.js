@@ -20,12 +20,12 @@ export class ColumnType {
 
     /** @returns {string} 类型名称 */
     get name() {
-        return 'text';
+        return "text";
     }
 
     /** @returns {string} 对应的编辑器类型名 */
     get editorType() {
-        return 'text';
+        return "text";
     }
 
     /**
@@ -34,7 +34,7 @@ export class ColumnType {
      * @returns {string} 显示文本
      */
     format(value) {
-        if (value === undefined || value === null) return '';
+        if (value === undefined || value === null) return "";
         return String(value);
     }
 
@@ -78,7 +78,7 @@ export class ColumnType {
      * @returns {*}
      */
     getDefaultValue() {
-        return '';
+        return "";
     }
 
     /**
@@ -88,10 +88,10 @@ export class ColumnType {
      * @param {'asc'|'desc'} order
      * @returns {number}
      */
-    compare(a, b, order = 'asc') {
-        const sa = String(a ?? '');
-        const sb = String(b ?? '');
+    compare(a, b, order = "asc") {
+        const sa = String(a ?? "");
+        const sb = String(b ?? "");
         const result = sa.localeCompare(sb, undefined, { numeric: true });
-        return order === 'desc' ? -result : result;
+        return order === "desc" ? -result : result;
     }
 }

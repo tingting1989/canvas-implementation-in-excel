@@ -120,7 +120,7 @@ const initApp = () => {
             { type: "text", width: 100 },
             { type: "text", width: 100 },
             { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-            { type: "text", width: 100 },
+            { type: "date", width: 300 },
         ],
         // 统一默认样式 — 所有单元格的基础字体
         defaultStyle: {

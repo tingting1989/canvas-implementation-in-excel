@@ -1,7 +1,7 @@
-import { CellEditor } from './CellEditor.js';
-import { HOOKS } from '../../constants/hookNames.js';
-import { EVENT_NAMES } from '../../constants/eventNames.js';
-import { CONFIG } from '../../constants/config';
+import { CellEditor } from "./CellEditor.js";
+import { HOOKS } from "../../constants/hookNames.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { CONFIG } from "../../constants/config";
 
 /**
  * 下拉选择编辑器
@@ -16,7 +16,7 @@ import { CONFIG } from '../../constants/config';
  */
 export class SelectEditor extends CellEditor {
     #scrollHiding = false;
-    #originalValue = '';
+    #originalValue = "";
     #source = [];
     #allowInvalid = false;
     #strict = false;
@@ -24,8 +24,8 @@ export class SelectEditor extends CellEditor {
 
     createEditor() {
         // 使用 select 元素实现下拉选择
-        this.editor = document.createElement('select');
-        this.editor.id = 'select-editor';
+        this.editor = document.createElement("select");
+        this.editor.id = "select-editor";
         this.editor.style.cssText = `
       position: absolute;
       display: none;
@@ -49,13 +49,13 @@ export class SelectEditor extends CellEditor {
     #bindEvents() {
         this.editor.addEventListener(EVENT_NAMES.BLUR, () => this.#onBlur());
         this.editor.addEventListener(EVENT_NAMES.KEYDOWN, (e) => this.#onKeyDown(e));
-        this.editor.addEventListener('change', () => {
+        this.editor.addEventListener("change", () => {
             // 选中后自动提交
             this.editor.blur();
         });
     }
 
-    show(row, col, cursorMode = 'select') {
+    show(row, col, cursorMode = "select") {
         if (!this.sheet || this.sheet.isDisabled(row, col)) return;
         this.activeRow = row;
         this.activeCol = col;
@@ -71,11 +71,11 @@ export class SelectEditor extends CellEditor {
         const merge = this.sheet.getMerge(row, col);
         const rect = this.renderEngine.getCellRect(row, col, merge);
 
-        this.editor.style.display = 'block';
-        this.editor.style.left = rect.x + 'px';
-        this.editor.style.top = rect.y + 'px';
-        this.editor.style.width = rect.w + 'px';
-        this.editor.style.height = rect.h + 'px';
+        this.editor.style.display = "block";
+        this.editor.style.left = rect.x + "px";
+        this.editor.style.top = rect.y + "px";
+        this.editor.style.width = rect.w + "px";
+        this.editor.style.height = rect.h + "px";
 
         this.#syncFontStyle(row, col, rect.h);
 
@@ -83,7 +83,7 @@ export class SelectEditor extends CellEditor {
         this.#buildOptions();
 
         const cell = this.sheet.cellStore.get(row, col);
-        const rawValue = cell?.value ?? '';
+        const rawValue = cell?.value ?? "";
         this.#originalValue = String(rawValue);
 
         // 选中当前值
@@ -94,17 +94,17 @@ export class SelectEditor extends CellEditor {
 
     #buildOptions() {
         // 清空现有选项
-        this.editor.innerHTML = '';
+        this.editor.innerHTML = "";
 
         // 添加空选项（占位符）
-        const emptyOption = document.createElement('option');
-        emptyOption.value = '';
-        emptyOption.textContent = this.#allowInvalid ? '— 自定义输入 —' : '— 请选择 —';
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = this.#allowInvalid ? "— 自定义输入 —" : "— 请选择 —";
         this.editor.appendChild(emptyOption);
 
         // 添加 source 中的选项
         for (const item of this.#source) {
-            const option = document.createElement('option');
+            const option = document.createElement("option");
             option.value = String(item);
             option.textContent = String(item);
             this.editor.appendChild(option);
@@ -124,25 +124,22 @@ export class SelectEditor extends CellEditor {
 
     #syncFontStyle(row, col, cellH) {
         const style = this.sheet.resolveStyle(row, col);
-        const fontStyle = style.fontStyle === 'italic' ? 'italic' : 'normal';
-        const fontWeight = style.fontWeight || 'normal';
+        const fontStyle = style.fontStyle === "italic" ? "italic" : "normal";
+        const fontWeight = style.fontWeight || "normal";
         const fontSize = style.fontSize || 12;
-        const fontFamily = style.fontFamily || 'Segoe UI';
+        const fontFamily = style.fontFamily || "Segoe UI";
         const lineHeight = cellH || 28;
 
         this.editor.style.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight}px ${fontFamily}`;
-        this.editor.style.textAlign = style.textAlign || 'left';
-        this.editor.style.color = style.color || '#222';
-        this.editor.style.backgroundColor =
-            style.backgroundColor && style.backgroundColor !== 'transparent'
-                ? style.backgroundColor
-                : '#fff';
+        this.editor.style.textAlign = style.textAlign || "left";
+        this.editor.style.color = style.color || "#222";
+        this.editor.style.backgroundColor = style.backgroundColor && style.backgroundColor !== "transparent" ? style.backgroundColor : "#fff";
     }
 
     hideForScroll() {
         if (this.activeRow < 0) return;
         this.#scrollHiding = true;
-        this.editor.style.display = 'none';
+        this.editor.style.display = "none";
     }
 
     restoreFromScroll() {
@@ -150,11 +147,11 @@ export class SelectEditor extends CellEditor {
         this.#scrollHiding = false;
         const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
         const rect = this.renderEngine.getCellRect(this.activeRow, this.activeCol, merge);
-        this.editor.style.display = 'block';
-        this.editor.style.left = rect.x + 'px';
-        this.editor.style.top = rect.y + 'px';
-        this.editor.style.width = rect.w + 'px';
-        this.editor.style.height = rect.h + 'px';
+        this.editor.style.display = "block";
+        this.editor.style.left = rect.x + "px";
+        this.editor.style.top = rect.y + "px";
+        this.editor.style.width = rect.w + "px";
+        this.editor.style.height = rect.h + "px";
         this.editor.focus();
     }
 
@@ -200,7 +197,7 @@ export class SelectEditor extends CellEditor {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (this.sheet.isDisabled(r, c)) continue;
                 const oldCell = this.sheet.cellStore.get(r, c);
-                const oldValue = oldCell?.value ?? '';
+                const oldValue = oldCell?.value ?? "";
                 if (oldValue !== parsedValue) {
                     changes.push({ row: r, col: c, oldValue, newValue: parsedValue });
                 }
@@ -223,7 +220,7 @@ export class SelectEditor extends CellEditor {
         if (!this.sheet) return;
 
         switch (e.key) {
-            case 'Enter':
+            case "Enter":
                 e.preventDefault();
                 const enterRow = this.activeRow;
                 const enterCol = this.activeCol;
@@ -237,23 +234,20 @@ export class SelectEditor extends CellEditor {
                 const { row: targetRow } = this.#getTopLeft(nextRow, enterCol);
                 const targetMerge = this.sheet.getMerge(targetRow, enterCol);
                 if (targetMerge) {
-                    this.sheet.selection.setRange(
-                        targetMerge.topRow, targetMerge.topCol,
-                        targetMerge.bottomRow, targetMerge.bottomCol,
-                    );
+                    this.sheet.selection.setRange(targetMerge.topRow, targetMerge.topCol, targetMerge.bottomRow, targetMerge.bottomCol);
                 } else {
                     this.sheet.selection.setActive(targetRow, enterCol);
                 }
                 this.renderEngine.scrollToCell(targetRow, enterCol);
                 this.#render();
                 break;
-            case 'Escape':
+            case "Escape":
                 e.preventDefault();
                 this.editor.value = this.#originalValue;
                 delete this.sheet._batchFillRange;
                 this.editor.blur();
                 break;
-            case 'Tab':
+            case "Tab":
                 e.preventDefault();
                 const tabRow = this.activeRow;
                 const tabCol = this.activeCol;
@@ -268,17 +262,11 @@ export class SelectEditor extends CellEditor {
                         targetCol = colMerge.bottomCol + 1;
                     }
                 }
-                targetCol = Math.min(
-                    this.sheet.rowColManager.realColCount - 1,
-                    Math.max(0, targetCol),
-                );
+                targetCol = Math.min(this.sheet.rowColManager.realColCount - 1, Math.max(0, targetCol));
                 const { col: finalCol } = this.#getTopLeft(tabRow, targetCol);
                 const tabTargetMerge = this.sheet.getMerge(tabRow, finalCol);
                 if (tabTargetMerge) {
-                    this.sheet.selection.setRange(
-                        tabTargetMerge.topRow, tabTargetMerge.topCol,
-                        tabTargetMerge.bottomRow, tabTargetMerge.bottomCol,
-                    );
+                    this.sheet.selection.setRange(tabTargetMerge.topRow, tabTargetMerge.topCol, tabTargetMerge.bottomRow, tabTargetMerge.bottomCol);
                 } else {
                     this.sheet.selection.setActive(tabRow, finalCol);
                 }
@@ -297,7 +285,7 @@ export class SelectEditor extends CellEditor {
     }
 
     #render() {
-        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === 'function') {
+        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === "function") {
             this.renderEngine.render(this.sheet);
         }
     }

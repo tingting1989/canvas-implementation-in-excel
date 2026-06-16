@@ -992,7 +992,7 @@ export class Sheet {
      * @returns {*} 解析后的值
      */
     parseCellValue(r, c, input) {
-        if (input === '' || input === undefined || input === null) return '';
+        if (input === "" || input === undefined || input === null) return "";
         const cellType = this.getCellTypeInstance(r, c);
         if (cellType) {
             return cellType.parse(input);

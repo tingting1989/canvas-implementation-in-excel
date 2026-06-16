@@ -1,4 +1,4 @@
-import { ColumnType } from './ColumnType.js';
+import { ColumnType } from "./ColumnType.js";
 
 /**
  * 布尔列类型
@@ -13,49 +13,49 @@ import { ColumnType } from './ColumnType.js';
  */
 export class BooleanColumnType extends ColumnType {
     get name() {
-        return 'boolean';
+        return "boolean";
     }
 
     get editorType() {
-        return 'text';
+        return "text";
     }
 
     getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: 'center' };
+        return { ...baseStyle, textAlign: "center" };
     }
 
     format(value) {
         const boolVal = this.#toBoolean(value);
-        if (boolVal === null) return String(value ?? '');
+        if (boolVal === null) return String(value ?? "");
 
         const labels = this.options?.labels;
         if (labels) {
-            return boolVal ? (labels.true ?? 'TRUE') : (labels.false ?? 'FALSE');
+            return boolVal ? (labels.true ?? "TRUE") : (labels.false ?? "FALSE");
         }
-        return boolVal ? 'TRUE' : 'FALSE';
+        return boolVal ? "TRUE" : "FALSE";
     }
 
     validate(value) {
-        if (value === '' || value === undefined || value === null) return true;
+        if (value === "" || value === undefined || value === null) return true;
         const boolVal = this.#toBoolean(value);
         if (boolVal === null) return false;
         return true;
     }
 
     parse(input) {
-        if (input === '' || input === undefined || input === null) return '';
+        if (input === "" || input === undefined || input === null) return "";
         const boolVal = this.#toBoolean(input);
         if (boolVal !== null) return boolVal;
         // 无法解析，返回原值
         return input;
     }
 
-    compare(a, b, order = 'asc') {
+    compare(a, b, order = "asc") {
         const ba = this.#toBoolean(a);
         const bb = this.#toBoolean(b);
         const va = ba === true ? 1 : ba === false ? 0 : -1;
         const vb = bb === true ? 1 : bb === false ? 0 : -1;
-        return order === 'asc' ? va - vb : vb - va;
+        return order === "asc" ? va - vb : vb - va;
     }
 
     /**
@@ -64,16 +64,16 @@ export class BooleanColumnType extends ColumnType {
      * @returns {boolean|null} null 表示无法识别
      */
     #toBoolean(value) {
-        if (typeof value === 'boolean') return value;
-        if (typeof value === 'number') {
+        if (typeof value === "boolean") return value;
+        if (typeof value === "number") {
             if (value === 1) return true;
             if (value === 0) return false;
             return null;
         }
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
             const lower = value.trim().toLowerCase();
-            if (['true', 'yes', 'y', '1', 't', '是', '真'].includes(lower)) return true;
-            if (['false', 'no', 'n', '0', 'f', '否', '假'].includes(lower)) return false;
+            if (["true", "yes", "y", "1", "t", "是", "真"].includes(lower)) return true;
+            if (["false", "no", "n", "0", "f", "否", "假"].includes(lower)) return false;
         }
         return null;
     }
