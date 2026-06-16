@@ -939,10 +939,12 @@ export class Sheet {
 
         if (pattern === "0.00%" || pattern === "0.0%" || pattern === "0%") {
             const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
-            return (num * 100).toLocaleString("en-US", {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals,
-            }) + "%";
+            return (
+                (num * 100).toLocaleString("en-US", {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals,
+                }) + "%"
+            );
         }
 
         if (pattern.startsWith("$") || pattern.startsWith("€") || pattern.startsWith("¥")) {
