@@ -1,11 +1,64 @@
 import { stylePool } from "../styles/index.js";
 import { CONFIG } from "../constants/config";
 
+/**
+ * 瓦片渲染器（TileRenderer）—— 负责将单元格数据绘制到瓦片上
+ *
+ * 核心职责：
+ * 1. 计算可视区域需要哪些瓦片
+ * 2. 只重绘脏（dirty）瓦片，复用未脏瓦片的缓存
+ * 3. 将瓦片内容绘制到主 Canvas 上
+ * 4. 管理脏标记（单个单元格/全部）
+ *
+ * 渲染流程：
+ * 1. render() 根据滚动位置计算可视区域覆盖的瓦片范围
+ * 2. 遍历每个瓦片，如果是脏的则调用 #paintTile 重新绘制
+ * 3. #paintTile 遍历瓦片内的所有单元格，依次绘制背景、边框、文字
+ * 4. 将瓦片的离屏 Canvas 通过 drawImage 绘制到主 Canvas
+ *
+ * 绘制层次（从底到顶）：
+ * 1. 斑马纹背景（奇偶行交替色）
+ * 2. 单元格自定义背景色
+ * 3. 条件样式背景色
+ * 4. 数据绑定样式背景色
+ * 5. 禁用单元格灰色背景
+ * 6. 网格线（边框）
+ * 7. 单元格文字
+ * 8. 下划线装饰
+ *
+ * 合并单元格处理：
+ * - 合并区域只绘制一次（在左上角单元格位置绘制整个合并区域）
+ * - 被合并的单元格（非左上角）通过 isMergedCell 跳过绘制
+ * - 合并区域的宽高跨越多个原始单元格
+ *
+ * 性能优化：
+ * - 跳过不可见行/列
+ * - 跳过宽度为 0 的列（隐藏列）
+ * - 跳过被合并的单元格
+ * - 只重绘脏瓦片
+ */
 export class TileRenderer {
+    /**
+     * 创建瓦片渲染器
+     *
+     * @param {TileCache} tileCache - 瓦片缓存实例
+     */
     constructor(tileCache) {
+        /** @type {TileCache} 瓦片缓存，用于获取/创建瓦片 */
         this.tileCache = tileCache;
     }
 
+    /**
+     * 渲染可视区域
+     * 根据滚动位置计算需要显示的瓦片，重绘脏瓦片，绘制到主 Canvas
+     *
+     * @param {CanvasRenderingContext2D} ctx - 主 Canvas 的 2D 上下文
+     * @param {Sheet} sheet - 当前工作表
+     * @param {number} scrollX - 水平滚动偏移（像素）
+     * @param {number} scrollY - 垂直滚动偏移（像素）
+     * @param {number} viewW - 可视区域宽度（含行头）
+     * @param {number} viewH - 可视区域高度（含列头）
+     */
     render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
         const headerW = CONFIG.HEADER_WIDTH;
         const headerH = CONFIG.HEADER_HEIGHT;
@@ -37,6 +90,20 @@ export class TileRenderer {
         }
     }
 
+    /**
+     * 绘制单个瓦片
+     * 遍历瓦片覆盖的所有单元格，依次绘制背景、边框、文字
+     *
+     * 坐标转换：
+     * - pixelY0/pixelX0: 瓦片左上角在表格全局像素坐标系中的位置
+     * - localY/localX: 单元格在瓦片局部坐标系中的位置
+     * - localY = rowY - pixelY0（全局像素 -> 瓦片局部像素）
+     *
+     * @param {Tile} tile - 目标瓦片
+     * @param {Sheet} sheet - 当前工作表
+     * @param {number} tileRow - 瓦片行号
+     * @param {number} tileCol - 瓦片列号
+     */
     #paintTile(tile, sheet, tileRow, tileCol) {
         const rc = sheet.rowColManager;
         const tileSize = CONFIG.TILE_SIZE;
@@ -95,6 +162,17 @@ export class TileRenderer {
         }
     }
 
+    /**
+     * 绘制单元格背景
+     * 按优先级从低到高依次覆盖，最终呈现的背景色由最高优先级决定
+     *
+     * 优先级（从低到高）：
+     * 1. 斑马纹（奇偶行交替色）
+     * 2. 单元格自定义背景色
+     * 3. 条件样式背景色
+     * 4. 数据绑定样式背景色
+     * 5. 禁用单元格灰色背景（最高优先级）
+     */
     #drawCellBackground(ctx, sheet, r, c, cell, drawX, drawY, w, h) {
         let bgColor = r % 2 === 0 ? CONFIG.ZEBRA_LIGHT : CONFIG.ZEBRA_DARK;
         ctx.fillStyle = bgColor;
@@ -130,6 +208,12 @@ export class TileRenderer {
         }
     }
 
+    /**
+     * 绘制单元格边框（网格线）
+     * 只绘制右边框和下边框，避免重复绘制
+     * 合并单元格不绘制内部网格线
+     * 使用 0.5 像素偏移确保 1px 线条清晰（Canvas 像素对齐技巧）
+     */
     #drawCellBorder(ctx, merge, drawX, drawY, w, h) {
         if (merge) return;
         ctx.strokeStyle = CONFIG.GRID_COLOR;
@@ -142,6 +226,18 @@ export class TileRenderer {
         ctx.stroke();
     }
 
+    /**
+     * 绘制单元格文字
+     *
+     * 处理逻辑：
+     * 1. 空单元格（value === undefined）跳过绘制
+     * 2. 解析最终样式（字体、颜色、对齐方式）
+     * 3. 禁用单元格使用灰色文字
+     * 4. 通过 formatCellValue 格式化显示值
+     * 5. 根据 textAlign 计算文字 X 坐标
+     * 6. 文字垂直居中（drawY + h/2 + 4，+4 为基线微调）
+     * 7. 如果有下划线装饰，在文字下方绘制横线
+     */
     #drawCellText(ctx, sheet, r, c, cell, drawX, drawY, w, h) {
         if (cell?.value === undefined) return;
 
@@ -190,6 +286,14 @@ export class TileRenderer {
         }
     }
 
+    /**
+     * 将指定单元格对应的瓦片标记为脏
+     * 通过单元格的像素坐标计算其所属的瓦片行列号
+     *
+     * @param {number} row - 单元格行号
+     * @param {number} col - 单元格列号
+     * @param {RowColManager} rc - 行列管理器（提供像素坐标查询）
+     */
     invalidateCell(row, col, rc) {
         if (!rc) return;
         const tileSize = CONFIG.TILE_SIZE;
@@ -198,10 +302,16 @@ export class TileRenderer {
         this.tileCache.markDirty(tileRow, tileCol);
     }
 
+    /**
+     * 将所有瓦片标记为脏（用于全量重绘场景）
+     */
     invalidateAll() {
         this.tileCache.markAllDirty();
     }
 
+    /**
+     * 销毁渲染器，清空瓦片缓存
+     */
     destroy() {
         this.tileCache.clear();
     }
