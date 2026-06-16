@@ -14,6 +14,7 @@ import {
 import { RowColManager } from "../core/RowColManager.js";
 import { CONFIG } from "../constants/config";
 import { STYLE_LEVEL } from "../constants/styleLevel";
+import { getColumnTypeFromConfig, resolveCellType } from "../types/index.js";
 
 /**
  * 工作表
@@ -76,6 +77,12 @@ export class Sheet {
         /** 数据绑定映射 col → mapperFn(cellValue) → styleId */
         this.dataBindings = new Map();
         /**
+         * 单元格类型配置映射 key("r,c") → {name: string, options: object}
+         * 单元格级别类型配置，优先级高于列级别 columnsConfig
+         * 参考 Handsontable 的 cellTypes 选项
+         */
+        this.cellTypes = new Map();
+        /**
          * cell 配置：数组，每个元素指定 {row, col, style?, disabled?, readOnly?, value?}
          * 静态声明式配置，初始化时一次性应用
          * 参考 Handsontable 的 cell 选项
@@ -94,14 +101,18 @@ export class Sheet {
          * 参考 Handsontable 的 columns 选项
          *
          * ColumnConfig 支持的属性：
-         * - type: 'text' | 'numeric' | 'date' — 列类型，决定编辑器和渲染方式
+         * - type: 'text' | 'numeric' | 'date' | 'boolean' | 'select' — 列类型，决定编辑器和渲染方式
          * - width: number — 列宽
          * - style: object — 列默认样式
          * - disabled / readOnly: boolean — 整列禁用
-         * - numericFormat: { pattern: string, culture: string } — 数字格式化配置
-         * - validator: Function — 值验证函数 (value) => boolean | string
+         * - numericFormat: { pattern: string } — 数字格式化配置 (type='numeric')
+         * - dateFormat: { pattern: string } — 日期格式化配置 (type='date')
+         * - labels: { true: string, false: string } — 布尔值显示标签 (type='boolean')
+         * - source: Array — 下拉列表数据源 (type='select')
+         * - min / max: number|string — 值范围限制 (type='numeric'/'date')
+         * - maxLength: number — 文本最大长度 (type='text')
+         * - validator: Function — 自定义值验证函数 (value) => boolean | string
          * - allowInvalid: boolean — 是否允许无效值
-         * - source: Array — 下拉列表数据源（type='dropdown' 时使用）
          */
         this.columnsConfig = new Map();
 
@@ -577,9 +588,11 @@ export class Sheet {
         if (rowStyleId) style = { ...style, ...stylePool.getStyle(rowStyleId) };
         if (cellStyleId) style = { ...style, ...stylePool.getStyle(cellStyleId) };
 
-        const colConfig = this.columnsConfig.get(c);
-        if (colConfig?.type === "numeric" && !style.textAlign) {
-            style = { ...style, textAlign: "right" };
+        // 使用类型系统获取默认样式（如 numeric 右对齐、date 居中、boolean 居中等）
+        // 使用 getCellTypeInstance 支持单元格级别类型覆盖
+        const cellType = this.getCellTypeInstance(r, c);
+        if (cellType) {
+            style = cellType.getDefaultStyle(style);
         }
 
         const cellProps = this.resolveCellProperties(r, c);
@@ -838,12 +851,43 @@ export class Sheet {
     }
 
     /**
-     * 获取指定列的类型
+     * 获取指定列的类型字符串
      * @param {number} col - 列号
      * @returns {string} 列类型，默认 'text'
      */
     getColumnType(col) {
         return this.columnsConfig.get(col)?.type || "text";
+    }
+
+    /**
+     * 获取指定列的 ColumnType 实例（仅列级别，忽略单元格级别）
+     * 用于列头渲染、列宽等纯列级别操作
+     *
+     * @param {number} col - 列号
+     * @returns {import("../types/ColumnType.js").ColumnType}
+     */
+    getColumnTypeInstance(col) {
+        const colConfig = this.columnsConfig.get(col);
+        return getColumnTypeFromConfig(colConfig);
+    }
+
+    /**
+     * 获取指定单元格的类型实例（ColumnType）
+     *
+     * 优先级：
+     *   1. cellTypes Map 中的单元格级别类型配置
+     *   2. columnsConfig Map 中的列级别类型配置
+     *   3. 默认 text 类型
+     *
+     * 这是所有格式化/验证/解析/样式路由的统一入口。
+     *
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {import("../types/ColumnType.js").ColumnType}
+     */
+    getCellTypeInstance(r, c) {
+        const realR = this.toRealRow(r);
+        return resolveCellType(realR, c, this.cellTypes, this.columnsConfig);
     }
 
     /**
@@ -890,7 +934,7 @@ export class Sheet {
 
     /**
      * 格式化单元格显示值
-     * 根据列类型的 numericFormat 等配置，将原始值转换为显示文本
+     * 委托给类型系统，根据列类型自动选择合适的格式化方式
      *
      * @param {number} r - 行号
      * @param {number} c - 列号
@@ -900,90 +944,34 @@ export class Sheet {
     formatCellValue(r, c, value) {
         if (value === undefined || value === null) return "";
 
-        const colConfig = this.columnsConfig.get(c);
-        if (!colConfig) return String(value);
-
-        switch (colConfig.type) {
-            case "numeric":
-                return this.#formatNumeric(value, colConfig.numericFormat);
-            default:
-                return String(value);
+        const cellType = this.getCellTypeInstance(r, c);
+        if (cellType) {
+            return cellType.format(value);
         }
+
+        return String(value);
     }
 
     /**
-     * 数字格式化
-     * @param {*} value - 原始值
-     * @param {object} [numericFormat] - 格式化配置
-     * @param {string} [numericFormat.pattern] - 格式模式，如 '0,0.00'、'0.00%'、'$0,0.00'
-     * @param {string} [numericFormat.culture] - 区域设置（预留）
-     * @returns {string}
-     */
-    #formatNumeric(value, numericFormat) {
-        const num = typeof value === "number" ? value : parseFloat(value);
-        if (isNaN(num)) return String(value);
-
-        if (!numericFormat || !numericFormat.pattern) {
-            return String(num);
-        }
-
-        const pattern = numericFormat.pattern;
-
-        if (pattern === "0,0.00" || pattern === "0,0.0" || pattern === "0,0") {
-            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
-            return num.toLocaleString("en-US", {
-                minimumFractionDigits: decimals,
-                maximumFractionDigits: decimals,
-            });
-        }
-
-        if (pattern === "0.00%" || pattern === "0.0%" || pattern === "0%") {
-            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
-            return (
-                (num * 100).toLocaleString("en-US", {
-                    minimumFractionDigits: decimals,
-                    maximumFractionDigits: decimals,
-                }) + "%"
-            );
-        }
-
-        if (pattern.startsWith("$") || pattern.startsWith("€") || pattern.startsWith("¥")) {
-            const symbol = pattern[0];
-            const rest = pattern.slice(1);
-            const decimals = rest.includes(".00") ? 2 : rest.includes(".0") ? 1 : 0;
-            const hasGroup = rest.includes(",");
-            const formatted = hasGroup
-                ? num.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
-                : num.toFixed(decimals);
-            return symbol + formatted;
-        }
-
-        if (pattern === "0.00" || pattern === "0.0" || pattern === "0") {
-            const decimals = pattern.includes(".00") ? 2 : pattern.includes(".0") ? 1 : 0;
-            return num.toFixed(decimals);
-        }
-
-        return String(num);
-    }
-
-    /**
-     * 验证单元格值是否符合列配置的 validator
+     * 验证单元格值
+     * 委托给类型系统 + 自定义 validator
+     *
+     * @param {number} r - 行号
      * @param {number} c - 列号
      * @param {*} value - 待验证的值
-     * @returns {boolean|string} true=有效, false=无效, string=错误消息
+     * @returns {boolean|string}
      */
-    validateCellValue(c, value) {
-        const colConfig = this.columnsConfig.get(c);
-        if (!colConfig) return true;
-
-        if (colConfig.type === "numeric" && value !== "" && value !== undefined && value !== null) {
-            const num = typeof value === "number" ? value : parseFloat(value);
-            if (isNaN(num)) {
-                return colConfig.allowInvalid ? "invalid" : false;
-            }
+    validateCellValue(r, c, value) {
+        // 1. 先用类型系统验证（支持单元格级别类型覆盖）
+        const cellType = this.getCellTypeInstance(r, c);
+        if (cellType) {
+            const typeResult = cellType.validate(value);
+            if (typeResult !== true) return typeResult;
         }
 
-        if (typeof colConfig.validator === "function") {
+        // 2. 再用列配置的自定义 validator 验证
+        const colConfig = this.columnsConfig.get(c);
+        if (colConfig && typeof colConfig.validator === "function") {
             try {
                 return colConfig.validator(value);
             } catch {
@@ -992,5 +980,23 @@ export class Sheet {
         }
 
         return true;
+    }
+
+    /**
+     * 解析用户输入值
+     * 委托给类型系统的 parse 方法，支持单元格级别类型覆盖
+     *
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {string} input - 用户输入的原始字符串
+     * @returns {*} 解析后的值
+     */
+    parseCellValue(r, c, input) {
+        if (input === '' || input === undefined || input === null) return '';
+        const cellType = this.getCellTypeInstance(r, c);
+        if (cellType) {
+            return cellType.parse(input);
+        }
+        return input;
     }
 }

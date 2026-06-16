@@ -1,28 +1,33 @@
-import { CellEditor } from "./CellEditor.js";
-import { HOOKS } from "../../constants/hookNames.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
-import { CONFIG } from "../../constants/config";
+import { CellEditor } from './CellEditor.js';
+import { HOOKS } from '../../constants/hookNames.js';
+import { EVENT_NAMES } from '../../constants/eventNames.js';
+import { CONFIG } from '../../constants/config';
 
 /**
- * 数字编辑器
- * 处理 numeric 类型列的单元格编辑，支持：
- * - 只允许输入数字、小数点、负号
- * - 输入验证（根据列配置的 validator）
- * - 粘贴时自动解析数字
+ * 日期编辑器
+ *
+ * 处理 date 类型列的单元格编辑，支持：
+ * - 日期输入（type="date" 原生日期选择器）
+ * - 文本输入回退（手动输入日期字符串）
+ * - 多种日期格式自动解析
  * - Enter/Tab 确认后自动跳转
  * - Escape 取消编辑
  * - 滚动时自动隐藏/恢复
  */
-export class NumericEditor extends CellEditor {
+export class DateEditor extends CellEditor {
     #scrollHiding = false;
     #composing = false;
-    #originalValue = "";
+    #originalValue = '';
+    #useNativePicker = true; // 是否使用原生日期选择器
 
     createEditor() {
-        this.editor = document.createElement("input");
-        this.editor.id = "numeric-editor";
-        this.editor.type = "text";
-        this.editor.inputMode = "decimal";
+        this.editor = document.createElement('input');
+
+        // 尝试使用原生日期选择器
+        this.#useNativePicker = this.#supportsDateInput();
+
+        this.editor.type = this.#useNativePicker ? 'date' : 'text';
+        this.editor.id = 'date-editor';
         this.editor.style.cssText = `
       position: absolute;
       display: none;
@@ -33,7 +38,7 @@ export class NumericEditor extends CellEditor {
       font: 12px/28px "Segoe UI", sans-serif;
       background: #fff;
       z-index: 1000;
-      text-align: right;
+      text-align: center;
     `;
         this.renderEngine.canvas.parentElement.appendChild(this.editor);
         this.#bindEvents();
@@ -48,15 +53,18 @@ export class NumericEditor extends CellEditor {
         this.editor.addEventListener(EVENT_NAMES.COMPOSITIONEND, () => {
             this.#composing = false;
         });
-        this.editor.addEventListener(EVENT_NAMES.INPUT, (e) => {
-            this.#onInput(e);
-        });
-        this.editor.addEventListener(EVENT_NAMES.PASTE, (e) => {
-            this.#onPaste(e);
-        });
     }
 
-    show(row, col, cursorMode = "select") {
+    /**
+     * 检测浏览器是否支持 date 类型输入
+     */
+    #supportsDateInput() {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'date');
+        return input.type === 'date';
+    }
+
+    show(row, col, cursorMode = 'select') {
         if (!this.sheet || this.sheet.isDisabled(row, col)) return;
         this.activeRow = row;
         this.activeCol = col;
@@ -65,46 +73,61 @@ export class NumericEditor extends CellEditor {
         const merge = this.sheet.getMerge(row, col);
         const rect = this.renderEngine.getCellRect(row, col, merge);
 
-        this.editor.style.display = "block";
-        this.editor.style.left = rect.x + "px";
-        this.editor.style.top = rect.y + "px";
-        this.editor.style.width = rect.w + "px";
-        this.editor.style.height = rect.h + "px";
+        this.editor.style.display = 'block';
+        this.editor.style.left = rect.x + 'px';
+        this.editor.style.top = rect.y + 'px';
+        this.editor.style.width = rect.w + 'px';
+        this.editor.style.height = rect.h + 'px';
 
         this.#syncFontStyle(row, col, rect.h);
 
         const cell = this.sheet.cellStore.get(row, col);
-        const rawValue = cell?.value ?? "";
-        this.#originalValue = String(rawValue);
-        this.editor.value = this.#originalValue;
+        const rawValue = cell?.value ?? '';
+        this.#originalValue = rawValue instanceof Date
+            ? this.#toDateString(rawValue)
+            : String(rawValue);
+
+        if (this.#useNativePicker && rawValue instanceof Date) {
+            this.editor.value = this.#toDateString(rawValue);
+        } else if (this.#useNativePicker) {
+            // 尝试解析日期
+            const parsed = this.#parseDateString(String(rawValue));
+            this.editor.value = parsed ? this.#toDateString(parsed) : '';
+        } else {
+            this.editor.value = this.#originalValue;
+        }
+
         this.editor.focus();
 
-        if (cursorMode === "end") {
+        if (cursorMode === 'end') {
             const len = this.editor.value.length;
             this.editor.setSelectionRange(len, len);
-        } else {
+        } else if (cursorMode === 'select' && !this.#useNativePicker) {
             this.editor.select();
         }
     }
 
     #syncFontStyle(row, col, cellH) {
         const style = this.sheet.resolveStyle(row, col);
-        const fontStyle = style.fontStyle === "italic" ? "italic" : "normal";
-        const fontWeight = style.fontWeight || "normal";
+        const fontStyle = style.fontStyle === 'italic' ? 'italic' : 'normal';
+        const fontWeight = style.fontWeight || 'normal';
         const fontSize = style.fontSize || 12;
-        const fontFamily = style.fontFamily || "Segoe UI";
+        const fontFamily = style.fontFamily || 'Segoe UI';
         const lineHeight = cellH || 28;
 
         this.editor.style.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight}px ${fontFamily}`;
-        this.editor.style.textAlign = style.textAlign || "right";
-        this.editor.style.color = style.color || "#222";
-        this.editor.style.backgroundColor = style.backgroundColor && style.backgroundColor !== "transparent" ? style.backgroundColor : "#fff";
+        this.editor.style.textAlign = style.textAlign || 'center';
+        this.editor.style.color = style.color || '#222';
+        this.editor.style.backgroundColor =
+            style.backgroundColor && style.backgroundColor !== 'transparent'
+                ? style.backgroundColor
+                : '#fff';
     }
 
     hideForScroll() {
         if (this.activeRow < 0) return;
         this.#scrollHiding = true;
-        this.editor.style.display = "none";
+        this.editor.style.display = 'none';
     }
 
     restoreFromScroll() {
@@ -112,34 +135,12 @@ export class NumericEditor extends CellEditor {
         this.#scrollHiding = false;
         const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
         const rect = this.renderEngine.getCellRect(this.activeRow, this.activeCol, merge);
-        this.editor.style.display = "block";
-        this.editor.style.left = rect.x + "px";
-        this.editor.style.top = rect.y + "px";
-        this.editor.style.width = rect.w + "px";
-        this.editor.style.height = rect.h + "px";
+        this.editor.style.display = 'block';
+        this.editor.style.left = rect.x + 'px';
+        this.editor.style.top = rect.y + 'px';
+        this.editor.style.width = rect.w + 'px';
+        this.editor.style.height = rect.h + 'px';
         this.editor.focus();
-    }
-
-    #onInput(e) {
-        if (this.#composing) return;
-        const value = this.editor.value;
-        const cleaned = value.replace(/[^0-9.\-eE]/g, "");
-
-        if (cleaned !== value) {
-            const start = this.editor.selectionStart;
-            const diff = value.length - cleaned.length;
-            this.editor.value = cleaned;
-            this.editor.setSelectionRange(start - diff, start - diff);
-        }
-    }
-
-    #onPaste(e) {
-        e.preventDefault();
-        const text = (e.clipboardData || window.clipboardData).getData("text");
-        const num = parseFloat(text);
-        if (!isNaN(num)) {
-            this.editor.value = String(num);
-        }
     }
 
     #onBlur() {
@@ -165,7 +166,14 @@ export class NumericEditor extends CellEditor {
             }
 
             const oldCell = this.sheet.cellStore.get(this.activeRow, this.activeCol);
-            if (oldCell?.value === newValue) {
+            // 比较日期值
+            const oldStr = oldCell?.value instanceof Date
+                ? oldCell.value.getTime()
+                : oldCell?.value;
+            const newStr = newValue instanceof Date
+                ? newValue.getTime()
+                : newValue;
+            if (oldStr === newStr) {
                 this.hide();
                 this.#render();
                 return;
@@ -186,7 +194,7 @@ export class NumericEditor extends CellEditor {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (this.sheet.isDisabled(r, c)) continue;
                 const oldCell = this.sheet.cellStore.get(r, c);
-                const oldValue = oldCell?.value ?? "";
+                const oldValue = oldCell?.value ?? '';
                 if (oldValue !== parsedValue) {
                     changes.push({ row: r, col: c, oldValue, newValue: parsedValue });
                 }
@@ -210,7 +218,7 @@ export class NumericEditor extends CellEditor {
         if (this.#composing) return;
 
         switch (e.key) {
-            case "Enter":
+            case 'Enter':
                 e.preventDefault();
                 const enterRow = this.activeRow;
                 const enterCol = this.activeCol;
@@ -224,20 +232,23 @@ export class NumericEditor extends CellEditor {
                 const { row: targetRow } = this.#getTopLeft(nextRow, enterCol);
                 const targetMerge = this.sheet.getMerge(targetRow, enterCol);
                 if (targetMerge) {
-                    this.sheet.selection.setRange(targetMerge.topRow, targetMerge.topCol, targetMerge.bottomRow, targetMerge.bottomCol);
+                    this.sheet.selection.setRange(
+                        targetMerge.topRow, targetMerge.topCol,
+                        targetMerge.bottomRow, targetMerge.bottomCol,
+                    );
                 } else {
                     this.sheet.selection.setActive(targetRow, enterCol);
                 }
                 this.renderEngine.scrollToCell(targetRow, enterCol);
                 this.#render();
                 break;
-            case "Escape":
+            case 'Escape':
                 e.preventDefault();
                 this.editor.value = this.#originalValue;
                 delete this.sheet._batchFillRange;
                 this.editor.blur();
                 break;
-            case "Tab":
+            case 'Tab':
                 e.preventDefault();
                 const tabRow = this.activeRow;
                 const tabCol = this.activeCol;
@@ -252,11 +263,17 @@ export class NumericEditor extends CellEditor {
                         targetCol = colMerge.bottomCol + 1;
                     }
                 }
-                targetCol = Math.min(this.sheet.rowColManager.realColCount - 1, Math.max(0, targetCol));
+                targetCol = Math.min(
+                    this.sheet.rowColManager.realColCount - 1,
+                    Math.max(0, targetCol),
+                );
                 const { col: finalCol } = this.#getTopLeft(tabRow, targetCol);
                 const tabTargetMerge = this.sheet.getMerge(tabRow, finalCol);
                 if (tabTargetMerge) {
-                    this.sheet.selection.setRange(tabTargetMerge.topRow, tabTargetMerge.topCol, tabTargetMerge.bottomRow, tabTargetMerge.bottomCol);
+                    this.sheet.selection.setRange(
+                        tabTargetMerge.topRow, tabTargetMerge.topCol,
+                        tabTargetMerge.bottomRow, tabTargetMerge.bottomCol,
+                    );
                 } else {
                     this.sheet.selection.setActive(tabRow, finalCol);
                 }
@@ -274,8 +291,53 @@ export class NumericEditor extends CellEditor {
         return { row, col };
     }
 
+    /**
+     * 解析日期字符串
+     */
+    #parseDateString(str) {
+        if (!str || !str.trim()) return null;
+
+        // 原生 date input 返回 yyyy-mm-dd 格式
+        const isoMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+        if (isoMatch) {
+            const y = parseInt(isoMatch[1], 10);
+            const m = parseInt(isoMatch[2], 10) - 1;
+            const d = parseInt(isoMatch[3], 10);
+            const date = new Date(y, m, d);
+            return isNaN(date.getTime()) ? null : date;
+        }
+
+        // 尝试其他格式
+        const slashMatch = str.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{4})$/);
+        if (slashMatch) {
+            const a = parseInt(slashMatch[1], 10);
+            const b = parseInt(slashMatch[2], 10);
+            const y = parseInt(slashMatch[3], 10);
+            // 尝试 MM/DD/YYYY 和 DD/MM/YYYY
+            let date = new Date(y, b - 1, a);
+            if (isNaN(date.getTime())) {
+                date = new Date(y, a - 1, b);
+            }
+            return isNaN(date.getTime()) ? null : date;
+        }
+
+        const date = new Date(str);
+        return isNaN(date.getTime()) ? null : date;
+    }
+
+    /**
+     * 将 Date 对象转为 yyyy-mm-dd 字符串（供原生 date input 使用）
+     */
+    #toDateString(date) {
+        if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
     #render() {
-        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === "function") {
+        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === 'function') {
             this.renderEngine.render(this.sheet);
         }
     }

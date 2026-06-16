@@ -64,8 +64,15 @@ export class Workbook {
      *   数组索引对应列号，每个元素可以是对象或函数：
      *   - 对象形式: { type, width, style, disabled, readOnly, numericFormat, validator, allowInvalid, source }
      *   - 函数形式: (col) => ColumnConfig
-     *   type 支持的值: 'text'（默认）, 'numeric'
+     *   type 支持的值: 'text'（默认）, 'numeric', 'date', 'boolean', 'select'
      *   numericFormat: { pattern: '0,0.00' | '0.00%' | '$0,0.00' | '0.00' | '0' }
+     *   dateFormat: { pattern: 'YYYY-MM-DD' | 'MM/DD/YYYY' | 'DD/MM/YYYY' }
+     *   labels: { true: '✓', false: '✗' }  — boolean 类型的显示标签
+     *   source: string[] — select 类型的可选值列表
+     * @param {Array<{row:number,col:number,type:string,...}>} [options.cellTypes]
+     *   单元格级别类型配置（参考 Handsontable cellTypes 选项）
+     *   优先级高于 columns 中的类型配置，可覆盖特定单元格的类型
+     *   每个元素除 type 外，还可包含该类型支持的所有配置选项
      * @param {Function} [options.afterInit] - 初始化完成回调
      *
      * @example
@@ -137,6 +144,7 @@ export class Workbook {
     }
 
     initRender() {
+        console.log(123)
         if (this.renderEngine) return;
 
         if (this.sheets.size === 0) {
@@ -153,8 +161,8 @@ export class Workbook {
         this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
         this.pluginManager = new PluginManager(this);
 
-        for (const [name, PluginClass] of Workbook.#pluginRegistry) {
-            PluginManager.register(name, PluginClass);
+        for (const [name, pluginClass] of Workbook.#pluginRegistry) {
+            PluginManager.register(name, pluginClass);
         }
 
         for (const sheet of this.sheets.values()) {
@@ -559,6 +567,9 @@ export class Workbook {
         if (Array.isArray(settings.columns)) {
             this.#applyColumnsConfig(sheet, settings.columns);
         }
+        if (Array.isArray(settings.cellTypes)) {
+            this.#applyCellTypes(sheet, settings.cellTypes);
+        }
         if (settings.width != null || settings.height != null) {
             this.renderEngine?.setCanvasSize(settings.width, settings.height);
         }
@@ -614,6 +625,15 @@ export class Workbook {
     #applyCellConfig(sheet, cellConfig) {
         sheet.cellConfig = cellConfig;
         sheet.applyCellConfig();
+    }
+
+    #applyCellTypes(sheet, cellTypes) {
+        for (const ct of cellTypes) {
+            if (ct.row == null || ct.col == null || !ct.type) continue;
+            const key = `${ct.row},${ct.col}`;
+            const { row, col, type: name, ...rest } = ct;
+            sheet.cellTypes.set(key, { name, options: rest });
+        }
     }
 
     #applyColumnsConfig(sheet, columnsConfig) {

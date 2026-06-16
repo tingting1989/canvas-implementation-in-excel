@@ -1,9 +1,11 @@
-import { TextEditor } from "./editors/index.js";
-import { NumericEditor } from "./editors/NumericEditor.js";
+import { TextEditor } from './editors/index.js';
+import { NumericEditor } from './editors/NumericEditor.js';
+import { DateEditor } from './editors/DateEditor.js';
+import { SelectEditor } from './editors/SelectEditor.js';
 
 /**
  * 编辑器管理器（门面模式）
- * 统一管理所有类型的单元格编辑器（文本、数字等）
+ * 统一管理所有类型的单元格编辑器（文本、数字、日期、下拉选择等）
  * 根据列类型自动路由到对应的编辑器
  * 对外提供 show/hide/getEditor 等接口，隐藏编辑器实现细节
  */
@@ -36,23 +38,47 @@ export class EditorManager {
 
     /** 初始化默认编辑器 */
     #initEditors() {
+        // 文本编辑器
         const textEditor = new TextEditor(this.renderEngine, this.#sheet);
         textEditor.createEditor();
-        this.editors.set("text", textEditor);
+        this.editors.set('text', textEditor);
 
+        // 数字编辑器
         const numericEditor = new NumericEditor(this.renderEngine, this.#sheet);
         numericEditor.createEditor();
-        this.editors.set("numeric", numericEditor);
+        this.editors.set('numeric', numericEditor);
+
+        // 日期编辑器
+        const dateEditor = new DateEditor(this.renderEngine, this.#sheet);
+        dateEditor.createEditor();
+        this.editors.set('date', dateEditor);
+
+        // 下拉选择编辑器
+        const selectEditor = new SelectEditor(this.renderEngine, this.#sheet);
+        selectEditor.createEditor();
+        this.editors.set('select', selectEditor);
     }
 
     /**
-     * 根据列类型获取对应的编辑器
+     * 根据单元格位置获取对应的编辑器
+     * 使用 getCellTypeInstance 支持单元格级别类型覆盖
+     *
+     * @param {number} row - 行号
      * @param {number} col - 列号
      * @returns {import("./editors/CellEditor.js").CellEditor}
      */
-    #getEditorForColumn(col) {
-        const type = this.#sheet?.getColumnType(col) || "text";
-        return this.editors.get(type) || this.editors.get("text");
+    #getEditorForCell(row, col) {
+        if (this.#sheet) {
+            const cellType = this.#sheet.getCellTypeInstance(row, col);
+            if (cellType) {
+                const editorType = cellType.editorType;
+                const editor = this.editors.get(editorType);
+                if (editor) return editor;
+            }
+        }
+
+        // 回退：默认 text 编辑器
+        return this.editors.get('text');
     }
 
     /**
@@ -60,7 +86,7 @@ export class EditorManager {
      * 兼容旧接口
      */
     get editor() {
-        return this.editors.get("text");
+        return this.editors.get('text');
     }
 
     /**
@@ -71,8 +97,8 @@ export class EditorManager {
      * @param {number} col - 列号
      * @param {'select'|'end'} cursorMode - 光标模式（透传给编辑器）
      */
-    show(row, col, cursorMode = "select") {
-        const editor = this.#getEditorForColumn(col);
+    show(row, col, cursorMode = 'select') {
+        const editor = this.#getEditorForCell(row, col);
         if (editor) {
             this.hide();
             editor.show(row, col, cursorMode);
@@ -89,7 +115,7 @@ export class EditorManager {
     /**
      * 注册自定义编辑器
      *
-     * @param {string} type - 编辑器类型名（如 'formula', 'date' 等）
+     * @param {string} type - 编辑器类型名（如 'formula', 'color' 等）
      * @param {object} editor - 编辑器实例，需实现 createEditor/show/hide/destroy 方法
      */
     addEditor(type, editor) {

@@ -147,7 +147,7 @@ export class TextEditor extends CellEditor {
         if (this.#composing) return;
         if (this.activeRow < 0 || !this.sheet) return;
 
-        const newValue = this.editor.value;
+        let newValue = this.editor.value;
         const batchRange = this.sheet._batchFillRange;
 
         if (batchRange) {
@@ -160,6 +160,9 @@ export class TextEditor extends CellEditor {
             delete this.sheet._batchFillRange;
         } else {
             /** 单单元格编辑模式 */
+            // 使用类型系统的 parse 统一解析
+            newValue = this.sheet.parseCellValue(this.activeRow, this.activeCol, newValue);
+
             const oldCell = this.sheet.cellStore.get(this.activeRow, this.activeCol);
             if (oldCell?.value === newValue) {
                 this.hide();
