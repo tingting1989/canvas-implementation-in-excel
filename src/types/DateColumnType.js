@@ -167,19 +167,28 @@ export class DateColumnType extends ColumnType {
         const h = String(date.getHours()).padStart(2, "0");
         const mi = String(date.getMinutes()).padStart(2, "0");
         const s = String(date.getSeconds()).padStart(2, "0");
-
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-        return pattern
-            .replace("YYYY", String(y))
-            .replace("YY", String(y).slice(-2))
-            .replace("MM", m)
-            .replace("M", String(date.getMonth() + 1))
-            .replace("DD", d)
-            .replace("D", String(date.getDate()))
-            .replace("HH", h)
-            .replace("mm", mi)
-            .replace("ss", s)
-            .replace("Mon", monthNames[date.getMonth()]);
+        const tokens = {
+            YYYY: String(y),
+            YY: String(y).slice(-2),
+            MM: m,
+            M: String(date.getMonth() + 1),
+            DD: d,
+            D: String(date.getDate()),
+            HH: h,
+            mm: mi,
+            ss: s,
+            Mon: monthNames[date.getMonth()],
+        };
+
+        // 如果 pattern 中包含中文，则扩展中文 token
+        if (/[年月日]/.test(pattern)) {
+            tokens["年"] = "年";
+            tokens["月"] = "月";
+            tokens["日"] = "日";
+        }
+
+        return pattern.replace(/YYYY|YY|MM|M|DD|D|HH|mm|ss|Mon|年|月|日/g, (t) => tokens[t]);
     }
 }

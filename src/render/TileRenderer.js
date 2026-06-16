@@ -85,7 +85,12 @@ export class TileRenderer {
                 const drawX = headerW + tc * tileSize - scrollX;
                 const drawY = headerH + tr * tileSize - scrollY;
 
-                ctx.drawImage(tile.canvas, 0, 0, tile.canvas.width, tile.canvas.height, drawX, drawY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+                // drawImage 的源区域参数 (sx,sy,sw,sh) 使用的是源 Canvas 的**物理像素坐标**
+                // 不受源 Canvas ctx.scale() 影响
+                // 瓦片 canvas 物理尺寸 = TILE_SIZE * DPR，内容绘制在完整的物理区域内
+                // 主 ctx 已 setTransform(DPR,DPR)，目标坐标用逻辑像素即可
+                const srcSize = CONFIG.TILE_SIZE * CONFIG.DPR;
+                ctx.drawImage(tile.canvas, 0, 0, srcSize, srcSize, drawX, drawY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
             }
         }
     }
@@ -242,27 +247,29 @@ export class TileRenderer {
         if (cell?.value === undefined) return;
 
         const finalStyle = sheet.resolveStyle(r, c);
-        ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || "#222";
-
         const fontStyle = finalStyle.fontStyle === "italic" ? "italic" : "";
         const fontWeight = finalStyle.fontWeight || "normal";
         const fontSize = finalStyle.fontSize || 12;
         const fontFamily = finalStyle.fontFamily || "Segoe UI";
-        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`.trim();
+        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`.trim().replace(/\s+/g, " ");
+
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || "#222";
 
         const textAlign = finalStyle.textAlign || "left";
         ctx.textAlign = textAlign;
 
         const displayValue = sheet.formatCellValue(r, c, cell.value);
 
-        let textX = drawX + 4;
+        let textX = Math.round(drawX + 4);
         if (textAlign === "center") {
-            textX = drawX + w / 2;
+            textX = Math.round(drawX + w / 2);
         } else if (textAlign === "right") {
-            textX = drawX + w - 4;
+            textX = Math.round(drawX + w - 4);
         }
 
-        ctx.fillText(displayValue, textX, drawY + h / 2 + 4);
+        const textY = Math.round(drawY + h / 2);
+        ctx.fillText(displayValue, textX, textY);
 
         /**
          * 绘制下划线
@@ -276,7 +283,7 @@ export class TileRenderer {
             } else if (textAlign === "right") {
                 lineX = textX - textWidth;
             }
-            const lineY = drawY + h / 2 + 6;
+            const lineY = textY + Math.round(fontSize * 0.6);
             ctx.beginPath();
             ctx.moveTo(lineX, lineY);
             ctx.lineTo(lineX + textWidth, lineY);

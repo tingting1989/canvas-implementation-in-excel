@@ -799,7 +799,7 @@ export class Sheet {
 
     /**
      * 移动列：将 fromCol 的数据移到 toCol 位置
-     * 中间列自动平移，同时移动列头标签
+     * 中间列自动平移，同时移动列头标签、列类型配置、列样式等
      * @param {number} fromCol - 源列号
      * @param {number} toCol - 目标列号
      */
@@ -811,17 +811,86 @@ export class Sheet {
         this.rowColManager.moveCol(fromCol, toCol);
         this.mergeManager.moveCol(fromCol, toCol);
 
+        // 移动列头标签
         if (Array.isArray(this.colHeaders) && this.colHeaders.length > Math.max(fromCol, toCol)) {
             const [header] = this.colHeaders.splice(fromCol, 1);
             this.colHeaders.splice(toCol, 0, header);
         }
 
+        // 同步更新列级别配置 Map（columnsConfig / colStyles / dataBindings）
+        this.#shiftMapColIndex(this.columnsConfig, fromCol, toCol);
+        this.#shiftMapColIndex(this.colStyles, fromCol, toCol);
+        this.#shiftMapColIndex(this.dataBindings, fromCol, toCol);
+
+        // 同步更新单元格级别类型配置 cellTypes（key 为 "r,c"）
+        this.#shiftCellTypesColIndex(fromCol, toCol);
+
         this.#invalidateAll();
     }
 
     /**
+     * 平移 Map 中指定列的键
+     * 将 fromCol 的 entry 移到 toCol，中间列的键平移
+     * @param {Map<number, any>} map - 要更新的 Map
+     * @param {number} fromCol - 源列号
+     * @param {number} toCol - 目标列号
+     */
+    #shiftMapColIndex(map, fromCol, toCol) {
+        const entries = [];
+        for (const [c, val] of map) {
+            let newCol = c;
+            if (c === fromCol) {
+                newCol = toCol;
+            } else if (fromCol < toCol) {
+                if (c > fromCol && c <= toCol) newCol = c - 1;
+            } else {
+                if (c >= toCol && c < fromCol) newCol = c + 1;
+            }
+            if (newCol !== c) {
+                entries.push({ oldCol: c, newCol, val });
+            }
+        }
+        for (const { oldCol } of entries) {
+            map.delete(oldCol);
+        }
+        for (const { newCol, val } of entries) {
+            map.set(newCol, val);
+        }
+    }
+
+    /**
+     * 平移 cellTypes Map 中 key 的列索引
+     * cellTypes key 格式为 "r,c"，需要更新其中的 c 部分
+     * @param {number} fromCol - 源列号
+     * @param {number} toCol - 目标列号
+     */
+    #shiftCellTypesColIndex(fromCol, toCol) {
+        const entries = [];
+        for (const [key, val] of this.cellTypes) {
+            const [r, c] = key.split(",").map(Number);
+            let newCol = c;
+            if (c === fromCol) {
+                newCol = toCol;
+            } else if (fromCol < toCol) {
+                if (c > fromCol && c <= toCol) newCol = c - 1;
+            } else {
+                if (c >= toCol && c < fromCol) newCol = c + 1;
+            }
+            if (newCol !== c) {
+                entries.push({ oldKey: key, newKey: `${r},${newCol}`, val });
+            }
+        }
+        for (const { oldKey } of entries) {
+            this.cellTypes.delete(oldKey);
+        }
+        for (const { newKey, val } of entries) {
+            this.cellTypes.set(newKey, val);
+        }
+    }
+
+    /**
      * 移动行：将 fromRow 的数据移到 toRow 位置
-     * 中间行自动平移，同时移动行头标签
+     * 中间行自动平移，同时移动行头标签、行样式等
      * @param {number} fromRow - 源行号
      * @param {number} toRow - 目标行号
      */
@@ -838,7 +907,43 @@ export class Sheet {
             this.rowHeaders.splice(toRow, 0, header);
         }
 
+        // 同步更新行级别配置 Map（rowStyles）
+        this.#shiftMapColIndex(this.rowStyles, fromRow, toRow);
+
+        // 同步更新单元格级别类型配置 cellTypes（key 为 "r,c"）
+        this.#shiftCellTypesRowIndex(fromRow, toRow);
+
         this.#invalidateAll();
+    }
+
+    /**
+     * 平移 cellTypes Map 中 key 的行索引
+     * cellTypes key 格式为 "r,c"，需要更新其中的 r 部分
+     * @param {number} fromRow - 源行号
+     * @param {number} toRow - 目标行号
+     */
+    #shiftCellTypesRowIndex(fromRow, toRow) {
+        const entries = [];
+        for (const [key, val] of this.cellTypes) {
+            const [r, c] = key.split(",").map(Number);
+            let newRow = r;
+            if (r === fromRow) {
+                newRow = toRow;
+            } else if (fromRow < toRow) {
+                if (r > fromRow && r <= toRow) newRow = r - 1;
+            } else {
+                if (r >= toRow && r < fromRow) newRow = r + 1;
+            }
+            if (newRow !== r) {
+                entries.push({ oldKey: key, newKey: `${newRow},${c}`, val });
+            }
+        }
+        for (const { oldKey } of entries) {
+            this.cellTypes.delete(oldKey);
+        }
+        for (const { newKey, val } of entries) {
+            this.cellTypes.set(newKey, val);
+        }
     }
 
     /**

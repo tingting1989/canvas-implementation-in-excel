@@ -224,7 +224,10 @@ export class KeyboardStrategy extends EventStrategy {
         const inputEl = activeEditor?.editor;
         if (inputEl) {
             inputEl.value = e.key;
-            inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
+            // 原生 date/number/month 等类型输入框不支持 setSelectionRange
+            if (inputEl.type === "text" || inputEl.type === "search" || inputEl.type === "url" || inputEl.type === "password") {
+                inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
+            }
         }
 
         this.#markBatchFill(sheet, range);

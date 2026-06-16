@@ -51,6 +51,9 @@
 | `mm` | 两位分钟 | `30` |
 | `ss` | 两位秒 | `00` |
 | `Mon` | 英文月份缩写 | `Jan` |
+| `年` | 中文字面"年" | `年` |
+| `月` | 中文字面"月" | `月` |
+| `日` | 中文字面"日" | `日` |
 
 ## 行为
 
@@ -126,6 +129,8 @@ getDefaultStyle({ fontSize: 14 }) // → { fontSize: 14, textAlign: 'center' }
 
 ## 使用示例
 
+### 列级别类型
+
 ```js
 const wb = new Workbook('grid', {
     columns: [
@@ -145,6 +150,30 @@ const wb = new Workbook('grid', {
     ],
 });
 ```
+
+### 单元格级别类型（cellTypes）
+
+通过 `cellTypes` 可对特定单元格覆盖列级别的类型配置，优先级高于 `columns`：
+
+```js
+const wb = new Workbook('grid', {
+    columns: [
+        { type: 'text' },       // 第 0 列默认为文本
+        { type: 'text' },       // 第 1 列默认为文本
+        { type: 'date', dateFormat: { pattern: 'YYYY-MM-DD' } },  // 第 2 列默认为 ISO 日期
+    ],
+    cellTypes: [
+        // (0, 2) 单元格使用中文日期格式，覆盖列级别的 YYYY-MM-DD
+        { row: 0, col: 2, type: 'date', dateFormat: { pattern: 'YYYY年MM月DD日' } },
+        // (1, 2) 单元格使用美式日期格式，限制范围
+        { row: 1, col: 2, type: 'date', dateFormat: { pattern: 'MM/DD/YYYY' }, min: '2020-01-01', max: '2030-12-31' },
+        // (2, 0) 单元格覆盖为日期类型（列默认为 text）
+        { row: 2, col: 0, type: 'date', dateFormat: { pattern: 'YYYY-MM-DD' } },
+    ],
+});
+```
+
+> **注意**：`cellTypes` 中 `type`、`dateFormat`、`min`、`max`、`allowInvalid` 的用法与 `columns` 中完全一致。
 
 ## 对应的编辑器
 

@@ -174,6 +174,10 @@ export class NumericEditor extends CellEditor {
         }
 
         this.hide();
+        // 确保瓦片缓存失效，避免渲染旧值
+        if (this.renderEngine && typeof this.renderEngine.invalidateAll === "function") {
+            this.renderEngine.invalidateAll();
+        }
         this.#render();
     }
 

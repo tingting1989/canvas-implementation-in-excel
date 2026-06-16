@@ -173,6 +173,11 @@ export class DateEditor extends CellEditor {
         }
 
         this.hide();
+        // 强制使所有瓦片失效，确保渲染时使用最新数据
+        // 解决原生 date picker 选择日期后 blur 时瓦片缓存未更新的问题
+        if (this.renderEngine && typeof this.renderEngine.invalidateAll === "function") {
+            this.renderEngine.invalidateAll();
+        }
         this.#render();
     }
 
