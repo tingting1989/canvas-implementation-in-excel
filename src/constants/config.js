@@ -29,8 +29,10 @@ export const CONFIG = {
 
     /** 行号列宽度（px） */
     HEADER_WIDTH: 46,
-    /** 列号行高度（px） */
+    /** 列号行每层高度（px），嵌套表头时每层均为此高度 */
     HEADER_HEIGHT: 28,
+    /** 嵌套表头默认行数（不配置 nestedHeaders 时保持单层） */
+    NESTED_HEADER_ROWS: 1,
 
     /** 行分块大小，每个 chunk 包含的行数 */
     CHUNK_ROW_SIZE: 1024,

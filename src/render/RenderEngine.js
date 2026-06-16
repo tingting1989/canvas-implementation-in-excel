@@ -186,7 +186,13 @@ export class RenderEngine {
         this.#currentSheet = sheet;
 
         const rc = sheet.rowColManager;
-        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH);
+        const headerH = sheet.getHeaderHeight();
+        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH, headerH);
+
+        // 动态更新 CSS 变量，使垂直滚动条 top 跟随表头高度
+        if (headerH !== CONFIG.HEADER_HEIGHT) {
+            this.wrap.style.setProperty("--header-height", `${headerH}px`);
+        }
 
         const ctx = this.ctx;
         const viewW = this.#viewW;
@@ -221,7 +227,7 @@ export class RenderEngine {
         if (!rc) return { x: 0, y: 0, w: 0, h: 0 };
 
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
 
@@ -255,9 +261,9 @@ export class RenderEngine {
         const rect = this.canvas.getBoundingClientRect();
         const px = clientX - rect.left;
         const py = clientY - rect.top;
-        const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
         const sheet = this.#currentSheet;
+        const headerW = CONFIG.HEADER_WIDTH;
+        const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
 
         if (px > this.#viewW || py > this.#viewH) return null;
 
@@ -317,7 +323,7 @@ export class RenderEngine {
         if (!rc) return null;
 
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
         const hitArea = CONFIG.RESIZE_HIT_AREA;
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
@@ -363,7 +369,7 @@ export class RenderEngine {
         const range = sheet.selection.getRange();
 
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet.getHeaderHeight();
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
 

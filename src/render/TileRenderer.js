@@ -61,7 +61,7 @@ export class TileRenderer {
      */
     render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet.getHeaderHeight();
         const cellViewW = viewW - headerW;
         const cellViewH = viewH - headerH;
 

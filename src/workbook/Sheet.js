@@ -109,6 +109,27 @@ export class Sheet {
         this.colHeaders = true;
         /** 行头配置：true→1/2/3... | string[] | Function(row) */
         this.rowHeaders = true;
+        /**
+         * 嵌套表头配置
+         *
+         * 参考 Handsontable nestedHeaders API：
+         *   二维数组，每行对应一层表头，每列的元素定义该层对应列的标签。
+         *   元素可以是：
+         *     - 字符串：直接作为该表头单元格的文本
+         *     - 对象：{ label: string, colspan: number }
+         *
+         *   示例：
+         *     nestedHeaders: [
+         *       ['A', {label: 'Group B', colspan: 3}, 'C'],
+         *       ['A1', 'B1', 'B2', 'B3', 'C1'],
+         *     ]
+         *
+         *   当配置了 nestedHeaders 时，它优先于 colHeaders，但 colHeaders
+         *   仍可用于提供最底层（叶子层）的标签。
+         *
+         * @type {Array<Array<string|{label:string, colspan:number}>>|null}
+         */
+        this.nestedHeaders = null;
 
         if (renderEngine) this.#renderEngine = renderEngine;
     }
@@ -431,6 +452,65 @@ export class Sheet {
             n = Math.floor(n / 26);
         }
         return label || "A";
+    }
+
+    // ============================================================
+    // 嵌套表头
+    // ============================================================
+
+    /**
+     * 获取嵌套表头的总层数
+     * @returns {number} 0 表示未启用嵌套表头
+     */
+    getNestedHeaderRowCount() {
+        return Array.isArray(this.nestedHeaders) ? this.nestedHeaders.length : 0;
+    }
+
+    /**
+     * 获取嵌套表头中指定层、指定列的表头信息
+     *
+     * 返回值可能是：
+     *   - null：该层该列被上方 colspan 跨越（应绘制空单元格）
+     *   - { label: string, colspan: number }：带跨列的表头
+     *   - { label: string, colspan: 1 }：普通单列表头
+     *
+     * @param {number} rowIndex - 嵌套层索引（0=顶层）
+     * @param {number} col - 数据列号
+     * @returns {{label: string, colspan: number}|null}
+     */
+    getNestedColHeader(rowIndex, col) {
+        if (!this.nestedHeaders || rowIndex >= this.nestedHeaders.length) return null;
+
+        const row = this.nestedHeaders[rowIndex];
+        if (!Array.isArray(row)) return null;
+
+        // 遍历该层的元素，找到 col 对应的表头定义
+        // 由于 colspan 的存在，需要跟踪当前已消费的列数
+        let consumed = 0;
+        for (let i = 0; i < row.length; i++) {
+            const item = row[i];
+            const label = typeof item === "string" ? item : (item?.label ?? "");
+            const colspan = (item && typeof item === "object" && item.colspan) ? item.colspan : 1;
+
+            if (col >= consumed && col < consumed + colspan) {
+                return { label, colspan };
+            }
+            consumed += colspan;
+        }
+
+        // col 超出该层定义范围，由默认 colHeaders 兜底
+        return null;
+    }
+
+    /**
+     * 获取表头总高度（像素）
+     * 嵌套表头时 = HEADER_HEIGHT × 嵌套层数，否则 = HEADER_HEIGHT
+     *
+     * @returns {number}
+     */
+    getHeaderHeight() {
+        const rows = this.getNestedHeaderRowCount() || CONFIG.NESTED_HEADER_ROWS;
+        return rows * CONFIG.HEADER_HEIGHT;
     }
 
     // ============================================================
@@ -818,9 +898,9 @@ export class Sheet {
     #calcShiftedIndex(index, from, to) {
         if (index === from) return to;
         if (from < to) {
-            return (index > from && index <= to) ? index - 1 : index;
+            return index > from && index <= to ? index - 1 : index;
         }
-        return (index >= to && index < from) ? index + 1 : index;
+        return index >= to && index < from ? index + 1 : index;
     }
 
     // ============================================================

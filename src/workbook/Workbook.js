@@ -201,7 +201,7 @@ export class Workbook {
             const rc = this.activeSheet.rowColManager;
             const dpr = window.devicePixelRatio || 1;
             const headerW = CONFIG.HEADER_WIDTH;
-            const headerH = CONFIG.HEADER_HEIGHT;
+            const headerH = this.activeSheet.getHeaderHeight();
             const tabH = CONFIG.SHEET_TAB_HEIGHT;
             const viewW = this.renderEngine.canvas.width / dpr - headerW;
             const viewH = this.renderEngine.canvas.height / dpr - headerH - tabH;
@@ -213,11 +213,7 @@ export class Workbook {
             const sx = this.renderEngine.scrollX;
             const sy = this.renderEngine.scrollY;
 
-            const outOfView =
-                cellX + cellW <= sx ||
-                cellX >= sx + viewW ||
-                cellY + cellH <= sy ||
-                cellY >= sy + viewH;
+            const outOfView = cellX + cellW <= sx || cellX >= sx + viewW || cellY + cellH <= sy || cellY >= sy + viewH;
 
             if (outOfView) {
                 activeEditor.hideForScroll();
@@ -328,10 +324,7 @@ export class Workbook {
         sheet.workbook = this;
 
         const opts = this.#initOptions;
-        sheet.rowColManager.ensureSize(
-            opts?.startRows || 100,
-            opts?.startCols || 26,
-        );
+        sheet.rowColManager.ensureSize(opts?.startRows || 100, opts?.startCols || 26);
 
         this.sheets.set(name, sheet);
         this.#activateIfFirst(sheet);
@@ -430,11 +423,17 @@ export class Workbook {
     // ============================================================
 
     undo() {
-        this.#withActiveSheet((s) => { s.undo(); this.render(); });
+        this.#withActiveSheet((s) => {
+            s.undo();
+            this.render();
+        });
     }
 
     redo() {
-        this.#withActiveSheet((s) => { s.redo(); this.render(); });
+        this.#withActiveSheet((s) => {
+            s.redo();
+            this.render();
+        });
     }
 
     // ============================================================
@@ -546,11 +545,17 @@ export class Workbook {
     }
 
     setCellStyle(row, col, styleObj) {
-        this.#withActiveSheet((s) => { s.setCellStyle(row, col, styleObj); this.render(); });
+        this.#withActiveSheet((s) => {
+            s.setCellStyle(row, col, styleObj);
+            this.render();
+        });
     }
 
     setRangeStyle(range, styleObj) {
-        this.#withActiveSheet((s) => { s.setRangeStyle(range, styleObj); this.render(); });
+        this.#withActiveSheet((s) => {
+            s.setRangeStyle(range, styleObj);
+            this.render();
+        });
     }
 
     /** @returns {object} */
@@ -559,7 +564,10 @@ export class Workbook {
     }
 
     setDefaultStyle(styleObj) {
-        this.#withActiveSheet((s) => { s.setDefaultStyle(styleObj); this.render(); });
+        this.#withActiveSheet((s) => {
+            s.setDefaultStyle(styleObj);
+            this.render();
+        });
     }
 
     /** @returns {object} */

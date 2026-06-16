@@ -82,7 +82,7 @@ export class HeaderRenderer {
 
         this.#renderColumnHeaders(ctx, sheet, scrollX, viewW, range);
         this.#renderRowHeaders(ctx, sheet, scrollY, viewH, range);
-        this.#renderCorner(ctx, range);
+        this.#renderCorner(ctx, sheet, range);
         this.#renderResizeLine(ctx, viewW, viewH);
         this.#renderColumnMoveIndicator(ctx, sheet, scrollX, viewW, viewH);
         this.#renderRowMoveIndicator(ctx, sheet, scrollY, viewW, viewH);
@@ -90,43 +90,136 @@ export class HeaderRenderer {
 
     /**
      * 渲染列头区域
+     * - 支持嵌套表头：多层渲染，每层有独立的 Y 偏移
+     * - 嵌套表头中跨列单元格使用 colspan 合并绘制
      * - 背景填充 → 逐列绘制（跳过隐藏列）→ 选区高亮底线
      * - 拖拽中时源列显示蓝色半透明高亮，隐藏选区底线
      */
     #renderColumnHeaders(ctx, sheet, scrollX, viewW, range) {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const rowH = CONFIG.HEADER_HEIGHT;
         const defaultStyle = sheet.getDefaultStyle();
         const headerFont = this.#buildHeaderFont(defaultStyle);
 
+        const nestedCount = sheet.getNestedHeaderRowCount();
+        const totalHeaderH = sheet.getHeaderHeight();
+
+        // 填充整个列头区域背景
         ctx.fillStyle = CONFIG.HEADER_BG;
-        ctx.fillRect(headerW, 0, viewW - headerW, headerH);
+        ctx.fillRect(headerW, 0, viewW - headerW, totalHeaderH);
 
         const sc = rc.colAt(scrollX);
         const ec = rc.colAt(scrollX + viewW - headerW) + 1;
 
-        for (let c = sc; c < ec; c++) {
-            const w = rc.getColWidth(c);
-            if (w <= 0) continue;
+        if (nestedCount > 0) {
+            this.#renderNestedColumnHeaders(ctx, sheet, rc, sc, ec, headerW, rowH, scrollX, headerFont, defaultStyle);
+        } else {
+            // 单层表头（原有逻辑）
+            for (let c = sc; c < ec; c++) {
+                const w = rc.getColWidth(c);
+                if (w <= 0) continue;
 
-            const x = headerW + rc.getColX(c) - scrollX;
-            const isSource = this.#columnMoveState && c === this.#columnMoveState.sourceCol;
-            const highlighted = c >= range.topCol && c <= range.bottomCol;
+                const x = headerW + rc.getColX(c) - scrollX;
+                const isSource = this.#columnMoveState && c === this.#columnMoveState.sourceCol;
+                const highlighted = c >= range.topCol && c <= range.bottomCol;
 
-            this.#drawHeaderCell(ctx, x, 0, w, headerH, isSource, highlighted, defaultStyle);
-            this.#drawHeaderText(ctx, sheet.getColHeader(c), x + 4, headerH - 8, null, headerFont);
-            this.#drawSeparator(ctx, x + w, 0, x + w, headerH);
+                this.#drawHeaderCell(ctx, x, 0, w, rowH, isSource, highlighted, defaultStyle);
+                this.#drawHeaderText(ctx, sheet.getColHeader(c), x + 4, rowH - 8, null, headerFont);
+                this.#drawSeparator(ctx, x + w, 0, x + w, rowH);
+            }
         }
 
+        // 最底层表头下方的选区高亮线
         if (!this.#columnMoveState) {
             this.#drawSelectionLine(
                 ctx,
                 headerW + rc.getColX(range.topCol) - scrollX,
-                headerH,
+                totalHeaderH,
                 rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - rc.getColX(range.topCol),
                 true,
             );
+        }
+    }
+
+    /**
+     * 渲染嵌套多层列头
+     *
+     * 对于每一层：
+     * 1. 遍历该层定义，处理 colspan 跨列合并
+     * 2. 对于被 colspan 覆盖的列，该层不绘制分隔线（由上层跨列合并处理）
+     * 3. 最底层（叶子层）使用 colHeaders 或默认 A/B/C 标签
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {RowColManager} rc
+     * @param {number} sc - 起始列
+     * @param {number} ec - 结束列
+     * @param {number} headerW - 行头宽度
+     * @param {number} rowH - 每层表头高度
+     * @param {number} scrollX - 水平滚动偏移
+     * @param {string} headerFont - 表头字体
+     * @param {object} defaultStyle - 默认样式
+     */
+    #renderNestedColumnHeaders(ctx, sheet, rc, sc, ec, headerW, rowH, scrollX, headerFont, defaultStyle) {
+        const nestedCount = sheet.getNestedHeaderRowCount();
+
+        // 逐层渲染（从上到下）
+        for (let layerIdx = 0; layerIdx < nestedCount; layerIdx++) {
+            const layerY = layerIdx * rowH;
+
+            // 处理该层所有定义，逐个渲染
+            const row = sheet.nestedHeaders[layerIdx];
+            if (!Array.isArray(row)) continue;
+
+            let consumed = 0;
+            for (let i = 0; i < row.length; i++) {
+                const item = row[i];
+                const label = typeof item === "string" ? item : (item?.label ?? "");
+                const colspan = (item && typeof item === "object" && item.colspan) ? item.colspan : 1;
+
+                // 计算该表头覆盖的列范围
+                const startCol = consumed;
+                const endCol = consumed + colspan - 1;
+                consumed += colspan;
+
+                // 检查是否在可视区域内
+                if (endCol < sc || startCol > ec) continue;
+
+                // 跳过隐藏列
+                let visibleStartCol = startCol;
+                while (visibleStartCol <= endCol && rc.getColWidth(visibleStartCol) <= 0) {
+                    visibleStartCol++;
+                }
+                if (visibleStartCol > endCol) continue;
+
+                // 计算该跨列表头在 canvas 上的位置和宽度
+                const x = headerW + rc.getColX(Math.max(startCol, sc)) - scrollX;
+                const totalW = rc.getColX(Math.min(endCol, ec)) + rc.getColWidth(Math.min(endCol, ec))
+                    - rc.getColX(Math.max(startCol, sc));
+
+                if (totalW <= 0) continue;
+
+                const isSource = this.#columnMoveState && startCol <= this.#columnMoveState.sourceCol && this.#columnMoveState.sourceCol <= endCol;
+                const highlighted = false; // 嵌套表头暂不处理选区高亮
+
+                this.#drawHeaderCell(ctx, x, layerY, totalW, rowH, isSource, highlighted, defaultStyle);
+
+                // 文字在跨列区域内居中
+                if (label) {
+                    this.#drawHeaderText(ctx, label, x + 4, layerY + rowH - 8, null, headerFont);
+                }
+
+                // 绘制该层表头右边界和底部分隔线
+                const rightEdge = Math.min(x + totalW, headerW + rc.getColX(Math.min(endCol, ec)) + rc.getColWidth(Math.min(endCol, ec)) - scrollX);
+                this.#drawSeparator(ctx, rightEdge, layerY, rightEdge, layerY + rowH);
+            }
+
+            // 该层底部横线（如果还有下一层）
+            if (layerIdx < nestedCount - 1) {
+                this.#drawSeparator(ctx, headerW + rc.getColX(sc) - scrollX, layerY + rowH,
+                    headerW + rc.getColX(ec - 1) + rc.getColWidth(ec - 1) - scrollX, layerY + rowH);
+            }
         }
     }
 
@@ -138,7 +231,7 @@ export class HeaderRenderer {
     #renderRowHeaders(ctx, sheet, scrollY, viewH, range) {
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet.getHeaderHeight();
         const defaultStyle = sheet.getDefaultStyle();
         const headerFont = this.#buildHeaderFont(defaultStyle);
 
@@ -172,11 +265,11 @@ export class HeaderRenderer {
 
     /**
      * 渲染左上角交叉区域
-     * 全选时高亮
+     * 全选时高亮，高度跟随表头总高度（支持嵌套表头）
      */
-    #renderCorner(ctx, range) {
+    #renderCorner(ctx, sheet, range) {
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet.getHeaderHeight();
         const allSelected = range.topRow === 0 && range.topCol === 0;
 
         ctx.fillStyle = allSelected ? CONFIG.HEADER_HIGHLIGHT_BG : CONFIG.HEADER_BG;
@@ -200,7 +293,7 @@ export class HeaderRenderer {
 
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet.getHeaderHeight();
         const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
         const colScreenX = headerW + state.colX - state.scrollX;
@@ -242,7 +335,7 @@ export class HeaderRenderer {
 
         const rc = sheet.rowColManager;
         const headerW = CONFIG.HEADER_WIDTH;
-        const headerH = CONFIG.HEADER_HEIGHT;
+        const headerH = sheet.getHeaderHeight();
         const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
         const rowScreenY = headerH + state.rowY - state.scrollY;
@@ -261,7 +354,7 @@ export class HeaderRenderer {
         this.#drawHeaderText(ctx, sheet.getRowHeader(state.sourceRow), 6, ghostTop + state.rowH / 2 + 4, GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
-            const indicatorY = this.#calcMoveIndicatorY(rc, state.sourceRow, state.targetRow, scrollY);
+            const indicatorY = this.#calcMoveIndicatorY(rc, state.sourceRow, state.targetRow, scrollY, headerH);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
             ctx.fillRect(0, indicatorY - INDICATOR_HALF, headerW, INDICATOR_WIDTH);
             ctx.fillRect(headerW, indicatorY - INDICATOR_HALF, viewW - headerW, INDICATOR_WIDTH);
@@ -417,10 +510,10 @@ export class HeaderRenderer {
      * @param {number} sourceRow - 源行号
      * @param {number} targetRow - 目标行号
      * @param {number} scrollY - 垂直滚动偏移
+     * @param {number} headerH - 表头总高度
      * @returns {number} 指示器在 canvas 上的 y 坐标
      */
-    #calcMoveIndicatorY(rc, sourceRow, targetRow, scrollY) {
-        const headerH = CONFIG.HEADER_HEIGHT;
+    #calcMoveIndicatorY(rc, sourceRow, targetRow, scrollY, headerH) {
         if (targetRow > sourceRow) {
             return headerH + rc.getRowY(targetRow) + rc.getRowHeight(targetRow) - scrollY;
         }
