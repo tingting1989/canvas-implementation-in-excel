@@ -42,6 +42,8 @@ export const CONFIG = {
     /** 瓦片缓存上限数量 */
     TILE_CACHE_MAX: 512,
 
+    DPR: window.devicePixelRatio || 1,
+
     /** 默认字体族 */
     DEFAULT_FONT: "Segoe UI",
     /** 默认字号（px） */

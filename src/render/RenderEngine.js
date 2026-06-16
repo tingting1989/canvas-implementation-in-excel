@@ -33,7 +33,6 @@ export class RenderEngine {
     /** @type {Function|null} 窗口 resize 事件处理器引用，用于销毁时移除监听 */
     #resizeHandler = null;
     /** @type {number} 设备像素比，用于高清屏适配 */
-    #dpr = 1;
     /** @type {number} 视口逻辑宽度（CSS 像素） */
     #viewW = 0;
     /** @type {number} 视口逻辑高度（CSS 像素） */
@@ -51,7 +50,6 @@ export class RenderEngine {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext("2d");
         this.outerWrap = this.canvas.parentElement;
-        this.#dpr = window.devicePixelRatio || 1;
 
         this.wrap = document.createElement("div");
         this.wrap.className = "cs-canvas-wrap";
@@ -62,7 +60,7 @@ export class RenderEngine {
 
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
         this.sheetTabBar = new SheetTabBar(this.wrap, null);
-        this.tileRenderer = new TileRenderer(new TileCache(this.#dpr));
+        this.tileRenderer = new TileRenderer(new TileCache());
         this.overlayRenderer = new OverlayRenderer();
         this.headerRenderer = new HeaderRenderer();
 
@@ -87,9 +85,6 @@ export class RenderEngine {
         return this.#viewH;
     }
     /** @returns {number} 设备像素比 */
-    get dpr() {
-        return this.#dpr;
-    }
     /** @returns {Sheet|null} 当前渲染的工作表 */
     get currentSheet() {
         return this.#currentSheet;
@@ -123,8 +118,8 @@ export class RenderEngine {
         const canvasH = h - CONFIG.SHEET_TAB_HEIGHT;
         this.#viewW = canvasW;
         this.#viewH = canvasH;
-        this.canvas.width = canvasW * this.#dpr;
-        this.canvas.height = canvasH * this.#dpr;
+        this.canvas.width = canvasW * CONFIG.DPR;
+        this.canvas.height = canvasH * CONFIG.DPR;
         this.canvas.style.width = canvasW + "px";
         this.canvas.style.height = canvasH + "px";
         this.wrap.style.width = w + "px";
@@ -199,7 +194,7 @@ export class RenderEngine {
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
 
-        ctx.setTransform(this.#dpr, 0, 0, this.#dpr, 0, 0);
+        ctx.setTransform(CONFIG.DPR, 0, 0, CONFIG.DPR, 0, 0);
         ctx.clearRect(0, 0, viewW, viewH);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";

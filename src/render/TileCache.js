@@ -2,10 +2,10 @@ import { Tile } from "./Tile.js";
 import { CONFIG } from "../constants/config";
 
 export class TileCache {
-    constructor(dpr = 1) {
+    constructor() {
         this.tiles = new Map();
         this.maxSize = CONFIG.TILE_CACHE_MAX;
-        this.dpr = dpr;
+        this.dpr = CONFIG.DPR;
     }
 
     get(tileRow, tileCol) {
@@ -25,7 +25,7 @@ export class TileCache {
             return tile;
         }
         this.#evictIfNeeded();
-        tile = new Tile(tileRow, tileCol, this.dpr);
+        tile = new Tile(tileRow, tileCol);
         this.tiles.set(key, tile);
         return tile;
     }

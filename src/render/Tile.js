@@ -1,17 +1,17 @@
 import { CONFIG } from "../constants/config";
 
 export class Tile {
-    constructor(tileRow, tileCol, dpr = 1) {
+    constructor(tileRow, tileCol) {
         this.tileRow = tileRow;
         this.tileCol = tileCol;
         this.dirty = true;
         this.lastUsed = 0;
-        this.dpr = dpr;
+        this.dpr = CONFIG.DPR;
         this.canvas = document.createElement("canvas");
-        this.canvas.width = CONFIG.TILE_SIZE * dpr;
-        this.canvas.height = CONFIG.TILE_SIZE * dpr;
+        this.canvas.width = CONFIG.TILE_SIZE * CONFIG.DPR;
+        this.canvas.height = CONFIG.TILE_SIZE * CONFIG.DPR;
         this.ctx = this.canvas.getContext("2d");
-        this.ctx.scale(dpr, dpr);
+        this.ctx.scale(CONFIG.DPR, CONFIG.DPR);
     }
 
     getKey() {
