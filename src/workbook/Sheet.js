@@ -490,7 +490,7 @@ export class Sheet {
         for (let i = 0; i < row.length; i++) {
             const item = row[i];
             const label = typeof item === "string" ? item : (item?.label ?? "");
-            const colspan = (item && typeof item === "object" && item.colspan) ? item.colspan : 1;
+            const colspan = item && typeof item === "object" && item.colspan ? item.colspan : 1;
 
             if (col >= consumed && col < consumed + colspan) {
                 return { label, colspan };

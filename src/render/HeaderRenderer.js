@@ -176,7 +176,7 @@ export class HeaderRenderer {
             for (let i = 0; i < row.length; i++) {
                 const item = row[i];
                 const label = typeof item === "string" ? item : (item?.label ?? "");
-                const colspan = (item && typeof item === "object" && item.colspan) ? item.colspan : 1;
+                const colspan = item && typeof item === "object" && item.colspan ? item.colspan : 1;
 
                 // 计算该表头覆盖的列范围
                 const startCol = consumed;
@@ -195,8 +195,7 @@ export class HeaderRenderer {
 
                 // 计算该跨列表头在 canvas 上的位置和宽度
                 const x = headerW + rc.getColX(Math.max(startCol, sc)) - scrollX;
-                const totalW = rc.getColX(Math.min(endCol, ec)) + rc.getColWidth(Math.min(endCol, ec))
-                    - rc.getColX(Math.max(startCol, sc));
+                const totalW = rc.getColX(Math.min(endCol, ec)) + rc.getColWidth(Math.min(endCol, ec)) - rc.getColX(Math.max(startCol, sc));
 
                 if (totalW <= 0) continue;
 
@@ -217,8 +216,13 @@ export class HeaderRenderer {
 
             // 该层底部横线（如果还有下一层）
             if (layerIdx < nestedCount - 1) {
-                this.#drawSeparator(ctx, headerW + rc.getColX(sc) - scrollX, layerY + rowH,
-                    headerW + rc.getColX(ec - 1) + rc.getColWidth(ec - 1) - scrollX, layerY + rowH);
+                this.#drawSeparator(
+                    ctx,
+                    headerW + rc.getColX(sc) - scrollX,
+                    layerY + rowH,
+                    headerW + rc.getColX(ec - 1) + rc.getColWidth(ec - 1) - scrollX,
+                    layerY + rowH,
+                );
             }
         }
     }
