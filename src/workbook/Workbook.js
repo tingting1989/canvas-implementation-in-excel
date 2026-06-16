@@ -6,31 +6,41 @@ import { ClipboardManager } from "../editor/ClipboardManager.js";
 import { PluginManager } from "../plugins/PluginManager.js";
 import { stylePool } from "../styles/index.js";
 import { CONFIG } from "../constants/config";
+import { SettingsApplier } from "./SettingsApplier.js";
 
 /**
  * 工作簿
- * 顶层管理对象，协调 Sheet、RenderEngine、EventHandler、EditorManager、PluginManager
+ *
+ * 顶层管理对象，作为 Facade 协调 Sheet、RenderEngine、EventHandler、
+ * EditorManager、PluginManager 等子系统。
  *
  * 插件系统：
  * - Workbook.registerPlugin(name, PluginClass)  — 全局注册插件类
  * - workbook.loadPlugin(name, options)           — 加载已注册的插件
- * - workbook.loadPluginClass(PluginClass, opts)  — 直接加载插件类（无需全局注册）
+ * - workbook.loadPluginClass(PluginClass, opts)  — 直接加载插件类
  * - workbook.getPlugin(name)                     — 获取插件实例
  * - workbook.unloadPlugin(name)                  — 卸载插件
  * - workbook.enablePlugin(name)                  — 启用插件
  * - workbook.disablePlugin(name)                 — 禁用插件
+ *
+ * 对齐 Handsontable 的 new Handsontable(container, options) 模式
  */
 export class Workbook {
+    /** @type {Map<string, typeof import("../plugins/BasePlugin.js").BasePlugin>} */
     static #pluginRegistry = new Map();
 
+    /** @type {string} */
     #containerId;
+    /** @type {object} */
     #initOptions;
+    /** @type {Array<{type:string, name?:string, PluginClass?:Function, options:object}>} */
     #pendingPlugins = [];
 
+    // ============================================================
+    // 构造函数
+    // ============================================================
+
     /**
-     * 创建工作簿
-     * 对齐 Handsontable 的 new Handsontable(container, options) 模式
-     *
      * @param {string} containerId - Canvas 元素 ID
      * @param {object} [options={}] - 配置选项
      *
@@ -41,67 +51,43 @@ export class Workbook {
      * @param {number} [options.width] - 画布宽度（px），默认自适应容器
      * @param {number} [options.height] - 画布高度（px），默认自适应容器
      * @param {number|number[]} [options.rowHeights] - 行高配置
-     *   number: 统一行高；number[]: 逐行指定
      * @param {number|number[]} [options.colWidths] - 列宽配置
-     *   number: 统一列宽；number[]: 逐列指定
      * @param {number} [options.startRows=100] - 初始行数
      * @param {number} [options.startCols=26] - 初始列数
      * @param {string[]} [options.plugins] - 要加载的插件名称列表
+     * @param {object} [options.pluginOptions] - 插件选项映射 { pluginName: options }
      * @param {object} [options.hooks] - 事件钩子映射 { hookName: callback }
-     * @param {Array<{row:number,col:number,rowspan:number,colspan:number}>} [options.mergeCells] - 合并单元格配置
-     * @param {Array<{range:object,condition:Function,style:object}>} [options.conditionalStyles] - 条件样式
+     * @param {Array<{row:number,col:number,rowspan:number,colspan:number}>} [options.mergeCells]
+     * @param {Array<{range:object,condition:Function,style:object}>} [options.conditionalStyles]
      * @param {Array<{row:number,col:number,style?:object,disabled?:boolean,readOnly?:boolean,value?:*}>} [options.cell]
-     *   静态单元格配置（参考 Handsontable cell 选项）
-     *   - style: 样式对象，如 { backgroundColor: "yellow", fontWeight: "bold" }
-     *   - disabled / readOnly: 禁用单元格（不可编辑）
-     *   - value: 初始值
-     * @param {Function} [options.cells]
-     *   动态单元格属性函数（参考 Handsontable cells 选项）
-     *   签名: (row, col) => { style?, disabled?, readOnly?, value? }
-     *   优先级高于 cell 配置，每次渲染时动态计算
-     * @param {Array<object|Function>} [options.columns]
-     *   列配置数组（参考 Handsontable columns 选项）
-     *   数组索引对应列号，每个元素可以是对象或函数：
-     *   - 对象形式: { type, width, style, disabled, readOnly, numericFormat, validator, allowInvalid, source }
-     *   - 函数形式: (col) => ColumnConfig
-     *   type 支持的值: 'text'（默认）, 'numeric', 'date', 'boolean', 'select'
-     *   numericFormat: { pattern: '0,0.00' | '0.00%' | '$0,0.00' | '0.00' | '0' }
-     *   dateFormat: { pattern: 'YYYY-MM-DD' | 'MM/DD/YYYY' | 'DD/MM/YYYY' }
-     *   labels: { true: '✓', false: '✗' }  — boolean 类型的显示标签
-     *   source: string[] — select 类型的可选值列表
-     * @param {Array<{row:number,col:number,type:string,...}>} [options.cellTypes]
-     *   单元格级别类型配置（参考 Handsontable cellTypes 选项）
-     *   优先级高于 columns 中的类型配置，可覆盖特定单元格的类型
-     *   每个元素除 type 外，还可包含该类型支持的所有配置选项
+     * @param {Function} [options.cells] - 动态单元格属性函数 (row, col) => { style?, disabled?, ... }
+     * @param {Array<object|Function>} [options.columns] - 列配置数组
+     * @param {Array<{row:number,col:number,type:string,...}>} [options.cellTypes] - 单元格级别类型配置
      * @param {Function} [options.afterInit] - 初始化完成回调
-     *
-     * @example
-     * const wb = new Workbook('grid', {
-     *   data: [
-     *     ['Name', 'Age', 'City'],
-     *     ['Zhang San', 25, 'Beijing'],
-     *     ['Li Si', 30, 'Shanghai'],
-     *   ],
-     *   colHeaders: ['Name', 'Age', 'City'],
-     *   rowHeaders: true,
-     *   colWidths: [120, 80, 100],
-     *   plugins: ['autoFill', 'contextMenu'],
-     *   hooks: {
-     *     ON_CELL_CLICK: (row, col) => console.log(row, col),
-     *   },
-     * });
      */
     constructor(containerId, options = {}) {
+        /** @type {Map<string, Sheet>} */
         this.sheets = new Map();
+        /** @type {Sheet|null} */
+        this.activeSheet = null;
+        /** @type {ClipboardManager} */
         this.clipboard = new ClipboardManager();
+        /** @type {RenderEngine|null} */
         this.renderEngine = null;
+        /** @type {EditorManager|null} */
         this.editor = null;
+        /** @type {EventHandler|null} */
         this.eventHandler = null;
+        /** @type {PluginManager|null} */
         this.pluginManager = null;
 
         this.#containerId = containerId || CONFIG.CANVAS_ID;
         this.#initOptions = options;
     }
+
+    // ============================================================
+    // 静态方法：全局插件注册
+    // ============================================================
 
     static registerPlugin(name, PluginClass) {
         Workbook.#pluginRegistry.set(name, PluginClass);
@@ -111,6 +97,11 @@ export class Workbook {
         Workbook.#pluginRegistry.delete(name);
     }
 
+    // ============================================================
+    // 插件委托方法
+    // ============================================================
+
+    /** @returns {?import("../plugins/BasePlugin.js").BasePlugin} */
     loadPlugin(name, options = {}) {
         if (!this.pluginManager) {
             this.#pendingPlugins.push({ type: "name", name, options });
@@ -119,6 +110,7 @@ export class Workbook {
         return this.pluginManager.loadPlugin(name, options);
     }
 
+    /** @returns {?import("../plugins/BasePlugin.js").BasePlugin} */
     loadPluginClass(PluginClass, options = {}) {
         if (!this.pluginManager) {
             this.#pendingPlugins.push({ type: "class", PluginClass, options });
@@ -131,8 +123,9 @@ export class Workbook {
         this.pluginManager?.unloadPlugin(name);
     }
 
+    /** @returns {?import("../plugins/BasePlugin.js").BasePlugin} */
     getPlugin(name) {
-        return this.pluginManager?.getPlugin(name) || null;
+        return this.pluginManager?.getPlugin(name) ?? null;
     }
 
     enablePlugin(name) {
@@ -143,49 +136,75 @@ export class Workbook {
         this.pluginManager?.disablePlugin(name);
     }
 
+    // ============================================================
+    // 初始化
+    // ============================================================
+
+    /**
+     * 初始化渲染引擎、编辑器、事件处理、插件系统。
+     * 延迟初始化，在构造后显式调用。
+     */
     initRender() {
-        console.log(123);
         if (this.renderEngine) return;
 
-        if (this.sheets.size === 0) {
-            this.addSheet(this.#initOptions?.sheetName || "Sheet1");
-        }
-
-        this.renderEngine = new RenderEngine(this.#containerId);
-
-        if (this.#initOptions?.width != null || this.#initOptions?.height != null) {
-            this.renderEngine.setCanvasSize(this.#initOptions?.width, this.#initOptions?.height);
-        }
-
-        this.editor = new EditorManager(this.renderEngine, this.activeSheet);
-        this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
-        this.pluginManager = new PluginManager(this);
-
-        for (const [name, pluginClass] of Workbook.#pluginRegistry) {
-            PluginManager.register(name, pluginClass);
-        }
-
-        for (const sheet of this.sheets.values()) {
-            sheet.renderEngine = this.renderEngine;
-        }
-
+        this.#ensureDefaultSheet();
+        this.#createRenderEngine();
+        this.#createSubSystems();
+        this.#linkSheetsToRenderEngine();
         this.#applyInitOptions();
         this.#setupScrollCallback();
         this.#setupSheetTabBar();
         this.#flushPendingPlugins();
     }
 
+    #ensureDefaultSheet() {
+        if (this.sheets.size === 0) {
+            this.addSheet(this.#initOptions?.sheetName || "Sheet1");
+        }
+    }
+
+    #createRenderEngine() {
+        this.renderEngine = new RenderEngine(this.#containerId);
+        const opts = this.#initOptions;
+        if (opts?.width != null || opts?.height != null) {
+            this.renderEngine.setCanvasSize(opts.width, opts.height);
+        }
+    }
+
+    #createSubSystems() {
+        this.editor = new EditorManager(this.renderEngine, this.activeSheet);
+        this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
+        this.pluginManager = new PluginManager(this);
+
+        // 将全局注册的插件类同步到 PluginManager
+        for (const [name, pluginClass] of Workbook.#pluginRegistry) {
+            PluginManager.register(name, pluginClass);
+        }
+    }
+
+    #linkSheetsToRenderEngine() {
+        for (const sheet of this.sheets.values()) {
+            sheet.renderEngine = this.renderEngine;
+        }
+    }
+
+    // ============================================================
+    // 滚动回调：编辑器视口裁剪
+    // ============================================================
+
     #setupScrollCallback() {
         this.renderEngine.onScrollCallback = () => {
             const activeEditor = this.editor?.getActiveEditor();
             if (!activeEditor || activeEditor.activeRow < 0) return;
 
-            const rc = this.activeSheet.rowColManager;
             const { activeRow: row, activeCol: col } = activeEditor;
+            const rc = this.activeSheet.rowColManager;
+            const dpr = window.devicePixelRatio || 1;
             const headerW = CONFIG.HEADER_WIDTH;
             const headerH = CONFIG.HEADER_HEIGHT;
-            const viewW = this.renderEngine.canvas.width / (window.devicePixelRatio || 1) - headerW;
-            const viewH = this.renderEngine.canvas.height / (window.devicePixelRatio || 1) - headerH - CONFIG.SHEET_TAB_HEIGHT;
+            const tabH = CONFIG.SHEET_TAB_HEIGHT;
+            const viewW = this.renderEngine.canvas.width / dpr - headerW;
+            const viewH = this.renderEngine.canvas.height / dpr - headerH - tabH;
 
             const cellX = rc.getColX(col);
             const cellY = rc.getRowY(row);
@@ -194,7 +213,11 @@ export class Workbook {
             const sx = this.renderEngine.scrollX;
             const sy = this.renderEngine.scrollY;
 
-            const outOfView = cellX + cellW <= sx || cellX >= sx + viewW || cellY + cellH <= sy || cellY >= sy + viewH;
+            const outOfView =
+                cellX + cellW <= sx ||
+                cellX >= sx + viewW ||
+                cellY + cellH <= sy ||
+                cellY >= sy + viewH;
 
             if (outOfView) {
                 activeEditor.hideForScroll();
@@ -204,13 +227,19 @@ export class Workbook {
         };
     }
 
+    // ============================================================
+    // Sheet Tab Bar 事件绑定
+    // ============================================================
+
     #setupSheetTabBar() {
         const tabBar = this.renderEngine.sheetTabBar;
         tabBar.workbook = this;
+
         tabBar.onSwitch = (name) => {
             this.switchTo(name);
             tabBar.scrollToTab(name);
         };
+
         tabBar.onAdd = () => {
             const newName = this.#generateSheetName();
             this.addSheet(newName);
@@ -218,51 +247,58 @@ export class Workbook {
             tabBar.refresh();
             tabBar.scrollToTab(newName);
         };
+
         tabBar.onRemove = (name) => {
             this.removeSheet(name);
             tabBar.refresh();
         };
+
         tabBar.onRename = (oldName, newName) => {
             this.renameSheet(oldName, newName);
             tabBar.refresh();
         };
+
         tabBar.refresh();
     }
 
     #generateSheetName() {
         let idx = this.sheets.size + 1;
-        let name = `Sheet${idx}`;
-        while (this.sheets.has(name)) {
-            idx++;
-            name = `Sheet${idx}`;
-        }
-        return name;
+        while (this.sheets.has(`Sheet${idx}`)) idx++;
+        return `Sheet${idx}`;
     }
+
+    // ============================================================
+    // 初始配置应用
+    // ============================================================
 
     #applyInitOptions() {
         const opts = this.#initOptions;
         if (!opts || Object.keys(opts).length === 0 || !this.activeSheet) return;
 
-        this.#applySheetSettings(this.activeSheet, opts);
+        SettingsApplier.apply({ sheet: this.activeSheet, renderEngine: this.renderEngine, settings: opts });
 
-        if (opts.plugins && Array.isArray(opts.plugins)) {
-            const pluginOptions = opts.pluginOptions || {};
-            for (const name of opts.plugins) {
-                const pluginOpts = pluginOptions[name] || {};
-                this.loadPlugin(name, pluginOpts);
-            }
-        }
-
-        if (opts.hooks && typeof opts.hooks === "object") {
-            for (const [hookName, callback] of Object.entries(opts.hooks)) {
-                if (typeof callback === "function") {
-                    this.addHook(hookName, callback);
-                }
-            }
-        }
+        this.#loadInitPlugins(opts);
+        this.#loadInitHooks(opts);
 
         if (typeof opts.afterInit === "function") {
             opts.afterInit(this);
+        }
+    }
+
+    #loadInitPlugins(opts) {
+        if (!Array.isArray(opts.plugins)) return;
+        const pluginOptions = opts.pluginOptions || {};
+        for (const name of opts.plugins) {
+            this.loadPlugin(name, pluginOptions[name] || {});
+        }
+    }
+
+    #loadInitHooks(opts) {
+        if (!opts.hooks || typeof opts.hooks !== "object") return;
+        for (const [hookName, callback] of Object.entries(opts.hooks)) {
+            if (typeof callback === "function") {
+                this.addHook(hookName, callback);
+            }
         }
     }
 
@@ -270,95 +306,113 @@ export class Workbook {
         for (const pending of this.#pendingPlugins) {
             if (pending.type === "name") {
                 this.pluginManager.loadPlugin(pending.name, pending.options);
-            } else if (pending.type === "class") {
+            } else {
                 this.pluginManager.loadPluginClass(pending.PluginClass, pending.options);
             }
         }
         this.#pendingPlugins = [];
     }
 
+    // ============================================================
+    // 工作表管理
+    // ============================================================
+
+    /**
+     * 添加工作表
+     * @param {string} name
+     * @returns {Sheet}
+     */
     addSheet(name) {
         const engine = this.renderEngine || { canvas: { width: 0, height: 0 } };
         const sheet = new Sheet(name, engine);
         sheet.workbook = this;
 
         const opts = this.#initOptions;
-        sheet.rowColManager.ensureSize(opts?.startRows || 100, opts?.startCols || 26);
+        sheet.rowColManager.ensureSize(
+            opts?.startRows || 100,
+            opts?.startCols || 26,
+        );
 
         this.sheets.set(name, sheet);
-
-        if (!this.activeSheet) {
-            this.activeSheet = sheet;
-            if (this.editor) this.editor.sheet = sheet;
-            if (this.eventHandler) this.eventHandler.sheet = sheet;
-        }
-
-        if (this.renderEngine?.sheetTabBar) {
-            this.renderEngine.sheetTabBar.refresh();
-        }
-
+        this.#activateIfFirst(sheet);
+        this.#refreshTabBar();
         return sheet;
     }
 
+    /**
+     * 删除工作表（至少保留一个）
+     * @param {string} name
+     * @returns {boolean}
+     */
     removeSheet(name) {
-        if (!this.sheets.has(name)) return false;
-        if (this.sheets.size <= 1) return false;
+        if (!this.sheets.has(name) || this.sheets.size <= 1) return false;
 
         const removed = this.sheets.get(name);
         this.sheets.delete(name);
 
         if (this.activeSheet === removed) {
-            const firstKey = this.sheets.keys().next().value;
-            this.switchTo(firstKey);
+            this.switchTo(this.sheets.keys().next().value);
         }
 
-        if (this.renderEngine?.sheetTabBar) {
-            this.renderEngine.sheetTabBar.refresh();
-        }
-
+        this.#refreshTabBar();
         return true;
     }
 
+    /**
+     * 重命名工作表
+     * @param {string} oldName
+     * @param {string} newName
+     * @returns {boolean}
+     */
     renameSheet(oldName, newName) {
         if (!this.sheets.has(oldName)) return false;
-        if (!newName || !newName.trim()) return false;
-        newName = newName.trim();
-        if (oldName === newName) return false;
-        if (this.sheets.has(newName)) return false;
+        newName = (newName || "").trim();
+        if (!newName || oldName === newName || this.sheets.has(newName)) return false;
 
         const sheet = this.sheets.get(oldName);
         this.sheets.delete(oldName);
         sheet.name = newName;
         this.sheets.set(newName, sheet);
-
         return true;
     }
 
+    /**
+     * 切换到指定工作表
+     * @param {string} name
+     */
     switchTo(name) {
-        if (!this.sheets.has(name)) return;
-        if (this.activeSheet === this.sheets.get(name)) return;
-        this.activeSheet = this.sheets.get(name);
-        if (this.editor) this.editor.sheet = this.activeSheet;
-        if (this.eventHandler) this.eventHandler.sheet = this.activeSheet;
+        const sheet = this.sheets.get(name);
+        if (!sheet || this.activeSheet === sheet) return;
+
+        this.activeSheet = sheet;
+        if (this.editor) this.editor.sheet = sheet;
+        if (this.eventHandler) this.eventHandler.sheet = sheet;
         if (this.renderEngine) {
-            this.activeSheet.renderEngine = this.renderEngine;
+            sheet.renderEngine = this.renderEngine;
             this.renderEngine.invalidateAll();
         }
         this.render();
-
-        if (this.renderEngine?.sheetTabBar) {
-            this.renderEngine.sheetTabBar.refresh();
-        }
+        this.#refreshTabBar();
     }
 
+    /** @returns {Sheet|null} */
     getActiveSheet() {
         return this.activeSheet;
     }
 
+    // ============================================================
+    // 渲染
+    // ============================================================
+
     render() {
-        if (!this.renderEngine || !this.activeSheet) return;
-        this.renderEngine.render(this.activeSheet);
+        if (this.renderEngine && this.activeSheet) {
+            this.renderEngine.render(this.activeSheet);
+        }
     }
+
+    // ============================================================
+    // 剪贴板
+    // ============================================================
 
     copy() {
         if (!this.activeSheet) return;
@@ -371,74 +425,85 @@ export class Workbook {
         this.render();
     }
 
+    // ============================================================
+    // 撤销 / 重做
+    // ============================================================
+
     undo() {
-        if (!this.activeSheet) return;
-        this.activeSheet.undo();
-        this.render();
+        this.#withActiveSheet((s) => { s.undo(); this.render(); });
     }
 
     redo() {
-        if (!this.activeSheet) return;
-        this.activeSheet.redo();
-        this.render();
+        this.#withActiveSheet((s) => { s.redo(); this.render(); });
     }
 
+    // ============================================================
+    // 单元格操作
+    // ============================================================
+
     disableCell() {
-        if (!this.activeSheet) return;
-        const [r, c] = this.activeSheet.selection.getActive();
-        this.activeSheet.disableCell(r, c);
-        this.render();
+        this.#withActiveSheet((s) => {
+            s.disableCell(...s.selection.getActive());
+            this.render();
+        });
     }
 
     enableCell() {
-        if (!this.activeSheet) return;
-        const [r, c] = this.activeSheet.selection.getActive();
-        this.activeSheet.enableCell(r, c);
-        this.render();
+        this.#withActiveSheet((s) => {
+            s.enableCell(...s.selection.getActive());
+            this.render();
+        });
     }
 
+    /** @returns {boolean} */
     mergeCells(topRow, topCol, bottomRow, bottomCol) {
-        if (!this.activeSheet) return false;
-        const result = this.activeSheet.mergeCells(topRow, topCol, bottomRow, bottomCol);
-        if (result) this.render();
-        return result;
+        return this.#withActiveSheet((s) => {
+            const ok = s.mergeCells(topRow, topCol, bottomRow, bottomCol);
+            if (ok) this.render();
+            return ok;
+        }, false);
     }
 
+    /** @returns {boolean} */
     unmergeCells() {
-        if (!this.activeSheet) return false;
-        const [r, c] = this.activeSheet.selection.getActive();
-        const result = this.activeSheet.unmergeCells(r, c);
-        if (result) this.render();
-        return result;
+        return this.#withActiveSheet((s) => {
+            const ok = s.unmergeCells(...s.selection.getActive());
+            if (ok) this.render();
+            return ok;
+        }, false);
     }
 
     insertRow(atRow) {
-        if (!this.activeSheet) return;
-        if (atRow === undefined) atRow = this.activeSheet.selection.getActive()[0];
-        this.activeSheet.insertRow(atRow);
-        this.render();
+        this.#withActiveSheet((s) => {
+            s.insertRow(atRow ?? s.selection.getActive()[0]);
+            this.render();
+        });
     }
 
     insertCol(atCol) {
-        if (!this.activeSheet) return;
-        if (atCol === undefined) atCol = this.activeSheet.selection.getActive()[1];
-        this.activeSheet.insertCol(atCol);
-        this.render();
+        this.#withActiveSheet((s) => {
+            s.insertCol(atCol ?? s.selection.getActive()[1]);
+            this.render();
+        });
     }
 
     deleteRow(atRow) {
-        if (!this.activeSheet) return;
-        if (atRow === undefined) atRow = this.activeSheet.selection.getActive()[0];
-        this.activeSheet.deleteRow(atRow);
-        this.render();
+        this.#withActiveSheet((s) => {
+            s.deleteRow(atRow ?? s.selection.getActive()[0]);
+            this.render();
+        });
     }
 
     deleteCol(atCol) {
-        if (!this.activeSheet) return;
-        if (atCol === undefined) atCol = this.activeSheet.selection.getActive()[1];
-        this.activeSheet.deleteCol(atCol);
-        this.render();
+        this.#withActiveSheet((s) => {
+            s.deleteCol(atCol ?? s.selection.getActive()[1]);
+            this.render();
+        });
     }
+
+    // ============================================================
+    // 钩子系统（委托到 EventHandler）
+    // ============================================================
 
     addHook(hookName, callback) {
         this.eventHandler?.addHook(hookName, callback);
@@ -456,6 +521,7 @@ export class Workbook {
         this.eventHandler?.clearHook(hookName);
     }
 
+    /** @returns {boolean} */
     hasHook(hookName) {
         return this.eventHandler?.hasHook(hookName) || false;
     }
@@ -464,208 +530,114 @@ export class Workbook {
         return this.eventHandler?.runHooks(hookName, ...args);
     }
 
+    // ============================================================
+    // 样式操作
+    // ============================================================
+
     /**
      * 更新配置（对齐 Handsontable 的 updateSettings API）
-     *
-     * @param {object} settings - 配置项（同构造函数 options）
+     * @param {object} settings
      */
     updateSettings(settings = {}) {
-        if (!this.activeSheet) return;
-        this.#applySheetSettings(this.activeSheet, settings);
-        this.render();
+        this.#withActiveSheet((s) => {
+            SettingsApplier.apply({ sheet: s, renderEngine: this.renderEngine, settings });
+            this.render();
+        });
     }
 
-    /**
-     * 设置单元格样式
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @param {object} styleObj - 样式对象，如 { fontSize: 16, fontWeight: "bold", color: "#ff0000" }
-     */
     setCellStyle(row, col, styleObj) {
-        if (!this.activeSheet) return;
-        this.activeSheet.setCellStyle(row, col, styleObj);
-        this.render();
+        this.#withActiveSheet((s) => { s.setCellStyle(row, col, styleObj); this.render(); });
     }
 
-    /**
-     * 批量设置选区样式
-     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range - 选区范围
-     * @param {object} styleObj - 样式对象
-     */
     setRangeStyle(range, styleObj) {
-        if (!this.activeSheet) return;
-        this.activeSheet.setRangeStyle(range, styleObj);
-        this.render();
+        this.#withActiveSheet((s) => { s.setRangeStyle(range, styleObj); this.render(); });
     }
 
-    /**
-     * 获取单元格最终解析样式
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @returns {object} 合并后的样式对象
-     */
+    /** @returns {object} */
     getCellStyle(row, col) {
-        if (!this.activeSheet) return {};
-        return this.activeSheet.getCellStyle(row, col);
+        return this.#withActiveSheet((s) => s.getCellStyle(row, col), {});
     }
 
-    /**
-     * 设置当前工作表默认样式
-     * 影响所有未单独设置样式的单元格
-     * @param {object} styleObj - 样式对象，如 { fontSize: 14, fontFamily: "Arial" }
-     */
     setDefaultStyle(styleObj) {
-        if (!this.activeSheet) return;
-        this.activeSheet.setDefaultStyle(styleObj);
-        this.render();
+        this.#withActiveSheet((s) => { s.setDefaultStyle(styleObj); this.render(); });
     }
 
-    /**
-     * 获取当前工作表默认样式
-     * @returns {object} 默认样式对象
-     */
+    /** @returns {object} */
     getDefaultStyle() {
-        if (!this.activeSheet) return {};
-        return this.activeSheet.getDefaultStyle();
+        return this.#withActiveSheet((s) => s.getDefaultStyle(), {});
     }
 
-    /**
-     * 统一的 Sheet 配置应用方法
-     * 被 #applyInitOptions 和 updateSettings 共用，消除重复代码
-     */
-    #applySheetSettings(sheet, settings) {
-        if (settings.colHeaders !== undefined) {
-            sheet.colHeaders = settings.colHeaders;
-        }
-        if (settings.rowHeaders !== undefined) {
-            sheet.rowHeaders = settings.rowHeaders;
-        }
-        if (settings.data) {
-            sheet.loadData(settings.data);
-        }
-        if (settings.defaultStyle) {
-            sheet.setDefaultStyle(settings.defaultStyle);
-        }
-        if (settings.rowHeights !== undefined) {
-            this.#applyRowHeights(sheet, settings.rowHeights);
-        }
-        if (settings.colWidths !== undefined) {
-            this.#applyColWidths(sheet, settings.colWidths);
-        }
-        if (Array.isArray(settings.mergeCells)) {
-            this.#applyMergeCells(sheet, settings.mergeCells);
-        }
-        if (Array.isArray(settings.conditionalStyles)) {
-            this.#applyConditionalStyles(sheet, settings.conditionalStyles);
-        }
-        if (Array.isArray(settings.cell)) {
-            this.#applyCellConfig(sheet, settings.cell);
-        }
-        if (typeof settings.cells === "function") {
-            sheet.cellsFn = settings.cells;
-        }
-        if (Array.isArray(settings.columns)) {
-            this.#applyColumnsConfig(sheet, settings.columns);
-        }
-        if (Array.isArray(settings.cellTypes)) {
-            this.#applyCellTypes(sheet, settings.cellTypes);
-        }
-        if (settings.width != null || settings.height != null) {
-            this.renderEngine?.setCanvasSize(settings.width, settings.height);
-        }
-    }
+    // ============================================================
+    // 导出（委托到 exportFile 插件）
+    // ============================================================
 
-    #applyRowHeights(sheet, rowHeights) {
-        if (typeof rowHeights === "number") {
-            const count = sheet.rowColManager.allocatedRowCount || 100;
-            sheet.rowColManager.ensureSize(count, 0);
-            for (let r = 0; r < count; r++) {
-                sheet.rowColManager.setRowHeight(r, rowHeights);
-            }
-        } else if (Array.isArray(rowHeights)) {
-            sheet.rowColManager.ensureSize(rowHeights.length, 0);
-            for (let r = 0; r < rowHeights.length; r++) {
-                sheet.rowColManager.setRowHeight(r, rowHeights[r]);
-            }
-        }
-    }
-
-    #applyColWidths(sheet, colWidths) {
-        if (typeof colWidths === "number") {
-            const count = sheet.rowColManager.allocatedColCount || 26;
-            sheet.rowColManager.ensureSize(0, count);
-            for (let c = 0; c < count; c++) {
-                sheet.rowColManager.setColWidth(c, colWidths);
-            }
-        } else if (Array.isArray(colWidths)) {
-            sheet.rowColManager.ensureSize(0, colWidths.length);
-            for (let c = 0; c < colWidths.length; c++) {
-                sheet.rowColManager.setColWidth(c, colWidths[c]);
-            }
-        }
-    }
-
-    #applyMergeCells(sheet, mergeCells) {
-        for (const m of mergeCells) {
-            if (m.row !== undefined && m.col !== undefined && m.rowspan !== undefined && m.colspan !== undefined) {
-                sheet.mergeCells(m.row, m.col, m.row + m.rowspan - 1, m.col + m.colspan - 1);
-            }
-        }
-    }
-
-    #applyConditionalStyles(sheet, conditionalStyles) {
-        for (const cs of conditionalStyles) {
-            if (cs.range && cs.condition && cs.style) {
-                const styleId = stylePool.getStyleId(cs.style);
-                sheet.addConditionalRule(cs.range, cs.condition, styleId);
-            }
-        }
-    }
-
-    #applyCellConfig(sheet, cellConfig) {
-        sheet.cellConfig = cellConfig;
-        sheet.applyCellConfig();
-    }
-
-    #applyCellTypes(sheet, cellTypes) {
-        for (const ct of cellTypes) {
-            if (ct.row == null || ct.col == null || !ct.type) continue;
-            const key = `${ct.row},${ct.col}`;
-            const { row, col, type: name, ...rest } = ct;
-            sheet.cellTypes.set(key, { name, options: rest });
-        }
-    }
-
-    #applyColumnsConfig(sheet, columnsConfig) {
-        sheet.applyColumnsConfig(columnsConfig);
-    }
-
-    #getExportPlugin() {
-        return this.getPlugin("exportFile");
-    }
-
+    /** @returns {string} */
     exportAsString(format, options) {
-        return this.#getExportPlugin()?.exportAsString(format, options) ?? "";
+        return this.getPlugin("exportFile")?.exportAsString(format, options) ?? "";
     }
 
+    /** @returns {?Blob} */
     exportAsBlob(format, options) {
-        return this.#getExportPlugin()?.exportAsBlob(format, options) ?? null;
+        return this.getPlugin("exportFile")?.exportAsBlob(format, options) ?? null;
     }
 
     downloadFile(format, options) {
-        this.#getExportPlugin()?.downloadFile(format, options);
+        this.getPlugin("exportFile")?.downloadFile(format, options);
     }
+
+    // ============================================================
+    // 生命周期
+    // ============================================================
 
     destroy() {
         this.pluginManager?.destroyAll();
         this.pluginManager = null;
+
         this.eventHandler?.destroy();
+        this.eventHandler = null;
+
         this.editor?.destroy();
+        this.editor = null;
+
         this.renderEngine?.destroy();
         this.renderEngine = null;
-        this.editor = null;
-        this.eventHandler = null;
+
         this.sheets.clear();
         this.activeSheet = null;
+    }
+
+    // ============================================================
+    // 私有辅助
+    // ============================================================
+
+    /**
+     * 如果尚未有活动工作表，将传入 sheet 设为活动。
+     * 同时同步 editor / eventHandler 的 sheet 引用。
+     */
+    #activateIfFirst(sheet) {
+        if (!this.activeSheet) {
+            this.activeSheet = sheet;
+            if (this.editor) this.editor.sheet = sheet;
+            if (this.eventHandler) this.eventHandler.sheet = sheet;
+        }
+    }
+
+    /** 安全刷新 SheetTabBar */
+    #refreshTabBar() {
+        this.renderEngine?.sheetTabBar?.refresh();
+    }
+
+    /**
+     * 统一的"有活动工作表时执行"封装。
+     * 消除所有方法中重复的 `if (!this.activeSheet) return` 守卫。
+     *
+     * @template T
+     * @param {(sheet: Sheet) => T} fn
+     * @param {T} [defaultValue]
+     * @returns {T|undefined}
+     */
+    #withActiveSheet(fn, defaultValue) {
+        if (!this.activeSheet) return defaultValue;
+        return fn(this.activeSheet);
     }
 }

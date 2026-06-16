@@ -90,7 +90,7 @@ const initApp = () => {
                         },
                     },
                 ],
-                disabledItems: ["mergeCells", "unmergeCells"],
+                // disabledItems: ["mergeCells", "unmergeCells"],
             },
             // rowMove: { enabled: false }
         },

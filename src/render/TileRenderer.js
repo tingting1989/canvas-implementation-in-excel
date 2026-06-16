@@ -126,6 +126,9 @@ export class TileRenderer {
         const er = rc.rowAt(pixelY1) + 1;
         const ec = rc.colAt(pixelX1) + 1;
 
+        // 记录已绘制的合并区域左上角坐标，避免重复绘制
+        const renderedMerges = new Set();
+
         for (let r = sr; r < er; r++) {
             const rowY = rc.getRowY(r);
             const rowH = rc.getRowHeight(r);
@@ -139,7 +142,23 @@ export class TileRenderer {
                 const colW = rc.getColWidth(c);
                 if (colW <= 0) continue;
 
-                if (sheet.isMergedCell(realR, c)) continue;
+                // 检查是否属于某个合并区域
+                const merge = sheet.getMerge(r, c);
+
+                // 如果是合并区域内非左上角的格子
+                if (sheet.isMergedCell(realR, c)) {
+                    // 如果合并区域的左上角在本瓦片范围内且尚未渲染过，则由左上角统一绘制
+                    // 如果左上角不在本瓦片范围（合并区域从外部延伸进来），需要在此处补绘
+                    if (merge) {
+                        const mergeKey = `${merge.topRow},${merge.topCol}`;
+                        if (!renderedMerges.has(mergeKey)) {
+                            // 合并左上角不在当前瓦片的遍历范围内，需要在此补全绘制
+                            this.#drawMergeRegion(tileCtx, sheet, merge, rc, pixelX0, pixelY0, tileSize);
+                            renderedMerges.add(mergeKey);
+                        }
+                    }
+                    continue;
+                }
 
                 const colX = rc.getColX(c);
                 const localX = colX - pixelX0;
@@ -147,7 +166,6 @@ export class TileRenderer {
                 if (localX + colW <= 0 || localX >= tileSize) continue;
 
                 const cell = sheet.cellStore.get(realR, c);
-                const merge = sheet.getMerge(r, c);
                 let w = colW;
                 let h = rowH;
                 let drawX = localX;
@@ -158,13 +176,42 @@ export class TileRenderer {
                     h = rc.getRowY(merge.bottomRow) + rc.getRowHeight(merge.bottomRow) - rc.getRowY(merge.topRow);
                     drawX = rc.getColX(merge.topCol) - pixelX0;
                     drawY = rc.getRowY(merge.topRow) - pixelY0;
+                    renderedMerges.add(`${merge.topRow},${merge.topCol}`);
                 }
 
-                this.#drawCellBackground(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h);
+                this.#drawCellBackground(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
                 this.#drawCellBorder(tileCtx, merge, drawX, drawY, w, h);
-                this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h);
+                this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
             }
         }
+    }
+
+    /**
+     * 绘制合并区域（用于合并左上角在当前瓦片之外的补全绘制）
+     * 使用合并区域的左上角坐标解析样式和值，确保格式一致
+     */
+    #drawMergeRegion(ctx, sheet, merge, rc, pixelX0, pixelY0, tileSize) {
+        const { topRow, topCol, bottomRow, bottomCol } = merge;
+        const realTopR = sheet.toRealRow(topRow);
+
+        // 计算合并区域与当前瓦片的交集
+        const mergeLeft = rc.getColX(topCol);
+        const mergeTop = rc.getRowY(topRow);
+        const mergeRight = rc.getColX(bottomCol) + rc.getColWidth(bottomCol);
+        const mergeBottom = rc.getRowY(bottomRow) + rc.getRowHeight(bottomRow);
+
+        // 瓦片内可见部分
+        const drawX = Math.max(0, mergeLeft - pixelX0);
+        const drawY = Math.max(0, mergeTop - pixelY0);
+        const drawW = Math.min(tileSize, mergeRight - pixelX0) - drawX;
+        const drawH = Math.min(tileSize, mergeBottom - pixelY0) - drawY;
+
+        if (drawW <= 0 || drawH <= 0) return;
+
+        const cell = sheet.cellStore.get(realTopR, topCol);
+        this.#drawCellBackground(ctx, sheet, realTopR, topCol, cell, drawX, drawY, drawW, drawH, merge);
+        this.#drawCellBorder(ctx, merge, drawX, drawY, drawW, drawH);
+        this.#drawCellText(ctx, sheet, realTopR, topCol, cell, drawX, drawY, drawW, drawH, merge);
     }
 
     /**
@@ -177,8 +224,11 @@ export class TileRenderer {
      * 3. 条件样式背景色
      * 4. 数据绑定样式背景色
      * 5. 禁用单元格灰色背景（最高优先级）
+     *
+     * 合并单元格处理：
+     * - 合并区域使用统一的左上角样式，确保跨列时无视觉分割
      */
-    #drawCellBackground(ctx, sheet, r, c, cell, drawX, drawY, w, h) {
+    #drawCellBackground(ctx, sheet, r, c, cell, drawX, drawY, w, h, merge) {
         let bgColor = r % 2 === 0 ? CONFIG.ZEBRA_LIGHT : CONFIG.ZEBRA_DARK;
         ctx.fillStyle = bgColor;
         ctx.fillRect(drawX, drawY, w, h);
@@ -242,8 +292,11 @@ export class TileRenderer {
      * 5. 根据 textAlign 计算文字 X 坐标
      * 6. 文字垂直居中（drawY + h/2 + 4，+4 为基线微调）
      * 7. 如果有下划线装饰，在文字下方绘制横线
+     *
+     * 合并单元格处理：
+     * - 使用左上角坐标解析样式和格式化，确保跨列时格式一致
      */
-    #drawCellText(ctx, sheet, r, c, cell, drawX, drawY, w, h) {
+    #drawCellText(ctx, sheet, r, c, cell, drawX, drawY, w, h, merge) {
         if (cell?.value === undefined) return;
 
         const finalStyle = sheet.resolveStyle(r, c);
