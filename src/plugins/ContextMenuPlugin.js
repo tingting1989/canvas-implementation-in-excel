@@ -9,7 +9,8 @@ import { ContextMenuStrategy } from "../editor/strategies/ContextMenuStrategy.js
  * - 右键单元格显示上下文菜单
  * - 插入/删除行和列
  * - 合并/取消合并单元格
- * - 清空单元格内容
+ * - 插入图片（通过文件选择器，需 copyPaste 插件已加载）
+ * - 清空单元格内容（含图片等富内容）
  *
  * 使用方式：
  * ```js
@@ -21,6 +22,11 @@ import { ContextMenuStrategy } from "../editor/strategies/ContextMenuStrategy.js
  *     customItems: [
  *         { label: '自定义操作', action: (row, col) => console.log(row, col) }
  *     ]
+ * });
+ *
+ * // 禁用内置菜单项
+ * workbook.loadPluginClass(ContextMenuPlugin, {
+ *     disabledItems: ["mergeCells", "unmergeCells", "insertImage"]
  * });
  *
  * // 禁用右键菜单

@@ -46,6 +46,12 @@ export class TileRenderer {
     constructor(tileCache) {
         /** @type {TileCache} 瓦片缓存，用于获取/创建瓦片 */
         this.tileCache = tileCache;
+        /**
+         * 图片异步加载完成时的回调
+         * 由 RenderEngine 设置，用于在图片就绪后触发重绘
+         * @type {Function|null}
+         */
+        this.onContentReady = null;
     }
 
     /**
@@ -436,6 +442,13 @@ export class TileRenderer {
 
     /**
      * 获取或加载图片元素
+     *
+     * 首次加载时创建 Image 对象并注册 onload 回调，
+     * 图片加载完成后自动标记所有瓦片为脏并通过 onContentReady 触发重绘。
+     *
+     * 注意：Object URL 加载通常很快（本地 Blob），但仍是异步的。
+     * 如果图片在设置 onload 前已完成加载（极少数情况），通过检查 complete 兜底。
+     *
      * @param {string} url - Object URL
      * @returns {HTMLImageElement|null}
      */
@@ -444,8 +457,31 @@ export class TileRenderer {
             return this.#imageElementCache.get(url);
         }
         const img = new Image();
+
+        // 先设置 onload，再设置 src（确保不会漏掉事件）
+        img.onload = () => {
+            this.tileCache.markAllDirty();
+            if (this.onContentReady) {
+                this.onContentReady();
+            }
+        };
+        img.onerror = () => {
+            // 加载失败时从缓存中移除，避免无限缓存失败的 URL
+            this.#imageElementCache.delete(url);
+        };
+
         img.src = url;
         this.#imageElementCache.set(url, img);
+
+        // 极少数情况：图片在设置 onload 之前就已完成加载
+        // 此时 complete 为 true，手动触发重绘
+        if (img.complete) {
+            this.tileCache.markAllDirty();
+            if (this.onContentReady) {
+                this.onContentReady();
+            }
+        }
+
         return img;
     }
 

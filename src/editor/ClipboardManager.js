@@ -82,7 +82,7 @@ export class ClipboardManager {
         if (!items || items.length === 0) {
             // fallback 到内部数据
             if (this.#data) {
-                this.#pasteInternal(sheet);
+                this.pasteInternal(sheet);
                 return true;
             }
             return false;
@@ -114,14 +114,14 @@ export class ClipboardManager {
         // 处理文本粘贴
         if (textContent) {
             textContent.getAsString((text) => {
-                this.#pasteText(sheet, text);
+                this.pasteText(sheet, text);
             });
             return true;
         }
 
         // 既无文本也无图片，fallback 到内部数据
         if (this.#data) {
-            this.#pasteInternal(sheet);
+            this.pasteInternal(sheet);
             return true;
         }
         return false;
@@ -225,22 +225,27 @@ export class ClipboardManager {
                 .readText()
                 .then((text) => {
                     if (text) {
-                        this.#pasteText(sheet, text);
+                        this.pasteText(sheet, text);
                     } else if (this.#data) {
-                        this.#pasteInternal(sheet);
+                        this.pasteInternal(sheet);
                     }
                 })
                 .catch(() => {
                     if (this.#data) {
-                        this.#pasteInternal(sheet);
+                        this.pasteInternal(sheet);
                     }
                 });
         } else if (this.#data) {
-            this.#pasteInternal(sheet);
+            this.pasteInternal(sheet);
         }
     }
 
-    #pasteText(sheet, text) {
+    /**
+     * 粘贴文本到当前活动单元格（公开方法，供 CopyPasteStrategy 调用）
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {string} text - TSV 格式文本
+     */
+    pasteText(sheet, text) {
         const [targetRow, targetCol] = sheet.selection.getActive();
         const rows = text.split("\n");
         // 计算源列数（取最长行的列数）
@@ -279,7 +284,11 @@ export class ClipboardManager {
         sheet.render();
     }
 
-    #pasteInternal(sheet) {
+    /**
+     * 粘贴内部剪贴板数据（公开方法，供 CopyPasteStrategy 调用）
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     */
+    pasteInternal(sheet) {
         if (!this.#data) return;
         const [targetRow, targetCol] = sheet.selection.getActive();
 
@@ -404,6 +413,55 @@ export class ClipboardManager {
         if (sheet.isDisabled(targetRow, targetCol)) return;
 
         this.setCellImage(sheet, targetRow, targetCol, blob);
+    }
+
+    // ============================================================
+    // 文件选择插入图片（右键菜单 / 工具栏）
+    // ============================================================
+
+    /**
+     * 通过文件选择器插入图片到当前活动单元格
+     * 创建一个隐藏的 <input type="file"> 触发文件选择，选中后调用 setCellImage
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {object} [options]
+     * @param {number} [options.row] - 目标行号（不传则使用当前选区活动单元格）
+     * @param {number} [options.col] - 目标列号
+     * @param {Function} [options.onComplete] - 完成回调 (success: boolean) => void
+     */
+    insertImageFromFile(sheet, options = {}) {
+        const targetRow = options.row ?? sheet.selection.getActive()[0];
+        const targetCol = options.col ?? sheet.selection.getActive()[1];
+
+        if (sheet.isDisabled(targetRow, targetCol)) {
+            options.onComplete?.(false);
+            return;
+        }
+
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/png,image/jpeg,image/gif,image/webp,image/bmp,image/svg+xml";
+        input.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
+
+        input.addEventListener("change", () => {
+            const file = input.files?.[0];
+            if (file) {
+                this.setCellImage(sheet, targetRow, targetCol, file);
+                options.onComplete?.(true);
+            } else {
+                options.onComplete?.(false);
+            }
+            input.remove();
+        });
+
+        // 取消选择时清理
+        input.addEventListener("cancel", () => {
+            options.onComplete?.(false);
+            input.remove();
+        });
+
+        document.body.appendChild(input);
+        input.click();
     }
 
     /**

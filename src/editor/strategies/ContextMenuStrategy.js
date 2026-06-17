@@ -75,6 +75,8 @@ export class ContextMenuStrategy extends EventStrategy {
             "mergeCells",
             "unmergeCells",
             null,
+            "insertImage",
+            null,
             "clearContent",
         ],
         rowHeader: ["insertRowAbove", "insertRowBelow", null, "deleteRow", null, "clearContent"],
@@ -200,6 +202,14 @@ export class ContextMenuStrategy extends EventStrategy {
                 label: "取消合并",
                 action: (r, c, sheet) => sheet.unmergeCells(r, c),
             },
+            insertImage: {
+                label: "插入图片",
+                action: (r, c, sheet) => {
+                    const clipboard = sheet.workbook?.clipboard;
+                    if (!clipboard) return;
+                    clipboard.insertImageFromFile(sheet, { row: r, col: c });
+                },
+            },
             clearContent: {
                 label: "清空内容",
                 action: (r, c, sheet) => {
@@ -208,6 +218,9 @@ export class ContextMenuStrategy extends EventStrategy {
                     for (let row = range.topRow; row <= range.bottomRow; row++) {
                         for (let col = range.topCol; col <= range.bottomCol; col++) {
                             if (!sheet.isDisabled(row, col)) {
+                                // 同时清除富内容（图片等）
+                                const realR = sheet.toRealRow(row);
+                                sheet.workbook?.clipboard?.removeCellContent(sheet, realR, col);
                                 sheet.setCell(row, col, "", 0);
                             }
                         }

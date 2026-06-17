@@ -64,6 +64,11 @@ export class RenderEngine {
         this.overlayRenderer = new OverlayRenderer();
         this.headerRenderer = new HeaderRenderer();
 
+        // 图片异步加载完成后自动触发重绘
+        this.tileRenderer.onContentReady = () => {
+            this.requestRender();
+        };
+
         this.#initCanvasSize();
         this.#bindEvents();
     }

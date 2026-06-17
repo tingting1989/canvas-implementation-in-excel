@@ -251,12 +251,24 @@ console.log(plugin.getComment(0, 0));
 | 插件 | 扩展策略 | 功能 |
 |------|---------|------|
 | AutoFillPlugin | EventStrategy | 拖拽填充手柄自动填充 |
-| ContextMenuPlugin | EventStrategy | 右键上下文菜单（支持自定义项） |
+| ContextMenuPlugin | EventStrategy | 右键上下文菜单（插入行/列、合并、插入图片、清空内容，支持自定义项） |
+| CopyPastePlugin | EventStrategy + 原生 paste 事件 | 复制/粘贴/剪切 + 图片粘贴（Ctrl+V） + 图片插入 API |
 | ColumnMovePlugin | EventStrategy | 拖拽列头移动列 |
 | RowMovePlugin | EventStrategy | 拖拽行头移动行 |
 | PaginationPlugin | Hooks | 分页浏览大数据 |
 | ExportFilePlugin | 独立功能 | CSV/TSV 导出下载 |
 | HiddenColumnsPlugin | Hooks + API | 隐藏/显示列 |
+
+### CopyPastePlugin 简介
+
+`CopyPastePlugin` 同时使用了 EventStrategy 和原生 paste 事件，是最复杂的插件之一：
+
+- **EventStrategy**：通过 `CopyPasteStrategy` 拦截 Ctrl+C/V/X 键盘快捷键
+- **原生 paste 事件**：通过持久隐藏的 contenteditable div 接收 paste 事件，同步读取剪贴板（支持文本 + 图片），无需浏览器权限弹窗
+- **图片管理**：通过 `ClipboardManager` 内部的 `#cellContent` Map 管理图片，与 Cell 模型解耦
+- **公开 API**：`copy()` / `paste()` / `cut()` / `insertImage({ row?, col? })` / `setPermissions()`
+
+详见 [CopyPastePlugin.md](./CopyPastePlugin.md) 和 [ClipboardManager.md](./ClipboardManager.md)。
 
 ## 钩子名称参考
 

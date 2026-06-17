@@ -10,10 +10,26 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
  *
  * 由 CopyPastePlugin 创建和注册，插件禁用时此策略会被 EventHandler
  * 的 enabled 检查自动跳过。
+ *
+ * Ctrl+V 处理策略：
+ * - 浏览器只在 contentEditable / input / textarea 上触发 paste 事件
+ * - 按 Ctrl+V 时：不 preventDefault，而是聚焦隐藏的 contentEditable div
+ * - 浏览器检测到可编辑元素 + Ctrl+V → 自然触发 paste 事件
+ * - paste 事件在 div 上处理（同步读取 clipboardData，含图片 Blob）
+ * - 处理完成后清除 div 内容，焦点由用户下一次操作自然转移
  */
 export class CopyPasteStrategy extends EventStrategy {
     /** 高于 KeyboardStrategy(0) 的优先级 */
     priority = 10;
+
+    /**
+     * 隐藏的 contentEditable div，用于接收浏览器 paste 事件
+     * 持久存在于 DOM 中，避免每次粘贴都创建/销毁
+     * @type {HTMLDivElement|null}
+     */
+    #pasteTarget = null;
+    /** bound paste handler 引用，用于解绑 */
+    #boundPasteHandler = null;
 
     /**
      * @param {import("../EventHandler.js").EventHandler} handler
@@ -24,9 +40,12 @@ export class CopyPasteStrategy extends EventStrategy {
         this.clipboardManager = clipboardManager;
     }
 
-    init() {}
+    init() {
+        this.#ensurePasteTarget();
+    }
 
     destroy() {
+        this.#removePasteTarget();
         this.clipboardManager = null;
     }
 
@@ -39,11 +58,6 @@ export class CopyPasteStrategy extends EventStrategy {
     /**
      * 处理 Ctrl+C / Ctrl+V / Ctrl+X 快捷键
      * 返回 false 表示事件已消费，不继续传递给 KeyboardStrategy
-     *
-     * Ctrl+V 处理策略：
-     * - 只做 e.preventDefault() 阻止浏览器默认行为
-     * - 实际的粘贴操作由 CopyPastePlugin 注册的原生 paste 事件处理
-     * - 这样可以利用 e.clipboardData 同步读取所有类型（含图片），无需权限弹窗
      */
     #handleKeyDown(e) {
         if (!this.enabled) return;
@@ -66,14 +80,15 @@ export class CopyPasteStrategy extends EventStrategy {
                     this.handler.runHooks("beforeCopy", sheet.selection.getRange());
                     this.clipboardManager.copy(sheet);
                     this.handler.runHooks("afterCopy", sheet.selection.getRange());
-                    return false; // 阻止 KeyboardStrategy 处理
+                    return false;
                 }
                 break;
             case "v":
                 if (ctrlOrMeta) {
-                    // 阻止浏览器默认粘贴行为，由原生 paste 事件接管
-                    // paste 事件会同步触发，携带完整的 clipboardData（含图片）
-                    e.preventDefault();
+                    // 不 preventDefault，让浏览器自然触发 paste 事件
+                    // 先将焦点移到隐藏的 contentEditable div
+                    // 浏览器检测到可编辑元素有焦点 → Ctrl+V → 触发 paste 事件
+                    this.#focusPasteTarget();
                     return false;
                 }
                 break;
@@ -87,6 +102,76 @@ export class CopyPasteStrategy extends EventStrategy {
                     return false;
                 }
                 break;
+        }
+    }
+
+    // ============================================================
+    // 隐藏 contentEditable div 管理
+    // ============================================================
+
+    /**
+     * 确保隐藏 div 存在并绑定 paste 处理器
+     */
+    #ensurePasteTarget() {
+        if (this.#pasteTarget) return;
+
+        const div = document.createElement("div");
+        div.contentEditable = "true";
+        // 不设置 aria-hidden，否则聚焦时会触发无障碍警告
+        // 视觉上已通过 CSS 完全隐藏（fixed + 负坐标 + opacity:0）
+        div.style.cssText =
+            "position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;overflow:hidden;";
+        document.body.appendChild(div);
+        this.#pasteTarget = div;
+
+        this.#boundPasteHandler = (pasteEvent) => {
+            if (!this.enabled) return;
+
+            const { sheet, editor } = this.handler;
+            if (!sheet) return;
+
+            const activeEditor = editor?.getActiveEditor();
+            if (activeEditor && activeEditor.editor && activeEditor.editor.style.display === "block") {
+                return;
+            }
+
+            pasteEvent.preventDefault();
+            pasteEvent.stopPropagation();
+
+            this.handler.runHooks("beforePaste", sheet.selection.getActive());
+            this.clipboardManager.pasteFromEvent(sheet, pasteEvent);
+            this.handler.runHooks("afterPaste", sheet.selection.getActive());
+
+            // 清除 div 中可能残留的内容
+            div.textContent = "";
+        };
+
+        div.addEventListener("paste", this.#boundPasteHandler);
+    }
+
+    /**
+     * 移除隐藏 div 并解绑
+     */
+    #removePasteTarget() {
+        if (this.#pasteTarget) {
+            if (this.#boundPasteHandler) {
+                this.#pasteTarget.removeEventListener("paste", this.#boundPasteHandler);
+                this.#boundPasteHandler = null;
+            }
+            if (document.body.contains(this.#pasteTarget)) {
+                this.#pasteTarget.remove();
+            }
+            this.#pasteTarget = null;
+        }
+    }
+
+    /**
+     * 聚焦隐藏 div，触发浏览器的 paste 事件流
+     */
+    #focusPasteTarget() {
+        this.#ensurePasteTarget();
+        if (this.#pasteTarget) {
+            this.#pasteTarget.focus();
         }
     }
 
