@@ -68,14 +68,12 @@
 | + tileRow: number               |  瓦片行号（瓦片网格坐标）
 | + tileCol: number               |  瓦片列号（瓦片网格坐标）
 | + dirty: boolean                |  脏标记
-| + lastUsed: number              |  最后访问时间戳
 | + dpr: number                   |  设备像素比
 | + canvas: HTMLCanvasElement     |  离屏 Canvas
 | + ctx: CanvasRenderingContext2D |  2D 渲染上下文
 +----------------------------------+
 | + getKey(): string              |  获取缓存键
 | + markDirty(): void             |  标记为脏
-| + touch(): void                 |  更新访问时间
 | + clear(): void                 |  清空内容
 | + destroy(): void               |  销毁释放资源
 +----------------------------------+
@@ -138,9 +136,11 @@ destroy() {
 +----------------------------------------------+
 |            TileCache                          |
 +----------------------------------------------+
-| + tiles: Map<string, Tile>           |  瓦片映射表
+| + tiles: Map<string, Node>           |  瓦片映射表（Node 含 tile + 链表指针）
 | + maxSize: number                    |  最大缓存数量
 | + dpr: number                        |  设备像素比
+| - head(private): Node|null          |  双向链表头（最久未使用）
+| - tail(private): Node|null          |  双向链表尾（最近使用）
 +----------------------------------------------+
 | + get(tileRow, tileCol): Tile|null   |  获取缓存瓦片
 | + getOrCreate(tileRow, tileCol): Tile|  获取或创建
@@ -150,18 +150,35 @@ destroy() {
 | + remove(tileRow, tileCol): void     |  移除瓦片
 | + clear(): void                      |  清空所有
 | + get size(): number                 |  缓存数量
-| - #evictIfNeeded(): void             |  LRU 淘汰
+| - evictIfNeeded(private): void      |  LRU 淘汰
+| - removeNode(private): void         |  从链表摘除节点 O(1)
+| - appendTail(private): void         |  追加到链表尾部 O(1)
+| - moveToTail(private): void         |  移至链表尾部 O(1)
 +----------------------------------------------+
 ```
 
 ### LRU 缓存淘汰
 
-当缓存数量达到上限（默认 512）时，触发淘汰：
+当缓存数量达到上限（默认 512）时，触发淘汰。使用**双向链表 + Map** 实现 O(1) 的 LRU：
+
+```mermaid
+双向链表结构：
+
+head (最久未使用)                          tail (最近使用)
++------+    +------+    +------+    +------+
+| Node |<-->| Node |<-->| Node |<-->| Node |
++------+    +------+    +------+    +------+
+  ↓           ↓           ↓           ↓
+ Tile        Tile        Tile        Tile
+
+每个 Node = { key, tile, prev, next }
+Map<string, Node> 通过 key 快速定位 Node
+```
 
 ```mermaid
 getOrCreate()
     |
-    +-- 缓存命中 --> touch() 更新时间戳 --> 返回
+    +-- 缓存命中 --> #moveToTail(node) --> 返回 tile
     |
     +-- 缓存未命中 --> #evictIfNeeded()
                         |
@@ -169,12 +186,26 @@ getOrCreate()
                         |
                         +-- size >= maxSize
                               |
-                              +-- 按 lastUsed 升序排序
+                              +-- 从链表头部 #head 逐个移除
                               +-- 淘汰前 25% 瓦片（至少 1 个）
+                              +-- #removeNode(node) 摘除节点
                               +-- tile.destroy() 释放资源
+                              +-- Map.delete(key)
+
+新增瓦片：
+    getOrCreate() 未命中 --> 创建 Node --> #appendTail(node) --> 链表尾部
 ```
 
-淘汰 25% 而非 1 个的原因：避免频繁触发淘汰排序，一次淘汰多个可减少排序开销。
+淘汰 25% 而非 1 个的原因：避免频繁触发淘汰，一次淘汰多个可减少开销。
+
+### LRU 操作复杂度对比
+
+| 操作 | 旧实现（时间戳排序） | 新实现（双向链表） |
+|------|---------------------|-------------------|
+| 访问更新 | `tile.touch()` 写时间戳 O(1) | `#moveToTail(node)` 指针操作 O(1) |
+| 淘汰 | 拷贝 + 排序 O(n log n) | 从链表头部逐个移除 O(k) |
+| 新增 | `Map.set()` O(1) | `Map.set()` + `#appendTail()` O(1) |
+| 移除 | `Map.delete()` O(1) | `#removeNode()` + `Map.delete()` O(1) |
 
 ### 脏标记传播
 
@@ -272,7 +303,6 @@ render(ctx, sheet, scrollX, scrollY, viewW, viewH)
 |         |
 |         +-- tile = tileCache.getOrCreate(tr, tc)
 |         +-- if (tile.dirty) --> #paintTile() --> tile.dirty = false
-|         +-- tile.touch()  // 更新 LRU 时间戳
 |         |
 |         +-- ctx.drawImage(tile.canvas, ...)
 |              // 将离屏 Canvas 绘制到主 Canvas
@@ -476,12 +506,19 @@ if (sheet.isMergedCell(realR, c)) continue;
 
 ### 8.4 LRU 缓存淘汰
 
-限制瓦片缓存数量，避免内存无限增长：
+限制瓦片缓存数量，避免内存无限增长。使用双向链表 + Map 实现 O(1) 的 LRU 淘汰：
 
 ```
 maxSize = 512  // 最多缓存 512 个瓦片
 每个瓦片 = 256x256x4 bytes = 256KB（DPR=1）
 512 个瓦片 = 128MB 内存上限
+
+淘汰策略：
+- 链表头部（head）= 最久未使用的瓦片
+- 链表尾部（tail）= 最近使用的瓦片
+- 访问瓦片时 #moveToTail() 移至尾部，O(1)
+- 淘汰时从头部逐个移除，O(k)，k 为淘汰数量
+- 对比旧实现：旧实现每次淘汰需拷贝+排序 O(n log n)
 ```
 
 ### 8.5 边框绘制优化
@@ -509,7 +546,6 @@ ctx.lineTo(drawX + w, drawY + h - 0.5);
 | `constructor` | tileRow, tileCol | Tile | 创建瓦片实例 |
 | `getKey` | - | string | 获取缓存键 "tileRow:tileCol" |
 | `markDirty` | - | void | 标记为脏 |
-| `touch` | - | void | 更新访问时间戳 |
 | `clear` | - | void | 清空内容并标记为脏 |
 | `destroy` | - | void | 销毁释放资源 |
 
@@ -557,5 +593,5 @@ a**常量定义在 `src/constants/config.js`**：
 
 ---
 
-*文档生成时间：2026-06-16*  
+*文档更新时间：2026-06-17*  
 *项目地址：canvas-implementation-in-excel*

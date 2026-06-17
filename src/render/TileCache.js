@@ -12,17 +12,23 @@ import { CONFIG } from "../constants/config";
  * 5. 瓦片销毁和内存释放
  *
  * 缓存淘汰策略：
- * - 当瓦片数量达到 maxSize 上限时，触发淘汰
- * - 按 lastUsed 时间戳排序，淘汰最久未使用的 25% 瓦片
+ * - 使用双向链表 + Map 实现 O(1) 的 LRU 缓存淘汰
+ * - 链表头部（head）为最久未使用的节点，尾部（tail）为最近使用的节点
+ * - 访问瓦片时将其移至链表尾部，淘汰时从链表头部移除
  * - 淘汰时调用 tile.destroy() 释放 Canvas 资源
  */
 export class TileCache {
+    /** @type {{key: string, tile: Tile, prev: object|null, next: object|null}|null} 双向链表头节点（最久未使用） */
+    #head = null;
+    /** @type {{key: string, tile: Tile, prev: object|null, next: object|null}|null} 双向链表尾节点（最近使用） */
+    #tail = null;
+
     /**
      * 创建瓦片缓存实例
      * 最大缓存数量从 CONFIG.TILE_CACHE_MAX 读取
      */
     constructor() {
-        /** @type {Map<string, Tile>} 瓦片映射表，键为 tileRow:tileCol */
+        /** @type {Map<string, {key: string, tile: Tile, prev: object|null, next: object|null}>} 瓦片映射表 */
         this.tiles = new Map();
         /** @type {number} 最大缓存瓦片数量，超出时触发 LRU 淘汰 */
         this.maxSize = CONFIG.TILE_CACHE_MAX;
@@ -32,7 +38,7 @@ export class TileCache {
 
     /**
      * 获取已缓存的瓦片（不创建新瓦片）
-     * 如果命中缓存，更新 lastUsed 时间戳
+     * 如果命中缓存，将该节点移至链表尾部（标记为最近使用）
      *
      * @param {number} tileRow - 瓦片行号
      * @param {number} tileCol - 瓦片列号
@@ -40,16 +46,16 @@ export class TileCache {
      */
     get(tileRow, tileCol) {
         const key = `${tileRow}:${tileCol}`;
-        const tile = this.tiles.get(key);
-        if (tile) {
-            tile.touch();
+        const node = this.tiles.get(key);
+        if (node) {
+            this.#moveToTail(node);
         }
-        return tile || null;
+        return node ? node.tile : null;
     }
 
     /**
      * 获取或创建瓦片
-     * 缓存命中则更新 lastUsed 并返回；未命中则先淘汰再创建
+     * 缓存命中则移至链表尾部并返回；未命中则先淘汰再创建并追加到链表尾部
      *
      * @param {number} tileRow - 瓦片行号
      * @param {number} tileCol - 瓦片列号
@@ -57,14 +63,16 @@ export class TileCache {
      */
     getOrCreate(tileRow, tileCol) {
         const key = `${tileRow}:${tileCol}`;
-        let tile = this.tiles.get(key);
-        if (tile) {
-            tile.touch();
-            return tile;
+        const node = this.tiles.get(key);
+        if (node) {
+            this.#moveToTail(node);
+            return node.tile;
         }
         this.#evictIfNeeded();
-        tile = new Tile(tileRow, tileCol);
-        this.tiles.set(key, tile);
+        const tile = new Tile(tileRow, tileCol);
+        const newNode = { key, tile, prev: null, next: null };
+        this.tiles.set(key, newNode);
+        this.#appendTail(newNode);
         return tile;
     }
 
@@ -73,9 +81,9 @@ export class TileCache {
      */
     markDirty(tileRow, tileCol) {
         const key = `${tileRow}:${tileCol}`;
-        const tile = this.tiles.get(key);
-        if (tile) {
-            tile.markDirty();
+        const node = this.tiles.get(key);
+        if (node) {
+            node.tile.markDirty();
         }
     }
 
@@ -83,8 +91,8 @@ export class TileCache {
      * 标记所有已缓存瓦片为脏（用于全量重绘场景）
      */
     markAllDirty() {
-        for (const tile of this.tiles.values()) {
-            tile.markDirty();
+        for (const node of this.tiles.values()) {
+            node.tile.markDirty();
         }
     }
 
@@ -99,7 +107,8 @@ export class TileCache {
      */
     invalidateRegion(startRow, startCol, endRow, endCol) {
         const tileSize = CONFIG.TILE_SIZE;
-        for (const [key, tile] of this.tiles) {
+        for (const node of this.tiles.values()) {
+            const tile = node.tile;
             const tileStartRow = tile.tileRow;
             const tileStartCol = tile.tileCol;
             const tileEndRow = tileStartRow + tileSize;
@@ -115,9 +124,10 @@ export class TileCache {
      */
     remove(tileRow, tileCol) {
         const key = `${tileRow}:${tileCol}`;
-        const tile = this.tiles.get(key);
-        if (tile) {
-            tile.destroy();
+        const node = this.tiles.get(key);
+        if (node) {
+            this.#removeNode(node);
+            node.tile.destroy();
             this.tiles.delete(key);
         }
     }
@@ -126,10 +136,12 @@ export class TileCache {
      * 清空所有瓦片（销毁并移除）
      */
     clear() {
-        for (const tile of this.tiles.values()) {
-            tile.destroy();
+        for (const node of this.tiles.values()) {
+            node.tile.destroy();
         }
         this.tiles.clear();
+        this.#head = null;
+        this.#tail = null;
     }
 
     /**
@@ -142,18 +154,60 @@ export class TileCache {
 
     /**
      * LRU 缓存淘汰
-     * 当缓存数量达到上限时，按 lastUsed 排序，淘汰最久未使用的 25% 瓦片
+     * 当缓存数量达到上限时，从链表头部淘汰最久未使用的 25% 瓦片
      * 淘汰时调用 tile.destroy() 释放离屏 Canvas 的 GPU 内存
+     * 时间复杂度 O(k)，k 为淘汰数量，优于原来的 O(n log n) 排序
      */
     #evictIfNeeded() {
         if (this.tiles.size < this.maxSize) return;
         const evictCount = Math.max(1, Math.floor(this.maxSize * 0.25));
-        const entries = [...this.tiles.entries()];
-        entries.sort((a, b) => a[1].lastUsed - b[1].lastUsed);
-        for (let i = 0; i < Math.min(evictCount, entries.length); i++) {
-            const [key, tile] = entries[i];
-            tile.destroy();
-            this.tiles.delete(key);
+        for (let i = 0; i < evictCount && this.#head; i++) {
+            const node = this.#head;
+            this.#removeNode(node);
+            node.tile.destroy();
+            this.tiles.delete(node.key);
         }
+    }
+
+    /**
+     * 从双向链表中摘除指定节点，O(1)
+     */
+    #removeNode(node) {
+        if (node.prev) {
+            node.prev.next = node.next;
+        } else {
+            this.#head = node.next;
+        }
+        if (node.next) {
+            node.next.prev = node.prev;
+        } else {
+            this.#tail = node.prev;
+        }
+        node.prev = null;
+        node.next = null;
+    }
+
+    /**
+     * 将节点追加到双向链表尾部（标记为最近使用），O(1)
+     */
+    #appendTail(node) {
+        node.prev = this.#tail;
+        node.next = null;
+        if (this.#tail) {
+            this.#tail.next = node;
+        } else {
+            this.#head = node;
+        }
+        this.#tail = node;
+    }
+
+    /**
+     * 将已存在的节点移至链表尾部（标记为最近使用），O(1)
+     * 如果节点已在尾部则跳过
+     */
+    #moveToTail(node) {
+        if (node === this.#tail) return;
+        this.#removeNode(node);
+        this.#appendTail(node);
     }
 }

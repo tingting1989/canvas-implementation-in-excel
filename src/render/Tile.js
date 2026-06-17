@@ -20,8 +20,9 @@ import { CONFIG } from "../constants/config";
  * - TileRenderer.render() 只重绘 dirty 的瓦片
  *
  * LRU 缓存淘汰：
- * - lastUsed 记录瓦片最后一次被访问的时间戳
- * - TileCache 淘汰时按 lastUsed 排序，优先淘汰最久未使用的瓦片
+ * - LRU 顺序由 TileCache 内部的双向链表维护
+ * - 瓦片被访问时，TileCache 将其移至链表尾部（最近使用）
+ * - 淘汰时从链表头部移除（最久未使用），O(1) 复杂度
  *
  * 高清屏适配（DPR）：
  * - Canvas 物理像素 = 逻辑像素 x DPR
@@ -43,8 +44,6 @@ export class Tile {
         this.tileCol = tileCol;
         /** @type {boolean} 脏标记，true 表示需要重新绘制 */
         this.dirty = true;
-        /** @type {number} 最后访问时间戳（performance.now()），用于 LRU 淘汰 */
-        this.lastUsed = 0;
         /** @type {number} 设备像素比，从 CONFIG.DPR 读取并缓存到实例 */
         this.dpr = CONFIG.DPR;
         /** @type {HTMLCanvasElement} 离屏 Canvas，瓦片的绘制目标 */
@@ -73,13 +72,6 @@ export class Tile {
      */
     markDirty() {
         this.dirty = true;
-    }
-
-    /**
-     * 更新最后访问时间戳，用于 LRU 淘汰排序
-     */
-    touch() {
-        this.lastUsed = performance.now();
     }
 
     /**

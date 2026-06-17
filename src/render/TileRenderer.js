@@ -80,8 +80,6 @@ export class TileRenderer {
                     this.#paintTile(tile, sheet, tr, tc);
                     tile.dirty = false;
                 }
-                tile.touch();
-
                 const drawX = headerW + tc * tileSize - scrollX;
                 const drawY = headerH + tr * tileSize - scrollY;
 
