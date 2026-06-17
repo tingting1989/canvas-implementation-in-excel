@@ -318,7 +318,14 @@ export class TileRenderer {
         }
 
         const textY = Math.round(drawY + h / 2);
+
+        // 裁剪文字到单元格边界内，防止溢出文字被相邻单元格背景覆盖
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(drawX, drawY, w, h);
+        ctx.clip();
         ctx.fillText(displayValue, textX, textY);
+        ctx.restore();
 
         /**
          * 绘制下划线

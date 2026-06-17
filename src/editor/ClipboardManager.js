@@ -22,9 +22,10 @@ export class ClipboardManager {
         const range = sheet.selection.getRange();
         const cells = [];
         for (let r = range.topRow; r <= range.bottomRow; r++) {
+            const realR = sheet.toRealRow(r);
             const row = [];
             for (let c = range.topCol; c <= range.bottomCol; c++) {
-                const cell = sheet.cellStore.get(r, c);
+                const cell = sheet.cellStore.get(realR, c);
                 row.push(cell ? { value: cell.value, styleId: cell.styleId || 0 } : null);
             }
             cells.push(row);
@@ -129,6 +130,8 @@ export class ClipboardManager {
             }
         }
         sheet.endBatch();
+        // 标记所有瓦片为脏，确保粘贴内容被完整重绘
+        sheet.renderEngine?.invalidateAll();
         sheet.render();
     }
 
@@ -139,12 +142,21 @@ export class ClipboardManager {
         for (let r = 0; r < this.#data.rows; r++) {
             for (let c = 0; c < this.#data.cols; c++) {
                 const cellData = this.#data.cells[r]?.[c];
-                if (cellData) {
-                    sheet.setCell(targetRow + r, targetCol + c, cellData.value, cellData.styleId);
-                }
+                if (!cellData) continue;
+                const tr = targetRow + r;
+                const tc = targetCol + c;
+                if (sheet.isDisabled(tr, tc)) continue;
+                // 先用源列格式化为显示字符串，再用目标列的类型系统解析
+                const srcR = this.#data.topRow + r;
+                const srcC = this.#data.topCol + c;
+                const displayText = sheet.formatCellValue(srcR, srcC, cellData.value);
+                const parsedValue = sheet.parseCellValue(tr, tc, displayText);
+                sheet.setCell(tr, tc, parsedValue, cellData.styleId);
             }
         }
         sheet.endBatch();
+        // 标记所有瓦片为脏，确保粘贴内容被完整重绘
+        sheet.renderEngine?.invalidateAll();
         sheet.render();
     }
 }

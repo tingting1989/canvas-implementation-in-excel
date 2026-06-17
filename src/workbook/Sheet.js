@@ -189,7 +189,10 @@ export class Sheet {
 
     /** 标记指定单元格需要重绘 */
     #invalidateCell(r, c) {
-        this.#renderEngine?.invalidateCell?.(r, c);
+        // r 可能是真实行号（realR），需要转为页面行号
+        // TileRenderer.invalidateCell → getRowY 在分页模式下期望页面行号
+        const pageRow = this.toPageRow(r);
+        this.#renderEngine?.invalidateCell?.(pageRow, c);
         this.#styleCache.delete(`${r},${c}`);
         this.#styleCacheVersion++;
     }

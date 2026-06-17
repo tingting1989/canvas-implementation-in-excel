@@ -77,7 +77,9 @@ export class TextEditor extends CellEditor {
 
         this.#syncFontStyle(row, col, rect.h);
 
-        const cell = this.sheet.cellStore.get(row, col);
+        // 使用真实行号读取 cellStore（分页模式下 row 是页面行号）
+        const realR = this.sheet.toRealRow(row);
+        const cell = this.sheet.cellStore.get(realR, col);
         this.editor.value = cell?.value ?? "";
         this.editor.focus();
 
@@ -163,7 +165,9 @@ export class TextEditor extends CellEditor {
             // 使用类型系统的 parse 统一解析
             newValue = this.sheet.parseCellValue(this.activeRow, this.activeCol, newValue);
 
-            const oldCell = this.sheet.cellStore.get(this.activeRow, this.activeCol);
+            // 使用真实行号读取 cellStore（分页模式下 activeRow 是页面行号）
+            const realR = this.sheet.toRealRow(this.activeRow);
+            const oldCell = this.sheet.cellStore.get(realR, this.activeCol);
             if (oldCell?.value === newValue) {
                 this.hide();
                 this.#render();
@@ -195,7 +199,9 @@ export class TextEditor extends CellEditor {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (this.sheet.isDisabled(r, c)) continue;
 
-                const oldCell = this.sheet.cellStore.get(r, c);
+                // 使用真实行号读取 cellStore（分页模式下 r 是页面行号）
+                const realR = this.sheet.toRealRow(r);
+                const oldCell = this.sheet.cellStore.get(realR, c);
                 const oldValue = oldCell?.value ?? "";
                 if (oldValue !== value) {
                     changes.push({ row: r, col: c, oldValue, newValue: value });
@@ -209,7 +215,9 @@ export class TextEditor extends CellEditor {
 
         this.sheet.beginBatch();
         for (const { row, col, newValue } of changes) {
-            const oldCell = this.sheet.cellStore.get(row, col);
+            // 使用真实行号读取 cellStore
+            const realR = this.sheet.toRealRow(row);
+            const oldCell = this.sheet.cellStore.get(realR, col);
             this.sheet.setCell(row, col, newValue, oldCell?.styleId || 0);
         }
         this.sheet.endBatch();
@@ -251,7 +259,9 @@ export class TextEditor extends CellEditor {
                 break;
             case "Escape":
                 e.preventDefault();
-                this.editor.value = this.sheet.cellStore.get(this.activeRow, this.activeCol)?.value ?? "";
+                // 使用真实行号读取 cellStore（分页模式下 activeRow 是页面行号）
+                const escRealR = this.sheet.toRealRow(this.activeRow);
+                this.editor.value = this.sheet.cellStore.get(escRealR, this.activeCol)?.value ?? "";
                 delete this.sheet._batchFillRange;
                 this.editor.blur();
                 break;
