@@ -5,11 +5,12 @@
  * 由 CopyPastePlugin 持有和调用，也可独立使用。
  *
  * 剪贴板策略：
- * - 复制：内部存储（含样式ID）+ 系统剪贴板（TSV 纯文本）
+ * - 复制：内部存储（含样式ID + 列类型）+ 系统剪贴板（TSV 纯文本）
  * - 粘贴：优先读取系统剪贴板，fallback 到内部数据（保留样式）
+ * - 类型检查：粘贴时验证源列类型与目标列类型一致，不一致则阻止粘贴
  */
 export class ClipboardManager {
-    /** @type {{ sourceSheetName:string, topRow:number, topCol:number, rows:number, cols:number, cells:Array }|null} */
+    /** @type {{ sourceSheetName:string, topRow:number, topCol:number, rows:number, cols:number, cells:Array, columnTypes:Array<string> }|null} */
     #data = null;
 
     /**
@@ -21,6 +22,12 @@ export class ClipboardManager {
     copy(sheet) {
         const range = sheet.selection.getRange();
         const cells = [];
+        // 记录每个复制列的类型名称，用于粘贴时的类型一致性检查
+        const columnTypes = [];
+        for (let c = range.topCol; c <= range.bottomCol; c++) {
+            const cellType = sheet.getCellTypeInstance(range.topRow, c);
+            columnTypes.push(cellType ? cellType.name : "text");
+        }
         for (let r = range.topRow; r <= range.bottomRow; r++) {
             const realR = sheet.toRealRow(r);
             const row = [];
@@ -37,6 +44,7 @@ export class ClipboardManager {
             rows: range.bottomRow - range.topRow + 1,
             cols: range.bottomCol - range.topCol + 1,
             cells,
+            columnTypes,
         };
 
         this.#writeSystemClipboard(sheet, range, cells);
@@ -59,16 +67,58 @@ export class ClipboardManager {
         this.#data = null;
     }
 
+    /**
+     * 检查粘贴时源列类型与目标列类型是否一致
+     * 如果存在任何不一致，返回冲突信息；全部一致则返回 null
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet - 目标工作表
+     * @param {number} targetRow - 目标起始行
+     * @param {number} targetCol - 目标起始列
+     * @param {number} [srcCols] - 源数据列数（仅 #pasteInternal 使用，#pasteText 从文本推断）
+     * @returns {{ mismatches: Array<{srcCol:number, targetCol:number, srcType:string, targetType:string}> }|null}
+     */
+    #checkTypeMismatch(sheet, targetRow, targetCol, srcCols) {
+        if (!this.#data) return null;
+        const cols = srcCols != null ? srcCols : this.#data.cols;
+        const columnTypes = this.#data.columnTypes;
+        const mismatches = [];
+
+        for (let c = 0; c < cols; c++) {
+            const srcType = columnTypes[c] || "text";
+            const tc = targetCol + c;
+            const targetCellType = sheet.getCellTypeInstance(targetRow, tc);
+            const targetType = targetCellType ? targetCellType.name : "text";
+
+            if (srcType !== targetType) {
+                mismatches.push({ srcCol: this.#data.topCol + c, targetCol: tc, srcType, targetType });
+            }
+        }
+
+        return mismatches.length > 0 ? { mismatches } : null;
+    }
+
+    /**
+     * 获取内部剪贴板数据（供 CopyPastePlugin 在 beforePaste 钩子中使用）
+     * @returns {object|null}
+     */
+    getClipboardData() {
+        return this.#data;
+    }
+
     #writeSystemClipboard(sheet, range, cells) {
         // 使用 sheet.formatCellValue() 格式化显示值，避免 Date 等对象被 String() 转为冗长字符串
-        const text = cells.map((row, ri) =>
-            row.map((cell, ci) => {
-                if (!cell) return "";
-                const r = range.topRow + ri;
-                const c = range.topCol + ci;
-                return sheet.formatCellValue(r, c, cell.value);
-            }).join("\t")
-        ).join("\n");
+        const text = cells
+            .map((row, ri) =>
+                row
+                    .map((cell, ci) => {
+                        if (!cell) return "";
+                        const r = range.topRow + ri;
+                        const c = range.topCol + ci;
+                        return sheet.formatCellValue(r, c, cell.value);
+                    })
+                    .join("\t"),
+            )
+            .join("\n");
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).catch(() => {
@@ -115,6 +165,24 @@ export class ClipboardManager {
     #pasteText(sheet, text) {
         const [targetRow, targetCol] = sheet.selection.getActive();
         const rows = text.split("\n");
+        // 计算源列数（取最长行的列数）
+        let srcCols = 0;
+        for (let r = 0; r < rows.length; r++) {
+            if (rows[r] === "" && r === rows.length - 1) continue;
+            const colCount = rows[r].split("\t").length;
+            if (colCount > srcCols) srcCols = colCount;
+        }
+
+        // 检查类型一致性：源列类型与目标列类型不一致时阻止粘贴
+        const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol, srcCols);
+        if (mismatch) {
+            const details = mismatch.mismatches
+                .map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`)
+                .join("; ");
+            console.warn(`[ClipboardManager] 类型不一致，阻止粘贴: ${details}`);
+            return;
+        }
+
         sheet.beginBatch();
         for (let r = 0; r < rows.length; r++) {
             if (rows[r] === "" && r === rows.length - 1) continue;
@@ -138,6 +206,17 @@ export class ClipboardManager {
     #pasteInternal(sheet) {
         if (!this.#data) return;
         const [targetRow, targetCol] = sheet.selection.getActive();
+
+        // 检查类型一致性：源列类型与目标列类型不一致时阻止粘贴
+        const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol);
+        if (mismatch) {
+            const details = mismatch.mismatches
+                .map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`)
+                .join("; ");
+            console.warn(`[ClipboardManager] 类型不一致，阻止粘贴: ${details}`);
+            return;
+        }
+
         sheet.beginBatch();
         for (let r = 0; r < this.#data.rows; r++) {
             for (let c = 0; c < this.#data.cols; c++) {
