@@ -207,12 +207,13 @@ export class Sheet {
      * @param {number} c - 列号
      * @param {*} value - 单元格值
      * @param {number} [styleId=0] - 样式 ID
+     * @param {boolean} [disabled=false] - 是否禁用
      */
-    setCell(r, c, value, styleId = 0) {
+    setCell(r, c, value, styleId = 0, disabled = false) {
         const realR = this.toRealRow(r);
         this.rowColManager.ensureSize(realR + 1, c + 1);
         const old = this.cellStore.get(realR, c);
-        const cell = new Cell(value, styleId);
+        const cell = new Cell(value, styleId, disabled);
         const cmd = new SetCellCommand(this.cellStore, realR, c, old, cell);
         if (this.#inBatch) {
             this.#batchCommands.push(cmd);

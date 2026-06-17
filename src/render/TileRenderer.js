@@ -178,8 +178,13 @@ export class TileRenderer {
                 }
 
                 this.#drawCellBackground(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
-                this.#drawCellBorder(tileCtx, merge, drawX, drawY, w, h);
-                this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+
+                // 富内容单元格（图片等）：绘制富内容而非文本
+                const hasContent = this.#drawCellContent(tileCtx, sheet, realR, c, drawX, drawY, w, h);
+                if (!hasContent) {
+                    this.#drawCellBorder(tileCtx, merge, drawX, drawY, w, h);
+                    this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+                }
             }
         }
     }
@@ -208,8 +213,12 @@ export class TileRenderer {
 
         const cell = sheet.cellStore.get(realTopR, topCol);
         this.#drawCellBackground(ctx, sheet, realTopR, topCol, cell, drawX, drawY, drawW, drawH, merge);
-        this.#drawCellBorder(ctx, merge, drawX, drawY, drawW, drawH);
-        this.#drawCellText(ctx, sheet, realTopR, topCol, cell, drawX, drawY, drawW, drawH, merge);
+
+        const hasContent = this.#drawCellContent(ctx, sheet, realTopR, topCol, drawX, drawY, drawW, drawH);
+        if (!hasContent) {
+            this.#drawCellBorder(ctx, merge, drawX, drawY, drawW, drawH);
+            this.#drawCellText(ctx, sheet, realTopR, topCol, cell, drawX, drawY, drawW, drawH, merge);
+        }
     }
 
     /**
@@ -350,6 +359,97 @@ export class TileRenderer {
     }
 
     /**
+     * 绘制单元格富内容（图片等）
+     *
+     * 通过 ClipboardManager.getCellContent() 查询单元格是否有富内容，
+     * 与 Cell 模型完全解耦。当前仅支持图片，未来可扩展图表、附件等。
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} realR - 实际行号
+     * @param {number} col - 列号
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @returns {boolean} 是否绘制了富内容（用于决定是否跳过文本/边框绘制）
+     */
+    #drawCellContent(ctx, sheet, realR, col, drawX, drawY, w, h) {
+        const clipboard = sheet.workbook?.clipboard;
+        if (!clipboard) return false;
+
+        const content = clipboard.getCellContent(sheet, realR, col);
+        if (!content) return false;
+
+        if (content.type === "image") {
+            return this.#drawCellImage(ctx, content.objectUrl, drawX, drawY, w, h);
+        }
+
+        // 未来可扩展其他类型：chart, attachment, video 等
+        return false;
+    }
+
+    /**
+     * 绘制图片到单元格区域（保持宽高比，居中显示）
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {string} imageUrl - Object URL
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @returns {boolean} 是否成功绘制
+     */
+    #drawCellImage(ctx, imageUrl, drawX, drawY, w, h) {
+        const img = this.#getOrLoadImage(imageUrl);
+        if (!img || !img.complete) {
+            // 图片尚未加载完成，本次渲染跳过，等待下次脏标记重绘
+            return true; // 有内容但未就绪，阻止文本/边框绘制
+        }
+
+        // 保持宽高比，在单元格内居中绘制
+        const cellRatio = w / h;
+        const imgRatio = img.naturalWidth / img.naturalHeight;
+        let drawW, drawH, offsetX, offsetY;
+
+        if (imgRatio > cellRatio) {
+            drawW = w;
+            drawH = w / imgRatio;
+            offsetX = 0;
+            offsetY = (h - drawH) / 2;
+        } else {
+            drawH = h;
+            drawW = h * imgRatio;
+            offsetX = (w - drawW) / 2;
+            offsetY = 0;
+        }
+
+        ctx.drawImage(img, drawX + offsetX, drawY + offsetY, drawW, drawH);
+        return true;
+    }
+
+    /**
+     * 图片元素缓存，避免重复创建 Image 对象
+     * @type {Map<string, HTMLImageElement>}
+     */
+    #imageElementCache = new Map();
+
+    /**
+     * 获取或加载图片元素
+     * @param {string} url - Object URL
+     * @returns {HTMLImageElement|null}
+     */
+    #getOrLoadImage(url) {
+        if (this.#imageElementCache.has(url)) {
+            return this.#imageElementCache.get(url);
+        }
+        const img = new Image();
+        img.src = url;
+        this.#imageElementCache.set(url, img);
+        return img;
+    }
+
+    /**
      * 将指定单元格对应的瓦片标记为脏
      * 通过单元格的像素坐标计算其所属的瓦片行列号
      *
@@ -373,9 +473,10 @@ export class TileRenderer {
     }
 
     /**
-     * 销毁渲染器，清空瓦片缓存
+     * 销毁渲染器，清空瓦片缓存和图片元素缓存
      */
     destroy() {
         this.tileCache.clear();
+        this.#imageElementCache.clear();
     }
 }

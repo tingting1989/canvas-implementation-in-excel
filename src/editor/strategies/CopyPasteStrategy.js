@@ -39,6 +39,11 @@ export class CopyPasteStrategy extends EventStrategy {
     /**
      * 处理 Ctrl+C / Ctrl+V / Ctrl+X 快捷键
      * 返回 false 表示事件已消费，不继续传递给 KeyboardStrategy
+     *
+     * Ctrl+V 处理策略：
+     * - 只做 e.preventDefault() 阻止浏览器默认行为
+     * - 实际的粘贴操作由 CopyPastePlugin 注册的原生 paste 事件处理
+     * - 这样可以利用 e.clipboardData 同步读取所有类型（含图片），无需权限弹窗
      */
     #handleKeyDown(e) {
         if (!this.enabled) return;
@@ -66,11 +71,9 @@ export class CopyPasteStrategy extends EventStrategy {
                 break;
             case "v":
                 if (ctrlOrMeta) {
+                    // 阻止浏览器默认粘贴行为，由原生 paste 事件接管
+                    // paste 事件会同步触发，携带完整的 clipboardData（含图片）
                     e.preventDefault();
-                    this.handler.runHooks("beforePaste", sheet.selection.getActive());
-                    this.clipboardManager.paste(sheet);
-                    // paste 是异步的，afterPaste 在 ClipboardManager 内部无法触发时
-                    // 通过此处延迟触发不够精确，采用同步触发（粘贴完成后由 ClipboardManager 触发渲染）
                     return false;
                 }
                 break;

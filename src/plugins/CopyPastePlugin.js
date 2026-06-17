@@ -13,8 +13,14 @@ import { ClipboardManager } from "../editor/ClipboardManager.js";
  *
  * 快捷键：
  * - Ctrl+C：复制
- * - Ctrl+V：粘贴
+ * - Ctrl+V：粘贴（通过浏览器原生 paste 事件，支持文本和图片）
  * - Ctrl+X：剪切（复制 + 删除）
+ *
+ * 粘贴机制（v2）：
+ * - 使用浏览器原生 paste 事件（document:paste），无需 navigator.clipboard 权限弹窗
+ * - 同步读取 e.clipboardData.items，支持 text/plain、image/png、image/jpeg 等
+ * - 图片粘贴：提取 Blob → Object URL → 存储到 Cell.imageId → TileRenderer 渲染
+ * - 文本粘贴：保持原有 TSV 解析 + 类型系统转换
  *
  * 使用方式：
  * ```js
@@ -46,6 +52,8 @@ export class CopyPastePlugin extends BasePlugin {
     #allowPaste = true;
     /** 是否允许剪切 */
     #allowCut = true;
+    /** paste 事件处理函数引用（用于手动解绑） */
+    #pasteHandler = null;
 
     /**
      * 初始化复制/粘贴插件
@@ -73,6 +81,9 @@ export class CopyPastePlugin extends BasePlugin {
         this.#strategy = new CopyPasteStrategy(this.eventHandler, this.#clipboard);
         this.addStrategy("copyPaste", this.#strategy);
 
+        // 注册原生 paste 事件（支持文本 + 图片粘贴，无权限弹窗）
+        this.#registerPasteEvent();
+
         // 同步策略的初始启用状态
         if (options.enabled === false) {
             this.disable();
@@ -80,10 +91,40 @@ export class CopyPastePlugin extends BasePlugin {
     }
 
     /**
+     * 注册浏览器原生 paste 事件
+     * 在 document 上监听，确保焦点在 Canvas 区域时也能触发
+     */
+    #registerPasteEvent() {
+        this.#pasteHandler = (e) => {
+            if (!this.enabled || !this.#allowPaste) return;
+            const sheet = this.sheet;
+            if (!sheet || !this.#clipboard) return;
+
+            // 编辑状态下不拦截（编辑框内应有自己的粘贴行为）
+            const activeEditor = this.editor?.getActiveEditor();
+            if (activeEditor?.editor && activeEditor.editor.style.display === "block") {
+                return;
+            }
+
+            e.preventDefault();
+
+            this.eventHandler?.runHooks("beforePaste", sheet.selection.getActive());
+            this.#clipboard.pasteFromEvent(sheet, e);
+            this.eventHandler?.runHooks("afterPaste", sheet.selection.getActive());
+        };
+        document.addEventListener("paste", this.#pasteHandler);
+    }
+
+    /**
      * 销毁插件
      * 策略会由基类 removeOwnStrategies() 自动清理
      */
     destroy() {
+        if (this.#pasteHandler) {
+            document.removeEventListener("paste", this.#pasteHandler);
+            this.#pasteHandler = null;
+        }
+        this.#clipboard?.destroy();
         this.#strategy = null;
         this.#clipboard = null;
         this.workbook.clipboard = null;
@@ -100,7 +141,7 @@ export class CopyPastePlugin extends BasePlugin {
 
     /**
      * 禁用插件
-     * 禁用后 Ctrl+C/V/X 快捷键不再响应
+     * 禁用后 Ctrl+C/V/X 快捷键不再响应，paste 事件被跳过
      */
     disable() {
         super.disable();
@@ -125,8 +166,11 @@ export class CopyPastePlugin extends BasePlugin {
     }
 
     /**
-     * 执行粘贴操作
+     * 执行粘贴操作（通过异步 readText，兼容旧 API）
      * 触发 beforePaste → 执行粘贴 → afterPaste 钩子链
+     *
+     * 注意：工具栏按钮调用此方法时走异步 readText 路径；
+     * Ctrl+V 由原生 paste 事件直接处理（更高效，支持图片）。
      */
     paste() {
         const sheet = this.sheet;

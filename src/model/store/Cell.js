@@ -6,6 +6,7 @@
  * - 坐标由 ChunkedCellStore / Chunk 层级管理，Cell 本身是"纯数据"对象。
  * - 保持极简字段设计：避免在 Cell 上堆积格式、合并、条件规则等属性，
  *   这些由 StyleManager、MergeManager、ConditionalRule 等独立模块管理。
+ * - 图片、图表等富内容由外部模块（如 ClipboardManager）独立管理，不侵入 Cell。
  *
  * 字段说明：
  * - value：单元格的值，可以是字符串、数字等（实际类型由使用方决定）。
