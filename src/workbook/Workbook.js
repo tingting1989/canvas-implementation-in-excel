@@ -2,7 +2,6 @@ import { Sheet } from "./Sheet.js";
 import { RenderEngine } from "../render/RenderEngine.js";
 import { EditorManager } from "../editor/EditorManager.js";
 import { EventHandler } from "../editor/EventHandler.js";
-import { ClipboardManager } from "../editor/ClipboardManager.js";
 import { PluginManager } from "../plugins/PluginManager.js";
 import { stylePool } from "../styles/index.js";
 import { CONFIG } from "../constants/config";
@@ -67,8 +66,13 @@ export class Workbook {
         this.sheets = new Map();
         /** @type {Sheet|null} */
         this.activeSheet = null;
-        /** @type {ClipboardManager} */
-        this.clipboard = new ClipboardManager();
+        /**
+         * 剪贴板管理器引用
+         * 由 CopyPastePlugin 在 init() 时注入，非插件模式下为 null。
+         * 向后兼容：外部代码仍可通过 workbook.clipboard 访问。
+         * @type {import("../editor/ClipboardManager.js").ClipboardManager|null}
+         */
+        this.clipboard = null;
         /** @type {RenderEngine|null} */
         this.renderEngine = null;
         /** @type {EditorManager|null} */
@@ -179,7 +183,7 @@ export class Workbook {
 
     #createSubSystems() {
         this.editor = new EditorManager(this.renderEngine, this.activeSheet);
-        this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
+        this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, null);
         this.pluginManager = new PluginManager(this);
     }
 
@@ -405,18 +409,34 @@ export class Workbook {
     }
 
     // ============================================================
-    // 剪贴板
+    // 剪贴板（委托到 CopyPastePlugin）
     // ============================================================
 
+    /**
+     * 复制当前选区
+     * 委托到 CopyPastePlugin，若插件未加载则回退到直接调用 ClipboardManager
+     */
     copy() {
-        if (!this.activeSheet) return;
-        this.clipboard.copy(this.activeSheet);
+        const plugin = this.getPlugin("copyPaste");
+        if (plugin) {
+            plugin.copy();
+        } else if (this.clipboard && this.activeSheet) {
+            this.clipboard.copy(this.activeSheet);
+        }
     }
 
+    /**
+     * 粘贴到当前选区
+     * 委托到 CopyPastePlugin，若插件未加载则回退到直接调用 ClipboardManager
+     */
     paste() {
-        if (!this.activeSheet) return;
-        this.clipboard.paste(this.activeSheet);
-        this.render();
+        const plugin = this.getPlugin("copyPaste");
+        if (plugin) {
+            plugin.paste();
+        } else if (this.clipboard && this.activeSheet) {
+            this.clipboard.paste(this.activeSheet);
+            this.render();
+        }
     }
 
     // ============================================================

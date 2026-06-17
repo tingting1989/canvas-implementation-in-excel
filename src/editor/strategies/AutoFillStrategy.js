@@ -242,6 +242,7 @@ export class AutoFillStrategy extends EventStrategy {
         const srcHeight = src.bottomRow - src.topRow + 1;
         const srcWidth = src.bottomCol - src.topCol + 1;
 
+        sheet.beginBatch();
         if (dir === "down" || dir === "up") {
             for (let c = 0; c < srcWidth; c++) {
                 const colValues = [];
@@ -258,6 +259,7 @@ export class AutoFillStrategy extends EventStrategy {
                 this.#fillRow(sheet, src, target, r, step, rowValues, dir);
             }
         }
+        sheet.endBatch();
     }
 
     #detectStep(values) {

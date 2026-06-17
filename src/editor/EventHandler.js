@@ -25,13 +25,13 @@ export class EventHandler {
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
      * @param {import("../render/RenderEngine.js").RenderEngine} renderEngine - 渲染引擎
      * @param {import("./EditorManager.js").EditorManager} editor - 编辑器管理器
-     * @param {import("./ClipboardManager.js").ClipboardManager} clipboard - 剪贴板管理器
+     * @param {import("./ClipboardManager.js").ClipboardManager} [clipboard] - 剪贴板管理器（可选，由 CopyPastePlugin 注入）
      */
     constructor(sheet, renderEngine, editor, clipboard) {
         this.sheet = sheet;
         this.renderEngine = renderEngine;
         this.editor = editor;
-        this.clipboard = clipboard;
+        this.clipboard = clipboard || null;
         this.canvas = renderEngine.canvas;
         this.wrap = renderEngine.canvas.parentElement;
 

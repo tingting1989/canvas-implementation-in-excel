@@ -5,7 +5,7 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
  * 键盘交互策略
- * 优先级 0（默认），无与其他策略的事件冲突
+ * 优先级 0（默认），低于 CopyPasteStrategy(10)，确保 Ctrl+C/V/X 优先被 CopyPastePlugin 拦截
  *
  * 处理以下键盘操作：
  * - 方向键导航（支持 Shift 扩展选区）
@@ -14,9 +14,10 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
  * - Delete/Backspace 批量清空选区内容
  * - Ctrl+A 全选
  * - Ctrl+Z/Y 撤销/重做
- * - Ctrl+C/V 复制/粘贴
  * - Ctrl+B/I/U 格式化加粗/斜体/下划线（批量格式化）
  * - 直接输入字符进入批量赋值模式
+ *
+ * 注意：Ctrl+C/V/X（复制/粘贴/剪切）已移至 CopyPasteStrategy，由 CopyPastePlugin 管理。
  */
 export class KeyboardStrategy extends EventStrategy {
     constructor(handler) {
@@ -103,25 +104,6 @@ export class KeyboardStrategy extends EventStrategy {
                     this.handler.render();
                 }
                 break;
-            case "c":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    this.handler.clipboard.copy(sheet);
-                }
-                break;
-            case "v":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    this.handler.clipboard.paste(sheet);
-                }
-                break;
-            case "x":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    this.handler.clipboard.copy(sheet);
-                    this.#handleDelete();
-                }
-                break;
             case "a":
                 if (e.ctrlKey || e.metaKey) {
                     e.preventDefault();
@@ -193,10 +175,12 @@ export class KeyboardStrategy extends EventStrategy {
 
         this.handler.runHooks(HOOKS.BEFORE_CHANGE, changes);
 
+        sheet.beginBatch();
         for (const { row, col } of changes) {
             const oldCell = sheet.cellStore.get(row, col);
             sheet.setCell(row, col, "", oldCell?.styleId || 0);
         }
+        sheet.endBatch();
 
         this.handler.runHooks(HOOKS.AFTER_CHANGE, changes);
         this.handler.render();

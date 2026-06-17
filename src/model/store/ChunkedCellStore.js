@@ -149,9 +149,7 @@ export class ChunkedCellStore {
         }
 
         // 只处理 rowStart >= atRow 的 Chunk（上方 Chunk 不受影响）
-        const affectedChunks = chunkGroups.filter(
-            (g) => g.chunk.rowStart >= atRow
-        );
+        const affectedChunks = chunkGroups.filter((g) => g.chunk.rowStart >= atRow);
 
         // 从下往上处理，避免数据覆盖
         affectedChunks.sort((a, b) => b.chunk.rowStart - a.chunk.rowStart);
@@ -186,9 +184,7 @@ export class ChunkedCellStore {
         }
 
         // 只处理 colStart >= atCol 的 Chunk
-        const affectedChunks = chunkGroups.filter(
-            (g) => g.chunk.colStart >= atCol
-        );
+        const affectedChunks = chunkGroups.filter((g) => g.chunk.colStart >= atCol);
 
         // 从右往左处理
         affectedChunks.sort((a, b) => b.chunk.colStart - a.chunk.colStart);
@@ -236,9 +232,7 @@ export class ChunkedCellStore {
             chunkGroups.push({ key, chunk });
         }
 
-        const affectedChunks = chunkGroups.filter(
-            (g) => g.chunk.rowStart > atRow
-        );
+        const affectedChunks = chunkGroups.filter((g) => g.chunk.rowStart > atRow);
         affectedChunks.sort((a, b) => a.chunk.rowStart - b.chunk.rowStart);
 
         for (const { chunk } of affectedChunks) {
@@ -278,9 +272,7 @@ export class ChunkedCellStore {
             chunkGroups.push({ key, chunk });
         }
 
-        const affectedChunks = chunkGroups.filter(
-            (g) => g.chunk.colStart > atCol
-        );
+        const affectedChunks = chunkGroups.filter((g) => g.chunk.colStart > atCol);
         affectedChunks.sort((a, b) => a.chunk.colStart - b.chunk.colStart);
 
         for (const { chunk } of affectedChunks) {

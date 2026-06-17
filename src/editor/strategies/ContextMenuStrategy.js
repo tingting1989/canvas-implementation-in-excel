@@ -204,6 +204,7 @@ export class ContextMenuStrategy extends EventStrategy {
                 label: "清空内容",
                 action: (r, c, sheet) => {
                     const range = sheet.selection.getRange();
+                    sheet.beginBatch();
                     for (let row = range.topRow; row <= range.bottomRow; row++) {
                         for (let col = range.topCol; col <= range.bottomCol; col++) {
                             if (!sheet.isDisabled(row, col)) {
@@ -211,6 +212,7 @@ export class ContextMenuStrategy extends EventStrategy {
                             }
                         }
                     }
+                    sheet.endBatch();
                 },
             },
         };

@@ -10,6 +10,7 @@ import {
     MergeCommand,
     UnmergeCommand,
     Cell,
+    BatchCommand,
 } from "../model/index.js";
 import { RowColManager } from "../core/RowColManager.js";
 import { CONFIG } from "../constants/config";
@@ -42,6 +43,10 @@ export class Sheet {
     #styleCache = new Map();
     /** 样式缓存版本号，每次样式变更递增，渲染帧内使用版本号判断是否过期 */
     #styleCacheVersion = 0;
+    /** 批量模式：暂存子命令 */
+    #batchCommands = [];
+    /** 是否处于批量模式 */
+    #inBatch = false;
     /** 当前渲染帧的缓存版本，帧内相同版本直接命中缓存 */
     #styleCacheFrameVersion = -1;
 
@@ -205,7 +210,12 @@ export class Sheet {
         this.rowColManager.ensureSize(realR + 1, c + 1);
         const old = this.cellStore.get(realR, c);
         const cell = new Cell(value, styleId);
-        this.history.push(new SetCellCommand(this.cellStore, realR, c, old, cell));
+        const cmd = new SetCellCommand(this.cellStore, realR, c, old, cell);
+        if (this.#inBatch) {
+            this.#batchCommands.push(cmd);
+        } else {
+            this.history.push(cmd);
+        }
         this.cellStore.set(realR, c, cell);
         this.#invalidateCell(realR, c);
     }
@@ -225,7 +235,12 @@ export class Sheet {
         } else {
             cell.disabled = true;
         }
-        this.history.push(new ToggleDisableCommand(this.cellStore, realR, c, oldState));
+        const cmd = new ToggleDisableCommand(this.cellStore, realR, c, oldState);
+        if (this.#inBatch) {
+            this.#batchCommands.push(cmd);
+        } else {
+            this.history.push(cmd);
+        }
         this.cellStore.set(realR, c, cell);
         this.#invalidateCell(realR, c);
     }
@@ -241,7 +256,12 @@ export class Sheet {
         if (!cell) return;
         const oldState = cell.disabled;
         cell.disabled = false;
-        this.history.push(new ToggleDisableCommand(this.cellStore, realR, c, oldState));
+        const cmd = new ToggleDisableCommand(this.cellStore, realR, c, oldState);
+        if (this.#inBatch) {
+            this.#batchCommands.push(cmd);
+        } else {
+            this.history.push(cmd);
+        }
         this.#invalidateCell(realR, c);
     }
 
@@ -727,6 +747,37 @@ export class Sheet {
     /** 获取所有合并单元格信息 */
     getAllMerges() {
         return this.mergeManager.getAllMerges();
+    }
+
+    // ============================================================
+    // 批量操作
+    // ============================================================
+
+    /**
+     * 开始批量操作
+     *
+     * 在批量模式下，setCell/disableCell/enableCell 产生的命令会暂存到 #batchCommands，
+     * 直到 endBatch() 调用时合并为一个 BatchCommand 推入历史栈。
+     * 这确保粘贴、剪切、自动填充等多单元格操作可以一键撤销。
+     */
+    beginBatch() {
+        this.#inBatch = true;
+        this.#batchCommands = [];
+    }
+
+    /**
+     * 结束批量操作
+     *
+     * 将暂存的子命令合并为一个 BatchCommand 推入历史栈。
+     * 如果没有子命令（空操作），不推入任何内容。
+     */
+    endBatch() {
+        this.#inBatch = false;
+        const commands = this.#batchCommands;
+        this.#batchCommands = [];
+        if (commands.length > 0) {
+            this.history.push(new BatchCommand(commands));
+        }
     }
 
     // ============================================================

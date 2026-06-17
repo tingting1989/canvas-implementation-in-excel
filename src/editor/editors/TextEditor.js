@@ -207,10 +207,12 @@ export class TextEditor extends CellEditor {
 
         this.sheet.workbook?.runHooks(HOOKS.BEFORE_CHANGE, changes);
 
+        this.sheet.beginBatch();
         for (const { row, col, newValue } of changes) {
             const oldCell = this.sheet.cellStore.get(row, col);
             this.sheet.setCell(row, col, newValue, oldCell?.styleId || 0);
         }
+        this.sheet.endBatch();
 
         this.sheet.workbook?.runHooks(HOOKS.AFTER_CHANGE, changes);
     }

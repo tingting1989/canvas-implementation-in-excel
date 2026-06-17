@@ -1,6 +1,23 @@
+/**
+ * 剪贴板管理器
+ *
+ * 负责复制/粘贴的核心逻辑，不依赖插件系统，保持纯数据操作。
+ * 由 CopyPastePlugin 持有和调用，也可独立使用。
+ *
+ * 剪贴板策略：
+ * - 复制：内部存储（含样式ID）+ 系统剪贴板（TSV 纯文本）
+ * - 粘贴：优先读取系统剪贴板，fallback 到内部数据（保留样式）
+ */
 export class ClipboardManager {
+    /** @type {{ sourceSheetName:string, topRow:number, topCol:number, rows:number, cols:number, cells:Array }|null} */
     #data = null;
 
+    /**
+     * 复制当前选区到剪贴板
+     * 同时写入内部存储（保留样式）和系统剪贴板（TSV 纯文本）
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     */
     copy(sheet) {
         const range = sheet.selection.getRange();
         const cells = [];
@@ -21,19 +38,36 @@ export class ClipboardManager {
             cells,
         };
 
-        this.#writeSystemClipboard(cells);
+        this.#writeSystemClipboard(sheet, range, cells);
     }
 
+    /**
+     * 粘贴剪贴板内容到当前活动单元格位置
+     * 优先读取系统剪贴板，fallback 到内部数据
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     */
     paste(sheet) {
         this.#readSystemClipboard(sheet);
     }
 
+    /**
+     * 清空内部剪贴板数据
+     */
     clear() {
         this.#data = null;
     }
 
-    #writeSystemClipboard(cells) {
-        const text = cells.map((row) => row.map((cell) => (cell ? String(cell.value ?? "") : "")).join("\t")).join("\n");
+    #writeSystemClipboard(sheet, range, cells) {
+        // 使用 sheet.formatCellValue() 格式化显示值，避免 Date 等对象被 String() 转为冗长字符串
+        const text = cells.map((row, ri) =>
+            row.map((cell, ci) => {
+                if (!cell) return "";
+                const r = range.topRow + ri;
+                const c = range.topCol + ci;
+                return sheet.formatCellValue(r, c, cell.value);
+            }).join("\t")
+        ).join("\n");
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).catch(() => {
@@ -80,21 +114,28 @@ export class ClipboardManager {
     #pasteText(sheet, text) {
         const [targetRow, targetCol] = sheet.selection.getActive();
         const rows = text.split("\n");
+        sheet.beginBatch();
         for (let r = 0; r < rows.length; r++) {
             if (rows[r] === "" && r === rows.length - 1) continue;
             const cols = rows[r].split("\t");
             for (let c = 0; c < cols.length; c++) {
-                if (!sheet.isDisabled(targetRow + r, targetCol + c)) {
-                    sheet.setCell(targetRow + r, targetCol + c, cols[c]);
+                const tr = targetRow + r;
+                const tc = targetCol + c;
+                if (!sheet.isDisabled(tr, tc)) {
+                    // 使用类型系统解析粘贴的值，确保日期等类型正确存储
+                    const parsedValue = sheet.parseCellValue(tr, tc, cols[c]);
+                    sheet.setCell(tr, tc, parsedValue);
                 }
             }
         }
+        sheet.endBatch();
         sheet.render();
     }
 
     #pasteInternal(sheet) {
         if (!this.#data) return;
         const [targetRow, targetCol] = sheet.selection.getActive();
+        sheet.beginBatch();
         for (let r = 0; r < this.#data.rows; r++) {
             for (let c = 0; c < this.#data.cols; c++) {
                 const cellData = this.#data.cells[r]?.[c];
@@ -103,6 +144,7 @@ export class ClipboardManager {
                 }
             }
         }
+        sheet.endBatch();
         sheet.render();
     }
 }
