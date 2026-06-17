@@ -184,7 +184,12 @@ export class EventHandler {
                 const boundListener = (e) => {
                     const entries = this.#delegateMap.get(key);
                     if (!entries) return;
-                    for (const { handler: h } of entries) {
+                    // 先拷贝快照，防止迭代过程中 entries 被修改（如某个 handler 触发了 removeStrategy）
+                    const snapshot = [...entries];
+                    for (const { name: strategyName, handler: h } of snapshot) {
+                        // 检查策略是否仍然存在且处于启用状态
+                        const strategy = this.strategies.get(strategyName);
+                        if (!strategy || !strategy.enabled) continue;
                         const result = h(e);
                         if (result === false) break;
                     }

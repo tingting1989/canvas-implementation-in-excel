@@ -345,7 +345,7 @@ export class Sheet {
         const { topRow, topCol, bottomRow, bottomCol } = range;
 
         // 整行覆盖
-        if (topCol === 0 && bottomCol >= this.rowColManager.totalCols - 1) {
+        if (topCol === 0 && bottomCol >= this.rowColManager.colCount - 1) {
             for (let r = topRow; r <= bottomRow; r++) {
                 this.rowStyles.set(this.toRealRow(r), styleId);
             }
@@ -354,7 +354,7 @@ export class Sheet {
         }
 
         // 整列覆盖
-        if (topRow === 0 && bottomRow >= this.rowColManager.totalRows - 1) {
+        if (topRow === 0 && bottomRow >= this.rowColManager.rowCount - 1) {
             for (let c = topCol; c <= bottomCol; c++) {
                 this.colStyles.set(c, styleId);
             }

@@ -151,22 +151,32 @@ export class BasePlugin {
     /**
      * 注册钩子回调（自动跟踪，destroy 时自动清理）
      *
+     * 回调执行前会自动检查插件的 enabled 状态，
+     * 禁用插件的钩子回调会被跳过。
+     *
      * @param {string} hookName - 钩子名称
      * @param {Function} callback - 回调函数
      */
     addHook(hookName, callback) {
-        this.hooks?.addHook(hookName, callback);
-        this.#registeredHooks.push({ hookName, callback });
+        const guardedCallback = (...args) => {
+            if (!this.#enabled) return;
+            callback(...args);
+        };
+        this.hooks?.addHook(hookName, guardedCallback);
+        this.#registeredHooks.push({ hookName, callback: guardedCallback });
     }
 
     /**
      * 注册一次性钩子回调（触发一次后自动移除）
+     *
+     * 回调执行前会自动检查插件的 enabled 状态。
      *
      * @param {string} hookName - 钩子名称
      * @param {Function} callback - 回调函数
      */
     addHookOnce(hookName, callback) {
         const onceCallback = (...args) => {
+            if (!this.#enabled) return;
             callback(...args);
             this.#registeredHooks = this.#registeredHooks.filter((h) => h.hookName !== hookName || h.callback !== onceCallback);
         };

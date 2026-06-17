@@ -399,7 +399,7 @@ export class ContextMenuStrategy extends EventStrategy {
     #handleRowHeaderHit(hit, e) {
         const sheet = this.handler.sheet;
         const row = hit.index;
-        const totalCols = sheet.rowColManager.totalCols;
+        const totalCols = sheet.rowColManager.colCount;
 
         if (!sheet.selection.contains(row, 0)) {
             sheet.selection.setRange(row, 0, row, totalCols - 1);
@@ -420,7 +420,7 @@ export class ContextMenuStrategy extends EventStrategy {
     #handleColHeaderHit(hit, e) {
         const sheet = this.handler.sheet;
         const col = hit.index;
-        const totalRows = sheet.rowColManager.totalRows;
+        const totalRows = sheet.rowColManager.rowCount;
 
         if (!sheet.selection.contains(0, col)) {
             sheet.selection.setRange(0, col, totalRows - 1, col);

@@ -214,7 +214,7 @@ export class TileRenderer {
 
     /**
      * 绘制单元格背景
-     * 按优先级从低到高依次覆盖，最终呈现的背景色由最高优先级决定
+     * 按优先级从低到高计算最终背景色，只执行一次 fillRect
      *
      * 优先级（从低到高）：
      * 1. 斑马纹（奇偶行交替色）
@@ -227,22 +227,19 @@ export class TileRenderer {
      * - 合并区域使用统一的左上角样式，确保跨列时无视觉分割
      */
     #drawCellBackground(ctx, sheet, r, c, cell, drawX, drawY, w, h, merge) {
+        // 按优先级从低到高逐层覆盖，最终只绘制一次
         let bgColor = r % 2 === 0 ? CONFIG.ZEBRA_LIGHT : CONFIG.ZEBRA_DARK;
-        ctx.fillStyle = bgColor;
-        ctx.fillRect(drawX, drawY, w, h);
 
         const resolvedStyle = sheet.resolveStyle(r, c);
         if (resolvedStyle.backgroundColor) {
-            ctx.fillStyle = resolvedStyle.backgroundColor;
-            ctx.fillRect(drawX, drawY, w, h);
+            bgColor = resolvedStyle.backgroundColor;
         }
 
         const cfStyleId = sheet.matchConditionalStyle(r, c, cell);
         if (cfStyleId !== null) {
             const cfStyle = stylePool.getStyle(cfStyleId);
             if (cfStyle.backgroundColor) {
-                ctx.fillStyle = cfStyle.backgroundColor;
-                ctx.fillRect(drawX, drawY, w, h);
+                bgColor = cfStyle.backgroundColor;
             }
         }
 
@@ -250,15 +247,16 @@ export class TileRenderer {
         if (dbStyleId !== null) {
             const dbStyle = stylePool.getStyle(dbStyleId);
             if (dbStyle.backgroundColor) {
-                ctx.fillStyle = dbStyle.backgroundColor;
-                ctx.fillRect(drawX, drawY, w, h);
+                bgColor = dbStyle.backgroundColor;
             }
         }
 
         if (cell?.disabled) {
-            ctx.fillStyle = CONFIG.DISABLED_BG;
-            ctx.fillRect(drawX, drawY, w, h);
+            bgColor = CONFIG.DISABLED_BG;
         }
+
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(drawX, drawY, w, h);
     }
 
     /**
