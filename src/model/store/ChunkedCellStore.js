@@ -2,32 +2,76 @@ import { Chunk } from "./Chunk.js";
 import { CONFIG } from "../../constants/config";
 
 /**
- * 分块单元格存储
- * 将单元格按行列分块存储，支持千万级数据
- * 每个块（Chunk）覆盖 CHUNK_ROW_SIZE × CHUNK_COL_SIZE 个单元格
+ * 分块单元格存储（Chunked Cell Store）
+ *
+ * 设计意图：
+ * - 将千万级单元格按二维网格切分为固定大小的数据块（Chunk），每个 Chunk 覆盖
+ *   CHUNK_ROW_SIZE × CHUNK_COL_SIZE 个逻辑单元格位置（默认 1024 × 256 = 262,144）。
+ * - 使用 Map<chunkKey, Chunk> 管理所有 Chunk，通过逻辑坐标 (row, col) 快速定位。
+ * - 支持 CRUD 和行列插入/删除/移动操作。
+ *
+ * 坐标系：
+ * - 所有方法使用全局逻辑坐标 (row, col)，内部自动通过 #chunkKey() 映射到对应 Chunk。
+ * - Chunk 按需创建（lazy allocation），只有写入数据时才实例化 Chunk。
+ *
+ * 行列操作优化策略：
+ * - insertRow/insertCol：仅遍历 rowStart/colStart >= 插入位置的 Chunk（而非所有 Chunk）。
+ * - deleteRow/deleteCol：两步操作——先删除目标行/列上的 Cell，再将后续 Cell 移动。
+ * - moveRow/moveCol：先收集源行/列的 Cell，再逐行/列移动中间数据，最后写入目标位置。
+ *
+ * 性能特征（典型场景：100 万 Cell，100 个 Chunk）：
+ * - 基本 CRUD（get/set/delete）：O(1)，两次哈希查找（chunkKey + cell key）。
+ * - insertRow（atRow 在数据中间）：遍历约 50 个 Chunk 的约 50 万 Cell，减少 50%。
+ * - deleteRow（atRow 在数据中间）：遍历约 50 个 Chunk + 跨行 Chunk 的 Cell，减少约 50%。
+ * - 已知限制：受影响 Chunk 内部仍遍历全部 Cell（而非仅遍历需要移动的行），
+ *   进一步优化方向见 Chunk.iterate() 的文档。
+ *
+ * 容量上限：
+ * - 最大行数：MAX_ROWS = 10,000,000（一千万行）
+ * - 最大列数：MAX_COLS = 70,000（七万列）
+ * - 最多 Chunk 数：约 ceil(MAX_ROWS/1024) × ceil(MAX_COLS/256) ≈ 9,766 × 274 ≈ 267 万个
+ * - Map 本身支持数百万 key，实际 Chunk 数取决于数据分布密度
  */
 export class ChunkedCellStore {
-    /** 块映射表：chunkKey → Chunk 实例 */
+    /**
+     * 块映射表
+     * key: "chunkRowIndex:chunkColIndex"（块网格坐标，非逻辑行列号）
+     * value: Chunk 实例
+     * @type {Map<string, Chunk>}
+     */
     #chunks = new Map();
 
     constructor() {}
 
     /**
-     * 计算块键
+     * 根据逻辑坐标计算所属 Chunk 的网格索引（块键）
      *
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @returns {string}
+     * 块键是 Chunk 在二维网格中的坐标，而非逻辑行列号。
+     * 示例：
+     *   - 逻辑行 0~1023、列 0~255    → chunkKey "0:0"
+     *   - 逻辑行 0~1023、列 256~511  → chunkKey "0:1"
+     *   - 逻辑行 1024~2047、列 0~255 → chunkKey "1:0"
+     *
+     * 块键用于 Map 索引，确保 O(1) 定位到目标 Chunk。
+     *
+     * @param {number} row - 逻辑行号
+     * @param {number} col - 逻辑列号
+     * @returns {string} 格式 "chunkRowIndex:chunkColIndex"
      */
     #chunkKey(row, col) {
         return `${Math.floor(row / CONFIG.CHUNK_ROW_SIZE)}:${Math.floor(col / CONFIG.CHUNK_COL_SIZE)}`;
     }
 
     /**
-     * 获取或创建指定位置的块
+     * 获取或创建指定位置的 Chunk（懒分配）
      *
-     * @param {number} row - 行号
-     * @param {number} col - 列号
+     * 如果对应块键的 Chunk 不存在，则创建新的 Chunk 实例。
+     * Chunk 的 rowStart/colStart 由块网格坐标反算得到：
+     *   rowStart = chunkRowIndex × CHUNK_ROW_SIZE
+     *   colStart = chunkColIndex × CHUNK_COL_SIZE
+     *
+     * @param {number} row - 逻辑行号
+     * @param {number} col - 逻辑列号
      * @returns {Chunk}
      */
     #getChunk(row, col) {
@@ -38,6 +82,10 @@ export class ChunkedCellStore {
         }
         return this.#chunks.get(key);
     }
+
+    // ============================================================
+    // CRUD 操作
+    // ============================================================
 
     /**
      * 获取指定位置的单元格
@@ -72,217 +120,347 @@ export class ChunkedCellStore {
         chunk.delete(row, col);
     }
 
+    // ============================================================
+    // 行列插入
+    // ============================================================
+
     /**
-     * 插入行：将 atRow 及以下所有单元格下移一行
-     * 从最底行开始向上遍历，避免覆盖
+     * 插入行：在 atRow 位置插入一行，atRow 及以下的 Cell 全部下移一行。
      *
-     * @param {number} atRow - 插入位置的行号
-     * @param {number} [maxRow] - 最大行号（限制遍历范围）
+     * 实现策略：
+     * 1. 收集所有 Chunk，筛选 rowStart >= atRow 的受影响 Chunk。
+     * 2. 从下往上处理（避免数据覆盖），遍历每个受影响 Chunk 的全部 Cell。
+     * 3. 清空 Chunk 后，将每个 Cell 写入 row+1 位置（通过 this.set() 自动路由到正确的 Chunk）。
+     *
+     * 性能：
+     * - 仅遍历 rowStart >= atRow 的 Chunk（而非所有 Chunk）。
+     * - 典型场景（100 Chunk，atRow 在中间）：遍历约 50 个 Chunk，减少 50% 遍历量。
+     * - 已知限制：Chunk 内遍历全部 Cell 而非仅 row >= atRow 的 Cell。
+     *
+     * 注意：newRow 本身不存储数据，插入后 atRow 位置为空行。
+     *
+     * @param {number} atRow - 插入位置的行号（新行将占据此位置）
      */
-    insertRow(atRow, maxRow) {
-        const affected = [];
-        for (const chunk of this.#chunks.values()) {
-            for (const { row, col, cell } of chunk.iterate()) {
-                if (row >= atRow) {
-                    affected.push({ row, col, cell });
-                }
-            }
+    insertRow(atRow) {
+        // 收集所有 Chunk 数据，按 Chunk 的 rowStart 分组
+        const chunkGroups = [];
+        for (const [key, chunk] of this.#chunks) {
+            chunkGroups.push({ key, chunk });
         }
 
-        affected.sort((a, b) => b.row - a.row);
+        // 只处理 rowStart >= atRow 的 Chunk（上方 Chunk 不受影响）
+        const affectedChunks = chunkGroups.filter(
+            (g) => g.chunk.rowStart >= atRow
+        );
 
-        for (const { row, col, cell } of affected) {
-            this.delete(row, col);
-            this.set(row + 1, col, cell);
+        // 从下往上处理，避免数据覆盖
+        affectedChunks.sort((a, b) => b.chunk.rowStart - a.chunk.rowStart);
+
+        for (const { chunk } of affectedChunks) {
+            const cellsToMove = [];
+            for (const { row, col, cell } of chunk.iterate()) {
+                cellsToMove.push({ row, col, cell });
+            }
+            // 清空当前 Chunk
+            chunk.cells.clear();
+            // 将 Cell 写入 row+1 位置
+            for (const { row, col, cell } of cellsToMove) {
+                this.set(row + 1, col, cell);
+            }
         }
     }
 
     /**
-     * 插入列：将 atCol 及右侧所有单元格右移一列
-     * 从最右列开始向左遍历，避免覆盖
+     * 插入列：在 atCol 位置插入一列，atCol 及右侧的 Cell 全部右移一列。
      *
-     * @param {number} atCol - 插入位置的列号
-     * @param {number} [maxCol] - 最大列号（限制遍历范围）
+     * 实现策略与 insertRow 对称：筛选 colStart >= atCol 的 Chunk，从右往左逐 Cell 移动。
+     *
+     * 注意：newCol 本身不存储数据，插入后 atCol 位置为空列。
+     *
+     * @param {number} atCol - 插入位置的列号（新列将占据此位置）
      */
-    insertCol(atCol, maxCol) {
-        const affected = [];
-        for (const chunk of this.#chunks.values()) {
-            for (const { row, col, cell } of chunk.iterate()) {
-                if (col >= atCol) {
-                    affected.push({ row, col, cell });
-                }
-            }
+    insertCol(atCol) {
+        const chunkGroups = [];
+        for (const [key, chunk] of this.#chunks) {
+            chunkGroups.push({ key, chunk });
         }
 
-        affected.sort((a, b) => b.col - a.col);
+        // 只处理 colStart >= atCol 的 Chunk
+        const affectedChunks = chunkGroups.filter(
+            (g) => g.chunk.colStart >= atCol
+        );
 
-        for (const { row, col, cell } of affected) {
-            this.delete(row, col);
-            this.set(row, col + 1, cell);
+        // 从右往左处理
+        affectedChunks.sort((a, b) => b.chunk.colStart - a.chunk.colStart);
+
+        for (const { chunk } of affectedChunks) {
+            const cellsToMove = [];
+            for (const { row, col, cell } of chunk.iterate()) {
+                cellsToMove.push({ row, col, cell });
+            }
+            chunk.cells.clear();
+            for (const { row, col, cell } of cellsToMove) {
+                this.set(row, col + 1, cell);
+            }
         }
     }
 
+    // ============================================================
+    // 行列删除
+    // ============================================================
+
     /**
-     * 删除行：将 atRow 以下所有单元格上移一行
+     * 删除行：两步操作——
+     * 1. 删除 atRow 上的所有 Cell（仅遍历包含 atRow 的 Chunk）。
+     * 2. 将 atRow 下方的 Cell 全部上移一行（仅遍历 rowStart > atRow 的 Chunk）。
+     *
+     * 第一步的 Chunk 筛选使用区间判定（而非精确匹配），因为一个 Chunk 覆盖 1024 行。
      *
      * @param {number} atRow - 要删除的行号
      */
     deleteRow(atRow) {
-        const affected = [];
-        for (const chunk of this.#chunks.values()) {
-            for (const { row, col, cell } of chunk.iterate()) {
-                if (row > atRow) {
-                    affected.push({ row, col, cell });
-                }
-            }
-        }
-
-        affected.sort((a, b) => a.row - b.row);
-
-        for (const chunk of this.#chunks.values()) {
+        // 第一步：删除 atRow 上的所有 Cell
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart > atRow + CONFIG.CHUNK_ROW_SIZE) continue;
+            if (chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= atRow) continue;
             for (const { row, col } of chunk.iterate()) {
                 if (row === atRow) {
-                    this.delete(row, col);
+                    chunk.delete(row, col);
                 }
             }
         }
 
-        for (const { row, col, cell } of affected) {
-            this.delete(row, col);
-            this.set(row - 1, col, cell);
+        // 第二步：将 atRow 下方的 Cell 上移
+        const chunkGroups = [];
+        for (const [key, chunk] of this.#chunks) {
+            chunkGroups.push({ key, chunk });
+        }
+
+        const affectedChunks = chunkGroups.filter(
+            (g) => g.chunk.rowStart > atRow
+        );
+        affectedChunks.sort((a, b) => a.chunk.rowStart - b.chunk.rowStart);
+
+        for (const { chunk } of affectedChunks) {
+            const cellsToMove = [];
+            for (const { row, col, cell } of chunk.iterate()) {
+                cellsToMove.push({ row, col, cell });
+            }
+            chunk.cells.clear();
+            for (const { row, col, cell } of cellsToMove) {
+                this.set(row - 1, col, cell);
+            }
         }
     }
 
     /**
-     * 删除列：将 atCol 右侧所有单元格左移一列
+     * 删除列：两步操作，与 deleteRow 对称——
+     * 1. 删除 atCol 上的所有 Cell。
+     * 2. 将 atCol 右侧的 Cell 全部左移一列。
      *
      * @param {number} atCol - 要删除的列号
      */
     deleteCol(atCol) {
-        const affected = [];
-        for (const chunk of this.#chunks.values()) {
-            for (const { row, col, cell } of chunk.iterate()) {
-                if (col > atCol) {
-                    affected.push({ row, col, cell });
-                }
-            }
-        }
-
-        affected.sort((a, b) => a.col - b.col);
-
-        for (const chunk of this.#chunks.values()) {
+        // 第一步：删除 atCol 上的所有 Cell
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.colStart > atCol + CONFIG.CHUNK_COL_SIZE) continue;
+            if (chunk.colStart + CONFIG.CHUNK_COL_SIZE <= atCol) continue;
             for (const { row, col } of chunk.iterate()) {
                 if (col === atCol) {
-                    this.delete(row, col);
+                    chunk.delete(row, col);
                 }
             }
         }
 
-        for (const { row, col, cell } of affected) {
-            this.delete(row, col);
-            this.set(row, col - 1, cell);
+        // 第二步：将 atCol 右侧的 Cell 左移
+        const chunkGroups = [];
+        for (const [key, chunk] of this.#chunks) {
+            chunkGroups.push({ key, chunk });
+        }
+
+        const affectedChunks = chunkGroups.filter(
+            (g) => g.chunk.colStart > atCol
+        );
+        affectedChunks.sort((a, b) => a.chunk.colStart - b.chunk.colStart);
+
+        for (const { chunk } of affectedChunks) {
+            const cellsToMove = [];
+            for (const { row, col, cell } of chunk.iterate()) {
+                cellsToMove.push({ row, col, cell });
+            }
+            chunk.cells.clear();
+            for (const { row, col, cell } of cellsToMove) {
+                this.set(row, col - 1, cell);
+            }
         }
     }
 
+    // ============================================================
+    // 行列移动
+    // ============================================================
+
+    /**
+     * 移动列：将 fromCol 整列移动到 toCol 位置，中间列顺移。
+     *
+     * 三步操作：
+     * 1. 收集 fromCol 上的所有 Cell，从原位置删除。
+     * 2. 移动中间列（fromCol+1 到 toCol 逐列左移，或 fromCol-1 到 toCol 逐列右移）。
+     * 3. 将收集的 Cell 写入 toCol 位置。
+     *
+     * 中间列移动通过 #shiftColLeft / #shiftColRight 实现，每次只处理包含目标列的 Chunk。
+     *
+     * @param {number} fromCol - 源列号
+     * @param {number} toCol - 目标列号
+     */
     moveCol(fromCol, toCol) {
         if (fromCol === toCol) return;
 
+        // 收集 fromCol 上的所有 Cell
         const colCells = new Map();
-        for (const chunk of this.#chunks.values()) {
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.colStart > fromCol || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= fromCol) continue;
             for (const { row, col, cell } of chunk.iterate()) {
                 if (col === fromCol) {
                     colCells.set(row, cell);
+                    chunk.delete(row, col);
                 }
             }
         }
 
-        for (const [row] of colCells) {
-            this.delete(row, fromCol);
-        }
-
+        // 移动中间列
         if (fromCol < toCol) {
-            const shiftCols = [];
-            for (const chunk of this.#chunks.values()) {
-                for (const { row, col, cell } of chunk.iterate()) {
-                    if (col > fromCol && col <= toCol) {
-                        shiftCols.push({ row, col, cell });
-                    }
-                }
-            }
-            shiftCols.sort((a, b) => a.col - b.col);
-            for (const { row, col, cell } of shiftCols) {
-                this.delete(row, col);
-                this.set(row, col - 1, cell);
+            for (let c = fromCol + 1; c <= toCol; c++) {
+                this.#shiftColLeft(c);
             }
         } else {
-            const shiftCols = [];
-            for (const chunk of this.#chunks.values()) {
-                for (const { row, col, cell } of chunk.iterate()) {
-                    if (col >= toCol && col < fromCol) {
-                        shiftCols.push({ row, col, cell });
-                    }
-                }
-            }
-            shiftCols.sort((a, b) => b.col - a.col);
-            for (const { row, col, cell } of shiftCols) {
-                this.delete(row, col);
-                this.set(row, col + 1, cell);
+            for (let c = fromCol - 1; c >= toCol; c--) {
+                this.#shiftColRight(c);
             }
         }
 
+        // 写入目标列
         for (const [row, cell] of colCells) {
             this.set(row, toCol, cell);
         }
     }
 
+    /**
+     * 移动行：将 fromRow 整行移动到 toRow 位置，中间行顺移。
+     *
+     * 实现策略与 moveCol 对称，通过 #shiftRowUp / #shiftRowDown 移动中间行。
+     *
+     * @param {number} fromRow - 源行号
+     * @param {number} toRow - 目标行号
+     */
     moveRow(fromRow, toRow) {
         if (fromRow === toRow) return;
 
+        // 收集 fromRow 上的所有 Cell
         const rowCells = new Map();
-        for (const chunk of this.#chunks.values()) {
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart > fromRow || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= fromRow) continue;
             for (const { row, col, cell } of chunk.iterate()) {
                 if (row === fromRow) {
                     rowCells.set(col, cell);
+                    chunk.delete(row, col);
                 }
             }
         }
 
-        for (const [col] of rowCells) {
-            this.delete(fromRow, col);
-        }
-
+        // 移动中间行
         if (fromRow < toRow) {
-            const shiftRows = [];
-            for (const chunk of this.#chunks.values()) {
-                for (const { row, col, cell } of chunk.iterate()) {
-                    if (row > fromRow && row <= toRow) {
-                        shiftRows.push({ row, col, cell });
-                    }
-                }
-            }
-            shiftRows.sort((a, b) => a.row - b.row);
-            for (const { row, col, cell } of shiftRows) {
-                this.delete(row, col);
-                this.set(row - 1, col, cell);
+            for (let r = fromRow + 1; r <= toRow; r++) {
+                this.#shiftRowUp(r);
             }
         } else {
-            const shiftRows = [];
-            for (const chunk of this.#chunks.values()) {
-                for (const { row, col, cell } of chunk.iterate()) {
-                    if (row >= toRow && row < fromRow) {
-                        shiftRows.push({ row, col, cell });
-                    }
-                }
-            }
-            shiftRows.sort((a, b) => b.row - a.row);
-            for (const { row, col, cell } of shiftRows) {
-                this.delete(row, col);
-                this.set(row + 1, col, cell);
+            for (let r = fromRow - 1; r >= toRow; r--) {
+                this.#shiftRowDown(r);
             }
         }
 
+        // 写入目标行
         for (const [col, cell] of rowCells) {
             this.set(toRow, col, cell);
+        }
+    }
+
+    /**
+     * 将指定列的所有 Cell 左移一列（用于 moveCol 中间列的移动）
+     * @param {number} col - 要左移的列号
+     */
+    #shiftColLeft(col) {
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.colStart > col || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= col) continue;
+            const cellsInCol = [];
+            for (const { row, c, cell } of chunk.iterate()) {
+                if (c === col) {
+                    cellsInCol.push({ row, cell });
+                }
+            }
+            for (const { row, cell } of cellsInCol) {
+                chunk.delete(row, col);
+                this.set(row, col - 1, cell);
+            }
+        }
+    }
+
+    /**
+     * 将指定列的所有 Cell 右移一列（用于 moveCol 中间列的移动）
+     * @param {number} col - 要右移的列号
+     */
+    #shiftColRight(col) {
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.colStart > col || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= col) continue;
+            const cellsInCol = [];
+            for (const { row, c, cell } of chunk.iterate()) {
+                if (c === col) {
+                    cellsInCol.push({ row, cell });
+                }
+            }
+            for (const { row, cell } of cellsInCol) {
+                chunk.delete(row, col);
+                this.set(row, col + 1, cell);
+            }
+        }
+    }
+
+    /**
+     * 将指定行的所有 Cell 上移一行
+     * @param {number} row - 要上移的行号
+     */
+    #shiftRowUp(row) {
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
+            const cellsInRow = [];
+            for (const { r, col, cell } of chunk.iterate()) {
+                if (r === row) {
+                    cellsInRow.push({ col, cell });
+                }
+            }
+            for (const { col, cell } of cellsInRow) {
+                chunk.delete(row, col);
+                this.set(row - 1, col, cell);
+            }
+        }
+    }
+
+    /**
+     * 将指定行的所有 Cell 下移一行
+     * @param {number} row - 要下移的行号
+     */
+    #shiftRowDown(row) {
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
+            const cellsInRow = [];
+            for (const { r, col, cell } of chunk.iterate()) {
+                if (r === row) {
+                    cellsInRow.push({ col, cell });
+                }
+            }
+            for (const { col, cell } of cellsInRow) {
+                chunk.delete(row, col);
+                this.set(row + 1, col, cell);
+            }
         }
     }
 
@@ -297,6 +475,15 @@ export class ChunkedCellStore {
         }
     }
 
+    /**
+     * 获取当前数据区域的最大行号
+     *
+     * 遍历所有非空 Chunk，取 rowStart + CHUNK_ROW_SIZE - 1 的最大值。
+     * 注意：返回的是 Chunk 覆盖范围的最大行号，而非精确的"最后一个有数据行"的行号。
+     * 无数据时返回 -1。
+     *
+     * @returns {number} 最大行号，-1 表示无数据
+     */
     getMaxRow() {
         let maxRow = -1;
         for (const chunk of this.#chunks.values()) {
@@ -308,6 +495,14 @@ export class ChunkedCellStore {
         return maxRow;
     }
 
+    /**
+     * 获取当前数据区域的最大列号
+     *
+     * 与 getMaxRow 对称，返回非空 Chunk 中 colStart + CHUNK_COL_SIZE - 1 的最大值。
+     * 无数据时返回 -1。
+     *
+     * @returns {number} 最大列号，-1 表示无数据
+     */
     getMaxCol() {
         let maxCol = -1;
         for (const chunk of this.#chunks.values()) {

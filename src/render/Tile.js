@@ -84,11 +84,19 @@ export class Tile {
     }
 
     /**
-     * 销毁瓦片，释放 Canvas 资源
+     * 销毁瓦片，释放 Canvas 资源（包括 GPU 内存）
+     *
+     * 先将宽高置零以主动通知浏览器释放 GPU 端纹理内存，
+     * 再断开引用让 JS GC 回收宿主对象。
      */
     destroy() {
-        this.canvas.width = 0;
-        this.canvas.height = 0;
+        // 将 Canvas 尺寸置零，主动释放 GPU 端纹理/缓冲区
+        // 这是 Canvas 2D 释放 GPU 资源的可靠手段，比单纯靠 GC 更快
+        if (this.canvas) {
+            this.canvas.width = 0;
+            this.canvas.height = 0;
+        }
+        // 断开引用，让 JS GC 回收宿主对象
         this.ctx = null;
         this.canvas = null;
     }
