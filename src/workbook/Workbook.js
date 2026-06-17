@@ -26,9 +26,6 @@ import { SettingsApplier } from "./SettingsApplier.js";
  * 对齐 Handsontable 的 new Handsontable(container, options) 模式
  */
 export class Workbook {
-    /** @type {Map<string, typeof import("../plugins/BasePlugin.js").BasePlugin>} */
-    static #pluginRegistry = new Map();
-
     /** @type {string} */
     #containerId;
     /** @type {object} */
@@ -89,12 +86,21 @@ export class Workbook {
     // 静态方法：全局插件注册
     // ============================================================
 
+    /**
+     * 全局注册插件类（直接委托给 PluginManager，统一注册源）
+     * @param {string} name - 插件名称
+     * @param {typeof import("../plugins/BasePlugin.js").BasePlugin} PluginClass - 插件类
+     */
     static registerPlugin(name, PluginClass) {
-        Workbook.#pluginRegistry.set(name, PluginClass);
+        PluginManager.register(name, PluginClass);
     }
 
+    /**
+     * 全局注销插件类
+     * @param {string} name - 插件名称
+     */
     static unregisterPlugin(name) {
-        Workbook.#pluginRegistry.delete(name);
+        PluginManager.unregister(name);
     }
 
     // ============================================================
@@ -175,11 +181,6 @@ export class Workbook {
         this.editor = new EditorManager(this.renderEngine, this.activeSheet);
         this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, this.clipboard);
         this.pluginManager = new PluginManager(this);
-
-        // 将全局注册的插件类同步到 PluginManager
-        for (const [name, pluginClass] of Workbook.#pluginRegistry) {
-            PluginManager.register(name, pluginClass);
-        }
     }
 
     #linkSheetsToRenderEngine() {
