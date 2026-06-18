@@ -79,12 +79,6 @@ export class Sheet {
         this.mergeManager = new MergeManager();
         /** 行列尺寸与坐标计算管理器 */
         this.rowColManager = new RowColManager();
-        /** 行级样式映射 row → styleId */
-        this.rowStyles = new Map();
-        /** 列级样式映射 col → styleId */
-        this.colStyles = new Map();
-        /** 单元格级别类型配置映射 key("r,c") → {name: string, options: object} */
-        this.cellTypes = new Map();
         /**
          * cell 配置数组，每个元素指定 {row, col, style?, disabled?, readOnly?, value?}
          * 静态声明式配置，初始化时一次性应用（参考 Handsontable cell 选项）
@@ -95,65 +89,20 @@ export class Sheet {
          * 动态计算式配置，每次 resolveCellProperties 时调用（参考 Handsontable cells 选项）
          */
         this.cellsFn = null;
-        /**
-         * 列配置映射 col → ColumnConfig（参考 Handsontable columns 选项）
-         *
-         * ColumnConfig 支持的属性：
-         * - type: 'text' | 'numeric' | 'date' | 'boolean' | 'select'
-         * - width: number
-         * - style: object
-         * - disabled / readOnly: boolean
-         * - numericFormat: { pattern: string }  (type='numeric')
-         * - dateFormat: { pattern: string }      (type='date')
-         * - labels: { true: string, false: string } (type='boolean')
-         * - source: Array                        (type='select')
-         * - min / max: number|string             (type='numeric'/'date')
-         * - maxLength: number                    (type='text')
-         * - validator: Function                  (value) => boolean | string
-         * - allowInvalid: boolean
-         */
-        this.columnsConfig = new Map();
-
-        /** 列头配置：true→A/B/C... | string[] | Function(col) */
-        this.colHeaders = true;
-        /** 行头配置：true→1/2/3... | string[] | Function(row) */
-        this.rowHeaders = true;
-        /** 行头列宽度（px），默认使用 CONFIG.HEADER_WIDTH */
-        this.rowHeaderWidth = CONFIG.HEADER_WIDTH;
         /** 单元格文字内边距（px），左右两侧各保留此宽度 */
         this.cellPadding = CONFIG.CELL_PADDING;
         /** 单元格文字溢出时是否显示省略号（...） */
         this.textOverflowEllipsis = CONFIG.TEXT_OVERFLOW_ELLIPSIS;
-        /**
-         * 嵌套表头配置
-         *
-         * 参考 Handsontable nestedHeaders API：
-         *   二维数组，每行对应一层表头，每列的元素定义该层对应列的标签。
-         *   元素可以是：
-         *     - 字符串：直接作为该表头单元格的文本
-         *     - 对象：{ label: string, colspan: number }
-         *
-         *   示例：
-         *     nestedHeaders: [
-         *       ['A', {label: 'Group B', colspan: 3}, 'C'],
-         *       ['A1', 'B1', 'B2', 'B3', 'C1'],
-         *     ]
-         *
-         *   当配置了 nestedHeaders 时，它优先于 colHeaders，但 colHeaders
-         *   仍可用于提供最底层（叶子层）的标签。
-         *
-         * @type {Array<Array<string|{label:string, colspan:number}>>|null}
-         */
-        this.nestedHeaders = null;
 
         if (renderEngine) this.#renderEngine = renderEngine;
 
-        this.#rowSync = new RowColSync(this, "row");
-        this.#colSync = new RowColSync(this, "col");
+        // 子管理器必须在代理 getter 访问之前创建
         this.#styleManager = new SheetStyleManager(this);
         this.#typeManager = new ColumnTypeManager(this);
         this.#headerLabels = new HeaderLabelManager(this);
         this.#conditionalFormat = new ConditionalFormatManager(this);
+        this.#rowSync = new RowColSync(this, "row");
+        this.#colSync = new RowColSync(this, "col");
     }
 
     // ============================================================
@@ -167,6 +116,31 @@ export class Sheet {
     set renderEngine(engine) {
         this.#renderEngine = engine;
     }
+
+    // ============================================================
+    // 数据访问代理 getter / setter
+    //
+    // 这些属性已搬入子管理器内部存储（解耦），通过代理保持
+    // 外部代码（SettingsApplier、RowColSync、渲染器）的兼容性。
+    // ============================================================
+
+    // ---- SheetStyleManager 代理 ----
+    get rowStyles() { return this.#styleManager.rowStyles; }
+    get colStyles() { return this.#styleManager.colStyles; }
+
+    // ---- ColumnTypeManager 代理 ----
+    get columnsConfig() { return this.#typeManager.columnsConfig; }
+    get cellTypes() { return this.#typeManager.cellTypes; }
+
+    // ---- HeaderLabelManager 代理 ----
+    get colHeaders() { return this.#headerLabels.colHeaders; }
+    set colHeaders(v) { this.#headerLabels.colHeaders = v; }
+    get rowHeaders() { return this.#headerLabels.rowHeaders; }
+    set rowHeaders(v) { this.#headerLabels.rowHeaders = v; }
+    get nestedHeaders() { return this.#headerLabels.nestedHeaders; }
+    set nestedHeaders(v) { this.#headerLabels.nestedHeaders = v; }
+    get rowHeaderWidth() { return this.#headerLabels.rowHeaderWidth; }
+    set rowHeaderWidth(v) { this.#headerLabels.rowHeaderWidth = v; }
 
     // ============================================================
     // 行号转换（分页支持）

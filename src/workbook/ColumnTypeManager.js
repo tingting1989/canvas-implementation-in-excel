@@ -17,6 +17,11 @@ export class ColumnTypeManager {
     /** 所属工作表引用 */
     #sheet;
 
+    /** 列配置映射 col → ColumnConfig */
+    #columnsConfig = new Map();
+    /** 单元格级别类型配置映射 key("r,c") → {name, options} */
+    #cellTypes = new Map();
+
     /**
      * @param {import("./Sheet.js").Sheet} sheet - 所属工作表实例
      */
@@ -24,13 +29,18 @@ export class ColumnTypeManager {
         this.#sheet = sheet;
     }
 
+    /** 列配置 Map（供 RowColSync 等内部模块访问） */
+    get columnsConfig() { return this.#columnsConfig; }
+    /** 单元格类型 Map（供 RowColSync 等内部模块访问） */
+    get cellTypes() { return this.#cellTypes; }
+
     /**
      * 获取指定列的配置对象
      * @param {number} col - 列号
      * @returns {Object|null} 列配置对象，无配置时返回 null
      */
     getColumnConfig(col) {
-        return this.#sheet.columnsConfig.get(col) || null;
+        return this.#columnsConfig.get(col) || null;
     }
 
     /**
@@ -39,7 +49,7 @@ export class ColumnTypeManager {
      * @returns {string} 类型名称（如 "text"、"numeric"、"date"），默认 "text"
      */
     getColumnType(col) {
-        return this.#sheet.columnsConfig.get(col)?.type || "text";
+        return this.#columnsConfig.get(col)?.type || "text";
     }
 
     /**
@@ -69,7 +79,7 @@ export class ColumnTypeManager {
      * @returns {import("../types/ColumnType.js").ColumnType} 列类型实例
      */
     getColumnTypeInstance(col) {
-        return getColumnTypeFromConfig(this.#sheet.columnsConfig.get(col));
+        return getColumnTypeFromConfig(this.#columnsConfig.get(col));
     }
 
     /**
@@ -84,7 +94,7 @@ export class ColumnTypeManager {
      */
     getCellTypeInstance(r, c) {
         const realR = this.#sheet.toRealRow(r);
-        return resolveCellType(realR, c, this.#sheet.cellTypes, this.#sheet.columnsConfig);
+        return resolveCellType(realR, c, this.#cellTypes, this.#columnsConfig);
     }
 
     /**
@@ -119,16 +129,16 @@ export class ColumnTypeManager {
             if (!config || typeof config !== "object") continue;
 
             // 存储列配置到 columnsConfig Map
-            this.#sheet.columnsConfig.set(c, config);
+            this.#columnsConfig.set(c, config);
 
             // 应用列宽配置
             if (config.width != null) {
                 this.#sheet.rowColManager.setColWidth(c, config.width);
             }
 
-            // 应用列样式配置，通过 stylePool 去重转为 ID 存储
+            // 应用列样式配置，通过 Sheet API（解耦，不再直接写入 colStyles Map）
             if (config.style) {
-                this.#sheet.colStyles.set(c, stylePool.getStyleId(config.style));
+                this.#sheet.setColStyle(c, stylePool.getStyleId(config.style));
             }
 
             // 禁用/只读列需要确保行列表尺寸已分配，以便渲染禁用状态
@@ -164,7 +174,7 @@ export class ColumnTypeManager {
      * @returns {boolean|string} true 表示有效，false 或错误信息字符串表示无效
      */
     validateCellValue(r, c, value) {
-        return validateValue(this.getCellTypeInstance(r, c), value, this.#sheet.columnsConfig.get(c));
+        return validateValue(this.getCellTypeInstance(r, c), value, this.#columnsConfig.get(c));
     }
 
     /**

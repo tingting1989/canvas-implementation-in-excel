@@ -21,6 +21,11 @@ export class SheetStyleManager {
     /** 所属工作表引用 */
     #sheet;
 
+    /** 行级样式映射 row → styleId */
+    #rowStyles = new Map();
+    /** 列级样式映射 col → styleId */
+    #colStyles = new Map();
+
     /** 当前工作表的默认样式 ID，初始为全局 DEFAULT_STYLE_ID */
     #defaultStyleId = DEFAULT_STYLE_ID;
 
@@ -39,6 +44,11 @@ export class SheetStyleManager {
     constructor(sheet) {
         this.#sheet = sheet;
     }
+
+    /** 行级样式 Map（供 RowColSync 等内部模块访问） */
+    get rowStyles() { return this.#rowStyles; }
+    /** 列级样式 Map（供 RowColSync 等内部模块访问） */
+    get colStyles() { return this.#colStyles; }
 
     /** 获取当前默认样式 ID */
     get defaultStyleId() {
@@ -61,7 +71,7 @@ export class SheetStyleManager {
      * @param {number} styleId - 样式 ID（由 stylePool.getStyleId 获得）
      */
     setRowStyle(row, styleId) {
-        this.#sheet.rowStyles.set(row, styleId);
+        this.#rowStyles.set(row, styleId);
         this.invalidateCache();
     }
 
@@ -71,7 +81,7 @@ export class SheetStyleManager {
      * @param {number} styleId - 样式 ID
      */
     setColStyle(col, styleId) {
-        this.#sheet.colStyles.set(col, styleId);
+        this.#colStyles.set(col, styleId);
         this.invalidateCache();
     }
 
@@ -141,8 +151,8 @@ export class SheetStyleManager {
      * @param {number} row - 实际行号
      */
     clearRowStyle(row) {
-        if (!this.#sheet.rowStyles.has(row)) return;
-        this.#sheet.rowStyles.delete(row);
+        if (!this.#rowStyles.has(row)) return;
+        this.#rowStyles.delete(row);
         this.invalidateCache();
     }
 
@@ -151,8 +161,8 @@ export class SheetStyleManager {
      * @param {number} col - 列号
      */
     clearColStyle(col) {
-        if (!this.#sheet.colStyles.has(col)) return;
-        this.#sheet.colStyles.delete(col);
+        if (!this.#colStyles.has(col)) return;
+        this.#colStyles.delete(col);
         this.invalidateCache();
     }
 
@@ -175,7 +185,7 @@ export class SheetStyleManager {
         // 整行选区优化：范围覆盖所有列时，直接设置行样式
         if (topCol === 0 && bottomCol >= rowColManager.colCount - 1) {
             for (let r = topRow; r <= bottomRow; r++) {
-                this.#sheet.rowStyles.set(this.#sheet.toRealRow(r), styleId);
+                this.#rowStyles.set(this.#sheet.toRealRow(r), styleId);
             }
             this.invalidateCache();
             return;
@@ -184,7 +194,7 @@ export class SheetStyleManager {
         // 整列选区优化：范围覆盖所有行时，直接设置列样式
         if (topRow === 0 && bottomRow >= rowColManager.rowCount - 1) {
             for (let c = topCol; c <= bottomCol; c++) {
-                this.#sheet.colStyles.set(c, styleId);
+                this.#colStyles.set(c, styleId);
             }
             this.invalidateCache();
             return;
@@ -232,8 +242,8 @@ export class SheetStyleManager {
 
         // 第 1 层：默认样式（基础）
         const base = stylePool.getStyle(this.#defaultStyleId);
-        const colStyleId = this.#sheet.colStyles.get(c);
-        const rowStyleId = this.#sheet.rowStyles.get(realR);
+        const colStyleId = this.#colStyles.get(c);
+        const rowStyleId = this.#rowStyles.get(realR);
         const cell = this.#sheet.cellStore.get(realR, c);
         const cellStyleId = cell?.styleId;
 

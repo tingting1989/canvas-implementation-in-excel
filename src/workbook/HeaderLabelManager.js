@@ -15,6 +15,15 @@ export class HeaderLabelManager {
     /** @type {import("./Sheet.js").Sheet} */
     #sheet;
 
+    /** 列头配置：true→A/B/C... | string[] | Function(col) */
+    #colHeaders = true;
+    /** 行头配置：true→1/2/3... | string[] | Function(row) */
+    #rowHeaders = true;
+    /** 嵌套表头配置 */
+    #nestedHeaders = null;
+    /** 行头列宽度（px） */
+    #rowHeaderWidth = CONFIG.HEADER_WIDTH;
+
     /**
      * @param {import("./Sheet.js").Sheet} sheet - 所属工作表
      */
@@ -22,18 +31,29 @@ export class HeaderLabelManager {
         this.#sheet = sheet;
     }
 
+    // ---- 属性访问（供 SettingsApplier / RowColSync 透明迁移） ----
+
+    get colHeaders() { return this.#colHeaders; }
+    set colHeaders(v) { this.#colHeaders = v; }
+    get rowHeaders() { return this.#rowHeaders; }
+    set rowHeaders(v) { this.#rowHeaders = v; }
+    get nestedHeaders() { return this.#nestedHeaders; }
+    set nestedHeaders(v) { this.#nestedHeaders = v; }
+    get rowHeaderWidth() { return this.#rowHeaderWidth; }
+    set rowHeaderWidth(v) { this.#rowHeaderWidth = v; }
+
     // ============================================================
     // 行/列头标签
     // ============================================================
 
     /** 获取列头标签 */
     getColHeader(col) {
-        return this.#resolve(this.#sheet.colHeaders, col, this.#defaultColLabel);
+        return this.#resolve(this.#colHeaders, col, this.#defaultColLabel);
     }
 
     /** 获取行头标签 */
     getRowHeader(row) {
-        return this.#resolve(this.#sheet.rowHeaders, row, (i) => String(i + 1));
+        return this.#resolve(this.#rowHeaders, row, (i) => String(i + 1));
     }
 
     /**
@@ -75,7 +95,7 @@ export class HeaderLabelManager {
      * @returns {number} 0 表示未启用嵌套表头
      */
     getNestedHeaderRowCount() {
-        const nh = this.#sheet.nestedHeaders;
+        const nh = this.#nestedHeaders;
         return Array.isArray(nh) ? nh.length : 0;
     }
 
@@ -92,7 +112,7 @@ export class HeaderLabelManager {
      * @returns {{label: string, colspan: number}|null}
      */
     getNestedColHeader(rowIndex, col) {
-        const nh = this.#sheet.nestedHeaders;
+        const nh = this.#nestedHeaders;
         if (!nh || rowIndex >= nh.length) return null;
 
         const row = nh[rowIndex];
@@ -133,6 +153,6 @@ export class HeaderLabelManager {
      * @returns {number}
      */
     getHeaderWidth() {
-        return this.#sheet.rowHeaderWidth ?? CONFIG.HEADER_WIDTH;
+        return this.#rowHeaderWidth ?? CONFIG.HEADER_WIDTH;
     }
 }
