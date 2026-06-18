@@ -718,6 +718,11 @@ export class Sheet {
      * @returns {boolean}
      */
     mergeCells(topRow, topCol, bottomRow, bottomCol) {
+        // 禁止跨不同列类型合并
+        if (!this.#checkColumnTypeConsistency(topCol, bottomCol)) {
+            return false;
+        }
+
         const cmd = new MergeCommand(this.mergeManager, topRow, topCol, bottomRow, bottomCol);
         cmd.redo();
         if (cmd.succeeded) {
@@ -1045,6 +1050,24 @@ export class Sheet {
     /** 获取指定列的类型字符串，默认 'text' */
     getColumnType(col) {
         return this.columnsConfig.get(col)?.type || "text";
+    }
+
+    /**
+     * 检查合并区域内所有列的类型是否一致
+     * 如果存在不同类型列（如 numeric 与 text），则禁止合并
+     *
+     * @param {number} topCol
+     * @param {number} bottomCol
+     * @returns {boolean} true 表示类型一致，允许合并
+     */
+    #checkColumnTypeConsistency(topCol, bottomCol) {
+        const firstType = this.getColumnType(topCol);
+        for (let c = topCol + 1; c <= bottomCol; c++) {
+            if (this.getColumnType(c) !== firstType) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

@@ -1,7 +1,22 @@
+import { CONFIG } from "../../constants/config";
+
 export class MergeManager {
     constructor() {
+        /** @type {Map<number, {topRow:number, topCol:number, bottomRow:number, bottomCol:number, rowSpan:number, colSpan:number}>} */
         this.merges = new Map();
+        /** @type {Map<number, number>} 每个单元格 → 其所属合并区域左上角的 key */
         this.cellMap = new Map();
+    }
+
+    /**
+     * 将 (row, col) 编码为唯一整数 key
+     * 公式：row * MAX_COLS + col，最大约 7×10^11，安全在 Number.MAX_SAFE_INTEGER 内
+     * @param {number} r
+     * @param {number} c
+     * @returns {number}
+     */
+    #encodeKey(r, c) {
+        return r * CONFIG.MAX_COLS + c;
     }
 
     merge(topRow, topCol, bottomRow, bottomCol) {
@@ -13,7 +28,7 @@ export class MergeManager {
             return false;
         }
 
-        const key = `${topRow}:${topCol}`;
+        const key = this.#encodeKey(topRow, topCol);
         const mergeInfo = {
             topRow,
             topCol,
@@ -27,7 +42,7 @@ export class MergeManager {
 
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
-                this.cellMap.set(`${r}:${c}`, key);
+                this.cellMap.set(this.#encodeKey(r, c), key);
             }
         }
 
@@ -44,15 +59,15 @@ export class MergeManager {
     }
 
     unmerge(row, col) {
-        const key = this.cellMap.get(`${row}:${col}`);
-        if (!key) return false;
+        const key = this.cellMap.get(this.#encodeKey(row, col));
+        if (key === undefined) return false;
 
         const info = this.merges.get(key);
         if (!info) return false;
 
         for (let r = info.topRow; r <= info.bottomRow; r++) {
             for (let c = info.topCol; c <= info.bottomCol; c++) {
-                this.cellMap.delete(`${r}:${c}`);
+                this.cellMap.delete(this.#encodeKey(r, c));
             }
         }
 
@@ -61,21 +76,21 @@ export class MergeManager {
     }
 
     getMerge(row, col) {
-        const key = this.cellMap.get(`${row}:${col}`);
-        if (!key) return null;
+        const key = this.cellMap.get(this.#encodeKey(row, col));
+        if (key === undefined) return null;
         return this.merges.get(key) || null;
     }
 
     isTopLeft(row, col) {
-        const key = this.cellMap.get(`${row}:${col}`);
-        if (!key) return false;
-        return key === `${row}:${col}`;
+        const key = this.cellMap.get(this.#encodeKey(row, col));
+        if (key === undefined) return false;
+        return key === this.#encodeKey(row, col);
     }
 
     isMerged(row, col) {
-        const key = this.cellMap.get(`${row}:${col}`);
-        if (!key) return false;
-        return key !== `${row}:${col}`;
+        const key = this.cellMap.get(this.#encodeKey(row, col));
+        if (key === undefined) return false;
+        return key !== this.#encodeKey(row, col);
     }
 
     getAllMerges() {
@@ -134,7 +149,7 @@ export class MergeManager {
             const info = this.merges.get(key);
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
-                    this.cellMap.delete(`${r}:${c}`);
+                    this.cellMap.delete(this.#encodeKey(r, c));
                 }
             }
             this.merges.delete(key);
@@ -178,7 +193,7 @@ export class MergeManager {
             const info = this.merges.get(key);
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
-                    this.cellMap.delete(`${r}:${c}`);
+                    this.cellMap.delete(this.#encodeKey(r, c));
                 }
             }
             this.merges.delete(key);
@@ -232,7 +247,7 @@ export class MergeManager {
             const info = this.merges.get(key);
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
-                    this.cellMap.delete(`${r}:${c}`);
+                    this.cellMap.delete(this.#encodeKey(r, c));
                 }
             }
             this.merges.delete(key);
@@ -281,7 +296,7 @@ export class MergeManager {
             const info = this.merges.get(key);
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
-                    this.cellMap.delete(`${r}:${c}`);
+                    this.cellMap.delete(this.#encodeKey(r, c));
                 }
             }
             this.merges.delete(key);
@@ -329,7 +344,7 @@ export class MergeManager {
             const info = this.merges.get(key);
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
-                    this.cellMap.delete(`${r}:${c}`);
+                    this.cellMap.delete(this.#encodeKey(r, c));
                 }
             }
             this.merges.delete(key);
@@ -379,7 +394,7 @@ export class MergeManager {
             const info = this.merges.get(key);
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
-                    this.cellMap.delete(`${r}:${c}`);
+                    this.cellMap.delete(this.#encodeKey(r, c));
                 }
             }
             this.merges.delete(key);

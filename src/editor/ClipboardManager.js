@@ -147,7 +147,8 @@ export class ClipboardManager {
 
     /**
      * 检查粘贴时源列类型与目标列类型是否一致
-     * 如果存在任何不一致，返回冲突信息；全部一致则返回 null
+     * 仅当目标列明确配置了不同类型时才阻止粘贴；
+     * 目标列无类型配置（默认 text）时允许任意类型粘贴。
      *
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 目标工作表
      * @param {number} targetRow - 目标起始行
@@ -164,11 +165,19 @@ export class ClipboardManager {
         for (let c = 0; c < cols; c++) {
             const srcType = columnTypes[c] || "text";
             const tc = targetCol + c;
-            const targetCellType = sheet.getCellTypeInstance(targetRow, tc);
-            const targetType = targetCellType ? targetCellType.name : "text";
 
-            if (srcType !== targetType) {
-                mismatches.push({ srcCol: this.#data.topCol + c, targetCol: tc, srcType, targetType });
+            // 检查目标列是否有显式类型配置
+            const colConfig = sheet.getColumnConfig(tc);
+            const hasExplicitColType = colConfig?.type != null;
+            const hasCellType = sheet.cellTypes?.has(`${targetRow},${tc}`);
+
+            // 仅当目标列/单元格有显式类型配置且与源类型不同时才拒绝
+            if (hasExplicitColType || hasCellType) {
+                const targetCellType = sheet.getCellTypeInstance(targetRow, tc);
+                const targetType = targetCellType ? targetCellType.name : "text";
+                if (srcType !== targetType) {
+                    mismatches.push({ srcCol: this.#data.topCol + c, targetCol: tc, srcType, targetType });
+                }
             }
         }
 
