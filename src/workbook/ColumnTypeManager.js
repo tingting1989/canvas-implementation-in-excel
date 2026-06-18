@@ -1,21 +1,56 @@
 import { stylePool } from "../styles/index.js";
 import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../types/index.js";
 
+/**
+ * 列类型管理器
+ *
+ * 负责管理单个工作表（Sheet）的列类型体系，包括：
+ * - 列配置的读取与查询（getColumnConfig / getColumnType）
+ * - 列类型实例的创建（getColumnTypeInstance / getCellTypeInstance）
+ * - 列配置的应用（applyColumnsConfig）：将 columns 数组解析到 columnsConfig、colStyles、列宽等
+ * - 单元格值的格式化、验证、解析（委托 ColumnType 实例）
+ *
+ * 类型解析优先级（getCellTypeInstance）：
+ *   单元格级别类型（cellTypes） → 列级别类型（columnsConfig） → 默认 text 类型
+ */
 export class ColumnTypeManager {
+    /** 所属工作表引用 */
     #sheet;
 
+    /**
+     * @param {import("./Sheet.js").Sheet} sheet - 所属工作表实例
+     */
     constructor(sheet) {
         this.#sheet = sheet;
     }
 
+    /**
+     * 获取指定列的配置对象
+     * @param {number} col - 列号
+     * @returns {Object|null} 列配置对象，无配置时返回 null
+     */
     getColumnConfig(col) {
         return this.#sheet.columnsConfig.get(col) || null;
     }
 
+    /**
+     * 获取指定列的类型名称
+     * @param {number} col - 列号
+     * @returns {string} 类型名称（如 "text"、"numeric"、"date"），默认 "text"
+     */
     getColumnType(col) {
         return this.#sheet.columnsConfig.get(col)?.type || "text";
     }
 
+    /**
+     * 检查选区范围内所有列的类型是否一致
+     *
+     * 用于判断多列选区是否可以统一应用某种类型操作（如编辑器选择）。
+     *
+     * @param {number} topCol - 起始列号
+     * @param {number} bottomCol - 结束列号
+     * @returns {boolean} 类型一致返回 true，否则 false
+     */
     checkColumnTypeConsistency(topCol, bottomCol) {
         const firstType = this.getColumnType(topCol);
         for (let c = topCol + 1; c <= bottomCol; c++) {
@@ -24,21 +59,54 @@ export class ColumnTypeManager {
         return true;
     }
 
+    /**
+     * 获取列级别的 ColumnType 实例
+     *
+     * 仅根据列配置（columnsConfig）创建类型实例，不考虑单元格级别覆盖。
+     * 适用于需要列级别类型行为的场景（如列默认样式）。
+     *
+     * @param {number} col - 列号
+     * @returns {import("../types/ColumnType.js").ColumnType} 列类型实例
+     */
     getColumnTypeInstance(col) {
         return getColumnTypeFromConfig(this.#sheet.columnsConfig.get(col));
     }
 
+    /**
+     * 获取单元格级别的 ColumnType 实例
+     *
+     * 解析优先级：单元格类型配置（cellTypes） → 列配置（columnsConfig） → 默认 text
+     * 适用于需要精确单元格类型行为的场景（如格式化、验证、编辑器选择）。
+     *
+     * @param {number} r - 页面行号（pageRow）
+     * @param {number} c - 列号
+     * @returns {import("../types/ColumnType.js").ColumnType} 单元格类型实例
+     */
     getCellTypeInstance(r, c) {
         const realR = this.#sheet.toRealRow(r);
         return resolveCellType(realR, c, this.#sheet.cellTypes, this.#sheet.columnsConfig);
     }
 
+    /**
+     * 应用列配置数组
+     *
+     * 将 columns 配置数组解析并应用到工作表的各个子系统：
+     * - columnsConfig：存储每列的完整配置对象
+     * - rowColManager：设置列宽
+     * - colStyles：设置列样式（通过 stylePool 转为 ID）
+     * - rowColManager：确保禁用/只读列的尺寸已分配
+     *
+     * 支持函数式配置：数组元素可以是函数，接收列号作为参数，返回配置对象。
+     *
+     * @param {Array<Object|Function>} columnsConfig - 列配置数组
+     */
     applyColumnsConfig(columnsConfig) {
         if (!Array.isArray(columnsConfig)) return;
 
         for (let c = 0; c < columnsConfig.length; c++) {
             let config = columnsConfig[c];
 
+            // 支持函数式配置：config 可以是返回配置对象的函数
             if (typeof config === "function") {
                 try {
                     config = config(c);
@@ -47,32 +115,69 @@ export class ColumnTypeManager {
                 }
             }
 
+            // 跳过无效配置
             if (!config || typeof config !== "object") continue;
 
+            // 存储列配置到 columnsConfig Map
             this.#sheet.columnsConfig.set(c, config);
 
+            // 应用列宽配置
             if (config.width != null) {
                 this.#sheet.rowColManager.setColWidth(c, config.width);
             }
 
+            // 应用列样式配置，通过 stylePool 去重转为 ID 存储
             if (config.style) {
                 this.#sheet.colStyles.set(c, stylePool.getStyleId(config.style));
             }
 
+            // 禁用/只读列需要确保行列表尺寸已分配，以便渲染禁用状态
             if (config.disabled === true || config.readOnly === true) {
                 this.#sheet.rowColManager.ensureSize(1, c + 1);
             }
         }
     }
 
+    /**
+     * 格式化单元格值用于显示
+     *
+     * 委托 ColumnType.format() 将原始值转为显示文本。
+     * 例如：数字类型添加千分位，日期类型按模式格式化。
+     *
+     * @param {number} r - 页面行号
+     * @param {number} c - 列号
+     * @param {*} value - 原始值
+     * @returns {string} 格式化后的显示文本
+     */
     formatCellValue(r, c, value) {
         return formatValue(this.getCellTypeInstance(r, c), value);
     }
 
+    /**
+     * 验证单元格值是否有效
+     *
+     * 委托 ColumnType.validate() 和列配置中的 validator 进行双重验证。
+     *
+     * @param {number} r - 页面行号
+     * @param {number} c - 列号
+     * @param {*} value - 待验证的值
+     * @returns {boolean|string} true 表示有效，false 或错误信息字符串表示无效
+     */
     validateCellValue(r, c, value) {
         return validateValue(this.getCellTypeInstance(r, c), value, this.#sheet.columnsConfig.get(c));
     }
 
+    /**
+     * 解析用户输入为原始值
+     *
+     * 委托 ColumnType.parse() 将用户输入的字符串转为对应类型的值。
+     * 例如：数字类型将 "123" 转为 123，日期类型将 "2024-01-15" 转为 Date。
+     *
+     * @param {number} r - 页面行号
+     * @param {number} c - 列号
+     * @param {string} input - 用户输入的原始字符串
+     * @returns {*} 解析后的值
+     */
     parseCellValue(r, c, input) {
         return parseValue(this.getCellTypeInstance(r, c), input);
     }

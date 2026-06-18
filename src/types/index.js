@@ -128,7 +128,6 @@ export function resolveCellType(r, c, cellTypes, columnsConfig) {
 
     // 3. 默认 text 类型
     return registry.get("text");
-
 }
 
 export function formatValue(cellType, value) {
