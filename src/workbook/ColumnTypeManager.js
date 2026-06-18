@@ -1,5 +1,5 @@
 import { stylePool } from "../styles/index.js";
-import { getColumnTypeFromConfig, resolveCellType } from "../types/index.js";
+import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../types/index.js";
 
 export class ColumnTypeManager {
     #sheet;
@@ -66,33 +66,14 @@ export class ColumnTypeManager {
     }
 
     formatCellValue(r, c, value) {
-        if (value === undefined || value === null) return "";
-        const cellType = this.getCellTypeInstance(r, c);
-        return cellType ? cellType.format(value) : String(value);
+        return formatValue(this.getCellTypeInstance(r, c), value);
     }
 
     validateCellValue(r, c, value) {
-        const cellType = this.getCellTypeInstance(r, c);
-        if (cellType) {
-            const result = cellType.validate(value);
-            if (result !== true) return result;
-        }
-
-        const colConfig = this.#sheet.columnsConfig.get(c);
-        if (colConfig && typeof colConfig.validator === "function") {
-            try {
-                return colConfig.validator(value);
-            } catch {
-                return false;
-            }
-        }
-
-        return true;
+        return validateValue(this.getCellTypeInstance(r, c), value, this.#sheet.columnsConfig.get(c));
     }
 
     parseCellValue(r, c, input) {
-        if (input === "" || input === undefined || input === null) return "";
-        const cellType = this.getCellTypeInstance(r, c);
-        return cellType ? cellType.parse(input) : input;
+        return parseValue(this.getCellTypeInstance(r, c), input);
     }
 }

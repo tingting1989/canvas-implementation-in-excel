@@ -128,6 +128,30 @@ export function resolveCellType(r, c, cellTypes, columnsConfig) {
 
     // 3. 默认 text 类型
     return registry.get("text");
+
 }
 
-export { ColumnType, TextColumnType, NumericColumnType, DateColumnType, BooleanColumnType, SelectColumnType };
+export function formatValue(cellType, value) {
+    if (value === undefined || value === null) return "";
+    return cellType ? cellType.format(value) : String(value);
+}
+
+export function parseValue(cellType, input) {
+    if (input === "" || input === undefined || input === null) return "";
+    return cellType ? cellType.parse(input) : input;
+}
+
+export function validateValue(cellType, value, colConfig) {
+    if (cellType) {
+        const result = cellType.validate(value);
+        if (result !== true) return result;
+    }
+    if (colConfig && typeof colConfig.validator === "function") {
+        try {
+            return colConfig.validator(value);
+        } catch {
+            return false;
+        }
+    }
+    return true;
+}

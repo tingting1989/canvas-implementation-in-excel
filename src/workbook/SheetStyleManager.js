@@ -12,7 +12,9 @@ export class SheetStyleManager {
         this.#sheet = sheet;
     }
 
-    get defaultStyleId() { return this.#defaultStyleId; }
+    get defaultStyleId() {
+        return this.#defaultStyleId;
+    }
 
     invalidateCache() {
         this.#styleCacheVersion++;
