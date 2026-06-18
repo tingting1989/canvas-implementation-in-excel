@@ -14,7 +14,8 @@ import {
 } from "../model/index.js";
 import { RowColManager } from "../core/RowColManager.js";
 import { CONFIG } from "../constants/config";
-import { getColumnTypeFromConfig, resolveCellType } from "../types/index.js";
+import { SheetStyleManager } from "./SheetStyleManager.js";
+import { ColumnTypeManager } from "./ColumnTypeManager.js";
 
 /**
  * 工作表
@@ -37,22 +38,20 @@ import { getColumnTypeFromConfig, resolveCellType } from "../types/index.js";
 export class Sheet {
     /** 渲染引擎引用（由 Workbook.initRender 时注入） */
     #renderEngine = null;
-    /** 工作表默认样式 ID（覆盖全局 DEFAULT_STYLE_ID） */
-    #defaultStyleId = DEFAULT_STYLE_ID;
-    /** resolveStyle 缓存：key = "r,c" → value = 合并后的样式对象 */
-    #styleCache = new Map();
-    /** 样式缓存版本号，每次样式变更递增，渲染帧内使用版本号判断是否过期 */
-    #styleCacheVersion = 0;
     /** 批量模式：暂存子命令 */
     #batchCommands = [];
     /** 是否处于批量模式 */
     #inBatch = false;
-    /** 当前渲染帧的缓存版本，帧内相同版本直接命中缓存 */
-    #styleCacheFrameVersion = -1;
+    /** 样式缓存版本号，供 #invalidateAll 递增 */
+    #styleCacheVersion = 0;
     /** 行同步器 */
     #rowSync = null;
     /** 列同步器 */
     #colSync = null;
+    /** 样式管理器 */
+    #styleManager = null;
+    /** 列类型管理器 */
+    #typeManager = null;
 
     /**
      * @param {string} name - 工作表名称
@@ -150,6 +149,8 @@ export class Sheet {
 
         this.#rowSync = new RowColSync(this, "row");
         this.#colSync = new RowColSync(this, "col");
+        this.#styleManager = new SheetStyleManager(this);
+        this.#typeManager = new ColumnTypeManager(this);
     }
 
     // ============================================================
@@ -198,16 +199,13 @@ export class Sheet {
     #invalidateAll() {
         this.#renderEngine?.invalidateAll?.();
         this.#styleCacheVersion++;
+        this.#styleManager.invalidateCache();
     }
 
-    /** 标记指定单元格需要重绘 */
     #invalidateCell(r, c) {
-        // r 可能是真实行号（realR），需要转为页面行号
-        // TileRenderer.invalidateCell → getRowY 在分页模式下期望页面行号
         const pageRow = this.toPageRow(r);
         this.#renderEngine?.invalidateCell?.(pageRow, c);
-        this.#styleCache.delete(`${r},${c}`);
-        this.#styleCacheVersion++;
+        this.#styleManager.invalidateCache();
     }
 
     // ============================================================
@@ -298,119 +296,57 @@ export class Sheet {
     }
 
     // ============================================================
-    // 样式操作
+    // 样式操作（委托 SheetStyleManager）
     // ============================================================
 
     /** 设置行级样式 */
     setRowStyle(row, styleId) {
-        this.rowStyles.set(row, styleId);
+        this.#styleManager.setRowStyle(row, styleId);
         this.#invalidateAll();
     }
 
     /** 设置列级样式 */
     setColStyle(col, styleId) {
-        this.colStyles.set(col, styleId);
+        this.#styleManager.setColStyle(col, styleId);
         this.#invalidateAll();
     }
 
     /** 设置工作表默认样式 */
     setDefaultStyle(styleObj) {
-        this.#defaultStyleId = stylePool.getStyleId(styleObj);
+        this.#styleManager.setDefaultStyle(styleObj);
         this.#invalidateAll();
     }
 
     /** @returns {object} 默认样式对象 */
     getDefaultStyle() {
-        return stylePool.getStyle(this.#defaultStyleId);
+        return this.#styleManager.getDefaultStyle();
     }
 
-    /**
-     * 设置单个单元格样式（保留原有值，仅更新样式）
-     * @param {number} r - 行号
-     * @param {number} c - 列号
-     * @param {object} styleObj
-     */
     setCellStyle(r, c, styleObj) {
-        const realR = this.toRealRow(r);
-        this.rowColManager.ensureSize(realR + 1, c + 1);
-        const cell = this.cellStore.get(realR, c);
-        const currentStyleId = cell?.styleId || 0;
-        const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
-        const mergedStyle = { ...currentStyle, ...styleObj };
-        const newStyleId = stylePool.getStyleId(mergedStyle);
-        const value = cell?.value ?? "";
-        this.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
+        this.#styleManager.setCellStyle(r, c, styleObj);
         this.#invalidateAll();
     }
 
-    /** 清除单元格样式，保留值和禁用状态 */
     clearCellStyle(r, c) {
-        const realR = this.toRealRow(r);
-        const cell = this.cellStore.get(realR, c);
-        if (!cell || cell.styleId === 0) return;
-        this.cellStore.set(realR, c, new Cell(cell.value, 0, cell.disabled));
+        this.#styleManager.clearCellStyle(r, c);
         this.#invalidateAll();
     }
 
-    /** 清除行级样式 */
     clearRowStyle(row) {
-        if (!this.rowStyles.has(row)) return;
-        this.rowStyles.delete(row);
+        this.#styleManager.clearRowStyle(row);
         this.#invalidateAll();
     }
 
-    /** 清除列级样式 */
     clearColStyle(col) {
-        if (!this.colStyles.has(col)) return;
-        this.colStyles.delete(col);
+        this.#styleManager.clearColStyle(col);
         this.#invalidateAll();
     }
 
-    /**
-     * 批量设置选区样式（高性能版本）
-     *
-     * 优化策略：
-     * 1. 整行覆盖 → 使用 rowStyles（O(行数)）
-     * 2. 整列覆盖 → 使用 colStyles（O(列数)）
-     * 3. 混合选区 → 逐单元格设置，仅调用一次 invalidateAll
-     *
-     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range
-     * @param {object} styleObj
-     */
     setRangeStyle(range, styleObj) {
-        const styleId = stylePool.getStyleId(styleObj);
-        const { topRow, topCol, bottomRow, bottomCol } = range;
-
-        // 整行覆盖
-        if (topCol === 0 && bottomCol >= this.rowColManager.colCount - 1) {
-            for (let r = topRow; r <= bottomRow; r++) {
-                this.rowStyles.set(this.toRealRow(r), styleId);
-            }
-            this.#invalidateAll();
-            return;
-        }
-
-        // 整列覆盖
-        if (topRow === 0 && bottomRow >= this.rowColManager.rowCount - 1) {
-            for (let c = topCol; c <= bottomCol; c++) {
-                this.colStyles.set(c, styleId);
-            }
-            this.#invalidateAll();
-            return;
-        }
-
-        // 混合选区
-        for (let r = topRow; r <= bottomRow; r++) {
-            for (let c = topCol; c <= bottomCol; c++) {
-                if (!this.isDisabled(r, c)) {
-                    this.setCellStyle(r, c, styleObj);
-                }
-            }
-        }
+        this.#styleManager.setRangeStyle(range, styleObj);
         this.#invalidateAll();
     }
 
-    /** 获取单元格最终解析样式 */
     getCellStyle(r, c) {
         return this.resolveStyle(r, c);
     }
@@ -606,62 +542,9 @@ export class Sheet {
     // 样式解析（核心：带帧级缓存）
     // ============================================================
 
-    /**
-     * 解析单元格最终样式（带帧级缓存）
-     *
-     * 优先级：默认样式 < 列样式 < 行样式 < 单元格样式（后者覆盖前者）
-     *
-     * 缓存策略：
-     * - 同一渲染帧内，相同 (r,c) 直接返回缓存结果，避免重复对象展开
-     * - 样式变更时 #styleCacheVersion 递增，下一帧自动失效
-     * - 帧切换时清空缓存，防止内存泄漏
-     *
-     * @param {number} r - 行号
-     * @param {number} c - 列号
-     * @returns {object} 合并后的样式对象
-     */
+    /** 解析单元格最终样式（委托 SheetStyleManager） */
     resolveStyle(r, c) {
-        const realR = this.toRealRow(r);
-        const key = `${realR},${c}`;
-
-        // 帧级缓存命中
-        if (this.#styleCacheFrameVersion === this.#styleCacheVersion) {
-            const cached = this.#styleCache.get(key);
-            if (cached !== undefined) return cached;
-        } else {
-            this.#styleCacheFrameVersion = this.#styleCacheVersion;
-            this.#styleCache.clear();
-        }
-
-        const base = stylePool.getStyle(this.#defaultStyleId);
-        const colStyleId = this.colStyles.get(c);
-        const rowStyleId = this.rowStyles.get(realR);
-        const cell = this.cellStore.get(realR, c);
-        const cellStyleId = cell?.styleId;
-
-        // 快速路径：无任何额外样式 → 直接返回 base
-        if (!colStyleId && !rowStyleId && !cellStyleId && !this.cellsFn && !this.columnsConfig.get(c)?.style) {
-            this.#styleCache.set(key, base);
-            return base;
-        }
-
-        let style = base;
-        if (colStyleId) style = { ...style, ...stylePool.getStyle(colStyleId) };
-        if (rowStyleId) style = { ...style, ...stylePool.getStyle(rowStyleId) };
-        if (cellStyleId) style = { ...style, ...stylePool.getStyle(cellStyleId) };
-
-        // 类型系统默认样式（如 numeric 右对齐、date 居中、boolean 居中等）
-        const cellType = this.getCellTypeInstance(r, c);
-        if (cellType) {
-            style = cellType.getDefaultStyle(style);
-        }
-
-        // cellsFn 动态属性（优先级最高）
-        const cellProps = this.resolveCellProperties(r, c);
-        if (cellProps?.style) style = { ...style, ...cellProps.style };
-
-        this.#styleCache.set(key, style);
-        return style;
+        return this.#styleManager.resolveStyle(r, c);
     }
 
     // ============================================================
@@ -895,157 +778,48 @@ export class Sheet {
     }
 
     // ============================================================
-    // 列类型配置
+    // 列类型配置（委托 ColumnTypeManager）
     // ============================================================
 
-    /** 获取指定列的配置 */
     getColumnConfig(col) {
-        return this.columnsConfig.get(col) || null;
+        return this.#typeManager.getColumnConfig(col);
     }
 
-    /** 获取指定列的类型字符串，默认 'text' */
     getColumnType(col) {
-        return this.columnsConfig.get(col)?.type || "text";
+        return this.#typeManager.getColumnType(col);
     }
 
-    /**
-     * 检查合并区域内所有列的类型是否一致
-     * 如果存在不同类型列（如 numeric 与 text），则禁止合并
-     *
-     * @param {number} topCol
-     * @param {number} bottomCol
-     * @returns {boolean} true 表示类型一致，允许合并
-     */
     #checkColumnTypeConsistency(topCol, bottomCol) {
-        const firstType = this.getColumnType(topCol);
-        for (let c = topCol + 1; c <= bottomCol; c++) {
-            if (this.getColumnType(c) !== firstType) {
-                return false;
-            }
-        }
-        return true;
+        return this.#typeManager.checkColumnTypeConsistency(topCol, bottomCol);
     }
 
-    /**
-     * 获取指定列的 ColumnType 实例（仅列级别，忽略单元格级别）
-     * @param {number} col
-     * @returns {import("../types/ColumnType.js").ColumnType}
-     */
     getColumnTypeInstance(col) {
-        return getColumnTypeFromConfig(this.columnsConfig.get(col));
+        return this.#typeManager.getColumnTypeInstance(col);
     }
 
-    /**
-     * 获取指定单元格的类型实例（ColumnType）
-     *
-     * 优先级：cellTypes Map > columnsConfig Map > 默认 text 类型
-     * 这是所有格式化/验证/解析/样式路由的统一入口。
-     *
-     * @param {number} r - 行号
-     * @param {number} c - 列号
-     * @returns {import("../types/ColumnType.js").ColumnType}
-     */
     getCellTypeInstance(r, c) {
-        const realR = this.toRealRow(r);
-        return resolveCellType(realR, c, this.cellTypes, this.columnsConfig);
+        return this.#typeManager.getCellTypeInstance(r, c);
     }
 
-    /**
-     * 应用 columns 配置
-     * 遍历列配置数组，逐列应用属性
-     *
-     * @param {Array<Function|object>} columnsConfig
-     *   数组元素为对象：直接作为该列配置
-     *   数组元素为函数：(col) => ColumnConfig，动态计算列配置
-     */
     applyColumnsConfig(columnsConfig) {
-        if (!Array.isArray(columnsConfig)) return;
-
-        for (let c = 0; c < columnsConfig.length; c++) {
-            let config = columnsConfig[c];
-
-            if (typeof config === "function") {
-                try {
-                    config = config(c);
-                } catch {
-                    continue;
-                }
-            }
-
-            if (!config || typeof config !== "object") continue;
-
-            this.columnsConfig.set(c, config);
-
-            if (config.width != null) {
-                this.rowColManager.setColWidth(c, config.width);
-            }
-
-            if (config.style) {
-                this.colStyles.set(c, stylePool.getStyleId(config.style));
-            }
-
-            if (config.disabled === true || config.readOnly === true) {
-                this.rowColManager.ensureSize(1, c + 1);
-            }
-        }
-
+        this.#typeManager.applyColumnsConfig(columnsConfig);
         this.#invalidateAll();
     }
 
     // ============================================================
-    // 类型系统委托：格式化 / 验证 / 解析
+    // 类型系统委托：格式化 / 验证 / 解析（委托 ColumnTypeManager）
     // ============================================================
 
-    /**
-     * 格式化单元格显示值
-     * @param {number} r - 行号
-     * @param {number} c - 列号
-     * @param {*} value - 原始值
-     * @returns {string}
-     */
     formatCellValue(r, c, value) {
-        if (value === undefined || value === null) return "";
-        const cellType = this.getCellTypeInstance(r, c);
-        return cellType ? cellType.format(value) : String(value);
+        return this.#typeManager.formatCellValue(r, c, value);
     }
 
-    /**
-     * 验证单元格值（类型系统 + 自定义 validator）
-     * @param {number} r - 行号
-     * @param {number} c - 列号
-     * @param {*} value
-     * @returns {boolean|string}
-     */
     validateCellValue(r, c, value) {
-        const cellType = this.getCellTypeInstance(r, c);
-        if (cellType) {
-            const result = cellType.validate(value);
-            if (result !== true) return result;
-        }
-
-        const colConfig = this.columnsConfig.get(c);
-        if (colConfig && typeof colConfig.validator === "function") {
-            try {
-                return colConfig.validator(value);
-            } catch {
-                return false;
-            }
-        }
-
-        return true;
+        return this.#typeManager.validateCellValue(r, c, value);
     }
 
-    /**
-     * 解析用户输入值
-     * @param {number} r - 行号
-     * @param {number} c - 列号
-     * @param {string} input - 用户输入的原始字符串
-     * @returns {*}
-     */
     parseCellValue(r, c, input) {
-        if (input === "" || input === undefined || input === null) return "";
-        const cellType = this.getCellTypeInstance(r, c);
-        return cellType ? cellType.parse(input) : input;
+        return this.#typeManager.parseCellValue(r, c, input);
     }
 }
 
@@ -1067,17 +841,17 @@ class RowColSync {
         this.#axis = axis;
     }
 
-    get #headers() { return this.#axis === "row" ? this.#sheet.rowHeaders : this.#sheet.colHeaders; }
+    get #headers() {
+        return this.#axis === "row" ? this.#sheet.rowHeaders : this.#sheet.colHeaders;
+    }
     get #maps() {
-        return this.#axis === "row"
-            ? [this.#sheet.rowStyles]
-            : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
+        return this.#axis === "row" ? [this.#sheet.rowStyles] : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
     }
 
     insert(atIndex) {
         this.#insertArrayAt(this.#headers, atIndex);
-        for (const map of this.#maps) this.#remapMapKeys(map, k => k >= atIndex ? k + 1 : k);
-        this.#remapCellTypesKeys(k => k >= atIndex ? k + 1 : k);
+        for (const map of this.#maps) this.#remapMapKeys(map, (k) => (k >= atIndex ? k + 1 : k));
+        this.#remapCellTypesKeys((k) => (k >= atIndex ? k + 1 : k));
         if (this.#axis === "col") this.#insertNestedHeaderColumn(atIndex);
     }
 
@@ -1085,16 +859,16 @@ class RowColSync {
         this.#deleteArrayAt(this.#headers, atIndex);
         for (const map of this.#maps) {
             map.delete(atIndex);
-            this.#remapMapKeys(map, k => k > atIndex ? k - 1 : k);
+            this.#remapMapKeys(map, (k) => (k > atIndex ? k - 1 : k));
         }
-        this.#remapCellTypesKeys(k => k === atIndex ? -1 : k > atIndex ? k - 1 : k, true);
+        this.#remapCellTypesKeys((k) => (k === atIndex ? -1 : k > atIndex ? k - 1 : k), true);
         if (this.#axis === "col") this.#deleteNestedHeaderColumn(atIndex);
     }
 
     move(from, to) {
         this.#shiftArray(this.#headers, from, to);
-        for (const map of this.#maps) this.#remapMapKeys(map, k => this.#calcShiftedIndex(k, from, to));
-        this.#remapCellTypesKeys(k => this.#calcShiftedIndex(k, from, to));
+        for (const map of this.#maps) this.#remapMapKeys(map, (k) => this.#calcShiftedIndex(k, from, to));
+        this.#remapCellTypesKeys((k) => this.#calcShiftedIndex(k, from, to));
         if (this.#axis === "col") this.#shiftNestedHeaders(from, to);
     }
 
