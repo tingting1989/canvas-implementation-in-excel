@@ -8,7 +8,7 @@
  *
  * 坐标系说明：
  * - rowStart / colStart：Chunk 在逻辑坐标系中的起始行列号（含），例如 Chunk(0, 0) 覆盖行 [0, 1023]、列 [0, 255]。
- * - 内部存储的 key 为相对偏移量 "rowOffset:colOffset"，范围 [0, CHUNK_ROW_SIZE-1] × [0, CHUNK_COL_SIZE-1]。
+ * - 内部存储的 key 为整数编码 rowOffset * CHUNK_COL_SIZE + colOffset，范围 [0, 262143]。
  *
  * 内存特性：
  * - 未写入数据的单元格不占用内存（Map 中没有对应 key）。
@@ -22,6 +22,8 @@
  *   这导致 insertRow/deleteRow 等操作在受影响 Chunk 内仍需遍历全部 Cell（而非仅遍历目标行下方的 Cell）。
  *   优化方向：可考虑内部改用按行分组的二级 Map 或有序结构，以支持按行范围查询。
  */
+import { CONFIG } from "../../constants/config";
+
 export class Chunk {
     /**
      * @param {number} rowStart - Chunk 在逻辑坐标系中的起始行号（含）
@@ -34,24 +36,25 @@ export class Chunk {
         this.colStart = colStart;
         /**
          * 单元格存储 Map
-         * key: "rowOffset:colOffset"（相对于 Chunk 起始位置的偏移量）
+         * key: 整数编码 rowOffset * CHUNK_COL_SIZE + colOffset
          * value: Cell 实例
-         * @type {Map<string, import("../Cell.js").Cell>}
+         * @type {Map<number, import("../Cell.js").Cell>}
          */
         this.cells = new Map();
     }
 
     /**
-     * 将逻辑坐标 (row, col) 转换为 Chunk 内部的相对偏移量 key
+     * 将逻辑坐标 (row, col) 转换为 Chunk 内部的整数 key
      *
-     * 示例：Chunk(1024, 0) 中，逻辑行 1050 → 偏移量 26，key = "26:0"
+     * 编码公式：rowOffset * CHUNK_COL_SIZE + colOffset
+     * 示例：Chunk(1024, 0) 中，逻辑行 1050, 列 5 → key = 26*256 + 5 = 6661
      *
      * @param {number} row - 逻辑行号
      * @param {number} col - 逻辑列号
-     * @returns {string} 格式 "rowOffset:colOffset"
+     * @returns {number} 整数编码
      */
     #key(row, col) {
-        return `${row - this.rowStart}:${col - this.colStart}`;
+        return (row - this.rowStart) * CONFIG.CHUNK_COL_SIZE + (col - this.colStart);
     }
 
     /**
@@ -91,7 +94,8 @@ export class Chunk {
     /**
      * 遍历 Chunk 内所有已存储的单元格（生成器）
      *
-     * 将内部相对偏移量 key 还原为逻辑坐标后 yield。
+     * 将内部整数 key 解码为逻辑坐标后 yield。
+     * 解码公式：rowOffset = key / CHUNK_COL_SIZE, colOffset = key % CHUNK_COL_SIZE
      * 每次 yield 一个对象 { row, col, cell }，其中 row/col 为逻辑坐标。
      *
      * 性能注意：此方法遍历 Chunk 内所有 Cell，不提供按行列范围过滤的能力。
@@ -101,8 +105,10 @@ export class Chunk {
      * @yields {{row: number, col: number, cell: import("../Cell.js").Cell}}
      */
     *iterate() {
+        const colSize = CONFIG.CHUNK_COL_SIZE;
         for (const [key, cell] of this.cells) {
-            const [rowOffset, colOffset] = key.split(":").map(Number);
+            const rowOffset = (key / colSize) | 0;
+            const colOffset = key % colSize;
             yield {
                 row: this.rowStart + rowOffset,
                 col: this.colStart + colOffset,

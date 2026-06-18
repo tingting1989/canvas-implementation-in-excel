@@ -86,6 +86,8 @@ export class ScrollManager {
     #hBar = null;
     #vBar = null;
     #corner = null;
+    /** rAF 合并标志：scroll 回调是否已在本帧调度 */
+    #pendingScrollCallback = false;
 
     constructor(wrap, canvas) {
         this.wrap = wrap;
@@ -213,14 +215,23 @@ export class ScrollManager {
             const dy = e.deltaY || 0;
             this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, this.#scrollX + dx));
             this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, this.#scrollY + dy));
-            if (this.#onScrollCallback) {
-                this.#onScrollCallback();
-            }
-            if (this.#onAfterScroll) {
-                this.#onAfterScroll();
-            }
+            this.#scheduleScrollCallbacks();
         };
         this.wrap.addEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler, { passive: false });
+    }
+
+    /**
+     * 通过 rAF 合并滚动回调，确保同一帧内只执行一次
+     * 滚动位置本身已立即更新，回调延迟到下一帧取最新值
+     */
+    #scheduleScrollCallbacks() {
+        if (this.#pendingScrollCallback) return;
+        this.#pendingScrollCallback = true;
+        requestAnimationFrame(() => {
+            this.#pendingScrollCallback = false;
+            if (this.#onScrollCallback) this.#onScrollCallback();
+            if (this.#onAfterScroll) this.#onAfterScroll();
+        });
     }
 
     updateScrollBounds(totalW, totalH, viewW, viewH, headerH = CONFIG.HEADER_HEIGHT, headerW = CONFIG.HEADER_WIDTH) {
@@ -237,8 +248,7 @@ export class ScrollManager {
     setScrollPosition(x, y) {
         this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, x));
         this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, y));
-        if (this.#onScrollCallback) this.#onScrollCallback();
-        if (this.#onAfterScroll) this.#onAfterScroll();
+        this.#scheduleScrollCallbacks();
     }
 
     updateScrollbars(viewW, viewH) {
@@ -306,6 +316,7 @@ export class ScrollManager {
             document.removeEventListener("mouseup", this.#dragEndHandler);
             this.#dragEndHandler = null;
         }
+        this.#pendingScrollCallback = false;
         if (this.#hBar && this.#hBar.parentElement) {
             this.#hBar.parentElement.removeChild(this.#hBar);
         }

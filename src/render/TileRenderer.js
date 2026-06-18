@@ -354,7 +354,8 @@ export class TileRenderer {
             const fullWidth = ctx.measureText(displayValue).width;
             if (fullWidth > maxTextWidth) {
                 const suffix = sheet.textOverflowEllipsis ? "..." : "";
-                let lo = 0, hi = displayValue.length;
+                let lo = 0,
+                    hi = displayValue.length;
                 while (lo < hi) {
                     const mid = Math.ceil((lo + hi) / 2);
                     if (ctx.measureText(displayValue.slice(0, mid) + suffix).width > maxTextWidth) {
