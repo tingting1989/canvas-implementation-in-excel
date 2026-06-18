@@ -1,14 +1,14 @@
-﻿import { Workbook } from "./workbook/Workbook.js";
-import { stylePool } from "./styles/index.js";
-import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
-import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
-import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
-import { CopyPastePlugin } from "./plugins/CopyPastePlugin.js";
-import { ExportFilePlugin } from "./plugins/ExportFilePlugin.js";
-import { PaginationPlugin } from "./plugins/PaginationPlugin.js";
-import { HiddenColumnsPlugin } from "./plugins/HiddenColumnsPlugin.js";
-import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
-import { HOOKS } from "./constants/hookNames.js";
+﻿import {Workbook} from "./workbook/Workbook.js";
+import {stylePool} from "./styles/index.js";
+import {AutoFillPlugin} from "./plugins/AutoFillPlugin.js";
+import {ContextMenuPlugin} from "./plugins/ContextMenuPlugin.js";
+import {ColumnMovePlugin} from "./plugins/ColumnMovePlugin.js";
+import {CopyPastePlugin} from "./plugins/CopyPastePlugin.js";
+import {ExportFilePlugin} from "./plugins/ExportFilePlugin.js";
+import {PaginationPlugin} from "./plugins/PaginationPlugin.js";
+import {HiddenColumnsPlugin} from "./plugins/HiddenColumnsPlugin.js";
+import {RowMovePlugin} from "./plugins/RowMovePlugin.js";
+import {HOOKS} from "./constants/hookNames.js";
 
 const initApp = () => {
     console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -29,15 +29,17 @@ const initApp = () => {
             ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
         ],
         colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+        // 配置 rowHeader 宽度
         rowHeaderWidth: 120,
+        rowHeights:  [30, 50, 90],
         rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
         // 嵌套表头示例（参考 Handsontable nestedHeaders API）
         nestedHeaders: [
             [
-                { label: "基本信息", colspan: 2 },
-                { label: "工作信息", colspan: 4 },
+                {label: "基本信息", colspan: 2},
+                {label: "工作信息", colspan: 4},
             ],
-            ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+            ["姓名", "年龄", "城市", "部门", {label: "薪酬", colspan: 2}],
             ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
         ],
         // width: 400,
@@ -49,7 +51,7 @@ const initApp = () => {
         plugins: ["autoFill", "contextMenu", "columnMove", "copyPaste", "pagination", "exportFile", "hiddenColumns", "rowMove"],
         pluginOptions: {
             //  pagination: { pageSize: 50 },
-            hiddenColumns: { columns: [2] },
+            hiddenColumns: {columns: [2]},
             contextMenu: {
                 enabled: true,
                 customItems: [
@@ -58,7 +60,7 @@ const initApp = () => {
                         // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
                         contexts: ["cell", "rowHeader"],
                         action: (row, col, sheet) => {
-                            sheet.setRowStyle(row, stylePool.getStyleId({ backgroundColor: "yellow" }));
+                            sheet.setRowStyle(row, stylePool.getStyleId({backgroundColor: "yellow"}));
                             wb.render();
                         },
                     },
@@ -67,7 +69,7 @@ const initApp = () => {
                         contexts: ["cell"],
                         action: (row, col, sheet) => {
                             const range = sheet.selection.getRange();
-                            const styleObj = { backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724" };
+                            const styleObj = {backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724"};
                             for (let r = range.topRow; r <= range.bottomRow; r++) {
                                 for (let c = range.topCol; c <= range.bottomCol; c++) {
                                     if (!sheet.isDisabled(r, c)) {
@@ -93,7 +95,7 @@ const initApp = () => {
                             wb.render();
                         },
                     },
-                    { type: "separator" },
+                    {type: "separator"},
                     {
                         label: "导出选中区域",
                         action: (row, col, sheet) => {
@@ -108,31 +110,31 @@ const initApp = () => {
         },
         conditionalStyles: [
             {
-                range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
+                range: {sr: 0, sc: 0, er: 10000000, ec: 25},
                 condition: (v) => typeof v === "number" && v > 25,
-                style: { backgroundColor: "#ffcccc" },
+                style: {backgroundColor: "#ffcccc"},
             },
         ],
         cell: [
-            { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-            { row: 1, col: 3, disabled: true },
-            { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
+            {row: 0, col: 0, style: {backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center"}},
+            {row: 1, col: 3, disabled: true},
+            {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
         ],
         cells: (row, col) => {
             if (row === 0) {
-                return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
+                return {style: {fontWeight: "bold", backgroundColor: "#e8f4fd"}};
             }
             if (col === 0 && row > 0) {
-                return { style: { textAlign: "right", fontWeight: "bold" } };
+                return {style: {textAlign: "right", fontWeight: "bold"}};
             }
         },
         columns: [
-            { type: "text", width: 120, style: { textAlign: "left" } },
-            { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-            { type: "text", width: 100 },
-            { type: "text", width: 100 },
-            { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-            { type: "date", width: 300 },
+            {type: "text", width: 120, style: {textAlign: "left"}},
+            {type: "numeric", width: 80, style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
+            {type: "text", width: 100},
+            {type: "text", width: 100},
+            {type: "numeric", width: 100, style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
+            {type: "date", width: 300},
         ],
         // 统一默认样式 — 所有单元格的基础字体
         defaultStyle: {
