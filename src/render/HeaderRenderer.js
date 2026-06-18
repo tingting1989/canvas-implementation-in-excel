@@ -15,6 +15,10 @@ const INDICATOR_HALF = 1;
 const HEADER_TEXT_COLOR = "#555";
 /** 幽灵行头/列头文字颜色 */
 const GHOST_TEXT_COLOR = "#fff";
+/** 列头文字水平内边距（px） */
+const HEADER_COL_PADDING = 4;
+/** 行头文字水平内边距（px） */
+const HEADER_ROW_PADDING = 6;
 
 /**
  * 表头渲染器
@@ -125,7 +129,7 @@ export class HeaderRenderer {
                 const highlighted = c >= range.topCol && c <= range.bottomCol;
 
                 this.#drawHeaderCell(ctx, x, 0, w, rowH, isSource, highlighted, defaultStyle);
-                this.#drawHeaderText(ctx, sheet.getColHeader(c), x + 4, rowH - 8, null, headerFont);
+                this.#drawHeaderText(ctx, sheet.getColHeader(c), x + HEADER_COL_PADDING, rowH - 8, null, headerFont);
                 this.#drawSeparator(ctx, x + w, 0, x + w, rowH);
             }
         }
@@ -206,7 +210,7 @@ export class HeaderRenderer {
 
                 // 文字在跨列区域内居中
                 if (label) {
-                    this.#drawHeaderText(ctx, label, x + 4, layerY + rowH - 8, null, headerFont);
+                    this.#drawHeaderText(ctx, label, x + HEADER_COL_PADDING, layerY + rowH - 8, null, headerFont);
                 }
 
                 // 绘制该层表头右边界和底部分隔线
@@ -253,13 +257,13 @@ export class HeaderRenderer {
 
             this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, defaultStyle);
 
-            // 裁剪区域防止文字溢出（左右各留 6px 内边距）
-            const textMaxW = headerW - 12;
+            // 裁剪区域防止文字溢出
+            const textMaxW = headerW - HEADER_ROW_PADDING * 2;
             ctx.save();
             ctx.beginPath();
-            ctx.rect(6, y, textMaxW, h);
+            ctx.rect(HEADER_ROW_PADDING, y, textMaxW, h);
             ctx.clip();
-            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4, null, headerFont, textMaxW);
+            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), HEADER_ROW_PADDING, y + h / 2 + 4, null, headerFont, textMaxW);
             ctx.restore();
 
             this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
@@ -322,7 +326,7 @@ export class HeaderRenderer {
 
         ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(ghostLeft, 0, state.colW, headerH);
-        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + 4, headerH - 8, GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + HEADER_COL_PADDING, headerH - 8, GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
             const indicatorX = this.#calcMoveIndicatorX(rc, state.sourceCol, state.targetCol, scrollX, headerW);
@@ -364,7 +368,7 @@ export class HeaderRenderer {
 
         ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(0, ghostTop, headerW, state.rowH);
-        this.#drawHeaderText(ctx, sheet.getRowHeader(state.sourceRow), 6, ghostTop + state.rowH / 2 + 4, GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(ctx, sheet.getRowHeader(state.sourceRow), HEADER_ROW_PADDING, ghostTop + state.rowH / 2 + 4, GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
             const indicatorY = this.#calcMoveIndicatorY(rc, state.sourceRow, state.targetRow, scrollY, headerH);
