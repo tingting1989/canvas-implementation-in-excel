@@ -125,22 +125,46 @@ export class Sheet {
     // ============================================================
 
     // ---- SheetStyleManager 代理 ----
-    get rowStyles() { return this.#styleManager.rowStyles; }
-    get colStyles() { return this.#styleManager.colStyles; }
+    get rowStyles() {
+        return this.#styleManager.rowStyles;
+    }
+    get colStyles() {
+        return this.#styleManager.colStyles;
+    }
 
     // ---- ColumnTypeManager 代理 ----
-    get columnsConfig() { return this.#typeManager.columnsConfig; }
-    get cellTypes() { return this.#typeManager.cellTypes; }
+    get columnsConfig() {
+        return this.#typeManager.columnsConfig;
+    }
+    get cellTypes() {
+        return this.#typeManager.cellTypes;
+    }
 
     // ---- HeaderLabelManager 代理 ----
-    get colHeaders() { return this.#headerLabels.colHeaders; }
-    set colHeaders(v) { this.#headerLabels.colHeaders = v; }
-    get rowHeaders() { return this.#headerLabels.rowHeaders; }
-    set rowHeaders(v) { this.#headerLabels.rowHeaders = v; }
-    get nestedHeaders() { return this.#headerLabels.nestedHeaders; }
-    set nestedHeaders(v) { this.#headerLabels.nestedHeaders = v; }
-    get rowHeaderWidth() { return this.#headerLabels.rowHeaderWidth; }
-    set rowHeaderWidth(v) { this.#headerLabels.rowHeaderWidth = v; }
+    get colHeaders() {
+        return this.#headerLabels.colHeaders;
+    }
+    set colHeaders(v) {
+        this.#headerLabels.colHeaders = v;
+    }
+    get rowHeaders() {
+        return this.#headerLabels.rowHeaders;
+    }
+    set rowHeaders(v) {
+        this.#headerLabels.rowHeaders = v;
+    }
+    get nestedHeaders() {
+        return this.#headerLabels.nestedHeaders;
+    }
+    set nestedHeaders(v) {
+        this.#headerLabels.nestedHeaders = v;
+    }
+    get rowHeaderWidth() {
+        return this.#headerLabels.rowHeaderWidth;
+    }
+    set rowHeaderWidth(v) {
+        this.#headerLabels.rowHeaderWidth = v;
+    }
 
     // ============================================================
     // 行号转换（分页支持）

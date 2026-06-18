@@ -30,9 +30,13 @@ export class ColumnTypeManager {
     }
 
     /** 列配置 Map（供 RowColSync 等内部模块访问） */
-    get columnsConfig() { return this.#columnsConfig; }
+    get columnsConfig() {
+        return this.#columnsConfig;
+    }
     /** 单元格类型 Map（供 RowColSync 等内部模块访问） */
-    get cellTypes() { return this.#cellTypes; }
+    get cellTypes() {
+        return this.#cellTypes;
+    }
 
     /**
      * 获取指定列的配置对象

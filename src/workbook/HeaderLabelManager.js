@@ -33,14 +33,30 @@ export class HeaderLabelManager {
 
     // ---- 属性访问（供 SettingsApplier / RowColSync 透明迁移） ----
 
-    get colHeaders() { return this.#colHeaders; }
-    set colHeaders(v) { this.#colHeaders = v; }
-    get rowHeaders() { return this.#rowHeaders; }
-    set rowHeaders(v) { this.#rowHeaders = v; }
-    get nestedHeaders() { return this.#nestedHeaders; }
-    set nestedHeaders(v) { this.#nestedHeaders = v; }
-    get rowHeaderWidth() { return this.#rowHeaderWidth; }
-    set rowHeaderWidth(v) { this.#rowHeaderWidth = v; }
+    get colHeaders() {
+        return this.#colHeaders;
+    }
+    set colHeaders(v) {
+        this.#colHeaders = v;
+    }
+    get rowHeaders() {
+        return this.#rowHeaders;
+    }
+    set rowHeaders(v) {
+        this.#rowHeaders = v;
+    }
+    get nestedHeaders() {
+        return this.#nestedHeaders;
+    }
+    set nestedHeaders(v) {
+        this.#nestedHeaders = v;
+    }
+    get rowHeaderWidth() {
+        return this.#rowHeaderWidth;
+    }
+    set rowHeaderWidth(v) {
+        this.#rowHeaderWidth = v;
+    }
 
     // ============================================================
     // 行/列头标签

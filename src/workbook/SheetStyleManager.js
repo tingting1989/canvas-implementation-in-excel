@@ -46,9 +46,13 @@ export class SheetStyleManager {
     }
 
     /** 行级样式 Map（供 RowColSync 等内部模块访问） */
-    get rowStyles() { return this.#rowStyles; }
+    get rowStyles() {
+        return this.#rowStyles;
+    }
     /** 列级样式 Map（供 RowColSync 等内部模块访问） */
-    get colStyles() { return this.#colStyles; }
+    get colStyles() {
+        return this.#colStyles;
+    }
 
     /** 获取当前默认样式 ID */
     get defaultStyleId() {
