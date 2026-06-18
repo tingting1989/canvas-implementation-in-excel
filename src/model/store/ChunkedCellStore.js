@@ -379,18 +379,18 @@ export class ChunkedCellStore {
      * 将指定列的所有 Cell 左移一列（用于 moveCol 中间列的移动）
      * @param {number} col - 要左移的列号
      */
-    #shiftColLeft(col) {
+    #shiftColLeft(targetCol) {
         for (const [, chunk] of this.#chunks) {
-            if (chunk.colStart > col || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= col) continue;
+            if (chunk.colStart > targetCol || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= targetCol) continue;
             const cellsInCol = [];
-            for (const { row, c, cell } of chunk.iterate()) {
-                if (c === col) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (col === targetCol) {
                     cellsInCol.push({ row, cell });
                 }
             }
             for (const { row, cell } of cellsInCol) {
-                chunk.delete(row, col);
-                this.set(row, col - 1, cell);
+                chunk.delete(row, targetCol);
+                this.set(row, targetCol - 1, cell);
             }
         }
     }
@@ -399,18 +399,18 @@ export class ChunkedCellStore {
      * 将指定列的所有 Cell 右移一列（用于 moveCol 中间列的移动）
      * @param {number} col - 要右移的列号
      */
-    #shiftColRight(col) {
+    #shiftColRight(targetCol) {
         for (const [, chunk] of this.#chunks) {
-            if (chunk.colStart > col || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= col) continue;
+            if (chunk.colStart > targetCol || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= targetCol) continue;
             const cellsInCol = [];
-            for (const { row, c, cell } of chunk.iterate()) {
-                if (c === col) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (col === targetCol) {
                     cellsInCol.push({ row, cell });
                 }
             }
             for (const { row, cell } of cellsInCol) {
-                chunk.delete(row, col);
-                this.set(row, col + 1, cell);
+                chunk.delete(row, targetCol);
+                this.set(row, targetCol + 1, cell);
             }
         }
     }
@@ -419,18 +419,18 @@ export class ChunkedCellStore {
      * 将指定行的所有 Cell 上移一行
      * @param {number} row - 要上移的行号
      */
-    #shiftRowUp(row) {
+    #shiftRowUp(targetRow) {
         for (const [, chunk] of this.#chunks) {
-            if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
+            if (chunk.rowStart > targetRow || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= targetRow) continue;
             const cellsInRow = [];
-            for (const { r, col, cell } of chunk.iterate()) {
-                if (r === row) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (row === targetRow) {
                     cellsInRow.push({ col, cell });
                 }
             }
             for (const { col, cell } of cellsInRow) {
-                chunk.delete(row, col);
-                this.set(row - 1, col, cell);
+                chunk.delete(targetRow, col);
+                this.set(targetRow - 1, col, cell);
             }
         }
     }
@@ -439,18 +439,18 @@ export class ChunkedCellStore {
      * 将指定行的所有 Cell 下移一行
      * @param {number} row - 要下移的行号
      */
-    #shiftRowDown(row) {
+    #shiftRowDown(targetRow) {
         for (const [, chunk] of this.#chunks) {
-            if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
+            if (chunk.rowStart > targetRow || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= targetRow) continue;
             const cellsInRow = [];
-            for (const { r, col, cell } of chunk.iterate()) {
-                if (r === row) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (row === targetRow) {
                     cellsInRow.push({ col, cell });
                 }
             }
             for (const { col, cell } of cellsInRow) {
-                chunk.delete(row, col);
-                this.set(row + 1, col, cell);
+                chunk.delete(targetRow, col);
+                this.set(targetRow + 1, col, cell);
             }
         }
     }
