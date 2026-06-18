@@ -86,7 +86,7 @@ export class ResizeStrategy extends EventStrategy {
 
             const rect = this.handler.canvas.getBoundingClientRect();
             const lineX = e.clientX - rect.left;
-            headerRenderer.setResizeLine(HIT_TYPE.COL_RESIZE, this.#resizeIndex, lineX);
+            headerRenderer.resizeRenderer.setResizeLine(HIT_TYPE.COL_RESIZE, this.#resizeIndex, lineX);
         } else {
             const delta = e.clientY - this.#startPos;
             const newHeight = Math.max(CONFIG.MIN_ROW_HEIGHT, this.#startSize + delta);
@@ -94,7 +94,7 @@ export class ResizeStrategy extends EventStrategy {
 
             const rect = this.handler.canvas.getBoundingClientRect();
             const lineY = e.clientY - rect.top;
-            headerRenderer.setResizeLine(HIT_TYPE.ROW_RESIZE, this.#resizeIndex, lineY);
+            headerRenderer.resizeRenderer.setResizeLine(HIT_TYPE.ROW_RESIZE, this.#resizeIndex, lineY);
         }
 
         this.handler.renderEngine.invalidateAll();
@@ -134,7 +134,7 @@ export class ResizeStrategy extends EventStrategy {
 
     #clearResizeLine() {
         if (this.handler.renderEngine?.headerRenderer) {
-            this.handler.renderEngine.headerRenderer.setResizeLine(null);
+            this.handler.renderEngine.headerRenderer.resizeRenderer.setResizeLine(null);
         }
     }
 }

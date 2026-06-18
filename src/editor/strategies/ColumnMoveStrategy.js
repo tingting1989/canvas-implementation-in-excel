@@ -108,7 +108,7 @@ export class ColumnMoveStrategy extends EventStrategy {
 
         const headerRenderer = this.handler.renderEngine.headerRenderer;
         const sheet = this.handler.sheet;
-        headerRenderer.setColumnMoveState({
+        headerRenderer.dragRenderer.setColumnMoveState({
             sourceCol: this.#sourceCol,
             targetCol: this.#targetCol,
             dragX: dragX,
@@ -165,7 +165,7 @@ export class ColumnMoveStrategy extends EventStrategy {
 
     #clearIndicator() {
         if (this.handler.renderEngine?.headerRenderer) {
-            this.handler.renderEngine.headerRenderer.setColumnMoveState(null);
+            this.handler.renderEngine.headerRenderer.dragRenderer.setColumnMoveState(null);
         }
     }
 }

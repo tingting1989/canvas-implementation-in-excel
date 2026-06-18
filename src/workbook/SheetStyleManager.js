@@ -252,7 +252,15 @@ export class SheetStyleManager {
         const cellStyleId = cell?.styleId;
 
         // 快速路径：无任何自定义样式时，直接返回默认样式
-        if (!colStyleId && !rowStyleId && !cellStyleId && !this.#sheet.cellsFn && !this.#sheet.columnsConfig.get(c)?.style && !this.#sheet.hasConditionalRules() && !this.#sheet.hasDataBindings()) {
+        if (
+            !colStyleId &&
+            !rowStyleId &&
+            !cellStyleId &&
+            !this.#sheet.cellsFn &&
+            !this.#sheet.columnsConfig.get(c)?.style &&
+            !this.#sheet.hasConditionalRules() &&
+            !this.#sheet.hasDataBindings()
+        ) {
             this.#styleCache.set(key, base);
             return base;
         }

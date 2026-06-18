@@ -1,4 +1,4 @@
-import { Sheet } from "./Sheet.js";
+import { Sheet, SHEET_CHANGE_ALL, SHEET_CHANGE_CELL, SHEET_CHANGE_RENDER } from "./Sheet.js";
 import { RenderEngine } from "../render/RenderEngine.js";
 import { EditorManager } from "../editor/EditorManager.js";
 import { EventHandler } from "../editor/EventHandler.js";
@@ -200,13 +200,13 @@ export class Workbook {
     #bindSheetOnChange(sheet) {
         sheet.onChange = (event) => {
             switch (event.type) {
-                case "all":
+                case SHEET_CHANGE_ALL:
                     this.renderEngine?.invalidateAll();
                     break;
-                case "cell":
+                case SHEET_CHANGE_CELL:
                     this.renderEngine?.invalidateCell(event.pageRow, event.c);
                     break;
-                case "render":
+                case SHEET_CHANGE_RENDER:
                     this.renderEngine?.render(event.sheet);
                     break;
             }

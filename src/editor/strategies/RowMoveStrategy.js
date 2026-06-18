@@ -138,7 +138,7 @@ export class RowMoveStrategy extends EventStrategy {
         const dragY = e.clientY - rect.top;
 
         const headerRenderer = this.handler.renderEngine.headerRenderer;
-        headerRenderer.setRowMoveState({
+        headerRenderer.dragRenderer.setRowMoveState({
             sourceRow: this.#sourceRow,
             targetRow: this.#targetRow,
             dragY: dragY,
@@ -206,7 +206,7 @@ export class RowMoveStrategy extends EventStrategy {
     /** 清除 HeaderRenderer 中的行移动指示器 */
     #clearIndicator() {
         if (this.handler.renderEngine?.headerRenderer) {
-            this.handler.renderEngine.headerRenderer.setRowMoveState(null);
+            this.handler.renderEngine.headerRenderer.dragRenderer.setRowMoveState(null);
         }
     }
 }

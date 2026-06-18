@@ -1,4 +1,12 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../styles/index.js";
+
+/** @constant {string} 数据变更事件类型：全量失效 */
+export const SHEET_CHANGE_ALL = "all";
+/** @constant {string} 数据变更事件类型：单格失效 */
+export const SHEET_CHANGE_CELL = "cell";
+/** @constant {string} 数据变更事件类型：触发渲染 */
+export const SHEET_CHANGE_RENDER = "render";
+
 import {
     ChunkedCellStore,
     SelectionManager,
@@ -9,14 +17,15 @@ import {
     MergeCommand,
     UnmergeCommand,
     Cell,
-    BatchCommand,
 } from "../model/index.js";
 import { RowColManager } from "../core/RowColManager.js";
+import { RowColSync } from "../core/RowColSync.js";
 import { CONFIG } from "../constants/config";
 import { SheetStyleManager } from "./SheetStyleManager.js";
 import { ColumnTypeManager } from "./ColumnTypeManager.js";
 import { HeaderLabelManager } from "./HeaderLabelManager.js";
 import { ConditionalFormatManager } from "./ConditionalFormatManager.js";
+import { BatchOperationManager } from "./BatchOperationManager.js";
 
 /**
  * 工作表
@@ -39,13 +48,11 @@ import { ConditionalFormatManager } from "./ConditionalFormatManager.js";
 export class Sheet {
     /**
      * 数据变更通知回调（由 Workbook 注入，替代直接持有 RenderEngine）
-     * 签名：(event: { type: 'all' | 'cell' | 'render', r?: number, c?: number, pageRow?: number, sheet?: Sheet }) => void
+     * 签名：(event: { type: SHEET_CHANGE_ALL | SHEET_CHANGE_CELL | SHEET_CHANGE_RENDER, r?: number, c?: number, pageRow?: number, sheet?: Sheet }) => void
      */
     #onChange = null;
-    /** 批量模式：暂存子命令 */
-    #batchCommands = [];
-    /** 是否处于批量模式 */
-    #inBatch = false;
+    /** 批量操作管理器 */
+    #batchOp = new BatchOperationManager();
     /** 样式缓存版本号，供 #invalidateAll 递增 */
     #styleCacheVersion = 0;
     /** 行同步器 */
@@ -200,12 +207,12 @@ export class Sheet {
     #invalidateAll() {
         this.#styleCacheVersion++;
         this.#styleManager.invalidateCache();
-        this.#onChange?.({ type: "all" });
+        this.#onChange?.({ type: SHEET_CHANGE_ALL });
     }
 
     #invalidateCell(r, c) {
         this.#styleManager.invalidateCache();
-        this.#onChange?.({ type: "cell", r, c, pageRow: this.toPageRow(r) });
+        this.#onChange?.({ type: SHEET_CHANGE_CELL, r, c, pageRow: this.toPageRow(r) });
     }
 
     /**
@@ -234,11 +241,7 @@ export class Sheet {
         const old = this.cellStore.get(realR, c);
         const cell = new Cell(value, styleId, disabled);
         const cmd = new SetCellCommand(this.cellStore, realR, c, old, cell);
-        if (this.#inBatch) {
-            this.#batchCommands.push(cmd);
-        } else {
-            this.history.push(cmd);
-        }
+        this.#batchOp.pushCommand(cmd, this.history);
         this.cellStore.set(realR, c, cell);
         this.#invalidateCell(realR, c);
     }
@@ -259,11 +262,7 @@ export class Sheet {
             cell.disabled = true;
         }
         const cmd = new ToggleDisableCommand(this.cellStore, realR, c, oldState);
-        if (this.#inBatch) {
-            this.#batchCommands.push(cmd);
-        } else {
-            this.history.push(cmd);
-        }
+        this.#batchOp.pushCommand(cmd, this.history);
         this.cellStore.set(realR, c, cell);
         this.#invalidateCell(realR, c);
     }
@@ -280,11 +279,7 @@ export class Sheet {
         const oldState = cell.disabled;
         cell.disabled = false;
         const cmd = new ToggleDisableCommand(this.cellStore, realR, c, oldState);
-        if (this.#inBatch) {
-            this.#batchCommands.push(cmd);
-        } else {
-            this.history.push(cmd);
-        }
+        this.#batchOp.pushCommand(cmd, this.history);
         this.#invalidateCell(realR, c);
     }
 
@@ -626,30 +621,16 @@ export class Sheet {
     // ============================================================
 
     /**
-     * 开始批量操作
+     * 开始批量操作（委托 BatchOperationManager）
      *
-     * 在批量模式下，setCell/disableCell/enableCell 产生的命令会暂存到 #batchCommands，
-     * 直到 endBatch() 调用时合并为一个 BatchCommand 推入历史栈。
-     * 这确保粘贴、剪切、自动填充等多单元格操作可以一键撤销。
+     * 确保粘贴、剪切、自动填充等多单元格操作可以一键撤销。
      */
     beginBatch() {
-        this.#inBatch = true;
-        this.#batchCommands = [];
+        this.#batchOp.beginBatch();
     }
 
-    /**
-     * 结束批量操作
-     *
-     * 将暂存的子命令合并为一个 BatchCommand 推入历史栈。
-     * 如果没有子命令（空操作），不推入任何内容。
-     */
     endBatch() {
-        this.#inBatch = false;
-        const commands = this.#batchCommands;
-        this.#batchCommands = [];
-        if (commands.length > 0) {
-            this.history.push(new BatchCommand(commands));
-        }
+        this.#batchOp.endBatch(this.history);
     }
 
     // ============================================================
@@ -658,7 +639,7 @@ export class Sheet {
 
     /** 触发渲染（通过 onChange 回调委托 Workbook 执行实际渲染） */
     render() {
-        this.#onChange?.({ type: "render", sheet: this });
+        this.#onChange?.({ type: SHEET_CHANGE_RENDER, sheet: this });
     }
 
     /** 撤销上一步操作 */
@@ -780,189 +761,4 @@ export class Sheet {
     }
 }
 
-/**
- * 行列同步器：统一管理 insert/delete/move 时所有附属状态的同步
- *
- * 将原来分散在 6 个行列操作方法中的同步逻辑（数组、Map、cellTypes、嵌套表头）
- * 收敛到此处，消除重复代码。
- *
- * 内部使用 #remapMapKeys 和 #remapCellTypesKeys 两个通用方法，
- * 通过传入不同的 shiftFn 替代原来 6 套独立的移位逻辑。
- */
-class RowColSync {
-    #sheet;
-    #axis;
 
-    constructor(sheet, axis) {
-        this.#sheet = sheet;
-        this.#axis = axis;
-    }
-
-    get #headers() {
-        return this.#axis === "row" ? this.#sheet.rowHeaders : this.#sheet.colHeaders;
-    }
-    get #maps() {
-        return this.#axis === "row" ? [this.#sheet.rowStyles] : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
-    }
-
-    insert(atIndex) {
-        this.#insertArrayAt(this.#headers, atIndex);
-        for (const map of this.#maps) this.#remapMapKeys(map, (k) => (k >= atIndex ? k + 1 : k));
-        this.#remapCellTypesKeys((k) => (k >= atIndex ? k + 1 : k));
-        if (this.#axis === "col") this.#insertNestedHeaderColumn(atIndex);
-    }
-
-    delete(atIndex) {
-        this.#deleteArrayAt(this.#headers, atIndex);
-        for (const map of this.#maps) {
-            map.delete(atIndex);
-            this.#remapMapKeys(map, (k) => (k > atIndex ? k - 1 : k));
-        }
-        this.#remapCellTypesKeys((k) => (k === atIndex ? -1 : k > atIndex ? k - 1 : k), true);
-        if (this.#axis === "col") this.#deleteNestedHeaderColumn(atIndex);
-    }
-
-    move(from, to) {
-        this.#shiftArray(this.#headers, from, to);
-        for (const map of this.#maps) this.#remapMapKeys(map, (k) => this.#calcShiftedIndex(k, from, to));
-        this.#remapCellTypesKeys((k) => this.#calcShiftedIndex(k, from, to));
-        if (this.#axis === "col") this.#shiftNestedHeaders(from, to);
-    }
-
-    #insertArrayAt(arr, atIndex) {
-        if (!Array.isArray(arr) || atIndex < 0 || atIndex >= CONFIG.MAX_COLS) return;
-        arr.splice(atIndex, 0, "");
-    }
-
-    #deleteArrayAt(arr, atIndex) {
-        if (!Array.isArray(arr) || atIndex < 0 || atIndex >= arr.length) return;
-        arr.splice(atIndex, 1);
-    }
-
-    #shiftArray(arr, from, to) {
-        if (!Array.isArray(arr) || arr.length <= Math.max(from, to)) return;
-        const [item] = arr.splice(from, 1);
-        arr.splice(to, 0, item);
-    }
-
-    #remapMapKeys(map, shiftFn) {
-        const moved = [];
-        for (const [key, val] of map) {
-            const newKey = shiftFn(key);
-            if (newKey !== key) moved.push({ old: key, new: newKey, val });
-        }
-        for (const { old: k } of moved) map.delete(k);
-        for (const { new: k, val } of moved) map.set(k, val);
-    }
-
-    #remapCellTypesKeys(shiftFn, deleteOnMinusOne = false) {
-        const toDelete = [];
-        const moved = [];
-        for (const [key, val] of this.#sheet.cellTypes) {
-            const [r, c] = key.split(",").map(Number);
-            const oldVal = this.#axis === "row" ? r : c;
-            const newVal = shiftFn(oldVal);
-            if (newVal === -1) {
-                toDelete.push(key);
-            } else if (newVal !== oldVal) {
-                const newKey = this.#axis === "row" ? `${newVal},${c}` : `${r},${newVal}`;
-                moved.push({ oldKey: key, newKey, val });
-            }
-        }
-        for (const k of toDelete) this.#sheet.cellTypes.delete(k);
-        for (const { oldKey } of moved) this.#sheet.cellTypes.delete(oldKey);
-        for (const { newKey, val } of moved) this.#sheet.cellTypes.set(newKey, val);
-    }
-
-    #calcShiftedIndex(index, from, to) {
-        if (index === from) return to;
-        if (from < to) return index > from && index <= to ? index - 1 : index;
-        return index >= to && index < from ? index + 1 : index;
-    }
-
-    #insertNestedHeaderColumn(atCol) {
-        const nh = this.#sheet.nestedHeaders;
-        if (!Array.isArray(nh) || nh.length === 0) return;
-        for (const layer of nh) {
-            if (!Array.isArray(layer) || layer.length === 0) continue;
-            let consumed = 0;
-            let inserted = false;
-            for (let i = 0; i < layer.length; i++) {
-                const item = layer[i];
-                const isObj = typeof item === "object" && item !== null;
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
-                if (atCol >= consumed && atCol < consumed + colspan) {
-                    if (isObj) {
-                        layer[i] = { ...item, colspan: colspan + 1 };
-                    } else if (colspan > 1) {
-                        layer[i] = { label: String(item), colspan: colspan + 1 };
-                    } else {
-                        layer.splice(i, 0, "");
-                    }
-                    inserted = true;
-                    break;
-                }
-                consumed += colspan;
-            }
-            if (!inserted) layer.push("");
-        }
-    }
-
-    #deleteNestedHeaderColumn(atCol) {
-        const nh = this.#sheet.nestedHeaders;
-        if (!Array.isArray(nh) || nh.length === 0) return;
-        for (const layer of nh) {
-            if (!Array.isArray(layer) || layer.length === 0) continue;
-            let consumed = 0;
-            for (let i = 0; i < layer.length; i++) {
-                const item = layer[i];
-                const isObj = typeof item === "object" && item !== null;
-                const label = isObj ? (item.label ?? "") : String(item);
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
-                if (atCol >= consumed && atCol < consumed + colspan) {
-                    if (colspan > 1) {
-                        const newSpan = colspan - 1;
-                        layer[i] = newSpan === 1 ? label : { label, colspan: newSpan };
-                    } else {
-                        layer.splice(i, 1);
-                    }
-                    break;
-                }
-                consumed += colspan;
-            }
-        }
-    }
-
-    #shiftNestedHeaders(fromCol, toCol) {
-        const nh = this.#sheet.nestedHeaders;
-        if (!Array.isArray(nh) || nh.length === 0) return;
-        for (let li = 0; li < nh.length; li++) {
-            const layer = nh[li];
-            if (!Array.isArray(layer) || layer.length === 0) continue;
-
-            const flat = [];
-            for (const item of layer) {
-                const isObj = typeof item === "object" && item !== null;
-                const label = isObj ? (item.label ?? "") : String(item);
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
-                for (let i = 0; i < colspan; i++) flat.push(label);
-            }
-
-            if (fromCol < flat.length) {
-                const [moved] = flat.splice(fromCol, 1);
-                flat.splice(toCol, 0, moved);
-            }
-
-            const repacked = [];
-            let i = 0;
-            while (i < flat.length) {
-                const label = flat[i];
-                let span = 1;
-                while (i + span < flat.length && flat[i + span] === label) span++;
-                repacked.push(span === 1 ? label : { label, colspan: span });
-                i += span;
-            }
-            nh[li] = repacked;
-        }
-    }
-}
