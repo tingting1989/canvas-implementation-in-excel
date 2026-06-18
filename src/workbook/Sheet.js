@@ -7,6 +7,16 @@ export const SHEET_CHANGE_CELL = "cell";
 /** @constant {string} 数据变更事件类型：触发渲染 */
 export const SHEET_CHANGE_RENDER = "render";
 
+/** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
+const SUB = {
+    INSERT_ROW: "insertRow",
+    INSERT_COL: "insertCol",
+    DELETE_ROW: "deleteRow",
+    DELETE_COL: "deleteCol",
+    MOVE_ROW: "moveRow",
+    MOVE_COL: "moveCol",
+};
+
 import {
     ChunkedCellStore,
     SelectionManager,
@@ -661,28 +671,28 @@ export class Sheet {
     /** 在指定位置插入行 */
     insertRow(atRow) {
         if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
-        this.#dispatchToSubSystems("insertRow", atRow);
+        this.#dispatchToSubSystems(SUB.INSERT_ROW, atRow);
         this.#rowSync.insert(atRow);
     }
 
     /** 在指定位置插入列 */
     insertCol(atCol) {
         if (!this.#isValidIndex(atCol, CONFIG.MAX_COLS)) return;
-        this.#dispatchToSubSystems("insertCol", atCol);
+        this.#dispatchToSubSystems(SUB.INSERT_COL, atCol);
         this.#colSync.insert(atCol);
     }
 
     /** 删除指定行 */
     deleteRow(atRow) {
         if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
-        this.#dispatchToSubSystems("deleteRow", atRow);
+        this.#dispatchToSubSystems(SUB.DELETE_ROW, atRow);
         this.#rowSync.delete(atRow);
     }
 
     /** 删除指定列 */
     deleteCol(atCol) {
         if (!this.#isValidIndex(atCol, CONFIG.MAX_COLS)) return;
-        this.#dispatchToSubSystems("deleteCol", atCol);
+        this.#dispatchToSubSystems(SUB.DELETE_COL, atCol);
         this.#colSync.delete(atCol);
     }
 
@@ -690,7 +700,7 @@ export class Sheet {
     moveCol(fromCol, toCol) {
         if (fromCol === toCol || fromCol < 0 || toCol < 0) return;
         if (fromCol >= CONFIG.MAX_COLS || toCol >= CONFIG.MAX_COLS) return;
-        this.#dispatchToSubSystems("moveCol", fromCol, toCol);
+        this.#dispatchToSubSystems(SUB.MOVE_COL, fromCol, toCol);
         this.#colSync.move(fromCol, toCol);
         this.#invalidateAll();
     }
@@ -699,7 +709,7 @@ export class Sheet {
     moveRow(fromRow, toRow) {
         if (fromRow === toRow || fromRow < 0 || toRow < 0) return;
         if (fromRow >= CONFIG.MAX_ROWS || toRow >= CONFIG.MAX_ROWS) return;
-        this.#dispatchToSubSystems("moveRow", fromRow, toRow);
+        this.#dispatchToSubSystems(SUB.MOVE_ROW, fromRow, toRow);
         this.#rowSync.move(fromRow, toRow);
         this.#invalidateAll();
     }
