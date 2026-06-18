@@ -49,6 +49,10 @@ export class Sheet {
     #inBatch = false;
     /** 当前渲染帧的缓存版本，帧内相同版本直接命中缓存 */
     #styleCacheFrameVersion = -1;
+    /** 行同步器 */
+    #rowSync = null;
+    /** 列同步器 */
+    #colSync = null;
 
     /**
      * @param {string} name - 工作表名称
@@ -143,6 +147,9 @@ export class Sheet {
         this.nestedHeaders = null;
 
         if (renderEngine) this.#renderEngine = renderEngine;
+
+        this.#rowSync = new RowColSync(this, "row");
+        this.#colSync = new RowColSync(this, "col");
     }
 
     // ============================================================
@@ -834,93 +841,36 @@ export class Sheet {
     insertRow(atRow) {
         if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
         this.#dispatchToSubSystems("insertRow", atRow);
-
-        // 同步更新行头标签
-        this.#insertArrayAt(this.rowHeaders, atRow);
-
-        // 同步更新行级别配置 Map
-        this.#shiftMapForInsert(this.rowStyles, atRow);
-
-        // 同步更新单元格级别类型配置 cellTypes
-        this.#shiftCellTypesForInsert("row", atRow);
+        this.#rowSync.insert(atRow);
     }
 
     /** 在指定位置插入列 */
     insertCol(atCol) {
         if (!this.#isValidIndex(atCol, CONFIG.MAX_COLS)) return;
         this.#dispatchToSubSystems("insertCol", atCol);
-
-        // 同步更新列头标签
-        this.#insertArrayAt(this.colHeaders, atCol);
-
-        // 同步更新列级别配置 Map（columnsConfig / colStyles / dataBindings）
-        for (const map of [this.columnsConfig, this.colStyles, this.dataBindings]) {
-            this.#shiftMapForInsert(map, atCol);
-        }
-
-        // 同步更新单元格级别类型配置 cellTypes
-        this.#shiftCellTypesForInsert("col", atCol);
-
-        // 同步更新嵌套表头：在 atCol 处展开 colspan 或插入空元素
-        this.#insertNestedHeaderColumn(atCol);
+        this.#colSync.insert(atCol);
     }
 
     /** 删除指定行 */
     deleteRow(atRow) {
         if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
         this.#dispatchToSubSystems("deleteRow", atRow);
-
-        // 同步更新行头标签
-        this.#deleteArrayAt(this.rowHeaders, atRow);
-
-        // 同步更新行级别配置 Map
-        this.#shiftMapForDelete(this.rowStyles, atRow);
-
-        // 同步更新单元格级别类型配置 cellTypes
-        this.#shiftCellTypesForDelete("row", atRow);
+        this.#rowSync.delete(atRow);
     }
 
     /** 删除指定列 */
     deleteCol(atCol) {
         if (!this.#isValidIndex(atCol, CONFIG.MAX_COLS)) return;
         this.#dispatchToSubSystems("deleteCol", atCol);
-
-        // 同步更新列头标签
-        this.#deleteArrayAt(this.colHeaders, atCol);
-
-        // 同步更新列级别配置 Map（columnsConfig / colStyles / dataBindings）
-        for (const map of [this.columnsConfig, this.colStyles, this.dataBindings]) {
-            this.#shiftMapForDelete(map, atCol);
-        }
-
-        // 同步更新单元格级别类型配置 cellTypes
-        this.#shiftCellTypesForDelete("col", atCol);
-
-        // 同步更新嵌套表头：删除 atCol 处的列
-        this.#deleteNestedHeaderColumn(atCol);
+        this.#colSync.delete(atCol);
     }
 
     /** 移动列：将 fromCol 的数据移到 toCol 位置，中间列自动平移 */
     moveCol(fromCol, toCol) {
         if (fromCol === toCol || fromCol < 0 || toCol < 0) return;
         if (fromCol >= CONFIG.MAX_COLS || toCol >= CONFIG.MAX_COLS) return;
-
         this.#dispatchToSubSystems("moveCol", fromCol, toCol);
-
-        // 移动列头标签
-        this.#shiftArray(this.colHeaders, fromCol, toCol);
-
-        // 同步更新列级别配置 Map
-        for (const map of [this.columnsConfig, this.colStyles, this.dataBindings]) {
-            this.#shiftMapIndex(map, fromCol, toCol);
-        }
-
-        // 同步更新单元格级别类型配置 cellTypes
-        this.#shiftCellTypesIndex("col", fromCol, toCol);
-
-        // 同步更新嵌套表头（nestedHeaders）
-        this.#shiftNestedHeaders(fromCol, toCol);
-
+        this.#colSync.move(fromCol, toCol);
         this.#invalidateAll();
     }
 
@@ -928,28 +878,11 @@ export class Sheet {
     moveRow(fromRow, toRow) {
         if (fromRow === toRow || fromRow < 0 || toRow < 0) return;
         if (fromRow >= CONFIG.MAX_ROWS || toRow >= CONFIG.MAX_ROWS) return;
-
         this.#dispatchToSubSystems("moveRow", fromRow, toRow);
-
-        // 移动行头标签
-        this.#shiftArray(this.rowHeaders, fromRow, toRow);
-
-        // 同步更新行级别配置 Map
-        this.#shiftMapIndex(this.rowStyles, fromRow, toRow);
-
-        // 同步更新单元格级别类型配置 cellTypes
-        this.#shiftCellTypesIndex("row", fromRow, toRow);
-
+        this.#rowSync.move(fromRow, toRow);
         this.#invalidateAll();
     }
 
-    // ---- 行列操作辅助 ----
-
-    /**
-     * 将操作分发到三个子系统
-     * @param {"insertRow"|"insertCol"|"deleteRow"|"deleteCol"|"moveRow"|"moveCol"} method
-     * @param  {...number} args
-     */
     #dispatchToSubSystems(method, ...args) {
         this.rowColManager[method](...args);
         this.cellStore[method](...args);
@@ -957,338 +890,8 @@ export class Sheet {
         this.#invalidateAll();
     }
 
-    /** @param {number} index @param {number} max @returns {boolean} */
     #isValidIndex(index, max) {
         return index >= 0 && index < max;
-    }
-
-    /**
-     * 平移数组元素（用于 colHeaders / rowHeaders）
-     * @param {Array|true|Function|null} arr
-     * @param {number} from
-     * @param {number} to
-     */
-    #shiftArray(arr, from, to) {
-        if (!Array.isArray(arr) || arr.length <= Math.max(from, to)) return;
-        const [item] = arr.splice(from, 1);
-        arr.splice(to, 0, item);
-    }
-
-    /**
-     * 将嵌套表头的单层按 colspan 展开为逐列标签数组
-     * @param {Array} layer - 单层 nestedHeader 定义
-     * @returns {string[]} 逐列标签数组，长度等于该层覆盖的总列数
-     */
-    #expandNestedLayer(layer) {
-        const flat = [];
-        for (const item of layer) {
-            const isObj = typeof item === "object" && item !== null;
-            const label = isObj ? (item.label ?? "") : String(item);
-            const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
-            for (let i = 0; i < colspan; i++) {
-                flat.push(label);
-            }
-        }
-        return flat;
-    }
-
-    /**
-     * 将逐列标签数组重新打包为嵌套表头格式
-     * 连续相同标签合并为 { label, colspan: N }，单独标签保持字符串形式
-     * @param {string[]} flat - 逐列标签数组
-     * @returns {Array<string|{label:string, colspan:number}>}
-     */
-    #repackFlatLayer(flat) {
-        const repacked = [];
-        let i = 0;
-        while (i < flat.length) {
-            const label = flat[i];
-            let span = 1;
-            while (i + span < flat.length && flat[i + span] === label) {
-                span++;
-            }
-            if (span === 1) {
-                repacked.push(label);
-            } else {
-                repacked.push({ label, colspan: span });
-            }
-            i += span;
-        }
-        return repacked;
-    }
-
-    /**
-     * 平移嵌套表头（nestedHeaders）以匹配列拖拽后的新列顺序
-     *
-     * 策略：展开 → 平移 → 重新打包
-     *
-     * 注意：moveCol 场景下 repack 是安全的，因为平移操作不产生
-     * "同标签相邻但不应合并"的情况——源列被移走后，原位置由后续列填补，
-     * 标签分布与用户看到的列顺序一致。
-     *
-     * @param {number} fromCol - 源列号
-     * @param {number} toCol - 目标列号
-     */
-    #shiftNestedHeaders(fromCol, toCol) {
-        if (!Array.isArray(this.nestedHeaders) || this.nestedHeaders.length === 0) return;
-
-        for (let layerIdx = 0; layerIdx < this.nestedHeaders.length; layerIdx++) {
-            const layer = this.nestedHeaders[layerIdx];
-            if (!Array.isArray(layer) || layer.length === 0) continue;
-
-            const flat = this.#expandNestedLayer(layer);
-
-            // 移除 fromCol 处的元素，插入到 toCol 处
-            if (fromCol < flat.length) {
-                const [moved] = flat.splice(fromCol, 1);
-                flat.splice(toCol, 0, moved);
-            }
-
-            this.nestedHeaders[layerIdx] = this.#repackFlatLayer(flat);
-        }
-    }
-
-    /**
-     * 在嵌套表头中插入一列（insertCol 同步用）
-     *
-     * 策略：直接在原始结构上操作，定位 atCol 落在哪个表头元素内：
-     * - 如果落在某个 colspan 组内 → 该组 colspan + 1
-     * - 如果落在两个元素之间 → 插入一个新的空标签元素
-     * - 如果超出范围 → 追加空标签元素
-     *
-     * @param {number} atCol - 插入位置列号
-     */
-    #insertNestedHeaderColumn(atCol) {
-        if (!Array.isArray(this.nestedHeaders) || this.nestedHeaders.length === 0) return;
-
-        for (let layerIdx = 0; layerIdx < this.nestedHeaders.length; layerIdx++) {
-            const layer = this.nestedHeaders[layerIdx];
-            if (!Array.isArray(layer) || layer.length === 0) continue;
-
-            let consumed = 0;
-            let inserted = false;
-
-            for (let i = 0; i < layer.length; i++) {
-                const item = layer[i];
-                const isObj = typeof item === "object" && item !== null;
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
-
-                if (atCol >= consumed && atCol < consumed + colspan) {
-                    if (isObj) {
-                        layer[i] = { ...item, colspan: colspan + 1 };
-                    } else if (colspan > 1) {
-                        layer[i] = { label: String(item), colspan: colspan + 1 };
-                    } else {
-                        layer.splice(i, 0, "");
-                    }
-                    inserted = true;
-                    break;
-                }
-
-                consumed += colspan;
-            }
-
-            if (!inserted) {
-                layer.push("");
-            }
-        }
-    }
-
-    /**
-     * 在嵌套表头中删除一列（deleteCol 同步用）
-     *
-     * 策略：直接在原始结构上操作，定位 atCol 落在哪个表头元素内：
-     * - 如果落在 colspan > 1 的组内 → colspan - 1
-     * - 如果落在 colspan = 1 的元素上 → 移除该元素
-     * - 收缩后 colspan 降为 1 时，将 { label, colspan: 1 } 降级为纯字符串
-     *
-     * @param {number} atCol - 删除位置列号
-     */
-    #deleteNestedHeaderColumn(atCol) {
-        if (!Array.isArray(this.nestedHeaders) || this.nestedHeaders.length === 0) return;
-
-        for (let layerIdx = 0; layerIdx < this.nestedHeaders.length; layerIdx++) {
-            const layer = this.nestedHeaders[layerIdx];
-            if (!Array.isArray(layer) || layer.length === 0) continue;
-
-            let consumed = 0;
-
-            for (let i = 0; i < layer.length; i++) {
-                const item = layer[i];
-                const isObj = typeof item === "object" && item !== null;
-                const label = isObj ? (item.label ?? "") : String(item);
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
-
-                if (atCol >= consumed && atCol < consumed + colspan) {
-                    if (colspan > 1) {
-                        const newSpan = colspan - 1;
-                        if (newSpan === 1) {
-                            layer[i] = label;
-                        } else {
-                            layer[i] = { label, colspan: newSpan };
-                        }
-                    } else {
-                        layer.splice(i, 1);
-                    }
-                    break;
-                }
-
-                consumed += colspan;
-            }
-        }
-    }
-
-    /**
-     * 平移 Map 中指定索引的键（通用行列均可）
-     * 将 from 的 entry 移到 to，中间索引平移
-     * @param {Map<number, any>} map
-     * @param {number} from
-     * @param {number} to
-     */
-    #shiftMapIndex(map, from, to) {
-        const moved = [];
-        for (const [index, val] of map) {
-            const newIndex = this.#calcShiftedIndex(index, from, to);
-            if (newIndex !== index) moved.push({ old: index, new: newIndex, val });
-        }
-        for (const { old: oldIndex } of moved) map.delete(oldIndex);
-        for (const { new: newIndex, val } of moved) map.set(newIndex, val);
-    }
-
-    /**
-     * 平移 cellTypes Map 中 key 的行/列索引
-     * cellTypes key 格式为 "r,c"
-     * @param {"row"|"col"} axis
-     * @param {number} from
-     * @param {number} to
-     */
-    #shiftCellTypesIndex(axis, from, to) {
-        const moved = [];
-        for (const [key, val] of this.cellTypes) {
-            const [r, c] = key.split(",").map(Number);
-            const oldAxisVal = axis === "row" ? r : c;
-            const newAxisVal = this.#calcShiftedIndex(oldAxisVal, from, to);
-            if (newAxisVal !== oldAxisVal) {
-                const newKey = axis === "row" ? `${newAxisVal},${c}` : `${r},${newAxisVal}`;
-                moved.push({ oldKey: key, newKey, val });
-            }
-        }
-        for (const { oldKey } of moved) this.cellTypes.delete(oldKey);
-        for (const { newKey, val } of moved) this.cellTypes.set(newKey, val);
-    }
-
-    // ---- 插入列/行专用：数组/Map/cellTypes 移位 ----
-
-    /**
-     * 在数组中插入一个空元素（仅当 arr 为数组时操作）
-     * @param {Array|*} arr
-     * @param {number} atIndex
-     */
-    #insertArrayAt(arr, atIndex) {
-        if (!Array.isArray(arr) || atIndex < 0 || atIndex >= CONFIG.MAX_COLS) return;
-        arr.splice(atIndex, 0, "");
-    }
-
-    /**
-     * 从数组中删除指定位置的元素（仅当 arr 为数组时操作）
-     * @param {Array|*} arr
-     * @param {number} atIndex
-     */
-    #deleteArrayAt(arr, atIndex) {
-        if (!Array.isArray(arr) || atIndex < 0 || atIndex >= arr.length) return;
-        arr.splice(atIndex, 1);
-    }
-
-    /**
-     * 插入后平移 Map 键：所有 >= atIndex 的 key 右移一位
-     * @param {Map<number, any>} map
-     * @param {number} atIndex
-     */
-    #shiftMapForInsert(map, atIndex) {
-        const moved = [];
-        for (const [index, val] of map) {
-            if (index >= atIndex) {
-                moved.push({ old: index, new: index + 1, val });
-            }
-        }
-        for (const { old: oldIndex } of moved) map.delete(oldIndex);
-        for (const { new: newIndex, val } of moved) map.set(newIndex, val);
-    }
-
-    /**
-     * 删除后平移 Map 键：删除 atIndex 上的 entry，所有 > atIndex 的 key 左移一位
-     * @param {Map<number, any>} map
-     * @param {number} atIndex
-     */
-    #shiftMapForDelete(map, atIndex) {
-        map.delete(atIndex);
-        const moved = [];
-        for (const [index, val] of map) {
-            if (index > atIndex) {
-                moved.push({ old: index, new: index - 1, val });
-            }
-        }
-        for (const { old: oldIndex } of moved) map.delete(oldIndex);
-        for (const { new: newIndex, val } of moved) map.set(newIndex, val);
-    }
-
-    /**
-     * 插入后平移 cellTypes Map：所有 col >= atIndex 的列号右移一位
-     * @param {"row"|"col"} axis
-     * @param {number} atIndex
-     */
-    #shiftCellTypesForInsert(axis, atIndex) {
-        const moved = [];
-        for (const [key, val] of this.cellTypes) {
-            const [r, c] = key.split(",").map(Number);
-            const oldAxisVal = axis === "row" ? r : c;
-            if (oldAxisVal >= atIndex) {
-                const newAxisVal = oldAxisVal + 1;
-                const newKey = axis === "row" ? `${newAxisVal},${c}` : `${r},${newAxisVal}`;
-                moved.push({ oldKey: key, newKey, val });
-            }
-        }
-        for (const { oldKey } of moved) this.cellTypes.delete(oldKey);
-        for (const { newKey, val } of moved) this.cellTypes.set(newKey, val);
-    }
-
-    /**
-     * 删除后平移 cellTypes Map：删除 col == atIndex 的 entry，col > atIndex 左移一位
-     * @param {"row"|"col"} axis
-     * @param {number} atIndex
-     */
-    #shiftCellTypesForDelete(axis, atIndex) {
-        const toDelete = [];
-        const moved = [];
-        for (const [key, val] of this.cellTypes) {
-            const [r, c] = key.split(",").map(Number);
-            const oldAxisVal = axis === "row" ? r : c;
-            if (oldAxisVal === atIndex) {
-                toDelete.push(key);
-            } else if (oldAxisVal > atIndex) {
-                const newAxisVal = oldAxisVal - 1;
-                const newKey = axis === "row" ? `${newAxisVal},${c}` : `${r},${newAxisVal}`;
-                moved.push({ oldKey: key, newKey, val });
-            }
-        }
-        for (const key of toDelete) this.cellTypes.delete(key);
-        for (const { oldKey } of moved) this.cellTypes.delete(oldKey);
-        for (const { newKey, val } of moved) this.cellTypes.set(newKey, val);
-    }
-
-    /**
-     * 计算平移后的索引值
-     * @param {number} index - 当前索引
-     * @param {number} from - 源位置
-     * @param {number} to - 目标位置
-     * @returns {number}
-     */
-    #calcShiftedIndex(index, from, to) {
-        if (index === from) return to;
-        if (from < to) {
-            return index > from && index <= to ? index - 1 : index;
-        }
-        return index >= to && index < from ? index + 1 : index;
     }
 
     // ============================================================
@@ -1443,5 +1046,192 @@ export class Sheet {
         if (input === "" || input === undefined || input === null) return "";
         const cellType = this.getCellTypeInstance(r, c);
         return cellType ? cellType.parse(input) : input;
+    }
+}
+
+/**
+ * 行列同步器：统一管理 insert/delete/move 时所有附属状态的同步
+ *
+ * 将原来分散在 6 个行列操作方法中的同步逻辑（数组、Map、cellTypes、嵌套表头）
+ * 收敛到此处，消除重复代码。
+ *
+ * 内部使用 #remapMapKeys 和 #remapCellTypesKeys 两个通用方法，
+ * 通过传入不同的 shiftFn 替代原来 6 套独立的移位逻辑。
+ */
+class RowColSync {
+    #sheet;
+    #axis;
+
+    constructor(sheet, axis) {
+        this.#sheet = sheet;
+        this.#axis = axis;
+    }
+
+    get #headers() { return this.#axis === "row" ? this.#sheet.rowHeaders : this.#sheet.colHeaders; }
+    get #maps() {
+        return this.#axis === "row"
+            ? [this.#sheet.rowStyles]
+            : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
+    }
+
+    insert(atIndex) {
+        this.#insertArrayAt(this.#headers, atIndex);
+        for (const map of this.#maps) this.#remapMapKeys(map, k => k >= atIndex ? k + 1 : k);
+        this.#remapCellTypesKeys(k => k >= atIndex ? k + 1 : k);
+        if (this.#axis === "col") this.#insertNestedHeaderColumn(atIndex);
+    }
+
+    delete(atIndex) {
+        this.#deleteArrayAt(this.#headers, atIndex);
+        for (const map of this.#maps) {
+            map.delete(atIndex);
+            this.#remapMapKeys(map, k => k > atIndex ? k - 1 : k);
+        }
+        this.#remapCellTypesKeys(k => k === atIndex ? -1 : k > atIndex ? k - 1 : k, true);
+        if (this.#axis === "col") this.#deleteNestedHeaderColumn(atIndex);
+    }
+
+    move(from, to) {
+        this.#shiftArray(this.#headers, from, to);
+        for (const map of this.#maps) this.#remapMapKeys(map, k => this.#calcShiftedIndex(k, from, to));
+        this.#remapCellTypesKeys(k => this.#calcShiftedIndex(k, from, to));
+        if (this.#axis === "col") this.#shiftNestedHeaders(from, to);
+    }
+
+    #insertArrayAt(arr, atIndex) {
+        if (!Array.isArray(arr) || atIndex < 0 || atIndex >= CONFIG.MAX_COLS) return;
+        arr.splice(atIndex, 0, "");
+    }
+
+    #deleteArrayAt(arr, atIndex) {
+        if (!Array.isArray(arr) || atIndex < 0 || atIndex >= arr.length) return;
+        arr.splice(atIndex, 1);
+    }
+
+    #shiftArray(arr, from, to) {
+        if (!Array.isArray(arr) || arr.length <= Math.max(from, to)) return;
+        const [item] = arr.splice(from, 1);
+        arr.splice(to, 0, item);
+    }
+
+    #remapMapKeys(map, shiftFn) {
+        const moved = [];
+        for (const [key, val] of map) {
+            const newKey = shiftFn(key);
+            if (newKey !== key) moved.push({ old: key, new: newKey, val });
+        }
+        for (const { old: k } of moved) map.delete(k);
+        for (const { new: k, val } of moved) map.set(k, val);
+    }
+
+    #remapCellTypesKeys(shiftFn, deleteOnMinusOne = false) {
+        const toDelete = [];
+        const moved = [];
+        for (const [key, val] of this.#sheet.cellTypes) {
+            const [r, c] = key.split(",").map(Number);
+            const oldVal = this.#axis === "row" ? r : c;
+            const newVal = shiftFn(oldVal);
+            if (newVal === -1) {
+                toDelete.push(key);
+            } else if (newVal !== oldVal) {
+                const newKey = this.#axis === "row" ? `${newVal},${c}` : `${r},${newVal}`;
+                moved.push({ oldKey: key, newKey, val });
+            }
+        }
+        for (const k of toDelete) this.#sheet.cellTypes.delete(k);
+        for (const { oldKey } of moved) this.#sheet.cellTypes.delete(oldKey);
+        for (const { newKey, val } of moved) this.#sheet.cellTypes.set(newKey, val);
+    }
+
+    #calcShiftedIndex(index, from, to) {
+        if (index === from) return to;
+        if (from < to) return index > from && index <= to ? index - 1 : index;
+        return index >= to && index < from ? index + 1 : index;
+    }
+
+    #insertNestedHeaderColumn(atCol) {
+        const nh = this.#sheet.nestedHeaders;
+        if (!Array.isArray(nh) || nh.length === 0) return;
+        for (const layer of nh) {
+            if (!Array.isArray(layer) || layer.length === 0) continue;
+            let consumed = 0;
+            let inserted = false;
+            for (let i = 0; i < layer.length; i++) {
+                const item = layer[i];
+                const isObj = typeof item === "object" && item !== null;
+                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
+                if (atCol >= consumed && atCol < consumed + colspan) {
+                    if (isObj) {
+                        layer[i] = { ...item, colspan: colspan + 1 };
+                    } else if (colspan > 1) {
+                        layer[i] = { label: String(item), colspan: colspan + 1 };
+                    } else {
+                        layer.splice(i, 0, "");
+                    }
+                    inserted = true;
+                    break;
+                }
+                consumed += colspan;
+            }
+            if (!inserted) layer.push("");
+        }
+    }
+
+    #deleteNestedHeaderColumn(atCol) {
+        const nh = this.#sheet.nestedHeaders;
+        if (!Array.isArray(nh) || nh.length === 0) return;
+        for (const layer of nh) {
+            if (!Array.isArray(layer) || layer.length === 0) continue;
+            let consumed = 0;
+            for (let i = 0; i < layer.length; i++) {
+                const item = layer[i];
+                const isObj = typeof item === "object" && item !== null;
+                const label = isObj ? (item.label ?? "") : String(item);
+                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
+                if (atCol >= consumed && atCol < consumed + colspan) {
+                    if (colspan > 1) {
+                        const newSpan = colspan - 1;
+                        layer[i] = newSpan === 1 ? label : { label, colspan: newSpan };
+                    } else {
+                        layer.splice(i, 1);
+                    }
+                    break;
+                }
+                consumed += colspan;
+            }
+        }
+    }
+
+    #shiftNestedHeaders(fromCol, toCol) {
+        const nh = this.#sheet.nestedHeaders;
+        if (!Array.isArray(nh) || nh.length === 0) return;
+        for (let li = 0; li < nh.length; li++) {
+            const layer = nh[li];
+            if (!Array.isArray(layer) || layer.length === 0) continue;
+
+            const flat = [];
+            for (const item of layer) {
+                const isObj = typeof item === "object" && item !== null;
+                const label = isObj ? (item.label ?? "") : String(item);
+                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
+                for (let i = 0; i < colspan; i++) flat.push(label);
+            }
+
+            if (fromCol < flat.length) {
+                const [moved] = flat.splice(fromCol, 1);
+                flat.splice(toCol, 0, moved);
+            }
+
+            const repacked = [];
+            let i = 0;
+            while (i < flat.length) {
+                const label = flat[i];
+                let span = 1;
+                while (i + span < flat.length && flat[i + span] === label) span++;
+                repacked.push(span === 1 ? label : { label, colspan: span });
+                i += span;
+            }
+            nh[li] = repacked;
+        }
     }
 }
