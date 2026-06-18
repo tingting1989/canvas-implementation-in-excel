@@ -34,11 +34,14 @@ import { ConditionalFormatManager } from "./ConditionalFormatManager.js";
  * - 实际行号（realRow）：数据在 cellStore 中的真实行号
  * - 列号：分页只影响行，列号无需转换
  *
- * 渲染刷新通过 #invalidateAll / #invalidateCell 通知 RenderEngine 重绘
+ * 数据变更通过 #onChange 回调通知外部（如 Workbook→RenderEngine）重绘
  */
 export class Sheet {
-    /** 渲染引擎引用（由 Workbook.initRender 时注入） */
-    #renderEngine = null;
+    /**
+     * 数据变更通知回调（由 Workbook 注入，替代直接持有 RenderEngine）
+     * 签名：(event: { type: 'all' | 'cell' | 'render', r?: number, c?: number, pageRow?: number, sheet?: Sheet }) => void
+     */
+    #onChange = null;
     /** 批量模式：暂存子命令 */
     #batchCommands = [];
     /** 是否处于批量模式 */
@@ -60,9 +63,8 @@ export class Sheet {
 
     /**
      * @param {string} name - 工作表名称
-     * @param {RenderEngine} renderEngine - 渲染引擎（可选，后续通过 setter 注入）
      */
-    constructor(name, renderEngine) {
+    constructor(name) {
         this.name = name;
         /** 所属工作簿引用（由 Workbook.addSheet 时注入） */
         this.workbook = null;
@@ -94,8 +96,6 @@ export class Sheet {
         /** 单元格文字溢出时是否显示省略号（...） */
         this.textOverflowEllipsis = CONFIG.TEXT_OVERFLOW_ELLIPSIS;
 
-        if (renderEngine) this.#renderEngine = renderEngine;
-
         // 子管理器必须在代理 getter 访问之前创建
         this.#styleManager = new SheetStyleManager(this);
         this.#typeManager = new ColumnTypeManager(this);
@@ -106,15 +106,15 @@ export class Sheet {
     }
 
     // ============================================================
-    // renderEngine getter / setter
+    // 数据变更通知回调（替代直接持有 RenderEngine 引用）
     // ============================================================
 
-    get renderEngine() {
-        return this.#renderEngine;
-    }
-
-    set renderEngine(engine) {
-        this.#renderEngine = engine;
+    /**
+     * 设置数据变更通知回调
+     * @param {(event: { type: string, r?: number, c?: number, pageRow?: number }) => void} fn
+     */
+    set onChange(fn) {
+        this.#onChange = fn;
     }
 
     // ============================================================
@@ -193,20 +193,27 @@ export class Sheet {
     }
 
     // ============================================================
-    // 内部：渲染失效通知
+    // 内部：数据变更通知
     // ============================================================
 
-    /** 标记整个视图需要重绘 */
+    /** 标记整个视图需要重绘（内部使用） */
     #invalidateAll() {
-        this.#renderEngine?.invalidateAll?.();
         this.#styleCacheVersion++;
         this.#styleManager.invalidateCache();
+        this.#onChange?.({ type: 'all' });
     }
 
     #invalidateCell(r, c) {
-        const pageRow = this.toPageRow(r);
-        this.#renderEngine?.invalidateCell?.(pageRow, c);
         this.#styleManager.invalidateCache();
+        this.#onChange?.({ type: 'cell', r, c, pageRow: this.toPageRow(r) });
+    }
+
+    /**
+     * 公开方法：供外部代码（如 ClipboardManager）触发全量重绘
+     * 内部使用 #invalidateAll 的数据变更路径无需额外调用此方法
+     */
+    invalidateAll() {
+        this.#invalidateAll();
     }
 
     // ============================================================
@@ -639,9 +646,9 @@ export class Sheet {
     // 渲染 & 撤销/重做
     // ============================================================
 
-    /** 触发渲染 */
+    /** 触发渲染（通过 onChange 回调委托 Workbook 执行实际渲染） */
     render() {
-        this.#renderEngine?.render?.(this);
+        this.#onChange?.({ type: 'render', sheet: this });
     }
 
     /** 撤销上一步操作 */

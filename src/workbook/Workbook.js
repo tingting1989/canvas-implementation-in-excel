@@ -189,8 +189,28 @@ export class Workbook {
 
     #linkSheetsToRenderEngine() {
         for (const sheet of this.sheets.values()) {
-            sheet.renderEngine = this.renderEngine;
+            this.#bindSheetOnChange(sheet);
         }
+    }
+
+    /**
+     * 将 Sheet 的数据变更通知桥接到 RenderEngine
+     * @param {import("./Sheet.js").Sheet} sheet
+     */
+    #bindSheetOnChange(sheet) {
+        sheet.onChange = (event) => {
+            switch (event.type) {
+                case 'all':
+                    this.renderEngine?.invalidateAll();
+                    break;
+                case 'cell':
+                    this.renderEngine?.invalidateCell(event.pageRow, event.c);
+                    break;
+                case 'render':
+                    this.renderEngine?.render(event.sheet);
+                    break;
+            }
+        };
     }
 
     // ============================================================
@@ -324,9 +344,9 @@ export class Workbook {
      * @returns {Sheet}
      */
     addSheet(name) {
-        const engine = this.renderEngine || { canvas: { width: 0, height: 0 } };
-        const sheet = new Sheet(name, engine);
+        const sheet = new Sheet(name);
         sheet.workbook = this;
+        if (this.renderEngine) this.#bindSheetOnChange(sheet);
 
         const opts = this.#initOptions;
         sheet.rowColManager.ensureSize(opts?.startRows || 100, opts?.startCols || 26);
@@ -386,7 +406,7 @@ export class Workbook {
         if (this.editor) this.editor.sheet = sheet;
         if (this.eventHandler) this.eventHandler.sheet = sheet;
         if (this.renderEngine) {
-            sheet.renderEngine = this.renderEngine;
+            this.#bindSheetOnChange(sheet);
             this.renderEngine.invalidateAll();
         }
         this.render();

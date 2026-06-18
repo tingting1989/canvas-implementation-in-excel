@@ -289,7 +289,7 @@ export class ClipboardManager {
         }
         sheet.endBatch();
         // 标记所有瓦片为脏，确保粘贴内容被完整重绘
-        sheet.renderEngine?.invalidateAll();
+        sheet.invalidateAll();
         sheet.render();
     }
 
@@ -327,7 +327,7 @@ export class ClipboardManager {
         }
         sheet.endBatch();
         // 标记所有瓦片为脏，确保粘贴内容被完整重绘
-        sheet.renderEngine?.invalidateAll();
+        sheet.invalidateAll();
         sheet.render();
     }
 
@@ -374,7 +374,7 @@ export class ClipboardManager {
             sheet.setCell(r, c, "");
         }
 
-        sheet.renderEngine?.invalidateAll();
+        sheet.invalidateAll();
     }
 
     /**
