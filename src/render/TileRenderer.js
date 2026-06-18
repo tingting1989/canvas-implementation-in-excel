@@ -39,6 +39,13 @@ import { CONFIG } from "../constants/config";
  */
 export class TileRenderer {
     /**
+     * 字体字符串缓存：仅在 ctx.font 值与上一次不同时才赋值，
+     * 避免连续相同字体单元格的重复 font parsing 开销
+     * @type {string|null}
+     */
+    #lastFont = null;
+
+    /**
      * 创建瓦片渲染器
      *
      * @param {TileCache} tileCache - 瓦片缓存实例
@@ -119,6 +126,7 @@ export class TileRenderer {
         const tileCtx = tile.ctx;
 
         tileCtx.clearRect(0, 0, tileSize, tileSize);
+        this.#lastFont = null; // 每个瓦片单独重置字体缓存
 
         const pixelY0 = tileRow * tileSize;
         const pixelX0 = tileCol * tileSize;
@@ -315,7 +323,11 @@ export class TileRenderer {
         const fontWeight = finalStyle.fontWeight || "normal";
         const fontSize = finalStyle.fontSize || 12;
         const fontFamily = finalStyle.fontFamily || "Segoe UI";
-        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`.trim().replace(/\s+/g, " ");
+        const fontString = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`.trim().replace(/\s+/g, " ");
+        if (this.#lastFont !== fontString) {
+            ctx.font = fontString;
+            this.#lastFont = fontString;
+        }
 
         ctx.textBaseline = "middle";
         ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || "#222";
