@@ -15,7 +15,7 @@ const initApp = () => {
 
     Workbook.registerPlugin("autoFill", AutoFillPlugin);
     Workbook.registerPlugin("contextMenu", ContextMenuPlugin);
-    // Workbook.registerPlugin("columnMove", ColumnMovePlugin);
+    Workbook.registerPlugin("columnMove", ColumnMovePlugin);
     Workbook.registerPlugin("copyPaste", CopyPastePlugin);
     Workbook.registerPlugin("exportFile", ExportFilePlugin);
     Workbook.registerPlugin("pagination", PaginationPlugin);
@@ -53,7 +53,7 @@ const initApp = () => {
         plugins: ["autoFill", "contextMenu", "columnMove", "copyPaste", "pagination", "exportFile", "hiddenColumns", "rowMove"],
         pluginOptions: {
             //  pagination: { pageSize: 50 },
-            hiddenColumns: { columns: [2] },
+            // hiddenColumns: { columns: [2] },
             contextMenu: {
                 enabled: true,
                 customItems: [

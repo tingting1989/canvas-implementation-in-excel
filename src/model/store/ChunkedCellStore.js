@@ -142,29 +142,26 @@ export class ChunkedCellStore {
      * @param {number} atRow - 插入位置的行号（新行将占据此位置）
      */
     insertRow(atRow) {
-        // 收集所有 Chunk 数据，按 Chunk 的 rowStart 分组
-        const chunkGroups = [];
-        for (const [key, chunk] of this.#chunks) {
-            chunkGroups.push({ key, chunk });
+        const cellsToMove = [];
+
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= atRow) continue;
+
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (row >= atRow) {
+                    cellsToMove.push({ row, col, cell });
+                }
+            }
         }
 
-        // 只处理 rowStart >= atRow 的 Chunk（上方 Chunk 不受影响）
-        const affectedChunks = chunkGroups.filter((g) => g.chunk.rowStart >= atRow);
+        for (const { row, col } of cellsToMove) {
+            const chunkKey = this.#chunkKey(row, col);
+            const chunk = this.#chunks.get(chunkKey);
+            if (chunk) chunk.delete(row, col);
+        }
 
-        // 从下往上处理，避免数据覆盖
-        affectedChunks.sort((a, b) => b.chunk.rowStart - a.chunk.rowStart);
-
-        for (const { chunk } of affectedChunks) {
-            const cellsToMove = [];
-            for (const { row, col, cell } of chunk.iterate()) {
-                cellsToMove.push({ row, col, cell });
-            }
-            // 清空当前 Chunk
-            chunk.cells.clear();
-            // 将 Cell 写入 row+1 位置
-            for (const { row, col, cell } of cellsToMove) {
-                this.set(row + 1, col, cell);
-            }
+        for (const { row, col, cell } of cellsToMove) {
+            this.set(row + 1, col, cell);
         }
     }
 
@@ -178,26 +175,26 @@ export class ChunkedCellStore {
      * @param {number} atCol - 插入位置的列号（新列将占据此位置）
      */
     insertCol(atCol) {
-        const chunkGroups = [];
-        for (const [key, chunk] of this.#chunks) {
-            chunkGroups.push({ key, chunk });
+        const cellsToMove = [];
+
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.colStart + CONFIG.CHUNK_COL_SIZE <= atCol) continue;
+
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (col >= atCol) {
+                    cellsToMove.push({ row, col, cell });
+                }
+            }
         }
 
-        // 只处理 colStart >= atCol 的 Chunk
-        const affectedChunks = chunkGroups.filter((g) => g.chunk.colStart >= atCol);
+        for (const { row, col } of cellsToMove) {
+            const chunkKey = this.#chunkKey(row, col);
+            const chunk = this.#chunks.get(chunkKey);
+            if (chunk) chunk.delete(row, col);
+        }
 
-        // 从右往左处理
-        affectedChunks.sort((a, b) => b.chunk.colStart - a.chunk.colStart);
-
-        for (const { chunk } of affectedChunks) {
-            const cellsToMove = [];
-            for (const { row, col, cell } of chunk.iterate()) {
-                cellsToMove.push({ row, col, cell });
-            }
-            chunk.cells.clear();
-            for (const { row, col, cell } of cellsToMove) {
-                this.set(row, col + 1, cell);
-            }
+        for (const { row, col, cell } of cellsToMove) {
+            this.set(row, col + 1, cell);
         }
     }
 
@@ -215,7 +212,6 @@ export class ChunkedCellStore {
      * @param {number} atRow - 要删除的行号
      */
     deleteRow(atRow) {
-        // 第一步：删除 atRow 上的所有 Cell
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart > atRow + CONFIG.CHUNK_ROW_SIZE) continue;
             if (chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= atRow) continue;
@@ -226,24 +222,26 @@ export class ChunkedCellStore {
             }
         }
 
-        // 第二步：将 atRow 下方的 Cell 上移
-        const chunkGroups = [];
-        for (const [key, chunk] of this.#chunks) {
-            chunkGroups.push({ key, chunk });
+        const cellsToMove = [];
+
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= atRow + 1) continue;
+
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (row > atRow) {
+                    cellsToMove.push({ row, col, cell });
+                }
+            }
         }
 
-        const affectedChunks = chunkGroups.filter((g) => g.chunk.rowStart > atRow);
-        affectedChunks.sort((a, b) => a.chunk.rowStart - b.chunk.rowStart);
+        for (const { row, col } of cellsToMove) {
+            const chunkKey = this.#chunkKey(row, col);
+            const chunk = this.#chunks.get(chunkKey);
+            if (chunk) chunk.delete(row, col);
+        }
 
-        for (const { chunk } of affectedChunks) {
-            const cellsToMove = [];
-            for (const { row, col, cell } of chunk.iterate()) {
-                cellsToMove.push({ row, col, cell });
-            }
-            chunk.cells.clear();
-            for (const { row, col, cell } of cellsToMove) {
-                this.set(row - 1, col, cell);
-            }
+        for (const { row, col, cell } of cellsToMove) {
+            this.set(row - 1, col, cell);
         }
     }
 
@@ -255,7 +253,6 @@ export class ChunkedCellStore {
      * @param {number} atCol - 要删除的列号
      */
     deleteCol(atCol) {
-        // 第一步：删除 atCol 上的所有 Cell
         for (const [, chunk] of this.#chunks) {
             if (chunk.colStart > atCol + CONFIG.CHUNK_COL_SIZE) continue;
             if (chunk.colStart + CONFIG.CHUNK_COL_SIZE <= atCol) continue;
@@ -266,24 +263,26 @@ export class ChunkedCellStore {
             }
         }
 
-        // 第二步：将 atCol 右侧的 Cell 左移
-        const chunkGroups = [];
-        for (const [key, chunk] of this.#chunks) {
-            chunkGroups.push({ key, chunk });
+        const cellsToMove = [];
+
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.colStart + CONFIG.CHUNK_COL_SIZE <= atCol + 1) continue;
+
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (col > atCol) {
+                    cellsToMove.push({ row, col, cell });
+                }
+            }
         }
 
-        const affectedChunks = chunkGroups.filter((g) => g.chunk.colStart > atCol);
-        affectedChunks.sort((a, b) => a.chunk.colStart - b.chunk.colStart);
+        for (const { row, col } of cellsToMove) {
+            const chunkKey = this.#chunkKey(row, col);
+            const chunk = this.#chunks.get(chunkKey);
+            if (chunk) chunk.delete(row, col);
+        }
 
-        for (const { chunk } of affectedChunks) {
-            const cellsToMove = [];
-            for (const { row, col, cell } of chunk.iterate()) {
-                cellsToMove.push({ row, col, cell });
-            }
-            chunk.cells.clear();
-            for (const { row, col, cell } of cellsToMove) {
-                this.set(row, col - 1, cell);
-            }
+        for (const { row, col, cell } of cellsToMove) {
+            this.set(row, col - 1, cell);
         }
     }
 
