@@ -79,4 +79,14 @@ export class ConditionalFormatManager {
     get bindings() {
         return this.#bindings;
     }
+
+    /** 是否有条件格式规则（供 resolveStyle 快速路径判断） */
+    hasRules() {
+        return this.#rules.length > 0;
+    }
+
+    /** 是否有数据绑定（供 resolveStyle 快速路径判断） */
+    hasBindings() {
+        return this.#bindings.size > 0;
+    }
 }

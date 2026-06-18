@@ -200,12 +200,12 @@ export class Sheet {
     #invalidateAll() {
         this.#styleCacheVersion++;
         this.#styleManager.invalidateCache();
-        this.#onChange?.({ type: 'all' });
+        this.#onChange?.({ type: "all" });
     }
 
     #invalidateCell(r, c) {
         this.#styleManager.invalidateCache();
-        this.#onChange?.({ type: 'cell', r, c, pageRow: this.toPageRow(r) });
+        this.#onChange?.({ type: "cell", r, c, pageRow: this.toPageRow(r) });
     }
 
     /**
@@ -366,6 +366,16 @@ export class Sheet {
     /** 添加条件格式规则 */
     addConditionalRule(range, conditionFn, styleId) {
         this.#conditionalFormat.addRule(range, conditionFn, styleId);
+    }
+
+    /** 是否有条件格式规则（供 resolveStyle 快速路径判断） */
+    hasConditionalRules() {
+        return this.#conditionalFormat.hasRules();
+    }
+
+    /** 是否有数据绑定（供 resolveStyle 快速路径判断） */
+    hasDataBindings() {
+        return this.#conditionalFormat.hasBindings();
     }
 
     /** 匹配条件格式样式 */
@@ -648,7 +658,7 @@ export class Sheet {
 
     /** 触发渲染（通过 onChange 回调委托 Workbook 执行实际渲染） */
     render() {
-        this.#onChange?.({ type: 'render', sheet: this });
+        this.#onChange?.({ type: "render", sheet: this });
     }
 
     /** 撤销上一步操作 */

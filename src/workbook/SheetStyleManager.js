@@ -11,7 +11,7 @@ import { Cell } from "../model/index.js";
  * - 单元格样式（cell.styleId）：单个单元格的样式
  *
  * 样式优先级（从低到高）：
- *   defaultStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style
+ *   defaultStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style → conditionalFormat → dataBinding
  *
  * 内部维护一个带版本号的缓存机制（#styleCache + #styleCacheVersion），
  * 任何样式变更都会递增版本号，resolveStyle 时检测版本不一致则清空缓存，
@@ -219,7 +219,7 @@ export class SheetStyleManager {
      * 解析单元格的最终合并样式
      *
      * 按优先级从低到高逐层合并：
-     *   defaultStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style
+     *   defaultStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style → conditionalFormat → dataBinding
      *
      * 使用版本号缓存机制：
      * - 若当前帧版本号（#styleCacheFrameVersion）与最新版本号（#styleCacheVersion）一致，
@@ -251,8 +251,8 @@ export class SheetStyleManager {
         const cell = this.#sheet.cellStore.get(realR, c);
         const cellStyleId = cell?.styleId;
 
-        // 快速路径：无任何自定义样式且无数据绑定和列配置样式时，直接返回默认样式
-        if (!colStyleId && !rowStyleId && !cellStyleId && !this.#sheet.cellsFn && !this.#sheet.columnsConfig.get(c)?.style) {
+        // 快速路径：无任何自定义样式时，直接返回默认样式
+        if (!colStyleId && !rowStyleId && !cellStyleId && !this.#sheet.cellsFn && !this.#sheet.columnsConfig.get(c)?.style && !this.#sheet.hasConditionalRules() && !this.#sheet.hasDataBindings()) {
             this.#styleCache.set(key, base);
             return base;
         }
@@ -274,6 +274,14 @@ export class SheetStyleManager {
         // 第 6 层：数据绑定属性中的样式（cells / cell 配置）
         const cellProps = this.#sheet.resolveCellProperties(r, c);
         if (cellProps?.style) style = { ...style, ...cellProps.style };
+
+        // 第 7 层：条件格式样式
+        const cfStyleId = this.#sheet.matchConditionalStyle(r, c, cell);
+        if (cfStyleId) style = { ...style, ...stylePool.getStyle(cfStyleId) };
+
+        // 第 8 层：数据绑定样式（值映射）
+        const dbStyleId = this.#sheet.getDataBindStyle(r, c);
+        if (dbStyleId) style = { ...style, ...stylePool.getStyle(dbStyleId) };
 
         this.#styleCache.set(key, style);
         return style;

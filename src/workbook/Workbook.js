@@ -200,13 +200,13 @@ export class Workbook {
     #bindSheetOnChange(sheet) {
         sheet.onChange = (event) => {
             switch (event.type) {
-                case 'all':
+                case "all":
                     this.renderEngine?.invalidateAll();
                     break;
-                case 'cell':
+                case "cell":
                     this.renderEngine?.invalidateCell(event.pageRow, event.c);
                     break;
-                case 'render':
+                case "render":
                     this.renderEngine?.render(event.sheet);
                     break;
             }

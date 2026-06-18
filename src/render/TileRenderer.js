@@ -1,4 +1,3 @@
-import { stylePool } from "../styles/index.js";
 import { CONFIG } from "../constants/config";
 
 /**
@@ -241,38 +240,16 @@ export class TileRenderer {
      *
      * 优先级（从低到高）：
      * 1. 斑马纹（奇偶行交替色）
-     * 2. 单元格自定义背景色
-     * 3. 条件样式背景色
-     * 4. 数据绑定样式背景色
-     * 5. 禁用单元格灰色背景（最高优先级）
+     * 2. resolveStyle 返回的完整样式（已含条件格式、数据绑定背景色）
+     * 3. 禁用单元格灰色背景（最高优先级）
      *
      * 合并单元格处理：
      * - 合并区域使用统一的左上角样式，确保跨列时无视觉分割
      */
     #drawCellBackground(ctx, sheet, r, c, cell, drawX, drawY, w, h, merge) {
         // 按优先级从低到高逐层覆盖，最终只绘制一次
-        let bgColor = r % 2 === 0 ? CONFIG.ZEBRA_LIGHT : CONFIG.ZEBRA_DARK;
-
         const resolvedStyle = sheet.resolveStyle(r, c);
-        if (resolvedStyle.backgroundColor) {
-            bgColor = resolvedStyle.backgroundColor;
-        }
-
-        const cfStyleId = sheet.matchConditionalStyle(r, c, cell);
-        if (cfStyleId !== null) {
-            const cfStyle = stylePool.getStyle(cfStyleId);
-            if (cfStyle.backgroundColor) {
-                bgColor = cfStyle.backgroundColor;
-            }
-        }
-
-        const dbStyleId = sheet.getDataBindStyle(r, c);
-        if (dbStyleId !== null) {
-            const dbStyle = stylePool.getStyle(dbStyleId);
-            if (dbStyle.backgroundColor) {
-                bgColor = dbStyle.backgroundColor;
-            }
-        }
+        let bgColor = resolvedStyle.backgroundColor || (r % 2 === 0 ? CONFIG.ZEBRA_LIGHT : CONFIG.ZEBRA_DARK);
 
         if (cell?.disabled) {
             bgColor = CONFIG.DISABLED_BG;
