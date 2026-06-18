@@ -94,4 +94,10 @@ export const CONFIG = {
     MIN_COL_WIDTH: 30,
     /** 行最小高度（px），拖拽调整行高时不可低于此值 */
     MIN_ROW_HEIGHT: 10,
+
+    /** 单元格文字内边距（px），左右两侧各保留此宽度 */
+    CELL_PADDING: 6,
+
+    /** 单元格文字溢出时是否显示省略号（...），设为 false 则直接裁剪 */
+    TEXT_OVERFLOW_ELLIPSIS: true,
 };

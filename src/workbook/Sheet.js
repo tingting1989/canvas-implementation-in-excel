@@ -116,6 +116,10 @@ export class Sheet {
         this.rowHeaders = true;
         /** 行头列宽度（px），默认使用 CONFIG.HEADER_WIDTH */
         this.rowHeaderWidth = CONFIG.HEADER_WIDTH;
+        /** 单元格文字内边距（px），左右两侧各保留此宽度 */
+        this.cellPadding = CONFIG.CELL_PADDING;
+        /** 单元格文字溢出时是否显示省略号（...） */
+        this.textOverflowEllipsis = CONFIG.TEXT_OVERFLOW_ELLIPSIS;
         /**
          * 嵌套表头配置
          *

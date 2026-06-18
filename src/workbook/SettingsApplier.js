@@ -64,6 +64,14 @@ export class SettingsApplier {
         if (settings.width != null || settings.height != null) {
             renderEngine?.setCanvasSize(settings.width, settings.height);
         }
+
+        // 单元格渲染配置
+        if (settings.cellPadding !== undefined) {
+            sheet.cellPadding = settings.cellPadding;
+        }
+        if (settings.textOverflowEllipsis !== undefined) {
+            sheet.textOverflowEllipsis = settings.textOverflowEllipsis;
+        }
     }
 
     // ---- 私有辅助 ----

@@ -325,29 +325,54 @@ export class TileRenderer {
 
         const displayValue = sheet.formatCellValue(r, c, cell.value);
 
-        let textX = Math.round(drawX + 4);
+        let textX = Math.round(drawX + sheet.cellPadding);
         if (textAlign === "center") {
             textX = Math.round(drawX + w / 2);
         } else if (textAlign === "right") {
-            textX = Math.round(drawX + w - 4);
+            textX = Math.round(drawX + w - sheet.cellPadding);
         }
 
         const textY = Math.round(drawY + h / 2);
 
-        // 裁剪文字到单元格边界内，防止溢出文字被相邻单元格背景覆盖
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(drawX, drawY, w, h);
-        ctx.clip();
-        ctx.fillText(displayValue, textX, textY);
-        ctx.restore();
+        // 文本超出时截断，确保左右两侧留有内边距
+        // 使用二分查找定位截断点：O(log n) vs 逐字符 O(n)
+        const maxTextWidth = w - sheet.cellPadding * 2;
+        let renderedText = displayValue;
+        if (maxTextWidth > 0) {
+            const fullWidth = ctx.measureText(displayValue).width;
+            if (fullWidth > maxTextWidth) {
+                const suffix = sheet.textOverflowEllipsis ? "..." : "";
+                let lo = 0, hi = displayValue.length;
+                while (lo < hi) {
+                    const mid = Math.ceil((lo + hi) / 2);
+                    if (ctx.measureText(displayValue.slice(0, mid) + suffix).width > maxTextWidth) {
+                        hi = mid - 1;
+                    } else {
+                        lo = mid;
+                    }
+                }
+                renderedText = displayValue.slice(0, lo) + suffix;
+            }
+        }
+
+        // 仅在文本溢出时裁剪，避免每个单元格的 save/clip/restore 开销
+        if (renderedText !== displayValue) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(drawX, drawY, w, h);
+            ctx.clip();
+            ctx.fillText(renderedText, textX, textY);
+            ctx.restore();
+        } else {
+            ctx.fillText(renderedText, textX, textY);
+        }
 
         /**
          * 绘制下划线
          * textDecoration: underline 时在文字下方绘制一条线
          */
         if (finalStyle.textDecoration === "underline") {
-            const textWidth = ctx.measureText(displayValue).width;
+            const textWidth = ctx.measureText(renderedText).width;
             let lineX = textX;
             if (textAlign === "center") {
                 lineX = textX - textWidth / 2;
