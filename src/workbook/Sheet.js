@@ -760,5 +760,3 @@ export class Sheet {
         return this.#typeManager.parseCellValue(r, c, input);
     }
 }
-
-
