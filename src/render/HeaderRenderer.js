@@ -368,7 +368,14 @@ export class HeaderRenderer {
 
         ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(0, ghostTop, headerW, state.rowH);
-        this.#drawHeaderText(ctx, sheet.getRowHeader(state.sourceRow), HEADER_ROW_PADDING, ghostTop + state.rowH / 2 + 4, GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(
+            ctx,
+            sheet.getRowHeader(state.sourceRow),
+            HEADER_ROW_PADDING,
+            ghostTop + state.rowH / 2 + 4,
+            GHOST_TEXT_COLOR,
+            headerFont,
+        );
 
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
             const indicatorY = this.#calcMoveIndicatorY(rc, state.sourceRow, state.targetRow, scrollY, headerH);

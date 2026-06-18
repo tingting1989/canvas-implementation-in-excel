@@ -1,7 +1,6 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../styles/index.js";
 import {
     ChunkedCellStore,
-    ConditionalRule,
     SelectionManager,
     SetCellCommand,
     ToggleDisableCommand,
@@ -16,6 +15,8 @@ import { RowColManager } from "../core/RowColManager.js";
 import { CONFIG } from "../constants/config";
 import { SheetStyleManager } from "./SheetStyleManager.js";
 import { ColumnTypeManager } from "./ColumnTypeManager.js";
+import { HeaderLabelManager } from "./HeaderLabelManager.js";
+import { ConditionalFormatManager } from "./ConditionalFormatManager.js";
 
 /**
  * 工作表
@@ -52,6 +53,10 @@ export class Sheet {
     #styleManager = null;
     /** 列类型管理器 */
     #typeManager = null;
+    /** 表头标签管理器 */
+    #headerLabels = null;
+    /** 条件格式管理器 */
+    #conditionalFormat = null;
 
     /**
      * @param {string} name - 工作表名称
@@ -74,14 +79,10 @@ export class Sheet {
         this.mergeManager = new MergeManager();
         /** 行列尺寸与坐标计算管理器 */
         this.rowColManager = new RowColManager();
-        /** 条件格式规则列表 */
-        this.conditionalRules = [];
         /** 行级样式映射 row → styleId */
         this.rowStyles = new Map();
         /** 列级样式映射 col → styleId */
         this.colStyles = new Map();
-        /** 数据绑定映射 col → mapperFn(cellValue) → styleId */
-        this.dataBindings = new Map();
         /** 单元格级别类型配置映射 key("r,c") → {name: string, options: object} */
         this.cellTypes = new Map();
         /**
@@ -151,6 +152,8 @@ export class Sheet {
         this.#colSync = new RowColSync(this, "col");
         this.#styleManager = new SheetStyleManager(this);
         this.#typeManager = new ColumnTypeManager(this);
+        this.#headerLabels = new HeaderLabelManager(this);
+        this.#conditionalFormat = new ConditionalFormatManager(this);
     }
 
     // ============================================================
@@ -352,83 +355,53 @@ export class Sheet {
     }
 
     // ============================================================
-    // 条件格式 & 数据绑定
+    // 条件格式 & 数据绑定（委托 ConditionalFormatManager）
     // ============================================================
 
     /** 添加条件格式规则 */
     addConditionalRule(range, conditionFn, styleId) {
-        this.conditionalRules.push(new ConditionalRule(range, conditionFn, styleId));
+        this.#conditionalFormat.addRule(range, conditionFn, styleId);
     }
 
     /** 匹配条件格式样式 */
     matchConditionalStyle(r, c, cell) {
-        const realR = this.toRealRow(r);
-        for (const rule of this.conditionalRules) {
-            if (rule.match(realR, c, cell)) return rule.styleId;
-        }
-        return null;
+        return this.#conditionalFormat.match(r, c, cell);
     }
 
     /** 绑定数据样式映射 */
     bindDataStyle(col, mapperFn) {
-        this.dataBindings.set(col, mapperFn);
+        this.#conditionalFormat.bind(col, mapperFn);
     }
 
     /** 获取数据绑定样式 */
     getDataBindStyle(r, c) {
-        const realR = this.toRealRow(r);
-        const fn = this.dataBindings.get(c);
-        if (!fn) return null;
-        const cell = this.cellStore.get(realR, c);
-        return fn(cell?.value);
+        return this.#conditionalFormat.getBinding(r, c);
+    }
+
+    /**
+     * 数据绑定 Map（供 RowColSync 行列同步时重映射键）
+     * @returns {Map<number, Function>}
+     */
+    get dataBindings() {
+        return this.#conditionalFormat.bindings;
     }
 
     // ============================================================
-    // 行列头标签
+    // 行列头标签（委托 HeaderLabelManager）
     // ============================================================
 
     /** 获取列头标签 */
     getColHeader(col) {
-        return this.#resolveHeader(this.colHeaders, col, this.#defaultColLabel);
+        return this.#headerLabels.getColHeader(col);
     }
 
     /** 获取行头标签 */
     getRowHeader(row) {
-        return this.#resolveHeader(this.rowHeaders, row, (i) => String(i + 1));
-    }
-
-    /**
-     * 统一的行/列头解析
-     * @param {true|string[]|Function|null} config
-     * @param {number} index
-     * @param {(index: number) => string} defaultFn
-     * @returns {string}
-     */
-    #resolveHeader(config, index, defaultFn) {
-        if (config === true || config == null) return defaultFn(index);
-        if (Array.isArray(config)) return index < config.length ? config[index] : defaultFn(index);
-        if (typeof config === "function") return config(index);
-        return defaultFn(index);
-    }
-
-    /**
-     * 默认列标签：0→A, 1→B, ..., 25→Z, 26→AA, ...
-     * @param {number} col - 列号
-     * @returns {string}
-     */
-    #defaultColLabel(col) {
-        let label = "";
-        let n = col + 1;
-        while (n > 0) {
-            n = n - 1;
-            label = String.fromCharCode(65 + (n % 26)) + label;
-            n = Math.floor(n / 26);
-        }
-        return label || "A";
+        return this.#headerLabels.getRowHeader(row);
     }
 
     // ============================================================
-    // 嵌套表头
+    // 嵌套表头 & 表头尺寸（委托 HeaderLabelManager）
     // ============================================================
 
     /**
@@ -436,64 +409,33 @@ export class Sheet {
      * @returns {number} 0 表示未启用嵌套表头
      */
     getNestedHeaderRowCount() {
-        return Array.isArray(this.nestedHeaders) ? this.nestedHeaders.length : 0;
+        return this.#headerLabels.getNestedHeaderRowCount();
     }
 
     /**
      * 获取嵌套表头中指定层、指定列的表头信息
-     *
-     * 返回值可能是：
-     *   - null：该层该列被上方 colspan 跨越（应绘制空单元格）
-     *   - { label: string, colspan: number }：带跨列的表头
-     *   - { label: string, colspan: 1 }：普通单列表头
-     *
      * @param {number} rowIndex - 嵌套层索引（0=顶层）
      * @param {number} col - 数据列号
      * @returns {{label: string, colspan: number}|null}
      */
     getNestedColHeader(rowIndex, col) {
-        if (!this.nestedHeaders || rowIndex >= this.nestedHeaders.length) return null;
-
-        const row = this.nestedHeaders[rowIndex];
-        if (!Array.isArray(row)) return null;
-
-        // 遍历该层的元素，找到 col 对应的表头定义
-        // 由于 colspan 的存在，需要跟踪当前已消费的列数
-        let consumed = 0;
-        for (let i = 0; i < row.length; i++) {
-            const item = row[i];
-            const label = typeof item === "string" ? item : (item?.label ?? "");
-            const colspan = item && typeof item === "object" && item.colspan ? item.colspan : 1;
-
-            if (col >= consumed && col < consumed + colspan) {
-                return { label, colspan };
-            }
-            consumed += colspan;
-        }
-
-        // col 超出该层定义范围，由默认 colHeaders 兜底
-        return null;
+        return this.#headerLabels.getNestedColHeader(rowIndex, col);
     }
 
     /**
      * 获取表头总高度（像素）
-     * 嵌套表头时 = HEADER_HEIGHT × 嵌套层数，否则 = HEADER_HEIGHT
-     *
      * @returns {number}
      */
     getHeaderHeight() {
-        const rows = this.getNestedHeaderRowCount() || CONFIG.NESTED_HEADER_ROWS;
-        return rows * CONFIG.HEADER_HEIGHT;
+        return this.#headerLabels.getHeaderHeight();
     }
 
     /**
      * 获取行头列宽度（像素）
-     * 由 rowHeaderWidth 配置决定，默认 CONFIG.HEADER_WIDTH (46px)
-     *
      * @returns {number}
      */
     getHeaderWidth() {
-        return this.rowHeaderWidth ?? CONFIG.HEADER_WIDTH;
+        return this.#headerLabels.getHeaderWidth();
     }
 
     // ============================================================
