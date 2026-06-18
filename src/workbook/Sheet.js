@@ -851,6 +851,9 @@ export class Sheet {
         // 同步更新单元格级别类型配置 cellTypes
         this.#shiftCellTypesIndex("col", fromCol, toCol);
 
+        // 同步更新嵌套表头（nestedHeaders）
+        this.#shiftNestedHeaders(fromCol, toCol);
+
         this.#invalidateAll();
     }
 
@@ -902,6 +905,62 @@ export class Sheet {
         if (!Array.isArray(arr) || arr.length <= Math.max(from, to)) return;
         const [item] = arr.splice(from, 1);
         arr.splice(to, 0, item);
+    }
+
+    /**
+     * 平移嵌套表头（nestedHeaders）以匹配列拖拽后的新列顺序
+     *
+     * 策略：展开 → 平移 → 重新打包
+     * 1. 将每层按 colspan 展开为逐列标签
+     * 2. 执行与数据列相同的数组平移操作
+     * 3. 将连续相同标签重新打包为 colspan 对象
+     *
+     * @param {number} fromCol - 源列号
+     * @param {number} toCol - 目标列号
+     */
+    #shiftNestedHeaders(fromCol, toCol) {
+        if (!Array.isArray(this.nestedHeaders) || this.nestedHeaders.length === 0) return;
+
+        for (let layerIdx = 0; layerIdx < this.nestedHeaders.length; layerIdx++) {
+            const layer = this.nestedHeaders[layerIdx];
+            if (!Array.isArray(layer) || layer.length === 0) continue;
+
+            // 1. 按 colspan 展开为逐列标签数组
+            const flat = [];
+            for (const item of layer) {
+                const isObj = typeof item === "object" && item !== null;
+                const label = isObj ? (item.label ?? "") : String(item);
+                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
+                for (let i = 0; i < colspan; i++) {
+                    flat.push(label);
+                }
+            }
+
+            // 2. 执行与数据列相同的位置平移
+            //    移除 fromCol 处的元素，插入到 toCol 处
+            if (fromCol < flat.length) {
+                const [moved] = flat.splice(fromCol, 1);
+                flat.splice(toCol, 0, moved);
+            }
+
+            // 3. 重新打包：连续相同标签合并为 colspan > 1
+            const repacked = [];
+            let i = 0;
+            while (i < flat.length) {
+                const label = flat[i];
+                let span = 1;
+                while (i + span < flat.length && flat[i + span] === label) {
+                    span++;
+                }
+                if (span === 1) {
+                    repacked.push(label);
+                } else {
+                    repacked.push({ label, colspan: span });
+                }
+                i += span;
+            }
+            this.nestedHeaders[layerIdx] = repacked;
+        }
     }
 
     /**

@@ -15,7 +15,7 @@ const initApp = () => {
 
     Workbook.registerPlugin("autoFill", AutoFillPlugin);
     Workbook.registerPlugin("contextMenu", ContextMenuPlugin);
-    Workbook.registerPlugin("columnMove", ColumnMovePlugin);
+    // Workbook.registerPlugin("columnMove", ColumnMovePlugin);
     Workbook.registerPlugin("copyPaste", CopyPastePlugin);
     Workbook.registerPlugin("exportFile", ExportFilePlugin);
     Workbook.registerPlugin("pagination", PaginationPlugin);
@@ -29,7 +29,8 @@ const initApp = () => {
             ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
         ],
         colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-        rowHeaders: false,
+
+        rowHeaders: ['姓名', '年龄', '城市', '部门', '薪酬', '入职日期'],
         // 嵌套表头示例（参考 Handsontable nestedHeaders API）
         nestedHeaders: [
             [
