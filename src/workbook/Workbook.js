@@ -205,7 +205,7 @@ export class Workbook {
             const { activeRow: row, activeCol: col } = activeEditor;
             const rc = this.activeSheet.rowColManager;
             const dpr = window.devicePixelRatio || 1;
-            const headerW = CONFIG.HEADER_WIDTH;
+            const headerW = this.activeSheet.getHeaderWidth();
             const headerH = this.activeSheet.getHeaderHeight();
             const tabH = CONFIG.SHEET_TAB_HEIGHT;
             const viewW = this.renderEngine.canvas.width / dpr - headerW;

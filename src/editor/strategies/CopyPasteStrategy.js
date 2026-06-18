@@ -119,8 +119,7 @@ export class CopyPasteStrategy extends EventStrategy {
         div.contentEditable = "true";
         // 不设置 aria-hidden，否则聚焦时会触发无障碍警告
         // 视觉上已通过 CSS 完全隐藏（fixed + 负坐标 + opacity:0）
-        div.style.cssText =
-            "position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;overflow:hidden;";
+        div.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;overflow:hidden;";
         document.body.appendChild(div);
         this.#pasteTarget = div;
 

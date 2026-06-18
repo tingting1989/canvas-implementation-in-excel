@@ -192,11 +192,16 @@ export class RenderEngine {
 
         const rc = sheet.rowColManager;
         const headerH = sheet.getHeaderHeight();
-        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH, headerH);
+        const headerW = sheet.getHeaderWidth();
+        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH, headerH, headerW);
 
         // 动态更新 CSS 变量，使垂直滚动条 top 跟随表头高度
         if (headerH !== CONFIG.HEADER_HEIGHT) {
             this.wrap.style.setProperty("--header-height", `${headerH}px`);
+        }
+        // 动态更新行宽度，使 SheetTabBar 添加按钮宽度与行头对齐
+        if (headerW !== CONFIG.HEADER_WIDTH) {
+            this.wrap.style.setProperty("--header-width", `${headerW}px`);
         }
 
         const ctx = this.ctx;
@@ -231,7 +236,7 @@ export class RenderEngine {
         const rc = sheet ? sheet.rowColManager : null;
         if (!rc) return { x: 0, y: 0, w: 0, h: 0 };
 
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH;
         const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;
@@ -267,7 +272,7 @@ export class RenderEngine {
         const px = clientX - rect.left;
         const py = clientY - rect.top;
         const sheet = this.#currentSheet;
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH;
         const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
 
         if (px > this.#viewW || py > this.#viewH) return null;
@@ -327,7 +332,7 @@ export class RenderEngine {
         const rc = sheet ? sheet.rowColManager : null;
         if (!rc) return null;
 
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH;
         const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
         const hitArea = CONFIG.RESIZE_HIT_AREA;
         const sx = this.scrollMgr.scrollX;
@@ -373,7 +378,7 @@ export class RenderEngine {
         const rc = sheet.rowColManager;
         const range = sheet.selection.getRange();
 
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const sx = this.scrollMgr.scrollX;
         const sy = this.scrollMgr.scrollY;

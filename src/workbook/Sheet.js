@@ -114,6 +114,8 @@ export class Sheet {
         this.colHeaders = true;
         /** 行头配置：true→1/2/3... | string[] | Function(row) */
         this.rowHeaders = true;
+        /** 行头列宽度（px），默认使用 CONFIG.HEADER_WIDTH */
+        this.rowHeaderWidth = CONFIG.HEADER_WIDTH;
         /**
          * 嵌套表头配置
          *
@@ -535,6 +537,16 @@ export class Sheet {
     getHeaderHeight() {
         const rows = this.getNestedHeaderRowCount() || CONFIG.NESTED_HEADER_ROWS;
         return rows * CONFIG.HEADER_HEIGHT;
+    }
+
+    /**
+     * 获取行头列宽度（像素）
+     * 由 rowHeaderWidth 配置决定，默认 CONFIG.HEADER_WIDTH (46px)
+     *
+     * @returns {number}
+     */
+    getHeaderWidth() {
+        return this.rowHeaderWidth ?? CONFIG.HEADER_WIDTH;
     }
 
     // ============================================================

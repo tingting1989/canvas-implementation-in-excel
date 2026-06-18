@@ -73,6 +73,7 @@ export class ScrollManager {
     #maxScrollX = 0;
     #maxScrollY = 0;
     #headerH = CONFIG.HEADER_HEIGHT;
+    #headerW = CONFIG.HEADER_WIDTH;
     #onScrollCallback = null;
     #onAfterScroll = null;
     #wheelHandler = null;
@@ -144,7 +145,7 @@ export class ScrollManager {
             if (dragging === "h") {
                 const dx = e.clientX - startMouse;
                 const trackW = this.#viewW / 2;
-                const viewW = this.#viewW - CONFIG.HEADER_WIDTH;
+                const viewW = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH);
                 const totalContent = this.#maxScrollX + viewW;
                 const ratio = totalContent > 0 ? trackW / totalContent : 1;
                 const newX = Math.max(0, Math.min(this.#maxScrollX, startScroll + dx / ratio));
@@ -222,11 +223,12 @@ export class ScrollManager {
         this.wrap.addEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler, { passive: false });
     }
 
-    updateScrollBounds(totalW, totalH, viewW, viewH, headerH = CONFIG.HEADER_HEIGHT) {
+    updateScrollBounds(totalW, totalH, viewW, viewH, headerH = CONFIG.HEADER_HEIGHT, headerW = CONFIG.HEADER_WIDTH) {
         this.#viewW = viewW;
         this.#viewH = viewH;
         this.#headerH = headerH;
-        this.#maxScrollX = Math.max(0, totalW - viewW + CONFIG.HEADER_WIDTH);
+        this.#headerW = headerW;
+        this.#maxScrollX = Math.max(0, totalW - viewW + this.#headerW);
         this.#maxScrollY = Math.max(0, totalH - viewH + headerH);
         this.#scrollX = Math.min(this.#scrollX, this.#maxScrollX);
         this.#scrollY = Math.min(this.#scrollY, this.#maxScrollY);
@@ -256,7 +258,7 @@ export class ScrollManager {
 
         if (this.#hThumb && this.#maxScrollX > 0) {
             const trackW = this.#viewW / 2;
-            const viewW2 = this.#viewW - CONFIG.HEADER_WIDTH;
+            const viewW2 = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH);
             const totalW = this.#maxScrollX + viewW2;
             const thumbW = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackW * (viewW2 / totalW)));
             this.#hThumb.style.width = thumbW + "px";
@@ -272,7 +274,7 @@ export class ScrollManager {
         const cellY = rc.getRowY(row);
         const cellW = rc.getColWidth(col);
         const cellH = rc.getRowHeight(row);
-        const viewW = this.#viewW - CONFIG.HEADER_WIDTH;
+        const viewW = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH);
         const viewH = this.#viewH - (this.#headerH ?? CONFIG.HEADER_HEIGHT);
 
         if (cellX < this.#scrollX) {

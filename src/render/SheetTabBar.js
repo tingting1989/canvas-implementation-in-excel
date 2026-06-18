@@ -23,7 +23,7 @@ function injectSheetTabStyles() {
   user-select: none;
 }
 .cs-sheet-add-btn {
-  width: ${CONFIG.HEADER_WIDTH}px;
+  width: var(--header-width, ${CONFIG.HEADER_WIDTH}px);
   height: ${CONFIG.SHEET_TAB_HEIGHT}px;
   display: flex;
   align-items: center;

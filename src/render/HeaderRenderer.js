@@ -97,7 +97,7 @@ export class HeaderRenderer {
      */
     #renderColumnHeaders(ctx, sheet, scrollX, viewW, range) {
         const rc = sheet.rowColManager;
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet.getHeaderWidth();
         const rowH = CONFIG.HEADER_HEIGHT;
         const defaultStyle = sheet.getDefaultStyle();
         const headerFont = this.#buildHeaderFont(defaultStyle);
@@ -234,7 +234,7 @@ export class HeaderRenderer {
      */
     #renderRowHeaders(ctx, sheet, scrollY, viewH, range) {
         const rc = sheet.rowColManager;
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const defaultStyle = sheet.getDefaultStyle();
         const headerFont = this.#buildHeaderFont(defaultStyle);
@@ -252,7 +252,16 @@ export class HeaderRenderer {
             const highlighted = r >= range.topRow && r <= range.bottomRow;
 
             this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, defaultStyle);
-            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4, null, headerFont);
+
+            // 裁剪区域防止文字溢出（左右各留 6px 内边距）
+            const textMaxW = headerW - 12;
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(6, y, textMaxW, h);
+            ctx.clip();
+            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), 6, y + h / 2 + 4, null, headerFont, textMaxW);
+            ctx.restore();
+
             this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
         }
 
@@ -272,7 +281,7 @@ export class HeaderRenderer {
      * 全选时高亮，高度跟随表头总高度（支持嵌套表头）
      */
     #renderCorner(ctx, sheet, range) {
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const allSelected = range.topRow === 0 && range.topCol === 0;
 
@@ -296,7 +305,7 @@ export class HeaderRenderer {
         if (!state) return;
 
         const rc = sheet.rowColManager;
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
@@ -316,7 +325,7 @@ export class HeaderRenderer {
         this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + 4, headerH - 8, GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
-            const indicatorX = this.#calcMoveIndicatorX(rc, state.sourceCol, state.targetCol, scrollX);
+            const indicatorX = this.#calcMoveIndicatorX(rc, state.sourceCol, state.targetCol, scrollX, headerW);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
             ctx.fillRect(indicatorX - INDICATOR_HALF, 0, INDICATOR_WIDTH, headerH);
             ctx.fillRect(indicatorX - INDICATOR_HALF, headerH, INDICATOR_WIDTH, viewH - headerH);
@@ -338,7 +347,7 @@ export class HeaderRenderer {
         if (!state) return;
 
         const rc = sheet.rowColManager;
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
@@ -425,19 +434,31 @@ export class HeaderRenderer {
     }
 
     /**
-     * 绘制表头文字
+     * 绘制表头文字，支持溢出截断
      * @param {CanvasRenderingContext2D} ctx
      * @param {string} text - 文字内容
      * @param {number} x - 文字 x 坐标
      * @param {number} y - 文字 y 坐标（基线）
      * @param {string} [color] - 文字颜色，null 则使用当前 fillStyle
      * @param {string} [font] - 字体 CSS 字符串，默认 "12px sans-serif"
+     * @param {number} [maxWidth] - 文字最大宽度（px），超出则截断加省略号
      */
-    #drawHeaderText(ctx, text, x, y, color, font) {
+    #drawHeaderText(ctx, text, x, y, color, font, maxWidth) {
         ctx.font = font || "12px sans-serif";
         ctx.textAlign = "left";
         if (color) ctx.fillStyle = color;
-        ctx.fillText(text, x, y);
+
+        if (maxWidth && ctx.measureText(text).width > maxWidth) {
+            // 逐字截断，预留省略号宽度
+            const ellipsis = "...";
+            let truncated = text;
+            while (truncated.length > 0 && ctx.measureText(truncated + ellipsis).width > maxWidth) {
+                truncated = truncated.slice(0, -1);
+            }
+            ctx.fillText(truncated + ellipsis, x, y);
+        } else {
+            ctx.fillText(text, x, y);
+        }
     }
 
     /**
@@ -498,10 +519,10 @@ export class HeaderRenderer {
      * @param {number} sourceCol - 源列号
      * @param {number} targetCol - 目标列号
      * @param {number} scrollX - 水平滚动偏移
+     * @param {number} headerW - 行头宽度
      * @returns {number} 指示器在 canvas 上的 x 坐标
      */
-    #calcMoveIndicatorX(rc, sourceCol, targetCol, scrollX) {
-        const headerW = CONFIG.HEADER_WIDTH;
+    #calcMoveIndicatorX(rc, sourceCol, targetCol, scrollX, headerW) {
         if (targetCol > sourceCol) {
             return headerW + rc.getColX(targetCol) + rc.getColWidth(targetCol) - scrollX;
         }

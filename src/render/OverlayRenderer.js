@@ -44,7 +44,7 @@ export class OverlayRenderer {
         for (const merge of sheet.getAllMerges()) {
             const { topRow, topCol, bottomRow, bottomCol } = merge;
             const rc = sheet.rowColManager;
-            const headerW = CONFIG.HEADER_WIDTH;
+            const headerW = sheet.getHeaderWidth();
 
             if (pageStart >= 0 && pageEnd > pageStart) {
                 if (bottomRow < pageStart || topRow >= pageEnd) continue;
@@ -89,7 +89,7 @@ export class OverlayRenderer {
      */
     renderSelection(ctx, sheet, scrollX, scrollY, viewW, viewH) {
         const rc = sheet.rowColManager;
-        const headerW = CONFIG.HEADER_WIDTH;
+        const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const range = sheet.selection.getRange();
         const [focusRow, focusCol] = sheet.selection.getFocus();

@@ -107,12 +107,13 @@ export class ColumnMoveStrategy extends EventStrategy {
         const dragX = e.clientX - rect.left;
 
         const headerRenderer = this.handler.renderEngine.headerRenderer;
+        const sheet = this.handler.sheet;
         headerRenderer.setColumnMoveState({
             sourceCol: this.#sourceCol,
             targetCol: this.#targetCol,
             dragX: dragX,
             dragStartX: this.#dragStartX,
-            headerW: CONFIG.HEADER_WIDTH,
+            headerW: sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH,
             scrollX: this.handler.renderEngine.scrollX,
             colX: rc.getColX(this.#sourceCol),
             colW: rc.getColWidth(this.#sourceCol),

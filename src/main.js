@@ -29,8 +29,8 @@ const initApp = () => {
             ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
         ],
         colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-
-        rowHeaders: ['姓名', '年龄', '城市', '部门', '薪酬', '入职日期'],
+        rowHeaderWidth: 120,
+        rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
         // 嵌套表头示例（参考 Handsontable nestedHeaders API）
         nestedHeaders: [
             [

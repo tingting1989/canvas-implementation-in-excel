@@ -24,6 +24,9 @@ export class SettingsApplier {
         if (settings.rowHeaders !== undefined) {
             sheet.rowHeaders = settings.rowHeaders;
         }
+        if (settings.rowHeaderWidth !== undefined) {
+            sheet.rowHeaderWidth = settings.rowHeaderWidth;
+        }
         if (Array.isArray(settings.nestedHeaders)) {
             sheet.nestedHeaders = settings.nestedHeaders;
         }
