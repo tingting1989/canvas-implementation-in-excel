@@ -75,20 +75,19 @@ export class DragIndicatorRenderer {
      *
      * @param {CanvasRenderingContext2D} ctx
      * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {number} scrollX - 水平滚动偏移
+     * @param {import("./ViewportTransform.js").ViewportTransform} vt
      * @param {number} viewW - 可视区域宽度
      * @param {number} viewH - 可视区域高度
      */
-    renderColumnMoveIndicator(ctx, sheet, scrollX, viewW, viewH) {
+    renderColumnMoveIndicator(ctx, sheet, vt, viewW, viewH) {
         const state = this.#columnMoveState;
         if (!state) return;
 
-        const rc = sheet.rowColManager;
-        const headerW = sheet.getHeaderWidth();
-        const headerH = sheet.getHeaderHeight();
+        const headerW = vt.headerW;
+        const headerH = vt.headerH;
         const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
-        const colScreenX = headerW + state.colX - state.scrollX;
+        const colScreenX = vt.colToViewX(state.sourceCol);
         const ghostLeft = state.dragX - (state.dragStartX - colScreenX);
 
         ctx.save();
@@ -104,7 +103,7 @@ export class DragIndicatorRenderer {
         this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + HEADER_COL_PADDING, headerH - 8, GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
-            const indicatorX = this.#calcMoveIndicatorX(rc, state.sourceCol, state.targetCol, scrollX, headerW);
+            const indicatorX = this.#calcMoveIndicatorX(vt, state.sourceCol, state.targetCol);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
             ctx.fillRect(indicatorX - INDICATOR_HALF, 0, INDICATOR_WIDTH, headerH);
             ctx.fillRect(indicatorX - INDICATOR_HALF, headerH, INDICATOR_WIDTH, viewH - headerH);
@@ -123,20 +122,19 @@ export class DragIndicatorRenderer {
      *
      * @param {CanvasRenderingContext2D} ctx
      * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {number} scrollY - 垂直滚动偏移
+     * @param {import("./ViewportTransform.js").ViewportTransform} vt
      * @param {number} viewW - 可视区域宽度
      * @param {number} viewH - 可视区域高度
      */
-    renderRowMoveIndicator(ctx, sheet, scrollY, viewW, viewH) {
+    renderRowMoveIndicator(ctx, sheet, vt, viewW, viewH) {
         const state = this.#rowMoveState;
         if (!state) return;
 
-        const rc = sheet.rowColManager;
-        const headerW = sheet.getHeaderWidth();
-        const headerH = sheet.getHeaderHeight();
+        const headerW = vt.headerW;
+        const headerH = vt.headerH;
         const headerFont = this.#buildHeaderFont(sheet.getDefaultStyle());
 
-        const rowScreenY = headerH + state.rowY - state.scrollY;
+        const rowScreenY = vt.rowToViewY(state.sourceRow);
         const ghostTop = state.dragY - (state.dragStartY - rowScreenY);
 
         ctx.save();
@@ -159,7 +157,7 @@ export class DragIndicatorRenderer {
         );
 
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
-            const indicatorY = this.#calcMoveIndicatorY(rc, state.sourceRow, state.targetRow, scrollY, headerH);
+            const indicatorY = this.#calcMoveIndicatorY(vt, state.sourceRow, state.targetRow);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
             ctx.fillRect(0, indicatorY - INDICATOR_HALF, headerW, INDICATOR_WIDTH);
             ctx.fillRect(headerW, indicatorY - INDICATOR_HALF, viewW - headerW, INDICATOR_WIDTH);
@@ -187,19 +185,25 @@ export class DragIndicatorRenderer {
         return [fontStyle, fontWeight, `${fontSize}px`, fontFamily].filter(Boolean).join(" ");
     }
 
-    /** 计算列移动插入指示器的 x 坐标 */
-    #calcMoveIndicatorX(rc, sourceCol, targetCol, scrollX, headerW) {
+    /**
+     * 计算列移动插入指示器的 x 坐标
+     * 使用 ViewportTransform 自动处理冻结列偏移
+     */
+    #calcMoveIndicatorX(vt, sourceCol, targetCol) {
         if (targetCol > sourceCol) {
-            return headerW + rc.getColX(targetCol) + rc.getColWidth(targetCol) - scrollX;
+            return vt.colRightToViewX(targetCol);
         }
-        return headerW + rc.getColX(targetCol) - scrollX;
+        return vt.colToViewX(targetCol);
     }
 
-    /** 计算行移动插入指示器的 y 坐标 */
-    #calcMoveIndicatorY(rc, sourceRow, targetRow, scrollY, headerH) {
+    /**
+     * 计算行移动插入指示器的 y 坐标
+     * 使用 ViewportTransform 自动处理冻结行偏移
+     */
+    #calcMoveIndicatorY(vt, sourceRow, targetRow) {
         if (targetRow > sourceRow) {
-            return headerH + rc.getRowY(targetRow) + rc.getRowHeight(targetRow) - scrollY;
+            return vt.rowBottomToViewY(targetRow);
         }
-        return headerH + rc.getRowY(targetRow) - scrollY;
+        return vt.rowToViewY(targetRow);
     }
 }

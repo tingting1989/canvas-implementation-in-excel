@@ -2,7 +2,6 @@ import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { HOOKS } from "../../constants/hookNames.js";
-import { CONFIG } from "../../constants/config";
 
 /** 拖拽启动阈值（像素），鼠标移动超过此距离才视为拖拽开始 */
 const DRAG_THRESHOLD = 3;
@@ -143,9 +142,6 @@ export class RowMoveStrategy extends EventStrategy {
             targetRow: this.#targetRow,
             dragY: dragY,
             dragStartY: this.#dragStartY,
-            headerH: CONFIG.HEADER_HEIGHT,
-            scrollY: this.handler.renderEngine.scrollY,
-            rowY: rc.getRowY(this.#sourceRow),
             rowH: rc.getRowHeight(this.#sourceRow),
         });
 

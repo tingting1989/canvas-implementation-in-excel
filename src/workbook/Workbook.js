@@ -1,5 +1,6 @@
 import { Sheet, SHEET_CHANGE_ALL, SHEET_CHANGE_CELL, SHEET_CHANGE_RENDER } from "./Sheet.js";
 import { RenderEngine } from "../render/RenderEngine.js";
+import { ViewportTransform } from "../render/ViewportTransform.js";
 import { EditorManager } from "../editor/EditorManager.js";
 import { EventHandler } from "../editor/EventHandler.js";
 import { PluginManager } from "../plugins/PluginManager.js";
@@ -223,47 +224,19 @@ export class Workbook {
             if (!activeEditor || activeEditor.activeRow < 0) return;
 
             const { activeRow: row, activeCol: col } = activeEditor;
-            const rc = this.activeSheet.rowColManager;
+            const sheet = this.activeSheet;
             const dpr = window.devicePixelRatio || 1;
-            const headerW = this.activeSheet.getHeaderWidth();
-            const headerH = this.activeSheet.getHeaderHeight();
             const tabH = CONFIG.SHEET_TAB_HEIGHT;
-            const frozenColsW = this.activeSheet.frozenColsWidth;
-            const frozenRowsH = this.activeSheet.frozenRowsHeight;
-            const fixedRows = this.activeSheet.fixedRowsTop;
-            const fixedCols = this.activeSheet.fixedColumnsStart;
-            const viewW = this.renderEngine.canvas.width / dpr - headerW - frozenColsW;
-            const viewH = this.renderEngine.canvas.height / dpr - headerH - tabH - frozenRowsH;
+            const canvasW = this.renderEngine.canvas.width / dpr;
+            const canvasH = this.renderEngine.canvas.height / dpr;
 
-            const cellX = rc.getColX(col);
-            const cellY = rc.getRowY(row);
-            const cellW = rc.getColWidth(col);
-            const cellH = rc.getRowHeight(row);
-            const sx = this.renderEngine.scrollX;
-            const sy = this.renderEngine.scrollY;
+            const vt = new ViewportTransform(sheet, this.renderEngine.scrollX, this.renderEngine.scrollY);
+            const visible = vt.isCellVisible(row, col, canvasW, canvasH, tabH);
 
-            const inFrozenCols = col < fixedCols;
-            const inFrozenRows = row < fixedRows;
-
-            const effectiveSx = inFrozenCols ? 0 : sx;
-            const effectiveSy = inFrozenRows ? 0 : sy;
-
-            let outOfView = false;
-            if (inFrozenCols) {
-                outOfView = cellX + cellW <= 0 || cellX >= frozenColsW;
-            } else {
-                outOfView = cellX + cellW - frozenColsW <= effectiveSx || cellX - frozenColsW >= effectiveSx + viewW;
-            }
-            if (inFrozenRows) {
-                outOfView = outOfView || (cellY + cellH <= 0 || cellY >= frozenRowsH);
-            } else {
-                outOfView = outOfView || (cellY + cellH - frozenRowsH <= effectiveSy || cellY - frozenRowsH >= effectiveSy + viewH);
-            }
-
-            if (outOfView) {
-                activeEditor.hideForScroll();
-            } else {
+            if (visible) {
                 activeEditor.restoreFromScroll();
+            } else {
+                activeEditor.hideForScroll();
             }
         };
     }

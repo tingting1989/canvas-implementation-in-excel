@@ -82,6 +82,9 @@ export class ScrollManager {
     #wheelHandler = null;
     #dragMoveHandler = null;
     #dragEndHandler = null;
+    /** thumb 的 mousedown 处理器引用（destroy 时需移除） */
+    #hThumbDownHandler = null;
+    #vThumbDownHandler = null;
     #viewW = 0;
     #viewH = 0;
     #hThumb = null;
@@ -133,8 +136,8 @@ export class ScrollManager {
             dragging = "h";
             startMouse = e.clientX;
             startScroll = this.#scrollX;
-            document.addEventListener("mousemove", onDragMove);
-            document.addEventListener("mouseup", onDragEnd);
+            document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
+            document.addEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
         };
 
         const onVThumbDown = (e) => {
@@ -142,15 +145,16 @@ export class ScrollManager {
             dragging = "v";
             startMouse = e.clientY;
             startScroll = this.#scrollY;
-            document.addEventListener("mousemove", onDragMove);
-            document.addEventListener("mouseup", onDragEnd);
+            document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
+            document.addEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
         };
 
         const onDragMove = (e) => {
             if (dragging === "h") {
                 const dx = e.clientX - startMouse;
                 const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
-                const trackW = this.#viewW - hw - this.#frozenColsW;
+                // trackW 必须与 CSS half-and-half 布局一致，否则拖拽距离与滚动距离比例错误
+                const trackW = (this.#viewW - CONFIG.SCROLLBAR_WIDTH) / 2;
                 const dataViewW = this.#viewW - hw - this.#frozenColsW;
                 const totalContent = this.#maxScrollX + dataViewW;
                 const ratio = totalContent > 0 ? trackW / totalContent : 1;
@@ -170,13 +174,16 @@ export class ScrollManager {
 
         const onDragEnd = () => {
             dragging = null;
-            document.removeEventListener("mousemove", onDragMove);
-            document.removeEventListener("mouseup", onDragEnd);
+            document.removeEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
+            document.removeEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
         };
 
-        this.#hThumb.addEventListener("mousedown", onHThumbDown);
-        this.#vThumb.addEventListener("mousedown", onVThumbDown);
+        this.#hThumb.addEventListener(EVENT_NAMES.MOUSEDOWN, onHThumbDown);
+        this.#vThumb.addEventListener(EVENT_NAMES.MOUSEDOWN, onVThumbDown);
 
+        // 保存所有 handler 引用，供 destroy() 统一移除
+        this.#hThumbDownHandler = onHThumbDown;
+        this.#vThumbDownHandler = onVThumbDown;
         this.#dragMoveHandler = onDragMove;
         this.#dragEndHandler = onDragEnd;
     }
@@ -300,7 +307,12 @@ export class ScrollManager {
         }
 
         if (this.#hThumb && this.#maxScrollX > 0) {
-            const trackW = this.#viewW - hw - this.#frozenColsW;
+            // 滚动条轨道实际宽度由 CSS "half-and-half" 布局决定：
+            // hBar.left = (viewW - SCROLLBAR_WIDTH) / 2, hBar.right = SCROLLBAR_WIDTH
+            // 轨道宽度 = viewW - hBar.left - hBar.right = viewW - (viewW-SCROLLBAR_WIDTH)/2 - SCROLLBAR_WIDTH
+            //           = (viewW - SCROLLBAR_WIDTH) / 2 ≈ viewW / 2
+            // thumb 的 left 和 width 都应基于此轨道宽度计算，而非 dataViewW
+            const trackW = (this.#viewW - CONFIG.SCROLLBAR_WIDTH) / 2;
             const dataViewW = this.#viewW - hw - this.#frozenColsW;
             const totalW = this.#maxScrollX + dataViewW;
             const thumbW = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackW * (dataViewW / totalW)));
@@ -350,12 +362,21 @@ export class ScrollManager {
             this.#wheelHandler = null;
         }
         if (this.#dragMoveHandler) {
-            document.removeEventListener("mousemove", this.#dragMoveHandler);
+            document.removeEventListener(EVENT_NAMES.MOUSEMOVE, this.#dragMoveHandler);
             this.#dragMoveHandler = null;
         }
         if (this.#dragEndHandler) {
-            document.removeEventListener("mouseup", this.#dragEndHandler);
+            document.removeEventListener(EVENT_NAMES.MOUSEUP, this.#dragEndHandler);
             this.#dragEndHandler = null;
+        }
+        // 移除 thumb 上的 mousedown 监听（之前未保存引用导致泄漏）
+        if (this.#hThumb && this.#hThumbDownHandler) {
+            this.#hThumb.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#hThumbDownHandler);
+            this.#hThumbDownHandler = null;
+        }
+        if (this.#vThumb && this.#vThumbDownHandler) {
+            this.#vThumb.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#vThumbDownHandler);
+            this.#vThumbDownHandler = null;
         }
         this.#pendingScrollCallback = false;
         if (this.#hBar && this.#hBar.parentElement) {

@@ -4,6 +4,7 @@ import { SheetTabBar } from "./SheetTabBar.js";
 import { TileRenderer } from "./TileRenderer.js";
 import { OverlayRenderer } from "./OverlayRenderer.js";
 import { HeaderRenderer } from "./HeaderRenderer.js";
+import { ViewportTransform } from "./ViewportTransform.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { CONFIG } from "../constants/config";
 import { HIT_TYPE } from "../constants/hitType";
@@ -37,6 +38,14 @@ export class RenderEngine {
     #viewW = 0;
     /** @type {number} 视口逻辑高度（CSS 像素） */
     #viewH = 0;
+    /**
+     * 缓存的 ViewportTransform 实例，避免 hitTest/getCellRect 等高频方法每次 new
+     * 通过 #getViewportTransform() 获取，内部按需更新（sheet/scroll 变化时）
+     * @type {ViewportTransform|null}
+     */
+    #cachedVT = null;
+    /** @type {string} 缓存 VT 对应的 sheet 标识，用于判断是否需要重建 */
+    #cachedVTSheetKey = "";
     /** @type {number|null} 用户通过配置项指定的画布宽度，null 表示自适应容器 */
     #userWidth = null;
     /** @type {number|null} 用户通过配置项指定的画布高度，null 表示自适应容器 */
@@ -227,26 +236,27 @@ export class RenderEngine {
         // 渲染超出实际数据范围的行/列（表现为底部/右侧出现多余空白行/列）
         const mainViewW = frozenColsW > 0 ? viewW - frozenColsW : viewW;
         const mainViewH = frozenRowsH > 0 ? viewH - frozenRowsH : viewH;
-        this.tileRenderer.render(ctx, sheet, sx, sy, mainViewW, mainViewH);
-        this.overlayRenderer.renderMerges(ctx, sheet, sx, sy);
-        this.overlayRenderer.renderSelection(ctx, sheet, sx, sy, viewW, viewH);
+        const vt = this.#getViewportTransform();
 
-        // 分页模式下冻结行区域需使用实际行号渲染（绕过页面偏移）
+        this.tileRenderer.render(ctx, sheet, sx, sy, mainViewW, mainViewH);
+        this.overlayRenderer.renderMerges(ctx, sheet, vt);
+        this.overlayRenderer.renderSelection(ctx, sheet, vt, viewW, viewH);
+
         const freezeTileOptions = isPaginationActive ? { useRealRows: true } : undefined;
 
         if (frozenColsW > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, viewH - headerH, 0, sy, frozenColsW + headerW, viewH, freezeTileOptions);
+            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, viewH - headerH, 0, sy, frozenColsW + headerW, viewH, vt, freezeTileOptions);
         }
 
         if (frozenRowsH > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, viewW - headerW, frozenRowsH, sx, 0, viewW, frozenRowsH + headerH, freezeTileOptions);
+            this.#renderClippedRegion(ctx, sheet, headerW, headerH, viewW - headerW, frozenRowsH, sx, 0, viewW, frozenRowsH + headerH, vt, freezeTileOptions);
         }
 
         if (frozenRowsH > 0 && frozenColsW > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, frozenRowsH, 0, 0, frozenColsW + headerW, frozenRowsH + headerH, freezeTileOptions);
+            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, frozenRowsH, 0, 0, frozenColsW + headerW, frozenRowsH + headerH, vt, freezeTileOptions);
         }
 
-        this.headerRenderer.render(ctx, sheet, sx, sy, viewW, viewH);
+        this.headerRenderer.render(ctx, sheet, vt, viewW, viewH);
 
         if (frozenColsW > 0 || frozenRowsH > 0) {
             this.#renderFreezeLines(ctx, headerW, headerH, frozenColsW, frozenRowsH, viewW, viewH);
@@ -270,14 +280,14 @@ export class RenderEngine {
      * @param {number} viewH - 视口高度（用于 overlay）
      * @param {object} [tileOptions] - 传递给 TileRenderer 的额外选项
      */
-    #renderClippedRegion(ctx, sheet, clipX, clipY, clipW, clipH, scrollX, scrollY, viewW, viewH, tileOptions) {
+    #renderClippedRegion(ctx, sheet, clipX, clipY, clipW, clipH, scrollX, scrollY, viewW, viewH, vt, tileOptions) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(clipX, clipY, clipW, clipH);
         ctx.clip();
         this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, tileOptions);
-        this.overlayRenderer.renderMerges(ctx, sheet, scrollX, scrollY);
-        this.overlayRenderer.renderSelection(ctx, sheet, scrollX, scrollY, viewW, viewH);
+        this.overlayRenderer.renderMerges(ctx, sheet, vt);
+        this.overlayRenderer.renderSelection(ctx, sheet, vt, viewW, viewH);
         ctx.restore();
     }
 
@@ -306,6 +316,26 @@ export class RenderEngine {
     }
 
     /**
+     * 获取缓存的 ViewportTransform 实例（带滚动偏移）
+     * 内部按需更新：当 sheet 或滚动位置变化时重建，避免高频方法每次 new
+     * @returns {ViewportTransform|null}
+     */
+    #getViewportTransform() {
+        const sheet = this.#currentSheet;
+        if (!sheet) return null;
+        const sx = this.scrollMgr.scrollX;
+        const sy = this.scrollMgr.scrollY;
+        // 用冻结尺寸+表头尺寸+名称组合作为 sheet 状态标识，
+        // 行高/列宽变化时这些值会变，确保缓存失效
+        const sheetKey = `${sheet.name}:${sheet.frozenColsWidth}:${sheet.frozenRowsHeight}:${sheet.getHeaderWidth()}:${sheet.getHeaderHeight()}`;
+        if (!this.#cachedVT || this.#cachedVTSheetKey !== sheetKey || this.#cachedVT.scrollX !== sx || this.#cachedVT.scrollY !== sy) {
+            this.#cachedVT = new ViewportTransform(sheet, sx, sy);
+            this.#cachedVTSheetKey = sheetKey;
+        }
+        return this.#cachedVT;
+    }
+
+    /**
      * 获取单元格在视口中的矩形位置
      * 返回的坐标是相对于 Canvas 左上角的 CSS 像素坐标，已扣除滚动偏移
      *
@@ -316,52 +346,19 @@ export class RenderEngine {
      */
     getCellRect(row, col, mergeInfo = null) {
         const sheet = this.#currentSheet;
-        const rc = sheet ? sheet.rowColManager : null;
-        if (!rc) return { x: 0, y: 0, w: 0, h: 0 };
+        if (!sheet || !sheet.rowColManager) return { x: 0, y: 0, w: 0, h: 0 };
 
-        const headerW = sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH;
-        const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
-        const sx = this.scrollMgr.scrollX;
-        const sy = this.scrollMgr.scrollY;
-        const frozenRowsH = sheet ? sheet.frozenRowsHeight : 0;
-        const frozenColsW = sheet ? sheet.frozenColsWidth : 0;
-        const fixedRows = sheet ? sheet.fixedRowsTop : 0;
-        const fixedCols = sheet ? sheet.fixedColumnsStart : 0;
+        const vt = this.#getViewportTransform();
 
         if (mergeInfo) {
-            const pageTopRow = sheet ? sheet.toPageRow(mergeInfo.topRow) : mergeInfo.topRow;
-            const pageBottomRow = sheet ? sheet.toPageRow(mergeInfo.bottomRow) : mergeInfo.bottomRow;
-
-            const colX = rc.getColX(mergeInfo.topCol);
-            const rowY = rc.getRowY(pageTopRow);
-            const w = rc.getColX(mergeInfo.bottomCol) + rc.getColWidth(mergeInfo.bottomCol) - colX;
-            const h = rc.getRowY(pageBottomRow) + rc.getRowHeight(pageBottomRow) - rowY;
-
-            const effectiveSx = mergeInfo.topCol < fixedCols ? 0 : sx;
-            const effectiveSy = mergeInfo.topRow < fixedRows ? 0 : sy;
-
-            return {
-                x: headerW + colX - effectiveSx,
-                y: headerH + rowY - effectiveSy,
-                w,
-                h,
-            };
+            // mergeInfo 的行号为实际行号，需转为页面行号后再做视口坐标转换
+            const pageTopRow = sheet.toPageRow(mergeInfo.topRow);
+            const pageBottomRow = sheet.toPageRow(mergeInfo.bottomRow);
+            const pageMerge = { topRow: pageTopRow, topCol: mergeInfo.topCol, bottomRow: pageBottomRow, bottomCol: mergeInfo.bottomCol };
+            return vt.mergeToViewRect(pageMerge);
         }
 
-        const colX = rc.getColX(col);
-        const rowY = rc.getRowY(row);
-        const w = rc.getColWidth(col);
-        const h = rc.getRowHeight(row);
-
-        const effectiveSx = col < fixedCols ? 0 : sx;
-        const effectiveSy = row < fixedRows ? 0 : sy;
-
-        return {
-            x: headerW + colX - effectiveSx,
-            y: headerH + rowY - effectiveSy,
-            w,
-            h,
-        };
+        return vt.cellToViewRect(row, col);
     }
 
     /**
@@ -377,12 +374,11 @@ export class RenderEngine {
         const px = clientX - rect.left;
         const py = clientY - rect.top;
         const sheet = this.#currentSheet;
-        const headerW = sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH;
-        const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
-        const frozenRowsH = sheet ? sheet.frozenRowsHeight : 0;
-        const frozenColsW = sheet ? sheet.frozenColsWidth : 0;
-        const fixedRows = sheet ? sheet.fixedRowsTop : 0;
-        const fixedCols = sheet ? sheet.fixedColumnsStart : 0;
+        if (!sheet) return null;
+        const vt = this.#getViewportTransform();
+        const rc = sheet.rowColManager;
+        const headerW = vt.headerW;
+        const headerH = vt.headerH;
 
         if (px > this.#viewW || py > this.#viewH) return null;
 
@@ -391,36 +387,22 @@ export class RenderEngine {
         }
 
         if (py >= 0 && py <= headerH && px > headerW) {
-            const rc = sheet ? sheet.rowColManager : null;
-            if (!rc) return null;
-            const inFrozenCols = frozenColsW > 0 && px <= headerW + frozenColsW;
-            const dataX = inFrozenCols ? (px - headerW) : (px - headerW + this.scrollMgr.scrollX);
-            const col = rc.colAt(dataX);
+            const col = vt.viewXToCol(px);
             if (col >= 0 && col < rc.colCount) {
                 return { type: HIT_TYPE.COL_HEADER, index: col };
             }
         }
 
         if (px >= 0 && px <= headerW && py > headerH) {
-            const rc = sheet ? sheet.rowColManager : null;
-            if (!rc) return null;
-            const inFrozenRows = frozenRowsH > 0 && py <= headerH + frozenRowsH;
-            const dataY = inFrozenRows ? (py - headerH) : (py - headerH + this.scrollMgr.scrollY);
-            const row = rc.rowAt(dataY);
+            const row = vt.viewYToRow(py);
             if (row >= 0 && row < rc.rowCount) {
                 return { type: HIT_TYPE.ROW_HEADER, index: row };
             }
         }
 
         if (px > headerW && py > headerH) {
-            const rc = sheet ? sheet.rowColManager : null;
-            if (!rc) return null;
-            const inFrozenCols = frozenColsW > 0 && px <= headerW + frozenColsW;
-            const inFrozenRows = frozenRowsH > 0 && py <= headerH + frozenRowsH;
-            const dataX = inFrozenCols ? (px - headerW) : (px - headerW + this.scrollMgr.scrollX);
-            const dataY = inFrozenRows ? (py - headerH) : (py - headerH + this.scrollMgr.scrollY);
-            const col = rc.colAt(dataX);
-            const row = rc.rowAt(dataY);
+            const col = vt.viewXToCol(px);
+            const row = vt.viewYToRow(py);
             if (row >= 0 && row < rc.rowCount && col >= 0 && col < rc.colCount) {
                 return { type: HIT_TYPE.CELL, row, col };
             }
@@ -442,33 +424,27 @@ export class RenderEngine {
         const px = clientX - rect.left;
         const py = clientY - rect.top;
         const sheet = this.#currentSheet;
-        const rc = sheet ? sheet.rowColManager : null;
-        if (!rc) return null;
-
-        const headerW = sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH;
-        const headerH = sheet ? sheet.getHeaderHeight() : CONFIG.HEADER_HEIGHT;
-        const frozenRowsH = sheet ? sheet.frozenRowsHeight : 0;
-        const frozenColsW = sheet ? sheet.frozenColsWidth : 0;
+        if (!sheet) return null;
+        const rc = sheet.rowColManager;
+        const vt = this.#getViewportTransform();
+        const headerW = vt.headerW;
+        const headerH = vt.headerH;
         const hitArea = CONFIG.RESIZE_HIT_AREA;
-        const sx = this.scrollMgr.scrollX;
-        const sy = this.scrollMgr.scrollY;
         if (px > this.#viewW || py > this.#viewH) return null;
 
         if (py >= 0 && py <= headerH && px > headerW) {
-            const inFrozenCols = frozenColsW > 0 && px <= headerW + frozenColsW;
-            const dataX = inFrozenCols ? (px - headerW) : (px - headerW + sx);
+            const dataX = vt.viewXToDataX(px);
             const col = rc.colAt(dataX);
-            const colRight = rc.getColX(col) + rc.getColWidth(col);
+            const colRight = vt.colRightToDataX(col);
             if (Math.abs(dataX - colRight) <= hitArea) {
                 return { type: HIT_TYPE.COL_RESIZE, index: col };
             }
         }
 
         if (px >= 0 && px <= headerW && py > headerH) {
-            const inFrozenRows = frozenRowsH > 0 && py <= headerH + frozenRowsH;
-            const dataY = inFrozenRows ? (py - headerH) : (py - headerH + sy);
+            const dataY = vt.viewYToDataY(py);
             const row = rc.rowAt(dataY);
-            const rowBottom = rc.getRowY(row) + rc.getRowHeight(row);
+            const rowBottom = vt.rowBottomToDataY(row);
             if (Math.abs(dataY - rowBottom) <= hitArea) {
                 return { type: HIT_TYPE.ROW_RESIZE, index: row };
             }
@@ -492,21 +468,11 @@ export class RenderEngine {
         const px = clientX - rect.left;
         const py = clientY - rect.top;
         const sheet = this.#currentSheet;
-        const rc = sheet.rowColManager;
         const range = sheet.selection.getRange();
 
-        const headerW = sheet.getHeaderWidth();
-        const headerH = sheet.getHeaderHeight();
-        const sx = this.scrollMgr.scrollX;
-        const sy = this.scrollMgr.scrollY;
-        const fixedRows = sheet.fixedRowsTop;
-        const fixedCols = sheet.fixedColumnsStart;
-
-        const effectiveSx = range.bottomCol < fixedCols ? 0 : sx;
-        const effectiveSy = range.bottomRow < fixedRows ? 0 : sy;
-
-        const x2 = headerW + rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - effectiveSx;
-        const y2 = headerH + rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - effectiveSy;
+        const vt = this.#getViewportTransform();
+        const x2 = vt.colRightToViewX(range.bottomCol);
+        const y2 = vt.rowBottomToViewY(range.bottomRow);
 
         const handleSize = 6;
         return px >= x2 - handleSize && px <= x2 && py >= y2 - handleSize && py <= y2;

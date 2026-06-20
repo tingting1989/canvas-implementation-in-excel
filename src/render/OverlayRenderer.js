@@ -30,21 +30,18 @@ export class OverlayRenderer {
      *
      * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 工作表
-     * @param {number} scrollX - 水平滚动偏移
-     * @param {number} scrollY - 垂直滚动偏移
+     * @param {import("./ViewportTransform.js").ViewportTransform} vt - 视口坐标转换器
      */
-    renderMerges(ctx, sheet, scrollX, scrollY) {
+    renderMerges(ctx, sheet, vt) {
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
         ctx.lineWidth = 2;
 
         const pageStart = sheet.rowColManager.pageStartRow;
         const pageEnd = sheet.rowColManager.pageEndRow;
-        const headerH = sheet.getHeaderHeight();
 
         for (const merge of sheet.getAllMerges()) {
             const { topRow, topCol, bottomRow, bottomCol } = merge;
             const rc = sheet.rowColManager;
-            const headerW = sheet.getHeaderWidth();
 
             if (pageStart >= 0 && pageEnd > pageStart) {
                 if (bottomRow < pageStart || topRow >= pageEnd) continue;
@@ -55,17 +52,8 @@ export class OverlayRenderer {
             const pageTopRow = sheet.toPageRow(topRow);
             const pageBottomRow = sheet.toPageRow(bottomRow);
 
-            const x1 = rc.getColX(topCol);
-            const y1 = rc.getRowY(pageTopRow);
-            const x2 = rc.getColX(bottomCol) + rc.getColWidth(bottomCol);
-            const y2 = rc.getRowY(pageBottomRow) + rc.getRowHeight(pageBottomRow);
-
-            const drawX = headerW + x1 - scrollX;
-            const drawY = headerH + y1 - scrollY;
-            const drawW = x2 - x1;
-            const drawH = y2 - y1;
-
-            ctx.strokeRect(drawX, drawY, drawW, drawH);
+            const rect = vt.mergeToViewRect({ topRow: pageTopRow, topCol, bottomRow: pageBottomRow, bottomCol });
+            ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
         }
 
         ctx.lineWidth = 1;
@@ -82,131 +70,92 @@ export class OverlayRenderer {
      *
      * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 工作表
-     * @param {number} scrollX - 水平滚动偏移
-     * @param {number} scrollY - 垂直滚动偏移
+     * @param {import("./ViewportTransform.js").ViewportTransform} vt - 视口坐标转换器
      * @param {number} viewW - 视口宽度
      * @param {number} viewH - 视口高度
      */
-    renderSelection(ctx, sheet, scrollX, scrollY, viewW, viewH) {
-        const rc = sheet.rowColManager;
-        const headerW = sheet.getHeaderWidth();
-        const headerH = sheet.getHeaderHeight();
+    renderSelection(ctx, sheet, vt, viewW, viewH) {
         const range = sheet.selection.getRange();
         const [focusRow, focusCol] = sheet.selection.getFocus();
 
-        this.#renderRangeHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH);
-        this.#renderHeaderHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH, viewW, viewH);
-        this.#renderActiveCell(ctx, rc, focusRow, focusCol, scrollX, scrollY, headerW, headerH, sheet);
-        this.#renderRangeBorder(ctx, rc, range, scrollX, scrollY, headerW, headerH);
-        this.#renderFillHandle(ctx, rc, range, scrollX, scrollY, headerW, headerH);
+        this.#renderRangeHighlight(ctx, vt, range);
+        this.#renderHeaderHighlight(ctx, vt, range);
+        this.#renderActiveCell(ctx, vt, focusRow, focusCol, sheet);
+        this.#renderRangeBorder(ctx, vt, range);
+        this.#renderFillHandle(ctx, vt, range);
 
         if (this.#resizeLine) {
-            this.#renderResizeLine(ctx, this.#resizeLine, headerW, headerH, viewW, viewH);
+            this.#renderResizeLine(ctx, this.#resizeLine, vt, viewW, viewH);
         }
     }
 
-    /**
-     * 渲染选区范围高亮（浅蓝色半透明背景）
-     */
-    #renderRangeHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH) {
-        const x1 = rc.getColX(range.topCol);
-        const y1 = rc.getRowY(range.topRow);
-        const x2 = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol);
-        const y2 = rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow);
-
-        const drawX = headerW + x1 - scrollX;
-        const drawY = headerH + y1 - scrollY;
-        const drawW = x2 - x1;
-        const drawH = y2 - y1;
-
+    #renderRangeHighlight(ctx, vt, range) {
+        const rect = vt.mergeToViewRect(range);
         ctx.fillStyle = "rgba(76, 139, 245, 0.08)";
-        ctx.fillRect(drawX, drawY, drawW, drawH);
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
 
-    #renderHeaderHighlight(ctx, rc, range, scrollX, scrollY, headerW, headerH, viewW, viewH) {
+    #renderHeaderHighlight(ctx, vt, range) {
         ctx.fillStyle = "rgba(76, 139, 245, 0.18)";
 
-        const colX1 = rc.getColX(range.topCol) - scrollX;
-        const colX2 = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - scrollX;
-        ctx.fillRect(headerW + colX1, 0, colX2 - colX1, headerH);
+        const colX1 = vt.colToViewX(range.topCol);
+        const colX2 = vt.colRightToViewX(range.bottomCol);
+        ctx.fillRect(colX1, 0, colX2 - colX1, vt.headerH);
 
-        const rowY1 = rc.getRowY(range.topRow) - scrollY;
-        const rowY2 = rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - scrollY;
-        ctx.fillRect(0, headerH + rowY1, headerW, rowY2 - rowY1);
+        const rowY1 = vt.rowToViewY(range.topRow);
+        const rowY2 = vt.rowBottomToViewY(range.bottomRow);
+        ctx.fillRect(0, rowY1, vt.headerW, rowY2 - rowY1);
     }
 
-    #renderActiveCell(ctx, rc, row, col, scrollX, scrollY, headerW, headerH, sheet) {
+    #renderActiveCell(ctx, vt, row, col, sheet) {
         const merge = sheet.getMerge(row, col);
-        const actualRow = merge ? merge.topRow : row;
-        const actualCol = merge ? merge.topCol : col;
 
-        let x, y, w, h;
+        let rect;
         if (merge) {
-            x = rc.getColX(merge.topCol);
-            y = rc.getRowY(merge.topRow);
-            w = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol) - x;
-            h = rc.getRowY(merge.bottomRow) + rc.getRowHeight(merge.bottomRow) - y;
+            rect = vt.mergeToViewRect(merge);
         } else {
-            x = rc.getColX(actualCol);
-            y = rc.getRowY(actualRow);
-            w = rc.getColWidth(actualCol);
-            h = rc.getRowHeight(actualRow);
+            rect = vt.cellToViewRect(row, col);
         }
 
-        const drawX = headerW + x - scrollX;
-        const drawY = headerH + y - scrollY;
-
         ctx.fillStyle = "rgba(76, 139, 245, 0.12)";
-        ctx.fillRect(drawX, drawY, w, h);
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
 
-    #renderRangeBorder(ctx, rc, range, scrollX, scrollY, headerW, headerH) {
-        const x1 = rc.getColX(range.topCol);
-        const y1 = rc.getRowY(range.topRow);
-        const x2 = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol);
-        const y2 = rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow);
-
-        const drawX = headerW + x1 - scrollX;
-        const drawY = headerH + y1 - scrollY;
-        const drawW = x2 - x1;
-        const drawH = y2 - y1;
-
+    #renderRangeBorder(ctx, vt, range) {
+        const rect = vt.mergeToViewRect(range);
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
         ctx.lineWidth = 2;
-        ctx.strokeRect(drawX, drawY, drawW, drawH);
+        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
         ctx.lineWidth = 1;
     }
 
-    #renderFillHandle(ctx, rc, range, scrollX, scrollY, headerW, headerH) {
-        const x2 = rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol);
-        const y2 = rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow);
-
-        const drawX = headerW + x2 - scrollX;
-        const drawY = headerH + y2 - scrollY;
+    #renderFillHandle(ctx, vt, range) {
+        const x2 = vt.colRightToViewX(range.bottomCol);
+        const y2 = vt.rowBottomToViewY(range.bottomRow);
 
         ctx.fillStyle = CONFIG.SELECTION_COLOR;
-        ctx.fillRect(drawX - 5, drawY - 5, 5, 5);
+        ctx.fillRect(x2 - 5, y2 - 5, 5, 5);
     }
 
     /**
      * 渲染拖拽调整行高/列宽时的参考线（蓝色虚线）
      */
-    #renderResizeLine(ctx, line, headerW, headerH, viewW, viewH) {
+    #renderResizeLine(ctx, line, vt, viewW, viewH) {
         ctx.save();
         ctx.strokeStyle = "#4c8bf5";
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 3]);
 
         if (line.type === HIT_TYPE.COL_RESIZE) {
-            const x = headerW + line.position;
+            const x = vt.headerW + line.position;
             ctx.beginPath();
-            ctx.moveTo(x, headerH);
+            ctx.moveTo(x, vt.headerH);
             ctx.lineTo(x, viewH);
             ctx.stroke();
         } else if (line.type === HIT_TYPE.ROW_RESIZE) {
-            const y = headerH + line.position;
+            const y = vt.headerH + line.position;
             ctx.beginPath();
-            ctx.moveTo(headerW, y);
+            ctx.moveTo(vt.headerW, y);
             ctx.lineTo(viewW, y);
             ctx.stroke();
         }

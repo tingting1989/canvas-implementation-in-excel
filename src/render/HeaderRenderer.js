@@ -42,24 +42,19 @@ export class HeaderRenderer {
      * 主渲染入口
      * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
-     * @param {number} scrollX - 水平滚动偏移
-     * @param {number} scrollY - 垂直滚动偏移
+     * @param {import("./ViewportTransform.js").ViewportTransform} vt - 视口坐标转换器
      * @param {number} viewW - 可视区域宽度
      * @param {number} viewH - 可视区域高度
      */
-    render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
+    render(ctx, sheet, vt, viewW, viewH) {
         const range = sheet.selection.getRange();
-        const frozenRowsH = sheet.frozenRowsHeight;
-        const frozenColsW = sheet.frozenColsWidth;
-        const fixedRows = sheet.fixedRowsTop;
-        const fixedCols = sheet.fixedColumnsStart;
 
-        this.#renderColumnHeaders(ctx, sheet, scrollX, viewW, range, frozenColsW, fixedCols);
-        this.#renderRowHeaders(ctx, sheet, scrollY, viewH, range, frozenRowsH, fixedRows);
-        this.#renderCorner(ctx, sheet, range);
+        this.#renderColumnHeaders(ctx, sheet, vt, viewW, range);
+        this.#renderRowHeaders(ctx, sheet, vt, viewH, range);
+        this.#renderCorner(ctx, vt, range);
         this.resizeRenderer.render(ctx, viewW, viewH);
-        this.dragRenderer.renderColumnMoveIndicator(ctx, sheet, scrollX, viewW, viewH);
-        this.dragRenderer.renderRowMoveIndicator(ctx, sheet, scrollY, viewW, viewH);
+        this.dragRenderer.renderColumnMoveIndicator(ctx, sheet, vt, viewW, viewH);
+        this.dragRenderer.renderRowMoveIndicator(ctx, sheet, vt, viewW, viewH);
     }
 
     /**
@@ -69,28 +64,29 @@ export class HeaderRenderer {
      * - 背景填充 → 逐列绘制（跳过隐藏列）→ 选区高亮底线
      * - 拖拽中时源列显示蓝色半透明高亮，隐藏选区底线
      */
-    #renderColumnHeaders(ctx, sheet, scrollX, viewW, range, frozenColsW, fixedCols) {
+    #renderColumnHeaders(ctx, sheet, vt, viewW, range) {
         const rc = sheet.rowColManager;
-        const headerW = sheet.getHeaderWidth();
+        const headerW = vt.headerW;
         const rowH = CONFIG.HEADER_HEIGHT;
         const defaultStyle = sheet.getDefaultStyle();
         const headerFont = this.#buildHeaderFont(defaultStyle);
 
         const nestedCount = sheet.getNestedHeaderRowCount();
-        const totalHeaderH = sheet.getHeaderHeight();
+        const totalHeaderH = vt.headerH;
+        const frozenColsW = vt.frozenColsW;
+        const fixedCols = vt.fixedCols;
+        const scrollX = vt.scrollX;
 
         ctx.fillStyle = CONFIG.HEADER_BG;
         ctx.fillRect(headerW, 0, viewW - headerW, totalHeaderH);
 
-        // 滚动区域列头（在冻结区域右侧）
         this.#renderHeaderRegion(ctx, sheet, {
+            vt,
+            rc,
             clipX: frozenColsW > 0 ? headerW + frozenColsW : headerW,
             clipY: 0,
             clipW: frozenColsW > 0 ? viewW - headerW - frozenColsW : viewW - headerW,
             clipH: totalHeaderH,
-            scrollX,
-            rc,
-            headerW,
             rowH,
             defaultStyle,
             headerFont,
@@ -100,16 +96,14 @@ export class HeaderRenderer {
             isFrozen: false,
         });
 
-        // 冻结区域列头（左侧固定）
         if (frozenColsW > 0) {
             this.#renderHeaderRegion(ctx, sheet, {
+                vt,
+                rc,
                 clipX: headerW,
                 clipY: 0,
                 clipW: frozenColsW,
                 clipH: totalHeaderH,
-                scrollX: 0,
-                rc,
-                headerW,
                 rowH,
                 defaultStyle,
                 headerFont,
@@ -121,12 +115,8 @@ export class HeaderRenderer {
         }
 
         if (!this.dragRenderer.hasColumnMove()) {
-            const topColX = range.topCol < fixedCols
-                ? headerW + rc.getColX(range.topCol)
-                : headerW + rc.getColX(range.topCol) - scrollX;
-            const bottomColRight = range.bottomCol < fixedCols
-                ? headerW + rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol)
-                : headerW + rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - scrollX;
+            const topColX = vt.colToViewX(range.topCol);
+            const bottomColRight = vt.colRightToViewX(range.bottomCol);
             this.#drawSelectionLine(
                 ctx,
                 topColX,
@@ -143,24 +133,11 @@ export class HeaderRenderer {
      * @param {CanvasRenderingContext2D} ctx
      * @param {Sheet} sheet
      * @param {object} opts - 渲染选项
-     * @param {number} opts.clipX - 裁剪区域 X
-     * @param {number} opts.clipY - 裁剪区域 Y
-     * @param {number} opts.clipW - 裁剪区域宽度
-     * @param {number} opts.clipH - 裁剪区域高度
-     * @param {number} opts.scrollX - 水平滚动偏移
-     * @param {object} opts.rc - RowColManager
-     * @param {number} opts.headerW - 表头宽度
-     * @param {number} opts.rowH - 表头行高
-     * @param {object} opts.defaultStyle - 默认样式
-     * @param {string} opts.headerFont - 表头字体
-     * @param {number} opts.nestedCount - 嵌套表头层数
-     * @param {object} opts.range - 当前选区范围
-     * @param {number} opts.fixedCols - 冻结列数
-     * @param {boolean} opts.isFrozen - 是否为冻结区域
      * @private
      */
     #renderHeaderRegion(ctx, sheet, opts) {
-        const { clipX, clipY, clipW, clipH, scrollX, rc, headerW, rowH, defaultStyle, headerFont, nestedCount, range, fixedCols, isFrozen } = opts;
+        const { vt, rc, clipX, clipY, clipW, clipH, rowH, defaultStyle, headerFont, nestedCount, range, fixedCols, isFrozen } = opts;
+        const scrollX = isFrozen ? 0 : vt.scrollX;
 
         ctx.save();
         ctx.beginPath();
@@ -172,14 +149,14 @@ export class HeaderRenderer {
             const ec = isFrozen
                 ? rc.colAt(clipW) + 1
                 : rc.colAt(scrollX + clipW) + 1;
-            this.#renderNestedColumnHeaders(ctx, sheet, rc, sc, ec, headerW, rowH, scrollX, headerFont, defaultStyle);
+            this.#renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle);
         } else {
             const startCol = isFrozen ? 0 : rc.colAt(scrollX);
             const endCol = isFrozen ? fixedCols : rc.colAt(scrollX + clipW) + 1;
             for (let c = startCol; c < endCol; c++) {
                 const w = rc.getColWidth(c);
                 if (w <= 0) continue;
-                const x = headerW + rc.getColX(c) - scrollX;
+                const x = vt.colToViewX(c);
                 const isSource = this.dragRenderer.isColumnSource(c);
                 const highlighted = c >= range.topCol && c <= range.bottomCol;
                 this.#drawHeaderCell(ctx, x, clipY, w, rowH, isSource, highlighted, defaultStyle);
@@ -194,7 +171,7 @@ export class HeaderRenderer {
     /**
      * 渲染嵌套多层列头
      */
-    #renderNestedColumnHeaders(ctx, sheet, rc, sc, ec, headerW, rowH, scrollX, headerFont, defaultStyle) {
+    #renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle) {
         const nestedCount = sheet.getNestedHeaderRowCount();
 
         for (let layerIdx = 0; layerIdx < nestedCount; layerIdx++) {
@@ -221,8 +198,11 @@ export class HeaderRenderer {
                 }
                 if (visibleStartCol > endCol) continue;
 
-                const x = headerW + rc.getColX(Math.max(startCol, sc)) - scrollX;
-                const totalW = rc.getColX(Math.min(endCol, ec)) + rc.getColWidth(Math.min(endCol, ec)) - rc.getColX(Math.max(startCol, sc));
+                const visStart = Math.max(startCol, sc);
+                const visEnd = Math.min(endCol, ec);
+                const x = vt.colToViewX(visStart);
+                const rightX = vt.colRightToViewX(visEnd);
+                const totalW = rightX - x;
 
                 if (totalW <= 0) continue;
 
@@ -235,18 +215,13 @@ export class HeaderRenderer {
                     this.#drawHeaderText(ctx, label, x + HEADER_COL_PADDING, layerY + rowH - 8, null, headerFont);
                 }
 
-                const rightEdge = Math.min(x + totalW, headerW + rc.getColX(Math.min(endCol, ec)) + rc.getColWidth(Math.min(endCol, ec)) - scrollX);
-                this.#drawSeparator(ctx, rightEdge, layerY, rightEdge, layerY + rowH);
+                this.#drawSeparator(ctx, rightX, layerY, rightX, layerY + rowH);
             }
 
             if (layerIdx < nestedCount - 1) {
-                this.#drawSeparator(
-                    ctx,
-                    headerW + rc.getColX(sc) - scrollX,
-                    layerY + rowH,
-                    headerW + rc.getColX(ec - 1) + rc.getColWidth(ec - 1) - scrollX,
-                    layerY + rowH,
-                );
+                const leftX = vt.colToViewX(sc);
+                const rightX = vt.colRightToViewX(ec - 1);
+                this.#drawSeparator(ctx, leftX, layerY + rowH, rightX, layerY + rowH);
             }
         }
     }
@@ -256,22 +231,24 @@ export class HeaderRenderer {
      * - 背景填充 → 逐行绘制 → 选区高亮右线
      * - 拖拽中时源行显示蓝色半透明高亮，隐藏选区右线
      */
-    #renderRowHeaders(ctx, sheet, scrollY, viewH, range, frozenRowsH, fixedRows) {
+    #renderRowHeaders(ctx, sheet, vt, viewH, range) {
         const rc = sheet.rowColManager;
-        const headerW = sheet.getHeaderWidth();
-        const headerH = sheet.getHeaderHeight();
+        const headerW = vt.headerW;
+        const headerH = vt.headerH;
         const defaultStyle = sheet.getDefaultStyle();
         const headerFont = this.#buildHeaderFont(defaultStyle);
+        const frozenRowsH = vt.frozenRowsH;
+        const fixedRows = vt.fixedRows;
+        const scrollY = vt.scrollY;
 
         ctx.fillStyle = CONFIG.HEADER_BG;
         ctx.fillRect(0, headerH, headerW, viewH - headerH);
 
-        // 滚动区域行头（在冻结区域下方）
         this.#renderRowHeaderRegion(ctx, sheet, {
+            vt,
+            rc,
             clipY: frozenRowsH > 0 ? headerH + frozenRowsH : headerH,
             clipH: frozenRowsH > 0 ? viewH - headerH - frozenRowsH : viewH - headerH,
-            scrollY,
-            rc,
             headerW,
             headerH,
             defaultStyle,
@@ -281,13 +258,12 @@ export class HeaderRenderer {
             isFrozen: false,
         });
 
-        // 冻结区域行头（顶部固定）
         if (frozenRowsH > 0) {
             this.#renderRowHeaderRegion(ctx, sheet, {
+                vt,
+                rc,
                 clipY: headerH,
                 clipH: frozenRowsH,
-                scrollY: 0,
-                rc,
                 headerW,
                 headerH,
                 defaultStyle,
@@ -299,12 +275,8 @@ export class HeaderRenderer {
         }
 
         if (!this.dragRenderer.hasRowMove()) {
-            const topRowY = range.topRow < fixedRows
-                ? headerH + rc.getRowY(range.topRow)
-                : headerH + rc.getRowY(range.topRow) - scrollY;
-            const bottomRowBottom = range.bottomRow < fixedRows
-                ? headerH + rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow)
-                : headerH + rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - scrollY;
+            const topRowY = vt.rowToViewY(range.topRow);
+            const bottomRowBottom = vt.rowBottomToViewY(range.bottomRow);
             this.#drawSelectionLine(
                 ctx,
                 headerW,
@@ -321,21 +293,11 @@ export class HeaderRenderer {
      * @param {CanvasRenderingContext2D} ctx
      * @param {Sheet} sheet
      * @param {object} opts
-     * @param {number} opts.clipY - 裁剪区域 Y
-     * @param {number} opts.clipH - 裁剪区域高度
-     * @param {number} opts.scrollY - 垂直滚动偏移
-     * @param {object} opts.rc - RowColManager
-     * @param {number} opts.headerW - 表头宽度
-     * @param {number} opts.headerH - 表头高度
-     * @param {object} opts.defaultStyle - 默认样式
-     * @param {string} opts.headerFont - 表头字体
-     * @param {object} opts.range - 当前选区范围
-     * @param {number} opts.fixedRows - 冻结行数
-     * @param {boolean} opts.isFrozen - 是否为冻结区域
      * @private
      */
     #renderRowHeaderRegion(ctx, sheet, opts) {
-        const { clipY, clipH, scrollY, rc, headerW, headerH, defaultStyle, headerFont, range, fixedRows, isFrozen } = opts;
+        const { vt, rc, clipY, clipH, headerW, headerH, defaultStyle, headerFont, range, fixedRows, isFrozen } = opts;
+        const scrollY = isFrozen ? 0 : vt.scrollY;
 
         ctx.save();
         ctx.beginPath();
@@ -343,9 +305,13 @@ export class HeaderRenderer {
         ctx.clip();
 
         const startRow = isFrozen ? 0 : rc.rowAt(scrollY);
-        const endRow = isFrozen ? fixedRows : rc.rowAt(scrollY + clipH) + 1;
+        // 非冻结区域：endRow 应基于完整的数据可视高度计算（scrollY + viewH - headerH），
+        // 而非 clipH（clipH 扣除了 frozenRowsH），否则当视口刚好能容纳所有非冻结行时，
+        // 最后一行的行头可能被遗漏。
+        const dataViewH = vt.frozenRowsH > 0 ? clipH + vt.frozenRowsH : clipH;
+        const endRow = isFrozen ? fixedRows : rc.rowAt(scrollY + dataViewH) + 1;
         for (let r = startRow; r < endRow; r++) {
-            const y = headerH + rc.getRowY(r) - scrollY;
+            const y = vt.rowToViewY(r);
             const h = rc.getRowHeight(r);
             if (h <= 0) continue;
 
@@ -372,9 +338,9 @@ export class HeaderRenderer {
      * 渲染左上角交叉区域
      * 全选时高亮，高度跟随表头总高度（支持嵌套表头）
      */
-    #renderCorner(ctx, sheet, range) {
-        const headerW = sheet.getHeaderWidth();
-        const headerH = sheet.getHeaderHeight();
+    #renderCorner(ctx, vt, range) {
+        const headerW = vt.headerW;
+        const headerH = vt.headerH;
         const allSelected = range.topRow === 0 && range.topCol === 0;
 
         ctx.fillStyle = allSelected ? CONFIG.HEADER_HIGHLIGHT_BG : CONFIG.HEADER_BG;

@@ -2,7 +2,6 @@ import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { HOOKS } from "../../constants/hookNames.js";
-import { CONFIG } from "../../constants/config";
 
 const DRAG_THRESHOLD = 3;
 
@@ -107,15 +106,11 @@ export class ColumnMoveStrategy extends EventStrategy {
         const dragX = e.clientX - rect.left;
 
         const headerRenderer = this.handler.renderEngine.headerRenderer;
-        const sheet = this.handler.sheet;
         headerRenderer.dragRenderer.setColumnMoveState({
             sourceCol: this.#sourceCol,
             targetCol: this.#targetCol,
             dragX: dragX,
             dragStartX: this.#dragStartX,
-            headerW: sheet ? sheet.getHeaderWidth() : CONFIG.HEADER_WIDTH,
-            scrollX: this.handler.renderEngine.scrollX,
-            colX: rc.getColX(this.#sourceCol),
             colW: rc.getColWidth(this.#sourceCol),
         });
 

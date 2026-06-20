@@ -84,6 +84,17 @@ export class ResizeStrategy extends EventStrategy {
             const newWidth = Math.max(CONFIG.MIN_COL_WIDTH, this.#startSize + delta);
             rc.setColWidth(this.#resizeIndex, newWidth);
 
+            // 当拖拽冻结列宽度变化时，调整 scrollX 补偿
+            // 原因：frozenColsW 增大 → mainViewW 缩小（= viewW - frozenColsW）→ 右侧空白
+            // 解决：将 scrollX 向左偏移相同量，使可视内容填充空白区域
+            if (this.#resizeIndex < sheet.fixedColumnsStart && sheet.fixedColumnsStart > 0 && delta !== 0) {
+                const currentSx = this.handler.renderEngine.scrollX;
+                const newSx = Math.max(0, currentSx - delta);
+                if (newSx !== currentSx) {
+                    this.handler.renderEngine.scrollMgr.setScrollPosition(newSx, this.handler.renderEngine.scrollY);
+                }
+            }
+
             const rect = this.handler.canvas.getBoundingClientRect();
             const lineX = e.clientX - rect.left;
             headerRenderer.resizeRenderer.setResizeLine(HIT_TYPE.COL_RESIZE, this.#resizeIndex, lineX);
