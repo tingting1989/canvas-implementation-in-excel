@@ -31,13 +31,26 @@ import { BasePlugin } from "./BasePlugin.js";
  */
 export class BaseHidePlugin extends BasePlugin {
     // ═══════════════════════════════════════════════════════════════
+    // 维度常量
+    // ═══════════════════════════════════════════════════════════════
+
+    /** 行维度标识 */
+    static AXIS_ROW = "row";
+    /** 列维度标识 */
+    static AXIS_COL = "col";
+    /** 行维度首字母大写（用于拼接 RowColManager API 后缀） */
+    static DIM_ROW = "Row";
+    /** 列维度首字母大写（用于拼接 RowColManager API 后缀） */
+    static DIM_COLUMN = "Column";
+
+    // ═══════════════════════════════════════════════════════════════
     // 静态属性（子类必须覆盖）
     // ═══════════════════════════════════════════════════════════════
 
     /**
      * 隐藏维度类型
      * @abstract
-     * @returns {"row" | "col"}
+     * @returns {typeof BaseHidePlugin.AXIS_ROW | typeof BaseHidePlugin.AXIS_COL}
      * @throws {Error} 子类未覆盖时抛出
      */
     static get AXIS() {
@@ -88,7 +101,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @returns {boolean}
      */
     get #isRow() {
-        return this.#axis === "row";
+        return this.#axis === BaseHidePlugin.AXIS_ROW;
     }
 
     /**
@@ -96,7 +109,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @returns {string} "Row" 或 "Column"
      */
     get #dimCapitalized() {
-        return this.#isRow ? "Row" : "Column";
+        return this.#isRow ? BaseHidePlugin.DIM_ROW : BaseHidePlugin.DIM_COLUMN;
     }
 
     // ─── RowColManager 方法动态调度 ───────────────────────────────

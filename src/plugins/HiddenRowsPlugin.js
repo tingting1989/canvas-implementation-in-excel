@@ -22,7 +22,7 @@ export class HiddenRowsPlugin extends BaseHidePlugin {
     }
 
     static get AXIS() {
-        return "row";
+        return BaseHidePlugin.AXIS_ROW;
     }
 
     static get AFTER_HIDE_HOOK() {

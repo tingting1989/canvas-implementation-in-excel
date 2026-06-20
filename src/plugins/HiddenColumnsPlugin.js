@@ -22,7 +22,7 @@ export class HiddenColumnsPlugin extends BaseHidePlugin {
     }
 
     static get AXIS() {
-        return "col";
+        return BaseHidePlugin.AXIS_COL;
     }
 
     static get AFTER_HIDE_HOOK() {
