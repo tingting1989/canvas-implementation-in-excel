@@ -190,12 +190,20 @@ export class RenderEngine {
         if (!sheet || !sheet.visible) return;
         this.#currentSheet = sheet;
 
+        // 每帧开始时失效冻结缓存，确保行高/列宽变更后能重新计算
+        sheet.invalidateFreezeCache();
+
         const rc = sheet.rowColManager;
         const headerH = sheet.getHeaderHeight();
         const headerW = sheet.getHeaderWidth();
         const frozenRowsH = sheet.frozenRowsHeight;
         const frozenColsW = sheet.frozenColsWidth;
-        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH, headerH, headerW, frozenRowsH, frozenColsW);
+
+        // 分页模式下，冻结行不在当前页数据范围内，
+        // totalHeight 不包含冻结行高度，因此 dataViewH 也不应扣除 frozenRowsH
+        const isPaginationActive = rc.pageStartRow >= 0;
+        const effectiveFrozenRowsH = isPaginationActive ? 0 : frozenRowsH;
+        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH, headerH, headerW, effectiveFrozenRowsH, frozenColsW);
 
         if (headerH !== CONFIG.HEADER_HEIGHT) {
             this.wrap.style.setProperty("--header-height", `${headerH}px`);
@@ -215,20 +223,27 @@ export class RenderEngine {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
 
-        this.tileRenderer.render(ctx, sheet, sx, sy, viewW, viewH);
+        // 主区域渲染时扣除冻结区域尺寸，避免在极端滚动位置（如滚到底部）
+        // 渲染超出实际数据范围的行/列（表现为底部/右侧出现多余空白行/列）
+        const mainViewW = frozenColsW > 0 ? viewW - frozenColsW : viewW;
+        const mainViewH = frozenRowsH > 0 ? viewH - frozenRowsH : viewH;
+        this.tileRenderer.render(ctx, sheet, sx, sy, mainViewW, mainViewH);
         this.overlayRenderer.renderMerges(ctx, sheet, sx, sy);
         this.overlayRenderer.renderSelection(ctx, sheet, sx, sy, viewW, viewH);
 
+        // 分页模式下冻结行区域需使用实际行号渲染（绕过页面偏移）
+        const freezeTileOptions = isPaginationActive ? { useRealRows: true } : undefined;
+
         if (frozenColsW > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, viewH - headerH, 0, sy, frozenColsW + headerW, viewH);
+            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, viewH - headerH, 0, sy, frozenColsW + headerW, viewH, freezeTileOptions);
         }
 
         if (frozenRowsH > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, viewW - headerW, frozenRowsH, sx, 0, viewW, frozenRowsH + headerH);
+            this.#renderClippedRegion(ctx, sheet, headerW, headerH, viewW - headerW, frozenRowsH, sx, 0, viewW, frozenRowsH + headerH, freezeTileOptions);
         }
 
         if (frozenRowsH > 0 && frozenColsW > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, frozenRowsH, 0, 0, frozenColsW + headerW, frozenRowsH + headerH);
+            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, frozenRowsH, 0, 0, frozenColsW + headerW, frozenRowsH + headerH, freezeTileOptions);
         }
 
         this.headerRenderer.render(ctx, sheet, sx, sy, viewW, viewH);
@@ -253,13 +268,14 @@ export class RenderEngine {
      * @param {number} scrollY - 垂直滚动偏移
      * @param {number} viewW - 视口宽度（用于 overlay）
      * @param {number} viewH - 视口高度（用于 overlay）
+     * @param {object} [tileOptions] - 传递给 TileRenderer 的额外选项
      */
-    #renderClippedRegion(ctx, sheet, clipX, clipY, clipW, clipH, scrollX, scrollY, viewW, viewH) {
+    #renderClippedRegion(ctx, sheet, clipX, clipY, clipW, clipH, scrollX, scrollY, viewW, viewH, tileOptions) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(clipX, clipY, clipW, clipH);
         ctx.clip();
-        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH);
+        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, tileOptions);
         this.overlayRenderer.renderMerges(ctx, sheet, scrollX, scrollY);
         this.overlayRenderer.renderSelection(ctx, sheet, scrollX, scrollY, viewW, viewH);
         ctx.restore();

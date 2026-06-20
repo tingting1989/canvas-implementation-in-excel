@@ -77,6 +77,14 @@ export class Sheet {
     #headerLabels = null;
     /** 条件格式管理器 */
     #conditionalFormat = null;
+    /** 冻结行像素高度缓存（-1 表示需重新计算） */
+    #cachedFrozenRowsHeight = -1;
+    /** 冻结列像素宽度缓存（-1 表示需重新计算） */
+    #cachedFrozenColsWidth = -1;
+    /** 冻结行数（顶部固定行数，不随垂直滚动移动），通过 getter/setter 访问以维护缓存 */
+    #fixedRowsTop = 0;
+    /** 冻结列数（左侧固定列数，不随水平滚动移动），通过 getter/setter 访问以维护缓存 */
+    #fixedColumnsStart = 0;
 
     /**
      * @param {string} name - 工作表名称
@@ -98,10 +106,6 @@ export class Sheet {
         this.mergeManager = new MergeManager();
         /** 行列尺寸与坐标计算管理器 */
         this.rowColManager = new RowColManager();
-        /** 冻结行数（顶部固定行数，不随垂直滚动移动） */
-        this.fixedRowsTop = 0;
-        /** 冻结列数（左侧固定列数，不随水平滚动移动） */
-        this.fixedColumnsStart = 0;
         /**
          * cell 配置数组，每个元素指定 {row, col, style?, disabled?, readOnly?, value?}
          * 静态声明式配置，初始化时一次性应用（参考 Handsontable cell 选项）
@@ -187,16 +191,60 @@ export class Sheet {
         this.#headerLabels.rowHeaderWidth = v;
     }
 
-    get frozenRowsHeight() {
-        if (this.fixedRowsTop <= 0) return 0;
-        const rc = this.rowColManager;
-        return rc.getRowY(this.fixedRowsTop - 1) + rc.getRowHeight(this.fixedRowsTop - 1);
+    // ─── 冻结状态（getter/setter 维护缓存）───────────────────
+
+    /** @returns {number} 冻结行数 */
+    get fixedRowsTop() {
+        return this.#fixedRowsTop;
+    }
+    /** @param {number} v 冻结行数，变化时自动失效高度缓存 */
+    set fixedRowsTop(v) {
+        if (this.#fixedRowsTop !== v) {
+            this.#fixedRowsTop = v;
+            this.#cachedFrozenRowsHeight = -1;
+        }
     }
 
-    get frozenColsWidth() {
-        if (this.fixedColumnsStart <= 0) return 0;
+    /** @returns {number} 冻结列数 */
+    get fixedColumnsStart() {
+        return this.#fixedColumnsStart;
+    }
+    /** @param {number} v 冻结列数，变化时自动失效宽度缓存 */
+    set fixedColumnsStart(v) {
+        if (this.#fixedColumnsStart !== v) {
+            this.#fixedColumnsStart = v;
+            this.#cachedFrozenColsWidth = -1;
+        }
+    }
+
+    /** @returns {number} 冻结行像素高度（带缓存，行列尺寸变化时需调用 invalidateFreezeCache） */
+    get frozenRowsHeight() {
+        if (this.#fixedRowsTop <= 0) return 0;
+        if (this.#cachedFrozenRowsHeight >= 0) return this.#cachedFrozenRowsHeight;
         const rc = this.rowColManager;
-        return rc.getColX(this.fixedColumnsStart - 1) + rc.getColWidth(this.fixedColumnsStart - 1);
+        // 使用实际行号计算（绕过页面偏移），因为冻结行始终是数据的真实行 0..fixedRowsTop-1
+        const realRow = this.#fixedRowsTop - 1;
+        this.#cachedFrozenRowsHeight = rc.getRealRowY(realRow) + rc.getRealRowHeight(realRow);
+        return this.#cachedFrozenRowsHeight;
+    }
+
+    /** @returns {number} 冻结列像素宽度（带缓存，行列尺寸变化时需调用 invalidateFreezeCache） */
+    get frozenColsWidth() {
+        if (this.#fixedColumnsStart <= 0) return 0;
+        if (this.#cachedFrozenColsWidth >= 0) return this.#cachedFrozenColsWidth;
+        const rc = this.rowColManager;
+        this.#cachedFrozenColsWidth = rc.getColX(this.#fixedColumnsStart - 1) + rc.getColWidth(this.#fixedColumnsStart - 1);
+        return this.#cachedFrozenColsWidth;
+    }
+
+    /**
+     * 失效冻结区域缓存
+     * 当行高/列宽发生变化（拖拽调整、隐藏/显示行列）时必须调用，
+     * 确保下次访问 frozenRowsHeight/frozenColsWidth 时重新计算。
+     */
+    invalidateFreezeCache() {
+        this.#cachedFrozenRowsHeight = -1;
+        this.#cachedFrozenColsWidth = -1;
     }
 
     // ============================================================

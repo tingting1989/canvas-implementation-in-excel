@@ -116,6 +116,17 @@ export class RowColManager {
         return CONFIG.DEFAULT_ROW_HEIGHT;
     }
 
+    /**
+     * 获取实际行号的行高（不经过页面偏移转换）
+     * @param {number} realRow - 实际行号
+     * @returns {number}
+     */
+    getRealRowHeight(realRow) {
+        if (realRow >= 0 && realRow < this.#rowHeights.length) return this.#rowHeights[realRow];
+        if (this.#hiddenRows.has(realRow)) return 0;
+        return CONFIG.DEFAULT_ROW_HEIGHT;
+    }
+
     getColWidth(col) {
         if (col >= 0 && col < this.#colWidths.length) return this.#colWidths[col];
         if (this.#hiddenCols.has(col)) return 0;
@@ -129,6 +140,16 @@ export class RowColManager {
             return this.#rawGetRowY(realRow) - pageStartY;
         }
         return this.#rawGetRowY(row);
+    }
+
+    /**
+     * 获取实际行号的全局 Y 坐标（不经过页面偏移转换）
+     * 用于冻结行像素高度计算等需要真实坐标的场景
+     * @param {number} realRow - 实际行号
+     * @returns {number}
+     */
+    getRealRowY(realRow) {
+        return this.#rawGetRowY(realRow);
     }
 
     #rawGetRowY(row) {
@@ -153,13 +174,18 @@ export class RowColManager {
         if (y < 0) return 0;
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             const pageStartY = this.#rawGetRowY(this.#pageStartRow);
-            const realRow = this.#rawRowAt(y + pageStartY);
+            const realRow = this.rawRowAt(y + pageStartY);
             return Math.max(0, Math.min(realRow - this.#pageStartRow, this.#pageEndRow - this.#pageStartRow - 1));
         }
-        return this.#rawRowAt(y);
+        return this.rawRowAt(y);
     }
 
-    #rawRowAt(y) {
+    /**
+     * 根据全局像素 Y 坐标查找实际行号（不经过页面偏移转换）
+     * @param {number} y - 全局像素 Y 坐标
+     * @returns {number} 实际行号
+     */
+    rawRowAt(y) {
         if (y < 0) return 0;
         this.#ensureRowPrefix();
         let row;

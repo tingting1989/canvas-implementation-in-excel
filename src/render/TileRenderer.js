@@ -71,7 +71,17 @@ export class TileRenderer {
      * @param {number} viewW - 可视区域宽度（含行头）
      * @param {number} viewH - 可视区域高度（含列头）
      */
-    render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
+    /**
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} scrollX
+     * @param {number} scrollY
+     * @param {number} viewW
+     * @param {number} viewH
+     * @param {object} [options]
+     * @param {boolean} [options.useRealRows] - 分页模式下使用实际行号渲染（用于冻结行区域）
+     */
+    render(ctx, sheet, scrollX, scrollY, viewW, viewH, options) {
         const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const cellViewW = viewW - headerW;
@@ -89,7 +99,7 @@ export class TileRenderer {
             for (let tc = startTileCol; tc <= endTileCol; tc++) {
                 const tile = this.tileCache.getOrCreate(tr, tc);
                 if (tile.dirty) {
-                    this.#paintTile(tile, sheet, tr, tc);
+                    this.#paintTile(tile, sheet, tr, tc, options);
                     tile.dirty = false;
                 }
                 const drawX = headerW + tc * tileSize - scrollX;
@@ -119,10 +129,11 @@ export class TileRenderer {
      * @param {number} tileRow - 瓦片行号
      * @param {number} tileCol - 瓦片列号
      */
-    #paintTile(tile, sheet, tileRow, tileCol) {
+    #paintTile(tile, sheet, tileRow, tileCol, options) {
         const rc = sheet.rowColManager;
         const tileSize = CONFIG.TILE_SIZE;
         const tileCtx = tile.ctx;
+        const useRealRows = options?.useRealRows === true;
 
         tileCtx.clearRect(0, 0, tileSize, tileSize);
         this.#lastFont = null; // 每个瓦片单独重置字体缓存
@@ -132,24 +143,24 @@ export class TileRenderer {
         const pixelY1 = pixelY0 + tileSize;
         const pixelX1 = pixelX0 + tileSize;
 
-        const sr = rc.rowAt(pixelY0);
+        const sr = useRealRows ? rc.rawRowAt(pixelY0) : rc.rowAt(pixelY0);
         const sc = rc.colAt(pixelX0);
-        const er = rc.rowAt(pixelY1) + 1;
+        const er = (useRealRows ? rc.rawRowAt(pixelY1) : rc.rowAt(pixelY1)) + 1;
         const ec = rc.colAt(pixelX1) + 1;
 
         // 记录已绘制的合并区域左上角坐标，避免重复绘制
         const renderedMerges = new Set();
 
         for (let r = sr; r < er; r++) {
-            const rowY = rc.getRowY(r);
-            const rowH = rc.getRowHeight(r);
+            const rowY = useRealRows ? rc.getRealRowY(r) : rc.getRowY(r);
+            const rowH = useRealRows ? rc.getRealRowHeight(r) : rc.getRowHeight(r);
             if (rowH <= 0) continue;
 
             const localY = rowY - pixelY0;
 
             if (localY + rowH <= 0 || localY >= tileSize) continue;
 
-            const realR = sheet.toRealRow(r);
+            const realR = useRealRows ? r : sheet.toRealRow(r);
 
             for (let c = sc; c < ec; c++) {
                 const colW = rc.getColWidth(c);

@@ -74,6 +74,9 @@ export class ScrollManager {
     #maxScrollY = 0;
     #headerH = CONFIG.HEADER_HEIGHT;
     #headerW = CONFIG.HEADER_WIDTH;
+    /** 冻结区域尺寸（用于滚动条轨道计算） */
+    #frozenRowsH = 0;
+    #frozenColsW = 0;
     #onScrollCallback = null;
     #onAfterScroll = null;
     #wheelHandler = null;
@@ -146,17 +149,19 @@ export class ScrollManager {
         const onDragMove = (e) => {
             if (dragging === "h") {
                 const dx = e.clientX - startMouse;
-                const trackW = this.#viewW / 2;
-                const viewW = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH);
-                const totalContent = this.#maxScrollX + viewW;
+                const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
+                const trackW = this.#viewW - hw - this.#frozenColsW;
+                const dataViewW = this.#viewW - hw - this.#frozenColsW;
+                const totalContent = this.#maxScrollX + dataViewW;
                 const ratio = totalContent > 0 ? trackW / totalContent : 1;
                 const newX = Math.max(0, Math.min(this.#maxScrollX, startScroll + dx / ratio));
                 this.setScrollPosition(newX, this.#scrollY);
             } else if (dragging === "v") {
                 const dy = e.clientY - startMouse;
-                const trackH = this.#viewH - (this.#headerH ?? CONFIG.HEADER_HEIGHT);
-                const viewH = this.#viewH - (this.#headerH ?? CONFIG.HEADER_HEIGHT);
-                const totalContent = this.#maxScrollY + viewH;
+                const hh = this.#headerH ?? CONFIG.HEADER_HEIGHT;
+                const trackH = this.#viewH - hh - this.#frozenRowsH;
+                const dataViewH = this.#viewH - hh - this.#frozenRowsH;
+                const totalContent = this.#maxScrollY + dataViewH;
                 const ratio = totalContent > 0 ? trackH / totalContent : 1;
                 const newY = Math.max(0, Math.min(this.#maxScrollY, startScroll + dy / ratio));
                 this.setScrollPosition(this.#scrollX, newY);
@@ -234,13 +239,40 @@ export class ScrollManager {
         });
     }
 
+    /**
+     * 更新滚动范围
+     *
+     * 冻结区域始终可见，实际可滚动的数据区为：
+     *   dataViewW = viewW - headerW - frozenColsW
+     *   dataViewH = viewH - headerH - frozenRowsH
+     *
+     * 因此最大滚动偏移为：
+     *   maxScrollX = totalW - dataViewW = totalW - viewW + headerW + frozenColsW
+     *   maxScrollY = totalH - dataViewH = totalH - viewH + headerH + frozenRowsH
+     *
+     * @param {number} totalW - 内容总宽度
+     * @param {number} totalH - 内容总高度
+     * @param {number} viewW - 视口宽度
+     * @param {number} viewH - 视口高度
+     * @param {number} [headerH] - 表头高度
+     * @param {number} [headerW] - 表头宽度
+     * @param {number} [frozenRowsH] - 冻结行像素高度
+     * @param {number} [frozenColsW] - 冻结列像素宽度
+     */
     updateScrollBounds(totalW, totalH, viewW, viewH, headerH = CONFIG.HEADER_HEIGHT, headerW = CONFIG.HEADER_WIDTH, frozenRowsH = 0, frozenColsW = 0) {
         this.#viewW = viewW;
         this.#viewH = viewH;
         this.#headerH = headerH;
         this.#headerW = headerW;
-        this.#maxScrollX = Math.max(0, totalW - viewW + this.#headerW + frozenColsW);
-        this.#maxScrollY = Math.max(0, totalH - viewH + headerH + frozenRowsH);
+        this.#frozenRowsH = frozenRowsH;
+        this.#frozenColsW = frozenColsW;
+
+        // 数据可视区域 = 视口 - 表头 - 冻结区域
+        const dataViewW = viewW - headerW - frozenColsW;
+        const dataViewH = viewH - headerH - frozenRowsH;
+        this.#maxScrollX = Math.max(0, totalW - dataViewW);
+        this.#maxScrollY = Math.max(0, totalH - dataViewH);
+
         this.#scrollX = Math.min(this.#scrollX, this.#maxScrollX);
         this.#scrollY = Math.min(this.#scrollY, this.#maxScrollY);
     }
@@ -255,24 +287,25 @@ export class ScrollManager {
         this.#viewW = viewW || this.#viewW;
         this.#viewH = viewH || this.#viewH;
         const hh = this.#headerH ?? CONFIG.HEADER_HEIGHT;
+        const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
 
         if (this.#vThumb && this.#maxScrollY > 0) {
             const trackH = this.#viewH - hh;
-            const viewH2 = this.#viewH - hh;
-            const totalH = this.#maxScrollY + viewH2;
-            const thumbH = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackH * (viewH2 / totalH)));
+            const dataViewH = this.#viewH - hh - this.#frozenRowsH;
+            const totalH = this.#maxScrollY + dataViewH;
+            const thumbH = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackH * (dataViewH / totalH)));
             this.#vThumb.style.height = thumbH + "px";
-            const ratio = this.#scrollY / this.#maxScrollY;
+            const ratio = this.#maxScrollY > 0 ? this.#scrollY / this.#maxScrollY : 0;
             this.#vThumb.style.top = ratio * (trackH - thumbH) + "px";
         }
 
         if (this.#hThumb && this.#maxScrollX > 0) {
-            const trackW = this.#viewW / 2;
-            const viewW2 = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH);
-            const totalW = this.#maxScrollX + viewW2;
-            const thumbW = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackW * (viewW2 / totalW)));
+            const trackW = this.#viewW - hw - this.#frozenColsW;
+            const dataViewW = this.#viewW - hw - this.#frozenColsW;
+            const totalW = this.#maxScrollX + dataViewW;
+            const thumbW = Math.max(CONFIG.SCROLLBAR_MIN_SIZE, Math.floor(trackW * (dataViewW / totalW)));
             this.#hThumb.style.width = thumbW + "px";
-            const ratio = this.#scrollX / this.#maxScrollX;
+            const ratio = this.#maxScrollX > 0 ? this.#scrollX / this.#maxScrollX : 0;
             this.#hThumb.style.left = ratio * (trackW - thumbW) + "px";
         }
     }
