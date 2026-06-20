@@ -1,4 +1,6 @@
 ﻿export { BasePlugin } from "./BasePlugin.js";
+export { BaseHidePlugin } from "./BaseHidePlugin.js";
+export { BaseMovePlugin } from "./BaseMovePlugin.js";
 export { PluginManager } from "./PluginManager.js";
 export { AutoFillPlugin } from "./AutoFillPlugin.js";
 export { ColumnMovePlugin } from "./ColumnMovePlugin.js";
@@ -9,3 +11,4 @@ export { PaginationPlugin } from "./PaginationPlugin.js";
 export { HiddenColumnsPlugin } from "./HiddenColumnsPlugin.js";
 export { HiddenRowsPlugin } from "./HiddenRowsPlugin.js";
 export { RowMovePlugin } from "./RowMovePlugin.js";
+export { FreezePlugin } from "./FreezePlugin.js";

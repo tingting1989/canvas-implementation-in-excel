@@ -234,13 +234,13 @@ export class ScrollManager {
         });
     }
 
-    updateScrollBounds(totalW, totalH, viewW, viewH, headerH = CONFIG.HEADER_HEIGHT, headerW = CONFIG.HEADER_WIDTH) {
+    updateScrollBounds(totalW, totalH, viewW, viewH, headerH = CONFIG.HEADER_HEIGHT, headerW = CONFIG.HEADER_WIDTH, frozenRowsH = 0, frozenColsW = 0) {
         this.#viewW = viewW;
         this.#viewH = viewH;
         this.#headerH = headerH;
         this.#headerW = headerW;
-        this.#maxScrollX = Math.max(0, totalW - viewW + this.#headerW);
-        this.#maxScrollY = Math.max(0, totalH - viewH + headerH);
+        this.#maxScrollX = Math.max(0, totalW - viewW + this.#headerW + frozenColsW);
+        this.#maxScrollY = Math.max(0, totalH - viewH + headerH + frozenRowsH);
         this.#scrollX = Math.min(this.#scrollX, this.#maxScrollX);
         this.#scrollY = Math.min(this.#scrollY, this.#maxScrollY);
     }
@@ -277,26 +277,34 @@ export class ScrollManager {
         }
     }
 
-    scrollToCell(row, col, rc) {
+    scrollToCell(row, col, rc, frozenRowsH = 0, frozenColsW = 0) {
         if (!rc) return;
 
         const cellX = rc.getColX(col);
         const cellY = rc.getRowY(row);
         const cellW = rc.getColWidth(col);
         const cellH = rc.getRowHeight(row);
-        const viewW = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH);
-        const viewH = this.#viewH - (this.#headerH ?? CONFIG.HEADER_HEIGHT);
+        const viewW = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH) - frozenColsW;
+        const viewH = this.#viewH - (this.#headerH ?? CONFIG.HEADER_HEIGHT) - frozenRowsH;
 
-        if (cellX < this.#scrollX) {
-            this.#scrollX = cellX;
-        } else if (cellX + cellW > this.#scrollX + viewW) {
-            this.#scrollX = cellX + cellW - viewW;
+        if (cellX < frozenColsW) {
+            // cell is in frozen column area, no horizontal scroll needed
+        } else {
+            if (cellX - frozenColsW < this.#scrollX) {
+                this.#scrollX = cellX - frozenColsW;
+            } else if (cellX + cellW - frozenColsW > this.#scrollX + viewW) {
+                this.#scrollX = cellX + cellW - frozenColsW - viewW;
+            }
         }
 
-        if (cellY < this.#scrollY) {
-            this.#scrollY = cellY;
-        } else if (cellY + cellH > this.#scrollY + viewH) {
-            this.#scrollY = cellY + cellH - viewH;
+        if (cellY < frozenRowsH) {
+            // cell is in frozen row area, no vertical scroll needed
+        } else {
+            if (cellY - frozenRowsH < this.#scrollY) {
+                this.#scrollY = cellY - frozenRowsH;
+            } else if (cellY + cellH - frozenRowsH > this.#scrollY + viewH) {
+                this.#scrollY = cellY + cellH - frozenRowsH - viewH;
+            }
         }
 
         this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, this.#scrollX));

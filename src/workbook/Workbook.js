@@ -228,8 +228,12 @@ export class Workbook {
             const headerW = this.activeSheet.getHeaderWidth();
             const headerH = this.activeSheet.getHeaderHeight();
             const tabH = CONFIG.SHEET_TAB_HEIGHT;
-            const viewW = this.renderEngine.canvas.width / dpr - headerW;
-            const viewH = this.renderEngine.canvas.height / dpr - headerH - tabH;
+            const frozenColsW = this.activeSheet.frozenColsWidth;
+            const frozenRowsH = this.activeSheet.frozenRowsHeight;
+            const fixedRows = this.activeSheet.fixedRowsTop;
+            const fixedCols = this.activeSheet.fixedColumnsStart;
+            const viewW = this.renderEngine.canvas.width / dpr - headerW - frozenColsW;
+            const viewH = this.renderEngine.canvas.height / dpr - headerH - tabH - frozenRowsH;
 
             const cellX = rc.getColX(col);
             const cellY = rc.getRowY(row);
@@ -238,7 +242,23 @@ export class Workbook {
             const sx = this.renderEngine.scrollX;
             const sy = this.renderEngine.scrollY;
 
-            const outOfView = cellX + cellW <= sx || cellX >= sx + viewW || cellY + cellH <= sy || cellY >= sy + viewH;
+            const inFrozenCols = col < fixedCols;
+            const inFrozenRows = row < fixedRows;
+
+            const effectiveSx = inFrozenCols ? 0 : sx;
+            const effectiveSy = inFrozenRows ? 0 : sy;
+
+            let outOfView = false;
+            if (inFrozenCols) {
+                outOfView = cellX + cellW <= 0 || cellX >= frozenColsW;
+            } else {
+                outOfView = cellX + cellW - frozenColsW <= effectiveSx || cellX - frozenColsW >= effectiveSx + viewW;
+            }
+            if (inFrozenRows) {
+                outOfView = outOfView || (cellY + cellH <= 0 || cellY >= frozenRowsH);
+            } else {
+                outOfView = outOfView || (cellY + cellH - frozenRowsH <= effectiveSy || cellY - frozenRowsH >= effectiveSy + viewH);
+            }
 
             if (outOfView) {
                 activeEditor.hideForScroll();

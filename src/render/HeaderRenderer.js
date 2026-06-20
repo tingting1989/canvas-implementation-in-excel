@@ -49,9 +49,13 @@ export class HeaderRenderer {
      */
     render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
         const range = sheet.selection.getRange();
+        const frozenRowsH = sheet.frozenRowsHeight;
+        const frozenColsW = sheet.frozenColsWidth;
+        const fixedRows = sheet.fixedRowsTop;
+        const fixedCols = sheet.fixedColumnsStart;
 
-        this.#renderColumnHeaders(ctx, sheet, scrollX, viewW, range);
-        this.#renderRowHeaders(ctx, sheet, scrollY, viewH, range);
+        this.#renderColumnHeaders(ctx, sheet, scrollX, viewW, range, frozenColsW, fixedCols);
+        this.#renderRowHeaders(ctx, sheet, scrollY, viewH, range, frozenRowsH, fixedRows);
         this.#renderCorner(ctx, sheet, range);
         this.resizeRenderer.render(ctx, viewW, viewH);
         this.dragRenderer.renderColumnMoveIndicator(ctx, sheet, scrollX, viewW, viewH);
@@ -65,7 +69,7 @@ export class HeaderRenderer {
      * - 背景填充 → 逐列绘制（跳过隐藏列）→ 选区高亮底线
      * - 拖拽中时源列显示蓝色半透明高亮，隐藏选区底线
      */
-    #renderColumnHeaders(ctx, sheet, scrollX, viewW, range) {
+    #renderColumnHeaders(ctx, sheet, scrollX, viewW, range, frozenColsW, fixedCols) {
         const rc = sheet.rowColManager;
         const headerW = sheet.getHeaderWidth();
         const rowH = CONFIG.HEADER_HEIGHT;
@@ -75,37 +79,77 @@ export class HeaderRenderer {
         const nestedCount = sheet.getNestedHeaderRowCount();
         const totalHeaderH = sheet.getHeaderHeight();
 
-        // 填充整个列头区域背景
         ctx.fillStyle = CONFIG.HEADER_BG;
         ctx.fillRect(headerW, 0, viewW - headerW, totalHeaderH);
 
-        const sc = rc.colAt(scrollX);
-        const ec = rc.colAt(scrollX + viewW - headerW) + 1;
+        ctx.save();
+        ctx.beginPath();
+        if (frozenColsW > 0) {
+            ctx.rect(headerW + frozenColsW, 0, viewW - headerW - frozenColsW, totalHeaderH);
+        } else {
+            ctx.rect(headerW, 0, viewW - headerW, totalHeaderH);
+        }
+        ctx.clip();
 
         if (nestedCount > 0) {
+            const sc = rc.colAt(scrollX);
+            const ec = rc.colAt(scrollX + viewW - headerW) + 1;
             this.#renderNestedColumnHeaders(ctx, sheet, rc, sc, ec, headerW, rowH, scrollX, headerFont, defaultStyle);
         } else {
+            const sc = rc.colAt(scrollX);
+            const ec = rc.colAt(scrollX + viewW - headerW) + 1;
             for (let c = sc; c < ec; c++) {
                 const w = rc.getColWidth(c);
                 if (w <= 0) continue;
-
                 const x = headerW + rc.getColX(c) - scrollX;
                 const isSource = this.dragRenderer.isColumnSource(c);
                 const highlighted = c >= range.topCol && c <= range.bottomCol;
-
                 this.#drawHeaderCell(ctx, x, 0, w, rowH, isSource, highlighted, defaultStyle);
                 this.#drawHeaderText(ctx, sheet.getColHeader(c), x + HEADER_COL_PADDING, rowH - 8, null, headerFont);
                 this.#drawSeparator(ctx, x + w, 0, x + w, rowH);
             }
         }
 
-        // 最底层表头下方的选区高亮线
+        ctx.restore();
+
+        if (frozenColsW > 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(headerW, 0, frozenColsW, totalHeaderH);
+            ctx.clip();
+
+            if (nestedCount > 0) {
+                const sc = 0;
+                const ec = rc.colAt(frozenColsW) + 1;
+                this.#renderNestedColumnHeaders(ctx, sheet, rc, sc, ec, headerW, rowH, 0, headerFont, defaultStyle);
+            } else {
+                for (let c = 0; c < fixedCols; c++) {
+                    const w = rc.getColWidth(c);
+                    if (w <= 0) continue;
+                    const x = headerW + rc.getColX(c);
+                    const isSource = this.dragRenderer.isColumnSource(c);
+                    const highlighted = c >= range.topCol && c <= range.bottomCol;
+                    this.#drawHeaderCell(ctx, x, 0, w, rowH, isSource, highlighted, defaultStyle);
+                    this.#drawHeaderText(ctx, sheet.getColHeader(c), x + HEADER_COL_PADDING, rowH - 8, null, headerFont);
+                    this.#drawSeparator(ctx, x + w, 0, x + w, rowH);
+                }
+            }
+
+            ctx.restore();
+        }
+
         if (!this.dragRenderer.hasColumnMove()) {
+            const topColX = range.topCol < fixedCols
+                ? headerW + rc.getColX(range.topCol)
+                : headerW + rc.getColX(range.topCol) - scrollX;
+            const bottomColRight = range.bottomCol < fixedCols
+                ? headerW + rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol)
+                : headerW + rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - scrollX;
             this.#drawSelectionLine(
                 ctx,
-                headerW + rc.getColX(range.topCol) - scrollX,
+                topColX,
                 totalHeaderH,
-                rc.getColX(range.bottomCol) + rc.getColWidth(range.bottomCol) - rc.getColX(range.topCol),
+                bottomColRight - topColX,
                 true,
             );
         }
@@ -176,7 +220,7 @@ export class HeaderRenderer {
      * - 背景填充 → 逐行绘制 → 选区高亮右线
      * - 拖拽中时源行显示蓝色半透明高亮，隐藏选区右线
      */
-    #renderRowHeaders(ctx, sheet, scrollY, viewH, range) {
+    #renderRowHeaders(ctx, sheet, scrollY, viewH, range, frozenRowsH, fixedRows) {
         const rc = sheet.rowColManager;
         const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
@@ -186,9 +230,17 @@ export class HeaderRenderer {
         ctx.fillStyle = CONFIG.HEADER_BG;
         ctx.fillRect(0, headerH, headerW, viewH - headerH);
 
+        ctx.save();
+        ctx.beginPath();
+        if (frozenRowsH > 0) {
+            ctx.rect(0, headerH + frozenRowsH, headerW, viewH - headerH - frozenRowsH);
+        } else {
+            ctx.rect(0, headerH, headerW, viewH - headerH);
+        }
+        ctx.clip();
+
         const sr = rc.rowAt(scrollY);
         const er = rc.rowAt(scrollY + viewH - headerH) + 1;
-
         for (let r = sr; r < er; r++) {
             const y = headerH + rc.getRowY(r) - scrollY;
             const h = rc.getRowHeight(r);
@@ -210,12 +262,50 @@ export class HeaderRenderer {
             this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
         }
 
+        ctx.restore();
+
+        if (frozenRowsH > 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, headerH, headerW, frozenRowsH);
+            ctx.clip();
+
+            for (let r = 0; r < fixedRows; r++) {
+                const y = headerH + rc.getRowY(r);
+                const h = rc.getRowHeight(r);
+                if (h <= 0) continue;
+
+                const isSource = this.dragRenderer.isRowSource(r);
+                const highlighted = r >= range.topRow && r <= range.bottomRow;
+
+                this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, defaultStyle);
+
+                const textMaxW = headerW - HEADER_ROW_PADDING * 2;
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(HEADER_ROW_PADDING, y, textMaxW, h);
+                ctx.clip();
+                this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), HEADER_ROW_PADDING, y + h / 2 + 4, null, headerFont, textMaxW);
+                ctx.restore();
+
+                this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
+            }
+
+            ctx.restore();
+        }
+
         if (!this.dragRenderer.hasRowMove()) {
+            const topRowY = range.topRow < fixedRows
+                ? headerH + rc.getRowY(range.topRow)
+                : headerH + rc.getRowY(range.topRow) - scrollY;
+            const bottomRowBottom = range.bottomRow < fixedRows
+                ? headerH + rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow)
+                : headerH + rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - scrollY;
             this.#drawSelectionLine(
                 ctx,
                 headerW,
-                headerH + rc.getRowY(range.topRow) - scrollY,
-                rc.getRowY(range.bottomRow) + rc.getRowHeight(range.bottomRow) - rc.getRowY(range.topRow),
+                topRowY,
+                bottomRowBottom - topRowY,
                 false,
             );
         }

@@ -1,4 +1,4 @@
-import { BasePlugin } from "./BasePlugin.js";
+import { BaseMovePlugin } from "./BaseMovePlugin.js";
 import { RowMoveStrategy } from "../editor/strategies/RowMoveStrategy.js";
 
 /**
@@ -13,47 +13,17 @@ import { RowMoveStrategy } from "../editor/strategies/RowMoveStrategy.js";
  * ```js
  * const wb = new Workbook('grid', {
  *     plugins: ['rowMove'],
- *     pluginOptions: {
- *         rowMove: { enabled: true }
- *     }
+ *     pluginOptions: { rowMove: { enabled: true } }
  * });
  * ```
  */
-export class RowMovePlugin extends BasePlugin {
+export class RowMovePlugin extends BaseMovePlugin {
     static get PLUGIN_NAME() {
         return "rowMove";
     }
 
-    /** 行移动交互策略实例 */
-    #strategy = null;
-
-    /**
-     * 初始化插件
-     * @param {Object} options - 插件配置
-     * @param {boolean} [options.enabled=true] - 是否启用行移动
-     */
-    init(options = {}) {
-        super.init(options);
-        this.#strategy = new RowMoveStrategy(this.eventHandler);
-        this.addStrategy("rowMove", this.#strategy);
-
-        if (options.enabled === false) {
-            this.disable();
-        }
-    }
-
-    destroy() {
-        this.#strategy = null;
-        super.destroy();
-    }
-
-    enable() {
-        super.enable();
-        this.#strategy?.enable();
-    }
-
-    disable() {
-        super.disable();
-        this.#strategy?.disable();
+    /** @override */
+    _createStrategy() {
+        return new RowMoveStrategy(this.eventHandler);
     }
 }

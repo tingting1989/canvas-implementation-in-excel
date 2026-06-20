@@ -98,6 +98,10 @@ export class Sheet {
         this.mergeManager = new MergeManager();
         /** 行列尺寸与坐标计算管理器 */
         this.rowColManager = new RowColManager();
+        /** 冻结行数（顶部固定行数，不随垂直滚动移动） */
+        this.fixedRowsTop = 0;
+        /** 冻结列数（左侧固定列数，不随水平滚动移动） */
+        this.fixedColumnsStart = 0;
         /**
          * cell 配置数组，每个元素指定 {row, col, style?, disabled?, readOnly?, value?}
          * 静态声明式配置，初始化时一次性应用（参考 Handsontable cell 选项）
@@ -181,6 +185,18 @@ export class Sheet {
     }
     set rowHeaderWidth(v) {
         this.#headerLabels.rowHeaderWidth = v;
+    }
+
+    get frozenRowsHeight() {
+        if (this.fixedRowsTop <= 0) return 0;
+        const rc = this.rowColManager;
+        return rc.getRowY(this.fixedRowsTop - 1) + rc.getRowHeight(this.fixedRowsTop - 1);
+    }
+
+    get frozenColsWidth() {
+        if (this.fixedColumnsStart <= 0) return 0;
+        const rc = this.rowColManager;
+        return rc.getColX(this.fixedColumnsStart - 1) + rc.getColWidth(this.fixedColumnsStart - 1);
     }
 
     // ============================================================

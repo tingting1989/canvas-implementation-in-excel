@@ -72,6 +72,12 @@ export class SettingsApplier {
         if (settings.textOverflowEllipsis !== undefined) {
             sheet.textOverflowEllipsis = settings.textOverflowEllipsis;
         }
+        if (settings.fixedRowsTop !== undefined) {
+            sheet.fixedRowsTop = settings.fixedRowsTop;
+        }
+        if (settings.fixedColumnsStart !== undefined) {
+            sheet.fixedColumnsStart = settings.fixedColumnsStart;
+        }
     }
 
     // ---- 私有辅助 ----

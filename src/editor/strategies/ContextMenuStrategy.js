@@ -77,6 +77,11 @@ export class ContextMenuStrategy extends EventStrategy {
             "hideColumn",
             "showColumn",
             null,
+            "freezeAtCell",
+            "freezeRow",
+            "freezeCol",
+            "unfreeze",
+            null,
             "mergeCells",
             "unmergeCells",
             null,
@@ -84,8 +89,8 @@ export class ContextMenuStrategy extends EventStrategy {
             null,
             "clearContent",
         ],
-        rowHeader: ["insertRowAbove", "insertRowBelow", null, "deleteRow", null, "hideRow", "showRow", null, "clearContent"],
-        colHeader: ["insertColLeft", "insertColRight", null, "deleteCol", null, "hideColumn", "showColumn", null, "clearContent"],
+        rowHeader: ["insertRowAbove", "insertRowBelow", null, "deleteRow", null, "hideRow", "showRow", null, "freezeAtCell", "freezeRow", "unfreeze", null, "clearContent"],
+        colHeader: ["insertColLeft", "insertColRight", null, "deleteCol", null, "hideColumn", "showColumn", null, "freezeAtCell", "freezeCol", "unfreeze", null, "clearContent"],
     };
 
     /**
@@ -285,6 +290,38 @@ export class ContextMenuStrategy extends EventStrategy {
                         if (rc.isColumnHidden(col)) cols.push(col);
                     }
                     if (cols.length > 0) hiddenCols.showColumns(cols);
+                },
+            },
+            freezeAtCell: {
+                label: "冻结至此处",
+                action: (r, c, sheet) => {
+                    const freeze = sheet.workbook?.getPlugin("freeze");
+                    if (!freeze) return;
+                    freeze.freeze(r, c);
+                },
+            },
+            freezeRow: {
+                label: "冻结首行",
+                action: (r, c, sheet) => {
+                    const freeze = sheet.workbook?.getPlugin("freeze");
+                    if (!freeze) return;
+                    freeze.freeze(1, freeze.fixedColumnsStart);
+                },
+            },
+            freezeCol: {
+                label: "冻结首列",
+                action: (r, c, sheet) => {
+                    const freeze = sheet.workbook?.getPlugin("freeze");
+                    if (!freeze) return;
+                    freeze.freeze(freeze.fixedRowsTop, 1);
+                },
+            },
+            unfreeze: {
+                label: "取消冻结",
+                action: (r, c, sheet) => {
+                    const freeze = sheet.workbook?.getPlugin("freeze");
+                    if (!freeze) return;
+                    freeze.unfreeze();
                 },
             },
         };

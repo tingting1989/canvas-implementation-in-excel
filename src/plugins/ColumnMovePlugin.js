@@ -1,35 +1,18 @@
-import { BasePlugin } from "./BasePlugin.js";
+import { BaseMovePlugin } from "./BaseMovePlugin.js";
 import { ColumnMoveStrategy } from "../editor/strategies/ColumnMoveStrategy.js";
 
-export class ColumnMovePlugin extends BasePlugin {
+/**
+ * 列拖拽移动插件
+ *
+ * 参考 Handsontable ManualColumnMove API。
+ */
+export class ColumnMovePlugin extends BaseMovePlugin {
     static get PLUGIN_NAME() {
         return "columnMove";
     }
 
-    #strategy = null;
-
-    init(options = {}) {
-        super.init(options);
-        this.#strategy = new ColumnMoveStrategy(this.eventHandler);
-        this.addStrategy("columnMove", this.#strategy);
-
-        if (options.enabled === false) {
-            this.disable();
-        }
-    }
-
-    destroy() {
-        this.#strategy = null;
-        super.destroy();
-    }
-
-    enable() {
-        super.enable();
-        this.#strategy?.enable();
-    }
-
-    disable() {
-        super.disable();
-        this.#strategy?.disable();
+    /** @override */
+    _createStrategy() {
+        return new ColumnMoveStrategy(this.eventHandler);
     }
 }
