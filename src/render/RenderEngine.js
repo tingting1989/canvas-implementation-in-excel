@@ -232,10 +232,8 @@ export class RenderEngine {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
 
-        // 主区域渲染时扣除冻结区域尺寸，避免在极端滚动位置（如滚到底部）
-        // 渲染超出实际数据范围的行/列（表现为底部/右侧出现多余空白行/列）
-        const mainViewW = frozenColsW > 0 ? viewW - frozenColsW : viewW;
-        const mainViewH = frozenRowsH > 0 ? viewH - frozenRowsH : viewH;
+        const mainViewW = viewW;
+        const mainViewH = viewH;
         const vt = this.#getViewportTransform();
 
         this.tileRenderer.render(ctx, sheet, sx, sy, mainViewW, mainViewH);

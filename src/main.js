@@ -38,14 +38,14 @@ const initApp = () => {
         rowHeights: [30, 50, 90],
         rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
         // 嵌套表头示例（参考 Handsontable nestedHeaders API）
-        nestedHeaders: [
-            [
-                { label: "基本信息", colspan: 2 },
-                { label: "工作信息", colspan: 4 },
-            ],
-            ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
-            ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-        ],
+        // nestedHeaders: [
+        //     [
+        //         { label: "基本信息", colspan: 2 },
+        //         { label: "工作信息", colspan: 4 },
+        //     ],
+        //     ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+        //     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+        // ],
         textOverflowEllipsis: false,
         cellPadding: 10,
         // width: 400,
