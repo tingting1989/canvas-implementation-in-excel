@@ -7,6 +7,7 @@ import { CopyPastePlugin } from "./plugins/CopyPastePlugin.js";
 import { ExportFilePlugin } from "./plugins/ExportFilePlugin.js";
 import { PaginationPlugin } from "./plugins/PaginationPlugin.js";
 import { HiddenColumnsPlugin } from "./plugins/HiddenColumnsPlugin.js";
+import { HiddenRowsPlugin } from "./plugins/HiddenRowsPlugin.js";
 import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 
@@ -20,6 +21,7 @@ const initApp = () => {
     Workbook.registerPlugin("exportFile", ExportFilePlugin);
     Workbook.registerPlugin("pagination", PaginationPlugin);
     Workbook.registerPlugin("hiddenColumns", HiddenColumnsPlugin);
+    Workbook.registerPlugin("hiddenRows", HiddenRowsPlugin);
     Workbook.registerPlugin("rowMove", RowMovePlugin);
 
     const wb = new Workbook("grid", {
@@ -50,7 +52,7 @@ const initApp = () => {
         startCols: 26,
         // plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'pagination', 'hiddenColumns', 'rowMove'],
         // 声明要加载： 声明当前实例需要哪些插件， 这是典型的注册-加载分离模式：
-        plugins: ["autoFill", "contextMenu", "columnMove", "copyPaste", "pagination", "exportFile", "hiddenColumns", "rowMove"],
+        plugins: ["autoFill", "contextMenu", "columnMove", "copyPaste", "pagination", "exportFile", "hiddenColumns", "hiddenRows", "rowMove"],
         pluginOptions: {
             //  pagination: { pageSize: 50 },
             // hiddenColumns: { columns: [2] },

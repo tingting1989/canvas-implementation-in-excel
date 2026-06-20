@@ -192,6 +192,8 @@ export class HeaderRenderer {
         for (let r = sr; r < er; r++) {
             const y = headerH + rc.getRowY(r) - scrollY;
             const h = rc.getRowHeight(r);
+            if (h <= 0) continue;
+
             const isSource = this.dragRenderer.isRowSource(r);
             const highlighted = r >= range.topRow && r <= range.bottomRow;
 

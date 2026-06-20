@@ -73,6 +73,10 @@ export const HOOKS = Object.freeze({
     AFTER_HIDE_COLUMN: "afterHideColumn",
     AFTER_SHOW_COLUMN: "afterShowColumn",
 
+    /** 隐藏行相关 */
+    AFTER_HIDE_ROW: "afterHideRow",
+    AFTER_SHOW_ROW: "afterShowRow",
+
     /** 生命周期相关 */
     INIT: "init",
     DESTROY: "destroy",

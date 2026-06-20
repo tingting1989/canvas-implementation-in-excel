@@ -72,6 +72,11 @@ export class ContextMenuStrategy extends EventStrategy {
             "deleteRow",
             "deleteCol",
             null,
+            "hideRow",
+            "showRow",
+            "hideColumn",
+            "showColumn",
+            null,
             "mergeCells",
             "unmergeCells",
             null,
@@ -79,8 +84,8 @@ export class ContextMenuStrategy extends EventStrategy {
             null,
             "clearContent",
         ],
-        rowHeader: ["insertRowAbove", "insertRowBelow", null, "deleteRow", null, "clearContent"],
-        colHeader: ["insertColLeft", "insertColRight", null, "deleteCol", null, "clearContent"],
+        rowHeader: ["insertRowAbove", "insertRowBelow", null, "deleteRow", null, "hideRow", "showRow", null, "clearContent"],
+        colHeader: ["insertColLeft", "insertColRight", null, "deleteCol", null, "hideColumn", "showColumn", null, "clearContent"],
     };
 
     /**
@@ -226,6 +231,60 @@ export class ContextMenuStrategy extends EventStrategy {
                         }
                     }
                     sheet.endBatch();
+                },
+            },
+            hideRow: {
+                label: "隐藏行",
+                action: (r, c, sheet) => {
+                    const hiddenRows = sheet.workbook?.getPlugin("hiddenRows");
+                    if (!hiddenRows) return;
+                    const range = sheet.selection.getRange();
+                    const rows = [];
+                    for (let row = range.topRow; row <= range.bottomRow; row++) {
+                        rows.push(row);
+                    }
+                    hiddenRows.hideRows(rows);
+                },
+            },
+            showRow: {
+                label: "显示行",
+                action: (r, c, sheet) => {
+                    const hiddenRows = sheet.workbook?.getPlugin("hiddenRows");
+                    if (!hiddenRows) return;
+                    const rc = sheet.rowColManager;
+                    const range = sheet.selection.getRange();
+                    const rows = [];
+                    for (let row = Math.max(0, range.topRow - 1); row <= range.bottomRow + 1; row++) {
+                        if (rc.isRowHidden(row)) rows.push(row);
+                    }
+                    if (rows.length > 0) hiddenRows.showRows(rows);
+                },
+            },
+            hideColumn: {
+                label: "隐藏列",
+                action: (r, c, sheet) => {
+                    const hiddenCols = sheet.workbook?.getPlugin("hiddenColumns");
+                    if (!hiddenCols) return;
+                    const range = sheet.selection.getRange();
+                    const cols = [];
+                    for (let col = range.topCol; col <= range.bottomCol; col++) {
+                        cols.push(col);
+                    }
+                    hiddenCols.hideColumns(cols);
+                },
+            },
+            showColumn: {
+                label: "显示列",
+                action: (r, c, sheet) => {
+                    const hiddenCols = sheet.workbook?.getPlugin("hiddenColumns");
+                    if (!hiddenCols) return;
+                    const rc = sheet.rowColManager;
+                    const range = sheet.selection.getRange();
+                    const cols = [];
+                    for (let col = Math.max(0, range.topCol - 1); col <= range.bottomCol + 1; col++) {
+                        if (rc.isColumnHidden(col)) cols.push(col);
+                    }
+                    if (cols.length > 0) hiddenCols.showColumns(cols);
                 },
             },
         };

@@ -18,6 +18,11 @@ export class RowColManager {
     /** 隐藏列的原始宽度缓存（隐藏前保存，显示时恢复） */
     #originalColWidths = new Map();
 
+    /** 隐藏行集合（存储实际行号） */
+    #hiddenRows = new Set();
+    /** 隐藏行的原始高度缓存（隐藏前保存，显示时恢复） */
+    #originalRowHeights = new Map();
+
     get totalHeight() {
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             const startY = this.#rawGetRowY(this.#pageStartRow);
@@ -51,6 +56,11 @@ export class RowColManager {
     /** 可视列总数（排除隐藏列） */
     get visibleColCount() {
         return CONFIG.MAX_COLS - this.#hiddenCols.size;
+    }
+
+    /** 可视行总数（排除隐藏行） */
+    get visibleRowCount() {
+        return CONFIG.MAX_ROWS - this.#hiddenRows.size;
     }
 
     get allocatedRowCount() {
@@ -98,9 +108,11 @@ export class RowColManager {
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             const realRow = this.#pageStartRow + row;
             if (realRow >= 0 && realRow < this.#rowHeights.length) return this.#rowHeights[realRow];
+            if (this.#hiddenRows.has(realRow)) return 0;
             return CONFIG.DEFAULT_ROW_HEIGHT;
         }
         if (row >= 0 && row < this.#rowHeights.length) return this.#rowHeights[row];
+        if (this.#hiddenRows.has(row)) return 0;
         return CONFIG.DEFAULT_ROW_HEIGHT;
     }
 
@@ -150,11 +162,17 @@ export class RowColManager {
     #rawRowAt(y) {
         if (y < 0) return 0;
         this.#ensureRowPrefix();
+        let row;
         if (y < this.#allocatedHeight) {
-            return this.#binarySearch(this.#rowPrefixSum, y);
+            row = this.#binarySearch(this.#rowPrefixSum, y);
+        } else {
+            const virtualY = y - this.#allocatedHeight;
+            row = this.#rowHeights.length + Math.floor(virtualY / CONFIG.DEFAULT_ROW_HEIGHT);
         }
-        const virtualY = y - this.#allocatedHeight;
-        return this.#rowHeights.length + Math.floor(virtualY / CONFIG.DEFAULT_ROW_HEIGHT);
+        while (row < CONFIG.MAX_ROWS && this.#hiddenRows.has(row)) {
+            row++;
+        }
+        return row;
     }
 
     colAt(x) {
@@ -188,6 +206,8 @@ export class RowColManager {
     insertRow(atRow) {
         this.ensureSize(atRow + 1, 0);
         this.#rowHeights.splice(atRow, 0, CONFIG.DEFAULT_ROW_HEIGHT);
+        this.#hiddenRows = new Set([...this.#hiddenRows].map((r) => (r >= atRow ? r + 1 : r)));
+        this.#originalRowHeights = new Map([...this.#originalRowHeights].map(([r, h]) => [r >= atRow ? r + 1 : r, h]));
         this.#rowPrefixDirty = true;
     }
 
@@ -202,6 +222,10 @@ export class RowColManager {
     deleteRow(row) {
         if (row < 0 || row >= this.#rowHeights.length) return;
         this.#rowHeights.splice(row, 1);
+        this.#hiddenRows.delete(row);
+        this.#originalRowHeights.delete(row);
+        this.#hiddenRows = new Set([...this.#hiddenRows].map((r) => (r > row ? r - 1 : r)));
+        this.#originalRowHeights = new Map([...this.#originalRowHeights].map(([r, h]) => [r > row ? r - 1 : r, h]));
         this.#rowPrefixDirty = true;
     }
 
@@ -240,6 +264,10 @@ export class RowColManager {
         this.ensureSize(Math.max(fromRow, toRow) + 1, 0);
         const [height] = this.#rowHeights.splice(fromRow, 1);
         this.#rowHeights.splice(toRow, 0, height);
+
+        this.#hiddenRows = new Set([...this.#hiddenRows].map((r) => this.#shiftIndex(r, fromRow, toRow)));
+        this.#originalRowHeights = new Map([...this.#originalRowHeights].map(([r, h]) => [this.#shiftIndex(r, fromRow, toRow), h]));
+
         this.#rowPrefixDirty = true;
     }
 
@@ -332,6 +360,70 @@ export class RowColManager {
     /** 隐藏列集合是否非空 */
     get hasHiddenColumns() {
         return this.#hiddenCols.size > 0;
+    }
+
+    /**
+     * 隐藏指定行（将高度设为 0）
+     * @param {number} row - 要隐藏的行索引
+     */
+    hideRow(row) {
+        if (row < 0 || this.#hiddenRows.has(row)) return;
+        this.ensureSize(row + 1, 0);
+        const currentHeight = this.#rowHeights[row];
+        this.#originalRowHeights.set(row, currentHeight);
+        this.#rowHeights[row] = 0;
+        this.#hiddenRows.add(row);
+        this.#rowPrefixDirty = true;
+    }
+
+    /**
+     * 显示指定行（恢复原始高度）
+     * @param {number} row - 要显示的行索引
+     */
+    showRow(row) {
+        if (!this.#hiddenRows.has(row)) return;
+        const originalHeight = this.#originalRowHeights.get(row) ?? CONFIG.DEFAULT_ROW_HEIGHT;
+        this.#rowHeights[row] = originalHeight;
+        this.#originalRowHeights.delete(row);
+        this.#hiddenRows.delete(row);
+        this.#rowPrefixDirty = true;
+    }
+
+    /**
+     * 判断指定行是否隐藏
+     * @param {number} row - 行索引
+     * @returns {boolean}
+     */
+    isRowHidden(row) {
+        return this.#hiddenRows.has(row);
+    }
+
+    /**
+     * 获取所有隐藏行索引
+     * @returns {number[]} 升序排列
+     */
+    getHiddenRows() {
+        return [...this.#hiddenRows].sort((a, b) => a - b);
+    }
+
+    /**
+     * 清除所有隐藏行，恢复全量显示
+     */
+    clearHiddenRows() {
+        for (const row of this.#hiddenRows) {
+            const originalHeight = this.#originalRowHeights.get(row) ?? CONFIG.DEFAULT_ROW_HEIGHT;
+            if (row < this.#rowHeights.length) {
+                this.#rowHeights[row] = originalHeight;
+            }
+        }
+        this.#hiddenRows.clear();
+        this.#originalRowHeights.clear();
+        this.#rowPrefixDirty = true;
+    }
+
+    /** 隐藏行集合是否非空 */
+    get hasHiddenRows() {
+        return this.#hiddenRows.size > 0;
     }
 
     #rebuildPrefix(sizes, dirtyFlag) {

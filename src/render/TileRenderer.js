@@ -143,6 +143,8 @@ export class TileRenderer {
         for (let r = sr; r < er; r++) {
             const rowY = rc.getRowY(r);
             const rowH = rc.getRowHeight(r);
+            if (rowH <= 0) continue;
+
             const localY = rowY - pixelY0;
 
             if (localY + rowH <= 0 || localY >= tileSize) continue;
