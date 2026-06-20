@@ -83,9 +83,9 @@ export class HeaderRenderer {
         this.#renderHeaderRegion(ctx, sheet, {
             vt,
             rc,
-            clipX: frozenColsW > 0 ? headerW + frozenColsW : headerW,
+            clipX: headerW,
             clipY: 0,
-            clipW: frozenColsW > 0 ? viewW - headerW - frozenColsW : viewW - headerW,
+            clipW: viewW - headerW,
             clipH: totalHeaderH,
             rowH,
             defaultStyle,
@@ -247,8 +247,8 @@ export class HeaderRenderer {
         this.#renderRowHeaderRegion(ctx, sheet, {
             vt,
             rc,
-            clipY: frozenRowsH > 0 ? headerH + frozenRowsH : headerH,
-            clipH: frozenRowsH > 0 ? viewH - headerH - frozenRowsH : viewH - headerH,
+            clipY: headerH,
+            clipH: viewH - headerH,
             headerW,
             headerH,
             defaultStyle,
