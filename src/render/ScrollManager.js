@@ -1,5 +1,5 @@
-import {EVENT_NAMES} from "../constants/eventNames.js";
-import {CONFIG} from "../constants/config";
+import { EVENT_NAMES } from "../constants/eventNames.js";
+import { CONFIG } from "../constants/config";
 
 let scrollbarStyleInjected = false;
 
@@ -235,7 +235,7 @@ export class ScrollManager {
             this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, this.#scrollY + dy));
             this.#scheduleScrollCallbacks();
         };
-        this.wrap.addEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler, {passive: false});
+        this.wrap.addEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler, { passive: false });
     }
 
     /**
