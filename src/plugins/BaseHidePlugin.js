@@ -1,4 +1,5 @@
 import { BasePlugin } from "./BasePlugin.js";
+import { CONFIG } from "../constants/config.js";
 
 /**
  * 隐藏行/列插件基类
@@ -35,9 +36,9 @@ export class BaseHidePlugin extends BasePlugin {
     // ═══════════════════════════════════════════════════════════════
 
     /** 行维度标识 */
-    static AXIS_ROW = "row";
+    static AXIS_ROW = CONFIG.AXIS_ROW;
     /** 列维度标识 */
-    static AXIS_COL = "col";
+    static AXIS_COL = CONFIG.AXIS_COL;
     /** 行维度首字母大写（用于拼接 RowColManager API 后缀） */
     static DIM_ROW = "Row";
     /** 列维度首字母大写（用于拼接 RowColManager API 后缀） */

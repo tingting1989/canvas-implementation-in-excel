@@ -100,4 +100,9 @@ export const CONFIG = {
 
     /** 单元格文字溢出时是否显示省略号（...），设为 false 则直接裁剪 */
     TEXT_OVERFLOW_ELLIPSIS: true,
+
+    /** 行轴标识 */
+    AXIS_ROW: "row",
+    /** 列轴标识 */
+    AXIS_COL: "col",
 };

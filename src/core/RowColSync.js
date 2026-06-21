@@ -32,12 +32,12 @@ export class RowColSync {
 
     /** 行头或列头标签数组（取决于 axis） */
     get #headers() {
-        return this.#axis === "row" ? this.#sheet.rowHeaders : this.#sheet.colHeaders;
+        return this.#axis === CONFIG.AXIS_ROW ? this.#sheet.rowHeaders : this.#sheet.colHeaders;
     }
 
     /** 需要同步的 Map 集合（行：rowStyles；列：columnsConfig + colStyles + dataBindings） */
     get #maps() {
-        return this.#axis === "row" ? [this.#sheet.rowStyles] : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
+        return this.#axis === CONFIG.AXIS_ROW ? [this.#sheet.rowStyles] : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
     }
 
     /**
@@ -50,7 +50,7 @@ export class RowColSync {
             this.#remapMapKeys(map, (k) => (k >= atIndex ? k + 1 : k));
         }
         this.#remapCellTypesKeys((k) => (k >= atIndex ? k + 1 : k));
-        if (this.#axis === "col") this.#insertNestedHeaderColumn(atIndex);
+        if (this.#axis === CONFIG.AXIS_COL) this.#insertNestedHeaderColumn(atIndex);
     }
 
     /**
@@ -64,7 +64,7 @@ export class RowColSync {
             this.#remapMapKeys(map, (k) => (k > atIndex ? k - 1 : k));
         }
         this.#remapCellTypesKeys((k) => (k === atIndex ? -1 : k > atIndex ? k - 1 : k), true);
-        if (this.#axis === "col") this.#deleteNestedHeaderColumn(atIndex);
+        if (this.#axis === CONFIG.AXIS_COL) this.#deleteNestedHeaderColumn(atIndex);
     }
 
     /**
@@ -78,7 +78,7 @@ export class RowColSync {
             this.#remapMapKeys(map, (k) => this.#calcShiftedIndex(k, from, to));
         }
         this.#remapCellTypesKeys((k) => this.#calcShiftedIndex(k, from, to));
-        if (this.#axis === "col") this.#shiftNestedHeaders(from, to);
+        if (this.#axis === CONFIG.AXIS_COL) this.#shiftNestedHeaders(from, to);
     }
 
     // ─── 数组操作工具 ──────────────────────────────────
@@ -129,12 +129,12 @@ export class RowColSync {
         const moved = [];
         for (const [key, val] of this.#sheet.cellTypes) {
             const [r, c] = key.split(",").map(Number);
-            const oldVal = this.#axis === "row" ? r : c;
+            const oldVal = this.#axis === CONFIG.AXIS_ROW ? r : c;
             const newVal = shiftFn(oldVal);
             if (newVal === -1) {
                 toDelete.push(key);
             } else if (newVal !== oldVal) {
-                const newKey = this.#axis === "row" ? `${newVal},${c}` : `${r},${newVal}`;
+                const newKey = this.#axis === CONFIG.AXIS_ROW ? `${newVal},${c}` : `${r},${newVal}`;
                 moved.push({ oldKey: key, newKey, val });
             }
         }

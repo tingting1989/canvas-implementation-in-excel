@@ -126,8 +126,8 @@ export class Sheet {
         this.#typeManager = new ColumnTypeManager(this);
         this.#headerLabels = new HeaderLabelManager(this);
         this.#conditionalFormat = new ConditionalFormatManager(this);
-        this.#rowSync = new RowColSync(this, "row");
-        this.#colSync = new RowColSync(this, "col");
+        this.#rowSync = new RowColSync(this, CONFIG.AXIS_ROW);
+        this.#colSync = new RowColSync(this, CONFIG.AXIS_COL);
     }
 
     // ============================================================
