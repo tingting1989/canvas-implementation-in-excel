@@ -117,13 +117,7 @@ export class HeaderRenderer {
         if (!this.dragRenderer.hasColumnMove()) {
             const topColX = vt.colToViewX(range.topCol);
             const bottomColRight = vt.colRightToViewX(range.bottomCol);
-            this.#drawSelectionLine(
-                ctx,
-                topColX,
-                totalHeaderH,
-                bottomColRight - topColX,
-                true,
-            );
+            this.#drawSelectionLine(ctx, topColX, totalHeaderH, bottomColRight - topColX, true);
         }
     }
 
@@ -146,9 +140,7 @@ export class HeaderRenderer {
 
         if (nestedCount > 0) {
             const sc = isFrozen ? 0 : rc.colAt(scrollX);
-            const ec = isFrozen
-                ? rc.colAt(clipW) + 1
-                : rc.colAt(scrollX + clipW) + 1;
+            const ec = isFrozen ? rc.colAt(clipW) + 1 : rc.colAt(scrollX + clipW) + 1;
             this.#renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle);
         } else {
             const startCol = isFrozen ? 0 : rc.colAt(scrollX);
@@ -277,13 +269,7 @@ export class HeaderRenderer {
         if (!this.dragRenderer.hasRowMove()) {
             const topRowY = vt.rowToViewY(range.topRow);
             const bottomRowBottom = vt.rowBottomToViewY(range.bottomRow);
-            this.#drawSelectionLine(
-                ctx,
-                headerW,
-                topRowY,
-                bottomRowBottom - topRowY,
-                false,
-            );
+            this.#drawSelectionLine(ctx, headerW, topRowY, bottomRowBottom - topRowY, false);
         }
     }
 

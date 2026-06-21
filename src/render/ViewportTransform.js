@@ -235,9 +235,9 @@ export class ViewportTransform {
         }
 
         if (this.isInFrozenRows(row)) {
-            outOfView = outOfView || (cellY + cellH <= 0 || cellY >= this.frozenRowsH);
+            outOfView = outOfView || cellY + cellH <= 0 || cellY >= this.frozenRowsH;
         } else {
-            outOfView = outOfView || (cellY + cellH - this.frozenRowsH <= this.scrollY || cellY - this.frozenRowsH >= this.scrollY + dataViewH);
+            outOfView = outOfView || cellY + cellH - this.frozenRowsH <= this.scrollY || cellY - this.frozenRowsH >= this.scrollY + dataViewH;
         }
 
         return !outOfView;

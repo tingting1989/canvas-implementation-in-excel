@@ -37,7 +37,9 @@ export class RowColSync {
 
     /** 需要同步的 Map 集合（行：rowStyles；列：columnsConfig + colStyles + dataBindings） */
     get #maps() {
-        return this.#axis === CONFIG.AXIS_ROW ? [this.#sheet.rowStyles] : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
+        return this.#axis === CONFIG.AXIS_ROW
+            ? [this.#sheet.rowStyles]
+            : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
     }
 
     /**

@@ -212,7 +212,16 @@ export class RenderEngine {
         // totalHeight 不包含冻结行高度，因此 dataViewH 也不应扣除 frozenRowsH
         const isPaginationActive = rc.pageStartRow >= 0;
         const effectiveFrozenRowsH = isPaginationActive ? 0 : frozenRowsH;
-        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH, headerH, headerW, effectiveFrozenRowsH, frozenColsW);
+        this.scrollMgr.updateScrollBounds(
+            rc.totalWidth,
+            rc.totalHeight,
+            this.#viewW,
+            this.#viewH,
+            headerH,
+            headerW,
+            effectiveFrozenRowsH,
+            frozenColsW,
+        );
 
         if (headerH !== CONFIG.HEADER_HEIGHT) {
             this.wrap.style.setProperty("--header-height", `${headerH}px`);
@@ -243,15 +252,54 @@ export class RenderEngine {
         const freezeTileOptions = isPaginationActive ? { useRealRows: true } : undefined;
 
         if (frozenColsW > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, viewH - headerH, 0, sy, frozenColsW + headerW, viewH, vt, freezeTileOptions);
+            this.#renderClippedRegion(
+                ctx,
+                sheet,
+                headerW,
+                headerH,
+                frozenColsW,
+                viewH - headerH,
+                0,
+                sy,
+                frozenColsW + headerW,
+                viewH,
+                vt,
+                freezeTileOptions,
+            );
         }
 
         if (frozenRowsH > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, viewW - headerW, frozenRowsH, sx, 0, viewW, frozenRowsH + headerH, vt, freezeTileOptions);
+            this.#renderClippedRegion(
+                ctx,
+                sheet,
+                headerW,
+                headerH,
+                viewW - headerW,
+                frozenRowsH,
+                sx,
+                0,
+                viewW,
+                frozenRowsH + headerH,
+                vt,
+                freezeTileOptions,
+            );
         }
 
         if (frozenRowsH > 0 && frozenColsW > 0) {
-            this.#renderClippedRegion(ctx, sheet, headerW, headerH, frozenColsW, frozenRowsH, 0, 0, frozenColsW + headerW, frozenRowsH + headerH, vt, freezeTileOptions);
+            this.#renderClippedRegion(
+                ctx,
+                sheet,
+                headerW,
+                headerH,
+                frozenColsW,
+                frozenRowsH,
+                0,
+                0,
+                frozenColsW + headerW,
+                frozenRowsH + headerH,
+                vt,
+                freezeTileOptions,
+            );
         }
 
         this.headerRenderer.render(ctx, sheet, vt, viewW, viewH);

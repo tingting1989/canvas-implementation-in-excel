@@ -266,7 +266,16 @@ export class ScrollManager {
      * @param {number} [frozenRowsH] - 冻结行像素高度
      * @param {number} [frozenColsW] - 冻结列像素宽度
      */
-    updateScrollBounds(totalW, totalH, viewW, viewH, headerH = CONFIG.HEADER_HEIGHT, headerW = CONFIG.HEADER_WIDTH, frozenRowsH = 0, frozenColsW = 0) {
+    updateScrollBounds(
+        totalW,
+        totalH,
+        viewW,
+        viewH,
+        headerH = CONFIG.HEADER_HEIGHT,
+        headerW = CONFIG.HEADER_WIDTH,
+        frozenRowsH = 0,
+        frozenColsW = 0,
+    ) {
         this.#viewW = viewW;
         this.#viewH = viewH;
         this.#headerH = headerH;

@@ -54,7 +54,18 @@ const initApp = () => {
         startCols: 26,
         // plugins: ['autoFill', 'contextMenu', 'columnMove', 'exportFile', 'pagination', 'hiddenColumns', 'rowMove'],
         // 声明要加载： 声明当前实例需要哪些插件， 这是典型的注册-加载分离模式：
-        plugins: ["autoFill", "contextMenu", "columnMove", "copyPaste", "pagination", "exportFile", "hiddenColumns", "hiddenRows", "rowMove", "freeze"],
+        plugins: [
+            "autoFill",
+            "contextMenu",
+            "columnMove",
+            "copyPaste",
+            "pagination",
+            "exportFile",
+            "hiddenColumns",
+            "hiddenRows",
+            "rowMove",
+            "freeze",
+        ],
         pluginOptions: {
             //  pagination: { pageSize: 50 },
             // hiddenColumns: { columns: [2] },

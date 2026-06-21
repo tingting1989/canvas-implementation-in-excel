@@ -122,9 +122,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @returns {boolean} 是否隐藏成功
      */
     #rcHide(index) {
-        return this.#isRow
-            ? this.sheet.rowColManager.hideRow(index)
-            : this.sheet.rowColManager.hideColumn(index);
+        return this.#isRow ? this.sheet.rowColManager.hideRow(index) : this.sheet.rowColManager.hideColumn(index);
     }
 
     /**
@@ -133,9 +131,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @returns {boolean} 是否显示成功
      */
     #rcShow(index) {
-        return this.#isRow
-            ? this.sheet.rowColManager.showRow(index)
-            : this.sheet.rowColManager.showColumn(index);
+        return this.#isRow ? this.sheet.rowColManager.showRow(index) : this.sheet.rowColManager.showColumn(index);
     }
 
     /**
@@ -144,9 +140,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @returns {boolean}
      */
     #rcIsHidden(index) {
-        return this.#isRow
-            ? this.sheet.rowColManager.isRowHidden(index)
-            : this.sheet.rowColManager.isColumnHidden(index);
+        return this.#isRow ? this.sheet.rowColManager.isRowHidden(index) : this.sheet.rowColManager.isColumnHidden(index);
     }
 
     /**
@@ -154,18 +148,14 @@ export class BaseHidePlugin extends BasePlugin {
      * @returns {number[]}
      */
     #rcGetHidden() {
-        return this.#isRow
-            ? this.sheet.rowColManager.getHiddenRows()
-            : this.sheet.rowColManager.getHiddenColumns();
+        return this.#isRow ? this.sheet.rowColManager.getHiddenRows() : this.sheet.rowColManager.getHiddenColumns();
     }
 
     /**
      * 清除所有隐藏项（分发到 clearHiddenRows / clearHiddenColumns）
      */
     #rcClearHidden() {
-        return this.#isRow
-            ? this.sheet.rowColManager.clearHiddenRows()
-            : this.sheet.rowColManager.clearHiddenColumns();
+        return this.#isRow ? this.sheet.rowColManager.clearHiddenRows() : this.sheet.rowColManager.clearHiddenColumns();
     }
 
     /**
@@ -173,9 +163,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @returns {number}
      */
     #rcVisibleCount() {
-        return this.#isRow
-            ? this.sheet.rowColManager.visibleRowCount
-            : this.sheet.rowColManager.visibleColCount;
+        return this.#isRow ? this.sheet.rowColManager.visibleRowCount : this.sheet.rowColManager.visibleColCount;
     }
 
     // ═══════════════════════════════════════════════════════════════

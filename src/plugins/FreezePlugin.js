@@ -234,7 +234,7 @@ export class FreezePlugin extends BasePlugin {
      */
     isFrozen() {
         const sheet = this.sheet;
-        return sheet ? (sheet.fixedRowsTop > 0 || sheet.fixedColumnsStart > 0) : false;
+        return sheet ? sheet.fixedRowsTop > 0 || sheet.fixedColumnsStart > 0 : false;
     }
 
     // ═══════════════════════════════════════════════════════════════
