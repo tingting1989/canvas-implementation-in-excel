@@ -62,13 +62,24 @@ export class ContextMenuStrategy extends EventStrategy {
      * 只读模式下禁用的内置菜单项 key
      */
     static #READONLY_DISABLED = new Set([
-        "insertRowAbove", "insertRowBelow", "insertColLeft", "insertColRight",
-        "deleteRow", "deleteCol",
-        "mergeCells", "unmergeCells",
+        "insertRowAbove",
+        "insertRowBelow",
+        "insertColLeft",
+        "insertColRight",
+        "deleteRow",
+        "deleteCol",
+        "mergeCells",
+        "unmergeCells",
         "clearContent",
         "insertImage",
-        "hideRow", "showRow", "hideColumn", "showColumn",
-        "freezeAtCell", "freezeRow", "freezeCol", "unfreeze",
+        "hideRow",
+        "showRow",
+        "hideColumn",
+        "showColumn",
+        "freezeAtCell",
+        "freezeRow",
+        "freezeCol",
+        "unfreeze",
     ]);
 
     /**
