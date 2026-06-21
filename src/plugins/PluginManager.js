@@ -1,4 +1,5 @@
 import { BasePlugin } from "./BasePlugin.js";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 插件管理器
@@ -46,7 +47,7 @@ export class PluginManager {
      */
     static register(name, PluginClass) {
         if (!(PluginClass.prototype instanceof BasePlugin)) {
-            throw new Error(`Plugin "${name}" must extend BasePlugin`);
+            errorHandler.throw(ERROR_CODE.PLUGIN_INVALID_CLASS, `Plugin "${name}" must extend BasePlugin`);
         }
         PluginManager.#registry.set(name, PluginClass);
     }
@@ -79,13 +80,13 @@ export class PluginManager {
      */
     loadPlugin(name, options = {}) {
         if (this.#plugins.has(name)) {
-            console.warn(`Plugin "${name}" is already loaded`);
+            errorHandler.warn(ERROR_CODE.PLUGIN_ALREADY_LOADED, `Plugin "${name}" is already loaded`);
             return this.#plugins.get(name);
         }
 
         const PluginClass = PluginManager.#registry.get(name);
         if (!PluginClass) {
-            console.error(`Plugin "${name}" is not registered. Use PluginManager.register() first.`);
+            errorHandler.handle(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin "${name}" is not registered. Use PluginManager.register() first.`);
             return null;
         }
 
@@ -107,7 +108,7 @@ export class PluginManager {
     loadPluginClass(PluginClass, options = {}) {
         const name = PluginClass.PLUGIN_NAME;
         if (this.#plugins.has(name)) {
-            console.warn(`Plugin "${name}" is already loaded`);
+            errorHandler.warn(ERROR_CODE.PLUGIN_ALREADY_LOADED, `Plugin "${name}" is already loaded`);
             return this.#plugins.get(name);
         }
 

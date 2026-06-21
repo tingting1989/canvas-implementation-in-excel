@@ -1,6 +1,7 @@
 import { stylePool } from "../styles/index.js";
 import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../types/index.js";
 import { isFunction, isObject } from "lodash-es";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 列类型管理器
@@ -125,7 +126,8 @@ export class ColumnTypeManager {
             if (isFunction(config)) {
                 try {
                     config = config(c);
-                } catch {
+                } catch (error) {
+                    errorHandler.handle(ERROR_CODE.TYPE_PARSE_ERROR, `Column config function failed at column ${c}`, { originalError: error });
                     continue;
                 }
             }

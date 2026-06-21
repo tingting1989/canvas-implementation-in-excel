@@ -5,6 +5,7 @@ import { DateColumnType } from "./DateColumnType.js";
 import { BooleanColumnType } from "./BooleanColumnType.js";
 import { SelectColumnType } from "./SelectColumnType.js";
 import { isFunction } from "lodash-es";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 全局类型注册表
@@ -29,7 +30,7 @@ registry.set("select", new SelectColumnType());
 export function getType(name, options = undefined) {
     const base = registry.get(name);
     if (!base) {
-        console.warn(`Type "${name}" not registered, falling back to text`);
+        errorHandler.warn(ERROR_CODE.TYPE_NOT_REGISTERED, `Type "${name}" not registered, falling back to text`);
         return registry.get("text");
     }
     if (!options) return base;
@@ -53,7 +54,7 @@ export function getType(name, options = undefined) {
  */
 export function registerType(typeInstance) {
     if (!typeInstance || !typeInstance.name) {
-        console.warn("Invalid type instance, registration skipped");
+        errorHandler.warn(ERROR_CODE.TYPE_INVALID_INSTANCE, "Invalid type instance, registration skipped");
         return;
     }
     registry.set(typeInstance.name, typeInstance);
@@ -149,7 +150,8 @@ export function validateValue(cellType, value, colConfig) {
     if (colConfig && isFunction(colConfig.validator)) {
         try {
             return colConfig.validator(value);
-        } catch {
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.TYPE_PARSE_ERROR, "Validator execution failed", { originalError: error });
             return false;
         }
     }

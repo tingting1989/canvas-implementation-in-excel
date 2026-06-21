@@ -1,5 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { CONFIG } from "../constants/config.js";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 隐藏行/列插件基类
@@ -55,7 +56,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @throws {Error} 子类未覆盖时抛出
      */
     static get AXIS() {
-        throw new Error("AXIS must be overridden in subclass");
+        errorHandler.throw(ERROR_CODE.PLUGIN_ABSTRACT_METHOD, "AXIS must be overridden in subclass");
     }
 
     /**
@@ -65,7 +66,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @throws {Error} 子类未覆盖时抛出
      */
     static get AFTER_HIDE_HOOK() {
-        throw new Error("AFTER_HIDE_HOOK must be overridden in subclass");
+        errorHandler.throw(ERROR_CODE.PLUGIN_ABSTRACT_METHOD, "AFTER_HIDE_HOOK must be overridden in subclass");
     }
 
     /**
@@ -75,7 +76,7 @@ export class BaseHidePlugin extends BasePlugin {
      * @throws {Error} 子类未覆盖时抛出
      */
     static get AFTER_SHOW_HOOK() {
-        throw new Error("AFTER_SHOW_HOOK must be overridden in subclass");
+        errorHandler.throw(ERROR_CODE.PLUGIN_ABSTRACT_METHOD, "AFTER_SHOW_HOOK must be overridden in subclass");
     }
 
     // ═══════════════════════════════════════════════════════════════

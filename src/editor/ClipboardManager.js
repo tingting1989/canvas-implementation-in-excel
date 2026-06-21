@@ -13,7 +13,11 @@
  * - 从 ClipboardEvent.clipboardData 中提取 image/png、image/jpeg 等 MIME 类型
  * - 图片 Blob 转换为 Object URL，存入内部 #cellContent Map（不侵入 Cell 模型）
  * - 由 TileRenderer 通过 getCellContent() 查询并渲染
- *
+ */
+
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+
+/**
  * 富内容管理：
  * - 图片、图表等富内容通过 #cellContent Map 独立管理，key 为 "sheetName,realR,col"
  * - Cell 类保持纯粹，不需要感知具体内容类型
@@ -208,7 +212,8 @@ export class ClipboardManager {
             .join("\n");
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).catch(() => {
+            navigator.clipboard.writeText(text).catch((err) => {
+                errorHandler.warn(ERROR_CODE.CLIPBOARD_WRITE_ERROR, "System clipboard write failed, using fallback", { originalError: err });
                 this.#fallbackWriteText(text);
             });
         } else {
@@ -224,7 +229,9 @@ export class ClipboardManager {
         ta.select();
         try {
             document.execCommand("copy");
-        } catch (_) {}
+        } catch (error) {
+            errorHandler.warn(ERROR_CODE.CLIPBOARD_WRITE_ERROR, "Fallback clipboard write failed", { originalError: error });
+        }
         document.body.removeChild(ta);
     }
 
@@ -239,7 +246,8 @@ export class ClipboardManager {
                         this.pasteInternal(sheet);
                     }
                 })
-                .catch(() => {
+                .catch((err) => {
+                    errorHandler.warn(ERROR_CODE.CLIPBOARD_READ_ERROR, "System clipboard read failed, using internal data", { originalError: err });
                     if (this.#data) {
                         this.pasteInternal(sheet);
                     }
@@ -269,7 +277,7 @@ export class ClipboardManager {
         const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol, srcCols);
         if (mismatch) {
             const details = mismatch.mismatches.map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`).join("; ");
-            console.warn(`[ClipboardManager] 类型不一致，阻止粘贴: ${details}`);
+            errorHandler.warn(ERROR_CODE.CLIPBOARD_TYPE_MISMATCH, `类型不一致，阻止粘贴: ${details}`);
             return;
         }
 
@@ -305,7 +313,7 @@ export class ClipboardManager {
         const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol);
         if (mismatch) {
             const details = mismatch.mismatches.map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`).join("; ");
-            console.warn(`[ClipboardManager] 类型不一致，阻止粘贴: ${details}`);
+            errorHandler.warn(ERROR_CODE.CLIPBOARD_TYPE_MISMATCH, `类型不一致，阻止粘贴: ${details}`);
             return;
         }
 

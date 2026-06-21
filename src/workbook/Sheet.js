@@ -1,4 +1,5 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../styles/index.js";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /** @constant {string} 数据变更事件类型：全量失效 */
 export const SHEET_CHANGE_ALL = "all";
@@ -616,7 +617,8 @@ export class Sheet {
         if (typeof this.cellsFn !== "function") return null;
         try {
             return this.cellsFn(r, c);
-        } catch {
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.CELL_INVALID_DATA, `cellsFn execution failed at (${r},${c})`, { originalError: error });
             return null;
         }
     }

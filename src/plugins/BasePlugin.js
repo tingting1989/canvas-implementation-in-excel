@@ -1,3 +1,5 @@
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+
 /**
  * 插件基类
  * 参考 Handsontable BasePlugin 设计
@@ -55,7 +57,7 @@ export class BasePlugin {
      * @returns {string}
      */
     static get PLUGIN_NAME() {
-        throw new Error("PLUGIN_NAME must be overridden in subclass");
+        errorHandler.throw(ERROR_CODE.PLUGIN_ABSTRACT_METHOD, "PLUGIN_NAME must be overridden in subclass");
     }
 
     /** 获取 Workbook 实例 */

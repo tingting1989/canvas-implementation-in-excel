@@ -1,4 +1,6 @@
 import { HOOKS } from "../constants/hookNames.js";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { isFunction } from "lodash-es";
 
 /**
  * Hooks 系统
@@ -42,8 +44,8 @@ export class Hooks {
      * @param {Function} callback - 回调函数
      */
     addHook(hookName, callback) {
-        if (typeof callback !== "function") {
-            throw new Error("Hook callback must be a function");
+        if (!isFunction(callback)) {
+            errorHandler.throw(ERROR_CODE.HOOK_CALLBACK_INVALID, "Hook callback must be a function");
         }
 
         if (!this.hooks.has(hookName)) {
@@ -60,8 +62,8 @@ export class Hooks {
      * @param {Function} callback - 回调函数
      */
     addHookOnce(hookName, callback) {
-        if (typeof callback !== "function") {
-            throw new Error("Hook callback must be a function");
+        if (!isFunction(callback)) {
+            errorHandler.throw(ERROR_CODE.HOOK_CALLBACK_INVALID, "Hook callback must be a function");
         }
 
         const onceCallback = (...args) => {
@@ -125,7 +127,7 @@ export class Hooks {
             try {
                 result = callback(...args);
             } catch (error) {
-                console.error(`Hook error [${hookName}]:`, error);
+                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 
@@ -153,7 +155,7 @@ export class Hooks {
                     return result;
                 }
             } catch (error) {
-                console.error(`Hook error [${hookName}]:`, error);
+                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 

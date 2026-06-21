@@ -1,4 +1,5 @@
 import { BasePlugin } from "./BasePlugin.js";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 行/列拖拽移动插件基类
@@ -61,7 +62,7 @@ export class BaseMovePlugin extends BasePlugin {
      * @protected
      */
     _createStrategy() {
-        throw new Error("_createStrategy() must be overridden in subclass");
+        errorHandler.throw(ERROR_CODE.PLUGIN_ABSTRACT_METHOD, "_createStrategy() must be overridden in subclass");
     }
 
     // ═══════════════════════════════════════════════════════════════
