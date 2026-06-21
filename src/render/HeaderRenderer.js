@@ -141,11 +141,11 @@ export class HeaderRenderer {
 
         if (nestedCount > 0) {
             const sc = isFrozen ? 0 : rc.colAt(scrollX);
-            const ec = isFrozen ? rc.colAt(clipW) + 1 : rc.colAt(scrollX + clipW) + 1;
+            const ec = isFrozen ? Math.min(rc.colAt(clipW) + 1, rc.colCount) : Math.min(rc.colAt(scrollX + clipW) + 1, rc.colCount);
             this.#renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle);
         } else {
             const startCol = isFrozen ? 0 : rc.colAt(scrollX);
-            const endCol = isFrozen ? fixedCols : rc.colAt(scrollX + clipW) + 1;
+            const endCol = isFrozen ? fixedCols : Math.min(rc.colAt(scrollX + clipW) + 1, rc.colCount);
             for (let c = startCol; c < endCol; c++) {
                 const w = rc.getColWidth(c);
                 if (w <= 0) continue;
@@ -292,11 +292,8 @@ export class HeaderRenderer {
         ctx.clip();
 
         const startRow = isFrozen ? 0 : rc.rowAt(scrollY);
-        // 非冻结区域：endRow 应基于完整的数据可视高度计算（scrollY + viewH - headerH），
-        // 而非 clipH（clipH 扣除了 frozenRowsH），否则当视口刚好能容纳所有非冻结行时，
-        // 最后一行的行头可能被遗漏。
         const dataViewH = vt.frozenRowsH > 0 ? clipH + vt.frozenRowsH : clipH;
-        const endRow = isFrozen ? fixedRows : rc.rowAt(scrollY + dataViewH) + 1;
+        const endRow = isFrozen ? fixedRows : Math.min(rc.rowAt(scrollY + dataViewH) + 1, rc.rowCount);
         for (let r = startRow; r < endRow; r++) {
             const y = vt.rowToViewY(r);
             const h = rc.getRowHeight(r);

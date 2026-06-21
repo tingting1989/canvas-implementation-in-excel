@@ -145,8 +145,8 @@ export class TileRenderer {
 
         const sr = useRealRows ? rc.rawRowAt(pixelY0) : rc.rowAt(pixelY0);
         const sc = rc.colAt(pixelX0);
-        const er = (useRealRows ? rc.rawRowAt(pixelY1) : rc.rowAt(pixelY1)) + 1;
-        const ec = rc.colAt(pixelX1) + 1;
+        const er = Math.min((useRealRows ? rc.rawRowAt(pixelY1) : rc.rowAt(pixelY1)) + 1, rc.rowCount);
+        const ec = Math.min(rc.colAt(pixelX1) + 1, rc.colCount);
 
         // 记录已绘制的合并区域左上角坐标，避免重复绘制
         const renderedMerges = new Set();

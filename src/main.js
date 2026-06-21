@@ -64,6 +64,9 @@ const initApp = () => {
                 cellPadding: 10,
                 // startRows: 100,
                 // startCols: 26,
+                // 固定行列数上限（使用 maxRows/maxCols）
+                maxRows: 20,
+                maxCols: 12,
                 conditionalStyles: [
                     {
                         range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
@@ -120,8 +123,6 @@ const initApp = () => {
                 ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
-                startRows: 100,
-                startCols: 26,
                 conditionalStyles: [
                     {
                         range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
@@ -262,6 +263,82 @@ const initApp = () => {
         console.log(`列移动完成 ${sourceCol} → ${targetCol}`);
     });
     window.wb = wb;
+
+    // ============================================================
+    // 动态调整行列数示例（可在浏览器控制台调用）
+    // ============================================================
+    window.resizeGrid = {
+        /** 设置行数 */
+        setRows: (rows) => {
+            const sheet = wb.getActiveSheet();
+            sheet.setRowCount(rows);
+            console.log(`✅ 行数已调整为: ${rows}`);
+        },
+
+        /** 设置列数 */
+        setCols: (cols) => {
+            const sheet = wb.getActiveSheet();
+            sheet.setColCount(cols);
+            console.log(`✅ 列数已调整为: ${cols}`);
+        },
+
+        /** 同时设置行数和列数 */
+        setSize: (rows, cols) => {
+            const sheet = wb.getActiveSheet();
+            sheet.setGridSize(rows, cols);
+            console.log(`✅ 网格大小已调整为: ${rows}行 x ${cols}列`);
+        },
+
+        /** 获取当前网格大小 */
+        getSize: () => {
+            const sheet = wb.getActiveSheet();
+            const rc = sheet.rowColManager;
+            return {
+                rows: rc.rowCount,
+                cols: rc.colCount,
+                explicitlySized: rc.isExplicitlySized,
+            };
+        },
+
+        /** 切换到"大数据模式"（启用分页） */
+        enableLargeDataMode: (rows = 1000, pageSize = 50) => {
+            const sheet = wb.getActiveSheet();
+            const pg = wb.getPlugin('pagination');
+
+            // 启用分页插件
+            wb.enablePlugin('pagination');
+
+            // 设置大数据量
+            sheet.setGridSize(rows, sheet.rowColManager.colCount);
+
+            // 调整每页行数
+            if (pg && pg.active) {
+                pg.setPageSize(pageSize);
+            }
+
+            console.log(`✅ 大数据模式已启用: ${rows}行, 每页${pageSize}行, 共${Math.ceil(rows/pageSize)}页`);
+        },
+
+        /** 切换到"小表格模式"（可选禁用分页） */
+        enableSmallTableMode: (rows = 30, disablePagination = true) => {
+            const sheet = wb.getActiveSheet();
+
+            // 设置小表格
+            sheet.setGridSize(rows, sheet.rowColManager.colCount);
+
+            // 可选：禁用分页
+            if (disablePagination) {
+                wb.disablePlugin('pagination');
+            }
+
+            console.log(`✅ 小表格模式已启用: ${rows}行, 分页${disablePagination ? '已禁用' : '仍启用'}`);
+        },
+    };
+
+    // 示例：5秒后自动调整为 30行 x 15列（可删除此段代码）
+    // setTimeout(() => {
+    //     window.resizeGrid.setSize(30, 15);
+    // }, 5000);
 
     console.log(wb.getActiveSheet().name);
     console.log("Loaded plugins:", wb.pluginManager.getLoadedNames());

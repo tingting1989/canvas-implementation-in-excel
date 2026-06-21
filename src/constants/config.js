@@ -17,10 +17,15 @@
  * - 列宽/行高调整：RESIZE_HIT_AREA / MIN_COL_WIDTH / MIN_ROW_HEIGHT
  */
 export const CONFIG = {
-    /** 最大行数 */
+    /** 最大行数（系统上限） */
     MAX_ROWS: 10000000,
-    /** 最大列数 */
+    /** 最大列数（系统上限） */
     MAX_COLS: 70000,
+
+    /** 默认初始行数（未配置 maxRows 时使用） */
+    DEFAULT_START_ROWS: 100,
+    /** 默认初始列数（未配置 maxCols 时使用） */
+    DEFAULT_START_COLS: 26,
 
     /** 默认列宽（px） */
     DEFAULT_COL_WIDTH: 100,

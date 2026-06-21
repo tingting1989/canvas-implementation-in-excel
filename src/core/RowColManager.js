@@ -23,6 +23,13 @@ export class RowColManager {
     /** 隐藏行的原始高度缓存（隐藏前保存，显示时恢复） */
     #originalRowHeights = new Map();
 
+    /** 实际使用的列数（由 ensureSize 设置） */
+    #usedCols = 0;
+    /** 实际使用的行数（由 ensureSize 设置） */
+    #usedRows = 0;
+    /** 是否通过 resetSize() 显式设置了行列数（优先级最高） */
+    #explicitlySized = false;
+
     get totalHeight() {
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             const startY = this.#rawGetRowY(this.#pageStartRow);
@@ -30,37 +37,45 @@ export class RowColManager {
             return endY - startY;
         }
         this.#ensureRowPrefix();
-        return this.#allocatedHeight + (CONFIG.MAX_ROWS - this.#rowHeights.length) * CONFIG.DEFAULT_ROW_HEIGHT;
+        // 使用实际行数计算总高度
+        const actualRowCount = Math.max(this.#usedRows, this.#rowHeights.length);
+        return this.#allocatedHeight + Math.max(0, actualRowCount - this.#rowHeights.length) * CONFIG.DEFAULT_ROW_HEIGHT;
     }
 
     get totalWidth() {
         this.#ensureColPrefix();
-        return this.#allocatedWidth + (CONFIG.MAX_COLS - this.#colWidths.length) * CONFIG.DEFAULT_COL_WIDTH;
+        // 使用实际列数计算总宽度
+        const actualColCount = Math.max(this.#usedCols, this.#colWidths.length);
+        return this.#allocatedWidth + Math.max(0, actualColCount - this.#colWidths.length) * CONFIG.DEFAULT_COL_WIDTH;
     }
 
     get rowCount() {
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             return this.#pageEndRow - this.#pageStartRow;
         }
-        return CONFIG.MAX_ROWS;
+        // 返回实际行数（考虑显式配置）
+        return Math.max(this.#usedRows, this.#rowHeights.length, 1);
     }
 
     get colCount() {
-        return CONFIG.MAX_COLS;
+        // 返回实际列数（考虑显式配置）
+        return Math.max(this.#usedCols, this.#colWidths.length, 1);
     }
 
     get realColCount() {
-        return CONFIG.MAX_COLS;
+        return this.colCount;
     }
 
     /** 可视列总数（排除隐藏列） */
     get visibleColCount() {
-        return CONFIG.MAX_COLS - this.#hiddenCols.size;
+        const actualColCount = Math.max(this.#usedCols, this.#colWidths.length, 1);
+        return actualColCount - this.#hiddenCols.size;
     }
 
     /** 可视行总数（排除隐藏行） */
     get visibleRowCount() {
-        return CONFIG.MAX_ROWS - this.#hiddenRows.size;
+        const actualRowCount = Math.max(this.#usedRows, this.#rowHeights.length, 1);
+        return actualRowCount - this.#hiddenRows.size;
     }
 
     get allocatedRowCount() {
@@ -71,9 +86,56 @@ export class RowColManager {
         return this.#colWidths.length;
     }
 
+    /**
+     * 强制设置行列数（用于初始化配置，覆盖之前的值）
+     * @param {number} rows
+     * @param {number} cols
+     */
+    resetSize(rows, cols) {
+        rows = Math.min(rows, CONFIG.MAX_ROWS);
+        cols = Math.min(cols, CONFIG.MAX_COLS);
+        console.log(`[RowColManager] resetSize: ${rows}rows x ${cols}cols (force override)`);
+        this.#usedRows = rows;
+        this.#usedCols = cols;
+        this.#explicitlySized = true;  // 标记为显式配置
+
+        // 强制调整数组长度（可以扩大或缩小）
+        if (this.#rowHeights.length !== rows) {
+            const oldLen = this.#rowHeights.length;
+            this.#rowHeights.length = rows;
+            if (rows > oldLen) {
+                this.#rowHeights.fill(CONFIG.DEFAULT_ROW_HEIGHT, oldLen, rows);
+            }
+            this.#rowPrefixDirty = true;
+        }
+
+        if (this.#colWidths.length !== cols) {
+            const oldLen = this.#colWidths.length;
+            this.#colWidths.length = cols;
+            if (cols > oldLen) {
+                this.#colWidths.fill(CONFIG.DEFAULT_COL_WIDTH, oldLen, cols);
+            }
+            this.#colPrefixDirty = true;
+        }
+
+        console.log(`[RowColManager] resetSize complete: rowHeights.len=${this.#rowHeights.length}, colWidths.len=${this.#colWidths.length}, explicitlySized=${this.#explicitlySized}`);
+    }
+
+    /** 是否通过 resetSize() 显式设置了行列数 */
+    get isExplicitlySized() {
+        return this.#explicitlySized;
+    }
+
     ensureSize(rows, cols) {
         rows = Math.min(rows, CONFIG.MAX_ROWS);
         cols = Math.min(cols, CONFIG.MAX_COLS);
+
+        // 更新实际使用的行列数（只在未显式设置时生效）
+        if (!this.#explicitlySized) {
+            this.#usedRows = Math.max(this.#usedRows, rows);
+            this.#usedCols = Math.max(this.#usedCols, cols);
+        }
+
         if (this.#rowHeights.length < rows) {
             const oldLen = this.#rowHeights.length;
             this.#rowHeights.length = rows;
@@ -198,7 +260,7 @@ export class RowColManager {
         while (row < CONFIG.MAX_ROWS && this.#hiddenRows.has(row)) {
             row++;
         }
-        return row;
+        return Math.min(row, this.rowCount - 1);
     }
 
     colAt(x) {
@@ -214,7 +276,7 @@ export class RowColManager {
         while (col < CONFIG.MAX_COLS && this.#hiddenCols.has(col)) {
             col++;
         }
-        return col;
+        return Math.min(col, this.colCount - 1);
     }
 
     #binarySearch(prefixSum, pos) {

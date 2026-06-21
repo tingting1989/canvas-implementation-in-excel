@@ -1,5 +1,6 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../styles/index.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { HOOKS } from "../constants/hookNames.js";
 
 /** @constant {string} 数据变更事件类型：全量失效 */
 export const SHEET_CHANGE_ALL = "all";
@@ -892,6 +893,84 @@ export class Sheet {
     applyColumnsConfig(columnsConfig) {
         this.#typeManager.applyColumnsConfig(columnsConfig);
         this.#invalidateAll();
+    }
+
+    // ============================================================
+    // 动态行列数调整
+    // ============================================================
+
+    /**
+     * 动态设置行数
+     * @param {number} rows - 新的行数（必须 >= 1）
+     */
+    setRowCount(rows) {
+        if (!Number.isInteger(rows) || rows < 1) {
+            console.warn(`[Sheet] setRowCount: invalid rows=${rows}, must be integer >= 1`);
+            return;
+        }
+        const currentCols = this.rowColManager.colCount;
+        console.log(`[Sheet] setRowCount: ${this.rowColManager.rowCount} → ${rows}`);
+        this.rowColManager.resetSize(rows, currentCols);
+        this.#syncPaginationAfterResize();
+        this.#invalidateAll();
+        this.render();
+        this.workbook?.runHooks(HOOKS.AFTER_CHANGE, []);
+    }
+
+    /**
+     * 动态设置列数
+     * @param {number} cols - 新的列数（必须 >= 1）
+     */
+    setColCount(cols) {
+        if (!Number.isInteger(cols) || cols < 1) {
+            console.warn(`[Sheet] setColCount: invalid cols=${cols}, must be integer >= 1`);
+            return;
+        }
+        const currentRows = this.rowColManager.rowCount;
+        console.log(`[Sheet] setColCount: ${this.rowColManager.colCount} → ${cols}`);
+        this.rowColManager.resetSize(currentRows, cols);
+        this.#invalidateAll();
+        this.render();
+        this.workbook?.runHooks(HOOKS.AFTER_CHANGE, []);
+    }
+
+    /**
+     * 同时动态设置行数和列数
+     * @param {number} rows - 新的行数（必须 >= 1）
+     * @param {number} cols - 新的列数（必须 >= 1）
+     */
+    setGridSize(rows, cols) {
+        if (!Number.isInteger(rows) || rows < 1 || !Number.isInteger(cols) || cols < 1) {
+            console.warn(`[Sheet] setGridSize: invalid size ${rows}x${cols}, must be integers >= 1`);
+            return;
+        }
+        console.log(`[Sheet] setGridSize: ${this.rowColManager.rowCount}x${this.rowColManager.colCount} → ${rows}x${cols}`);
+        this.rowColManager.resetSize(rows, cols);
+        this.#syncPaginationAfterResize();
+        this.#invalidateAll();
+        this.render();
+        this.workbook?.runHooks(HOOKS.AFTER_CHANGE, []);
+    }
+
+    /**
+     * 行列数调整后同步分页插件
+     * 确保 PaginationPlugin 的总行数和分页边界与新的网格大小一致
+     *
+     * 关键步骤：
+     * 1. 清除旧的分页边界（避免 rowCount getter 返回旧值）
+     * 2. 刷新分页插件（基于新的配置值重新计算）
+     */
+    #syncPaginationAfterResize() {
+        const paginationPlugin = this.workbook?.getPlugin("pagination");
+        if (!paginationPlugin || !paginationPlugin.active) return;
+
+        // 步骤1：先清除分页边界，使 rowCount 返回实际配置值而非分页值
+        console.log(`[Sheet] #syncPaginationAfterResize: clearing pagination bounds`);
+        this.rowColManager.clearPaginationBounds();
+
+        // 步骤2：刷新分页插件（此时 rowCount 会返回正确的配置值）
+        paginationPlugin.refresh();
+        console.log(`[Sheet] #syncPaginationAfterResize: refreshed pagination plugin`);
     }
 
     // ============================================================

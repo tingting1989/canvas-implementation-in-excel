@@ -19,6 +19,31 @@ export class SettingsApplier {
      * @param {object} params.settings
      */
     static apply({ sheet, renderEngine, settings }) {
+        console.log(`[SettingsApplier] Applying settings to sheet "${sheet.name}":`, {
+            maxRows: settings.maxRows,
+            maxCols: settings.maxCols,
+            rowHeights: settings.rowHeights?.length || 'not set',
+            columns: settings.columns?.length || 'not set',
+        });
+
+        // 使用 maxRows/maxCols 作为固定行列数的上限配置
+        if (settings.maxRows !== undefined || settings.maxCols !== undefined) {
+            const rows = settings.maxRows || CONFIG.MAX_ROWS;
+            const cols = settings.maxCols || CONFIG.MAX_COLS;
+            console.log(`[SettingsApplying] ✅ Found maxRows/maxCols! Calling resetSize(${rows}, ${cols})`);
+            sheet.rowColManager.resetSize(rows, cols);
+        } else {
+            // 兼容旧的 startRows/startCols 配置
+            if (settings.startRows !== undefined || settings.startCols !== undefined) {
+                const rows = settings.startRows || 100;
+                const cols = settings.startCols || 26;
+                console.log(`[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`);
+                sheet.rowColManager.resetSize(rows, cols);
+            } else {
+                console.log(`[SettingsApplying] ℹ️ No maxRows/maxCols or startRows/startCols in settings`);
+            }
+        }
+
         if (settings.colHeaders !== undefined) {
             sheet.colHeaders = settings.colHeaders;
         }

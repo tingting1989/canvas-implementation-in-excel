@@ -118,9 +118,21 @@ export class PaginationPlugin extends BasePlugin {
             return;
         }
 
+        const actualRowCount = sheet.rowColManager.rowCount;
         const allocated = sheet.rowColManager.allocatedRowCount;
         const maxDataRow = sheet.cellStore.getMaxRow();
-        this.#totalRows = Math.max(allocated, maxDataRow >= 0 ? maxDataRow + 1 : 0);
+        const explicitlySized = sheet.rowColManager.isExplicitlySized;
+
+        if (explicitlySized) {
+            // 用户显式配置了行列数：严格使用配置值，不扩展
+            // 这样可以确保 maxRows/maxCols 配置始终生效
+            this.#totalRows = actualRowCount;
+            console.log(`[PaginationPlugin] #updateTotalRows: explicitlySized → using config=${actualRowCount} (data=${maxDataRow})`);
+        } else {
+            // 未显式配置：使用传统逻辑（允许根据数据自动扩展）
+            this.#totalRows = Math.max(allocated, maxDataRow >= 0 ? maxDataRow + 1 : 0);
+            console.log(`[PaginationPlugin] #updateTotalRows: not explicitlySized → total=${this.#totalRows}`);
+        }
     }
 
     /**
