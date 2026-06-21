@@ -11,13 +11,18 @@ import { isNumber } from "lodash-es";
 export const FUNCTIONS = {
     SUM(args) {
         const flat = _flatten(args);
-        return flat.reduce((acc, v) => acc + _toNum(v), 0);
+        return flat.reduce((acc, v) => {
+            const n = _toNum(v);
+            return isNaN(n) ? acc : acc + n;
+        }, 0);
     },
 
     AVERAGE(args) {
-        const flat = _flatten(args).filter((v) => isNumber(v) || (typeof v === "string" && v.trim() !== "" && !isNaN(parseFloat(v))));
+        const flat = _flatten(args)
+            .map(_toNum)
+            .filter((v) => !isNaN(v));
         if (flat.length === 0) return "#DIV/0!";
-        return flat.reduce((acc, v) => acc + _toNum(v), 0) / flat.length;
+        return flat.reduce((acc, v) => acc + v, 0) / flat.length;
     },
 
     COUNT(args) {

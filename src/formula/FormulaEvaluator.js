@@ -43,7 +43,7 @@ export class FormulaEvaluator {
                 return this.#evalCellRef(node, sheet);
 
             case "rangeRef":
-                return this.#evalRangeRef(node);
+                return this.#evalRangeRef(node, sheet);
 
             case "function":
                 return this.#evalFunction(node, sheet);
