@@ -1,4 +1,4 @@
-import { CONFIG } from "../constants/config";
+import { CONFIG } from "../../constants/config";
 import { isFunction, isObject, isString } from "lodash-es";
 
 /**
@@ -13,7 +13,7 @@ import { isFunction, isObject, isString } from "lodash-es";
  * 所有方法均通过 Sheet 上的同名公开方法暴露，外部调用者无感知。
  */
 export class HeaderLabelManager {
-    /** @type {import("./Sheet.js").Sheet} */
+    /** @type {import("../Sheet.js").Sheet} */
     #sheet;
 
     /** 列头配置：true→A/B/C... | string[] | Function(col) */
@@ -26,7 +26,7 @@ export class HeaderLabelManager {
     #rowHeaderWidth = CONFIG.HEADER_WIDTH;
 
     /**
-     * @param {import("./Sheet.js").Sheet} sheet - 所属工作表
+     * @param {import("../Sheet.js").Sheet} sheet - 所属工作表
      */
     constructor(sheet) {
         this.#sheet = sheet;

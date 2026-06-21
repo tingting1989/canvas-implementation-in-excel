@@ -1,4 +1,4 @@
-import { CONFIG } from "../constants/config";
+import { EVENT_NAMES } from "../constants/eventNames.js";
 
 /**
  * 公式栏
@@ -19,18 +19,26 @@ export class FormulaBar {
     #input = null;
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
+    /** @type {HTMLElement} 容器元素引用 */
+    #container = null;
     /** 当前编辑中单元格的行号 */
     #activeRow = -1;
     /** 当前编辑中单元格的列号 */
     #activeCol = -1;
     /** 进入编辑前的原始值 */
     #originalValue = "";
+    /** keydown 事件处理器引用 */
+    #handleKeydown = null;
+    /** focus 事件处理器引用 */
+    #handleFocus = null;
 
     /**
      * @param {import("../workbook/Workbook.js").Workbook} workbook
+     * @param {HTMLElement} container - 公式栏要插入到的容器元素
      */
-    constructor(workbook) {
+    constructor(workbook, container) {
         this.#workbook = workbook;
+        this.#container = container;
         this.#createDOM();
         this.#bindEvents();
     }
@@ -89,9 +97,8 @@ export class FormulaBar {
         this.#bar.appendChild(this.#cellRef);
         this.#bar.appendChild(this.#input);
 
-        const wrap = document.getElementById(CONFIG.CANVAS_ID)?.parentElement;
-        if (wrap) {
-            wrap.parentElement.insertBefore(this.#bar, wrap);
+        if (this.#container) {
+            this.#container.insertBefore(this.#bar, this.#container.firstChild);
         }
     }
 
@@ -99,7 +106,7 @@ export class FormulaBar {
      * 绑定事件
      */
     #bindEvents() {
-        this.#input.addEventListener("keydown", (e) => {
+        this.#handleKeydown = (e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
                 this.#commit();
@@ -111,11 +118,14 @@ export class FormulaBar {
                 this.#commit();
                 this.#moveToNextCell();
             }
-        });
+        };
 
-        this.#input.addEventListener("focus", () => {
+        this.#handleFocus = () => {
             this.#input.select();
-        });
+        };
+
+        this.#input.addEventListener(EVENT_NAMES.KEYDOWN, this.#handleKeydown);
+        this.#input.addEventListener(EVENT_NAMES.FOCUS, this.#handleFocus);
     }
 
     /**
@@ -216,12 +226,18 @@ export class FormulaBar {
     }
 
     /**
-     * 销毁公式栏，移除 DOM 元素
+     * 销毁公式栏，移除 DOM 元素和事件监听器
      */
     destroy() {
+        if (this.#input) {
+            this.#input.removeEventListener(EVENT_NAMES.KEYDOWN, this.#handleKeydown);
+            this.#input.removeEventListener(EVENT_NAMES.FOCUS, this.#handleFocus);
+        }
         this.#bar?.remove();
         this.#bar = null;
         this.#input = null;
         this.#cellRef = null;
+        this.#handleKeydown = null;
+        this.#handleFocus = null;
     }
 }

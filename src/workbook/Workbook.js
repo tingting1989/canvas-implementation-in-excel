@@ -2,12 +2,12 @@ import { Sheet, SHEET_CHANGE_ALL, SHEET_CHANGE_CELL, SHEET_CHANGE_RENDER } from 
 import { RenderEngine } from "../render/RenderEngine.js";
 import { ViewportTransform } from "../render/ViewportTransform.js";
 import { EditorManager } from "../editor/EditorManager.js";
-import { EventHandler } from "../editor/EventHandler.js";
+import { EventHandler } from "../core/EventHandler.js";
 import { isFunction, isObject } from "lodash-es";
 import { PluginManager } from "../plugins/PluginManager.js";
-import { stylePool } from "../styles/index.js";
+import { stylePool } from "../model/styles";
 import { CONFIG } from "../constants/config";
-import { SettingsApplier } from "./SettingsApplier.js";
+import { SettingsApplier } from "./managers/SettingsApplier.js";
 
 /**
  * 工作簿

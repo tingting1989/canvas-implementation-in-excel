@@ -15,4 +15,4 @@ export { MergeManager } from "./merge/MergeManager.js";
 
 export { SelectionManager } from "./selection/SelectionManager.js";
 
-export { ConditionalRule } from "./ConditionalRule.js";
+export { ConditionalRule } from "./rules/ConditionalRule.js";

@@ -1,6 +1,6 @@
 ﻿import { TileCache } from "./TileCache.js";
-import { ScrollManager } from "./ScrollManager.js";
-import { SheetTabBar } from "./SheetTabBar.js";
+import { ScrollManager } from "../ui/ScrollManager.js";
+import { SheetTabBar } from "../ui/SheetTabBar.js";
 import { TileRenderer } from "./TileRenderer.js";
 import { OverlayRenderer } from "./OverlayRenderer.js";
 import { HeaderRenderer } from "./HeaderRenderer.js";

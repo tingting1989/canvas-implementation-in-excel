@@ -1,5 +1,5 @@
-import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "./strategies/index.js";
-import { Hooks } from "./Hooks.js";
+import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
+import { Hooks } from "../editor/Hooks.js";
 
 /**
  * 事件处理器
@@ -24,8 +24,8 @@ export class EventHandler {
     /**
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
      * @param {import("../render/RenderEngine.js").RenderEngine} renderEngine - 渲染引擎
-     * @param {import("./EditorManager.js").EditorManager} editor - 编辑器管理器
-     * @param {import("./ClipboardManager.js").ClipboardManager} [clipboard] - 剪贴板管理器（可选，由 CopyPastePlugin 注入）
+     * @param {import("../editor/EditorManager.js").EditorManager} editor - 编辑器管理器
+     * @param {import("../editor/ClipboardManager.js").ClipboardManager} [clipboard] - 剪贴板管理器（可选，由 CopyPastePlugin 注入）
      */
     constructor(sheet, renderEngine, editor, clipboard) {
         this.sheet = sheet;
@@ -60,7 +60,7 @@ export class EventHandler {
      * 自动收集策略声明的事件处理器，按优先级插入统一委托
      *
      * @param {string} name - 策略名称
-     * @param {import("./strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
+     * @param {import("../editor/strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
      */
     addStrategy(name, strategy) {
         this.strategies.set(name, strategy);
@@ -72,7 +72,7 @@ export class EventHandler {
      * 获取已注册的策略
      *
      * @param {string} name - 策略名称
-     * @returns {import("./strategies/EventStrategy.js").EventStrategy | null}
+     * @returns {import("../editor/strategies/EventStrategy.js").EventStrategy | null}
      */
     getStrategy(name) {
         return this.strategies.get(name) || null;
@@ -167,7 +167,7 @@ export class EventHandler {
      * 同一组内按优先级降序排列（priority 越大越先处理）
      *
      * @param {string} name - 策略名称
-     * @param {import("./strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
+     * @param {import("../editor/strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
      */
     #registerStrategyHandlers(name, strategy) {
         const handlers = strategy.getEventHandlers();

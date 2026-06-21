@@ -1,4 +1,4 @@
-import { ConditionalRule } from "../model/index.js";
+import { ConditionalRule } from "../../model";
 
 /**
  * 条件格式与数据绑定管理器
@@ -11,7 +11,7 @@ import { ConditionalRule } from "../model/index.js";
  * 优先级介于单元格样式和禁用单元格样式之间。
  */
 export class ConditionalFormatManager {
-    /** @type {import("./Sheet.js").Sheet} */
+    /** @type {import("../Sheet.js").Sheet} */
     #sheet;
     /** @type {ConditionalRule[]} 条件格式规则列表 */
     #rules = [];
@@ -19,7 +19,7 @@ export class ConditionalFormatManager {
     #bindings = new Map();
 
     /**
-     * @param {import("./Sheet.js").Sheet} sheet - 所属工作表
+     * @param {import("../Sheet.js").Sheet} sheet - 所属工作表
      */
     constructor(sheet) {
         this.#sheet = sheet;

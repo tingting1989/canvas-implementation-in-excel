@@ -1,7 +1,7 @@
-import { stylePool } from "../styles/index.js";
-import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../types/index.js";
+import { stylePool } from "../../model/styles";
+import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../../types";
 import { isFunction, isObject } from "lodash-es";
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
 
 /**
  * 列类型管理器
@@ -25,7 +25,7 @@ export class ColumnTypeManager {
     #cellTypes = new Map();
 
     /**
-     * @param {import("./Sheet.js").Sheet} sheet - 所属工作表实例
+     * @param {import("../Sheet.js").Sheet} sheet - 所属工作表实例
      */
     constructor(sheet) {
         this.#sheet = sheet;
@@ -82,7 +82,7 @@ export class ColumnTypeManager {
      * 适用于需要列级别类型行为的场景（如列默认样式）。
      *
      * @param {number} col - 列号
-     * @returns {import("../types/ColumnType.js").ColumnType} 列类型实例
+     * @returns {import("../../types/ColumnType.js").ColumnType} 列类型实例
      */
     getColumnTypeInstance(col) {
         return getColumnTypeFromConfig(this.#columnsConfig.get(col));
@@ -96,7 +96,7 @@ export class ColumnTypeManager {
      *
      * @param {number} r - 页面行号（pageRow）
      * @param {number} c - 列号
-     * @returns {import("../types/ColumnType.js").ColumnType} 单元格类型实例
+     * @returns {import("../../types/ColumnType.js").ColumnType} 单元格类型实例
      */
     getCellTypeInstance(r, c) {
         const realR = this.#sheet.toRealRow(r);

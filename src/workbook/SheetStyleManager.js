@@ -1,4 +1,4 @@
-import { stylePool, DEFAULT_STYLE_ID } from "../styles/index.js";
+import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
 import { Cell } from "../model/index.js";
 
 /**

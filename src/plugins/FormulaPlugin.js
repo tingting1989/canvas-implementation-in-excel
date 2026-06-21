@@ -49,7 +49,8 @@ export class FormulaPlugin extends BasePlugin {
         this.workbook.formulaEngine = this.#engine;
 
         if (showFormulaBar) {
-            this.#bar = new FormulaBar(this.workbook);
+            const container = this.workbook.renderEngine?.outerWrap;
+            this.#bar = new FormulaBar(this.workbook, container);
             this.workbook.formulaBar = this.#bar;
             this.#hookFormulaBar();
         }

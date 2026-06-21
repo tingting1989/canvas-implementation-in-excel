@@ -13,7 +13,7 @@ export class EventStrategy {
     priority = 0;
 
     /**
-     * @param {import("../EventHandler.js").EventHandler} handler
+     * @param {import("../../core/EventHandler.js").EventHandler} handler
      */
     constructor(handler) {
         this.handler = handler;

@@ -1,4 +1,4 @@
-import { CONFIG } from "../constants/config";
+import { CONFIG } from "../../constants/config";
 import { isNumber, isObject } from "lodash-es";
 
 /**
@@ -17,13 +17,13 @@ import { isNumber, isObject } from "lodash-es";
  * 替代原来 6 套独立的移位代码。
  */
 export class RowColSync {
-    /** @type {import("../workbook/Sheet.js").Sheet} */
+    /** @type {import("../../workbook/Sheet.js").Sheet} */
     #sheet;
     /** @type {"row"|"col"} */
     #axis;
 
     /**
-     * @param {import("../workbook/Sheet.js").Sheet} sheet - 所属工作表
+     * @param {import("../../workbook/Sheet.js").Sheet} sheet - 所属工作表
      * @param {"row"|"col"} axis - 同步轴
      */
     constructor(sheet, axis) {

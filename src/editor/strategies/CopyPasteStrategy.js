@@ -32,7 +32,7 @@ export class CopyPasteStrategy extends EventStrategy {
     #boundPasteHandler = null;
 
     /**
-     * @param {import("../EventHandler.js").EventHandler} handler
+     * @param {import("../../core/EventHandler.js").EventHandler} handler
      * @param {import("./ClipboardManager.js").ClipboardManager} clipboardManager
      */
     constructor(handler, clipboardManager) {

@@ -1,4 +1,4 @@
-import { BatchCommand } from "../model/index.js";
+import { BatchCommand } from "../../model";
 
 /**
  * 批量操作管理器
@@ -32,7 +32,7 @@ export class BatchOperationManager {
      * 退出批量模式
      * 将暂存的子命令合并为一个 BatchCommand 推入历史栈。
      * 如果没有子命令（空操作），不推入任何内容。
-     * @param {import("../model/index.js").HistoryStack} history
+     * @param {import("../../model").HistoryStack} history
      */
     endBatch(history) {
         this.#inBatch = false;
@@ -46,8 +46,8 @@ export class BatchOperationManager {
     /**
      * 推入一条命令
      * 批量模式下暂存，非批量模式下直接推入历史栈
-     * @param {import("../model/index.js").Command} cmd
-     * @param {import("../model/index.js").HistoryStack} history
+     * @param {import("../../model").Command} cmd
+     * @param {import("../../model").HistoryStack} history
      */
     pushCommand(cmd, history) {
         if (this.#inBatch) {

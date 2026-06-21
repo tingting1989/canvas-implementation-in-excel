@@ -1,4 +1,4 @@
-import { stylePool, DEFAULT_STYLE_ID } from "../styles/index.js";
+import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 import { HOOKS } from "../constants/hookNames.js";
 
@@ -30,14 +30,14 @@ import {
     UnmergeCommand,
     Cell,
 } from "../model/index.js";
-import { RowColManager } from "../core/RowColManager.js";
-import { RowColSync } from "../core/RowColSync.js";
+import { RowColManager } from "../model/grid/RowColManager.js";
+import { RowColSync } from "../model/grid/RowColSync.js";
 import { CONFIG } from "../constants/config";
 import { SheetStyleManager } from "./SheetStyleManager.js";
-import { ColumnTypeManager } from "./ColumnTypeManager.js";
-import { HeaderLabelManager } from "./HeaderLabelManager.js";
-import { ConditionalFormatManager } from "./ConditionalFormatManager.js";
-import { BatchOperationManager } from "./BatchOperationManager.js";
+import { ColumnTypeManager } from "./managers/ColumnTypeManager.js";
+import { HeaderLabelManager } from "./managers/HeaderLabelManager.js";
+import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js";
+import { BatchOperationManager } from "./managers/BatchOperationManager.js";
 
 /**
  * 工作表

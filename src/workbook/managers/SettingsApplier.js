@@ -1,4 +1,4 @@
-import { stylePool } from "../styles/index.js";
+import { stylePool } from "../../model/styles";
 import { isFunction, isNumber } from "lodash-es";
 
 /**
@@ -14,8 +14,8 @@ export class SettingsApplier {
      * 应用全部配置项到指定的 Sheet
      *
      * @param {object} params
-     * @param {import("./Sheet.js").Sheet} params.sheet
-     * @param {import("../render/RenderEngine.js").RenderEngine|null} params.renderEngine
+     * @param {import("../Sheet.js").Sheet} params.sheet
+     * @param {import("../../render/RenderEngine.js").RenderEngine|null} params.renderEngine
      * @param {object} params.settings
      */
     static apply({ sheet, renderEngine, settings }) {
@@ -113,7 +113,7 @@ export class SettingsApplier {
 
     // ---- 私有辅助 ----
 
-    /** @param {import("./Sheet.js").Sheet} sheet */
+    /** @param {import("../Sheet.js").Sheet} sheet */
     static #applyRowHeights(sheet, rowHeights) {
         const rc = sheet.rowColManager;
         if (isNumber(rowHeights)) {
@@ -126,7 +126,7 @@ export class SettingsApplier {
         }
     }
 
-    /** @param {import("./Sheet.js").Sheet} sheet */
+    /** @param {import("../Sheet.js").Sheet} sheet */
     static #applyColWidths(sheet, colWidths) {
         const rc = sheet.rowColManager;
         if (isNumber(colWidths)) {
@@ -139,7 +139,7 @@ export class SettingsApplier {
         }
     }
 
-    /** @param {import("./Sheet.js").Sheet} sheet */
+    /** @param {import("../Sheet.js").Sheet} sheet */
     static #applyMergeCells(sheet, mergeCells) {
         for (const m of mergeCells) {
             if (m.row == null || m.col == null || m.rowspan == null || m.colspan == null) continue;
@@ -147,7 +147,7 @@ export class SettingsApplier {
         }
     }
 
-    /** @param {import("./Sheet.js").Sheet} sheet */
+    /** @param {import("../Sheet.js").Sheet} sheet */
     static #applyConditionalStyles(sheet, conditionalStyles) {
         for (const cs of conditionalStyles) {
             if (!cs.range || !cs.condition || !cs.style) continue;
@@ -155,7 +155,7 @@ export class SettingsApplier {
         }
     }
 
-    /** @param {import("./Sheet.js").Sheet} sheet */
+    /** @param {import("../Sheet.js").Sheet} sheet */
     static #applyCellTypes(sheet, cellTypes) {
         for (const ct of cellTypes) {
             if (ct.row == null || ct.col == null || !ct.type) continue;

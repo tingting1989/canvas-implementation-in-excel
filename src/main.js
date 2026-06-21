@@ -1,5 +1,5 @@
 ﻿import { Workbook } from "./workbook/Workbook.js";
-import { stylePool } from "./styles/index.js";
+import { stylePool } from "./model/styles";
 import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
 import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
