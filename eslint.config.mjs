@@ -1,7 +1,9 @@
-import { defineConfig, globalIgnores } from "eslint/config";
+import {defineConfig, globalIgnores} from "eslint/config";
 import globals from "globals";
 import js from "@eslint/js";
 import importX from "eslint-plugin-import-x";
+import path from "path";
+
 export default defineConfig([
     {
         name: "app/files-to-lint",
@@ -34,8 +36,15 @@ export default defineConfig([
         plugins: {
             import: importX,
         },
-    },
-    {
+        settings: {
+            "import-x/resolver": {
+                // 配置 typescript resolver，主要是为了增强模块导入解析能力，即使你的项目主要是 JavaScript/Vue 项目也需要这个配置。
+                typescript: {
+                    project: path.resolve(__dirname, "tsconfig.json"),
+                    extensions: [".js", ".vue", ".json"],
+                },
+            },
+        },
         rules: {
             // ======================
             //  代码质量 & 安全
@@ -174,8 +183,8 @@ export default defineConfig([
                 },
             ],
             //禁止使用 ++ / --，但允许在 for 循环的最终表达式中使用
-            "no-plusplus": ["error", { allowForLoopAfterthoughts: true }],
-            "no-unneeded-ternary": ["error", { defaultAssignment: false }],
+            "no-plusplus": ["error", {allowForLoopAfterthoughts: true}],
+            "no-unneeded-ternary": ["error", {defaultAssignment: false}],
             // "no-mixed-operators": [
             //     "error", // 或 "warn"
             //     {
@@ -194,7 +203,7 @@ export default defineConfig([
             //     },
             // ],
             // 使用 1tbs 风格，并允许单行代码块
-            "brace-style": ["error", "1tbs", { allowSingleLine: false }],
+            "brace-style": ["error", "1tbs", {allowSingleLine: false}],
             // 强制单行注释的位置在代码上方
             "line-comment-position": [
                 "error",

@@ -73,6 +73,11 @@ export class SettingsApplier {
         if (settings.textOverflowEllipsis !== undefined) {
             sheet.textOverflowEllipsis = settings.textOverflowEllipsis;
         }
+
+        // 只读模式
+        if (settings.readOnly !== undefined) {
+            sheet.readOnly = settings.readOnly;
+        }
         if (settings.fixedRowsTop !== undefined) {
             sheet.fixedRowsTop = settings.fixedRowsTop;
         }

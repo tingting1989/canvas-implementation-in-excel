@@ -159,7 +159,13 @@ export class Workbook {
     initRender() {
         if (this.renderEngine) return;
 
-        this.#ensureDefaultSheet();
+        const opts = this.#initOptions;
+        if (Array.isArray(opts?.sheets) && opts.sheets.length > 0) {
+            this.#initSheetsFromConfig(opts.sheets);
+        } else {
+            this.#ensureDefaultSheet();
+        }
+
         this.#createRenderEngine();
         this.#createSubSystems();
         this.#linkSheetsToRenderEngine();
@@ -167,6 +173,17 @@ export class Workbook {
         this.#setupScrollCallback();
         this.#setupSheetTabBar();
         this.#flushPendingPlugins();
+    }
+
+    /**
+     * 从 sheets 配置数组批量创建工作表
+     * @param {Array<{name?: string, [key: string]: any}>} sheetsConfig
+     */
+    #initSheetsFromConfig(sheetsConfig) {
+        for (const config of sheetsConfig) {
+            const name = config.name || this.#generateSheetName();
+            this.addSheet(name);
+        }
     }
 
     #ensureDefaultSheet() {
@@ -288,15 +305,32 @@ export class Workbook {
 
     #applyInitOptions() {
         const opts = this.#initOptions;
-        if (!opts || Object.keys(opts).length === 0 || !this.activeSheet) return;
+        if (!opts || Object.keys(opts).length === 0) return;
 
-        SettingsApplier.apply({ sheet: this.activeSheet, renderEngine: this.renderEngine, settings: opts });
+        if (Array.isArray(opts.sheets) && opts.sheets.length > 0) {
+            this.#applySheetsConfig(opts);
+        }
 
         this.#loadInitPlugins(opts);
         this.#loadInitHooks(opts);
 
         if (isFunction(opts.afterInit)) {
             opts.afterInit(this);
+        }
+    }
+
+    /**
+     * 应用 sheets 数组配置
+     * 每个 sheet 配置项与顶层 opts 合并后独立应用
+     */
+    #applySheetsConfig(opts) {
+        for (const sheetConfig of opts.sheets) {
+            const name = sheetConfig.name || this.#generateSheetName();
+            const sheet = this.sheets.get(name);
+            if (!sheet) continue;
+            const settings = { ...opts, ...sheetConfig };
+            delete settings.sheets;
+            SettingsApplier.apply({ sheet, renderEngine: this.renderEngine, settings });
         }
     }
 

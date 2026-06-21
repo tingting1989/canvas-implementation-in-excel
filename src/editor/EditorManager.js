@@ -98,6 +98,7 @@ export class EditorManager {
      * @param {'select'|'end'} cursorMode - 光标模式（透传给编辑器）
      */
     show(row, col, cursorMode = "select") {
+        if (this.#sheet?.readOnly) return;
         const editor = this.#getEditorForCell(row, col);
         if (editor) {
             this.hide();

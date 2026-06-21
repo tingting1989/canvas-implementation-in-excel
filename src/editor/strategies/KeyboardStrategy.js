@@ -83,6 +83,7 @@ export class KeyboardStrategy extends EventStrategy {
                 break;
             case "Enter":
             case "F2":
+                if (sheet.readOnly) break;
                 e.preventDefault();
                 editor.show(r, c, "end");
                 break;
@@ -143,7 +144,7 @@ export class KeyboardStrategy extends EventStrategy {
                  * - 选中 A1:C3 → 输入 "hello" → A1:C3 全部变为 "hello"
                  * - 输入后光标自动进入编辑状态，位于活动单元格
                  */
-                if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                if (!sheet.readOnly && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
                     this.#handleDirectInput(e);
                 }
                 break;

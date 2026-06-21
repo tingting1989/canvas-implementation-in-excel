@@ -85,9 +85,6 @@ export class CopyPasteStrategy extends EventStrategy {
                 break;
             case "v":
                 if (ctrlOrMeta) {
-                    // 不 preventDefault，让浏览器自然触发 paste 事件
-                    // 先将焦点移到隐藏的 contentEditable div
-                    // 浏览器检测到可编辑元素有焦点 → Ctrl+V → 触发 paste 事件
                     this.#focusPasteTarget();
                     return false;
                 }

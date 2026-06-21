@@ -59,6 +59,19 @@ export class ContextMenuStrategy extends EventStrategy {
     #customItems = [];
 
     /**
+     * 只读模式下禁用的内置菜单项 key
+     */
+    static #READONLY_DISABLED = new Set([
+        "insertRowAbove", "insertRowBelow", "insertColLeft", "insertColRight",
+        "deleteRow", "deleteCol",
+        "mergeCells", "unmergeCells",
+        "clearContent",
+        "insertImage",
+        "hideRow", "showRow", "hideColumn", "showColumn",
+        "freezeAtCell", "freezeRow", "freezeCol", "unfreeze",
+    ]);
+
+    /**
      * 各上下文对应的内置菜单项排列顺序
      * null 表示分隔线，字符串为 #menuItemMap 中的 key
      */
@@ -411,12 +424,16 @@ export class ContextMenuStrategy extends EventStrategy {
         this.#menuEl.innerHTML = "";
         if (styleEl) this.#menuEl.appendChild(styleEl);
 
+        const isReadOnly = this.handler.sheet?.readOnly;
+
         // 渲染当前上下文的内置菜单项
         const order = ContextMenuStrategy.#CONTEXT_ITEMS[this.#context] || ContextMenuStrategy.#CONTEXT_ITEMS.cell;
         for (const key of order) {
             if (key === null) {
                 this.#appendSeparator();
             } else {
+                // 只读模式下跳过编辑类菜单项
+                if (isReadOnly && ContextMenuStrategy.#READONLY_DISABLED.has(key)) continue;
                 const item = this.#menuItemMap.get(key);
                 if (item) this.#appendItem(key, item.label);
             }

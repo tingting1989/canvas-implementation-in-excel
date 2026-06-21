@@ -86,6 +86,17 @@ export class Sheet {
     #fixedRowsTop = 0;
     /** 冻结列数（左侧固定列数，不随水平滚动移动），通过 getter/setter 访问以维护缓存 */
     #fixedColumnsStart = 0;
+    /** 只读模式：禁止所有数据修改 */
+    #readOnly = false;
+
+    /**
+     * 检查当前工作表是否可写，只读模式下返回 false
+     * 所有数据修改方法应在入口处调用此方法进行拦截
+     * @returns {boolean}
+     */
+    #ensureWritable() {
+        return !this.#readOnly;
+    }
 
     /**
      * @param {string} name - 工作表名称
@@ -218,6 +229,15 @@ export class Sheet {
         }
     }
 
+    /** @returns {boolean} 是否只读模式 */
+    get readOnly() {
+        return this.#readOnly;
+    }
+    /** @param {boolean} v 只读模式，阻止所有数据修改 */
+    set readOnly(v) {
+        this.#readOnly = !!v;
+    }
+
     /** @returns {number} 冻结行像素高度（带缓存，行列尺寸变化时需调用 invalidateFreezeCache） */
     get frozenRowsHeight() {
         if (this.#fixedRowsTop <= 0) return 0;
@@ -311,6 +331,7 @@ export class Sheet {
      * @param {boolean} [disabled=false] - 是否禁用
      */
     setCell(r, c, value, styleId = 0, disabled = false) {
+        if (!this.#ensureWritable()) return;
         const realR = this.toRealRow(r);
         this.rowColManager.ensureSize(realR + 1, c + 1);
         const old = this.cellStore.get(realR, c);
@@ -327,6 +348,7 @@ export class Sheet {
      * @param {number} c - 列号
      */
     disableCell(r, c) {
+        if (!this.#ensureWritable()) return;
         const realR = this.toRealRow(r);
         this.rowColManager.ensureSize(realR + 1, c + 1);
         let cell = this.cellStore.get(realR, c);
@@ -348,6 +370,7 @@ export class Sheet {
      * @param {number} c - 列号
      */
     enableCell(r, c) {
+        if (!this.#ensureWritable()) return;
         const realR = this.toRealRow(r);
         const cell = this.cellStore.get(realR, c);
         if (!cell) return;
@@ -379,12 +402,14 @@ export class Sheet {
 
     /** 设置行级样式 */
     setRowStyle(row, styleId) {
+        if (!this.#ensureWritable()) return;
         this.#styleManager.setRowStyle(row, styleId);
         this.#invalidateAll();
     }
 
     /** 设置列级样式 */
     setColStyle(col, styleId) {
+        if (!this.#ensureWritable()) return;
         this.#styleManager.setColStyle(col, styleId);
         this.#invalidateAll();
     }
@@ -401,26 +426,31 @@ export class Sheet {
     }
 
     setCellStyle(r, c, styleObj) {
+        if (!this.#ensureWritable()) return;
         this.#styleManager.setCellStyle(r, c, styleObj);
         this.#invalidateAll();
     }
 
     clearCellStyle(r, c) {
+        if (!this.#ensureWritable()) return;
         this.#styleManager.clearCellStyle(r, c);
         this.#invalidateAll();
     }
 
     clearRowStyle(row) {
+        if (!this.#ensureWritable()) return;
         this.#styleManager.clearRowStyle(row);
         this.#invalidateAll();
     }
 
     clearColStyle(col) {
+        if (!this.#ensureWritable()) return;
         this.#styleManager.clearColStyle(col);
         this.#invalidateAll();
     }
 
     setRangeStyle(range, styleObj) {
+        if (!this.#ensureWritable()) return;
         this.#styleManager.setRangeStyle(range, styleObj);
         this.#invalidateAll();
     }
@@ -532,6 +562,7 @@ export class Sheet {
      * @param {Array<Array<*>>} data
      */
     loadData(data) {
+        if (!this.#ensureWritable()) return;
         if (!Array.isArray(data)) return;
         const rows = data.length;
         if (rows === 0) return;
@@ -636,6 +667,7 @@ export class Sheet {
      * @returns {boolean}
      */
     mergeCells(topRow, topCol, bottomRow, bottomCol) {
+        if (!this.#ensureWritable()) return false;
         // 禁止跨不同列类型合并
         if (!this.#checkColumnTypeConsistency(topCol, bottomCol)) {
             return false;
@@ -657,6 +689,7 @@ export class Sheet {
      * @returns {boolean}
      */
     unmergeCells(row, col) {
+        if (!this.#ensureWritable()) return false;
         const cmd = new UnmergeCommand(this.mergeManager, row, col);
         cmd.redo();
         if (cmd.oldMerge) {
@@ -720,12 +753,14 @@ export class Sheet {
 
     /** 撤销上一步操作 */
     undo() {
+        if (!this.#ensureWritable()) return;
         this.history.undo();
         this.#invalidateAll();
     }
 
     /** 重做上一步撤销的操作 */
     redo() {
+        if (!this.#ensureWritable()) return;
         this.history.redo();
         this.#invalidateAll();
     }
@@ -736,6 +771,7 @@ export class Sheet {
 
     /** 在指定位置插入行 */
     insertRow(atRow) {
+        if (!this.#ensureWritable()) return;
         if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
         this.#dispatchToSubSystems(SUB.INSERT_ROW, atRow);
         this.#rowSync.insert(atRow);
@@ -743,6 +779,7 @@ export class Sheet {
 
     /** 在指定位置插入列 */
     insertCol(atCol) {
+        if (!this.#ensureWritable()) return;
         if (!this.#isValidIndex(atCol, CONFIG.MAX_COLS)) return;
         this.#dispatchToSubSystems(SUB.INSERT_COL, atCol);
         this.#colSync.insert(atCol);
@@ -750,6 +787,7 @@ export class Sheet {
 
     /** 删除指定行 */
     deleteRow(atRow) {
+        if (!this.#ensureWritable()) return;
         if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
         this.#dispatchToSubSystems(SUB.DELETE_ROW, atRow);
         this.#rowSync.delete(atRow);
@@ -757,6 +795,7 @@ export class Sheet {
 
     /** 删除指定列 */
     deleteCol(atCol) {
+        if (!this.#ensureWritable()) return;
         if (!this.#isValidIndex(atCol, CONFIG.MAX_COLS)) return;
         this.#dispatchToSubSystems(SUB.DELETE_COL, atCol);
         this.#colSync.delete(atCol);
@@ -764,6 +803,7 @@ export class Sheet {
 
     /** 移动列：将 fromCol 的数据移到 toCol 位置，中间列自动平移 */
     moveCol(fromCol, toCol) {
+        if (!this.#ensureWritable()) return;
         if (fromCol === toCol || fromCol < 0 || toCol < 0) return;
         if (fromCol >= CONFIG.MAX_COLS || toCol >= CONFIG.MAX_COLS) return;
         this.#dispatchToSubSystems(SUB.MOVE_COL, fromCol, toCol);
@@ -773,6 +813,7 @@ export class Sheet {
 
     /** 移动行：将 fromRow 的数据移到 toRow 位置，中间行自动平移 */
     moveRow(fromRow, toRow) {
+        if (!this.#ensureWritable()) return;
         if (fromRow === toRow || fromRow < 0 || toRow < 0) return;
         if (fromRow >= CONFIG.MAX_ROWS || toRow >= CONFIG.MAX_ROWS) return;
         this.#dispatchToSubSystems(SUB.MOVE_ROW, fromRow, toRow);
