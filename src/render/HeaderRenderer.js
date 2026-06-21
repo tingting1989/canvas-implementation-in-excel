@@ -1,6 +1,7 @@
 ﻿import { CONFIG } from "../constants/config";
 import { ResizeHandleRenderer } from "./ResizeHandleRenderer.js";
 import { DragIndicatorRenderer } from "./DragIndicatorRenderer.js";
+import { isObject, isString } from "lodash-es";
 
 /** 拖拽源行头/列头的半透明高亮色 */
 const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";
@@ -175,8 +176,8 @@ export class HeaderRenderer {
             let consumed = 0;
             for (let i = 0; i < row.length; i++) {
                 const item = row[i];
-                const label = typeof item === "string" ? item : (item?.label ?? "");
-                const colspan = item && typeof item === "object" && item.colspan ? item.colspan : 1;
+                const label = isString(item) ? item : (item?.label ?? "");
+                const colspan = item && isObject(item) && item.colspan ? item.colspan : 1;
 
                 const startCol = consumed;
                 const endCol = consumed + colspan - 1;

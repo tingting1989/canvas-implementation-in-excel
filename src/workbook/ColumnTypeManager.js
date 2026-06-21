@@ -1,5 +1,6 @@
 import { stylePool } from "../styles/index.js";
 import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../types/index.js";
+import { isFunction, isObject } from "lodash-es";
 
 /**
  * 列类型管理器
@@ -121,7 +122,7 @@ export class ColumnTypeManager {
             let config = columnsConfig[c];
 
             // 支持函数式配置：config 可以是返回配置对象的函数
-            if (typeof config === "function") {
+            if (isFunction(config)) {
                 try {
                     config = config(c);
                 } catch {
@@ -130,7 +131,7 @@ export class ColumnTypeManager {
             }
 
             // 跳过无效配置
-            if (!config || typeof config !== "object") continue;
+            if (!config || !isObject(config)) continue;
 
             // 存储列配置到 columnsConfig Map
             this.#columnsConfig.set(c, config);

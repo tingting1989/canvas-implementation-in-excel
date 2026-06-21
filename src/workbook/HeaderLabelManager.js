@@ -1,4 +1,5 @@
 import { CONFIG } from "../constants/config";
+import { isFunction, isObject, isString } from "lodash-es";
 
 /**
  * 表头标签管理器
@@ -82,7 +83,7 @@ export class HeaderLabelManager {
     #resolve(config, index, defaultFn) {
         if (config === true || config == null) return defaultFn(index);
         if (Array.isArray(config)) return index < config.length ? config[index] : defaultFn(index);
-        if (typeof config === "function") return config(index);
+        if (isFunction(config)) return config(index);
         return defaultFn(index);
     }
 
@@ -137,8 +138,8 @@ export class HeaderLabelManager {
         let consumed = 0;
         for (let i = 0; i < row.length; i++) {
             const item = row[i];
-            const label = typeof item === "string" ? item : (item?.label ?? "");
-            const colspan = item && typeof item === "object" && item.colspan ? item.colspan : 1;
+            const label = isString(item) ? item : (item?.label ?? "");
+            const colspan = item && isObject(item) && item.colspan ? item.colspan : 1;
 
             if (col >= consumed && col < consumed + colspan) {
                 return { label, colspan };

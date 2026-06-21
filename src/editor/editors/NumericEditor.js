@@ -2,6 +2,7 @@ import { CellEditor } from "./CellEditor.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 import { CONFIG } from "../../constants/config";
+import { isFunction } from "lodash-es";
 
 /**
  * 数字编辑器
@@ -175,7 +176,7 @@ export class NumericEditor extends CellEditor {
 
         this.hide();
         // 确保瓦片缓存失效，避免渲染旧值
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === "function") {
+        if (this.renderEngine && isFunction(this.renderEngine.invalidateAll)) {
             this.renderEngine.invalidateAll();
         }
         this.#render();
@@ -279,7 +280,7 @@ export class NumericEditor extends CellEditor {
     }
 
     #render() {
-        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === "function") {
+        if (this.sheet && this.renderEngine && isFunction(this.renderEngine.render)) {
             this.renderEngine.render(this.sheet);
         }
     }

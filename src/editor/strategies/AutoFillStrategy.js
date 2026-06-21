@@ -1,5 +1,6 @@
 import { EventStrategy } from "./EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { isNumber } from "lodash-es";
 
 /**
  * 自动填充策略（AutoFill）
@@ -263,7 +264,7 @@ export class AutoFillStrategy extends EventStrategy {
     }
 
     #detectStep(values) {
-        const nums = values.filter((v) => typeof v === "number");
+        const nums = values.filter((v) => isNumber(v));
         if (nums.length < values.length) return 0;
         if (nums.length === 1) return 1;
 
@@ -321,10 +322,10 @@ export class AutoFillStrategy extends EventStrategy {
     #computeValue(srcValues, srcIdx, step, cycle, srcLen) {
         const base = srcValues[srcIdx];
         if (base == null || base === "") return "";
-        if (typeof base === "number" && step !== 0) {
+        if (isNumber(base) && step !== 0) {
             return base + step * srcLen * (cycle + 1);
         }
-        if (typeof base === "number" && step === 0) {
+        if (isNumber(base) && step === 0) {
             return base;
         }
         return base;
@@ -333,10 +334,10 @@ export class AutoFillStrategy extends EventStrategy {
     #computeValueReverse(srcValues, srcIdx, step, cycle, srcLen) {
         const base = srcValues[srcIdx];
         if (base == null || base === "") return "";
-        if (typeof base === "number" && step !== 0) {
+        if (isNumber(base) && step !== 0) {
             return base - step * srcLen * cycle;
         }
-        if (typeof base === "number" && step === 0) {
+        if (isNumber(base) && step === 0) {
             return base;
         }
         return base;

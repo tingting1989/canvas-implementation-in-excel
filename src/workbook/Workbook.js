@@ -3,6 +3,7 @@ import { RenderEngine } from "../render/RenderEngine.js";
 import { ViewportTransform } from "../render/ViewportTransform.js";
 import { EditorManager } from "../editor/EditorManager.js";
 import { EventHandler } from "../editor/EventHandler.js";
+import { isFunction, isObject } from "lodash-es";
 import { PluginManager } from "../plugins/PluginManager.js";
 import { stylePool } from "../styles/index.js";
 import { CONFIG } from "../constants/config";
@@ -294,7 +295,7 @@ export class Workbook {
         this.#loadInitPlugins(opts);
         this.#loadInitHooks(opts);
 
-        if (typeof opts.afterInit === "function") {
+        if (isFunction(opts.afterInit)) {
             opts.afterInit(this);
         }
     }
@@ -308,9 +309,9 @@ export class Workbook {
     }
 
     #loadInitHooks(opts) {
-        if (!opts.hooks || typeof opts.hooks !== "object") return;
+        if (!opts.hooks || !isObject(opts.hooks)) return;
         for (const [hookName, callback] of Object.entries(opts.hooks)) {
-            if (typeof callback === "function") {
+            if (isFunction(callback)) {
                 this.addHook(hookName, callback);
             }
         }

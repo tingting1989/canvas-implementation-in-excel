@@ -2,6 +2,7 @@ import { CellEditor } from "./CellEditor.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 import { CONFIG } from "../../constants/config";
+import { isFunction } from "lodash-es";
 
 /**
  * 日期编辑器
@@ -175,7 +176,7 @@ export class DateEditor extends CellEditor {
         this.hide();
         // 强制使所有瓦片失效，确保渲染时使用最新数据
         // 解决原生 date picker 选择日期后 blur 时瓦片缓存未更新的问题
-        if (this.renderEngine && typeof this.renderEngine.invalidateAll === "function") {
+        if (this.renderEngine && isFunction(this.renderEngine.invalidateAll)) {
             this.renderEngine.invalidateAll();
         }
         this.#render();
@@ -324,7 +325,7 @@ export class DateEditor extends CellEditor {
     }
 
     #render() {
-        if (this.sheet && this.renderEngine && typeof this.renderEngine.render === "function") {
+        if (this.sheet && this.renderEngine && isFunction(this.renderEngine.render)) {
             this.renderEngine.render(this.sheet);
         }
     }

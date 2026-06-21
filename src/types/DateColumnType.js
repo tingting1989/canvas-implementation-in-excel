@@ -1,4 +1,5 @@
 import { ColumnType } from "./ColumnType.js";
+import { isNumber, isString } from "lodash-es";
 
 /**
  * 日期列类型
@@ -146,8 +147,8 @@ export class DateColumnType extends ColumnType {
      */
     #toDate(value) {
         if (value instanceof Date) return value;
-        if (typeof value === "number") return new Date(value);
-        if (typeof value === "string") {
+        if (isNumber(value)) return new Date(value);
+        if (isString(value)) {
             const d = new Date(value);
             return isNaN(d.getTime()) ? null : d;
         }

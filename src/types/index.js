@@ -4,6 +4,7 @@ import { NumericColumnType } from "./NumericColumnType.js";
 import { DateColumnType } from "./DateColumnType.js";
 import { BooleanColumnType } from "./BooleanColumnType.js";
 import { SelectColumnType } from "./SelectColumnType.js";
+import { isFunction } from "lodash-es";
 
 /**
  * 全局类型注册表
@@ -145,7 +146,7 @@ export function validateValue(cellType, value, colConfig) {
         const result = cellType.validate(value);
         if (result !== true) return result;
     }
-    if (colConfig && typeof colConfig.validator === "function") {
+    if (colConfig && isFunction(colConfig.validator)) {
         try {
             return colConfig.validator(value);
         } catch {

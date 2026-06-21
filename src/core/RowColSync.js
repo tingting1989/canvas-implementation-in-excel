@@ -1,4 +1,5 @@
 import { CONFIG } from "../constants/config";
+import { isNumber, isObject } from "lodash-es";
 
 /**
  * 行列同步器
@@ -172,8 +173,8 @@ export class RowColSync {
             let inserted = false;
             for (let i = 0; i < layer.length; i++) {
                 const item = layer[i];
-                const isObj = typeof item === "object" && item !== null;
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
+                const isObj = isObject(item);
+                const colspan = isObj && isNumber(item.colspan) ? item.colspan : 1;
                 if (atCol >= consumed && atCol < consumed + colspan) {
                     if (isObj) {
                         layer[i] = { ...item, colspan: colspan + 1 };
@@ -200,9 +201,9 @@ export class RowColSync {
             let consumed = 0;
             for (let i = 0; i < layer.length; i++) {
                 const item = layer[i];
-                const isObj = typeof item === "object" && item !== null;
+                const isObj = isObject(item);
                 const label = isObj ? (item.label ?? "") : String(item);
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
+                const colspan = isObj && isNumber(item.colspan) ? item.colspan : 1;
                 if (atCol >= consumed && atCol < consumed + colspan) {
                     if (colspan > 1) {
                         const newSpan = colspan - 1;
@@ -227,9 +228,9 @@ export class RowColSync {
 
             const flat = [];
             for (const item of layer) {
-                const isObj = typeof item === "object" && item !== null;
+                const isObj = isObject(item);
                 const label = isObj ? (item.label ?? "") : String(item);
-                const colspan = isObj && typeof item.colspan === "number" ? item.colspan : 1;
+                const colspan = isObj && isNumber(item.colspan) ? item.colspan : 1;
                 for (let i = 0; i < colspan; i++) flat.push(label);
             }
 

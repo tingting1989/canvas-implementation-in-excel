@@ -11,6 +11,7 @@ import { HiddenRowsPlugin } from "./plugins/HiddenRowsPlugin.js";
 import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
 import { FreezePlugin } from "./plugins/FreezePlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
+import { isFunction, isNumber } from "lodash-es";
 
 const initApp = () => {
     console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -129,7 +130,7 @@ const initApp = () => {
         conditionalStyles: [
             {
                 range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
-                condition: (v) => typeof v === "number" && v > 25,
+                condition: (v) => isNumber(v) && v > 25,
                 style: { backgroundColor: "#ffcccc" },
             },
         ],
@@ -163,7 +164,7 @@ const initApp = () => {
         hooks: {
             [HOOKS.ON_CELL_CLICK]: (row, col) => {
                 console.log("Cell clicked: (" + row + ", " + col + ")");
-                if (typeof updateToolbarStyleState === "function") {
+                if (isFunction(updateToolbarStyleState)) {
                     updateToolbarStyleState();
                 }
             },
@@ -183,7 +184,7 @@ const initApp = () => {
     wb.render();
 
     wb.addHook(HOOKS.AFTER_CHANGE, () => {
-        if (typeof window.updateToolbarStyleState === "function") {
+        if (isFunction(window.updateToolbarStyleState)) {
             window.updateToolbarStyleState();
         }
     });

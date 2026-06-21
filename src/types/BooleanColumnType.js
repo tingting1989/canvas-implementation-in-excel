@@ -1,4 +1,5 @@
 import { ColumnType } from "./ColumnType.js";
+import { isBoolean, isNumber, isString } from "lodash-es";
 
 /**
  * 布尔列类型
@@ -64,13 +65,13 @@ export class BooleanColumnType extends ColumnType {
      * @returns {boolean|null} null 表示无法识别
      */
     #toBoolean(value) {
-        if (typeof value === "boolean") return value;
-        if (typeof value === "number") {
+        if (isBoolean(value)) return value;
+        if (isNumber(value)) {
             if (value === 1) return true;
             if (value === 0) return false;
             return null;
         }
-        if (typeof value === "string") {
+        if (isString(value)) {
             const lower = value.trim().toLowerCase();
             if (["true", "yes", "y", "1", "t", "是", "真"].includes(lower)) return true;
             if (["false", "no", "n", "0", "f", "否", "假"].includes(lower)) return false;

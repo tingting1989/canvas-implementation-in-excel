@@ -1,4 +1,5 @@
 import { ColumnType } from "./ColumnType.js";
+import { isNumber } from "lodash-es";
 
 /**
  * 数字列类型
@@ -24,7 +25,7 @@ export class NumericColumnType extends ColumnType {
 
     format(value) {
         if (value === undefined || value === null) return "";
-        const num = typeof value === "number" ? value : parseFloat(value);
+        const num = isNumber(value) ? value : parseFloat(value);
         if (isNaN(num)) return String(value);
 
         const pattern = this.options?.numericFormat?.pattern;
@@ -36,7 +37,7 @@ export class NumericColumnType extends ColumnType {
     validate(value) {
         if (value === "" || value === undefined || value === null) return true;
 
-        const num = typeof value === "number" ? value : parseFloat(value);
+        const num = isNumber(value) ? value : parseFloat(value);
         if (isNaN(num)) {
             return this.options?.allowInvalid ? "invalid" : false;
         }
@@ -61,8 +62,8 @@ export class NumericColumnType extends ColumnType {
     }
 
     compare(a, b, order = "asc") {
-        const na = typeof a === "number" ? a : parseFloat(a);
-        const nb = typeof b === "number" ? b : parseFloat(b);
+        const na = isNumber(a) ? a : parseFloat(a);
+        const nb = isNumber(b) ? b : parseFloat(b);
         const va = isNaN(na) ? -Infinity : na;
         const vb = isNaN(nb) ? -Infinity : nb;
         return order === "asc" ? va - vb : vb - va;

@@ -1,4 +1,5 @@
 import { stylePool } from "../styles/index.js";
+import { isFunction, isNumber } from "lodash-es";
 
 /**
  * 配置应用器
@@ -52,7 +53,7 @@ export class SettingsApplier {
             sheet.cellConfig = settings.cell;
             sheet.applyCellConfig();
         }
-        if (typeof settings.cells === "function") {
+        if (isFunction(settings.cells)) {
             sheet.cellsFn = settings.cells;
         }
         if (Array.isArray(settings.columns)) {
@@ -85,7 +86,7 @@ export class SettingsApplier {
     /** @param {import("./Sheet.js").Sheet} sheet */
     static #applyRowHeights(sheet, rowHeights) {
         const rc = sheet.rowColManager;
-        if (typeof rowHeights === "number") {
+        if (isNumber(rowHeights)) {
             const count = rc.allocatedRowCount || 100;
             rc.ensureSize(count, 0);
             for (let r = 0; r < count; r++) rc.setRowHeight(r, rowHeights);
@@ -98,7 +99,7 @@ export class SettingsApplier {
     /** @param {import("./Sheet.js").Sheet} sheet */
     static #applyColWidths(sheet, colWidths) {
         const rc = sheet.rowColManager;
-        if (typeof colWidths === "number") {
+        if (isNumber(colWidths)) {
             const count = rc.allocatedColCount || 26;
             rc.ensureSize(0, count);
             for (let c = 0; c < count; c++) rc.setColWidth(c, colWidths);

@@ -1,5 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { HOOKS } from "../constants/hookNames.js";
+import { isNumber } from "lodash-es";
 
 /**
  * 冻结行列插件
@@ -108,10 +109,10 @@ export class FreezePlugin extends BasePlugin {
         if (options.fixedRowsTop !== undefined || options.fixedColumnsStart !== undefined) {
             const sheet = this.sheet;
             if (sheet) {
-                if (typeof options.fixedRowsTop === "number" && options.fixedRowsTop > 0) {
+                if (isNumber(options.fixedRowsTop) && options.fixedRowsTop > 0) {
                     sheet.fixedRowsTop = options.fixedRowsTop;
                 }
-                if (typeof options.fixedColumnsStart === "number" && options.fixedColumnsStart > 0) {
+                if (isNumber(options.fixedColumnsStart) && options.fixedColumnsStart > 0) {
                     sheet.fixedColumnsStart = options.fixedColumnsStart;
                 }
             }
