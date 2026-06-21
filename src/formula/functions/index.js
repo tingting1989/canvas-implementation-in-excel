@@ -11,7 +11,7 @@ import { isNumber } from "lodash-es";
 export const FUNCTIONS = {
     SUM(args) {
         const flat = _flatten(args);
-        return flat.reduce((acc, v) => acc + (_toNum(v)), 0);
+        return flat.reduce((acc, v) => acc + _toNum(v), 0);
     },
 
     AVERAGE(args) {
@@ -29,13 +29,17 @@ export const FUNCTIONS = {
     },
 
     MAX(args) {
-        const nums = _flatten(args).map(_toNum).filter((v) => !isNaN(v));
+        const nums = _flatten(args)
+            .map(_toNum)
+            .filter((v) => !isNaN(v));
         if (nums.length === 0) return 0;
         return Math.max(...nums);
     },
 
     MIN(args) {
-        const nums = _flatten(args).map(_toNum).filter((v) => !isNaN(v));
+        const nums = _flatten(args)
+            .map(_toNum)
+            .filter((v) => !isNaN(v));
         if (nums.length === 0) return 0;
         return Math.min(...nums);
     },

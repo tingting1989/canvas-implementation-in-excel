@@ -206,10 +206,26 @@ function tokenize(formula) {
             continue;
         }
 
-        if (ch === "(") { tokens.push({ type: TOKEN.LPAREN, value: "(" }); i++; continue; }
-        if (ch === ")") { tokens.push({ type: TOKEN.RPAREN, value: ")" }); i++; continue; }
-        if (ch === ",") { tokens.push({ type: TOKEN.COMMA, value: "," }); i++; continue; }
-        if (ch === ":") { tokens.push({ type: TOKEN.COLON, value: ":" }); i++; continue; }
+        if (ch === "(") {
+            tokens.push({ type: TOKEN.LPAREN, value: "(" });
+            i++;
+            continue;
+        }
+        if (ch === ")") {
+            tokens.push({ type: TOKEN.RPAREN, value: ")" });
+            i++;
+            continue;
+        }
+        if (ch === ",") {
+            tokens.push({ type: TOKEN.COMMA, value: "," });
+            i++;
+            continue;
+        }
+        if (ch === ":") {
+            tokens.push({ type: TOKEN.COLON, value: ":" });
+            i++;
+            continue;
+        }
 
         if (ch === "!" && tokens.length > 0) {
             const prev = tokens[tokens.length - 1];
@@ -233,7 +249,11 @@ function tokenize(formula) {
             continue;
         }
 
-        if (ch === "&") { tokens.push({ type: TOKEN.OPERATOR, value: "&" }); i++; continue; }
+        if (ch === "&") {
+            tokens.push({ type: TOKEN.OPERATOR, value: "&" });
+            i++;
+            continue;
+        }
 
         if (ch === "+" || ch === "-" || ch === "*" || ch === "/" || ch === "^" || ch === "=") {
             tokens.push({ type: TOKEN.OPERATOR, value: ch });
@@ -241,7 +261,7 @@ function tokenize(formula) {
             continue;
         }
 
-        if (ch === "\"" || ch === "'") {
+        if (ch === '"' || ch === "'") {
             const quote = ch;
             let str = "";
             i++;
@@ -299,7 +319,13 @@ function tokenize(formula) {
 
     function readWord() {
         let word = "";
-        while (i < formula.length && ((formula[i] >= "A" && formula[i] <= "Z") || (formula[i] >= "a" && formula[i] <= "z") || (formula[i] >= "0" && formula[i] <= "9") || formula[i] === "_")) {
+        while (
+            i < formula.length &&
+            ((formula[i] >= "A" && formula[i] <= "Z") ||
+                (formula[i] >= "a" && formula[i] <= "z") ||
+                (formula[i] >= "0" && formula[i] <= "9") ||
+                formula[i] === "_")
+        ) {
             word += formula[i];
             i++;
         }

@@ -198,11 +198,7 @@ export class FormulaEngine {
 
             const cell = sheet.cellStore.get(row, col);
             if (cell) {
-                sheet.cellStore.set(
-                    row,
-                    col,
-                    new (cell.constructor)(result, cell.styleId, cell.disabled, cell.formula)
-                );
+                sheet.cellStore.set(row, col, new cell.constructor(result, cell.styleId, cell.disabled, cell.formula));
             }
         }
     }
@@ -329,7 +325,7 @@ export class FormulaEngine {
 
             const cell = targetSheet.cellStore.get(row, col);
             if (cell && cell.formula === `=${this.#astToRaw(ast)}`) {
-                targetSheet.cellStore.set(row, col, new (cell.constructor)(result, cell.styleId, cell.disabled, cell.formula));
+                targetSheet.cellStore.set(row, col, new cell.constructor(result, cell.styleId, cell.disabled, cell.formula));
             }
 
             results.push({ sheetName, row, col, newValue: result });
@@ -342,13 +338,20 @@ export class FormulaEngine {
     #astToRaw(ast) {
         if (!ast) return "";
         switch (ast.type) {
-            case "literal": return String(ast.value);
-            case "cellRef": return `${ast.sheet ? ast.sheet + "!" : ""}${String.fromCharCode(65 + ast.col)}${ast.row + 1}`;
-            case "rangeRef": return `${ast.sheet ? ast.sheet + "!" : ""}${String.fromCharCode(65 + ast.topCol)}${ast.topRow + 1}:${String.fromCharCode(65 + ast.bottomCol)}${ast.bottomRow + 1}`;
-            case "function": return `${ast.name}(${ast.args.map((a) => this.#astToRaw(a)).join(",")})`;
-            case "binaryOp": return `${this.#astToRaw(ast.left)}${ast.operator}${this.#astToRaw(ast.right)}`;
-            case "unaryOp": return `${ast.operator}${this.#astToRaw(ast.operand)}`;
-            default: return "";
+            case "literal":
+                return String(ast.value);
+            case "cellRef":
+                return `${ast.sheet ? ast.sheet + "!" : ""}${String.fromCharCode(65 + ast.col)}${ast.row + 1}`;
+            case "rangeRef":
+                return `${ast.sheet ? ast.sheet + "!" : ""}${String.fromCharCode(65 + ast.topCol)}${ast.topRow + 1}:${String.fromCharCode(65 + ast.bottomCol)}${ast.bottomRow + 1}`;
+            case "function":
+                return `${ast.name}(${ast.args.map((a) => this.#astToRaw(a)).join(",")})`;
+            case "binaryOp":
+                return `${this.#astToRaw(ast.left)}${ast.operator}${this.#astToRaw(ast.right)}`;
+            case "unaryOp":
+                return `${ast.operator}${this.#astToRaw(ast.operand)}`;
+            default:
+                return "";
         }
     }
 }

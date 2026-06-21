@@ -70,24 +70,18 @@ export class FormulaEvaluator {
         return cell ? cell.value : "";
     }
 
-    #evalRangeRef(node) {
-        const targetSheet = node.sheet ? this.#resolveSheet(node.sheet) : null;
-        if (node.sheet && !targetSheet) return "#REF!";
+    #evalRangeRef(node, sheet) {
+        const targetSheet = node.sheet ? this.#resolveSheet(node.sheet) : sheet;
+        if (!targetSheet) return "#REF!";
 
         const result = [];
-        const sheet = targetSheet;
-
         for (let r = node.topRow; r <= node.bottomRow; r++) {
             const rowData = [];
             for (let c = node.topCol; c <= node.bottomCol; c++) {
-                if (sheet) {
-                    const cell = sheet.cellStore.get(r, c);
-                    const key = this.#cellKey(sheet.name, r, c);
-                    this.dependencies.add(key);
-                    rowData.push(cell ? cell.value : "");
-                } else {
-                    rowData.push("");
-                }
+                const cell = targetSheet.cellStore.get(r, c);
+                const key = this.#cellKey(targetSheet.name, r, c);
+                this.dependencies.add(key);
+                rowData.push(cell ? cell.value : "");
             }
             result.push(rowData);
         }
@@ -117,22 +111,34 @@ export class FormulaEvaluator {
         const right = this.#evalNode(node.right, sheet);
 
         switch (node.operator) {
-            case "+": return _toNum(left) + _toNum(right);
-            case "-": return _toNum(left) - _toNum(right);
-            case "*": return _toNum(left) * _toNum(right);
+            case "+":
+                return _toNum(left) + _toNum(right);
+            case "-":
+                return _toNum(left) - _toNum(right);
+            case "*":
+                return _toNum(left) * _toNum(right);
             case "/": {
                 const divisor = _toNum(right);
                 return divisor === 0 ? "#DIV/0!" : _toNum(left) / divisor;
             }
-            case "^": return Math.pow(_toNum(left), _toNum(right));
-            case "&": return String(left ?? "") + String(right ?? "");
-            case "=": return left === right;
-            case "<>": return left !== right;
-            case "<": return _toNum(left) < _toNum(right);
-            case ">": return _toNum(left) > _toNum(right);
-            case "<=": return _toNum(left) <= _toNum(right);
-            case ">=": return _toNum(left) >= _toNum(right);
-            default: return "#VALUE!";
+            case "^":
+                return Math.pow(_toNum(left), _toNum(right));
+            case "&":
+                return String(left ?? "") + String(right ?? "");
+            case "=":
+                return left === right;
+            case "<>":
+                return left !== right;
+            case "<":
+                return _toNum(left) < _toNum(right);
+            case ">":
+                return _toNum(left) > _toNum(right);
+            case "<=":
+                return _toNum(left) <= _toNum(right);
+            case ">=":
+                return _toNum(left) >= _toNum(right);
+            default:
+                return "#VALUE!";
         }
     }
 
