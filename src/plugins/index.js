@@ -12,3 +12,4 @@ export { HiddenColumnsPlugin } from "./HiddenColumnsPlugin.js";
 export { HiddenRowsPlugin } from "./HiddenRowsPlugin.js";
 export { RowMovePlugin } from "./RowMovePlugin.js";
 export { FreezePlugin } from "./FreezePlugin.js";
+export { FormulaPlugin } from "./FormulaPlugin.js";

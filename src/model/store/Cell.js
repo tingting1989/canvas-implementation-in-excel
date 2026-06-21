@@ -10,6 +10,7 @@
  *
  * 字段说明：
  * - value：单元格的值，可以是字符串、数字等（实际类型由使用方决定）。
+ * - formula：公式字符串（如 "=SUM(A1:A10)"），设置后 value 为其计算结果。
  * - styleId：指向 StyleManager 中样式表的索引（0 表示默认样式）。
  * - disabled：是否为禁用单元格（禁用后不可编辑，渲染为灰色背景）。
  *
@@ -26,13 +27,16 @@ export class Cell {
      * @param {*} value - 单元格值（字符串、数字等）
      * @param {number} [styleId=0] - 样式 ID，0 表示默认样式
      * @param {boolean} [disabled=false] - 是否禁用
+     * @param {string|null} [formula=null] - 公式字符串（如 "=SUM(A1:A10)"），非公式单元格为 null
      */
-    constructor(value = "", styleId = 0, disabled = false) {
+    constructor(value = "", styleId = 0, disabled = false, formula = null) {
         /** @type {*} 单元格的值 */
         this.value = value;
         /** @type {number} 样式 ID，引用 StyleManager 中的样式表 */
         this.styleId = styleId;
         /** @type {boolean} 是否禁用（禁用后不可编辑，渲染灰色背景） */
         this.disabled = disabled;
+        /** @type {string|null} 公式字符串，非公式单元格为 null */
+        this.formula = formula;
     }
 }

@@ -311,6 +311,15 @@ export class Sheet {
     }
 
     /**
+     * 供 FormulaEngine 内部调用，触发单个单元格重绘
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     */
+    _invalidateCellInternal(r, c) {
+        this.#invalidateCell(r, c);
+    }
+
+    /**
      * 公开方法：供外部代码（如 ClipboardManager）触发全量重绘
      * 内部使用 #invalidateAll 的数据变更路径无需额外调用此方法
      */
@@ -334,12 +343,25 @@ export class Sheet {
         if (!this.#ensureWritable()) return;
         const realR = this.toRealRow(r);
         this.rowColManager.ensureSize(realR + 1, c + 1);
+
+        let formula = null;
+        let cellValue = value;
+
+        if (this.workbook?.formulaEngine && typeof value === "string" && value.startsWith("=")) {
+            formula = value;
+            cellValue = this.workbook.formulaEngine.setFormula(this, realR, c, value);
+        }
+
         const old = this.cellStore.get(realR, c);
-        const cell = new Cell(value, styleId, disabled);
+        const cell = new Cell(cellValue, styleId, disabled, formula);
         const cmd = new SetCellCommand(this.cellStore, realR, c, old, cell);
         this.#batchOp.pushCommand(cmd, this.history);
         this.cellStore.set(realR, c, cell);
         this.#invalidateCell(realR, c);
+
+        if (!formula && this.workbook?.formulaEngine) {
+            this.workbook.formulaEngine.onCellChanged(this, realR, c);
+        }
     }
 
     /**
@@ -581,7 +603,13 @@ export class Sheet {
             if (!Array.isArray(row)) continue;
             for (let c = 0; c < row.length; c++) {
                 if (row[c] !== undefined && row[c] !== null && row[c] !== "") {
-                    this.cellStore.set(r, c, new Cell(row[c], 0));
+                    const val = row[c];
+                    if (typeof val === "string" && val.startsWith("=") && this.workbook?.formulaEngine) {
+                        const result = this.workbook.formulaEngine.setFormula(this, r, c, val);
+                        this.cellStore.set(r, c, new Cell(result, 0, false, val));
+                    } else {
+                        this.cellStore.set(r, c, new Cell(val, 0));
+                    }
                 }
             }
         }
@@ -755,6 +783,7 @@ export class Sheet {
     undo() {
         if (!this.#ensureWritable()) return;
         this.history.undo();
+        this.workbook?.formulaEngine?.recalculateAll(this);
         this.#invalidateAll();
     }
 
@@ -762,6 +791,7 @@ export class Sheet {
     redo() {
         if (!this.#ensureWritable()) return;
         this.history.redo();
+        this.workbook?.formulaEngine?.recalculateAll(this);
         this.#invalidateAll();
     }
 

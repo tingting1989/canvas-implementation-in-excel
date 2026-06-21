@@ -86,6 +86,11 @@ export class Workbook {
 
         this.#containerId = containerId || CONFIG.CANVAS_ID;
         this.#initOptions = options;
+
+        /** @type {import("../formula/FormulaEngine.js").FormulaEngine|null} 公式引擎（由 FormulaPlugin 注入） */
+        this.formulaEngine = null;
+        /** @type {import("../ui/FormulaBar.js").FormulaBar|null} 公式栏（由 FormulaPlugin 注入） */
+        this.formulaBar = null;
     }
 
     // ============================================================
@@ -169,10 +174,10 @@ export class Workbook {
         this.#createRenderEngine();
         this.#createSubSystems();
         this.#linkSheetsToRenderEngine();
+        this.#flushPendingPlugins();
         this.#applyInitOptions();
         this.#setupScrollCallback();
         this.#setupSheetTabBar();
-        this.#flushPendingPlugins();
     }
 
     /**

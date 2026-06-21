@@ -60,6 +60,9 @@ export class RenderEngine {
         this.ctx = this.canvas.getContext("2d");
         this.outerWrap = this.canvas.parentElement;
 
+        /** @type {Function|null} 每次渲染完成后调用 */
+        this.onAfterRender = null;
+
         this.wrap = document.createElement("div");
         this.wrap.className = "cs-canvas-wrap";
         this.wrap.style.position = "relative";
@@ -309,6 +312,10 @@ export class RenderEngine {
         }
 
         this.scrollMgr.updateScrollbars(this.#viewW, this.#viewH);
+
+        if (this.onAfterRender) {
+            this.onAfterRender();
+        }
     }
 
     /**

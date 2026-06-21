@@ -10,6 +10,7 @@ import { HiddenColumnsPlugin } from "./plugins/HiddenColumnsPlugin.js";
 import { HiddenRowsPlugin } from "./plugins/HiddenRowsPlugin.js";
 import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
 import { FreezePlugin } from "./plugins/FreezePlugin.js";
+import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "lodash-es";
 import { errorHandler, ERROR_LEVEL } from "./core/ErrorHandler.js";
@@ -33,29 +34,32 @@ const initApp = () => {
     Workbook.registerPlugin("hiddenRows", HiddenRowsPlugin);
     Workbook.registerPlugin("rowMove", RowMovePlugin);
     Workbook.registerPlugin("freeze", FreezePlugin);
+    Workbook.registerPlugin("formula", FormulaPlugin);
 
     const wb = new Workbook("grid", {
+        // height:600,
+        // width:800,
         sheets: [
             {
                 name: "Sheet1",
-                readOnly: true,
-                data: [
-                    ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
-                    ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
-                    ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
-                ],
-                colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                readOnly: false,
+                // data: [
+                //     ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
+                //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
+                //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
+                // ],
+                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
-                rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
-                nestedHeaders: [
-                    [
-                        { label: "基本信息", colspan: 2 },
-                        { label: "工作信息", colspan: 4 },
-                    ],
-                    ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
-                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                ],
+                //rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
+                // nestedHeaders: [
+                //     [
+                //         { label: "基本信息", colspan: 2 },
+                //         { label: "工作信息", colspan: 4 },
+                //     ],
+                //     ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+                //     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                // ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
                 startRows: 100,
@@ -164,6 +168,7 @@ const initApp = () => {
             "hiddenRows",
             "rowMove",
             "freeze",
+            "formula",
         ],
         pluginOptions: {
             contextMenu: {
