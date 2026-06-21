@@ -82,6 +82,10 @@ export class FormulaEngine {
      */
     setFormula(sheet, row, col, formulaStr) {
         const key = this.#cellKey(sheet.name, row, col);
+
+        this.#removeDependencies(key);
+        this.astCache.delete(key);
+
         const raw = formulaStr.startsWith("=") ? formulaStr.substring(1) : formulaStr;
 
         let ast;
@@ -104,6 +108,20 @@ export class FormulaEngine {
         this.#updateDependencies(key, this.evaluator.dependencies);
 
         return result;
+    }
+
+    /**
+     * 移除单元格的公式及其所有依赖关系
+     * 当公式被删除或改为非公式值时调用
+     *
+     * @param {object} sheet - Sheet 实例
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     */
+    removeFormula(sheet, row, col) {
+        const key = this.#cellKey(sheet.name, row, col);
+        this.#removeDependencies(key);
+        this.astCache.delete(key);
     }
 
     /**
@@ -341,9 +359,9 @@ export class FormulaEngine {
             case "literal":
                 return String(ast.value);
             case "cellRef":
-                return `${ast.sheet ? ast.sheet + "!" : ""}${String.fromCharCode(65 + ast.col)}${ast.row + 1}`;
+                return `${ast.sheet ? ast.sheet + "!" : ""}${this.#colToLabel(ast.col)}${ast.row + 1}`;
             case "rangeRef":
-                return `${ast.sheet ? ast.sheet + "!" : ""}${String.fromCharCode(65 + ast.topCol)}${ast.topRow + 1}:${String.fromCharCode(65 + ast.bottomCol)}${ast.bottomRow + 1}`;
+                return `${ast.sheet ? ast.sheet + "!" : ""}${this.#colToLabel(ast.topCol)}${ast.topRow + 1}:${this.#colToLabel(ast.bottomCol)}${ast.bottomRow + 1}`;
             case "function":
                 return `${ast.name}(${ast.args.map((a) => this.#astToRaw(a)).join(",")})`;
             case "binaryOp":
@@ -353,5 +371,15 @@ export class FormulaEngine {
             default:
                 return "";
         }
+    }
+
+    #colToLabel(col) {
+        let label = "";
+        let n = col;
+        do {
+            label = String.fromCharCode(65 + (n % 26)) + label;
+            n = Math.floor(n / 26) - 1;
+        } while (n >= 0);
+        return label;
     }
 }

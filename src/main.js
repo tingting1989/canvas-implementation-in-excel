@@ -62,8 +62,8 @@ const initApp = () => {
                 // ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
-                startRows: 100,
-                startCols: 26,
+                // startRows: 100,
+                // startCols: 26,
                 conditionalStyles: [
                     {
                         range: { sr: 0, sc: 0, er: 10000000, ec: 25 },

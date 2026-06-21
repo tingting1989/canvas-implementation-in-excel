@@ -60,7 +60,12 @@ export class FormulaEvaluator {
     }
 
     #evalCellRef(node, sheet) {
-        const targetSheet = node.sheet ? this.#resolveSheet(node.sheet) : sheet;
+        let targetSheet;
+        if (node.sheet) {
+            targetSheet = this.#resolveSheet(node.sheet);
+        } else if (sheet) {
+            targetSheet = sheet;
+        }
         if (!targetSheet) return "#REF!";
 
         const cell = targetSheet.cellStore.get(node.row, node.col);
@@ -71,7 +76,12 @@ export class FormulaEvaluator {
     }
 
     #evalRangeRef(node, sheet) {
-        const targetSheet = node.sheet ? this.#resolveSheet(node.sheet) : sheet;
+        let targetSheet;
+        if (node.sheet) {
+            targetSheet = this.#resolveSheet(node.sheet);
+        } else if (sheet) {
+            targetSheet = sheet;
+        }
         if (!targetSheet) return "#REF!";
 
         const result = [];

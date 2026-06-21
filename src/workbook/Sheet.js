@@ -347,12 +347,15 @@ export class Sheet {
         let formula = null;
         let cellValue = value;
 
+        const old = this.cellStore.get(realR, c);
+
         if (this.workbook?.formulaEngine && typeof value === "string" && value.startsWith("=")) {
             formula = value;
             cellValue = this.workbook.formulaEngine.setFormula(this, realR, c, value);
+        } else if (old?.formula && this.workbook?.formulaEngine) {
+            this.workbook.formulaEngine.removeFormula(this, realR, c);
         }
 
-        const old = this.cellStore.get(realR, c);
         const cell = new Cell(cellValue, styleId, disabled, formula);
         const cmd = new SetCellCommand(this.cellStore, realR, c, old, cell);
         this.#batchOp.pushCommand(cmd, this.history);
