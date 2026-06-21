@@ -97,7 +97,7 @@ export class RowColManager {
         console.log(`[RowColManager] resetSize: ${rows}rows x ${cols}cols (force override)`);
         this.#usedRows = rows;
         this.#usedCols = cols;
-        this.#explicitlySized = true;  // 标记为显式配置
+        this.#explicitlySized = true; // 标记为显式配置
 
         // 强制调整数组长度（可以扩大或缩小）
         if (this.#rowHeights.length !== rows) {
@@ -118,7 +118,9 @@ export class RowColManager {
             this.#colPrefixDirty = true;
         }
 
-        console.log(`[RowColManager] resetSize complete: rowHeights.len=${this.#rowHeights.length}, colWidths.len=${this.#colWidths.length}, explicitlySized=${this.#explicitlySized}`);
+        console.log(
+            `[RowColManager] resetSize complete: rowHeights.len=${this.#rowHeights.length}, colWidths.len=${this.#colWidths.length}, explicitlySized=${this.#explicitlySized}`,
+        );
     }
 
     /** 是否通过 resetSize() 显式设置了行列数 */

@@ -303,10 +303,10 @@ const initApp = () => {
         /** 切换到"大数据模式"（启用分页） */
         enableLargeDataMode: (rows = 1000, pageSize = 50) => {
             const sheet = wb.getActiveSheet();
-            const pg = wb.getPlugin('pagination');
+            const pg = wb.getPlugin("pagination");
 
             // 启用分页插件
-            wb.enablePlugin('pagination');
+            wb.enablePlugin("pagination");
 
             // 设置大数据量
             sheet.setGridSize(rows, sheet.rowColManager.colCount);
@@ -316,7 +316,7 @@ const initApp = () => {
                 pg.setPageSize(pageSize);
             }
 
-            console.log(`✅ 大数据模式已启用: ${rows}行, 每页${pageSize}行, 共${Math.ceil(rows/pageSize)}页`);
+            console.log(`✅ 大数据模式已启用: ${rows}行, 每页${pageSize}行, 共${Math.ceil(rows / pageSize)}页`);
         },
 
         /** 切换到"小表格模式"（可选禁用分页） */
@@ -328,10 +328,10 @@ const initApp = () => {
 
             // 可选：禁用分页
             if (disablePagination) {
-                wb.disablePlugin('pagination');
+                wb.disablePlugin("pagination");
             }
 
-            console.log(`✅ 小表格模式已启用: ${rows}行, 分页${disablePagination ? '已禁用' : '仍启用'}`);
+            console.log(`✅ 小表格模式已启用: ${rows}行, 分页${disablePagination ? "已禁用" : "仍启用"}`);
         },
     };
 

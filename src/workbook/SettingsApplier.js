@@ -22,8 +22,8 @@ export class SettingsApplier {
         console.log(`[SettingsApplier] Applying settings to sheet "${sheet.name}":`, {
             maxRows: settings.maxRows,
             maxCols: settings.maxCols,
-            rowHeights: settings.rowHeights?.length || 'not set',
-            columns: settings.columns?.length || 'not set',
+            rowHeights: settings.rowHeights?.length || "not set",
+            columns: settings.columns?.length || "not set",
         });
 
         // 使用 maxRows/maxCols 作为固定行列数的上限配置
