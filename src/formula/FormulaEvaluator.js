@@ -1,5 +1,6 @@
-import { FUNCTIONS } from "./functions/index.js";
+import { FUNCTIONS, getRegisteredFunctions } from "./functions/index.js";
 import { isNumber, isString } from "lodash-es";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 公式求值器
@@ -21,17 +22,35 @@ export class FormulaEvaluator {
         this.workbook = workbook;
         /** @type {Set<string>} 当前求值中引用的单元格 key 集合 */
         this.dependencies = new Set();
+        /**
+         * 调用栈（用于循环引用检测）
+         * @type {Set<string>}
+         * @private
+         */
+        this._callStack = new Set();
     }
 
     /**
      * 求值 AST 并返回结果
      * @param {object} ast - AST 根节点
      * @param {object} sheet - 当前 Sheet
+     * @param {string} [currentCellKey] - 当前正在求值的单元格 key（用于循环引用检测）
      * @returns {*} 计算结果
      */
-    evaluate(ast, sheet) {
+    evaluate(ast, sheet, currentCellKey) {
         this.dependencies = new Set();
-        return this.#evalNode(ast, sheet);
+
+        if (currentCellKey) {
+            this._callStack.add(currentCellKey);
+        }
+
+        try {
+            return this.#evalNode(ast, sheet);
+        } finally {
+            if (currentCellKey) {
+                this._callStack.delete(currentCellKey);
+            }
+        }
     }
 
     #evalNode(node, sheet) {
@@ -68,9 +87,45 @@ export class FormulaEvaluator {
         }
         if (!targetSheet) return "#REF!";
 
-        const cell = targetSheet.cellStore.get(node.row, node.col);
         const key = this.#cellKey(targetSheet.name, node.row, node.col);
+
+        if (this._callStack.has(key)) {
+            errorHandler.handle(
+                ERROR_CODE.FORMULA_CIRCULAR_REFERENCE,
+                `检测到循环引用: ${key}`,
+                {
+                    circularCell: key,
+                    callStack: [...this._callStack],
+                    sheetName: targetSheet.name,
+                    row: node.row,
+                    col: node.col
+                }
+            );
+            return "#CIRCULAR!";
+        }
+
+        const cell = targetSheet.cellStore.get(node.row, node.col);
         this.dependencies.add(key);
+
+        if (cell && cell.formula) {
+            const astCache = this.workbook?.formulaEngine?.astCache;
+            if (astCache && astCache.has(key)) {
+                try {
+                    this._callStack.add(key);
+                    const result = this.#evalNode(astCache.get(key), targetSheet);
+                    this._callStack.delete(key);
+                    return result;
+                } catch (error) {
+                    this._callStack.delete(key);
+                    errorHandler.handle(
+                        ERROR_CODE.FORMULA_EVAL_ERROR,
+                        `循环引用求值失败: ${key}`,
+                        { circularCell: key, error }
+                    );
+                    return "#CIRCULAR!";
+                }
+            }
+        }
 
         return cell ? cell.value : "";
     }
@@ -99,13 +154,33 @@ export class FormulaEvaluator {
     }
 
     #evalFunction(node, sheet) {
-        const fn = FUNCTIONS[node.name];
-        if (!fn) return "#NAME?";
+        const fnName = node.name ? node.name.toUpperCase() : node.name;
+        const fn = typeof FUNCTIONS.get === 'function' ? FUNCTIONS.get(fnName) : FUNCTIONS[fnName];
+
+        if (!fn) {
+            errorHandler.debug(
+                ERROR_CODE.FORMULA_FUNCTION_NOT_FOUND,
+                `函数 ${node.name} 未注册`,
+                {
+                    functionName: node.name,
+                    availableFunctions: typeof getRegisteredFunctions === 'function'
+                        ? getRegisteredFunctions().slice(0, 10)
+                        : 'N/A',
+                    sheetName: sheet?.name
+                }
+            );
+            return "#NAME?";
+        }
 
         const args = node.args.map((arg) => this.#evalNode(arg, sheet));
         try {
             return fn(args, { sheet, workbook: this.workbook });
-        } catch {
+        } catch (fnError) {
+            errorHandler.handle(
+                ERROR_CODE.FORMULA_EVAL_ERROR,
+                `函数 ${node.name} 执行失败`,
+                { functionName: node.name, args, error: fnError }
+            );
             return "#VALUE!";
         }
     }

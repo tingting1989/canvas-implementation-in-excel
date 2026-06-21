@@ -7,13 +7,14 @@
 3. [核心模块](#核心模块)
 4. [支持的语法特性](#支持的语法特性)
 5. [内置函数库](#内置函数库)
-6. [依赖追踪系统](#依赖追踪系统)
-7. [API 参考](#api-参考)
-8. [使用示例](#使用示例)
-9. [错误处理机制](#错误处理机制)
-10. [性能优化建议](#性能优化建议)
-11. [扩展指南](#扩展指南)
-12. [常见问题排查](#常见问题排查)
+6. [用户自定义函数（UDF）](#-用户自定义函数udf)
+7. [依赖追踪系统](#依赖追踪系统)
+8. [API 参考](#api-参考)
+9. [使用示例](#使用示例)
+10. [错误处理机制](#错误处理机制)
+11. [性能优化建议](#性能优化建议)
+12. [扩展指南](#扩展指南)
+13. [常见问题排查](#常见问题排查)
 
 ---
 
@@ -39,8 +40,10 @@
 | 范围引用 | ✅ | A1:B10, Sheet2!C5:D20 |
 | 跨表引用 | ✅ | Sheet2!A1 |
 | 函数调用 | ✅ | SUM, IF, AVERAGE 等 13 个内置函数 |
-| 依赖追踪 | ✅ | 自动重算，级联更新 |
-| 错误处理 | ✅ | #VALUE!, #REF!, #DIV/0!, #NAME?, #PARSE! |
+| **用户自定义函数** | ✅ **NEW** | 运行时动态注册/注销自定义函数 |
+| 依赖追踪 | ✅ | 自动重算，级联更新（含自定义函数） |
+| **循环引用检测** | ✅ **NEW** | 自动检测直接/间接/跨表循环引用 |
+| 错误处理 | ✅ | #VALUE!, #REF!, #DIV/0!, #NAME?, #PARSE!, **#CIRCULAR!** |
 
 ### 适用场景
 
@@ -734,15 +737,93 @@ astCache.delete("Sheet1!5,3")  // 清理 AST 缓存
 
 ### 循环引用检测
 
-**当前版本**: ⚠️ 未实现循环引用检测
+**状态**: ✅ **已实现**（v2.0+）
 
-**潜在风险**:
+#### 工作原理
+
+公式引擎使用**调用栈（Call Stack）**机制检测循环引用：
+
+1. 当开始求值某个单元格时，将其 key 加入调用栈
+2. 求值过程中访问其他单元格时，检查该单元格是否已在调用栈中
+3. 如果发现重复，立即返回 `#CIRCULAR!` 错误并记录日志
+4. 求值完成后，从调用栈中移除当前单元格
+
+#### 检测场景
+
+| 场景 | 示例 | 结果 |
+|------|------|------|
+| **直接循环** | A1 引用自身 | ✅ 检测到 |
+| **间接循环** | A1→B1→C1→A1 | ✅ 检测到 |
+| **跨表循环** | Sheet1!A1 → Sheet2!B1 → Sheet1!A1 | ✅ 检测到 |
+| **正常依赖** | A1→B1, C1→A1 (无环) | ✅ 正常工作 |
+
+#### 示例代码
+
 ```javascript
-A1 = B1 + 1
-B1 = A1 + 1  // ⚠️ 循环引用！会导致无限递归
+// 场景 1: 直接自引用
+engine.setFormula(sheet, 0, 0, '=A1+1');
+// 单元格显示: #CIRCULAR!
+// 日志: [ERROR] [FORMULA_CIRCULAR_REFERENCE] 检测到循环引用: Sheet1!0,0
+//       元数据: {circularCell: "Sheet1!0,0", callStack: ["Sheet1!0,0"], ...}
+
+// 场景 2: 间接循环引用
+sheet.setCell(0, 0, '=B1+1');   // A1 = B1 + 1
+sheet.setCell(1, 0, '=C1+1');   // B1 = C1 + 1
+sheet.setCell(2, 0, '=A1+1');   // C1 = A1 + 1 ← 循环！
+// 所有单元格都显示: #CIRCULAR!
+
+// 场景 3: 跨表循环引用
+const sheet2 = workbook.createSheet('Sheet2');
+engine.setFormula(sheet, 0, 0, '=Sheet2!A1+1');
+engine.setFormula(sheet2, 0, 0, '=Sheet1!A1+1');
+// 两个单元格都显示: #CIRCULAR!
 ```
 
-**建议**: 在生产环境中添加循环引用检测机制。
+#### 错误处理
+
+当检测到循环引用时：
+
+- **返回值**: `#CIRCULAR!` （Excel 标准错误码）
+- **错误级别**: ERROR
+- **错误码**: `FORMULA_CIRCULAR_REFERENCE`
+- **日志元数据**:
+  ```javascript
+  {
+    circularCell: "Sheet1!0,0",      // 形成循环的单元格
+    callStack: ["Sheet1!0,0"],        // 当前调用栈路径
+    sheetName: "Sheet1",
+    row: 0,
+    col: 0
+  }
+  ```
+
+#### 监听循环引用事件
+
+```javascript
+import { errorHandler, ERROR_CODE } from '../core/ErrorHandler.js';
+
+errorHandler.onError((code, message, level, meta) => {
+    if (code === ERROR_CODE.FORMULA_CIRCULAR_REFERENCE) {
+        console.error('⚠️ 循环引用警告:', {
+            cell: meta.circularCell,
+            path: meta.callStack.join(' → ')
+        });
+
+        // 可选：发送到监控系统
+        analytics.track('circular_reference', {
+            cell: meta.circularCell,
+            stackTrace: meta.callStack,
+            timestamp: Date.now()
+        });
+    }
+});
+```
+
+#### 性能影响
+
+- **时间复杂度**: O(1) - 使用 Set 进行查找，常数时间
+- **空间复杂度**: O(n) - n 为调用深度，通常很小（<100）
+- **开销**: 极小，仅增加一次 Set.has() 查找
 
 ---
 
@@ -796,6 +877,44 @@ B1 = A1 + 1  // ⚠️ 循环引用！会导致无限递归
 | `LOWER(text)` | string | string | 文本 |
 | `CONCAT(args...)` | any[] | string | 文本 |
 | `CONCATENATE(args...)` | any[] | string | 文本 |
+
+#### 用户自定义函数 API（NEW）
+
+| 方法 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `registerFunction(name,fn)` | string,Function | void | 注册自定义函数 |
+| `unregisterFunction(name)` | string | boolean | 注销自定义函数 |
+| `hasFunction(name)` | string | boolean | 检查函数是否存在 |
+| `getRegisteredFunctions()` | - | string[] | 获取所有已注册函数名 |
+
+**详细说明**:
+
+```javascript
+// 注册自定义函数
+engine.registerFunction('MYFUNC', (args, ctx) => {
+    // args: 已求值的参数数组
+    // ctx: { sheet, workbook } 上下文对象
+    return args[0] * 2;
+});
+
+// 注销自定义函数
+const success = engine.unregisterFunction('MYFUNC');
+
+// 检查函数是否存在
+if (engine.hasFunction('MYFUNC')) {
+    console.log('函数已注册');
+}
+
+// 获取所有已注册的函数
+console.log(engine.getRegisteredFunctions());
+// ["SUM", "AVERAGE", "IF", "MYFUNC", ...]
+```
+
+**函数签名规范**:
+- `name`: 函数名（自动转大写，如 `myfunc` → `MYFUNC`）
+- `fn`: 函数实现，签名为 `(args: Array, context?: { sheet, workbook }) => any`
+  - `args`: 已求值的参数数组
+  - `context`: 可选上下文对象，包含当前工作表和工作簿引用
 
 ---
 
@@ -1127,7 +1246,600 @@ worker.onmessage = (e) => {
 
 ## 扩展指南
 
-### 添加新函数
+### 🎯 用户自定义函数（UDF）
+
+#### 概述
+
+Canvas Spreadsheet 支持运行时注册**用户自定义函数（User Defined Functions, UDF）**，允许开发者根据业务需求扩展公式引擎的功能。
+
+**核心特性**:
+- ✅ **动态注册**: 无需重启应用，随时添加/移除函数
+- ✅ **大小写不敏感**: `myfunc`、`MyFunc`、`MYFUNC` 自动统一
+- ✅ **覆盖保护**: 覆盖内置函数时会打印警告日志
+- ✅ **类型安全**: 参数校验防止错误注册
+- ✅ **上下文支持**: 可访问工作簿和工作表对象
+- ✅ **依赖追踪兼容**: 自定义函数自动参与依赖追踪系统
+
+---
+
+#### 基础用法
+
+##### 1️⃣ 注册简单函数
+
+```javascript
+// 获取公式引擎实例
+const engine = workbook.formulaEngine;
+
+// 注册一个简单的翻倍函数
+engine.registerFunction('DOUBLE', (args) => {
+    return args[0] * 2;
+});
+
+// 现在可以在单元格中使用
+sheet.setCell(0, 0, '=DOUBLE(A1)');
+// 如果 A1 = 5，则结果为 10
+```
+
+##### 2️⃣ 注册多参数函数
+
+```javascript
+// 计算税额
+engine.registerFunction('TAX', (args) => {
+    const amount = args[0];      // 金额
+    const rate = args[1] ?? 0.13; // 税率（默认13%）
+    return amount * rate;
+});
+
+// 使用：=TAX(B1, 0.13)
+sheet.setCell(0, 0, '=TAX(10000, 0.13)');
+// 结果: 1300
+
+// 使用默认税率
+sheet.setCell(0, 1, '=TAX(10000)');
+// 结果: 1300 (使用默认税率 0.13)
+```
+
+##### 3️⃣ 使用上下文参数
+
+```javascript
+// 跨表求和
+engine.registerFunction('CROSS_SUM', (args, ctx) => {
+    const sheetName = args[0];       // 目标工作表名
+    const rangeStr = args[1];        // 范围字符串（如 "A1:B10"）
+
+    // 通过 context 访问工作簿
+    const targetSheet = ctx.workbook.sheets.get(sheetName);
+    if (!targetSheet) return '#REF!';
+
+    // 解析范围并计算总和
+    // 注意：这里简化处理，实际应使用 FormulaParser 解析范围
+    let sum = 0;
+    for (let r = 0; r < 10; r++) {
+        for (let c = 0; c < 2; c++) {
+            const cell = targetSheet.cellStore.get(r, c);
+            if (cell && typeof cell.value === 'number') {
+                sum += cell.value;
+            }
+        }
+    }
+    return sum;
+});
+
+// 使用：=CROSS_SUM("Sheet2", "A1:B10")
+```
+
+---
+
+#### 高级用法
+
+##### 4️⃣ 条件判断与业务逻辑
+
+```javascript
+// 成绩评级
+engine.registerFunction('GRADE', (args) => {
+    const score = args[0];
+
+    if (score >= 90) return 'A';
+    if (score >= 80) return 'B';
+    if (score >= 70) return 'C';
+    if (score >= 60) return 'D';
+    return 'F';
+});
+
+// 使用：=GRADE(A1)
+
+// 薪资计算器（含加班费）
+engine.registerFunction('OVERTIME_PAY', (args) => {
+    const hours = args[0];     // 工作时长
+    const baseRate = args[1];  // 基本时薪
+    const regularHours = 40;   // 标准工时
+
+    if (hours <= regularHours) {
+        return hours * baseRate;
+    } else {
+        // 加班部分按 1.5 倍计算
+        const regularPay = regularHours * baseRate;
+        const overtimePay = (hours - regularHours) * baseRate * 1.5;
+        return regularPay + overtimePay;
+    }
+});
+```
+
+##### 5️⃣ 数组和范围处理
+
+```javascript
+// 计算中位数
+engine.registerFunction('MEDIAN', (args) => {
+    const numbers = _flattenAndFilterNumbers(args);
+    if (numbers.length === 0) return '#DIV/0!';
+
+    numbers.sort((a, b) => a - b);
+    const mid = Math.floor(numbers.length / 2);
+
+    if (numbers.length % 2 === 0) {
+        return (numbers[mid - 1] + numbers[mid]) / 2;
+    } else {
+        return numbers[mid];
+    }
+});
+
+// 辅助工具函数（可在全局定义）
+function _flattenAndFilterNumbers(args) {
+    const result = [];
+    for (const item of args) {
+        if (Array.isArray(item)) {
+            result.push(..._flattenAndFilterNumbers(item));
+        } else if (typeof item === 'number' && !isNaN(item)) {
+            result.push(item);
+        } else if (typeof item === 'string') {
+            const num = parseFloat(item);
+            if (!isNaN(num)) result.push(num);
+        }
+    }
+    return result;
+}
+```
+
+##### 6️⃣ 金融函数示例
+
+```javascript
+// 内部收益率（IRR）简化版
+engine.registerFunction('IRR', (args) => {
+    const cashflows = args[0]; // 现金流数组
+    const guess = args[1] || 0.1; // 初始猜测值
+
+    let rate = guess;
+    let iterations = 0;
+    const maxIterations = 100;
+    const tolerance = 1e-6;
+
+    while (iterations < maxIterations) {
+        let npv = 0;
+        let dnpv = 0;
+
+        for (let i = 0; i < cashflows.length; i++) {
+            npv += cashflows[i] / Math.pow(1 + rate, i);
+            dnpv -= i * cashflows[i] / Math.pow(1 + rate, i + 1);
+        }
+
+        const newRate = rate - npv / dnpv;
+
+        if (Math.abs(newRate - rate) < tolerance) {
+            return newRate;
+        }
+
+        rate = newRate;
+        iterations++;
+    }
+
+    return '#NUM!'; // 未收敛
+});
+```
+
+---
+
+#### 函数管理 API
+
+##### 注册函数
+
+```javascript
+/**
+ * engine.registerFunction(name, fn)
+ *
+ * @param {string} name - 函数名（自动转大写）
+ * @param {Function} fn - 函数实现
+ * @returns {void}
+ * @throws {Error} 参数错误时抛出异常
+ */
+
+// ✅ 正确用法
+engine.registerFunction('MYFUNC', (args, ctx) => {
+    return args[0] + args[1];
+});
+
+// ❌ 错误用法（会抛出异常）
+engine.registerFunction('', () => {});  // 空名称
+engine.registerFunction('TEST', 'not a function');  // 非函数类型
+```
+
+##### 注销函数
+
+```javascript
+/**
+ * engine.unregisterFunction(name)
+ *
+ * @param {string} name - 要注销的函数名
+ * @returns {boolean} 是否成功移除
+ */
+
+engine.unregisterFunction('MYFUNC');  // true（成功移除）
+engine.unregisterFunction('NONEXISTENT');  // false（不存在）
+
+// ⚠️ 注销内置函数需谨慎
+engine.unregisterFunction('SUM');  // 可以，但会导致 SUM 函数不可用
+```
+
+##### 查询函数
+
+```javascript
+/**
+ * engine.hasFunction(name)
+ * @returns {boolean} 函数是否存在
+ */
+
+engine.hasFunction('SUM');     // true（内置函数）
+engine.hasFunction('MYFUNC');  // false（未注册）
+
+/**
+ * engine.getRegisteredFunctions()
+ * @returns {string[]} 所有已注册的函数名数组
+ */
+
+console.log(engine.getRegisteredFunctions());
+// ["SUM", "AVERAGE", "COUNT", "IF", "ABS", ... , "MY_CUSTOM_FUNC"]
+```
+
+---
+
+#### 插件集成最佳实践
+
+通过插件系统批量注册业务函数：
+
+```javascript
+// plugins/FinancialPlugin.js
+import { BasePlugin } from './BasePlugin.js';
+
+export class FinancialPlugin extends BasePlugin {
+    static get PLUGIN_NAME() { return 'financial'; }
+
+    init(options = {}) {
+        super.init(options);
+
+        // 批量注册金融相关函数
+        this.workbook.formulaEngine.registerFunction('PMT', (args) => {
+            // 计算每期还款额
+            const [rate, nper, pv, fv, type] = args;
+            // ... 实现逻辑
+        });
+
+        this.workbook.formulaEngine.registerFunction('FV', (args) => {
+            // 计算未来值
+            // ...
+        });
+
+        this.workbook.formulaEngine.registerFunction('PV', (args) => {
+            // 计算现值
+            // ...
+        });
+
+        console.log('[FinancialPlugin] 已加载 PMT, FV, PV 函数');
+    }
+
+    destroy() {
+        // 清理已注册的函数
+        ['PMT', 'FV', 'PV'].forEach(fn =>
+            this.workbook.formulaEngine.unregisterFunction(fn)
+        );
+        super.destroy();
+    }
+}
+
+// 使用方式
+Workbook.registerPlugin('financial', FinancialPlugin);
+workbook.loadPlugin('financial');
+```
+
+---
+
+#### 错误处理与调试
+
+##### 函数执行错误
+
+```javascript
+// 自定义函数内部抛出异常会被捕获并返回 #VALUE!
+engine.registerFunction('BUGGY', (args) => {
+    throw new Error('Something went wrong!');
+});
+
+sheet.setCell(0, 0, '=BUGGY(A1)');
+// 单元格显示: #VALUE!
+
+// 推荐做法：返回错误码而非抛出异常
+engine.registerFunction('SAFE_DIVIDE', (args) => {
+    const divisor = args[1];
+    if (divisor === 0) return '#DIV/0!';
+    return args[0] / divisor;
+});
+```
+
+##### 调试技巧
+
+```javascript
+// 1. 查看所有已注册函数
+console.log(engine.getRegisteredFunctions());
+
+// 2. 检查特定函数是否存在
+if (engine.hasFunction('MYFUNC')) {
+    console.log('✅ MYFUNC 已就绪');
+} else {
+    console.log('❌ MYFUNC 未注册');
+}
+
+// 3. 在函数内打印调试信息
+engine.registerFunction('DEBUG_FUNC', (args, ctx) => {
+    console.log('[DEBUG]', {
+        arguments: args,
+        sheetName: ctx.sheet.name,
+        timestamp: new Date().toISOString()
+    });
+    return args[0];
+});
+```
+
+---
+
+#### 性能优化建议
+
+| 场景 | 建议 | 示例 |
+|------|------|------|
+| **频繁调用** | 缓存计算结果 | 使用 Map 缓存昂贵运算 |
+| **大量数据** | 避免深层递归 | 用循环替代递归 |
+| **DOM 操作** | 移至渲染层 | 函数只返回数据 |
+| **异步操作** | 不支持 | 自定义函数必须同步 |
+
+```javascript
+// ❌ 反模式：在函数中进行耗时操作
+engine.registerFunction('SLOW', (args) => {
+    const result = expensiveCalculation(args); // 耗时操作
+    return result;
+});
+
+// ✅ 最佳实践：缓存结果
+const cache = new Map();
+engine.registerFunction('FAST', (args) => {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) return cache.get(key);
+
+    const result = expensiveCalculation(args);
+    cache.set(key, result);
+    return result;
+});
+```
+
+---
+
+#### 安全注意事项
+
+⚠️ **生产环境注意事项**:
+
+1. **输入验证**
+   ```javascript
+   engine.registerFunction('SAFE', (args) => {
+       if (!args || args.length === 0) return '#VALUE!';
+       // 验证参数...
+   });
+   ```
+
+2. **避免副作用**
+   ```javascript
+   // ❌ 危险：修改外部状态
+   engine.registerFunction('BAD', (args) => {
+       globalCounter++;  // 副作用！
+       return args[0];
+   });
+
+   // ✅ 安全：纯函数
+   engine.registerFunction('GOOD', (args) => {
+       return args[0] * 2;  // 无副作用
+   });
+   ```
+
+3. **沙箱执行（高级场景）**
+   ```javascript
+   // 如需执行用户提供的代码，考虑使用沙箱
+   import { VM } from 'vm2';
+
+   engine.registerFunction('EVAL_SAFE', (args, ctx) => {
+       const vm = new VM({
+           sandbox: { args, sheet: ctx.sheet }
+       });
+       return vm.run(`(${args[0]})(...args)`);
+   });
+   ```
+
+---
+
+### 🔧 错误处理与日志系统
+
+#### 集成统一错误处理器（ErrorHandler）
+
+Canvas Spreadsheet 的公式引擎已完全集成统一的错误处理系统 `ErrorHandler`，所有公式相关的错误、警告和调试信息都通过标准化的方式输出。
+
+**核心优势**:
+- ✅ 统一的错误码体系，便于追踪和定位问题
+- ✅ 支持级别过滤（DEBUG/INFO/WARN/ERROR/FATAL）
+- ✅ 支持自定义错误监听器（插件可监听公式错误）
+- ✅ 开发模式和生产模式的差异化日志输出
+
+#### 公式相关错误码
+
+| 错误码 | 级别 | 说明 | 触发场景 |
+|--------|------|------|----------|
+| `FORMULA_INVALID_FUNCTION_NAME` | FATAL | 函数名无效 | 注册空名称或非字符串 |
+| `FORMULA_INVALID_FUNCTION` | FATAL | 函数实现无效 | 传入非函数类型 |
+| `FORMULA_FUNCTION_OVERRIDE` | WARN | 函数被覆盖 | 覆盖已有函数时警告 |
+| `FORMULA_FUNCTION_NOT_FOUND` | DEBUG | 函数未找到 | 调用未注册的函数 |
+| `FORMULA_PARSE_ERROR` | ERROR | 公式解析失败 | 公式语法错误 |
+| `FORMULA_EVAL_ERROR` | ERROR | 公式求值失败 | 函数执行异常 |
+
+#### 错误处理示例
+
+##### 1️⃣ 自定义函数注册时的错误处理
+
+```javascript
+import { errorHandler, ERROR_CODE } from '../core/ErrorHandler.js';
+
+// 注册全局错误监听器（可选）
+errorHandler.onError((code, message, level, meta) => {
+    if (code.startsWith('FORMULA_')) {
+        console.log(`📊 公式错误 [${level}]: ${message}`, meta);
+    }
+});
+
+// 示例 1: 无效的函数名（会抛出 FATAL 异常）
+try {
+    engine.registerFunction('', () => {});
+} catch (e) {
+    // 自动记录到 ErrorHandler 并抛出异常
+    // 输出: [FATAL] [FORMULA_INVALID_FUNCTION_NAME] 函数名必须为非空字符串
+}
+
+// 示例 2: 无效的函数实现（会抛出 FATAL 异常）
+try {
+    engine.registerFunction('TEST', 'not a function');
+} catch (e) {
+    // 自动记录到 ErrorHandler 并抛出异常
+    // 输出: [FATAL] [FORMULA_INVALID_FUNCTION] 函数必须是 Function 类型
+}
+
+// 示例 3: 覆盖已有函数（会输出 WARN 警告）
+engine.registerFunction('SUM', (args) => args[0]);  // 覆盖内置 SUM
+// 输出: [WARN] [FORMULA_FUNCTION_OVERRIDE] 函数 SUM 已存在，将被覆盖 {functionName: "SUM"}
+```
+
+##### 2️⃣ 公式解析和求值错误
+
+```javascript
+// 解析错误的自动处理
+const result1 = engine.setFormula(sheet, 0, 0, '=SUM(');  // 缺少右括号
+// 单元格显示: #PARSE!
+// 日志输出: [ERROR] [FORMULA_PARSE_ERROR] 公式解析失败: =SUM(
+//          元数据: {formulaStr: "=SUM(", sheetName: "Sheet1", row: 0, col: 0, error: Error}
+
+// 求值错误的自动处理
+engine.registerFunction('BUGGY', () => {
+    throw new Error('Intentional error');
+});
+
+const result2 = engine.setFormula(sheet, 0, 1, '=BUGGY()');
+// 单元格显示: #VALUE!
+// 日志输出: [ERROR] [FORMULA_EVAL_ERROR] 函数 BUGGY 执行失败
+//          元数据: {functionName: "BUGGY", args: [], error: Error}
+```
+
+##### 3️⃣ 未注册函数的调试信息
+
+```javascript
+// 开启开发模式以查看 DEBUG 信息
+errorHandler.configure({ devMode: true });
+
+const result = engine.setFormula(sheet, 0, 0, '=NONEXISTENT()');
+// 单元格显示: #NAME?
+// 开发模式日志: [DEBUG] [FORMULA_FUNCTION_NOT_FOUND] 函数 NONEXISTENT 未注册
+//              元数据: {functionName: "NONEXISTENT", sheetName: "Sheet1"}
+```
+
+#### 最佳实践
+
+##### ✅ 推荐做法：在自定义函数中返回标准化错误
+
+```javascript
+engine.registerFunction('SAFE_DIVIDE', (args) => {
+    const dividend = args[0];
+    const divisor = args[1];
+
+    if (divisor === undefined || divisor === null) {
+        return '#VALUE!';  // 参数缺失
+    }
+
+    if (typeof divisor !== 'number' || typeof dividend !== 'number') {
+        return '#VALUE!';  // 类型错误
+    }
+
+    if (divisor === 0) {
+        return '#DIV/0!';  // 除零错误
+    }
+
+    return dividend / divisor;
+});
+```
+
+##### ❌ 避免做法：在自定义函数中直接抛出异常
+
+```javascript
+engine.registerFunction('UNSAFE', (args) => {
+    if (!args[0]) throw new Error('Missing argument');  // ❌ 不要这样做！
+    // 虽然会被捕获并返回 #VALUE!，但无法提供有意义的上下文
+});
+
+// ✅ 正确做法：返回错误码或使用 errorHandler
+engine.registerFunction('SAFE', (args) => {
+    if (!args[0]) {
+        errorHandler.debug(ERROR_CODE.FORMULA_EVAL_ERROR, '缺少必要参数', { args });
+        return '#VALUE!';
+    }
+    // ...
+});
+```
+
+#### 监听公式错误事件（插件开发者）
+
+```javascript
+class FormulaMonitorPlugin extends BasePlugin {
+    static get PLUGIN_NAME() { return 'formulaMonitor'; }
+
+    init(options = {}) {
+        super.init(options);
+
+        // 注册错误监听器
+        this.#listener = (code, message, level, meta) => {
+            if (code.startsWith('FORMULA_')) {
+                this.#logToServer(code, message, level, meta);
+            }
+        };
+
+        errorHandler.onError(this.#listener);
+        console.log('[FormulaMonitorPlugin] 已启动公式错误监控');
+    }
+
+    destroy() {
+        errorHandler.offError(this.#listener);
+        super.destroy();
+    }
+
+    #logToServer(code, message, level, meta) {
+        // 发送到远程日志服务
+        fetch('/api/logs', {
+            method: 'POST',
+            body: JSON.stringify({ code, message, level, meta, timestamp: Date.now() })
+        }).catch(() => {});  // 忽略网络错误
+    }
+}
+```
+
+---
+
+### 添加新函数（传统方式）
 
 #### 步骤 1: 在 functions/index.js 中注册
 

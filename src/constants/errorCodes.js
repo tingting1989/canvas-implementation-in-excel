@@ -49,6 +49,22 @@ export const ERROR_CODE = {
     /** 渲染异常 */
     RENDER_ERROR: "RENDER_ERROR",
 
+    // ── 公式 ──
+    /** 函数名无效（空或非字符串） */
+    FORMULA_INVALID_FUNCTION_NAME: "FORMULA_INVALID_FUNCTION_NAME",
+    /** 函数实现无效（非函数类型） */
+    FORMULA_INVALID_FUNCTION: "FORMULA_INVALID_FUNCTION",
+    /** 函数已存在，将被覆盖 */
+    FORMULA_FUNCTION_OVERRIDE: "FORMULA_FUNCTION_OVERRIDE",
+    /** 函数未注册 */
+    FORMULA_FUNCTION_NOT_FOUND: "FORMULA_FUNCTION_NOT_FOUND",
+    /** 公式解析错误 */
+    FORMULA_PARSE_ERROR: "FORMULA_PARSE_ERROR",
+    /** 公式求值错误 */
+    FORMULA_EVAL_ERROR: "FORMULA_EVAL_ERROR",
+    /** 循环引用检测 */
+    FORMULA_CIRCULAR_REFERENCE: "FORMULA_CIRCULAR_REFERENCE",
+
     // ── 通用 ──
     /** 未知错误 */
     UNKNOWN: "UNKNOWN",

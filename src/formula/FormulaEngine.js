@@ -1,6 +1,8 @@
 import { parseFormula } from "./FormulaParser.js";
 import { FormulaEvaluator } from "./FormulaEvaluator.js";
 import { isString } from "lodash-es";
+import { FUNCTIONS, registerFunction, unregisterFunction, hasFunction, getRegisteredFunctions } from "./functions/index.js";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 公式引擎
@@ -91,7 +93,12 @@ export class FormulaEngine {
         let ast;
         try {
             ast = parseFormula(raw);
-        } catch {
+        } catch (parseError) {
+            errorHandler.handle(
+                ERROR_CODE.FORMULA_PARSE_ERROR,
+                `公式解析失败: ${formulaStr}`,
+                { formulaStr, sheetName: sheet.name, row, col, error: parseError }
+            );
             return "#PARSE!";
         }
 
@@ -100,8 +107,13 @@ export class FormulaEngine {
         this.evaluator.dependencies = new Set();
         let result;
         try {
-            result = this.evaluator.evaluate(ast, sheet);
-        } catch {
+            result = this.evaluator.evaluate(ast, sheet, key);
+        } catch (evalError) {
+            errorHandler.handle(
+                ERROR_CODE.FORMULA_EVAL_ERROR,
+                `公式求值失败: ${formulaStr}`,
+                { formulaStr, sheetName: sheet.name, row, col, error: evalError }
+            );
             result = "#VALUE!";
         }
 
@@ -207,7 +219,7 @@ export class FormulaEngine {
             this.evaluator.dependencies = new Set();
             let result;
             try {
-                result = this.evaluator.evaluate(ast, sheet);
+                result = this.evaluator.evaluate(ast, sheet, key);
             } catch {
                 result = "#VALUE!";
             }
@@ -245,6 +257,70 @@ export class FormulaEngine {
         const key = this.#cellKey(sheetName, row, col);
         const deps = this.dependents.get(key);
         return deps ? [...deps] : [];
+    }
+
+    /**
+     * 注册自定义公式函数
+     *
+     * @param {string} name - 函数名（如 'MYFUNC'，会自动转大写）
+     * @param {Function} fn - 函数实现 (args: Array, context: { sheet, workbook }) => any
+     * @throws {Error} 参数类型错误时抛出
+     *
+     * @example
+     * ```js
+     * engine.registerFunction('DOUBLE', (args) => args[0] * 2);
+     * // 然后可以在单元格中使用 =DOUBLE(A1)
+     *
+     * // 复杂示例：使用上下文访问工作簿
+     * engine.registerFunction('TAX', (args, ctx) => {
+     *     const amount = args[0];
+     *     const rate = args[1] ?? 0.13;
+     *     return amount * rate;
+     * });
+     * ```
+     */
+    registerFunction(name, fn) {
+        registerFunction(name, fn);
+    }
+
+    /**
+     * 注销自定义公式函数
+     *
+     * @param {string} name - 要移除的函数名
+     * @returns {boolean} 是否成功移除
+     *
+     * @example
+     * ```js
+     * engine.unregisterFunction('DOUBLE');
+     * ```
+     */
+    unregisterFunction(name) {
+        return unregisterFunction(name);
+    }
+
+    /**
+     * 检查函数是否已注册
+     *
+     * @param {string} name - 函数名
+     * @returns {boolean}
+     */
+    hasFunction(name) {
+        return hasFunction(name);
+    }
+
+    /**
+     * 获取所有已注册的函数名列表（调试用）
+     *
+     * @returns {string[]} 函数名数组（全部大写）
+     *
+     * @example
+     * ```js
+     * console.log(engine.getRegisteredFunctions());
+     * // ["SUM", "AVERAGE", "IF", "MY_CUSTOM_FUNC", ...]
+     * ```
+     */
+    getRegisteredFunctions() {
+        return getRegisteredFunctions();
     }
 
     /**
@@ -334,7 +410,7 @@ export class FormulaEngine {
             this.evaluator.dependencies = new Set();
             let result;
             try {
-                result = this.evaluator.evaluate(ast, targetSheet);
+                result = this.evaluator.evaluate(ast, targetSheet, key);
             } catch {
                 result = "#VALUE!";
             }
