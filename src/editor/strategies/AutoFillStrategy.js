@@ -323,7 +323,7 @@ export class AutoFillStrategy extends EventStrategy {
         const base = srcValues[srcIdx];
         if (base == null || base === "") return "";
         if (isNumber(base) && step !== 0) {
-            return base + step * srcLen * (cycle + 1);
+            return base + step * srcLen * cycle;
         }
         if (isNumber(base) && step === 0) {
             return base;
