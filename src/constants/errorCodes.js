@@ -64,6 +64,8 @@ export const ERROR_CODE = {
     FORMULA_EVAL_ERROR: "FORMULA_EVAL_ERROR",
     /** 循环引用检测 */
     FORMULA_CIRCULAR_REFERENCE: "FORMULA_CIRCULAR_REFERENCE",
+    /** 参数数量无效 */
+    FORMULA_ARGUMENT_COUNT_INVALID: "FORMULA_ARGUMENT_COUNT_INVALID",
 
     // ── 通用 ──
     /** 未知错误 */
