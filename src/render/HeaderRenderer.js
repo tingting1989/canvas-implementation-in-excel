@@ -84,9 +84,9 @@ export class HeaderRenderer {
         this.#renderHeaderRegion(ctx, sheet, {
             vt,
             rc,
-            clipX: headerW,
+            clipX: headerW + frozenColsW,
             clipY: 0,
-            clipW: viewW - headerW,
+            clipW: viewW - headerW - frozenColsW,
             clipH: totalHeaderH,
             rowH,
             defaultStyle,
@@ -140,11 +140,11 @@ export class HeaderRenderer {
         ctx.clip();
 
         if (nestedCount > 0) {
-            const sc = isFrozen ? 0 : rc.colAt(scrollX);
+            const sc = isFrozen ? 0 : Math.max(fixedCols, rc.colAt(scrollX));
             const ec = isFrozen ? Math.min(rc.colAt(clipW) + 1, rc.colCount) : Math.min(rc.colAt(scrollX + clipW) + 1, rc.colCount);
             this.#renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle);
         } else {
-            const startCol = isFrozen ? 0 : rc.colAt(scrollX);
+            const startCol = isFrozen ? 0 : Math.max(fixedCols, rc.colAt(scrollX));
             const endCol = isFrozen ? fixedCols : Math.min(rc.colAt(scrollX + clipW) + 1, rc.colCount);
             for (let c = startCol; c < endCol; c++) {
                 const w = rc.getColWidth(c);
@@ -240,8 +240,8 @@ export class HeaderRenderer {
         this.#renderRowHeaderRegion(ctx, sheet, {
             vt,
             rc,
-            clipY: headerH,
-            clipH: viewH - headerH,
+            clipY: headerH + frozenRowsH,
+            clipH: viewH - headerH - frozenRowsH,
             headerW,
             headerH,
             defaultStyle,
@@ -291,7 +291,7 @@ export class HeaderRenderer {
         ctx.rect(0, clipY, headerW, clipH);
         ctx.clip();
 
-        const startRow = isFrozen ? 0 : rc.rowAt(scrollY);
+        const startRow = isFrozen ? 0 : Math.max(fixedRows, rc.rowAt(scrollY));
         const dataViewH = vt.frozenRowsH > 0 ? clipH + vt.frozenRowsH : clipH;
         const endRow = isFrozen ? fixedRows : Math.min(rc.rowAt(scrollY + dataViewH) + 1, rc.rowCount);
         for (let r = startRow; r < endRow; r++) {
