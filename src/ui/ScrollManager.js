@@ -289,11 +289,8 @@ export class ScrollManager {
         this.#frozenRowsH = frozenRowsH;
         this.#frozenColsW = frozenColsW;
 
-        // 数据可视区域 = 视口 - 表头 - 冻结区域
-        const dataViewW = viewW - headerW - frozenColsW;
-        const dataViewH = viewH - headerH - frozenRowsH;
-        this.#maxScrollX = Math.max(0, totalW - dataViewW);
-        this.#maxScrollY = Math.max(0, totalH - dataViewH);
+        this.#maxScrollX = Math.max(0, totalW - viewW + headerW);
+        this.#maxScrollY = Math.max(0, totalH - viewH + headerH);
 
         this.#scrollX = Math.min(this.#scrollX, this.#maxScrollX);
         this.#scrollY = Math.min(this.#scrollY, this.#maxScrollY);
