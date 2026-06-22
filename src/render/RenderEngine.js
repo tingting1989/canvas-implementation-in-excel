@@ -247,7 +247,6 @@ export class RenderEngine {
         const mainViewW = viewW;
         const mainViewH = viewH;
         const vt = this.#getViewportTransform();
-
         this.tileRenderer.render(ctx, sheet, sx, sy, mainViewW, mainViewH);
         this.overlayRenderer.renderMerges(ctx, sheet, vt);
         this.overlayRenderer.renderSelection(ctx, sheet, vt, viewW, viewH);
