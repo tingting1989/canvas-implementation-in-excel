@@ -103,6 +103,14 @@ export class RenderEngine {
         return this.#currentSheet;
     }
 
+    get headerRenderer() {
+        return this.headerLayer.headerRenderer;
+    }
+
+    get overlayRenderer() {
+        return this.overlayLayer.overlayRenderer;
+    }
+
     get onScrollCallback() {
         return this.scrollMgr.onScrollCallback;
     }
