@@ -10,8 +10,10 @@ export class HeaderLayer extends BaseLayer {
 
     bindStore(store) {
         super.bindStore(store);
+        this.watch("scroll", () => {});
         this.watch("frozen", () => {});
         this.watch("viewport", () => {});
+        this.watch("selection", () => {});
     }
 
     render(ctx, sheet, viewport, options = {}) {

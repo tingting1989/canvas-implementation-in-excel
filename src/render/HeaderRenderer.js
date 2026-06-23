@@ -133,6 +133,8 @@ export class HeaderRenderer {
     #renderHeaderRegion(ctx, sheet, opts) {
         const { vt, rc, clipX, clipY, clipW, clipH, rowH, defaultStyle, headerFont, nestedCount, range, fixedCols, isFrozen } = opts;
         const scrollX = isFrozen ? 0 : vt.scrollX;
+        const frozenColsW = vt.frozenColsW;
+        const dataViewW = (!isFrozen && frozenColsW > 0) ? clipW + frozenColsW : clipW;
 
         ctx.save();
         ctx.beginPath();
@@ -141,11 +143,11 @@ export class HeaderRenderer {
 
         if (nestedCount > 0) {
             const sc = isFrozen ? 0 : Math.max(fixedCols, rc.colAt(scrollX));
-            const ec = isFrozen ? Math.min(rc.colAt(clipW) + 1, rc.colCount) : Math.min(rc.colAt(scrollX + clipW) + 1, rc.colCount);
+            const ec = isFrozen ? Math.min(rc.colAt(clipW) + 1, rc.colCount) : Math.min(rc.colAt(scrollX + dataViewW) + 1, rc.colCount);
             this.#renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle);
         } else {
             const startCol = isFrozen ? 0 : Math.max(fixedCols, rc.colAt(scrollX));
-            const endCol = isFrozen ? fixedCols : Math.min(rc.colAt(scrollX + clipW) + 1, rc.colCount);
+            const endCol = isFrozen ? fixedCols : Math.min(rc.colAt(scrollX + dataViewW) + 1, rc.colCount);
             for (let c = startCol; c < endCol; c++) {
                 const w = rc.getColWidth(c);
                 if (w <= 0) continue;

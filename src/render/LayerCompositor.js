@@ -1,4 +1,5 @@
 import { BaseLayer } from "./BaseLayer.js";
+import { CONFIG } from "../constants/config.js";
 
 /**
  * 图层合成器 (LayerCompositor)
@@ -135,12 +136,9 @@ export class LayerCompositor {
                 layer.initCanvas(viewW, viewH);
 
                 if (layer.dirty) {
-                    if (layer.ctx.setTransform) {
-                        layer.ctx.setTransform(1, 0, 0, 1, 0, 0);
-                    }
-                    if (layer.ctx.clearRect) {
-                        layer.ctx.clearRect(0, 0, viewW, viewH);
-                    }
+                    const dpr = CONFIG.DPR;
+                    layer.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    layer.ctx.clearRect(0, 0, viewW, viewH);
 
                     layer.render(layer.ctx, sheet, viewport, renderOptions);
                     layer.clearDirty();
@@ -150,7 +148,9 @@ export class LayerCompositor {
                 }
 
                 if (mainCtx.drawImage) {
-                    mainCtx.drawImage(layer.canvas, 0, 0);
+                    const srcW = layer.canvas.width;
+                    const srcH = layer.canvas.height;
+                    mainCtx.drawImage(layer.canvas, 0, 0, srcW, srcH, 0, 0, viewW, viewH);
                 }
             } catch (error) {
                 console.error(`[LayerCompositor] Error rendering layer "${layer.name}":`, error);

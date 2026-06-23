@@ -19,6 +19,11 @@ export class FrozenLayer extends BaseLayer {
         this.markDirty();
     }
 
+    markAllDirty() {
+        this.tileRenderer.invalidateAll();
+        this.markDirty();
+    }
+
     bindStore(store) {
         super.bindStore(store);
         this.watch("frozen", () => {});

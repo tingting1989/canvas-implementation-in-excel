@@ -1,7 +1,5 @@
 ﻿import { ScrollManager } from "../ui/ScrollManager.js";
 import { SheetTabBar } from "../ui/SheetTabBar.js";
-import { TileRenderer } from "./TileRenderer.js";
-import { TileCache } from "./TileCache.js";
 import { ViewportTransform } from "./ViewportTransform.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { CONFIG } from "../constants/config";
@@ -43,12 +41,6 @@ export class RenderEngine {
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
         this.sheetTabBar = new SheetTabBar(this.wrap, null);
 
-        this.tileRenderer = new TileRenderer(new TileCache());
-
-        this.tileRenderer.onContentReady = () => {
-            this.requestRender();
-        };
-
         this.#initLayerSystem();
         this.#initCanvasSize();
         this.#bindEvents();
@@ -73,7 +65,6 @@ export class RenderEngine {
         this.headerLayer = new HeaderLayer();
         this.uiLayer = new UILayer();
 
-        this.tileLayer.tileRenderer = this.tileRenderer;
         this.tileLayer.onContentReady = () => {
             this.requestRender();
         };
@@ -109,6 +100,16 @@ export class RenderEngine {
 
     get overlayRenderer() {
         return this.overlayLayer.overlayRenderer;
+    }
+
+    setResizeLine(type, index, position) {
+        this.headerLayer.headerRenderer.resizeRenderer.setResizeLine(type, index, position);
+        this.headerLayer.markDirty();
+    }
+
+    clearResizeLine() {
+        this.headerLayer.headerRenderer.resizeRenderer.setResizeLine(null);
+        this.headerLayer.markDirty();
     }
 
     get onScrollCallback() {
