@@ -217,7 +217,19 @@ export class RenderEngine {
             this.store.state.frozenOffset.rowsHeight = frozenRowsH;
             this.store.state.viewport.width = viewW;
             this.store.state.viewport.height = viewH;
+
+            const range = sheet.selection.getRange();
+            const [focusRow, focusCol] = sheet.selection.getFocus();
+            this.store.state.selection.activeRange = range;
+            this.store.state.selection.focusRow = focusRow;
+            this.store.state.selection.focusCol = focusCol;
+
+            this.store.state.editor.visible = this.editor?.isVisible ?? false;
+            this.store.state.editor.row = this.editor?.activeRow ?? -1;
+            this.store.state.editor.col = this.editor?.activeCol ?? -1;
         });
+
+        this.store.flush();
 
         const vt = this.#getViewportTransform();
 
@@ -385,6 +397,7 @@ export class RenderEngine {
     invalidateCell(pageRow, col) {
         const rc = this.#currentSheet ? this.#currentSheet.rowColManager : null;
         this.tileLayer.markCellDirty(pageRow, col, rc);
+        this.frozenLayer.markCellDirty(pageRow, col, rc);
         this.requestRender();
     }
 

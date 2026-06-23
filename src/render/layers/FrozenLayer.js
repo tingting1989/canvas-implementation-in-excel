@@ -14,11 +14,17 @@ export class FrozenLayer extends BaseLayer {
         this._cachedFrozenRowsH = -1;
     }
 
+    markCellDirty(row, col, rc) {
+        this.tileRenderer.invalidateCell(row, col, rc);
+        this.markDirty();
+    }
+
     bindStore(store) {
         super.bindStore(store);
         this.watch("frozen", () => {});
         this.watch("frozenOffset", () => {});
         this.watch("scroll", () => {});
+        this.watch("selection", () => {});
     }
 
     #checkFrozenStateChange(sheet) {
