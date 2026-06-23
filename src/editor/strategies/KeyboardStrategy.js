@@ -64,6 +64,40 @@ export class KeyboardStrategy extends EventStrategy {
         const { sheet, editor, renderEngine } = this.handler;
         const [r, c] = sheet.selection.getActive();
 
+        // Ctrl/Meta 快捷键检测（独立于 switch，避免拦截非 Ctrl 时的字母输入）
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case "z":
+                    e.preventDefault();
+                    sheet.undo();
+                    this.handler.render();
+                    return;
+                case "y":
+                    e.preventDefault();
+                    sheet.redo();
+                    this.handler.render();
+                    return;
+                case "a":
+                    e.preventDefault();
+                    const rcAll = sheet.rowColManager;
+                    sheet.selection.selectAll(rcAll.rowCount - 1, rcAll.realColCount - 1);
+                    this.handler.render();
+                    return;
+                case "b":
+                    e.preventDefault();
+                    this.#handleToggleBold();
+                    return;
+                case "i":
+                    e.preventDefault();
+                    this.#handleToggleItalic();
+                    return;
+                case "u":
+                    e.preventDefault();
+                    this.#handleToggleUnderline();
+                    return;
+            }
+        }
+
         switch (e.key) {
             case "ArrowDown":
                 e.preventDefault();
@@ -91,46 +125,6 @@ export class KeyboardStrategy extends EventStrategy {
                 e.preventDefault();
                 this.#handleTab(r, c, e.shiftKey);
                 break;
-            case "z":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    sheet.undo();
-                    this.handler.render();
-                }
-                break;
-            case "y":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    sheet.redo();
-                    this.handler.render();
-                }
-                break;
-            case "a":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    const rc = sheet.rowColManager;
-                    sheet.selection.selectAll(rc.rowCount - 1, rc.realColCount - 1);
-                    this.handler.render();
-                }
-                break;
-            case "b":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    this.#handleToggleBold();
-                }
-                break;
-            case "i":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    this.#handleToggleItalic();
-                }
-                break;
-            case "u":
-                if (e.ctrlKey || e.metaKey) {
-                    e.preventDefault();
-                    this.#handleToggleUnderline();
-                }
-                break;
             case "Delete":
             case "Backspace":
                 e.preventDefault();
@@ -145,6 +139,7 @@ export class KeyboardStrategy extends EventStrategy {
                  * - 输入后光标自动进入编辑状态，位于活动单元格
                  */
                 if (!sheet.readOnly && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+                    e.preventDefault();
                     this.#handleDirectInput(e);
                 }
                 break;
