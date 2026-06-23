@@ -412,5 +412,7 @@ export class RenderEngine {
         this.compositor.destroyAll();
         this.store.destroy();
         this.scrollMgr.destroy();
+        this.canvas = null;
+        this.ctx = null;
     }
 }

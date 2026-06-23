@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Spreadsheet — 单元测试</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #eee;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 { color: #4c8bf5; margin-bottom: 10px; font-size: 20px; }
+        #output { white-space: pre-wrap; font-size: 13px; }
+        .pass { color: #4caf50; }
+        .fail { color: #f44336; }
+        .summary { margin-top: 16px; padding: 12px; border-radius: 8px; }
+        .summary.ok { background: #1b3a1b; border: 1px solid #2e7d32; }
+        .summary.fail { background: #3a1b1b; border: 1px solid #c62828; }
+        button {
+            background: #4c8bf5; color: white; border: none; padding: 10px 24px;
+            border-radius: 6px; cursor: pointer; font-size: 14px; font-family: inherit;
+            margin-bottom: 12px;
+        }
+        button:hover { background: #3b7ae5; }
+        canvas#grid, div#__test_canvas__ { display: none; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Canvas Spreadsheet Unit Tests</h1>
+    <button id="runBtn">▶ 运行所有测试</button>
+    <div id="result"></div>
+    <div id="output"></div>
+
+    <canvas id="grid" width="800" height="600"></canvas>
+    <div style="position:relative"><canvas id="__test_canvas__" width="800" height="600"></canvas></div>
+
+    <script type="module">
+        const outputEl = document.getElementById('output');
+        const resultEl = document.getElementById('result');
+        const btn = document.getElementById('runBtn');
+
+        function log(...args) {
+            const line = args.map(a =>
+                typeof a === 'string' ? a : JSON.stringify(a)
+            ).join(' ');
+            outputEl.textContent += line + '\n';
+        }
+
+        const originalConsoleLog = console.log;
+        console.log = (...args) => {
+            originalConsoleLog(...args);
+            log(...args);
+        };
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true;
+            btn.textContent = '⏳ 运行中...';
+            outputEl.textContent = '';
+            resultEl.innerHTML = '';
+
+            try {
+                const { runAllTests } = await import('./run-all-tests.js');
+                const result = await runAllTests();
+
+                resultEl.className = `summary ${result.failed === 0 ? 'ok' : 'fail'}`;
+                resultEl.innerHTML = `
+                    <strong>${result.failed === 0 ? '✅ 全部通过' : '❌ 存在失败'}</strong><br>
+                    通过: <span class="pass">${result.passed}</span> &nbsp;
+                    失败: <span class="${result.fail > 0 ? 'fail' : 'pass'}">${result.failed}</span> &nbsp;
+                    耗时: ${result.elapsed}ms
+                `;
+            } catch (e) {
+                resultEl.className = 'summary fail';
+                resultEl.innerHTML = `<strong>💥 异常:</strong> ${e.message}`;
+                log('Error:', e.message);
+                log(e.stack || '');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '▶ 重新运行';
+            }
+        });
+    </script>
+</body>
+</html>

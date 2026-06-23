@@ -48,18 +48,18 @@ const initApp = () => {
                 //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
                 //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 // ],
-                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
-                //rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
-                // nestedHeaders: [
-                //     [
-                //         { label: "基本信息", colspan: 2 },
-                //         { label: "工作信息", colspan: 4 },
-                //     ],
-                //     ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
-                //     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                // ],
+                rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
+                nestedHeaders: [
+                    [
+                        { label: "基本信息", colspan: 2 },
+                        { label: "工作信息", colspan: 4 },
+                    ],
+                    ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
                 // 固定行列数上限（使用 maxRows/maxCols）

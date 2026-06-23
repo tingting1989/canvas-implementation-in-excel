@@ -4,7 +4,6 @@
   "main": "index.js",
 
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "webpack serve --mode development",
     "build": "webpack --mode production",
     "lint": "npm run lint:js",
@@ -12,7 +11,9 @@
     "format": "prettier --write src/",
     "lint-staged": "lint-staged",
     "prepare": "husky",
-    "pre-commit": "lint-staged"
+    "pre-commit": "lint-staged",
+    "test": "node --experimental-loader ./examples/test-loader.mjs ./examples/run-tests-node.mjs",
+    "test:browser": "echo '打开 http://localhost:9000/examples/tests.html 运行浏览器测试'"
   },
   "keywords": [],
   "author": "",

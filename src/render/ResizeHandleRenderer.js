@@ -21,6 +21,16 @@ export class ResizeHandleRenderer {
         this.#resizeLine = type ? { type, index, position } : null;
     }
 
+    /** 清除调整线状态 */
+    clearResizeLine() {
+        this.#resizeLine = null;
+    }
+
+    /** 获取当前调整线状态 */
+    getResizeLine() {
+        return this.#resizeLine;
+    }
+
     /**
      * 绘制调整线虚线
      * @param {CanvasRenderingContext2D} ctx

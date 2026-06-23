@@ -132,9 +132,6 @@ export class HeaderRenderer {
      */
     #renderHeaderRegion(ctx, sheet, opts) {
         const { vt, rc, clipX, clipY, clipW, clipH, rowH, defaultStyle, headerFont, nestedCount, range, fixedCols, isFrozen } = opts;
-        const scrollX = isFrozen ? 0 : vt.scrollX;
-        const frozenColsW = vt.frozenColsW;
-        const dataViewW = (!isFrozen && frozenColsW > 0) ? clipW + frozenColsW : clipW;
 
         ctx.save();
         ctx.beginPath();
@@ -142,12 +139,12 @@ export class HeaderRenderer {
         ctx.clip();
 
         if (nestedCount > 0) {
-            const sc = isFrozen ? 0 : Math.max(fixedCols, rc.colAt(scrollX));
-            const ec = isFrozen ? Math.min(rc.colAt(clipW) + 1, rc.colCount) : Math.min(rc.colAt(scrollX + dataViewW) + 1, rc.colCount);
+            const sc = this.#calcStartCol(vt, rc, fixedCols, isFrozen, clipW);
+            const ec = this.#calcEndCol(vt, rc, fixedCols, isFrozen, clipW);
             this.#renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle);
         } else {
-            const startCol = isFrozen ? 0 : Math.max(fixedCols, rc.colAt(scrollX));
-            const endCol = isFrozen ? fixedCols : Math.min(rc.colAt(scrollX + dataViewW) + 1, rc.colCount);
+            const startCol = this.#calcStartCol(vt, rc, fixedCols, isFrozen, clipW);
+            const endCol = this.#calcEndCol(vt, rc, fixedCols, isFrozen, clipW);
             for (let c = startCol; c < endCol; c++) {
                 const w = rc.getColWidth(c);
                 if (w <= 0) continue;
@@ -164,14 +161,61 @@ export class HeaderRenderer {
     }
 
     /**
+     * 计算可见起始列号
+     *
+     * 冻结区域：从第0列开始到 fixedCols
+     * 非冻结区域：根据 scrollX 偏移计算第一个可见的非冻结列
+     *
+     * 坐标推导：
+     * - 非冻结列 c 在视口中的位置: viewX = headerW + colX(c) - scrollX
+     * - 非冻结区域起点: headerW + frozenColsW
+     * - 要求 viewX >= headerW + frozenColsW
+     * - 即 colX(c) >= frozenColsW + scrollX
+     */
+    #calcStartCol(vt, rc, fixedCols, isFrozen, clipW) {
+        if (isFrozen) return 0;
+
+        const scrollX = vt.scrollX;
+        const frozenColsW = vt.frozenColsW;
+        const dataOffset = frozenColsW + scrollX;
+        return Math.max(fixedCols, rc.colAt(dataOffset));
+    }
+
+    /**
+     * 计算可见结束列号（不包含）
+     *
+     * 冻结区域：到 fixedCols 为止
+     * 非冻结区域：根据 scrollX + frozenColsW + clipW 计算最后一个可见列+1
+     *
+     * dataViewW = clipW（非冻结区域的视口宽度 = 数据坐标系的宽度）
+     */
+    #calcEndCol(vt, rc, fixedCols, isFrozen, clipW) {
+        if (isFrozen) return fixedCols;
+
+        const scrollX = vt.scrollX;
+        const frozenColsW = vt.frozenColsW;
+        const dataViewW = clipW;
+        const dataEnd = frozenColsW + scrollX + dataViewW;
+        return Math.min(rc.colAt(dataEnd) + 1, rc.colCount);
+    }
+
+    /**
      * 渲染嵌套多层列头
+     *
+     * 核心原则：每个嵌套单元格的坐标必须通过 ViewportTransform 统一转换，
+     * 不能手动计算偏移。冻结/非冻结区域的区别由 VT 内部处理。
+     *
+     * 关键修复点：
+     * 1. colspan 项的可见部分裁剪：只绘制 [visStart, visEnd] 范围内的部分
+     * 2. 坐标统一使用 vt.colToViewX() / vt.colRightToViewX()
+     * 3. 层分隔线使用实际可见范围而非 sc/ec 边界
      */
     #renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle) {
         const nestedCount = sheet.getNestedHeaderRowCount();
+        const isFrozenRegion = sc === 0;
 
         for (let layerIdx = 0; layerIdx < nestedCount; layerIdx++) {
             const layerY = layerIdx * rowH;
-
             const row = sheet.nestedHeaders[layerIdx];
             if (!Array.isArray(row)) continue;
 
@@ -185,16 +229,17 @@ export class HeaderRenderer {
                 const endCol = consumed + colspan - 1;
                 consumed += colspan;
 
-                if (endCol < sc || startCol > ec) continue;
-
-                let visibleStartCol = startCol;
-                while (visibleStartCol <= endCol && rc.getColWidth(visibleStartCol) <= 0) {
-                    visibleStartCol++;
-                }
-                if (visibleStartCol > endCol) continue;
+                if (endCol < sc || startCol >= ec) continue;
 
                 const visStart = Math.max(startCol, sc);
                 const visEnd = Math.min(endCol, ec);
+
+                let visibleStartCol = visStart;
+                while (visibleStartCol <= visEnd && rc.getColWidth(visibleStartCol) <= 0) {
+                    visibleStartCol++;
+                }
+                if (visibleStartCol > visEnd) continue;
+
                 const x = vt.colToViewX(visStart);
                 const rightX = vt.colRightToViewX(visEnd);
                 const totalW = rightX - x;
@@ -202,11 +247,9 @@ export class HeaderRenderer {
                 if (totalW <= 0) continue;
 
                 const isSource = this.dragRenderer.isColumnSource(startCol);
-                const highlighted = false;
+                this.#drawHeaderCell(ctx, x, layerY, totalW, rowH, isSource, false, defaultStyle);
 
-                this.#drawHeaderCell(ctx, x, layerY, totalW, rowH, isSource, highlighted, defaultStyle);
-
-                if (label) {
+                if (label && !(colspan > 1 && !isFrozenRegion && startCol < sc)) {
                     this.#drawHeaderText(ctx, label, x + HEADER_COL_PADDING, layerY + rowH - 8, null, headerFont);
                 }
 
@@ -214,9 +257,31 @@ export class HeaderRenderer {
             }
 
             if (layerIdx < nestedCount - 1) {
-                const leftX = vt.colToViewX(sc);
-                const rightX = vt.colRightToViewX(ec - 1);
-                this.#drawSeparator(ctx, leftX, layerY + rowH, rightX, layerY + rowH);
+                this.#drawNestedLayerSeparator(ctx, vt, rc, sc, ec, layerY + rowH);
+            }
+        }
+    }
+
+    /**
+     * 绘制嵌套层之间的水平分隔线
+     * 只在实际有可见内容的范围内绘制
+     */
+    #drawNestedLayerSeparator(ctx, vt, rc, sc, ec, y) {
+        let leftmostVisible = Infinity;
+        let rightmostVisible = -Infinity;
+
+        for (let c = sc; c <= ec; c++) {
+            if (rc.getColWidth(c) > 0) {
+                leftmostVisible = Math.min(leftmostVisible, c);
+                rightmostVisible = Math.max(rightmostVisible, c);
+            }
+        }
+
+        if (leftmostVisible <= rightmostVisible) {
+            const leftX = vt.colToViewX(leftmostVisible);
+            const rightX = vt.colRightToViewX(rightmostVisible);
+            if (rightX > leftX) {
+                this.#drawSeparator(ctx, leftX, y, rightX, y);
             }
         }
     }
