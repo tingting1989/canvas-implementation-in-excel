@@ -1,16 +1,16 @@
-import { BaseLayer } from '../BaseLayer.js';
+import { BaseLayer } from "../BaseLayer.js";
 
 export class UILayer extends BaseLayer {
     constructor() {
-        super('ui', 4);
+        super("ui", 4);
 
         this.debugMode = false;
     }
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch('frozenOffset', () => {});
-        this.watch('editor', () => {});
+        this.watch("frozenOffset", () => {});
+        this.watch("editor", () => {});
     }
 
     render(ctx, sheet, viewport, options = {}) {
@@ -36,7 +36,7 @@ export class UILayer extends BaseLayer {
 
     #renderFreezeLines(ctx, headerW, headerH, frozenColsW, frozenRowsH, viewW, viewH) {
         ctx.save();
-        ctx.strokeStyle = '#217346';
+        ctx.strokeStyle = "#217346";
         ctx.lineWidth = 2;
 
         if (frozenColsW > 0) {
@@ -62,8 +62,8 @@ export class UILayer extends BaseLayer {
         const layers = options.layers || [];
 
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
-        ctx.font = '12px monospace';
+        ctx.fillStyle = "rgba(255, 0, 0, 0.8)";
+        ctx.font = "12px monospace";
 
         let y = 20;
         ctx.fillText(`[UILayer Debug] Total Layers: ${layers.length}`, 10, y);
@@ -71,12 +71,8 @@ export class UILayer extends BaseLayer {
         for (const layer of layers) {
             y += 16;
             const info = layer.getDebugInfo();
-            const status = layer.dirty ? 'DIRTY' : 'CLEAN';
-            ctx.fillText(
-                `  ${info.name} (z:${info.zIndex}) ${status} renders:${layer.renderCount}`,
-                10,
-                y
-            );
+            const status = layer.dirty ? "DIRTY" : "CLEAN";
+            ctx.fillText(`  ${info.name} (z:${info.zIndex}) ${status} renders:${layer.renderCount}`, 10, y);
         }
 
         ctx.restore();

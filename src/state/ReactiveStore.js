@@ -1,6 +1,4 @@
-const raf = typeof requestAnimationFrame === 'function'
-    ? requestAnimationFrame
-    : (fn) => setTimeout(fn, 16);
+const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (fn) => setTimeout(fn, 16);
 
 export class Scheduler {
     constructor() {
@@ -12,7 +10,7 @@ export class Scheduler {
 
     queueJob(job) {
         if (job.id !== undefined) {
-            const exists = this._queue.some(j => j.id === job.id);
+            const exists = this._queue.some((j) => j.id === job.id);
             if (exists) return;
         }
         this._queue.push(job);
@@ -37,7 +35,7 @@ export class Scheduler {
             try {
                 job.run();
             } catch (err) {
-                console.error('[Scheduler] job error:', err);
+                console.error("[Scheduler] job error:", err);
             }
         }
 
@@ -45,7 +43,7 @@ export class Scheduler {
     }
 
     nextTick() {
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
             if (this._queue.length === 0) {
                 resolve();
                 return;
@@ -62,7 +60,7 @@ export class Scheduler {
     }
 
     cancel() {
-        if (this._pendingRaf && typeof cancelAnimationFrame === 'function') {
+        if (this._pendingRaf && typeof cancelAnimationFrame === "function") {
             cancelAnimationFrame(this._rafId);
         }
         this._pendingRaf = false;
@@ -85,7 +83,7 @@ export class ReactiveStore {
         this._proxyMap = new WeakMap();
         this._scheduler = options.scheduler || new Scheduler();
 
-        this.state = this._createProxy(initialState, '');
+        this.state = this._createProxy(initialState, "");
     }
 
     _createProxy(target, basePath) {
@@ -110,7 +108,7 @@ export class ReactiveStore {
 
                 const value = obj[key];
 
-                if (typeof value === 'object' && value !== null) {
+                if (typeof value === "object" && value !== null) {
                     let proxy = self._proxyMap.get(value);
                     if (!proxy) {
                         proxy = self._createProxy(value, path);
@@ -139,7 +137,7 @@ export class ReactiveStore {
                     self._trigger(path, value, old);
                 }
                 return true;
-            }
+            },
         });
     }
 
@@ -178,15 +176,15 @@ export class ReactiveStore {
                     } catch (err) {
                         console.error(`[ReactiveStore] watcher error on "${path}":`, err);
                     }
-                }
+                },
             });
         }
     }
 
     _pathsMatch(changedPath, watchPath) {
         if (changedPath === watchPath) return true;
-        if (changedPath.startsWith(watchPath + '.')) return true;
-        if (watchPath.startsWith(changedPath + '.')) return true;
+        if (changedPath.startsWith(watchPath + ".")) return true;
+        if (watchPath.startsWith(changedPath + ".")) return true;
         return false;
     }
 
@@ -217,7 +215,7 @@ export class ReactiveStore {
             deps: new Set(),
             dirty: false,
             cachedValue: undefined,
-            unwatchers: []
+            unwatchers: [],
         };
 
         this._activeEffect = entry;
@@ -227,12 +225,16 @@ export class ReactiveStore {
         this._setValueByPath(this._raw, path, entry.cachedValue);
 
         for (const dep of entry.deps) {
-            const effect = { deps: new Set(), sync: true, run: () => {
-                if (!entry.dirty) {
-                    entry.dirty = true;
-                    this._trigger(path, undefined, entry.cachedValue);
-                }
-            }};
+            const effect = {
+                deps: new Set(),
+                sync: true,
+                run: () => {
+                    if (!entry.dirty) {
+                        entry.dirty = true;
+                        this._trigger(path, undefined, entry.cachedValue);
+                    }
+                },
+            };
 
             if (!this._watchers.has(dep)) {
                 this._watchers.set(dep, new Set());
@@ -282,7 +284,7 @@ export class ReactiveStore {
     }
 
     _getValueByPath(obj, path) {
-        const keys = path.split('.');
+        const keys = path.split(".");
         let cur = obj;
         for (const k of keys) {
             if (cur == null) return undefined;
@@ -292,7 +294,7 @@ export class ReactiveStore {
     }
 
     _setValueByPath(obj, path, value) {
-        const keys = path.split('.');
+        const keys = path.split(".");
         let cur = obj;
         for (let i = 0; i < keys.length - 1; i++) {
             if (cur == null) return;

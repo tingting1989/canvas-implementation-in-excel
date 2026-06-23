@@ -1,17 +1,17 @@
-import { BaseLayer } from '../BaseLayer.js';
-import { HeaderRenderer } from '../HeaderRenderer.js';
+import { BaseLayer } from "../BaseLayer.js";
+import { HeaderRenderer } from "../HeaderRenderer.js";
 
 export class HeaderLayer extends BaseLayer {
     constructor() {
-        super('headers', 3);
+        super("headers", 3);
 
         this.headerRenderer = new HeaderRenderer();
     }
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch('frozen', () => {});
-        this.watch('viewport', () => {});
+        this.watch("frozen", () => {});
+        this.watch("viewport", () => {});
     }
 
     render(ctx, sheet, viewport, options = {}) {
@@ -19,13 +19,7 @@ export class HeaderLayer extends BaseLayer {
 
         const { viewW, viewH } = options;
 
-        this.headerRenderer.render(
-            ctx,
-            sheet,
-            viewport,
-            viewW,
-            viewH
-        );
+        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH);
 
         this.renderCount++;
     }

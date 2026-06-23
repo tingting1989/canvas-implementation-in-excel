@@ -1,4 +1,4 @@
-import { BaseLayer } from './BaseLayer.js';
+import { BaseLayer } from "./BaseLayer.js";
 
 /**
  * 图层合成器 (LayerCompositor)
@@ -21,7 +21,7 @@ export class LayerCompositor {
             dirtyRenders: 0,
             cacheHits: 0,
             lastFrameTime: 0,
-            avgFrameTime: 0
+            avgFrameTime: 0,
         };
     }
 
@@ -32,7 +32,7 @@ export class LayerCompositor {
      */
     register(layer) {
         if (!(layer instanceof BaseLayer)) {
-            throw new Error('[LayerCompositor] layer must be an instance of BaseLayer');
+            throw new Error("[LayerCompositor] layer must be an instance of BaseLayer");
         }
         if (this.layers.has(layer.name)) {
             throw new Error(`[LayerCompositor] layer "${layer.name}" already registered`);
@@ -76,7 +76,7 @@ export class LayerCompositor {
     getSortedLayers() {
         if (this._needsSort) {
             this._sortedLayers = Array.from(this.layers.values())
-                .filter(layer => layer.enabled)
+                .filter((layer) => layer.enabled)
                 .sort((a, b) => a.zIndex - b.zIndex);
             this._needsSort = false;
         }
@@ -90,7 +90,7 @@ export class LayerCompositor {
      */
     bindAllLayers(store) {
         for (const [, layer] of this.layers) {
-            if (typeof layer.bindStore === 'function') {
+            if (typeof layer.bindStore === "function") {
                 layer.bindStore(store);
             }
         }
@@ -127,7 +127,7 @@ export class LayerCompositor {
             ...options,
             viewW,
             viewH,
-            layers: sortedLayers
+            layers: sortedLayers,
         };
 
         for (const layer of sortedLayers) {
@@ -152,7 +152,6 @@ export class LayerCompositor {
                 if (mainCtx.drawImage) {
                     mainCtx.drawImage(layer.canvas, 0, 0);
                 }
-
             } catch (error) {
                 console.error(`[LayerCompositor] Error rendering layer "${layer.name}":`, error);
             }
@@ -163,15 +162,13 @@ export class LayerCompositor {
         this.stats.dirtyRenders += dirtyCount;
         this.stats.cacheHits += cacheHitCount;
         this.stats.lastFrameTime = frameTime;
-        this.stats.avgFrameTime = (
-            (this.stats.avgFrameTime * (this.stats.totalRenders - 1)) + frameTime
-        ) / this.stats.totalRenders;
+        this.stats.avgFrameTime = (this.stats.avgFrameTime * (this.stats.totalRenders - 1) + frameTime) / this.stats.totalRenders;
 
         return {
             totalLayers: sortedLayers.length,
             dirtyLayers: dirtyCount,
             cachedLayers: cacheHitCount,
-            frameTime: Math.round(frameTime * 100) / 100
+            frameTime: Math.round(frameTime * 100) / 100,
         };
     }
 
@@ -181,7 +178,7 @@ export class LayerCompositor {
      * @returns {object[]}
      */
     getDebugInfo() {
-        return this.getSortedLayers().map(layer => layer.getDebugInfo());
+        return this.getSortedLayers().map((layer) => layer.getDebugInfo());
     }
 
     /**

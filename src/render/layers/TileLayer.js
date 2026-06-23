@@ -1,10 +1,10 @@
-import { BaseLayer } from '../BaseLayer.js';
-import { TileRenderer } from '../TileRenderer.js';
-import { TileCache } from '../TileCache.js';
+import { BaseLayer } from "../BaseLayer.js";
+import { TileRenderer } from "../TileRenderer.js";
+import { TileCache } from "../TileCache.js";
 
 export class TileLayer extends BaseLayer {
     constructor(tileCache = null) {
-        super('tiles', 1);
+        super("tiles", 1);
 
         this.tileRenderer = new TileRenderer(tileCache || new TileCache());
         this.onContentReady = null;
@@ -19,9 +19,9 @@ export class TileLayer extends BaseLayer {
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch('scroll', () => {});
-        this.watch('viewport', () => {});
-        this.watch('tile', () => {});
+        this.watch("scroll", () => {});
+        this.watch("viewport", () => {});
+        this.watch("tile", () => {});
     }
 
     render(ctx, sheet, viewport, options = {}) {
@@ -33,15 +33,7 @@ export class TileLayer extends BaseLayer {
         const viewH = options.viewH;
         const useRealRows = options.useRealRows;
 
-        this.tileRenderer.render(
-            ctx,
-            sheet,
-            scrollX,
-            scrollY,
-            viewW,
-            viewH,
-            useRealRows ? { useRealRows: true } : undefined
-        );
+        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, useRealRows ? { useRealRows: true } : undefined);
 
         this.renderCount++;
     }

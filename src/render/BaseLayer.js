@@ -18,10 +18,10 @@ export class BaseLayer {
      * @param {number} zIndex - 图层叠放顺序（数值越大越在上层）
      */
     constructor(name, zIndex) {
-        if (!name || typeof name !== 'string') {
+        if (!name || typeof name !== "string") {
             throw new Error(`[BaseLayer] name must be a non-empty string`);
         }
-        if (typeof zIndex !== 'number') {
+        if (typeof zIndex !== "number") {
             throw new Error(`[BaseLayer] zIndex must be a number`);
         }
 
@@ -91,11 +91,11 @@ export class BaseLayer {
      */
     initCanvas(width, height) {
         if (!this.canvas) {
-            this.canvas = document.createElement('canvas');
-            this.ctx = this.canvas.getContext('2d');
+            this.canvas = document.createElement("canvas");
+            this.ctx = this.canvas.getContext("2d");
         }
 
-        const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+        const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
         const physicalWidth = Math.round(width * dpr);
         const physicalHeight = Math.round(height * dpr);
 
@@ -165,7 +165,7 @@ export class BaseLayer {
             hasCanvas: !!this.canvas,
             canvasSize: this.canvas ? { w: this.canvas.width, h: this.canvas.height } : null,
             watcherCount: Array.from(this._watchers.values()).reduce((sum, arr) => sum + arr.length, 0),
-            hasStore: !!this._store
+            hasStore: !!this._store,
         };
     }
 }

@@ -60,9 +60,9 @@ export class RenderEngine {
             frozen: { rows: 0, cols: 0 },
             frozenOffset: { colsWidth: 0, rowsHeight: 0 },
             selection: { ranges: [], activeRange: null, merges: [] },
-            editor: { visible: false, row: -1, col: -1, value: '' },
+            editor: { visible: false, row: -1, col: -1, value: "" },
             viewport: { width: 0, height: 0 },
-            tile: { size: 256, cacheMax: 512 }
+            tile: { size: 256, cacheMax: 512 },
         });
 
         this.compositor = new LayerCompositor();
@@ -216,7 +216,7 @@ export class RenderEngine {
         const composeOptions = {
             scrollX: sx,
             scrollY: sy,
-            isPaginationActive
+            isPaginationActive,
         };
 
         this.compositor.compose(ctx, sheet, vt, viewW, viewH, composeOptions);

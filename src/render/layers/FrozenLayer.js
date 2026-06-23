@@ -1,11 +1,11 @@
-import { BaseLayer } from '../BaseLayer.js';
-import { TileRenderer } from '../TileRenderer.js';
-import { TileCache } from '../TileCache.js';
-import { OverlayRenderer } from '../OverlayRenderer.js';
+import { BaseLayer } from "../BaseLayer.js";
+import { TileRenderer } from "../TileRenderer.js";
+import { TileCache } from "../TileCache.js";
+import { OverlayRenderer } from "../OverlayRenderer.js";
 
 export class FrozenLayer extends BaseLayer {
     constructor() {
-        super('frozen', 2.5);
+        super("frozen", 2.5);
 
         this.tileRenderer = new TileRenderer(new TileCache());
         this.overlayRenderer = new OverlayRenderer();
@@ -16,9 +16,9 @@ export class FrozenLayer extends BaseLayer {
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch('frozen', () => {});
-        this.watch('frozenOffset', () => {});
-        this.watch('scroll', () => {});
+        this.watch("frozen", () => {});
+        this.watch("frozenOffset", () => {});
+        this.watch("scroll", () => {});
     }
 
     #checkFrozenStateChange(sheet) {
@@ -69,7 +69,7 @@ export class FrozenLayer extends BaseLayer {
                 frozenColsW + headerW,
                 viewH,
                 viewport,
-                tileOptions
+                tileOptions,
             );
         }
 
@@ -86,7 +86,7 @@ export class FrozenLayer extends BaseLayer {
                 viewW,
                 frozenRowsH + headerH,
                 viewport,
-                tileOptions
+                tileOptions,
             );
         }
 
@@ -103,7 +103,7 @@ export class FrozenLayer extends BaseLayer {
                 frozenColsW + headerW,
                 frozenRowsH + headerH,
                 viewport,
-                tileOptions
+                tileOptions,
             );
         }
 
