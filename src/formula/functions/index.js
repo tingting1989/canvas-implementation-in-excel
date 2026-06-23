@@ -36,12 +36,12 @@
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
 
 // 导入所有功能模块
-import { mathFunctions } from './math.js';
-import { statisticalFunctions } from './statistical.js';
-import { logicalFunctions } from './logical.js';
-import { textFunctions } from './text.js';
-import { conditionalFunctions } from './conditional.js';
-import { lookupFunctions } from './lookup.js';
+import { mathFunctions } from "./math.js";
+import { statisticalFunctions } from "./statistical.js";
+import { logicalFunctions } from "./logical.js";
+import { textFunctions } from "./text.js";
+import { conditionalFunctions } from "./conditional.js";
+import { lookupFunctions } from "./lookup.js";
 
 /**
  * 函数注册表（内部使用）
@@ -56,14 +56,14 @@ const FUNCTIONS_MAP = new Map();
 class FunctionRegistry {
     constructor() {
         this._functions = FUNCTIONS_MAP;
-        
+
         // 自动注册所有内置函数模块
-        this._registerModule('Math', mathFunctions);
-        this._registerModule('Statistical', statisticalFunctions);
-        this._registerModule('Logical', logicalFunctions);
-        this._registerModule('Text', textFunctions);
-        this._registerModule('Conditional', conditionalFunctions);
-        this._registerModule('Lookup', lookupFunctions);
+        this._registerModule("Math", mathFunctions);
+        this._registerModule("Statistical", statisticalFunctions);
+        this._registerModule("Logical", logicalFunctions);
+        this._registerModule("Text", textFunctions);
+        this._registerModule("Conditional", conditionalFunctions);
+        this._registerModule("Lookup", lookupFunctions);
     }
 
     /**
@@ -75,9 +75,9 @@ class FunctionRegistry {
      */
     _registerModule(moduleName, functionsObj) {
         for (const [name, fn] of Object.entries(functionsObj)) {
-            this.register(name, fn, { 
-                category: 'builtin',
-                module: moduleName 
+            this.register(name, fn, {
+                category: "builtin",
+                module: moduleName,
             });
         }
     }
@@ -92,44 +92,30 @@ class FunctionRegistry {
      * @param {string} [options.module] - 所属模块
      */
     register(name, fn, options = {}) {
-        if (typeof name !== 'string' || name.trim() === '') {
-            errorHandler.throw(
-                ERROR_CODE.FORMULA_INVALID_FUNCTION_NAME,
-                '函数名必须为非空字符串'
-            );
+        if (typeof name !== "string" || name.trim() === "") {
+            errorHandler.throw(ERROR_CODE.FORMULA_INVALID_FUNCTION_NAME, "函数名必须为非空字符串");
         }
-        
-        if (typeof fn !== 'function') {
-            errorHandler.throw(
-                ERROR_CODE.FORMULA_INVALID_FUNCTION,
-                '函数必须是 Function 类型'
-            );
+
+        if (typeof fn !== "function") {
+            errorHandler.throw(ERROR_CODE.FORMULA_INVALID_FUNCTION, "函数必须是 Function 类型");
         }
 
         const upperName = name.toUpperCase();
-        
+
         if (this._functions.has(upperName)) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_FUNCTION_OVERRIDE,
-                `函数 ${upperName} 已存在，将被覆盖`,
-                { functionName: upperName }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_FUNCTION_OVERRIDE, `函数 ${upperName} 已存在，将被覆盖`, { functionName: upperName });
         }
 
         // 包装函数，添加异常捕获
-        const wrappedFn = function(...args) {
+        const wrappedFn = function (...args) {
             try {
                 return fn.apply(this, args);
             } catch (error) {
-                errorHandler.handle(
-                    ERROR_CODE.FORMULA_EVAL_ERROR,
-                    `函数 ${upperName} 执行失败`,
-                    { 
-                        functionName: upperName, 
-                        error: error.message,
-                        stack: error.stack 
-                    }
-                );
+                errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${upperName} 执行失败`, {
+                    functionName: upperName,
+                    error: error.message,
+                    stack: error.stack,
+                });
                 return "#ERROR!";
             }
         };
@@ -137,9 +123,9 @@ class FunctionRegistry {
         this._functions.set(upperName, {
             implementation: wrappedFn,
             originalImplementation: fn,
-            category: options.category || 'custom',
-            module: options.module || 'unknown',
-            registeredAt: Date.now()
+            category: options.category || "custom",
+            module: options.module || "unknown",
+            registeredAt: Date.now(),
         });
     }
 
@@ -172,21 +158,17 @@ class FunctionRegistry {
      */
     unregister(name) {
         const upperName = name.toUpperCase();
-        
+
         if (this._functions.has(upperName)) {
             const entry = this._functions.get(upperName);
-            
-            if (entry.category === 'builtin') {
-                errorHandler.warn(
-                    ERROR_CODE.FORMULA_FUNCTION_OVERRIDE,
-                    `尝试注销内置函数 ${upperName}`,
-                    { functionName: upperName }
-                );
+
+            if (entry.category === "builtin") {
+                errorHandler.warn(ERROR_CODE.FORMULA_FUNCTION_OVERRIDE, `尝试注销内置函数 ${upperName}`, { functionName: upperName });
             }
-            
+
             return this._functions.delete(upperName);
         }
-        
+
         return false;
     }
 
@@ -207,15 +189,15 @@ class FunctionRegistry {
      */
     getInfo(name) {
         const entry = this._functions.get(name.toUpperCase());
-        
+
         if (!entry) return undefined;
-        
+
         return {
             name: name.toUpperCase(),
             category: entry.category,
             module: entry.module,
             registeredAt: new Date(entry.registeredAt).toISOString(),
-            isBuiltin: entry.category === 'builtin'
+            isBuiltin: entry.category === "builtin",
         };
     }
 
@@ -227,9 +209,9 @@ class FunctionRegistry {
     getStats() {
         let builtinCount = 0;
         let customCount = 0;
-        
+
         for (const [, entry] of this._functions) {
-            if (entry.category === 'builtin') {
+            if (entry.category === "builtin") {
                 builtinCount++;
             } else {
                 customCount++;
@@ -240,11 +222,7 @@ class FunctionRegistry {
             total: this._functions.size,
             builtin: builtinCount,
             custom: customCount,
-            modules: [...new Set(
-                [...this._functions.values()]
-                    .filter(e => e.module !== 'unknown')
-                    .map(e => e.module)
-            )]
+            modules: [...new Set([...this._functions.values()].filter((e) => e.module !== "unknown").map((e) => e.module))],
         };
     }
 }
@@ -284,7 +262,7 @@ export const FUNCTIONS = registry;
  * ```
  */
 export function registerFunction(name, fn) {
-    registry.register(name, fn, { category: 'custom' });
+    registry.register(name, fn, { category: "custom" });
 }
 
 /**
@@ -326,5 +304,5 @@ export function getFunctionStats() {
 }
 
 // 初始化日志
-console.log('[FormulaEngine] ✅ 函数注册表初始化完成');
+console.log("[FormulaEngine] ✅ 函数注册表初始化完成");
 console.log(`  统计信息:`, registry.getStats());

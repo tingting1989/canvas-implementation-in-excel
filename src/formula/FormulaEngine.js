@@ -94,11 +94,13 @@ export class FormulaEngine {
         try {
             ast = parseFormula(raw);
         } catch (parseError) {
-            errorHandler.handle(
-                ERROR_CODE.FORMULA_PARSE_ERROR,
-                `公式解析失败: ${formulaStr}`,
-                { formulaStr, sheetName: sheet.name, row, col, error: parseError }
-            );
+            errorHandler.handle(ERROR_CODE.FORMULA_PARSE_ERROR, `公式解析失败: ${formulaStr}`, {
+                formulaStr,
+                sheetName: sheet.name,
+                row,
+                col,
+                error: parseError,
+            });
             return "#PARSE!";
         }
 
@@ -109,11 +111,13 @@ export class FormulaEngine {
         try {
             result = this.evaluator.evaluate(ast, sheet, key);
         } catch (evalError) {
-            errorHandler.handle(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                `公式求值失败: ${formulaStr}`,
-                { formulaStr, sheetName: sheet.name, row, col, error: evalError }
-            );
+            errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `公式求值失败: ${formulaStr}`, {
+                formulaStr,
+                sheetName: sheet.name,
+                row,
+                col,
+                error: evalError,
+            });
             result = "#VALUE!";
         }
 

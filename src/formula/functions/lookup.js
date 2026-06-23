@@ -14,7 +14,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
-import { _flatten, _toNum, _validateArgs } from './utils/index.js';
+import { _flatten, _toNum, _validateArgs } from "./utils/index.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）
@@ -34,8 +34,8 @@ export const lookupFunctions = {
      * =VLOOKUP("苹果", A1:D10, 3, FALSE)    // 精确匹配查找"苹果"，返回第3列
      * =VLOOKUP(100, A1:E20, 2, TRUE)       // 近似匹配查找<=100的最大值
      */
-    'VLOOKUP': (args) => {
-        if (!_validateArgs(args, 3, 4, 'VLOOKUP')) return "#VALUE!";
+    VLOOKUP: (args) => {
+        if (!_validateArgs(args, 3, 4, "VLOOKUP")) return "#VALUE!";
 
         const lookupValue = args[0];
         const tableArray = args[1];
@@ -44,35 +44,25 @@ export const lookupFunctions = {
 
         // 参数校验
         if (isNaN(colIndex) || colIndex < 1) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'VLOOKUP: col_index_num 必须是 >=1 的整数',
-                { value: args[2], functionName: 'VLOOKUP' }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "VLOOKUP: col_index_num 必须是 >=1 的整数", { value: args[2], functionName: "VLOOKUP" });
             return "#VALUE!";
         }
 
         // 展平表格（假设是二维数组）
         let flatTable;
         if (Array.isArray(tableArray)) {
-            flatTable = Array.isArray(tableArray[0]) 
-                ? tableArray 
-                : [tableArray];  // 一维数组转二维
+            flatTable = Array.isArray(tableArray[0]) ? tableArray : [tableArray]; // 一维数组转二维
         } else {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'VLOOKUP: table_array 必须是数组',
-                { functionName: 'VLOOKUP' }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "VLOOKUP: table_array 必须是数组", { functionName: "VLOOKUP" });
             return "#VALUE!";
         }
 
         if (colIndex > flatTable[0].length) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                `VLOOKUP: col_index_num (${colIndex}) 超出表格列数 (${flatTable[0].length})`,
-                { colIndex, tableCols: flatTable[0].length, functionName: 'VLOOKUP' }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `VLOOKUP: col_index_num (${colIndex}) 超出表格列数 (${flatTable[0].length})`, {
+                colIndex,
+                tableCols: flatTable[0].length,
+                functionName: "VLOOKUP",
+            });
             return "#REF!";
         }
 
@@ -89,8 +79,7 @@ export const lookupFunctions = {
             } else {
                 // 近似匹配（查找 <= lookupValue 的最大值）
                 if (_toNum(firstColValue) <= _toNum(lookupValue)) {
-                    if (i === flatTable.length - 1 || 
-                        _toNum(flatTable[i + 1][0]) > _toNum(lookupValue)) {
+                    if (i === flatTable.length - 1 || _toNum(flatTable[i + 1][0]) > _toNum(lookupValue)) {
                         return row[colIndex - 1];
                     }
                 }
@@ -99,5 +88,5 @@ export const lookupFunctions = {
 
         // 未找到
         return "#N/A";
-    }
+    },
 };

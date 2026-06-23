@@ -17,7 +17,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
-import { _validateArgs } from './utils/index.js';
+import { _validateArgs } from "./utils/index.js";
 
 /**
  * 将值转换为布尔值（用于逻辑运算）
@@ -34,25 +34,25 @@ import { _validateArgs } from './utils/index.js';
  * @returns {boolean|*} 布尔值或错误值
  */
 function _toBoolean(value) {
-    if (typeof value === 'boolean') return value;
-    
-    if (typeof value === 'number') {
+    if (typeof value === "boolean") return value;
+
+    if (typeof value === "number") {
         return value !== 0;
     }
-    
-    if (typeof value === 'string') {
+
+    if (typeof value === "string") {
         const upperValue = value.toUpperCase().trim();
-        if (upperValue === 'TRUE') return true;
-        if (upperValue === 'FALSE') return false;
+        if (upperValue === "TRUE") return true;
+        if (upperValue === "FALSE") return false;
         // 其他非空字符串视为 true（Excel 行为）
-        return value !== '';
+        return value !== "";
     }
-    
+
     if (value === null || value === undefined) return false;
-    
+
     // 错误值传播
-    if (typeof value === 'string' && value.startsWith('#')) return value;
-    
+    if (typeof value === "string" && value.startsWith("#")) return value;
+
     // 其他情况视为 true
     return true;
 }
@@ -76,13 +76,13 @@ export const logicalFunctions = {
      * =IF(A1="", "未填写", A1)         // 空单元格提示
      * =IF(AND(A1>0, B1>0), "都大于0", "不满足")  // 复合条件
      */
-    'IF': (args) => {
-        if (!_validateArgs(args, 2, 3, 'IF')) return "#VALUE!";
-        
+    IF: (args) => {
+        if (!_validateArgs(args, 2, 3, "IF")) return "#VALUE!";
+
         const condition = args[0];
         const trueValue = args[1];
         const falseValue = args[2] !== undefined ? args[2] : false;
-        
+
         return condition ? trueValue : falseValue;
     },
 
@@ -109,32 +109,28 @@ export const logicalFunctions = {
      * =AND(1, 0, 3)                  // 返回 FALSE（0=FALSE）
      * =AND("TRUE", "yes", 1)         // 返回 TRUE
      */
-    'AND': (args) => {
-        if (!_validateArgs(args, 1, Infinity, 'AND')) return "#VALUE!";
-        
+    AND: (args) => {
+        if (!_validateArgs(args, 1, Infinity, "AND")) return "#VALUE!";
+
         for (let i = 0; i < args.length; i++) {
             const result = _toBoolean(args[i]);
-            
+
             // 错误值传播
-            if (typeof result === 'string' && result.startsWith('#')) {
-                errorHandler.warn(
-                    ERROR_CODE.FORMULA_EVAL_ERROR,
-                    `AND: 第 ${i + 1} 个参数是错误值`,
-                    { 
-                        error: result,
-                        index: i,
-                        functionName: 'AND'
-                    }
-                );
+            if (typeof result === "string" && result.startsWith("#")) {
+                errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `AND: 第 ${i + 1} 个参数是错误值`, {
+                    error: result,
+                    index: i,
+                    functionName: "AND",
+                });
                 return result;
             }
-            
+
             // 短路求值：遇到 FALSE 立即返回
             if (result === false) {
                 return false;
             }
         }
-        
+
         return true;
     },
 
@@ -161,32 +157,28 @@ export const logicalFunctions = {
      * =OR(1, 0, 0)                  // 返回 TRUE
      * =OR("", NULL, 0)              // 返回 FALSE（空/null/0 都算 FALSE）
      */
-    'OR': (args) => {
-        if (!_validateArgs(args, 1, Infinity, 'OR')) return "#VALUE!";
-        
+    OR: (args) => {
+        if (!_validateArgs(args, 1, Infinity, "OR")) return "#VALUE!";
+
         for (let i = 0; i < args.length; i++) {
             const result = _toBoolean(args[i]);
-            
+
             // 错误值传播
-            if (typeof result === 'string' && result.startsWith('#')) {
-                errorHandler.warn(
-                    ERROR_CODE.FORMULA_EVAL_ERROR,
-                    `OR: 第 ${i + 1} 个参数是错误值`,
-                    { 
-                        error: result,
-                        index: i,
-                        functionName: 'OR'
-                    }
-                );
+            if (typeof result === "string" && result.startsWith("#")) {
+                errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `OR: 第 ${i + 1} 个参数是错误值`, {
+                    error: result,
+                    index: i,
+                    functionName: "OR",
+                });
                 return result;
             }
-            
+
             // 短路求值：遇到 TRUE 立即返回
             if (result === true) {
                 return true;
             }
         }
-        
+
         return false;
     },
 
@@ -213,24 +205,20 @@ export const logicalFunctions = {
      * =NOT(A1>100)                   // 当 A1<=100 时返回 TRUE
      * =NOT(AND(A1>0, B1<50))        // 非(A1>0 且 B1<50)
      */
-    'NOT': (args) => {
-        if (!_validateArgs(args, 1, 1, 'NOT')) return "#VALUE!";
-        
+    NOT: (args) => {
+        if (!_validateArgs(args, 1, 1, "NOT")) return "#VALUE!";
+
         const result = _toBoolean(args[0]);
-        
+
         // 错误值传播
-        if (typeof result === 'string' && result.startsWith('#')) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'NOT: 参数是错误值',
-                { 
-                    error: result,
-                    functionName: 'NOT'
-                }
-            );
+        if (typeof result === "string" && result.startsWith("#")) {
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "NOT: 参数是错误值", {
+                error: result,
+                functionName: "NOT",
+            });
             return result;
         }
-        
+
         return !result;
-    }
+    },
 };

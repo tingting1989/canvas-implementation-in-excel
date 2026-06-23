@@ -19,7 +19,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
-import { _validateArgs } from './utils/index.js';
+import { _validateArgs } from "./utils/index.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）
@@ -39,17 +39,13 @@ export const textFunctions = {
      * =UPPER("hello world")      // 返回 "HELLO WORLD"
      * =UPPER(A1)                 // 将 A1 单元格内容转大写
      */
-    'UPPER': (args) => {
-        if (!_validateArgs(args, 1, 1, 'UPPER')) return "#VALUE!";
-        
+    UPPER: (args) => {
+        if (!_validateArgs(args, 1, 1, "UPPER")) return "#VALUE!";
+
         try {
             return String(args[0] ?? "").toUpperCase();
         } catch (e) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'UPPER: 无法转换为大写',
-                { error: e.message, functionName: 'UPPER' }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "UPPER: 无法转换为大写", { error: e.message, functionName: "UPPER" });
             return "#VALUE!";
         }
     },
@@ -68,17 +64,13 @@ export const textFunctions = {
      * =LOWER("HELLO WORLD")      // 返回 "hello world"
      * =LOWER(A1)                 // 将 A1 单元格内容转小写
      */
-    'LOWER': (args) => {
-        if (!_validateArgs(args, 1, 1, 'LOWER')) return "#VALUE!";
-        
+    LOWER: (args) => {
+        if (!_validateArgs(args, 1, 1, "LOWER")) return "#VALUE!";
+
         try {
             return String(args[0] ?? "").toLowerCase();
         } catch (e) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'LOWER: 无法转换为小写',
-                { error: e.message, functionName: 'LOWER' }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "LOWER: 无法转换为小写", { error: e.message, functionName: "LOWER" });
             return "#VALUE!";
         }
     },
@@ -99,17 +91,13 @@ export const textFunctions = {
      * =CONCAT(A1, B1, C1)             // 连接三个单元格的内容
      * =CONCAT(A1:A10)                  // 连接整个范围（Excel 2019+）
      */
-    'CONCAT': (args) => {
-        if (!_validateArgs(args, 1, Infinity, 'CONCAT')) return "#VALUE!";
-        
+    CONCAT: (args) => {
+        if (!_validateArgs(args, 1, Infinity, "CONCAT")) return "#VALUE!";
+
         try {
-            return args.map(v => String(v ?? "")).join("");
+            return args.map((v) => String(v ?? "")).join("");
         } catch (e) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'CONCAT: 字符串拼接失败',
-                { error: e.message, functionName: 'CONCAT' }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "CONCAT: 字符串拼接失败", { error: e.message, functionName: "CONCAT" });
             return "#VALUE!";
         }
     },
@@ -129,18 +117,14 @@ export const textFunctions = {
      * =CONCATENATE("Hello", " ", "World")   // 返回 "Hello World"
      * =CONCATENATE(A1, "-", B1)              // 返回 "A1值-B1值"
      */
-    'CONCATENATE': (args) => {
-        if (!_validateArgs(args, 1, Infinity, 'CONCATENATE')) return "#VALUE!";
-        
+    CONCATENATE: (args) => {
+        if (!_validateArgs(args, 1, Infinity, "CONCATENATE")) return "#VALUE!";
+
         try {
-            return args.map(v => String(v ?? "")).join("");
+            return args.map((v) => String(v ?? "")).join("");
         } catch (e) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'CONCATENATE: 字符串拼接失败',
-                { error: e.message, functionName: 'CONCATENATE' }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "CONCATENATE: 字符串拼接失败", { error: e.message, functionName: "CONCATENATE" });
             return "#VALUE!";
         }
-    }
+    },
 };

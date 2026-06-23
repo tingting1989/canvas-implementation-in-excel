@@ -24,10 +24,10 @@
 export function _flatten(arr) {
     const result = [];
     const stack = [...arr];
-    
+
     while (stack.length > 0) {
         const item = stack.pop();
-        
+
         if (Array.isArray(item)) {
             // 反向推入以保持原始顺序
             for (let i = item.length - 1; i >= 0; i--) {
@@ -37,7 +37,7 @@ export function _flatten(arr) {
             result.push(item);
         }
     }
-    
+
     return result;
 }
 
@@ -61,7 +61,7 @@ export function _flatten(arr) {
  * _toNum(undefined)   // NaN
  */
 export function _toNum(v) {
-    if (typeof v === 'number') return v;
+    if (typeof v === "number") return v;
     if (typeof v === "string" && v.trim() !== "") {
         const n = parseFloat(v);
         return isNaN(n) ? NaN : n;

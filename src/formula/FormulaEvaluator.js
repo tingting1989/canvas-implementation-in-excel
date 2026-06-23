@@ -90,17 +90,13 @@ export class FormulaEvaluator {
         const key = this.#cellKey(targetSheet.name, node.row, node.col);
 
         if (this._callStack.has(key)) {
-            errorHandler.handle(
-                ERROR_CODE.FORMULA_CIRCULAR_REFERENCE,
-                `检测到循环引用: ${key}`,
-                {
-                    circularCell: key,
-                    callStack: [...this._callStack],
-                    sheetName: targetSheet.name,
-                    row: node.row,
-                    col: node.col
-                }
-            );
+            errorHandler.handle(ERROR_CODE.FORMULA_CIRCULAR_REFERENCE, `检测到循环引用: ${key}`, {
+                circularCell: key,
+                callStack: [...this._callStack],
+                sheetName: targetSheet.name,
+                row: node.row,
+                col: node.col,
+            });
             return "#CIRCULAR!";
         }
 
@@ -117,11 +113,7 @@ export class FormulaEvaluator {
                     return result;
                 } catch (error) {
                     this._callStack.delete(key);
-                    errorHandler.handle(
-                        ERROR_CODE.FORMULA_EVAL_ERROR,
-                        `循环引用求值失败: ${key}`,
-                        { circularCell: key, error }
-                    );
+                    errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `循环引用求值失败: ${key}`, { circularCell: key, error });
                     return "#CIRCULAR!";
                 }
             }
@@ -155,20 +147,14 @@ export class FormulaEvaluator {
 
     #evalFunction(node, sheet) {
         const fnName = node.name ? node.name.toUpperCase() : node.name;
-        const fn = typeof FUNCTIONS.get === 'function' ? FUNCTIONS.get(fnName) : FUNCTIONS[fnName];
+        const fn = typeof FUNCTIONS.get === "function" ? FUNCTIONS.get(fnName) : FUNCTIONS[fnName];
 
         if (!fn) {
-            errorHandler.debug(
-                ERROR_CODE.FORMULA_FUNCTION_NOT_FOUND,
-                `函数 ${node.name} 未注册`,
-                {
-                    functionName: node.name,
-                    availableFunctions: typeof getRegisteredFunctions === 'function'
-                        ? getRegisteredFunctions().slice(0, 10)
-                        : 'N/A',
-                    sheetName: sheet?.name
-                }
-            );
+            errorHandler.debug(ERROR_CODE.FORMULA_FUNCTION_NOT_FOUND, `函数 ${node.name} 未注册`, {
+                functionName: node.name,
+                availableFunctions: typeof getRegisteredFunctions === "function" ? getRegisteredFunctions().slice(0, 10) : "N/A",
+                sheetName: sheet?.name,
+            });
             return "#NAME?";
         }
 
@@ -176,11 +162,7 @@ export class FormulaEvaluator {
         try {
             return fn(args, { sheet, workbook: this.workbook });
         } catch (fnError) {
-            errorHandler.handle(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                `函数 ${node.name} 执行失败`,
-                { functionName: node.name, args, error: fnError }
-            );
+            errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${node.name} 执行失败`, { functionName: node.name, args, error: fnError });
             return "#VALUE!";
         }
     }

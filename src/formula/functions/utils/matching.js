@@ -45,11 +45,11 @@ export function _matchCriteria(value, criteria) {
 
     const criteriaStr = String(criteria).trim();
 
-    if (criteriaStr === '') {
-        return value === '' || value === null || value === undefined;
+    if (criteriaStr === "") {
+        return value === "" || value === null || value === undefined;
     }
 
-    const operators = ['>=', '<=', '<>', '>', '<', '='];
+    const operators = [">=", "<=", "<>", ">", "<", "="];
     for (const op of operators) {
         if (criteriaStr.startsWith(op)) {
             const conditionValue = criteriaStr.substring(op.length).trim();
@@ -66,11 +66,11 @@ export function _matchCriteria(value, criteria) {
         return false;
     }
 
-    if (typeof criteriaStr === 'string') {
-        if (criteriaStr.includes('*') || criteriaStr.includes('?')) {
-            return _matchWildcard(String(value ?? ''), criteriaStr);
+    if (typeof criteriaStr === "string") {
+        if (criteriaStr.includes("*") || criteriaStr.includes("?")) {
+            return _matchWildcard(String(value ?? ""), criteriaStr);
         }
-        return String(value ?? '') === criteriaStr;
+        return String(value ?? "") === criteriaStr;
     }
 
     return value === criteria;
@@ -97,16 +97,16 @@ export function _matchCriteria(value, criteria) {
 function _compareWithOperator(value, operator, conditionValue) {
     const numCondition = parseFloat(conditionValue);
 
-    if (!isNaN(numCondition) && conditionValue.trim() !== '') {
+    if (!isNaN(numCondition) && conditionValue.trim() !== "") {
         const numValue = _toNum(value);
 
         if (isNaN(numValue)) {
             switch (operator) {
-                case '=':
-                case '==':
+                case "=":
+                case "==":
                     return false;
-                case '<>':
-                case '!=':
+                case "<>":
+                case "!=":
                     return true;
                 default:
                     return false;
@@ -114,35 +114,39 @@ function _compareWithOperator(value, operator, conditionValue) {
         }
 
         switch (operator) {
-            case '>': return numValue > numCondition;
-            case '<': return numValue < numCondition;
-            case '>=': return numValue >= numCondition;
-            case '<=': return numValue <= numCondition;
-            case '=':
-            case '==':
+            case ">":
+                return numValue > numCondition;
+            case "<":
+                return numValue < numCondition;
+            case ">=":
+                return numValue >= numCondition;
+            case "<=":
+                return numValue <= numCondition;
+            case "=":
+            case "==":
                 return Math.abs(numValue - numCondition) < 1e-10;
-            case '<>':
-            case '!=':
+            case "<>":
+            case "!=":
                 return Math.abs(numValue - numCondition) >= 1e-10;
             default:
                 return false;
         }
     } else {
-        const strValue = String(value ?? '');
+        const strValue = String(value ?? "");
         switch (operator) {
-            case '=':
-            case '==':
+            case "=":
+            case "==":
                 return strValue === conditionValue;
-            case '<>':
-            case '!=':
+            case "<>":
+            case "!=":
                 return strValue !== conditionValue;
-            case '>':
+            case ">":
                 return strValue.localeCompare(conditionValue) > 0;
-            case '<':
+            case "<":
                 return strValue.localeCompare(conditionValue) < 0;
-            case '>=':
+            case ">=":
                 return strValue.localeCompare(conditionValue) >= 0;
-            case '<=':
+            case "<=":
                 return strValue.localeCompare(conditionValue) <= 0;
             default:
                 return false;
@@ -171,10 +175,10 @@ function _compareWithOperator(value, operator, conditionValue) {
  */
 export function _matchWildcard(text, pattern) {
     const regexPattern = pattern
-        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-        .replace(/\*/g, '.*')
-        .replace(/\?/g, '.');
+        .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+        .replace(/\*/g, ".*")
+        .replace(/\?/g, ".");
 
-    const regex = new RegExp(`^${regexPattern}$`, 'i');
+    const regex = new RegExp(`^${regexPattern}$`, "i");
     return regex.test(text);
 }

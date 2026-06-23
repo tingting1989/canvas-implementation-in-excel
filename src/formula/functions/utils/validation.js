@@ -34,33 +34,23 @@ import { errorHandler, ERROR_CODE } from "../../../core/ErrorHandler.js";
  */
 export function _validateArgs(args, minArgs, maxArgs = Infinity, functionName) {
     if (!Array.isArray(args)) {
-        errorHandler.error(
-            ERROR_CODE.FORMULA_EVAL_ERROR,
-            `${functionName}: 参数必须是数组`,
-            { 
-                receivedType: typeof args, 
-                functionName 
-            }
-        );
+        errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: 参数必须是数组`, {
+            receivedType: typeof args,
+            functionName,
+        });
         return false;
     }
 
     const argCount = args.length;
 
     if (argCount < minArgs || argCount > maxArgs) {
-        const range = maxArgs === Infinity 
-            ? `至少 ${minArgs} 个` 
-            : `${minArgs}-${maxArgs} 个`;
-        
-        errorHandler.warn(
-            ERROR_CODE.FORMULA_ARGUMENT_COUNT_INVALID,
-            `${functionName} 需要 ${range}参数`,
-            { 
-                received: argCount, 
-                expected: range,
-                functionName 
-            }
-        );
+        const range = maxArgs === Infinity ? `至少 ${minArgs} 个` : `${minArgs}-${maxArgs} 个`;
+
+        errorHandler.warn(ERROR_CODE.FORMULA_ARGUMENT_COUNT_INVALID, `${functionName} 需要 ${range}参数`, {
+            received: argCount,
+            expected: range,
+            functionName,
+        });
         return false;
     }
 
@@ -85,19 +75,15 @@ export function _validateArgs(args, minArgs, maxArgs = Infinity, functionName) {
  */
 export function _validateNumericArg(args, index, paramName, functionName) {
     const value = _toNum(args[index]);
-    
+
     if (isNaN(value)) {
-        errorHandler.warn(
-            ERROR_CODE.FORMULA_EVAL_ERROR,
-            `${functionName}: ${paramName}无法转换为数值`,
-            { 
-                value: args[index],
-                index,
-                functionName 
-            }
-        );
+        errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: ${paramName}无法转换为数值`, {
+            value: args[index],
+            index,
+            functionName,
+        });
         return { valid: false };
     }
-    
+
     return { valid: true, value };
 }

@@ -15,7 +15,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
-import { _flatten, _toNum, _validateArgs, _matchCriteria, _matchWildcard } from './utils/index.js';
+import { _flatten, _toNum, _validateArgs, _matchCriteria, _matchWildcard } from "./utils/index.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）
@@ -41,8 +41,8 @@ export const conditionalFunctions = {
      * =SUMIF(B1:B10, "苹果", C1:C10)            // B列是"苹果"时，对C列求和
      * =SUMIF(A1:A10, "*张*")                    // 包含"张"字的单元格求和
      */
-    'SUMIF': (args) => {
-        if (!_validateArgs(args, 2, 3, 'SUMIF')) return "#VALUE!";
+    SUMIF: (args) => {
+        if (!_validateArgs(args, 2, 3, "SUMIF")) return "#VALUE!";
 
         const range = args[0];
         const criteria = args[1];
@@ -52,15 +52,11 @@ export const conditionalFunctions = {
         const flatSumRange = Array.isArray(sumRange) ? _flatten(sumRange) : [sumRange];
 
         if (flatRange.length !== flatSumRange.length) {
-            errorHandler.handle(
-                ERROR_CODE.FORMULA_EVAL_ERROR,
-                'SUMIF: range 和 sum_range 长度不匹配',
-                { 
-                    rangeLength: flatRange.length, 
-                    sumRangeLength: flatSumRange.length,
-                    functionName: 'SUMIF'
-                }
-            );
+            errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, "SUMIF: range 和 sum_range 长度不匹配", {
+                rangeLength: flatRange.length,
+                sumRangeLength: flatSumRange.length,
+                functionName: "SUMIF",
+            });
             return "#VALUE!";
         }
 
@@ -74,15 +70,11 @@ export const conditionalFunctions = {
                     }
                 }
             } catch (e) {
-                errorHandler.warn(
-                    ERROR_CODE.FORMULA_EVAL_ERROR,
-                    `SUMIF: 条件匹配失败 at index ${i}`,
-                    { 
-                        error: e.message, 
-                        index: i,
-                        functionName: 'SUMIF'
-                    }
-                );
+                errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `SUMIF: 条件匹配失败 at index ${i}`, {
+                    error: e.message,
+                    index: i,
+                    functionName: "SUMIF",
+                });
                 continue;
             }
         }
@@ -112,18 +104,14 @@ export const conditionalFunctions = {
      * =SUMIFS(A1:A10, B1:B10, ">=2024-01-01", B1:B10, "<=2024-12-31")
      *   // 2024年数据总和
      */
-    'SUMIFS': (args) => {
-        if (!_validateArgs(args, 3, Infinity, 'SUMIFS')) return "#VALUE!";
-        
+    SUMIFS: (args) => {
+        if (!_validateArgs(args, 3, Infinity, "SUMIFS")) return "#VALUE!";
+
         if ((args.length - 1) % 2 !== 0) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_ARGUMENT_COUNT_INVALID,
-                'SUMIFS 需要奇数个参数（sum_range + 成对的 criteria_range 和 criteria）',
-                { 
-                    received: args.length, 
-                    functionName: 'SUMIFS'
-                }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_ARGUMENT_COUNT_INVALID, "SUMIFS 需要奇数个参数（sum_range + 成对的 criteria_range 和 criteria）", {
+                received: args.length,
+                functionName: "SUMIFS",
+            });
             return "#VALUE!";
         }
 
@@ -134,26 +122,22 @@ export const conditionalFunctions = {
         for (let i = 1; i < args.length; i += 2) {
             const criteriaRange = args[i];
             const criteria = args[i + 1];
-            
+
             conditionPairs.push({
                 range: Array.isArray(criteriaRange) ? _flatten(criteriaRange) : [criteriaRange],
                 criteria: criteria,
-                pairIndex: Math.floor((i - 1) / 2)
+                pairIndex: Math.floor((i - 1) / 2),
             });
         }
 
         for (const pair of conditionPairs) {
             if (pair.range.length !== flatSumRange.length) {
-                errorHandler.handle(
-                    ERROR_CODE.FORMULA_EVAL_ERROR,
-                    `SUMIFS: 条件范围 ${pair.pairIndex + 1} 与 sum_range 长度不匹配`,
-                    { 
-                        expectedLength: flatSumRange.length, 
-                        actualLength: pair.range.length,
-                        pairIndex: pair.pairIndex,
-                        functionName: 'SUMIFS'
-                    }
-                );
+                errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `SUMIFS: 条件范围 ${pair.pairIndex + 1} 与 sum_range 长度不匹配`, {
+                    expectedLength: flatSumRange.length,
+                    actualLength: pair.range.length,
+                    pairIndex: pair.pairIndex,
+                    functionName: "SUMIFS",
+                });
                 return "#VALUE!";
             }
         }
@@ -169,16 +153,12 @@ export const conditionalFunctions = {
                         break;
                     }
                 } catch (e) {
-                    errorHandler.warn(
-                        ERROR_CODE.FORMULA_EVAL_ERROR,
-                        `SUMIFS: 条件 ${pair.pairIndex + 1} 匹配失败 at index ${i}`,
-                        { 
-                            error: e.message, 
-                            index: i,
-                            pairIndex: pair.pairIndex,
-                            functionName: 'SUMIFS'
-                        }
-                    );
+                    errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `SUMIFS: 条件 ${pair.pairIndex + 1} 匹配失败 at index ${i}`, {
+                        error: e.message,
+                        index: i,
+                        pairIndex: pair.pairIndex,
+                        functionName: "SUMIFS",
+                    });
                     allMatch = false;
                     break;
                 }
@@ -224,8 +204,8 @@ export const conditionalFunctions = {
      * =COUNTIF(D1:D100, "")                  // 统计空单元格数量
      * =COUNTIF(E1:E50, "<>")                 // 统计非空单元格数量
      */
-    'COUNTIF': (args) => {
-        if (!_validateArgs(args, 2, 2, 'COUNTIF')) return "#VALUE!";
+    COUNTIF: (args) => {
+        if (!_validateArgs(args, 2, 2, "COUNTIF")) return "#VALUE!";
 
         const range = args[0];
         const criteria = args[1];
@@ -239,17 +219,13 @@ export const conditionalFunctions = {
                     count++;
                 }
             } catch (e) {
-                errorHandler.warn(
-                    ERROR_CODE.FORMULA_EVAL_ERROR,
-                    `COUNTIF: 条件匹配失败 at index ${i}`,
-                    { 
-                        error: e.message, 
-                        index: i,
-                        value: flatRange[i],
-                        criteria: criteria,
-                        functionName: 'COUNTIF'
-                    }
-                );
+                errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `COUNTIF: 条件匹配失败 at index ${i}`, {
+                    error: e.message,
+                    index: i,
+                    value: flatRange[i],
+                    criteria: criteria,
+                    functionName: "COUNTIF",
+                });
                 continue;
             }
         }
@@ -283,19 +259,15 @@ export const conditionalFunctions = {
      * =COUNTIFS(E1:E200, "<>北京", F1:F200, ">50000")
      *   // 统计非北京地区且金额>50000的记录数
      */
-    'COUNTIFS': (args) => {
-        if (!_validateArgs(args, 2, Infinity, 'COUNTIFS')) return "#VALUE!";
-        
+    COUNTIFS: (args) => {
+        if (!_validateArgs(args, 2, Infinity, "COUNTIFS")) return "#VALUE!";
+
         // 参数数量必须是偶数（成对的条件范围和条件）
         if (args.length % 2 !== 0) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_ARGUMENT_COUNT_INVALID,
-                'COUNTIFS 需要偶数个参数（成对的 criteria_range 和 criteria）',
-                { 
-                    received: args.length, 
-                    functionName: 'COUNTIFS'
-                }
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_ARGUMENT_COUNT_INVALID, "COUNTIFS 需要偶数个参数（成对的 criteria_range 和 criteria）", {
+                received: args.length,
+                functionName: "COUNTIFS",
+            });
             return "#VALUE!";
         }
 
@@ -303,11 +275,11 @@ export const conditionalFunctions = {
         for (let i = 0; i < args.length; i += 2) {
             const criteriaRange = args[i];
             const criteria = args[i + 1];
-            
+
             conditionPairs.push({
                 range: Array.isArray(criteriaRange) ? _flatten(criteriaRange) : [criteriaRange],
                 criteria: criteria,
-                pairIndex: Math.floor(i / 2)
+                pairIndex: Math.floor(i / 2),
             });
         }
 
@@ -315,16 +287,12 @@ export const conditionalFunctions = {
         const referenceLength = conditionPairs[0].range.length;
         for (const pair of conditionPairs) {
             if (pair.range.length !== referenceLength) {
-                errorHandler.handle(
-                    ERROR_CODE.FORMULA_EVAL_ERROR,
-                    `COUNTIFS: 条件范围 ${pair.pairIndex + 1} 与条件范围 1 长度不匹配`,
-                    { 
-                        expectedLength: referenceLength, 
-                        actualLength: pair.range.length,
-                        pairIndex: pair.pairIndex,
-                        functionName: 'COUNTIFS'
-                    }
-                );
+                errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `COUNTIFS: 条件范围 ${pair.pairIndex + 1} 与条件范围 1 长度不匹配`, {
+                    expectedLength: referenceLength,
+                    actualLength: pair.range.length,
+                    pairIndex: pair.pairIndex,
+                    functionName: "COUNTIFS",
+                });
                 return "#VALUE!";
             }
         }
@@ -340,16 +308,12 @@ export const conditionalFunctions = {
                         break;
                     }
                 } catch (e) {
-                    errorHandler.warn(
-                        ERROR_CODE.FORMULA_EVAL_ERROR,
-                        `COUNTIFS: 条件 ${pair.pairIndex + 1} 匹配失败 at index ${i}`,
-                        { 
-                            error: e.message, 
-                            index: i,
-                            pairIndex: pair.pairIndex,
-                            functionName: 'COUNTIFS'
-                        }
-                    );
+                    errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `COUNTIFS: 条件 ${pair.pairIndex + 1} 匹配失败 at index ${i}`, {
+                        error: e.message,
+                        index: i,
+                        pairIndex: pair.pairIndex,
+                        functionName: "COUNTIFS",
+                    });
                     allMatch = false;
                     break;
                 }
@@ -361,5 +325,5 @@ export const conditionalFunctions = {
         }
 
         return count;
-    }
+    },
 };

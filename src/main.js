@@ -62,11 +62,9 @@ const initApp = () => {
                 // ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
-                // startRows: 100,
-                // startCols: 26,
                 // 固定行列数上限（使用 maxRows/maxCols）
-                maxRows: 20,
-                maxCols: 12,
+                // maxRows: 20,
+                // maxCols: 12,
                 conditionalStyles: [
                     {
                         range: { sr: 0, sc: 0, er: 10000000, ec: 25 },

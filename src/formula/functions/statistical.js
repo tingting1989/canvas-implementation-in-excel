@@ -11,7 +11,7 @@
 
 import { isNumber } from "lodash-es";
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
-import { _flatten, _isBlank, _validateArgs } from './utils/index.js';
+import { _flatten, _isBlank, _validateArgs } from "./utils/index.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）
@@ -31,9 +31,9 @@ export const statisticalFunctions = {
      * =COUNT(1, "a", 3, "", 5)   // 返回 3 (只统计 1, 3, 5)
      * =COUNT(A1:A100)            // 统计 A 列中的数值个数
      */
-    'COUNT': (args) => {
-        if (!_validateArgs(args, 1, Infinity, 'COUNT')) return "#VALUE!";
-        
+    COUNT: (args) => {
+        if (!_validateArgs(args, 1, Infinity, "COUNT")) return "#VALUE!";
+
         return _flatten(args).filter((v) => isNumber(v)).length;
     },
 
@@ -51,9 +51,9 @@ export const statisticalFunctions = {
      * =COUNTA(1, "", "text", null)  // 返回 2 (统计 1 和 "text")
      * =COUNTA(A1:D10)              // 统计区域中非空单元格数
      */
-    'COUNTA': (args) => {
-        if (!_validateArgs(args, 1, Infinity, 'COUNTA')) return "#VALUE!";
-        
+    COUNTA: (args) => {
+        if (!_validateArgs(args, 1, Infinity, "COUNTA")) return "#VALUE!";
+
         return _flatten(args).filter((v) => v !== "" && v !== null && v !== undefined).length;
     },
 
@@ -76,8 +76,8 @@ export const statisticalFunctions = {
      * =COUNTBLANK(A1:A10)              // 计算 A1:A10 中空单元格数
      * =COUNTBLANK(A1:D10)              // 计算整个区域中的空单元格
      */
-    'COUNTBLANK': (args) => {
-        if (!_validateArgs(args, 1, 1, 'COUNTBLANK')) return "#VALUE!";
+    COUNTBLANK: (args) => {
+        if (!_validateArgs(args, 1, 1, "COUNTBLANK")) return "#VALUE!";
 
         const range = args[0];
 
@@ -96,5 +96,5 @@ export const statisticalFunctions = {
         }
 
         return blankCount;
-    }
+    },
 };
