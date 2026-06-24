@@ -307,6 +307,14 @@ export class MergeManager {
         }
     }
 
+    #shiftIndex(idx, from, to) {
+        if (idx === from) return to;
+        if (from < to) {
+            return idx > from && idx <= to ? idx - 1 : idx;
+        }
+        return idx >= to && idx < from ? idx + 1 : idx;
+    }
+
     moveCol(fromCol, toCol) {
         if (fromCol === toCol) return;
 
@@ -315,21 +323,15 @@ export class MergeManager {
 
         for (const [key, info] of this.merges) {
             toRemove.push(key);
-            let newTopCol = info.topCol;
-            let newBottomCol = info.bottomCol;
+            let newTopCol, newBottomCol;
 
-            if (fromCol < toCol) {
-                if (info.topCol === fromCol) newTopCol = toCol;
-                else if (info.topCol > fromCol && info.topCol <= toCol) newTopCol--;
-
-                if (info.bottomCol === fromCol) newBottomCol = toCol;
-                else if (info.bottomCol > fromCol && info.bottomCol <= toCol) newBottomCol--;
+            if (info.topCol <= fromCol && fromCol <= info.bottomCol) {
+                const offset = toCol - fromCol;
+                newTopCol = info.topCol + offset;
+                newBottomCol = info.bottomCol + offset;
             } else {
-                if (info.topCol === fromCol) newTopCol = toCol;
-                else if (info.topCol >= toCol && info.topCol < fromCol) newTopCol++;
-
-                if (info.bottomCol === fromCol) newBottomCol = toCol;
-                else if (info.bottomCol >= toCol && info.bottomCol < fromCol) newBottomCol++;
+                newTopCol = this.#shiftIndex(info.topCol, fromCol, toCol);
+                newBottomCol = this.#shiftIndex(info.bottomCol, fromCol, toCol);
             }
 
             toUpdate.push({
@@ -365,21 +367,15 @@ export class MergeManager {
 
         for (const [key, info] of this.merges) {
             toRemove.push(key);
-            let newTopRow = info.topRow;
-            let newBottomRow = info.bottomRow;
+            let newTopRow, newBottomRow;
 
-            if (fromRow < toRow) {
-                if (info.topRow === fromRow) newTopRow = toRow;
-                else if (info.topRow > fromRow && info.topRow <= toRow) newTopRow--;
-
-                if (info.bottomRow === fromRow) newBottomRow = toRow;
-                else if (info.bottomRow > fromRow && info.bottomRow <= toRow) newBottomRow--;
+            if (info.topRow <= fromRow && fromRow <= info.bottomRow) {
+                const offset = toRow - fromRow;
+                newTopRow = info.topRow + offset;
+                newBottomRow = info.bottomRow + offset;
             } else {
-                if (info.topRow === fromRow) newTopRow = toRow;
-                else if (info.topRow >= toRow && info.topRow < fromRow) newTopRow++;
-
-                if (info.bottomRow === fromRow) newBottomRow = toRow;
-                else if (info.bottomRow >= toRow && info.bottomRow < fromRow) newBottomRow++;
+                newTopRow = this.#shiftIndex(info.topRow, fromRow, toRow);
+                newBottomRow = this.#shiftIndex(info.bottomRow, fromRow, toRow);
             }
 
             toUpdate.push({

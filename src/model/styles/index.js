@@ -29,15 +29,26 @@ export class StylePool {
     /**
      * 将样式对象标准化为可比较的字符串
      * 优化：按字母序拼接 "key:value"，比 JSON.stringify 快约 3-5 倍
+     * 递归处理嵌套对象，并在值前添加类型标记以区分数字和字符串
      */
     #normalize(obj) {
         const keys = Object.keys(obj).sort();
         let s = "";
         for (let i = 0; i < keys.length; i++) {
             if (i > 0) s += ",";
-            s += keys[i] + ":" + obj[keys[i]];
+            s += keys[i] + ":" + this.#normalizeValue(obj[keys[i]]);
         }
         return s;
+    }
+
+    #normalizeValue(val) {
+        if (val === null) return "null";
+        if (val === undefined) return "undefined";
+        const type = typeof val;
+        if (type === "object") {
+            return "{" + this.#normalize(val) + "}";
+        }
+        return type.charAt(0) + ":" + val;
     }
 
     /**

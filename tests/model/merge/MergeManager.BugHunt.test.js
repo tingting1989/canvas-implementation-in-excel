@@ -228,7 +228,7 @@ describe("MergeManager - Bug Hunting", () => {
     });
 
     describe("moveRow - 合并区域调整", () => {
-        it.skip("BUG: moveRow正向移动合并区域 - 跨越多行时bottomRow位移有误", () => {
+        it("BUG: moveRow正向移动合并区域 - 跨越多行时bottomRow位移有误", () => {
             mm.merge(2, 0, 4, 2);
             mm.moveRow(2, 6);
 
@@ -239,7 +239,7 @@ describe("MergeManager - Bug Hunting", () => {
             expect(info.bottomRow).toBe(8);
         });
 
-        it.skip("BUG: moveRow反向移动合并区域 - bottomRow位移逻辑有误", () => {
+        it("BUG: moveRow反向移动合并区域 - bottomRow位移逻辑有误", () => {
             mm.merge(5, 0, 7, 2);
             mm.moveRow(5, 1);
 
@@ -252,7 +252,7 @@ describe("MergeManager - Bug Hunting", () => {
     });
 
     describe("moveCol - 合并区域调整", () => {
-        it.skip("BUG: moveCol将合并区域整体移动 - 跨越多列时bottomCol位移有误", () => {
+        it("BUG: moveCol将合并区域整体移动 - 跨越多列时bottomCol位移有误", () => {
             mm.merge(0, 2, 2, 4);
             mm.moveCol(2, 6);
 
