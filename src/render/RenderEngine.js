@@ -81,6 +81,8 @@ export class RenderEngine {
         this.compositor.register(this.resizeLayer);
         this.compositor.register(this.headerLayer);
         this.compositor.register(this.dragIndicatorLayer);
+
+        this.headerLayer.setDragIndicator(this.dragIndicatorLayer);
         this.compositor.register(this.uiLayer);
         this.compositor.register(this.editorLayer);
 

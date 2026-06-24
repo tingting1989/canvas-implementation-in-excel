@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HeaderLayer } from "../../../src/render/layers/HeaderLayer.js";
+import { DragIndicatorLayer } from "../../../src/render/layers/DragIndicatorLayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
 
 describe("HeaderLayer", () => {
@@ -103,7 +104,7 @@ describe("HeaderLayer", () => {
 
         layer.render(ctx, sheet, viewport, options);
 
-        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, viewport, 800, 600, undefined);
+        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, viewport, 800, 600, null);
         expect(layer.renderCount).toBe(1);
         renderSpy.mockRestore();
     });
@@ -139,5 +140,79 @@ describe("HeaderLayer", () => {
         expect(info.name).toBe("headers");
         expect(info.zIndex).toBe(5);
         expect(info.enabled).toBe(true);
+    });
+});
+
+describe("HeaderLayer - setDragIndicator", () => {
+    it("should have null drag indicator by default", () => {
+        const layer = new HeaderLayer();
+        expect(layer._dragIndicatorLayer).toBeNull();
+    });
+
+    it("should set drag indicator via setDragIndicator", () => {
+        const layer = new HeaderLayer();
+        const dragLayer = new DragIndicatorLayer();
+        layer.setDragIndicator(dragLayer);
+        expect(layer._dragIndicatorLayer).toBe(dragLayer);
+    });
+
+    it("should pass drag indicator to HeaderRenderer.render", () => {
+        const layer = new HeaderLayer();
+        const dragLayer = new DragIndicatorLayer();
+        layer.setDragIndicator(dragLayer);
+
+        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        const ctx = {};
+        const sheet = {};
+        const viewport = {};
+
+        layer.render(ctx, sheet, viewport, { viewW: 800, viewH: 600 });
+
+        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, viewport, 800, 600, dragLayer);
+        renderSpy.mockRestore();
+    });
+
+    it("should pass null to HeaderRenderer when no drag indicator set", () => {
+        const layer = new HeaderLayer();
+
+        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        layer.render({}, {}, {}, { viewW: 800, viewH: 600 });
+
+        expect(renderSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, null);
+        renderSpy.mockRestore();
+    });
+
+    it("should not use options.layers for drag indicator lookup", () => {
+        const layer = new HeaderLayer();
+        const dragLayer = new DragIndicatorLayer();
+        layer.setDragIndicator(dragLayer);
+
+        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        const fakeLayers = [{ name: "drag-indicator", zIndex: 6 }];
+
+        layer.render({}, {}, {}, { viewW: 800, viewH: 600, layers: fakeLayers });
+
+        expect(renderSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, dragLayer);
+        renderSpy.mockRestore();
+    });
+
+    it("should allow replacing drag indicator", () => {
+        const layer = new HeaderLayer();
+        const dragLayer1 = new DragIndicatorLayer();
+        const dragLayer2 = new DragIndicatorLayer();
+
+        layer.setDragIndicator(dragLayer1);
+        expect(layer._dragIndicatorLayer).toBe(dragLayer1);
+
+        layer.setDragIndicator(dragLayer2);
+        expect(layer._dragIndicatorLayer).toBe(dragLayer2);
+    });
+
+    it("should allow clearing drag indicator by passing null", () => {
+        const layer = new HeaderLayer();
+        const dragLayer = new DragIndicatorLayer();
+        layer.setDragIndicator(dragLayer);
+        layer.setDragIndicator(null);
+        expect(layer._dragIndicatorLayer).toBeNull();
     });
 });
