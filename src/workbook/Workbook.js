@@ -1,4 +1,4 @@
-import { Sheet, SHEET_CHANGE_ALL, SHEET_CHANGE_CELL, SHEET_CHANGE_RENDER } from "./Sheet.js";
+import { Sheet } from "./Sheet.js";
 import { RenderEngine } from "../render/RenderEngine.js";
 import { ViewportTransform } from "../render/ViewportTransform.js";
 import { EditorManager } from "../editor/EditorManager.js";
@@ -8,6 +8,8 @@ import { PluginManager } from "../plugins/PluginManager.js";
 import { stylePool } from "../model/styles";
 import { CONFIG } from "../constants/config";
 import { SettingsApplier } from "./managers/SettingsApplier.js";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { HOOKS } from "../constants/hookNames.js";
 
 /**
  * 工作簿
@@ -35,6 +37,9 @@ export class Workbook {
 
     /** @type {Array<{type:string, name?:string, PluginClass?:Function, options:object}>} */
     #pendingPlugins = [];
+
+    /** @type {Set<import("./Sheet.js").Sheet>} 已绑定事件的 Sheet 集合（防止 switchTo 重复绑定） */
+    #boundSheets = new Set();
 
     // ============================================================
     // 构造函数
@@ -222,28 +227,83 @@ export class Workbook {
 
     #linkSheetsToRenderEngine() {
         for (const sheet of this.sheets.values()) {
-            this.#bindSheetOnChange(sheet);
+            this.#bindSheetEvents(sheet);
         }
     }
 
     /**
-     * 将 Sheet 的数据变更通知桥接到 RenderEngine
+     * 将 Sheet 的事件总线桥接到各子系统
      * @param {import("./Sheet.js").Sheet} sheet
      */
-    #bindSheetOnChange(sheet) {
-        sheet.onChange = (event) => {
-            switch (event.type) {
-                case SHEET_CHANGE_ALL:
-                    this.renderEngine?.invalidateAll();
-                    break;
-                case SHEET_CHANGE_CELL:
-                    this.renderEngine?.invalidateCell(event.pageRow, event.c);
-                    break;
-                case SHEET_CHANGE_RENDER:
-                    this.renderEngine?.render(event.sheet);
-                    break;
+    #bindSheetEvents(sheet) {
+        if (this.#boundSheets.has(sheet)) return;
+        this.#boundSheets.add(sheet);
+
+        const bus = sheet.bus;
+
+        bus.on(SHEET_EVENTS.INVALIDATE_ALL, () => {
+            this.renderEngine?.invalidateAll();
+        });
+
+        bus.on(SHEET_EVENTS.INVALIDATE_CELL, (e) => {
+            this.renderEngine?.invalidateCell(e.pageRow, e.c);
+        });
+
+        bus.on(SHEET_EVENTS.RENDER_REQUEST, (e) => {
+            this.renderEngine?.render(e.sheet);
+        });
+
+        bus.on(SHEET_EVENTS.FORMULA_SET, (e) => {
+            if (this.formulaEngine) {
+                const result = this.formulaEngine.setFormula(e.sheet, e.r, e.c, e.formula);
+                return result;
             }
-        };
+            return undefined;
+        });
+
+        bus.on(SHEET_EVENTS.FORMULA_REMOVE, (e) => {
+            this.formulaEngine?.removeFormula(e.sheet, e.r, e.c);
+        });
+
+        bus.on(SHEET_EVENTS.CELL_CHANGED, (e) => {
+            this.formulaEngine?.onCellChanged(e.sheet, e.r, e.c);
+        });
+
+        bus.on(SHEET_EVENTS.UNDO, (e) => {
+            this.formulaEngine?.recalculateAll(e.sheet);
+        });
+
+        bus.on(SHEET_EVENTS.REDO, (e) => {
+            this.formulaEngine?.recalculateAll(e.sheet);
+        });
+
+        bus.on(SHEET_EVENTS.AFTER_CHANGE, (e) => {
+            this.runHooks(HOOKS.AFTER_CHANGE, e.changes);
+        });
+
+        bus.on(SHEET_EVENTS.PAGINATION_REFRESH, (e) => {
+            const pg = this.getPlugin("pagination");
+            if (pg?.active) pg.refresh();
+        });
+
+        bus.on(SHEET_EVENTS.ROW_COL_RESIZE, (e) => {
+            const pg = this.getPlugin("pagination");
+            if (!pg || !pg.active) return;
+            e.sheet.rowColManager.clearPaginationBounds();
+            pg.refresh();
+        });
+
+        bus.on(SHEET_EVENTS.BEFORE_CHANGE, (changes) => {
+            this.runHooks(HOOKS.BEFORE_CHANGE, changes);
+        });
+
+        bus.on(SHEET_EVENTS.GET_CLIPBOARD, () => {
+            return this.clipboard;
+        });
+
+        bus.on(SHEET_EVENTS.GET_PLUGIN, (e) => {
+            return this.getPlugin(e.name);
+        });
     }
 
     // ============================================================
@@ -387,8 +447,7 @@ export class Workbook {
      */
     addSheet(name) {
         const sheet = new Sheet(name);
-        sheet.workbook = this;
-        if (this.renderEngine) this.#bindSheetOnChange(sheet);
+        if (this.renderEngine) this.#bindSheetEvents(sheet);
 
         const opts = this.#initOptions;
         sheet.rowColManager.ensureSize(opts?.startRows || 100, opts?.startCols || 26);
@@ -409,6 +468,7 @@ export class Workbook {
 
         const removed = this.sheets.get(name);
         this.sheets.delete(name);
+        this.#boundSheets.delete(removed);
 
         if (this.activeSheet === removed) {
             this.switchTo(this.sheets.keys().next().value);
@@ -448,7 +508,7 @@ export class Workbook {
         if (this.editor) this.editor.sheet = sheet;
         if (this.eventHandler) this.eventHandler.sheet = sheet;
         if (this.renderEngine) {
-            this.#bindSheetOnChange(sheet);
+            this.#bindSheetEvents(sheet);
             this.renderEngine.invalidateAll();
         }
         this.render();

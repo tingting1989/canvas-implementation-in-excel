@@ -1,4 +1,5 @@
 import { CONFIG } from "../constants/config";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 
 /**
  * 瓦片渲染器（TileRenderer）—— 负责将单元格数据绘制到瓦片上
@@ -410,7 +411,7 @@ export class TileRenderer {
      * @returns {boolean} 是否绘制了富内容（用于决定是否跳过文本/边框绘制）
      */
     #drawCellContent(ctx, sheet, realR, col, drawX, drawY, w, h) {
-        const clipboard = sheet.workbook?.clipboard;
+        const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD);
         if (!clipboard) return false;
 
         const content = clipboard.getCellContent(sheet, realR, col);

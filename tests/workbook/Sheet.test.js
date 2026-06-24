@@ -163,13 +163,13 @@ describe("Sheet - Row Number Conversion", () => {
     });
 });
 
-describe("Sheet - onChange", () => {
-    it("should call onChange callback on setCell", () => {
+describe("Sheet - bus events (replaces onChange)", () => {
+    it("should emit INVALIDATE_CELL event on setCell", () => {
         const sheet = new Sheet("Test");
-        const callback = vi.fn();
-        sheet.onChange = callback;
+        const handler = vi.fn();
+        sheet.bus.on("sheet:invalidate-cell", handler);
         sheet.setCell(0, 0, "test");
-        expect(callback).toHaveBeenCalled();
+        expect(handler).toHaveBeenCalled();
     });
 });
 

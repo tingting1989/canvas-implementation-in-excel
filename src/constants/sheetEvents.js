@@ -6,10 +6,13 @@ export const SHEET_EVENTS = Object.freeze({
     FORMULA_SET: "sheet:formula-set",
     FORMULA_REMOVE: "sheet:formula-remove",
     CELL_CHANGED: "sheet:cell-changed",
+    BEFORE_CHANGE: "sheet:before-change",
     AFTER_CHANGE: "sheet:after-change",
     UNDO: "sheet:undo",
     REDO: "sheet:redo",
     DATA_LOADED: "sheet:data-loaded",
     ROW_COL_RESIZE: "sheet:row-col-resize",
     PAGINATION_REFRESH: "sheet:pagination-refresh",
+    GET_CLIPBOARD: "sheet:get-clipboard",
+    GET_PLUGIN: "sheet:get-plugin",
 });

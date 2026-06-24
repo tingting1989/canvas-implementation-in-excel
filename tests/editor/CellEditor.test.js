@@ -4,6 +4,7 @@ import { TextEditor } from "@/editor/editors/TextEditor";
 import { NumericEditor } from "@/editor/editors/NumericEditor";
 import { DateEditor } from "@/editor/editors/DateEditor";
 import { SelectEditor } from "@/editor/editors/SelectEditor";
+import { EventBus } from "@/core/EventBus";
 
 function createMockRenderEngine(overrides = {}) {
     return {
@@ -32,7 +33,7 @@ function createMockSheet(opts = {}) {
         _batchFillRange: null,
         beginBatch: vi.fn(),
         endBatch: vi.fn(),
-        workbook: { runHooks: vi.fn() },
+        bus: new EventBus(),
     };
 }
 
@@ -1118,15 +1119,21 @@ describe("CellEditor - Batch Fill Logic", () => {
         expect(sheet.setCell).not.toHaveBeenCalled();
     });
 
-    it("should call workbook hooks for batch fill", () => {
+    it("should emit BEFORE_CHANGE and AFTER_CHANGE via bus for batch fill", () => {
         sheet._batchFillRange = { topRow: 0, topCol: 0, bottomRow: 0, bottomCol: 0 };
         sheet.cellStore.get.mockReturnValue({ value: "", styleId: 0 });
         sheet.parseCellValue.mockReturnValue("fillval");
         domElement.value = "fillval";
 
+        const beforeHandler = vi.fn();
+        const afterHandler = vi.fn();
+        sheet.bus.on("sheet:before-change", beforeHandler);
+        sheet.bus.on("sheet:after-change", afterHandler);
+
         handlers.blur();
 
-        expect(sheet.workbook.runHooks).toHaveBeenCalled();
+        expect(beforeHandler).toHaveBeenCalled();
+        expect(afterHandler).toHaveBeenCalled();
     });
 
     it("should use beginBatch/endBatch for TextEditor", () => {

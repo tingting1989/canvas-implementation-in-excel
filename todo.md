@@ -40,7 +40,7 @@ Phase 2	BaseLayer 添加 watchForDirty()，清理空回调	0.5 天
 Phase 3	HeaderLayer 依赖注入替代 layers 查找	0.5 天
 Phase 4	CellEditor 基类重构，消除子类重复代码	2 天
 Phase 5	移除 lodash-es 依赖	1 天
-Phase 6	Sheet ↔ Workbook 解耦（事件机制）	3 天
+Phase 6	Sheet ↔ Workbook 解耦（事件机制）	3 天 ✅ 已完成
 Phase 7	Strategy 接口抽象（ViewportService）	3 天
 Phase 8	FrozenLayer 拆分重构	2 天
 需要我直接开始执行哪个阶段的重构？

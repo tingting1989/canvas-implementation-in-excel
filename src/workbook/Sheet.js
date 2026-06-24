@@ -1,6 +1,5 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
-import { HOOKS } from "../constants/hookNames.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { EventBus } from "../core/EventBus.js";
 
@@ -23,15 +22,6 @@ import { ColumnTypeManager } from "./managers/ColumnTypeManager.js";
 import { HeaderLabelManager } from "./managers/HeaderLabelManager.js";
 import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js";
 import { BatchOperationManager } from "./managers/BatchOperationManager.js";
-
-/** @constant {string} 数据变更事件类型：全量失效 */
-export const SHEET_CHANGE_ALL = "all";
-
-/** @constant {string} 数据变更事件类型：单格失效 */
-export const SHEET_CHANGE_CELL = "cell";
-
-/** @constant {string} 数据变更事件类型：触发渲染 */
-export const SHEET_CHANGE_RENDER = "render";
 
 /** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
 const SUB = {
@@ -59,16 +49,9 @@ const SUB = {
  * - 实际行号（realRow）：数据在 cellStore 中的真实行号
  * - 列号：分页只影响行，列号无需转换
  *
- * 数据变更通过 #onChange 回调通知外部（如 Workbook→RenderEngine）重绘
+ * 数据变更通过 bus 事件通知外部（如 Workbook→RenderEngine）重绘
  */
 export class Sheet {
-    /**
-     * 数据变更通知回调（由 Workbook 注入，替代直接持有 RenderEngine）
-     * @deprecated 使用 bus 事件代替，仅向后兼容保留
-     * 签名：(event: { type: SHEET_CHANGE_ALL | SHEET_CHANGE_CELL | SHEET_CHANGE_RENDER, r?: number, c?: number, pageRow?: number, sheet?: Sheet }) => void
-     */
-    #onChange = null;
-
     /** 事件总线（Sheet 持有，Workbook 及各子系统订阅） */
     #bus = new EventBus();
 
@@ -126,10 +109,6 @@ export class Sheet {
     constructor(name) {
         this.name = name;
 
-        /** 所属工作簿引用（由 Workbook.addSheet 时注入）
-         * @deprecated 仅过渡期保留，新代码应通过 bus 事件通信 */
-        this.workbook = null;
-
         /** 是否可见 */
         this.visible = true;
 
@@ -173,19 +152,6 @@ export class Sheet {
         this.#conditionalFormat = new ConditionalFormatManager(this);
         this.#rowSync = new RowColSync(this, CONFIG.AXIS_ROW);
         this.#colSync = new RowColSync(this, CONFIG.AXIS_COL);
-    }
-
-    // ============================================================
-    // 数据变更通知回调（替代直接持有 RenderEngine 引用）
-    // ============================================================
-
-    /**
-     * 设置数据变更通知回调
-     * @deprecated 使用 bus.on(SHEET_EVENTS.INVALIDATE_ALL, ...) 代替
-     * @param {(event: { type: string, r?: number, c?: number, pageRow?: number }) => void} fn
-     */
-    set onChange(fn) {
-        this.#onChange = fn;
     }
 
     /**
@@ -348,14 +314,12 @@ export class Sheet {
     #invalidateAll() {
         this.#styleCacheVersion++;
         this.#styleManager.invalidateCache();
-        this.#onChange?.({ type: SHEET_CHANGE_ALL });
         this.#bus.emit(SHEET_EVENTS.INVALIDATE_ALL, { sheet: this });
     }
 
     #invalidateCell(r, c) {
         this.#styleManager.invalidateCache();
         const pageRow = this.toPageRow(r);
-        this.#onChange?.({ type: SHEET_CHANGE_CELL, r, c, pageRow });
         this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, { sheet: this, r, c, pageRow });
     }
 
@@ -398,11 +362,12 @@ export class Sheet {
 
         const old = this.cellStore.get(realR, c);
 
-        if (this.workbook?.formulaEngine && typeof value === "string" && value.startsWith("=")) {
+        if (typeof value === "string" && value.startsWith("=")) {
             formula = value;
-            cellValue = this.workbook.formulaEngine.setFormula(this, realR, c, value);
-        } else if (old?.formula && this.workbook?.formulaEngine) {
-            this.workbook.formulaEngine.removeFormula(this, realR, c);
+            const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { sheet: this, r: realR, c, formula: value });
+            cellValue = results !== undefined ? results : value;
+        } else if (old?.formula) {
+            this.#bus.emit(SHEET_EVENTS.FORMULA_REMOVE, { sheet: this, r: realR, c });
         }
 
         const cell = new Cell(cellValue, styleId, disabled, formula);
@@ -411,8 +376,8 @@ export class Sheet {
         this.cellStore.set(realR, c, cell);
         this.#invalidateCell(realR, c);
 
-        if (!formula && this.workbook?.formulaEngine) {
-            this.workbook.formulaEngine.onCellChanged(this, realR, c);
+        if (!formula) {
+            this.#bus.emit(SHEET_EVENTS.CELL_CHANGED, { sheet: this, r: realR, c });
         }
     }
 
@@ -656,8 +621,9 @@ export class Sheet {
             for (let c = 0; c < row.length; c++) {
                 if (row[c] !== undefined && row[c] !== null && row[c] !== "") {
                     const val = row[c];
-                    if (typeof val === "string" && val.startsWith("=") && this.workbook?.formulaEngine) {
-                        const result = this.workbook.formulaEngine.setFormula(this, r, c, val);
+                    if (typeof val === "string" && val.startsWith("=")) {
+                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { sheet: this, r, c, formula: val });
+                        const result = results !== undefined ? results : val;
                         this.cellStore.set(r, c, new Cell(result, 0, false, val));
                     } else {
                         this.cellStore.set(r, c, new Cell(val, 0));
@@ -672,8 +638,7 @@ export class Sheet {
 
     /** 刷新分页插件（数据加载后可能需要重新分页） */
     #refreshPagination() {
-        const pg = this.workbook?.getPlugin("pagination");
-        if (pg?.active) pg.refresh();
+        this.#bus.emit(SHEET_EVENTS.PAGINATION_REFRESH, { sheet: this });
     }
 
     // ============================================================
@@ -827,16 +792,16 @@ export class Sheet {
     // 渲染 & 撤销/重做
     // ============================================================
 
-    /** 触发渲染（通过 onChange 回调委托 Workbook 执行实际渲染） */
+    /** 触发渲染（通过 bus 事件委托 Workbook 执行实际渲染） */
     render() {
-        this.#onChange?.({ type: SHEET_CHANGE_RENDER, sheet: this });
+        this.#bus.emit(SHEET_EVENTS.RENDER_REQUEST, { sheet: this });
     }
 
     /** 撤销上一步操作 */
     undo() {
         if (!this.#ensureWritable()) return;
         this.history.undo();
-        this.workbook?.formulaEngine?.recalculateAll(this);
+        this.#bus.emit(SHEET_EVENTS.UNDO, { sheet: this });
         this.#invalidateAll();
     }
 
@@ -844,7 +809,7 @@ export class Sheet {
     redo() {
         if (!this.#ensureWritable()) return;
         this.history.redo();
-        this.workbook?.formulaEngine?.recalculateAll(this);
+        this.#bus.emit(SHEET_EVENTS.REDO, { sheet: this });
         this.#invalidateAll();
     }
 
@@ -963,7 +928,7 @@ export class Sheet {
         this.#syncPaginationAfterResize();
         this.#invalidateAll();
         this.render();
-        this.workbook?.runHooks(HOOKS.AFTER_CHANGE, []);
+        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { sheet: this, changes: [] });
     }
 
     /**
@@ -980,7 +945,7 @@ export class Sheet {
         this.rowColManager.resetSize(currentRows, cols);
         this.#invalidateAll();
         this.render();
-        this.workbook?.runHooks(HOOKS.AFTER_CHANGE, []);
+        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { sheet: this, changes: [] });
     }
 
     /**
@@ -998,7 +963,7 @@ export class Sheet {
         this.#syncPaginationAfterResize();
         this.#invalidateAll();
         this.render();
-        this.workbook?.runHooks(HOOKS.AFTER_CHANGE, []);
+        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { sheet: this, changes: [] });
     }
 
     /**
@@ -1010,16 +975,7 @@ export class Sheet {
      * 2. 刷新分页插件（基于新的配置值重新计算）
      */
     #syncPaginationAfterResize() {
-        const paginationPlugin = this.workbook?.getPlugin("pagination");
-        if (!paginationPlugin || !paginationPlugin.active) return;
-
-        // 步骤1：先清除分页边界，使 rowCount 返回实际配置值而非分页值
-        console.log(`[Sheet] #syncPaginationAfterResize: clearing pagination bounds`);
-        this.rowColManager.clearPaginationBounds();
-
-        // 步骤2：刷新分页插件（此时 rowCount 会返回正确的配置值）
-        paginationPlugin.refresh();
-        console.log(`[Sheet] #syncPaginationAfterResize: refreshed pagination plugin`);
+        this.#bus.emit(SHEET_EVENTS.ROW_COL_RESIZE, { sheet: this });
     }
 
     // ============================================================

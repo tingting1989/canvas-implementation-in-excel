@@ -1,5 +1,5 @@
 import { CONFIG } from "../../constants/config";
-import { HOOKS } from "../../constants/hookNames.js";
+import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 import { isFunction } from "../../core/utils.js";
 
@@ -275,7 +275,7 @@ export class CellEditor {
 
         if (changes.length === 0) return;
 
-        this.sheet.workbook?.runHooks(HOOKS.BEFORE_CHANGE, changes);
+        this.sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, changes);
 
         if (this.useBatchInBatchFill()) {
             this.sheet.beginBatch();
@@ -288,7 +288,7 @@ export class CellEditor {
             this.sheet.endBatch();
         }
 
-        this.sheet.workbook?.runHooks(HOOKS.AFTER_CHANGE, changes);
+        this.sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, changes);
     }
 
     #onKeyDown(e) {
