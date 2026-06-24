@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ViewportService } from "../../src/render/ViewportService.js";
 import { RenderEngineViewportService } from "../../src/render/RenderEngineViewportService.js";
+import { CanvasContext } from "../../src/render/CanvasContext.js";
+import { RenderEngineCanvasContext } from "../../src/render/RenderEngineCanvasContext.js";
 
 function createMockRenderEngine(overrides = {}) {
     const {
@@ -153,9 +155,6 @@ describe("ViewportService", () => {
             expect(() => service.setResizeLine("col", 0, 0)).toThrow("must be implemented");
             expect(() => service.clearResizeLine()).toThrow("must be implemented");
             expect(() => service.invalidateAll()).toThrow("must be implemented");
-            expect(() => service.canvasParent).toThrow("must be implemented");
-            expect(() => service.canvas).toThrow("must be implemented");
-            expect(() => service.render(null)).toThrow("must be implemented");
         });
     });
 
@@ -195,14 +194,6 @@ describe("ViewportService", () => {
 
             it("should delegate maxScrollY", () => {
                 expect(service.maxScrollY).toBe(3000);
-            });
-
-            it("should delegate canvas", () => {
-                expect(service.canvas).toBe(mockEngine.canvas);
-            });
-
-            it("should delegate canvasParent", () => {
-                expect(service.canvasParent).toBe(mockEngine.canvas.parentElement);
             });
         });
 
@@ -252,12 +243,6 @@ describe("ViewportService", () => {
             it("should delegate invalidateAll", () => {
                 service.invalidateAll();
                 expect(mockEngine.invalidateAll).toHaveBeenCalled();
-            });
-
-            it("should delegate render", () => {
-                const mockSheet = createMockSheet();
-                service.render(mockSheet);
-                expect(mockEngine.render).toHaveBeenCalledWith(mockSheet);
             });
         });
 
@@ -332,8 +317,6 @@ describe("ViewportService", () => {
             get viewH() { return this.#data.viewH ?? 600; }
             get maxScrollX() { return this.#data.maxScrollX ?? 0; }
             get maxScrollY() { return this.#data.maxScrollY ?? 0; }
-            get canvasParent() { return this.#data.canvasParent ?? null; }
-            get canvas() { return this.#data.canvas ?? null; }
 
             getCellRect(row, col, mergeInfo = null) {
                 return { x: col * 100, y: row * 28, w: 100, h: 28 };
@@ -369,10 +352,6 @@ describe("ViewportService", () => {
 
             invalidateAll() {
                 this.#data.invalidated = true;
-            }
-
-            render(sheet) {
-                this.#data.rendered = true;
             }
         }
 
@@ -416,13 +395,11 @@ describe("ViewportService", () => {
             expect(data.resizeLine).toBeNull();
         });
 
-        it("should track invalidation and rendering", () => {
+        it("should track invalidation", () => {
             const data = {};
             const service = new TestViewportService(data);
             service.invalidateAll();
             expect(data.invalidated).toBe(true);
-            service.render({});
-            expect(data.rendered).toBe(true);
         });
     });
 
@@ -440,8 +417,6 @@ describe("ViewportService", () => {
                 get viewH() { return 600; }
                 get maxScrollX() { return 0; }
                 get maxScrollY() { return 0; }
-                get canvasParent() { return null; }
-                get canvas() { return null; }
                 getCellRect(r, c) { return { x: c * 100, y: r * 28, w: 100, h: 28 }; }
                 hitTest() { return data.hitResult; }
                 headerHitTest() { return null; }
@@ -451,7 +426,6 @@ describe("ViewportService", () => {
                 setResizeLine() {}
                 clearResizeLine() {}
                 invalidateAll() {}
-                render() {}
             }
 
             const viewport = new TestViewportService();
@@ -464,6 +438,78 @@ describe("ViewportService", () => {
 
             expect(viewport.isCellVisible(0, 0, 800, 600)).toBe(true);
             expect(viewport.isCellVisible(5, 5, 800, 600)).toBe(false);
+        });
+    });
+
+    describe("CanvasContext", () => {
+        describe("interface contract", () => {
+            it("should throw for all abstract methods when called directly", () => {
+                const ctx = new CanvasContext();
+                expect(() => ctx.canvas).toThrow("CanvasContext.canvas must be implemented");
+                expect(() => ctx.canvasParent).toThrow("CanvasContext.canvasParent must be implemented");
+                expect(() => ctx.render(null)).toThrow("CanvasContext.render must be implemented");
+            });
+        });
+
+        describe("RenderEngineCanvasContext", () => {
+            let mockEngine;
+            let ctx;
+
+            beforeEach(() => {
+                mockEngine = createMockRenderEngine();
+                ctx = new RenderEngineCanvasContext(mockEngine);
+            });
+
+            it("should delegate canvas", () => {
+                expect(ctx.canvas).toBe(mockEngine.canvas);
+            });
+
+            it("should delegate canvasParent", () => {
+                expect(ctx.canvasParent).toBe(mockEngine.canvas.parentElement);
+            });
+
+            it("should delegate render", () => {
+                const mockSheet = createMockSheet();
+                ctx.render(mockSheet);
+                expect(mockEngine.render).toHaveBeenCalledWith(mockSheet);
+            });
+
+            it("should return null canvasParent when canvas is null", () => {
+                mockEngine.canvas = null;
+                expect(ctx.canvasParent).toBeNull();
+            });
+
+            it("should return null canvas when canvas is null", () => {
+                mockEngine.canvas = null;
+                expect(ctx.canvas).toBeNull();
+            });
+        });
+
+        describe("custom CanvasContext implementation", () => {
+            class TestCanvasContext extends CanvasContext {
+                #data;
+                constructor(data) { super(); this.#data = data; }
+                get canvas() { return this.#data.canvas ?? null; }
+                get canvasParent() { return this.#data.canvasParent ?? null; }
+                render(sheet) { this.#data.rendered = true; }
+            }
+
+            it("should allow custom implementation", () => {
+                const mockCanvas = { style: {} };
+                const mockParent = { appendChild: vi.fn() };
+                const data = { canvas: mockCanvas, canvasParent: mockParent };
+                const ctx = new TestCanvasContext(data);
+
+                expect(ctx.canvas).toBe(mockCanvas);
+                expect(ctx.canvasParent).toBe(mockParent);
+            });
+
+            it("should track render calls", () => {
+                const data = {};
+                const ctx = new TestCanvasContext(data);
+                ctx.render({});
+                expect(data.rendered).toBe(true);
+            });
         });
     });
 });

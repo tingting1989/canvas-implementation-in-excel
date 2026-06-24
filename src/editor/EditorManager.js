@@ -36,6 +36,16 @@ export class EditorManager {
         }
     }
 
+    /**
+     * 注入 CanvasContext 到所有编辑器
+     * @param {import("../render/CanvasContext.js").CanvasContext} canvasContext
+     */
+    setCanvasContext(canvasContext) {
+        for (const editor of this.editors.values()) {
+            editor.canvasContext = canvasContext;
+        }
+    }
+
     get sheet() {
         return this.#sheet;
     }

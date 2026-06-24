@@ -52,7 +52,7 @@ export class ColumnMoveStrategy extends EventStrategy {
         this.#sourceCol = hit.index;
         this.#targetCol = hit.index;
 
-        const rect = this.handler.canvas.getBoundingClientRect();
+        const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
         this.#mouseDownX = e.clientX;
         this.#dragStartX = e.clientX - rect.left;
     }
@@ -74,13 +74,13 @@ export class ColumnMoveStrategy extends EventStrategy {
 
         const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (hit && hit.type === HIT_TYPE.COL_HEADER) {
-            this.handler.canvas.style.cursor = "grab";
+            this.handler.canvasContext.canvas.style.cursor = "grab";
             this.#cursorOwned = true;
             return false;
         }
 
         if (this.#cursorOwned) {
-            this.handler.canvas.style.cursor = "";
+            this.handler.canvasContext.canvas.style.cursor = "";
             this.#cursorOwned = false;
         }
     }
@@ -93,7 +93,7 @@ export class ColumnMoveStrategy extends EventStrategy {
             if (dx < DRAG_THRESHOLD) return;
 
             this.#dragStarted = true;
-            this.handler.canvas.style.cursor = "grabbing";
+            this.handler.canvasContext.canvas.style.cursor = "grabbing";
         }
 
         const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
@@ -102,7 +102,7 @@ export class ColumnMoveStrategy extends EventStrategy {
         }
 
         const rc = this.handler.sheet.rowColManager;
-        const rect = this.handler.canvas.getBoundingClientRect();
+        const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
         const dragX = e.clientX - rect.left;
 
         this.handler.renderEngine.dragIndicatorLayer.setColumnMoveState({
@@ -122,7 +122,7 @@ export class ColumnMoveStrategy extends EventStrategy {
     #onMouseUp(e) {
         if (!this.#moving) return;
         this.#moving = false;
-        this.handler.canvas.style.cursor = "";
+        this.handler.canvasContext.canvas.style.cursor = "";
 
         this.#clearIndicator();
 

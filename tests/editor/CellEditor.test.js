@@ -7,8 +7,10 @@ import { SelectEditor } from "@/editor/editors/SelectEditor";
 import { EventBus } from "@/core/EventBus";
 
 function createMockRenderEngine(overrides = {}) {
+    const mockCanvas = { parentElement: { appendChild: vi.fn() } };
     return {
-        canvas: { parentElement: { appendChild: vi.fn() } },
+        canvas: mockCanvas,
+        canvasParent: mockCanvas.parentElement,
         getCellRect: vi.fn(() => ({ x: 10, y: 20, w: 100, h: 28 })),
         invalidateAll: vi.fn(),
         render: vi.fn(),

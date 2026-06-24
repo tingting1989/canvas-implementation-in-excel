@@ -1,6 +1,7 @@
 import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
 import { Hooks } from "../editor/Hooks.js";
 import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
+import { RenderEngineCanvasContext } from "../render/RenderEngineCanvasContext.js";
 
 /**
  * 事件处理器
@@ -38,6 +39,7 @@ export class EventHandler {
         this.wrap = renderEngine.canvas.parentElement;
 
         this.viewport = new RenderEngineViewportService(renderEngine);
+        this.canvasContext = new RenderEngineCanvasContext(renderEngine);
 
         this.hooks = new Hooks();
         this.hooks.init();

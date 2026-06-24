@@ -98,16 +98,4 @@ export class RenderEngineViewportService extends ViewportService {
     invalidateAll() {
         this.#renderEngine.invalidateAll();
     }
-
-    get canvasParent() {
-        return this.#renderEngine.canvas?.parentElement ?? null;
-    }
-
-    get canvas() {
-        return this.#renderEngine.canvas;
-    }
-
-    render(sheet) {
-        this.#renderEngine.render(sheet);
-    }
 }

@@ -222,6 +222,7 @@ export class Workbook {
         this.editor = new EditorManager(this.renderEngine, this.activeSheet);
         this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, null);
         this.editor.setViewport(this.eventHandler.viewport);
+        this.editor.setCanvasContext(this.eventHandler.canvasContext);
         this.pluginManager = new PluginManager(this);
     }
 

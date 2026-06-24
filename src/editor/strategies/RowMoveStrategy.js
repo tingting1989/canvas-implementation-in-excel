@@ -79,7 +79,7 @@ export class RowMoveStrategy extends EventStrategy {
         this.#sourceRow = hit.index;
         this.#targetRow = hit.index;
 
-        const rect = this.handler.canvas.getBoundingClientRect();
+        const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
         this.#mouseDownY = e.clientY;
         this.#dragStartY = e.clientY - rect.top;
     }
@@ -101,13 +101,13 @@ export class RowMoveStrategy extends EventStrategy {
 
         const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (hit && hit.type === HIT_TYPE.ROW_HEADER) {
-            this.handler.canvas.style.cursor = "grab";
+            this.handler.canvasContext.canvas.style.cursor = "grab";
             this.#cursorOwned = true;
             return false;
         }
 
         if (this.#cursorOwned) {
-            this.handler.canvas.style.cursor = "";
+            this.handler.canvasContext.canvas.style.cursor = "";
             this.#cursorOwned = false;
         }
     }
@@ -127,7 +127,7 @@ export class RowMoveStrategy extends EventStrategy {
             if (dy < DRAG_THRESHOLD) return;
 
             this.#dragStarted = true;
-            this.handler.canvas.style.cursor = "grabbing";
+            this.handler.canvasContext.canvas.style.cursor = "grabbing";
         }
 
         // 更新目标行：行头或单元格区域均可
@@ -138,7 +138,7 @@ export class RowMoveStrategy extends EventStrategy {
 
         // 传递拖拽状态给 HeaderRenderer 渲染幽灵行和插入指示器
         const rc = this.handler.sheet.rowColManager;
-        const rect = this.handler.canvas.getBoundingClientRect();
+        const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
         const dragY = e.clientY - rect.top;
 
         this.handler.renderEngine.dragIndicatorLayer.setRowMoveState({
@@ -165,7 +165,7 @@ export class RowMoveStrategy extends EventStrategy {
     #onMouseUp(e) {
         if (!this.#moving) return;
         this.#moving = false;
-        this.handler.canvas.style.cursor = "";
+        this.handler.canvasContext.canvas.style.cursor = "";
 
         this.#clearIndicator();
 

@@ -58,6 +58,17 @@ export class CellEditor {
         return this._viewport ?? this.renderEngine;
     }
 
+    /**
+     * @param {import("../../render/CanvasContext.js").CanvasContext} canvasContext
+     */
+    set canvasContext(canvasContext) {
+        this._canvasContext = canvasContext;
+    }
+
+    get canvasContext() {
+        return this._canvasContext ?? this.renderEngine;
+    }
+
     // ─── 模板方法（子类覆盖） ──────────────────────────────
 
     getElementType() {
@@ -147,7 +158,7 @@ export class CellEditor {
             }
         }
 
-        this.renderEngine.canvas.parentElement.appendChild(this.editor);
+        this.canvasContext.canvasParent.appendChild(this.editor);
         this.#bindCommonEvents();
         this.bindEditorEvents();
         this.afterCreateEditor();
@@ -378,8 +389,8 @@ export class CellEditor {
     }
 
     #render() {
-        if (this.sheet && this.viewport && isFunction(this.viewport.render)) {
-            this.viewport.render(this.sheet);
+        if (this.sheet && this.canvasContext && isFunction(this.canvasContext.render)) {
+            this.canvasContext.render(this.sheet);
         }
     }
 

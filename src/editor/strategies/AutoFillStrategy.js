@@ -64,7 +64,7 @@ export class AutoFillStrategy extends EventStrategy {
     #onCursorCheck(e) {
         if (!this.enabled || !this.handler.sheet) return;
 
-        const canvas = this.handler.canvas;
+        const canvas = this.handler.canvasContext.canvas;
         if (this.#filling) {
             canvas.style.cursor = "crosshair";
             return false;
@@ -165,7 +165,7 @@ export class AutoFillStrategy extends EventStrategy {
         if (!this.#filling) return;
         this.#filling = false;
 
-        this.handler.canvas.style.cursor = "";
+        this.handler.canvasContext.canvas.style.cursor = "";
 
         const sheet = this.handler.sheet;
         const src = this.#sourceRange;

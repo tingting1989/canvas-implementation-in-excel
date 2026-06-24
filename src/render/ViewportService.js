@@ -20,7 +20,10 @@
  * ## 使用方式
  *
  * ViewportService 作为接口（抽象类），具体实现由 RenderEngineViewportService 提供。
- * 策略和编辑器通过注入的 ViewportService 实例访问视口功能：
+ * 策略和编辑器通过注入的 ViewportService 实例访问视口功能。
+ *
+ * Canvas DOM 访问和渲染控制已拆分到 CanvasContext 接口，
+ * ViewportService 仅保留纯视口查询与操作语义。
  *
  * ```js
  * // 在 EventHandler 中注入
@@ -150,29 +153,5 @@ export class ViewportService {
      */
     invalidateAll() {
         throw new Error("ViewportService.invalidateAll must be implemented");
-    }
-
-    /**
-     * 获取 Canvas 的父元素（用于 DOM 操作如 appendChild）
-     * @returns {HTMLElement|null}
-     */
-    get canvasParent() {
-        throw new Error("ViewportService.canvasParent must be implemented");
-    }
-
-    /**
-     * 获取 Canvas 元素引用
-     * @returns {HTMLCanvasElement|null}
-     */
-    get canvas() {
-        throw new Error("ViewportService.canvas must be implemented");
-    }
-
-    /**
-     * 触发渲染
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     */
-    render(sheet) {
-        throw new Error("ViewportService.render must be implemented");
     }
 }

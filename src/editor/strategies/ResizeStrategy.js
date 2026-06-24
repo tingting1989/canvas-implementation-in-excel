@@ -84,7 +84,7 @@ export class ResizeStrategy extends EventStrategy {
             const newWidth = Math.max(CONFIG.MIN_COL_WIDTH, this.#startSize + delta);
             rc.setColWidth(this.#resizeIndex, newWidth);
 
-            const rect = this.handler.canvas.getBoundingClientRect();
+            const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
             const lineX = e.clientX - rect.left;
             viewport.setResizeLine(HIT_TYPE.COL_RESIZE, this.#resizeIndex, lineX);
         } else {
@@ -92,7 +92,7 @@ export class ResizeStrategy extends EventStrategy {
             const newHeight = Math.max(CONFIG.MIN_ROW_HEIGHT, this.#startSize + delta);
             rc.setRowHeight(this.#resizeIndex, newHeight);
 
-            const rect = this.handler.canvas.getBoundingClientRect();
+            const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
             const lineY = e.clientY - rect.top;
             viewport.setResizeLine(HIT_TYPE.ROW_RESIZE, this.#resizeIndex, lineY);
         }
@@ -112,13 +112,13 @@ export class ResizeStrategy extends EventStrategy {
         const hit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
 
         if (hit) {
-            this.handler.canvas.style.cursor = hit.type === HIT_TYPE.COL_RESIZE ? "col-resize" : "row-resize";
+            this.handler.canvasContext.canvas.style.cursor = hit.type === HIT_TYPE.COL_RESIZE ? "col-resize" : "row-resize";
             this.#hoverType = hit.type;
             return false;
         }
 
         if (this.#hoverType) {
-            this.handler.canvas.style.cursor = "";
+            this.handler.canvasContext.canvas.style.cursor = "";
             this.#hoverType = null;
         }
     }

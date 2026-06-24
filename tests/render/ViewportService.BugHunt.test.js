@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ViewportService } from "../../src/render/ViewportService.js";
 import { RenderEngineViewportService } from "../../src/render/RenderEngineViewportService.js";
+import { CanvasContext } from "../../src/render/CanvasContext.js";
+import { RenderEngineCanvasContext } from "../../src/render/RenderEngineCanvasContext.js";
 
 function createMockRenderEngine(overrides = {}) {
     const {
@@ -281,7 +283,7 @@ describe("ViewportService - BugHunt", () => {
     describe("ViewportService abstract class - abuse cases", () => {
         it("should throw for every property access on raw ViewportService", () => {
             const svc = new ViewportService();
-            const props = ["scrollX", "scrollY", "viewW", "viewH", "maxScrollX", "maxScrollY", "canvasParent", "canvas"];
+            const props = ["scrollX", "scrollY", "viewW", "viewH", "maxScrollX", "maxScrollY"];
             for (const prop of props) {
                 expect(() => svc[prop]).toThrow("must be implemented");
             }
@@ -299,7 +301,6 @@ describe("ViewportService - BugHunt", () => {
                 () => svc.setResizeLine("col", 0, 0),
                 () => svc.clearResizeLine(),
                 () => svc.invalidateAll(),
-                () => svc.render(null),
             ];
             for (const fn of methods) {
                 expect(fn).toThrow("must be implemented");
@@ -314,8 +315,6 @@ describe("ViewportService - BugHunt", () => {
                 get viewH() { return 600; }
                 get maxScrollX() { return 0; }
                 get maxScrollY() { return 0; }
-                get canvasParent() { return null; }
-                get canvas() { return null; }
                 getCellRect() { return { x: 0, y: 0, w: 0, h: 0 }; }
                 hitTest() { return null; }
                 headerHitTest() { return null; }
@@ -325,7 +324,6 @@ describe("ViewportService - BugHunt", () => {
                 setResizeLine() {}
                 clearResizeLine() {}
                 invalidateAll() {}
-                render() {}
             }
 
             const impl = new CompleteImpl();
@@ -392,20 +390,6 @@ describe("ViewportService - BugHunt", () => {
     });
 
     describe("RenderEngineViewportService - null/undefined safety", () => {
-        it("should handle null canvas gracefully for canvasParent", () => {
-            const engine = createMockRenderEngine();
-            engine.canvas = null;
-            const service = new RenderEngineViewportService(engine);
-            expect(service.canvasParent).toBeNull();
-        });
-
-        it("should handle null canvas gracefully for canvas", () => {
-            const engine = createMockRenderEngine();
-            engine.canvas = null;
-            const service = new RenderEngineViewportService(engine);
-            expect(service.canvas).toBeNull();
-        });
-
         it("should handle undefined mergeInfo in getCellRect", () => {
             const engine = createMockRenderEngine();
             const service = new RenderEngineViewportService(engine);
@@ -474,8 +458,6 @@ describe("ViewportService - BugHunt", () => {
                 get viewH() { return 600; }
                 get maxScrollX() { return 0; }
                 get maxScrollY() { return 0; }
-                get canvasParent() { return null; }
-                get canvas() { return null; }
                 hitTest() { return { type: "cell", row: 0, col: 0 }; }
                 getCellRect() { return { x: 0, y: 0, w: 100, h: 28 }; }
                 scrollToCell() {}
@@ -483,7 +465,6 @@ describe("ViewportService - BugHunt", () => {
                 setResizeLine() {}
                 clearResizeLine() {}
                 invalidateAll() {}
-                render() {}
                 fillHandleHitTest() { return false; }
                 headerHitTest() { return null; }
             }
@@ -491,6 +472,99 @@ describe("ViewportService - BugHunt", () => {
             const impl = new MinimalTestImpl();
             expect(impl.hitTest(0, 0)).toEqual({ type: "cell", row: 0, col: 0 });
             expect(impl.isCellVisible(0, 0, 800, 600)).toBe(true);
+        });
+    });
+
+    describe("CanvasContext - BugHunt", () => {
+        describe("CanvasContext abstract class - abuse cases", () => {
+            it("should throw for every property/method access on raw CanvasContext", () => {
+                const ctx = new CanvasContext();
+                expect(() => ctx.canvas).toThrow("CanvasContext.canvas must be implemented");
+                expect(() => ctx.canvasParent).toThrow("CanvasContext.canvasParent must be implemented");
+                expect(() => ctx.render(null)).toThrow("CanvasContext.render must be implemented");
+            });
+
+            it("should allow subclass to correctly override all abstract members", () => {
+                class TestCanvasContext extends CanvasContext {
+                    get canvas() { return null; }
+                    get canvasParent() { return null; }
+                    render() {}
+                }
+                const ctx = new TestCanvasContext();
+                expect(ctx.canvas).toBeNull();
+                expect(ctx.canvasParent).toBeNull();
+                expect(() => ctx.render({})).not.toThrow();
+            });
+
+            it("should enforce that partial implementation still throws for missing methods", () => {
+                class PartialCanvasContext extends CanvasContext {
+                    get canvas() { return null; }
+                }
+                const ctx = new PartialCanvasContext();
+                expect(ctx.canvas).toBeNull();
+                expect(() => ctx.canvasParent).toThrow("must be implemented");
+                expect(() => ctx.render(null)).toThrow("must be implemented");
+            });
+        });
+
+        describe("RenderEngineCanvasContext - boundary inputs", () => {
+            it("should handle null canvas gracefully for canvasParent", () => {
+                const engine = createMockRenderEngine();
+                engine.canvas = null;
+                const ctx = new RenderEngineCanvasContext(engine);
+                expect(ctx.canvasParent).toBeNull();
+            });
+
+            it("should handle null canvas gracefully for canvas", () => {
+                const engine = createMockRenderEngine();
+                engine.canvas = null;
+                const ctx = new RenderEngineCanvasContext(engine);
+                expect(ctx.canvas).toBeNull();
+            });
+
+            it("should handle undefined canvas gracefully for canvasParent", () => {
+                const engine = createMockRenderEngine();
+                engine.canvas = undefined;
+                const ctx = new RenderEngineCanvasContext(engine);
+                expect(ctx.canvasParent).toBeNull();
+            });
+
+            it("should handle render with null sheet", () => {
+                const engine = createMockRenderEngine();
+                const ctx = new RenderEngineCanvasContext(engine);
+                ctx.render(null);
+                expect(engine.render).toHaveBeenCalledWith(null);
+            });
+
+            it("should handle render with undefined sheet", () => {
+                const engine = createMockRenderEngine();
+                const ctx = new RenderEngineCanvasContext(engine);
+                ctx.render(undefined);
+                expect(engine.render).toHaveBeenCalledWith(undefined);
+            });
+        });
+
+        describe("RenderEngineCanvasContext - stress tests", () => {
+            it("should handle rapid sequential render calls", () => {
+                const engine = createMockRenderEngine();
+                const ctx = new RenderEngineCanvasContext(engine);
+                const mockSheet = createMockSheet();
+                for (let i = 0; i < 1000; i++) {
+                    ctx.render(mockSheet);
+                }
+                expect(engine.render).toHaveBeenCalledTimes(1000);
+            });
+
+            it("should handle alternating canvas access and render calls", () => {
+                const engine = createMockRenderEngine();
+                const ctx = new RenderEngineCanvasContext(engine);
+                const mockSheet = createMockSheet();
+                for (let i = 0; i < 500; i++) {
+                    const c = ctx.canvas;
+                    ctx.render(mockSheet);
+                }
+                expect(engine.render).toHaveBeenCalledTimes(500);
+            });
         });
     });
 });
