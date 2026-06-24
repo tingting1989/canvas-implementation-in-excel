@@ -1,55 +1,57 @@
 {
-  "name": "canvas-sheet",
-  "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "dev": "webpack serve --mode development",
-    "build": "webpack --mode production",
-    "lint": "npm run lint:js",
-    "lint:js": "eslint . --fix",
-    "format": "prettier --write src/",
-    "lint-staged": "lint-staged",
-    "prepare": "husky",
-    "pre-commit": "lint-staged",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
-    "test:legacy": "node --experimental-loader ./examples/test-loader.mjs ./examples/run-tests-node.mjs",
-    "test:browser": "webpack serve --mode development --open http://localhost:9000/examples/tests.html"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "lint-staged": {
-    "*.{js,mjs}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@vitest/ui": "^4.1.9",
-    "@vue/eslint-config-prettier": "^10.2.0",
-    "eslint": "^10.4.1",
-    "eslint-plugin-import-x": "^4.12.2",
-    "eslint-plugin-vue": "^10.8.0",
-    "globals": "^16.0.0",
-    "html-webpack-plugin": "^5.6.0",
-    "husky": "^9.0.11",
-    "jsdom": "^29.1.1",
-    "lint-staged": "^16.4.0",
-    "prettier": "^3.0.3",
-    "vitest": "^4.1.9",
-    "webpack": "^5.90.3",
-    "webpack-cli": "^7.0.3",
-    "webpack-dev-server": "^5.0.2"
-  },
-  "dependencies": {
-    "lodash-es": "^4.18.1"
-  }
+    "name": "canvas-sheet",
+    "version": "1.0.0",
+    "main": "index.js",
+    "scripts": {
+        "dev": "webpack serve --mode development",
+        "build": "webpack --mode production",
+        "lint": "npm run lint:js",
+        "lint:js": "eslint . --fix",
+        "format": "prettier --write src/",
+        "lint-staged": "lint-staged",
+        "prepare": "husky",
+        "pre-commit": "lint-staged",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:ui": "vitest --ui",
+        "test:coverage": "vitest run --coverage"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "description": "",
+    "lint-staged": {
+        "*.{js,mjs}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md}": [
+            "prettier --write"
+        ]
+    },
+    "devDependencies": {
+        "@babel/core": "^8.0.1",
+        "@babel/preset-env": "^8.0.2",
+        "@eslint/js": "^10.0.1",
+        "@vitest/ui": "^4.1.9",
+        "@vue/eslint-config-prettier": "^10.2.0",
+        "babel-loader": "^10.1.1",
+        "eslint": "^10.4.1",
+        "eslint-plugin-import-x": "^4.12.2",
+        "eslint-plugin-vue": "^10.8.0",
+        "globals": "^16.0.0",
+        "html-webpack-plugin": "^5.6.0",
+        "husky": "^9.0.11",
+        "jsdom": "^29.1.1",
+        "lint-staged": "^16.4.0",
+        "prettier": "^3.0.3",
+        "terser-webpack-plugin": "^5.6.1",
+        "vitest": "^4.1.9",
+        "webpack": "^5.90.3",
+        "webpack-cli": "^7.0.3",
+        "webpack-dev-server": "^5.0.2"
+    },
+    "dependencies": {
+        "lodash-es": "^4.18.1"
+    }
 }

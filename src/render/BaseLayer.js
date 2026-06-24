@@ -13,10 +13,9 @@
  * 5. 响应式集成：支持 ReactiveStore 自动触发脏标记
  */
 export class BaseLayer {
-    /**
-     * @param {string} name - 图层唯一标识符（用于调试和日志）
-     * @param {number} zIndex - 图层叠放顺序（数值越大越在上层）
-     */
+    #watchers = new Map();
+    #store = null;
+
     constructor(name, zIndex) {
         if (!name || typeof name !== "string") {
             throw new Error(`[BaseLayer] name must be a non-empty string`);
@@ -32,8 +31,6 @@ export class BaseLayer {
         this.ctx = null;
         this.enabled = true;
         this.renderCount = 0;
-        this._watchers = new Map();
-        this._store = null;
     }
 
     /**
@@ -42,7 +39,11 @@ export class BaseLayer {
      * @param {import('../state/ReactiveStore.js').ReactiveStore} store - 响应式存储实例
      */
     bindStore(store) {
-        this._store = store;
+        this.#store = store;
+    }
+
+    getStore() {
+        return this.#store;
     }
 
     /**
@@ -53,20 +54,20 @@ export class BaseLayer {
      * @returns {Function} 取消监听的函数
      */
     watch(path, callback) {
-        if (!this._store) {
+        if (!this.#store) {
             console.warn(`[${this.name}] Cannot watch: no store bound. Call bindStore() first.`);
             return () => {};
         }
 
-        const unwatch = this._store.watch(path, (newVal, oldVal) => {
+        const unwatch = this.#store.watch(path, (newVal, oldVal) => {
             this.markDirty();
             callback(newVal, oldVal);
         });
 
-        if (!this._watchers.has(path)) {
-            this._watchers.set(path, []);
+        if (!this.#watchers.has(path)) {
+            this.#watchers.set(path, []);
         }
-        this._watchers.get(path).push({ callback, unwatch });
+        this.#watchers.get(path).push({ callback, unwatch });
 
         return unwatch;
     }
@@ -89,12 +90,12 @@ export class BaseLayer {
      * 清除所有手动注册的watcher
      */
     clearWatchers() {
-        for (const [, watchers] of this._watchers) {
+        for (const [, watchers] of this.#watchers) {
             for (const { unwatch } of watchers) {
                 unwatch();
             }
         }
-        this._watchers.clear();
+        this.#watchers.clear();
     }
 
     /**
@@ -164,7 +165,7 @@ export class BaseLayer {
             this.ctx = null;
         }
 
-        this._store = null;
+        this.#store = null;
         this.dirty = true;
         this.renderCount = 0;
     }
@@ -178,8 +179,8 @@ export class BaseLayer {
             renderCount: this.renderCount,
             hasCanvas: !!this.canvas,
             canvasSize: this.canvas ? { w: this.canvas.width, h: this.canvas.height } : null,
-            watcherCount: Array.from(this._watchers.values()).reduce((sum, arr) => sum + arr.length, 0),
-            hasStore: !!this._store,
+            watcherCount: Array.from(this.#watchers.values()).reduce((sum, arr) => sum + arr.length, 0),
+            hasStore: !!this.#store,
         };
     }
 }

@@ -30,26 +30,16 @@ import { BaseLayer } from "../BaseLayer.js";
 import { HeaderRenderer } from "../HeaderRenderer.js";
 
 export class HeaderLayer extends BaseLayer {
+    #dragIndicatorLayer = null;
+
     constructor() {
         super("headers", 5);
 
-        /** 表头渲染器实例，负责实际的行列头绘制逻辑 */
         this.headerRenderer = new HeaderRenderer();
-
-        /** 拖拽指示器图层引用，由 RenderEngine 注入 */
-        this._dragIndicatorLayer = null;
     }
 
-    /**
-     * 注入拖拽指示器图层依赖
-     *
-     * 替代之前通过 options.layers.find() 查找的方式，
-     * 使依赖关系显式化，避免字符串匹配的脆弱性。
-     *
-     * @param {import("./DragIndicatorLayer.js").DragIndicatorLayer} layer - 拖拽指示器图层实例
-     */
     setDragIndicator(layer) {
-        this._dragIndicatorLayer = layer;
+        this.#dragIndicatorLayer = layer;
     }
 
     /**
@@ -89,7 +79,7 @@ export class HeaderLayer extends BaseLayer {
 
         const { viewW, viewH } = options;
 
-        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH, this._dragIndicatorLayer);
+        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH, this.#dragIndicatorLayer);
 
         this.renderCount++;
     }

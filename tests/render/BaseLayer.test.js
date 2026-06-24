@@ -86,7 +86,7 @@ describe("BaseLayer", () => {
         layer.destroy();
         store.state.count = 5;
         store.flush();
-        expect(layer._store).toBeNull();
+        expect(layer.getStore()).toBeNull();
     });
 
     it("should return debug info", () => {

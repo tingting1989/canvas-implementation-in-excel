@@ -131,7 +131,7 @@ describe("HeaderLayer", () => {
         layer.bindStore(store);
         layer.watch("scroll", () => {});
         layer.destroy();
-        expect(layer._store).toBeNull();
+        expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
     });
 
@@ -144,16 +144,26 @@ describe("HeaderLayer", () => {
 });
 
 describe("HeaderLayer - setDragIndicator", () => {
-    it("should have null drag indicator by default", () => {
+    it("should pass null to HeaderRenderer when no drag indicator set", () => {
         const layer = new HeaderLayer();
-        expect(layer._dragIndicatorLayer).toBeNull();
+
+        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        layer.render({}, {}, {}, { viewW: 800, viewH: 600 });
+
+        expect(renderSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, null);
+        renderSpy.mockRestore();
     });
 
     it("should set drag indicator via setDragIndicator", () => {
         const layer = new HeaderLayer();
         const dragLayer = new DragIndicatorLayer();
         layer.setDragIndicator(dragLayer);
-        expect(layer._dragIndicatorLayer).toBe(dragLayer);
+
+        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        layer.render({}, {}, {}, { viewW: 800, viewH: 600 });
+
+        expect(renderSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, dragLayer);
+        renderSpy.mockRestore();
     });
 
     it("should pass drag indicator to HeaderRenderer.render", () => {
@@ -169,16 +179,6 @@ describe("HeaderLayer - setDragIndicator", () => {
         layer.render(ctx, sheet, viewport, { viewW: 800, viewH: 600 });
 
         expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, viewport, 800, 600, dragLayer);
-        renderSpy.mockRestore();
-    });
-
-    it("should pass null to HeaderRenderer when no drag indicator set", () => {
-        const layer = new HeaderLayer();
-
-        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
-        layer.render({}, {}, {}, { viewW: 800, viewH: 600 });
-
-        expect(renderSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, null);
         renderSpy.mockRestore();
     });
 
@@ -202,10 +202,16 @@ describe("HeaderLayer - setDragIndicator", () => {
         const dragLayer2 = new DragIndicatorLayer();
 
         layer.setDragIndicator(dragLayer1);
-        expect(layer._dragIndicatorLayer).toBe(dragLayer1);
+        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        layer.render({}, {}, {}, { viewW: 800, viewH: 600 });
+        expect(renderSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, dragLayer1);
+        renderSpy.mockRestore();
 
         layer.setDragIndicator(dragLayer2);
-        expect(layer._dragIndicatorLayer).toBe(dragLayer2);
+        const renderSpy2 = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        layer.render({}, {}, {}, { viewW: 800, viewH: 600 });
+        expect(renderSpy2).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, dragLayer2);
+        renderSpy2.mockRestore();
     });
 
     it("should allow clearing drag indicator by passing null", () => {
@@ -213,6 +219,10 @@ describe("HeaderLayer - setDragIndicator", () => {
         const dragLayer = new DragIndicatorLayer();
         layer.setDragIndicator(dragLayer);
         layer.setDragIndicator(null);
-        expect(layer._dragIndicatorLayer).toBeNull();
+
+        const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
+        layer.render({}, {}, {}, { viewW: 800, viewH: 600 });
+        expect(renderSpy).toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.anything(), 800, 600, null);
+        renderSpy.mockRestore();
     });
 });

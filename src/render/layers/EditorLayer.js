@@ -17,7 +17,7 @@ export class EditorLayer extends BaseLayer {
         if (!this.enabled) return;
 
         const { viewW, viewH } = options;
-        const store = this._store;
+        const store = this.getStore();
         if (!store) return;
 
         const editorVisible = store.state.editor.visible;
