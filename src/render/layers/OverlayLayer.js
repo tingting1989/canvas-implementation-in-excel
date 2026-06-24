@@ -24,14 +24,4 @@ export class OverlayLayer extends BaseLayer {
 
         this.renderCount++;
     }
-
-    setResizeLine(type, position) {
-        this.overlayRenderer.setResizeLine(type, position);
-        this.markDirty();
-    }
-
-    clearResizeLine() {
-        this.overlayRenderer.clearResizeLine();
-        this.markDirty();
-    }
 }

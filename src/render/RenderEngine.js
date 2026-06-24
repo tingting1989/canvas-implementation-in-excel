@@ -8,8 +8,11 @@ import { LayerCompositor } from "./LayerCompositor.js";
 import { TileLayer } from "./layers/TileLayer.js";
 import { OverlayLayer } from "./layers/OverlayLayer.js";
 import { FrozenLayer } from "./layers/FrozenLayer.js";
+import { ResizeLayer } from "./layers/ResizeLayer.js";
 import { HeaderLayer } from "./layers/HeaderLayer.js";
+import { DragIndicatorLayer } from "./layers/DragIndicatorLayer.js";
 import { UILayer } from "./layers/UILayer.js";
+import { EditorLayer } from "./layers/EditorLayer.js";
 import { ReactiveStore } from "../state/ReactiveStore.js";
 
 export class RenderEngine {
@@ -62,8 +65,11 @@ export class RenderEngine {
         this.tileLayer = new TileLayer();
         this.overlayLayer = new OverlayLayer();
         this.frozenLayer = new FrozenLayer();
+        this.resizeLayer = new ResizeLayer();
         this.headerLayer = new HeaderLayer();
+        this.dragIndicatorLayer = new DragIndicatorLayer();
         this.uiLayer = new UILayer();
+        this.editorLayer = new EditorLayer();
 
         this.tileLayer.onContentReady = () => {
             this.requestRender();
@@ -72,8 +78,11 @@ export class RenderEngine {
         this.compositor.register(this.tileLayer);
         this.compositor.register(this.frozenLayer);
         this.compositor.register(this.overlayLayer);
+        this.compositor.register(this.resizeLayer);
         this.compositor.register(this.headerLayer);
+        this.compositor.register(this.dragIndicatorLayer);
         this.compositor.register(this.uiLayer);
+        this.compositor.register(this.editorLayer);
 
         this.compositor.bindAllLayers(this.store);
     }
@@ -103,13 +112,11 @@ export class RenderEngine {
     }
 
     setResizeLine(type, index, position) {
-        this.headerLayer.headerRenderer.resizeRenderer.setResizeLine(type, index, position);
-        this.headerLayer.markDirty();
+        this.resizeLayer.setResizeLine(type, index, position);
     }
 
     clearResizeLine() {
-        this.headerLayer.headerRenderer.resizeRenderer.setResizeLine(null);
-        this.headerLayer.markDirty();
+        this.resizeLayer.clearResizeLine();
     }
 
     get onScrollCallback() {
@@ -390,8 +397,11 @@ export class RenderEngine {
         this.tileLayer.markAllDirty();
         this.frozenLayer.markDirty();
         this.overlayLayer.markDirty();
+        this.resizeLayer.markDirty();
         this.headerLayer.markDirty();
+        this.dragIndicatorLayer.markDirty();
         this.uiLayer.markDirty();
+        this.editorLayer.markDirty();
         this.requestRender();
     }
 

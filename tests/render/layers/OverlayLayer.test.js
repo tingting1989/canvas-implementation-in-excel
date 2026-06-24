@@ -94,26 +94,6 @@ describe("OverlayLayer", () => {
         expect(layer.renderCount).toBe(3);
     });
 
-    it("should set resize line and mark dirty", () => {
-        layer.clearDirty();
-        const setSpy = vi.spyOn(layer.overlayRenderer, "setResizeLine");
-        layer.setResizeLine("col", 150);
-        expect(setSpy).toHaveBeenCalledWith("col", 150);
-        expect(layer.dirty).toBe(true);
-        setSpy.mockRestore();
-    });
-
-    it("should clear resize line and mark dirty", () => {
-        layer.setResizeLine("col", 150);
-        layer.clearDirty();
-
-        const clearSpy = vi.spyOn(layer.overlayRenderer, "clearResizeLine");
-        layer.clearResizeLine();
-        expect(clearSpy).toHaveBeenCalled();
-        expect(layer.dirty).toBe(true);
-        clearSpy.mockRestore();
-    });
-
     it("should destroy and clean up", () => {
         const store = new ReactiveStore({
             selection: { ranges: [], activeRange: null },
@@ -165,35 +145,6 @@ describe("OverlayLayer", () => {
 
         expect(renderSelectionSpy).toHaveBeenCalledWith(ctx, sheet, viewport, 1024, 768);
         renderSelectionSpy.mockRestore();
-    });
-
-    it("should handle setResizeLine for row type", () => {
-        layer.clearDirty();
-        const setSpy = vi.spyOn(layer.overlayRenderer, "setResizeLine");
-        layer.setResizeLine("row", 200);
-        expect(setSpy).toHaveBeenCalledWith("row", 200);
-        expect(layer.dirty).toBe(true);
-        setSpy.mockRestore();
-    });
-
-    it("should handle setResizeLine for col type", () => {
-        layer.clearDirty();
-        const setSpy = vi.spyOn(layer.overlayRenderer, "setResizeLine");
-        layer.setResizeLine("col", 300);
-        expect(setSpy).toHaveBeenCalledWith("col", 300);
-        expect(layer.dirty).toBe(true);
-        setSpy.mockRestore();
-    });
-
-    it("should handle clearResizeLine after setResizeLine", () => {
-        layer.setResizeLine("col", 150);
-        layer.clearDirty();
-
-        const clearSpy = vi.spyOn(layer.overlayRenderer, "clearResizeLine");
-        layer.clearResizeLine();
-        expect(clearSpy).toHaveBeenCalled();
-        expect(layer.dirty).toBe(true);
-        clearSpy.mockRestore();
     });
 
     it("should not render when disabled even with valid options", () => {

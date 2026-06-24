@@ -103,7 +103,7 @@ describe("HeaderLayer", () => {
 
         layer.render(ctx, sheet, viewport, options);
 
-        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, viewport, 800, 600);
+        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, viewport, 800, 600, undefined);
         expect(layer.renderCount).toBe(1);
         renderSpy.mockRestore();
     });

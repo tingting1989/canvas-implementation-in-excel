@@ -72,9 +72,10 @@ export class HeaderLayer extends BaseLayer {
     render(ctx, sheet, viewport, options = {}) {
         if (!this.enabled) return;
 
-        const { viewW, viewH } = options;
+        const { viewW, viewH, layers } = options;
+        const dragIndicator = layers?.find((l) => l.name === "drag-indicator");
 
-        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH);
+        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH, dragIndicator);
 
         this.renderCount++;
     }

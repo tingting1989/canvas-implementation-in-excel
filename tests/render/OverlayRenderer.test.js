@@ -1,53 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { OverlayRenderer } from "../../src/render/OverlayRenderer.js";
-import { HIT_TYPE } from "../../src/constants/hitType.js";
 
 describe("OverlayRenderer", () => {
     let renderer;
 
     beforeEach(() => {
         renderer = new OverlayRenderer();
-    });
-
-    describe("resizeLine management", () => {
-        it("should start with no resize line", () => {
-            expect(renderer.getResizeLine()).toBeNull();
-        });
-
-        it("should set column resize line", () => {
-            renderer.setResizeLine(HIT_TYPE.COL_RESIZE, 150);
-            const line = renderer.getResizeLine();
-            expect(line).not.toBeNull();
-            expect(line.type).toBe(HIT_TYPE.COL_RESIZE);
-            expect(line.position).toBe(150);
-        });
-
-        it("should set row resize line", () => {
-            renderer.setResizeLine(HIT_TYPE.ROW_RESIZE, 200);
-            const line = renderer.getResizeLine();
-            expect(line).not.toBeNull();
-            expect(line.type).toBe(HIT_TYPE.ROW_RESIZE);
-            expect(line.position).toBe(200);
-        });
-
-        it("should clear resize line", () => {
-            renderer.setResizeLine(HIT_TYPE.COL_RESIZE, 100);
-            renderer.clearResizeLine();
-            expect(renderer.getResizeLine()).toBeNull();
-        });
-
-        it("should replace existing resize line", () => {
-            renderer.setResizeLine(HIT_TYPE.COL_RESIZE, 100);
-            renderer.setResizeLine(HIT_TYPE.ROW_RESIZE, 200);
-            const line = renderer.getResizeLine();
-            expect(line.type).toBe(HIT_TYPE.ROW_RESIZE);
-            expect(line.position).toBe(200);
-        });
-
-        it("should handle clear when no resize line exists", () => {
-            expect(() => renderer.clearResizeLine()).not.toThrow();
-            expect(renderer.getResizeLine()).toBeNull();
-        });
     });
 
     describe("renderMerges", () => {
@@ -216,70 +174,7 @@ describe("OverlayRenderer", () => {
             expect(ctx.strokeRect).toHaveBeenCalled();
         });
 
-        it("should render resize line when set", () => {
-            const ctx = {
-                fillStyle: "",
-                strokeStyle: "",
-                lineWidth: 0,
-                fillRect: vi.fn(),
-                strokeRect: vi.fn(),
-                save: vi.fn(),
-                restore: vi.fn(),
-                beginPath: vi.fn(),
-                moveTo: vi.fn(),
-                lineTo: vi.fn(),
-                stroke: vi.fn(),
-                setLineDash: vi.fn(),
-            };
-
-            const sheet = createMockSheetForSelection();
-            const vt = createMockVt();
-            vt.headerH = 28;
-            vt.headerW = 46;
-
-            renderer.setResizeLine(HIT_TYPE.COL_RESIZE, 100);
-            renderer.renderSelection(ctx, sheet, vt, 800, 600);
-
-            expect(ctx.save).toHaveBeenCalled();
-            expect(ctx.setLineDash).toHaveBeenCalledWith([4, 3]);
-            expect(ctx.beginPath).toHaveBeenCalled();
-            expect(ctx.moveTo).toHaveBeenCalled();
-            expect(ctx.lineTo).toHaveBeenCalled();
-            expect(ctx.stroke).toHaveBeenCalled();
-            expect(ctx.restore).toHaveBeenCalled();
-        });
-
-        it("should render row resize line when set", () => {
-            const ctx = {
-                fillStyle: "",
-                strokeStyle: "",
-                lineWidth: 0,
-                fillRect: vi.fn(),
-                strokeRect: vi.fn(),
-                save: vi.fn(),
-                restore: vi.fn(),
-                beginPath: vi.fn(),
-                moveTo: vi.fn(),
-                lineTo: vi.fn(),
-                stroke: vi.fn(),
-                setLineDash: vi.fn(),
-            };
-
-            const sheet = createMockSheetForSelection();
-            const vt = createMockVt();
-            vt.headerH = 28;
-            vt.headerW = 46;
-
-            renderer.setResizeLine(HIT_TYPE.ROW_RESIZE, 80);
-            renderer.renderSelection(ctx, sheet, vt, 800, 600);
-
-            expect(ctx.save).toHaveBeenCalled();
-            expect(ctx.setLineDash).toHaveBeenCalledWith([4, 3]);
-            expect(ctx.stroke).toHaveBeenCalled();
-            expect(ctx.restore).toHaveBeenCalled();
-        });
-
-        it("should not render resize line when not set", () => {
+        it("should not render resize line (moved to ResizeLayer)", () => {
             const ctx = {
                 fillStyle: "",
                 strokeStyle: "",

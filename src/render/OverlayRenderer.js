@@ -28,43 +28,8 @@
  */
 
 import { CONFIG } from "../constants/config";
-import { HIT_TYPE } from "../constants/hitType";
 
 export class OverlayRenderer {
-    /** 拖拽调整行高/列宽时的参考线状态，null 表示无参考线 */
-    #resizeLine = null;
-
-    /**
-     * 设置拖拽参考线
-     *
-     * 当用户开始拖拽列宽或行高调整手柄时调用，
-     * 设置后在下次 renderSelection 时会绘制虚线参考线。
-     *
-     * @param {string} type - 拖拽类型，HIT_TYPE.COL_RESIZE 或 HIT_TYPE.ROW_RESIZE
-     * @param {number} position - 参考线相对于表头边缘的像素位置
-     */
-    setResizeLine(type, position) {
-        this.#resizeLine = { type, position };
-    }
-
-    /**
-     * 清除拖拽参考线
-     *
-     * 通常在鼠标释放或取消拖拽操作时调用
-     */
-    clearResizeLine() {
-        this.#resizeLine = null;
-    }
-
-    /**
-     * 获取当前拖拽参考线状态
-     *
-     * @returns {{ type: string, position: number } | null} 当前参考线状态，无则返回 null
-     */
-    getResizeLine() {
-        return this.#resizeLine;
-    }
-
     /**
      * 渲染所有合并单元格的边框
      *
@@ -133,10 +98,6 @@ export class OverlayRenderer {
         this.#renderActiveCell(ctx, vt, focusRow, focusCol, sheet);
         this.#renderRangeBorder(ctx, vt, range);
         this.#renderFillHandle(ctx, vt, range);
-
-        if (this.#resizeLine) {
-            this.#renderResizeLine(ctx, this.#resizeLine, vt, viewW, viewH);
-        }
     }
 
     /**
@@ -214,35 +175,5 @@ export class OverlayRenderer {
 
         ctx.fillStyle = CONFIG.SELECTION_COLOR;
         ctx.fillRect(x2 - 5, y2 - 5, 5, 5);
-    }
-
-    /**
-     * 渲染拖拽调整列宽/行高的参考线
-     *
-     * 使用蓝色虚线 [4,3] pattern 绘制：
-     * - COL_RESIZE: 从表头底部到画布底部的垂直线
-     * - ROW_RESIZE: 从表头右侧到画布右侧的水平线
-     */
-    #renderResizeLine(ctx, line, vt, viewW, viewH) {
-        ctx.save();
-        ctx.strokeStyle = "#4c8bf5";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([4, 3]);
-
-        if (line.type === HIT_TYPE.COL_RESIZE) {
-            const x = vt.headerW + line.position;
-            ctx.beginPath();
-            ctx.moveTo(x, vt.headerH);
-            ctx.lineTo(x, viewH);
-            ctx.stroke();
-        } else if (line.type === HIT_TYPE.ROW_RESIZE) {
-            const y = vt.headerH + line.position;
-            ctx.beginPath();
-            ctx.moveTo(vt.headerW, y);
-            ctx.lineTo(viewW, y);
-            ctx.stroke();
-        }
-
-        ctx.restore();
     }
 }

@@ -1,6 +1,4 @@
 ﻿import { CONFIG } from "../constants/config";
-import { ResizeHandleRenderer } from "./ResizeHandleRenderer.js";
-import { DragIndicatorRenderer } from "./DragIndicatorRenderer.js";
 import { isObject, isString } from "lodash-es";
 
 /** 拖拽源行头/列头的半透明高亮色 */
@@ -20,23 +18,17 @@ const HEADER_ROW_PADDING = 6;
  * - 行头区域（左侧竖条）
  * - 左上角交叉区域
  *
- * 调整手柄和拖拽指示器已分离为独立子渲染器：
- * - {@link ResizeHandleRenderer} — 列宽/行高调整虚线
- * - {@link DragIndicatorRenderer} — 拖拽幽灵和插入指示线
+ * 调整手柄和拖拽指示器已分离为独立 Layer：
+ * - {@link ResizeLayer} — 列宽/行高调整虚线
+ * - {@link DragIndicatorLayer} — 拖拽幽灵和插入指示线
  *
  * 渲染层次（从底到顶）：
  * 1. 列头背景 + 文字
  * 2. 行头背景 + 文字
  * 3. 左上角
- * 4. 调整线（委托 ResizeHandleRenderer）
- * 5. 移动指示器（委托 DragIndicatorRenderer）
  */
 export class HeaderRenderer {
     constructor() {
-        /** 调整手柄渲染器 */
-        this.resizeRenderer = new ResizeHandleRenderer();
-        /** 拖拽指示器渲染器 */
-        this.dragRenderer = new DragIndicatorRenderer();
     }
 
     /**
@@ -47,15 +39,13 @@ export class HeaderRenderer {
      * @param {number} viewW - 可视区域宽度
      * @param {number} viewH - 可视区域高度
      */
-    render(ctx, sheet, vt, viewW, viewH) {
+    render(ctx, sheet, vt, viewW, viewH, dragIndicator = null) {
+        this._dragIndicator = dragIndicator;
         const range = sheet.selection.getRange();
 
         this.#renderColumnHeaders(ctx, sheet, vt, viewW, range);
         this.#renderRowHeaders(ctx, sheet, vt, viewH, range);
         this.#renderCorner(ctx, vt, range);
-        this.resizeRenderer.render(ctx, viewW, viewH);
-        this.dragRenderer.renderColumnMoveIndicator(ctx, sheet, vt, viewW, viewH);
-        this.dragRenderer.renderRowMoveIndicator(ctx, sheet, vt, viewW, viewH);
     }
 
     /**
@@ -115,7 +105,7 @@ export class HeaderRenderer {
             });
         }
 
-        if (!this.dragRenderer.hasColumnMove()) {
+        if (!this._dragIndicator?.hasColumnMove()) {
             const topColX = vt.colToViewX(range.topCol);
             const bottomColRight = vt.colRightToViewX(range.bottomCol);
             this.#drawSelectionLine(ctx, topColX, totalHeaderH, bottomColRight - topColX, true);
@@ -149,7 +139,7 @@ export class HeaderRenderer {
                 const w = rc.getColWidth(c);
                 if (w <= 0) continue;
                 const x = vt.colToViewX(c);
-                const isSource = this.dragRenderer.isColumnSource(c);
+                const isSource = this._dragIndicator?.isColumnSource(c) ?? false;
                 const highlighted = c >= range.topCol && c <= range.bottomCol;
                 this.#drawHeaderCell(ctx, x, clipY, w, rowH, isSource, highlighted, defaultStyle);
                 this.#drawHeaderText(ctx, sheet.getColHeader(c), x + HEADER_COL_PADDING, clipY + rowH - 8, null, headerFont);
@@ -246,7 +236,7 @@ export class HeaderRenderer {
 
                 if (totalW <= 0) continue;
 
-                const isSource = this.dragRenderer.isColumnSource(startCol);
+                const isSource = this._dragIndicator?.isColumnSource(startCol) ?? false;
                 this.#drawHeaderCell(ctx, x, layerY, totalW, rowH, isSource, false, defaultStyle);
 
                 if (label && !(colspan > 1 && !isFrozenRegion && startCol < sc)) {
@@ -334,7 +324,7 @@ export class HeaderRenderer {
             });
         }
 
-        if (!this.dragRenderer.hasRowMove()) {
+        if (!this._dragIndicator?.hasRowMove()) {
             const topRowY = vt.rowToViewY(range.topRow);
             const bottomRowBottom = vt.rowBottomToViewY(range.bottomRow);
             this.#drawSelectionLine(ctx, headerW, topRowY, bottomRowBottom - topRowY, false);
@@ -366,7 +356,7 @@ export class HeaderRenderer {
             const h = rc.getRowHeight(r);
             if (h <= 0) continue;
 
-            const isSource = this.dragRenderer.isRowSource(r);
+            const isSource = this._dragIndicator?.isRowSource(r) ?? false;
             const highlighted = r >= range.topRow && r <= range.bottomRow;
 
             this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, defaultStyle);

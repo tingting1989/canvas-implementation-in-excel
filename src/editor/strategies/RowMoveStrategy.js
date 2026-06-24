@@ -136,8 +136,7 @@ export class RowMoveStrategy extends EventStrategy {
         const rect = this.handler.canvas.getBoundingClientRect();
         const dragY = e.clientY - rect.top;
 
-        const headerRenderer = this.handler.renderEngine.headerRenderer;
-        headerRenderer.dragRenderer.setRowMoveState({
+        this.handler.renderEngine.dragIndicatorLayer.setRowMoveState({
             sourceRow: this.#sourceRow,
             targetRow: this.#targetRow,
             dragY: dragY,
@@ -201,8 +200,8 @@ export class RowMoveStrategy extends EventStrategy {
 
     /** 清除 HeaderRenderer 中的行移动指示器 */
     #clearIndicator() {
-        if (this.handler.renderEngine?.headerRenderer) {
-            this.handler.renderEngine.headerRenderer.dragRenderer.setRowMoveState(null);
+        if (this.handler.renderEngine?.dragIndicatorLayer) {
+            this.handler.renderEngine.dragIndicatorLayer.setRowMoveState(null);
         }
     }
 }
