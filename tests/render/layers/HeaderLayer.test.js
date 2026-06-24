@@ -9,9 +9,9 @@ describe("HeaderLayer", () => {
         layer = new HeaderLayer();
     });
 
-    it("should have name 'headers' and zIndex 3", () => {
+    it("should have name 'headers' and zIndex 5", () => {
         expect(layer.name).toBe("headers");
-        expect(layer.zIndex).toBe(3);
+        expect(layer.zIndex).toBe(5);
     });
 
     it("should be dirty on construction", () => {

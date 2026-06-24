@@ -31,7 +31,7 @@ import { HeaderRenderer } from "../HeaderRenderer.js";
 
 export class HeaderLayer extends BaseLayer {
     constructor() {
-        super("headers", 3);
+        super("headers", 5);
 
         /** 表头渲染器实例，负责实际的行列头绘制逻辑 */
         this.headerRenderer = new HeaderRenderer();

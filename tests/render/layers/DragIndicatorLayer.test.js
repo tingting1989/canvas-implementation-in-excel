@@ -9,9 +9,9 @@ describe("DragIndicatorLayer", () => {
         layer = new DragIndicatorLayer();
     });
 
-    it("should have name 'drag-indicator' and zIndex 3.5", () => {
+    it("should have name 'drag-indicator' and zIndex 6", () => {
         expect(layer.name).toBe("drag-indicator");
-        expect(layer.zIndex).toBe(3.5);
+        expect(layer.zIndex).toBe(6);
     });
 
     it("should be dirty on construction", () => {
@@ -238,7 +238,7 @@ describe("DragIndicatorLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("drag-indicator");
-        expect(info.zIndex).toBe(3.5);
+        expect(info.zIndex).toBe(6);
         expect(info.enabled).toBe(true);
     });
 });

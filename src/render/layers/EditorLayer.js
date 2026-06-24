@@ -3,7 +3,7 @@ import { CONFIG } from "../../constants/config";
 
 export class EditorLayer extends BaseLayer {
     constructor() {
-        super("editor", 4.5);
+        super("editor", 8);
     }
 
     bindStore(store) {

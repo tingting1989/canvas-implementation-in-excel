@@ -28,9 +28,9 @@ describe("FrozenLayer", () => {
         layer = new FrozenLayer();
     });
 
-    it("should have name 'frozen' and zIndex 2.5", () => {
+    it("should have name 'frozen' and zIndex 4", () => {
         expect(layer.name).toBe("frozen");
-        expect(layer.zIndex).toBe(2.5);
+        expect(layer.zIndex).toBe(4);
     });
 
     it("should be dirty on construction", () => {
@@ -309,7 +309,7 @@ describe("FrozenLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("frozen");
-        expect(info.zIndex).toBe(2.5);
+        expect(info.zIndex).toBe(4);
         expect(info.enabled).toBe(true);
     });
 

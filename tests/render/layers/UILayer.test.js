@@ -19,9 +19,9 @@ describe("UILayer", () => {
         layer = new UILayer();
     });
 
-    it("should have name 'ui' and zIndex 4", () => {
+    it("should have name 'ui' and zIndex 7", () => {
         expect(layer.name).toBe("ui");
-        expect(layer.zIndex).toBe(4);
+        expect(layer.zIndex).toBe(7);
     });
 
     it("should be dirty on construction", () => {

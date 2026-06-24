@@ -37,7 +37,7 @@ import { BaseLayer } from "../BaseLayer.js";
 
 export class UILayer extends BaseLayer {
     constructor() {
-        super("ui", 4);
+        super("ui", 7);
 
         /** 是否开启调试模式，显示图层运行状态信息 */
         this.debugMode = false;

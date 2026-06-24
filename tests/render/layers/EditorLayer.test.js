@@ -9,9 +9,9 @@ describe("EditorLayer", () => {
         layer = new EditorLayer();
     });
 
-    it("should have name 'editor' and zIndex 4.5", () => {
+    it("should have name 'editor' and zIndex 8", () => {
         expect(layer.name).toBe("editor");
-        expect(layer.zIndex).toBe(4.5);
+        expect(layer.zIndex).toBe(8);
     });
 
     it("should be dirty on construction", () => {
@@ -168,7 +168,7 @@ describe("EditorLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("editor");
-        expect(info.zIndex).toBe(4.5);
+        expect(info.zIndex).toBe(8);
         expect(info.enabled).toBe(true);
     });
 });

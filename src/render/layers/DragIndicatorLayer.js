@@ -14,7 +14,7 @@ export class DragIndicatorLayer extends BaseLayer {
     #rowMoveState = null;
 
     constructor() {
-        super("drag-indicator", 3.5);
+        super("drag-indicator", 6);
     }
 
     bindStore(store) {

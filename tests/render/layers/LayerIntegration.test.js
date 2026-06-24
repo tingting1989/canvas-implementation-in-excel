@@ -37,11 +37,11 @@ describe("Layer Integration", () => {
         expect(sorted[1].name).toBe("overlays");
         expect(sorted[1].zIndex).toBe(2);
         expect(sorted[2].name).toBe("frozen");
-        expect(sorted[2].zIndex).toBe(2.5);
+        expect(sorted[2].zIndex).toBe(4);
         expect(sorted[3].name).toBe("headers");
-        expect(sorted[3].zIndex).toBe(3);
+        expect(sorted[3].zIndex).toBe(5);
         expect(sorted[4].name).toBe("ui");
-        expect(sorted[4].zIndex).toBe(4);
+        expect(sorted[4].zIndex).toBe(7);
     });
 
     it("should bind all layers to store", () => {
