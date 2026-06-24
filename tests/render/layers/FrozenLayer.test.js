@@ -302,7 +302,7 @@ describe("FrozenLayer", () => {
         layer.bindStore(store);
         layer.watch("frozen", () => {});
         layer.destroy();
-        expect(layer._store).toBeNull();
+       expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
     });
 

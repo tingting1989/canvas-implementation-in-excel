@@ -105,8 +105,8 @@ describe("LayerCompositor", () => {
         const store = new ReactiveStore({ count: 0 });
         compositor.bindAllLayers(store);
 
-        expect(a._store).toBe(store);
-        expect(b._store).toBe(store);
+        expect(a.getStore()).toBe(store);
+        expect(b.getStore()).toBe(store);
     });
 
     it("should compose layers to main canvas", () => {

@@ -228,7 +228,7 @@ describe("UILayer", () => {
         layer.bindStore(store);
         layer.watch("frozenOffset", () => {});
         layer.destroy();
-        expect(layer._store).toBeNull();
+        expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
     });
 
@@ -456,7 +456,7 @@ describe("UILayer", () => {
         layer.watch("frozenOffset", () => {});
         layer.watch("editor", () => {});
         layer.destroy();
-        expect(layer._store).toBeNull();
+        expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
     });
 });

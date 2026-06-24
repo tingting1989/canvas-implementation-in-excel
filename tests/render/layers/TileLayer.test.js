@@ -186,7 +186,7 @@ describe("TileLayer", () => {
         layer.bindStore(store);
         layer.watch("scroll", () => {});
         layer.destroy();
-        expect(layer._store).toBeNull();
+       expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
     });
 
@@ -300,7 +300,7 @@ describe("TileLayer", () => {
         layer.bindStore(store);
         layer.destroy();
 
-        expect(layer._store).toBeNull();
+        expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
         expect(layer.onContentReady).toBeNull();
     });

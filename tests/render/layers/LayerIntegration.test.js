@@ -55,7 +55,7 @@ describe("Layer Integration", () => {
 
         const sorted = compositor.getSortedLayers();
         for (const layer of sorted) {
-            expect(layer._store).toBe(store);
+            expect(layer.getStore()).toBe(store);
         }
     });
 

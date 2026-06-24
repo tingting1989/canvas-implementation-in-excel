@@ -102,7 +102,7 @@ describe("OverlayLayer", () => {
         layer.bindStore(store);
         layer.watch("selection", () => {});
         layer.destroy();
-        expect(layer._store).toBeNull();
+        expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
     });
 
@@ -195,7 +195,7 @@ describe("OverlayLayer", () => {
         layer.watch("frozenOffset", () => {});
         layer.destroy();
 
-        expect(layer._store).toBeNull();
+        expect(layer.getStore()).toBeNull();
         expect(layer.renderCount).toBe(0);
     });
 });
