@@ -275,7 +275,7 @@ export class CellEditor {
 
         if (changes.length === 0) return;
 
-        this.sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, changes);
+        this.sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, changes, { source: "CellEditor" });
 
         if (this.useBatchInBatchFill()) {
             this.sheet.beginBatch();
@@ -288,7 +288,7 @@ export class CellEditor {
             this.sheet.endBatch();
         }
 
-        this.sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, changes);
+        this.sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, changes, { source: "CellEditor" });
     }
 
     #onKeyDown(e) {

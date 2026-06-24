@@ -245,64 +245,67 @@ export class Workbook {
             this.renderEngine?.invalidateAll();
         });
 
-        bus.on(SHEET_EVENTS.INVALIDATE_CELL, (e) => {
-            this.renderEngine?.invalidateCell(e.pageRow, e.c);
+        bus.on(SHEET_EVENTS.INVALIDATE_CELL, (envelope) => {
+            const { pageRow, c } = envelope.payload;
+            this.renderEngine?.invalidateCell(pageRow, c);
         });
 
-        bus.on(SHEET_EVENTS.RENDER_REQUEST, (e) => {
-            this.renderEngine?.render(e.sheet);
+        bus.on(SHEET_EVENTS.RENDER_REQUEST, () => {
+            this.renderEngine?.render(sheet);
         });
 
-        bus.on(SHEET_EVENTS.FORMULA_SET, (e) => {
+        bus.on(SHEET_EVENTS.FORMULA_SET, (envelope) => {
             if (this.formulaEngine) {
-                const result = this.formulaEngine.setFormula(e.sheet, e.r, e.c, e.formula);
-                return result;
+                const { r, c, formula } = envelope.payload;
+                return this.formulaEngine.setFormula(sheet, r, c, formula);
             }
             return undefined;
         });
 
-        bus.on(SHEET_EVENTS.FORMULA_REMOVE, (e) => {
-            this.formulaEngine?.removeFormula(e.sheet, e.r, e.c);
+        bus.on(SHEET_EVENTS.FORMULA_REMOVE, (envelope) => {
+            const { r, c } = envelope.payload;
+            this.formulaEngine?.removeFormula(sheet, r, c);
         });
 
-        bus.on(SHEET_EVENTS.CELL_CHANGED, (e) => {
-            this.formulaEngine?.onCellChanged(e.sheet, e.r, e.c);
+        bus.on(SHEET_EVENTS.CELL_CHANGED, (envelope) => {
+            const { r, c } = envelope.payload;
+            this.formulaEngine?.onCellChanged(sheet, r, c);
         });
 
-        bus.on(SHEET_EVENTS.UNDO, (e) => {
-            this.formulaEngine?.recalculateAll(e.sheet);
+        bus.on(SHEET_EVENTS.UNDO, () => {
+            this.formulaEngine?.recalculateAll(sheet);
         });
 
-        bus.on(SHEET_EVENTS.REDO, (e) => {
-            this.formulaEngine?.recalculateAll(e.sheet);
+        bus.on(SHEET_EVENTS.REDO, () => {
+            this.formulaEngine?.recalculateAll(sheet);
         });
 
-        bus.on(SHEET_EVENTS.AFTER_CHANGE, (e) => {
-            this.runHooks(HOOKS.AFTER_CHANGE, e.changes);
+        bus.on(SHEET_EVENTS.AFTER_CHANGE, (envelope) => {
+            this.runHooks(HOOKS.AFTER_CHANGE, envelope.payload.changes);
         });
 
-        bus.on(SHEET_EVENTS.PAGINATION_REFRESH, (e) => {
+        bus.on(SHEET_EVENTS.PAGINATION_REFRESH, () => {
             const pg = this.getPlugin("pagination");
             if (pg?.active) pg.refresh();
         });
 
-        bus.on(SHEET_EVENTS.ROW_COL_RESIZE, (e) => {
+        bus.on(SHEET_EVENTS.ROW_COL_RESIZE, () => {
             const pg = this.getPlugin("pagination");
             if (!pg || !pg.active) return;
-            e.sheet.rowColManager.clearPaginationBounds();
+            sheet.rowColManager.clearPaginationBounds();
             pg.refresh();
         });
 
-        bus.on(SHEET_EVENTS.BEFORE_CHANGE, (changes) => {
-            this.runHooks(HOOKS.BEFORE_CHANGE, changes);
+        bus.on(SHEET_EVENTS.BEFORE_CHANGE, (envelope) => {
+            this.runHooks(HOOKS.BEFORE_CHANGE, envelope.payload);
         });
 
         bus.on(SHEET_EVENTS.GET_CLIPBOARD, () => {
             return this.clipboard;
         });
 
-        bus.on(SHEET_EVENTS.GET_PLUGIN, (e) => {
-            return this.getPlugin(e.name);
+        bus.on(SHEET_EVENTS.GET_PLUGIN, (envelope) => {
+            return this.getPlugin(envelope.payload.name);
         });
     }
 

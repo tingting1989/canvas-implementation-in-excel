@@ -52,8 +52,8 @@ const SUB = {
  * 数据变更通过 bus 事件通知外部（如 Workbook→RenderEngine）重绘
  */
 export class Sheet {
-    /** 事件总线（Sheet 持有，Workbook 及各子系统订阅） */
-    #bus = new EventBus();
+    /** 事件总线（Sheet 持有，Workbook 及各子系统订阅），构造时初始化 */
+    #bus;
 
     /** 批量操作管理器 */
     #batchOp = new BatchOperationManager();
@@ -108,6 +108,8 @@ export class Sheet {
      */
     constructor(name) {
         this.name = name;
+
+        this.#bus = new EventBus("Sheet", name);
 
         /** 是否可见 */
         this.visible = true;
@@ -314,13 +316,13 @@ export class Sheet {
     #invalidateAll() {
         this.#styleCacheVersion++;
         this.#styleManager.invalidateCache();
-        this.#bus.emit(SHEET_EVENTS.INVALIDATE_ALL, { sheet: this });
+        this.#bus.emit(SHEET_EVENTS.INVALIDATE_ALL);
     }
 
     #invalidateCell(r, c) {
         this.#styleManager.invalidateCache();
         const pageRow = this.toPageRow(r);
-        this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, { sheet: this, r, c, pageRow });
+        this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, { r, c, pageRow });
     }
 
     /**
@@ -364,10 +366,10 @@ export class Sheet {
 
         if (typeof value === "string" && value.startsWith("=")) {
             formula = value;
-            const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { sheet: this, r: realR, c, formula: value });
+            const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r: realR, c, formula: value });
             cellValue = results !== undefined ? results : value;
         } else if (old?.formula) {
-            this.#bus.emit(SHEET_EVENTS.FORMULA_REMOVE, { sheet: this, r: realR, c });
+            this.#bus.emit(SHEET_EVENTS.FORMULA_REMOVE, { r: realR, c });
         }
 
         const cell = new Cell(cellValue, styleId, disabled, formula);
@@ -377,7 +379,7 @@ export class Sheet {
         this.#invalidateCell(realR, c);
 
         if (!formula) {
-            this.#bus.emit(SHEET_EVENTS.CELL_CHANGED, { sheet: this, r: realR, c });
+            this.#bus.emit(SHEET_EVENTS.CELL_CHANGED, { r: realR, c });
         }
     }
 
@@ -622,7 +624,7 @@ export class Sheet {
                 if (row[c] !== undefined && row[c] !== null && row[c] !== "") {
                     const val = row[c];
                     if (typeof val === "string" && val.startsWith("=")) {
-                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { sheet: this, r, c, formula: val });
+                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r, c, formula: val });
                         const result = results !== undefined ? results : val;
                         this.cellStore.set(r, c, new Cell(result, 0, false, val));
                     } else {
@@ -638,7 +640,7 @@ export class Sheet {
 
     /** 刷新分页插件（数据加载后可能需要重新分页） */
     #refreshPagination() {
-        this.#bus.emit(SHEET_EVENTS.PAGINATION_REFRESH, { sheet: this });
+        this.#bus.emit(SHEET_EVENTS.PAGINATION_REFRESH);
     }
 
     // ============================================================
@@ -794,14 +796,14 @@ export class Sheet {
 
     /** 触发渲染（通过 bus 事件委托 Workbook 执行实际渲染） */
     render() {
-        this.#bus.emit(SHEET_EVENTS.RENDER_REQUEST, { sheet: this });
+        this.#bus.emit(SHEET_EVENTS.RENDER_REQUEST);
     }
 
     /** 撤销上一步操作 */
     undo() {
         if (!this.#ensureWritable()) return;
         this.history.undo();
-        this.#bus.emit(SHEET_EVENTS.UNDO, { sheet: this });
+        this.#bus.emit(SHEET_EVENTS.UNDO);
         this.#invalidateAll();
     }
 
@@ -809,7 +811,7 @@ export class Sheet {
     redo() {
         if (!this.#ensureWritable()) return;
         this.history.redo();
-        this.#bus.emit(SHEET_EVENTS.REDO, { sheet: this });
+        this.#bus.emit(SHEET_EVENTS.REDO);
         this.#invalidateAll();
     }
 
@@ -928,7 +930,7 @@ export class Sheet {
         this.#syncPaginationAfterResize();
         this.#invalidateAll();
         this.render();
-        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { sheet: this, changes: [] });
+        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { changes: [] });
     }
 
     /**
@@ -945,7 +947,7 @@ export class Sheet {
         this.rowColManager.resetSize(currentRows, cols);
         this.#invalidateAll();
         this.render();
-        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { sheet: this, changes: [] });
+        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { changes: [] });
     }
 
     /**
@@ -963,7 +965,7 @@ export class Sheet {
         this.#syncPaginationAfterResize();
         this.#invalidateAll();
         this.render();
-        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { sheet: this, changes: [] });
+        this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { changes: [] });
     }
 
     /**
@@ -975,7 +977,7 @@ export class Sheet {
      * 2. 刷新分页插件（基于新的配置值重新计算）
      */
     #syncPaginationAfterResize() {
-        this.#bus.emit(SHEET_EVENTS.ROW_COL_RESIZE, { sheet: this });
+        this.#bus.emit(SHEET_EVENTS.ROW_COL_RESIZE);
     }
 
     // ============================================================

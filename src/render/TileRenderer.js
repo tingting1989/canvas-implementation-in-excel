@@ -411,7 +411,7 @@ export class TileRenderer {
      * @returns {boolean} 是否绘制了富内容（用于决定是否跳过文本/边框绘制）
      */
     #drawCellContent(ctx, sheet, realR, col, drawX, drawY, w, h) {
-        const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD);
+        const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "TileRenderer" });
         if (!clipboard) return false;
 
         const content = clipboard.getCellContent(sheet, realR, col);

@@ -274,7 +274,7 @@ export class ContextMenuStrategy extends EventStrategy {
             insertImage: {
                 label: "插入图片",
                 action: (r, c, sheet) => {
-                    const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD);
+                    const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "ContextMenuStrategy" });
                     if (!clipboard) return;
                     clipboard.insertImageFromFile(sheet, { row: r, col: c });
                 },
@@ -288,7 +288,7 @@ export class ContextMenuStrategy extends EventStrategy {
                         for (let col = range.topCol; col <= range.bottomCol; col++) {
                             if (!sheet.isDisabled(row, col)) {
                                 const realR = sheet.toRealRow(row);
-                                const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD);
+                                const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "ContextMenuStrategy" });
                                 clipboard?.removeCellContent(sheet, realR, col);
                                 sheet.setCell(row, col, "", 0);
                             }
@@ -300,7 +300,7 @@ export class ContextMenuStrategy extends EventStrategy {
             hideRow: {
                 label: "隐藏行",
                 action: (r, c, sheet) => {
-                    const hiddenRows = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenRows" });
+                    const hiddenRows = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenRows" }, { source: "ContextMenuStrategy" });
                     if (!hiddenRows) return;
                     const range = sheet.selection.getRange();
                     const rows = [];
@@ -313,7 +313,7 @@ export class ContextMenuStrategy extends EventStrategy {
             showRow: {
                 label: "显示行",
                 action: (r, c, sheet) => {
-                    const hiddenRows = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenRows" });
+                    const hiddenRows = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenRows" }, { source: "ContextMenuStrategy" });
                     if (!hiddenRows) return;
                     const rc = sheet.rowColManager;
                     const range = sheet.selection.getRange();
@@ -327,7 +327,7 @@ export class ContextMenuStrategy extends EventStrategy {
             hideColumn: {
                 label: "隐藏列",
                 action: (r, c, sheet) => {
-                    const hiddenCols = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenColumns" });
+                    const hiddenCols = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenColumns" }, { source: "ContextMenuStrategy" });
                     if (!hiddenCols) return;
                     const range = sheet.selection.getRange();
                     const cols = [];
@@ -340,7 +340,7 @@ export class ContextMenuStrategy extends EventStrategy {
             showColumn: {
                 label: "显示列",
                 action: (r, c, sheet) => {
-                    const hiddenCols = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenColumns" });
+                    const hiddenCols = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenColumns" }, { source: "ContextMenuStrategy" });
                     if (!hiddenCols) return;
                     const rc = sheet.rowColManager;
                     const range = sheet.selection.getRange();
@@ -354,7 +354,7 @@ export class ContextMenuStrategy extends EventStrategy {
             freezeAtCell: {
                 label: "冻结至此处",
                 action: (r, c, sheet) => {
-                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" });
+                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.freeze(r, c);
                 },
@@ -362,7 +362,7 @@ export class ContextMenuStrategy extends EventStrategy {
             freezeRow: {
                 label: "冻结首行",
                 action: (r, c, sheet) => {
-                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" });
+                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.freeze(1, freeze.fixedColumnsStart);
                 },
@@ -370,7 +370,7 @@ export class ContextMenuStrategy extends EventStrategy {
             freezeCol: {
                 label: "冻结首列",
                 action: (r, c, sheet) => {
-                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" });
+                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.freeze(freeze.fixedRowsTop, 1);
                 },
@@ -378,7 +378,7 @@ export class ContextMenuStrategy extends EventStrategy {
             unfreeze: {
                 label: "取消冻结",
                 action: (r, c, sheet) => {
-                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" });
+                    const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.unfreeze();
                 },

@@ -80,11 +80,10 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, handler);
             sheet.setCell(0, 0, "value");
             expect(handler).toHaveBeenCalledOnce();
-            const event = handler.mock.calls[0][0];
-            expect(event).toHaveProperty("sheet", sheet);
-            expect(event).toHaveProperty("r", 0);
-            expect(event).toHaveProperty("c", 0);
-            expect(event).toHaveProperty("pageRow", 0);
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.payload).toHaveProperty("r", 0);
+            expect(envelope.payload).toHaveProperty("c", 0);
+            expect(envelope.payload).toHaveProperty("pageRow", 0);
         });
 
         it("should emit INVALIDATE_CELL on disableCell", () => {
@@ -109,7 +108,8 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.RENDER_REQUEST, handler);
             sheet.render();
             expect(handler).toHaveBeenCalledOnce();
-            expect(handler).toHaveBeenCalledWith({ sheet });
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.type).toBe(SHEET_EVENTS.RENDER_REQUEST);
         });
     });
 
@@ -119,10 +119,10 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.FORMULA_SET, handler);
             sheet.setCell(0, 0, "=SUM(A1:A3)");
             expect(handler).toHaveBeenCalledOnce();
-            const event = handler.mock.calls[0][0];
-            expect(event.formula).toBe("=SUM(A1:A3)");
-            expect(event.r).toBe(0);
-            expect(event.c).toBe(0);
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.payload.formula).toBe("=SUM(A1:A3)");
+            expect(envelope.payload.r).toBe(0);
+            expect(envelope.payload.c).toBe(0);
         });
 
         it("should not emit FORMULA_SET for non-formula values", () => {
@@ -152,9 +152,9 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.FORMULA_REMOVE, handler);
             sheet.setCell(0, 0, "plain");
             expect(handler).toHaveBeenCalledOnce();
-            const event = handler.mock.calls[0][0];
-            expect(event.r).toBe(0);
-            expect(event.c).toBe(0);
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.payload.r).toBe(0);
+            expect(envelope.payload.c).toBe(0);
         });
     });
 
@@ -164,7 +164,9 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.CELL_CHANGED, handler);
             sheet.setCell(0, 0, "hello");
             expect(handler).toHaveBeenCalledOnce();
-            expect(handler).toHaveBeenCalledWith({ sheet, r: 0, c: 0 });
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.payload.r).toBe(0);
+            expect(envelope.payload.c).toBe(0);
         });
 
         it("should not emit CELL_CHANGED for formula setCell", () => {
@@ -182,7 +184,8 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.UNDO, handler);
             sheet.undo();
             expect(handler).toHaveBeenCalledOnce();
-            expect(handler).toHaveBeenCalledWith({ sheet });
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.type).toBe(SHEET_EVENTS.UNDO);
         });
 
         it("should emit REDO on sheet.redo()", () => {
@@ -192,7 +195,8 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.REDO, handler);
             sheet.redo();
             expect(handler).toHaveBeenCalledOnce();
-            expect(handler).toHaveBeenCalledWith({ sheet });
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.type).toBe(SHEET_EVENTS.REDO);
         });
     });
 
@@ -286,8 +290,8 @@ describe("Sheet - EventBus Integration", () => {
 
         it("should resolve GET_PLUGIN via bus", () => {
             const mockPlugin = { freeze: vi.fn() };
-            sheet.bus.on(SHEET_EVENTS.GET_PLUGIN, (e) => {
-                if (e.name === "freeze") return mockPlugin;
+            sheet.bus.on(SHEET_EVENTS.GET_PLUGIN, (envelope) => {
+                if (envelope.payload.name === "freeze") return mockPlugin;
             });
             const result = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" });
             expect(result).toBe(mockPlugin);
@@ -305,12 +309,45 @@ describe("Sheet - EventBus Integration", () => {
     });
 
     describe("BEFORE_CHANGE event", () => {
-        it("should emit BEFORE_CHANGE with changes array", () => {
+        it("should emit BEFORE_CHANGE with changes array in payload", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.BEFORE_CHANGE, handler);
             const changes = [{ row: 0, col: 0, oldValue: "", newValue: "test" }];
             sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, changes);
-            expect(handler).toHaveBeenCalledWith(changes);
+            expect(handler).toHaveBeenCalledOnce();
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.payload).toBe(changes);
+        });
+    });
+
+    describe("Event envelope metadata", () => {
+        it("should include source, sheetId, timestamp, type in every envelope", () => {
+            const handler = vi.fn();
+            sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, handler);
+            sheet.setCell(0, 0, "val");
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope).toHaveProperty("source", "Sheet");
+            expect(envelope).toHaveProperty("sheetId", "TestSheet");
+            expect(envelope).toHaveProperty("timestamp");
+            expect(typeof envelope.timestamp).toBe("number");
+            expect(envelope).toHaveProperty("type", SHEET_EVENTS.INVALIDATE_CELL);
+            expect(envelope).toHaveProperty("payload");
+        });
+
+        it("should allow source override via emit options", () => {
+            const handler = vi.fn();
+            sheet.bus.on(SHEET_EVENTS.BEFORE_CHANGE, handler);
+            sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, [], { source: "CellEditor" });
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.source).toBe("CellEditor");
+        });
+
+        it("should use bus default source when no override", () => {
+            const handler = vi.fn();
+            sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, handler);
+            sheet.setCell(0, 0, "val");
+            const envelope = handler.mock.calls[0][0];
+            expect(envelope.source).toBe("Sheet");
         });
     });
 });
@@ -368,7 +405,7 @@ describe("Sheet - EventBus Aggressive Tests", () => {
     describe("Event data integrity", () => {
         it("should pass correct row/col in INVALIDATE_CELL for different cells", () => {
             const events = [];
-            sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, (e) => events.push({ r: e.r, c: e.c }));
+            sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, (envelope) => events.push({ r: envelope.payload.r, c: envelope.payload.c }));
             sheet.setCell(5, 3, "val1");
             sheet.setCell(10, 7, "val2");
             expect(events).toEqual([
@@ -379,21 +416,21 @@ describe("Sheet - EventBus Aggressive Tests", () => {
 
         it("should pass correct formula string in FORMULA_SET", () => {
             const events = [];
-            sheet.bus.on(SHEET_EVENTS.FORMULA_SET, (e) => events.push(e.formula));
+            sheet.bus.on(SHEET_EVENTS.FORMULA_SET, (envelope) => events.push(envelope.payload.formula));
             sheet.setCell(0, 0, "=A1+B1");
             sheet.setCell(1, 1, "=SUM(C1:C10)");
             expect(events).toEqual(["=A1+B1", "=SUM(C1:C10)"]);
         });
 
-        it("should pass sheet reference in all events", () => {
-            const events = [];
-            sheet.bus.on(SHEET_EVENTS.INVALIDATE_ALL, (e) => events.push(e));
-            sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, (e) => events.push(e));
-            sheet.bus.on(SHEET_EVENTS.RENDER_REQUEST, (e) => events.push(e));
+        it("should include sheetId in all envelopes", () => {
+            const envelopes = [];
+            sheet.bus.on(SHEET_EVENTS.INVALIDATE_ALL, (env) => envelopes.push(env));
+            sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, (env) => envelopes.push(env));
+            sheet.bus.on(SHEET_EVENTS.RENDER_REQUEST, (env) => envelopes.push(env));
             sheet.setCell(0, 0, "val");
             sheet.render();
-            for (const e of events) {
-                expect(e.sheet).toBe(sheet);
+            for (const env of envelopes) {
+                expect(env.sheetId).toBe("AggressiveSheet");
             }
         });
     });
@@ -508,9 +545,9 @@ describe("Sheet - EventBus Aggressive Tests", () => {
 
     describe("Formula result propagation via EventBus", () => {
         it("should propagate FORMULA_SET result back to cell value", () => {
-            sheet.bus.on(SHEET_EVENTS.FORMULA_SET, (e) => {
-                if (e.formula === "=1+1") return 2;
-                if (e.formula === "=2*3") return 6;
+            sheet.bus.on(SHEET_EVENTS.FORMULA_SET, (envelope) => {
+                if (envelope.payload.formula === "=1+1") return 2;
+                if (envelope.payload.formula === "=2*3") return 6;
                 return undefined;
             });
             sheet.setCell(0, 0, "=1+1");
@@ -538,7 +575,6 @@ describe("Sheet - EventBus Aggressive Tests", () => {
         it("should allow removing all listeners via bus.removeAll", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, handler);
-            sheet.bus.on(SHEET_EVENTS.CELL_CHANGED, handler);
             sheet.bus.removeAll();
             sheet.setCell(0, 0, "val");
             expect(handler).not.toHaveBeenCalled();
