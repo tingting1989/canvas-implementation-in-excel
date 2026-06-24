@@ -8,9 +8,9 @@ export class EditorLayer extends BaseLayer {
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch("editor", () => {});
-        this.watch("selection", () => {});
-        this.watch("scroll", () => {});
+        this.watchForDirty("editor");
+        this.watchForDirty("selection");
+        this.watchForDirty("scroll");
     }
 
     render(ctx, sheet, viewport, options = {}) {

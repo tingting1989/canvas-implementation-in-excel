@@ -10,8 +10,8 @@ export class OverlayLayer extends BaseLayer {
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch("selection", () => {});
-        this.watch("frozenOffset", () => {});
+        this.watchForDirty("selection");
+        this.watchForDirty("frozenOffset");
     }
 
     render(ctx, sheet, viewport, options = {}) {

@@ -11,8 +11,8 @@ export class ResizeLayer extends BaseLayer {
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch("scroll", () => {});
-        this.watch("frozenOffset", () => {});
+        this.watchForDirty("scroll");
+        this.watchForDirty("frozenOffset");
     }
 
     setResizeLine(type, index, position) {

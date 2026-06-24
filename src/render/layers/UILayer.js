@@ -54,8 +54,8 @@ export class UILayer extends BaseLayer {
      */
     bindStore(store) {
         super.bindStore(store);
-        this.watch("frozenOffset", () => {});
-        this.watch("editor", () => {});
+        this.watchForDirty("frozenOffset");
+        this.watchForDirty("editor");
     }
 
     /**

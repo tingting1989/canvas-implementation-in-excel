@@ -19,9 +19,9 @@ export class DragIndicatorLayer extends BaseLayer {
 
     bindStore(store) {
         super.bindStore(store);
-        this.watch("scroll", () => {});
-        this.watch("frozen", () => {});
-        this.watch("viewport", () => {});
+        this.watchForDirty("scroll");
+        this.watchForDirty("frozen");
+        this.watchForDirty("viewport");
     }
 
     setColumnMoveState(state) {

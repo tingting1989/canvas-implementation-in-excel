@@ -78,10 +78,10 @@ export class FrozenLayer extends BaseLayer {
      */
     bindStore(store) {
         super.bindStore(store);
-        this.watch("frozen", () => {});
-        this.watch("frozenOffset", () => {});
-        this.watch("scroll", () => {});
-        this.watch("selection", () => {});
+        this.watchForDirty("frozen");
+        this.watchForDirty("frozenOffset");
+        this.watchForDirty("scroll");
+        this.watchForDirty("selection");
     }
 
     /**

@@ -50,10 +50,10 @@ export class HeaderLayer extends BaseLayer {
      */
     bindStore(store) {
         super.bindStore(store);
-        this.watch("scroll", () => {});
-        this.watch("frozen", () => {});
-        this.watch("viewport", () => {});
-        this.watch("selection", () => {});
+        this.watchForDirty("scroll");
+        this.watchForDirty("frozen");
+        this.watchForDirty("viewport");
+        this.watchForDirty("selection");
     }
 
     /**

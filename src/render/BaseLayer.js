@@ -72,6 +72,20 @@ export class BaseLayer {
     }
 
     /**
+     * 注册仅触发脏标记的状态监听器
+     *
+     * 当状态路径的值发生变化时，仅将图层标记为脏（markDirty），
+     * 不执行任何额外回调。适用于大多数图层只需在状态变化时
+     * 触发重绘而无需处理变化值的场景。
+     *
+     * @param {string} path - 状态路径（如 'scroll' 或 'frozenOffset'）
+     * @returns {Function} 取消监听的函数
+     */
+    watchForDirty(path) {
+        return this.watch(path, () => {});
+    }
+
+    /**
      * 清除所有手动注册的watcher
      */
     clearWatchers() {

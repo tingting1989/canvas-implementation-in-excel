@@ -221,3 +221,133 @@ describe("BaseLayer", () => {
         expect(layer.enabled).toBe(true);
     });
 });
+
+describe("BaseLayer - watchForDirty", () => {
+    it("should mark dirty when watched path changes", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ scroll: { x: 0 } });
+        layer.bindStore(store);
+        layer.clearDirty();
+
+        layer.watchForDirty("scroll");
+        store.state.scroll.x = 100;
+        store.flush();
+
+        expect(layer.dirty).toBe(true);
+    });
+
+    it("should not mark dirty when unwatched", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ scroll: { x: 0 } });
+        layer.bindStore(store);
+        layer.clearDirty();
+
+        const unwatch = layer.watchForDirty("scroll");
+        unwatch();
+
+        store.state.scroll.x = 100;
+        store.flush();
+        expect(layer.dirty).toBe(false);
+    });
+
+    it("should support multiple watchForDirty on different paths", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ scroll: { x: 0 }, frozen: { rows: 0 } });
+        layer.bindStore(store);
+        layer.clearDirty();
+
+        layer.watchForDirty("scroll");
+        layer.watchForDirty("frozen");
+
+        store.state.frozen.rows = 2;
+        store.flush();
+        expect(layer.dirty).toBe(true);
+    });
+
+    it("should track watchForDirty in watcher count", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ a: 0, b: 0 });
+        layer.bindStore(store);
+
+        layer.watchForDirty("a");
+        layer.watchForDirty("b");
+
+        const info = layer.getDebugInfo();
+        expect(info.watcherCount).toBe(2);
+    });
+
+    it("should warn when watchForDirty without store", () => {
+        const layer = new BaseLayer("test", 1);
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        layer.watchForDirty("scroll");
+        expect(warnSpy).toHaveBeenCalled();
+        warnSpy.mockRestore();
+    });
+
+    it("should clear watchForDirty watchers on clearWatchers", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ scroll: { x: 0 } });
+        layer.bindStore(store);
+        layer.watchForDirty("scroll");
+        layer.clearDirty();
+        layer.clearWatchers();
+
+        store.state.scroll.x = 100;
+        store.flush();
+        expect(layer.dirty).toBe(false);
+    });
+
+    it("should clear watchForDirty watchers on destroy", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ scroll: { x: 0 } });
+        layer.bindStore(store);
+        layer.watchForDirty("scroll");
+        layer.clearDirty();
+        layer.destroy();
+
+        store.state.scroll.x = 100;
+        store.flush();
+        expect(layer.dirty).toBe(true);
+    });
+
+    it("should work alongside regular watch on same path", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ count: 0 });
+        layer.bindStore(store);
+        layer.clearDirty();
+
+        const cb = vi.fn();
+        layer.watch("count", cb);
+        layer.watchForDirty("count");
+
+        store.state.count = 5;
+        store.flush();
+
+        expect(cb).toHaveBeenCalledWith(5, 0);
+        expect(layer.dirty).toBe(true);
+        const info = layer.getDebugInfo();
+        expect(info.watcherCount).toBe(2);
+    });
+
+    it("should return unwatch function", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ count: 0 });
+        layer.bindStore(store);
+
+        const unwatch = layer.watchForDirty("count");
+        expect(typeof unwatch).toBe("function");
+    });
+
+    it("should handle nested path changes", () => {
+        const layer = new BaseLayer("test", 1);
+        const store = new ReactiveStore({ scroll: { x: 0, y: 0 } });
+        layer.bindStore(store);
+        layer.clearDirty();
+
+        layer.watchForDirty("scroll");
+        store.state.scroll.y = 50;
+        store.flush();
+
+        expect(layer.dirty).toBe(true);
+    });
+});

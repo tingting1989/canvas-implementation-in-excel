@@ -81,9 +81,9 @@ export class TileLayer extends BaseLayer {
      */
     bindStore(store) {
         super.bindStore(store);
-        this.watch("scroll", () => {});
-        this.watch("viewport", () => {});
-        this.watch("tile", () => {});
+        this.watchForDirty("scroll");
+        this.watchForDirty("viewport");
+        this.watchForDirty("tile");
     }
 
     /**
