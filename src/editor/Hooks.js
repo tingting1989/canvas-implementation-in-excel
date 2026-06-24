@@ -189,6 +189,6 @@ export class Hooks {
      */
     hasHook(hookName) {
         const callbacks = this.hooks.get(hookName);
-        return callbacks && callbacks.length > 0;
+        return !!callbacks && callbacks.length > 0;
     }
 }

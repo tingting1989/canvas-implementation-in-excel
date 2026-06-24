@@ -132,11 +132,10 @@ export class RowColManager {
         rows = Math.min(rows, CONFIG.MAX_ROWS);
         cols = Math.min(cols, CONFIG.MAX_COLS);
 
-        // 更新实际使用的行列数（只在未显式设置时生效）
-        if (!this.#explicitlySized) {
-            this.#usedRows = Math.max(this.#usedRows, rows);
-            this.#usedCols = Math.max(this.#usedCols, cols);
-        }
+        if (this.#explicitlySized) return;
+
+        this.#usedRows = Math.max(this.#usedRows, rows);
+        this.#usedCols = Math.max(this.#usedCols, cols);
 
         if (this.#rowHeights.length < rows) {
             const oldLen = this.#rowHeights.length;

@@ -61,7 +61,8 @@ export class StylePool {
      * @returns {Object}
      */
     getStyle(id) {
-        return this.idToStyle.get(id) || {};
+        const style = this.idToStyle.get(id);
+        return style ? { ...style } : {};
     }
 
     /**
