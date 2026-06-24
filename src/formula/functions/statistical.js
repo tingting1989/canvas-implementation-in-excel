@@ -9,7 +9,7 @@
  * @module formula/functions/statistical
  */
 
-import { isNumber } from "lodash-es";
+import { isNumber } from "../../core/utils.js";
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { _flatten, _isBlank, _validateArgs } from "./utils/index.js";
 

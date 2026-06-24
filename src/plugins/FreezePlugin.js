@@ -1,6 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { HOOKS } from "../constants/hookNames.js";
-import { isNumber } from "lodash-es";
+import { isNumber } from "../core/utils.js";
 
 /**
  * 冻结行列插件

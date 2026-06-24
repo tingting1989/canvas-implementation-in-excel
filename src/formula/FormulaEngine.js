@@ -1,6 +1,6 @@
 import { parseFormula } from "./FormulaParser.js";
 import { FormulaEvaluator } from "./FormulaEvaluator.js";
-import { isString } from "lodash-es";
+import { isString } from "../core/utils.js";
 import { FUNCTIONS, registerFunction, unregisterFunction, hasFunction, getRegisteredFunctions } from "./functions/index.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 

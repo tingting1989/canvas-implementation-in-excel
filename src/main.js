@@ -12,7 +12,7 @@ import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
 import { FreezePlugin } from "./plugins/FreezePlugin.js";
 import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
-import { isFunction, isNumber } from "lodash-es";
+import { isFunction, isNumber } from "./core/utils.js";
 import { errorHandler, ERROR_LEVEL } from "./core/ErrorHandler.js";
 
 const initApp = () => {

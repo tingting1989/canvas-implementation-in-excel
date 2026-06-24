@@ -1,5 +1,5 @@
 import { CONFIG } from "../../constants/config";
-import { isNumber, isObject } from "lodash-es";
+import { isNumber, isObject } from "../../core/utils.js";
 
 /**
  * 行列同步器

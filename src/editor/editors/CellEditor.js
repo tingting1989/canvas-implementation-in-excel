@@ -1,7 +1,7 @@
 import { CONFIG } from "../../constants/config";
 import { HOOKS } from "../../constants/hookNames.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
-import { isFunction } from "lodash-es";
+import { isFunction } from "../../core/utils.js";
 
 /**
  * 单元格编辑器基类

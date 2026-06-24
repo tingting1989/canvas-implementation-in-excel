@@ -4,7 +4,7 @@ import { NumericColumnType } from "./NumericColumnType.js";
 import { DateColumnType } from "./DateColumnType.js";
 import { BooleanColumnType } from "./BooleanColumnType.js";
 import { SelectColumnType } from "./SelectColumnType.js";
-import { isFunction } from "lodash-es";
+import { isFunction } from "../core/utils.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**

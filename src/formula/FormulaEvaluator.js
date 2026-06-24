@@ -1,5 +1,5 @@
 import { FUNCTIONS, getRegisteredFunctions } from "./functions/index.js";
-import { isNumber, isString } from "lodash-es";
+import { isNumber, isString } from "../core/utils.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**

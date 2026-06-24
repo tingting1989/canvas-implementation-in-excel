@@ -1,6 +1,6 @@
 import { stylePool } from "../../model/styles";
 import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../../types";
-import { isFunction, isObject } from "lodash-es";
+import { isFunction, isObject } from "../../core/utils.js";
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
 
 /**

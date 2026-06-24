@@ -1,5 +1,5 @@
 import { stylePool } from "../../model/styles";
-import { isFunction, isNumber } from "lodash-es";
+import { isFunction, isNumber } from "../../core/utils.js";
 
 /**
  * 配置应用器

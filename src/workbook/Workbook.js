@@ -3,7 +3,7 @@ import { RenderEngine } from "../render/RenderEngine.js";
 import { ViewportTransform } from "../render/ViewportTransform.js";
 import { EditorManager } from "../editor/EditorManager.js";
 import { EventHandler } from "../core/EventHandler.js";
-import { isFunction, isObject } from "lodash-es";
+import { isFunction, isObject } from "../core/utils.js";
 import { PluginManager } from "../plugins/PluginManager.js";
 import { stylePool } from "../model/styles";
 import { CONFIG } from "../constants/config";

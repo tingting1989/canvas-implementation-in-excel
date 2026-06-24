@@ -1,5 +1,5 @@
 import { CONFIG } from "../../constants/config";
-import { isFunction, isObject, isString } from "lodash-es";
+import { isFunction, isObject, isString } from "../../core/utils.js";
 
 /**
  * 表头标签管理器

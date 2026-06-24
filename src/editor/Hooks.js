@@ -1,6 +1,6 @@
 import { HOOKS } from "../constants/hookNames.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
-import { isFunction } from "lodash-es";
+import { isFunction } from "../core/utils.js";
 
 /**
  * Hooks 系统

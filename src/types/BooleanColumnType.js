@@ -1,5 +1,5 @@
 import { ColumnType } from "./ColumnType.js";
-import { isBoolean, isNumber, isString } from "lodash-es";
+import { isBoolean, isNumber, isString } from "../core/utils.js";
 
 /**
  * 布尔列类型

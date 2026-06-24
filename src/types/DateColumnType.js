@@ -1,5 +1,5 @@
 import { ColumnType } from "./ColumnType.js";
-import { isNumber, isString } from "lodash-es";
+import { isNumber, isString } from "../core/utils.js";
 
 /**
  * 日期列类型
