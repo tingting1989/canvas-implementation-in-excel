@@ -70,6 +70,16 @@ export class RenderEngineViewportService extends ViewportService {
         this.#renderEngine.scrollToCell(row, col);
     }
 
+    /**
+     * 判断单元格是否在可视区域内
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {number} canvasW - Canvas 逻辑宽度
+     * @param {number} canvasH - Canvas 逻辑高度
+     * @param {number} [tabH=0] - 标签栏高度
+     * @returns {boolean}
+     */
+    // eslint-disable-next-line max-params
     isCellVisible(row, col, canvasW, canvasH, tabH = 0) {
         const sheet = this.#renderEngine.currentSheet;
         if (!sheet) return false;

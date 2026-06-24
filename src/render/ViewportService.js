@@ -36,6 +36,10 @@
  * @module render/ViewportService
  */
 
+/* eslint-disable class-methods-use-this */
+/* eslint-disable no-unused-vars */
+/* eslint-disable max-params */
+
 export class ViewportService {
     get scrollX() {
         throw new Error("ViewportService.scrollX must be implemented");

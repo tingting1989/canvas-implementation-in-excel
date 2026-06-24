@@ -25,6 +25,8 @@ export default defineConfig([
         "**/tests/**",
         "**/node_modules/**",
         "**/stylelint.config.mjs",
+        "**/vitest.config.js",
+        "**/webpack.config.js",
     ]),
 
     {

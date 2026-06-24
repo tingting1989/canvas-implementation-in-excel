@@ -1,6 +1,5 @@
 import { Sheet } from "./Sheet.js";
 import { RenderEngine } from "../render/RenderEngine.js";
-import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
 import { EditorManager } from "../editor/EditorManager.js";
 import { EventHandler } from "../core/EventHandler.js";
 import { isFunction, isObject } from "../core/utils.js";
@@ -326,9 +325,7 @@ export class Workbook {
             const canvasH = this.renderEngine.canvas.height / dpr;
 
             const viewport = this.eventHandler?.viewport;
-            const visible = viewport
-                ? viewport.isCellVisible(row, col, canvasW, canvasH, tabH)
-                : true;
+            const visible = viewport ? viewport.isCellVisible(row, col, canvasW, canvasH, tabH) : true;
 
             if (visible) {
                 activeEditor.restoreFromScroll();

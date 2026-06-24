@@ -287,7 +287,7 @@ export class KeyboardStrategy extends EventStrategy {
     }
 
     #handleArrowDown(row, col, shiftKey) {
-        const { sheet, renderEngine } = this.handler;
+        const { sheet } = this.handler;
         const rc = sheet.rowColManager;
         let nextRow = Math.min(rc.rowCount - 1, row + 1);
         const merge = sheet.getMerge(row, col);
@@ -308,7 +308,7 @@ export class KeyboardStrategy extends EventStrategy {
     }
 
     #handleArrowUp(row, col, shiftKey) {
-        const { sheet, renderEngine } = this.handler;
+        const { sheet } = this.handler;
         let prevRow = Math.max(0, row - 1);
         const merge = sheet.getMerge(row, col);
         if (merge && row - 1 >= merge.topRow) {
@@ -326,7 +326,7 @@ export class KeyboardStrategy extends EventStrategy {
     }
 
     #handleArrowRight(row, col, shiftKey) {
-        const { sheet, renderEngine } = this.handler;
+        const { sheet } = this.handler;
         const rc = sheet.rowColManager;
         let nextCol = Math.min(rc.colCount - 1, col + 1);
         const merge = sheet.getMerge(row, col);
@@ -351,7 +351,7 @@ export class KeyboardStrategy extends EventStrategy {
     }
 
     #handleArrowLeft(row, col, shiftKey) {
-        const { sheet, renderEngine } = this.handler;
+        const { sheet } = this.handler;
         let prevCol = Math.max(0, col - 1);
         const merge = sheet.getMerge(row, col);
         if (merge && col - 1 >= merge.topCol) {
@@ -374,7 +374,7 @@ export class KeyboardStrategy extends EventStrategy {
     }
 
     #handleTab(row, col, shiftPressed) {
-        const { sheet, renderEngine } = this.handler;
+        const { sheet } = this.handler;
         const rc = sheet.rowColManager;
         let nextCol = shiftPressed ? Math.max(0, col - 1) : Math.min(rc.colCount - 1, col + 1);
 
