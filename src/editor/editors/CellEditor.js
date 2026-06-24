@@ -70,9 +70,15 @@ export class CellEditor {
         const re = this.renderEngine;
         if (!re) return null;
         return {
-            get canvas() { return re.canvas; },
-            get canvasParent() { return re.canvas?.parentElement ?? null; },
-            render(sheet) { re.render(sheet); },
+            get canvas() {
+                return re.canvas;
+            },
+            get canvasParent() {
+                return re.canvas?.parentElement ?? null;
+            },
+            render(sheet) {
+                re.render(sheet);
+            },
         };
     }
 
