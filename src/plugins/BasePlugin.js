@@ -177,10 +177,15 @@ export class BasePlugin {
      * @param {Function} callback - 回调函数
      */
     addHookOnce(hookName, callback) {
-        const onceCallback = (...args) => {
+        let fired = false;
+        let onceCallback = null;
+        onceCallback = (...args) => {
+            if (fired) return;
+            fired = true;
             if (!this.#enabled) return;
             callback(...args);
-            this.#registeredHooks = this.#registeredHooks.filter((h) => h.hookName !== hookName || h.callback !== onceCallback);
+            this.hooks?.removeHook(hookName, onceCallback);
+            this.#registeredHooks = this.#registeredHooks.filter((h) => h.callback !== onceCallback);
         };
         this.hooks?.addHook(hookName, onceCallback);
         this.#registeredHooks.push({ hookName, callback: onceCallback });

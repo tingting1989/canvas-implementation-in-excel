@@ -566,9 +566,10 @@ describe("ChunkedCellStore", () => {
             store.set(5, 0, new Cell("original"));
 
             store.insertRow(5);
-            store.deleteRow(5);
-
             expect(store.get(6, 0).value).toBe("original");
+
+            store.deleteRow(5);
+            expect(store.get(5, 0).value).toBe("original");
         });
     });
 });

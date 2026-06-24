@@ -1,4 +1,5 @@
 const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (fn) => setTimeout(fn, 16);
+const caf = typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : clearTimeout;
 
 export class Scheduler {
     constructor() {
@@ -60,8 +61,8 @@ export class Scheduler {
     }
 
     cancel() {
-        if (this._pendingRaf && typeof cancelAnimationFrame === "function") {
-            cancelAnimationFrame(this._rafId);
+        if (this._pendingRaf) {
+            caf(this._rafId);
         }
         this._pendingRaf = false;
         this._queue.length = 0;
