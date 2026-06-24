@@ -135,7 +135,7 @@ describe("Command System - Bug Hunting", () => {
             const cell = new Cell("test", 0, false);
             store.set(0, 0, cell);
 
-            const cmd = new ToggleDisableCommand(store, 0, 0);
+            const cmd = new ToggleDisableCommand(store, 0, 0, false);
             cmd.redo();
             expect(store.get(0, 0).disabled).toBe(true);
 
@@ -147,7 +147,7 @@ describe("Command System - Bug Hunting", () => {
             const store = new ChunkedCellStore();
             store.set(0, 0, new Cell("test", 0, false));
 
-            const cmd = new ToggleDisableCommand(store, 0, 0);
+            const cmd = new ToggleDisableCommand(store, 0, 0, false);
             cmd.redo();
             expect(store.get(0, 0).disabled).toBe(true);
 
@@ -192,13 +192,20 @@ describe("Command System - Bug Hunting", () => {
             const store = new ChunkedCellStore();
             const hs = new HistoryStack();
 
-            hs.push(new SetCellCommand(store, 0, 0, null, new Cell("A")));
-            hs.push(new SetCellCommand(store, 0, 1, null, new Cell("B")));
+            const cmd1 = new SetCellCommand(store, 0, 0, null, new Cell("A"));
+            cmd1.redo();
+            hs.push(cmd1);
+
+            const cmd2 = new SetCellCommand(store, 0, 1, null, new Cell("B"));
+            cmd2.redo();
+            hs.push(cmd2);
 
             hs.undo();
             expect(store.get(0, 1)).toBeUndefined();
 
-            hs.push(new SetCellCommand(store, 0, 2, null, new Cell("C")));
+            const cmd3 = new SetCellCommand(store, 0, 2, null, new Cell("C"));
+            cmd3.redo();
+            hs.push(cmd3);
 
             hs.redo();
             expect(store.get(0, 1)).toBeUndefined();
@@ -208,9 +215,17 @@ describe("Command System - Bug Hunting", () => {
             const store = new ChunkedCellStore();
             const hs = new HistoryStack();
 
-            hs.push(new SetCellCommand(store, 0, 0, null, new Cell("A")));
-            hs.push(new SetCellCommand(store, 0, 0, new Cell("A"), new Cell("B")));
-            hs.push(new SetCellCommand(store, 0, 0, new Cell("B"), new Cell("C")));
+            const cmd1 = new SetCellCommand(store, 0, 0, null, new Cell("A"));
+            cmd1.redo();
+            hs.push(cmd1);
+
+            const cmd2 = new SetCellCommand(store, 0, 0, new Cell("A"), new Cell("B"));
+            cmd2.redo();
+            hs.push(cmd2);
+
+            const cmd3 = new SetCellCommand(store, 0, 0, new Cell("B"), new Cell("C"));
+            cmd3.redo();
+            hs.push(cmd3);
 
             expect(store.get(0, 0).value).toBe("C");
 

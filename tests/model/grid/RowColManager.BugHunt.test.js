@@ -472,15 +472,15 @@ describe("RowColManager - Bug Hunting", () => {
             expect(range.ec).toBeLessThanOrEqual(rcm.colCount);
         });
 
-        it("BUG: 隐藏行/列后getVisibleRange应跳过", () => {
+        it("BUG: 隐藏行/列后getVisibleRange - rowAt跳过隐藏行列", () => {
             rcm.ensureSize(10, 10);
             rcm.hideRow(0);
             rcm.hideColumn(0);
 
             const range = rcm.getVisibleRange(0, 0, 500, 500);
 
-            expect(range.sr).toBe(0);
-            expect(range.sc).toBe(0);
+            expect(range.sr).toBe(1);
+            expect(range.sc).toBe(1);
         });
     });
 
