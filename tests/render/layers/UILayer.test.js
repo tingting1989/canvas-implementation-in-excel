@@ -235,7 +235,7 @@ describe("UILayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("ui");
-        expect(info.zIndex).toBe(4);
+        expect(info.zIndex).toBe(7);
         expect(info.enabled).toBe(true);
     });
 

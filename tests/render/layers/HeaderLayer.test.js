@@ -137,7 +137,7 @@ describe("HeaderLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("headers");
-        expect(info.zIndex).toBe(3);
+        expect(info.zIndex).toBe(5);
         expect(info.enabled).toBe(true);
     });
 });
