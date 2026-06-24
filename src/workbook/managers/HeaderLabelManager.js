@@ -18,10 +18,13 @@ export class HeaderLabelManager {
 
     /** 列头配置：true→A/B/C... | string[] | Function(col) */
     #colHeaders = true;
+
     /** 行头配置：true→1/2/3... | string[] | Function(row) */
     #rowHeaders = true;
+
     /** 嵌套表头配置 */
     #nestedHeaders = null;
+
     /** 行头列宽度（px） */
     #rowHeaderWidth = CONFIG.HEADER_WIDTH;
 

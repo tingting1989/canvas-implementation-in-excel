@@ -22,8 +22,10 @@ export class MouseStrategy extends EventStrategy {
 
     /** 是否正在拖拽选区 */
     #dragging = false;
+
     /** 拖拽起始锚点行号 */
     #dragAnchorRow = -1;
+
     /** 拖拽起始锚点列号 */
     #dragAnchorCol = -1;
 

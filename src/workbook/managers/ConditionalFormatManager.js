@@ -13,8 +13,10 @@ import { ConditionalRule } from "../../model";
 export class ConditionalFormatManager {
     /** @type {import("../Sheet.js").Sheet} */
     #sheet;
+
     /** @type {ConditionalRule[]} 条件格式规则列表 */
     #rules = [];
+
     /** @type {Map<number, Function>} 数据绑定映射 col → mapperFn(cellValue) → styleId */
     #bindings = new Map();
 

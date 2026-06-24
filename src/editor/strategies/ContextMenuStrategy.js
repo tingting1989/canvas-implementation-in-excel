@@ -41,20 +41,26 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 export class ContextMenuStrategy extends EventStrategy {
     /** 右键菜单 DOM 容器 */
     #menuEl = null;
+
     /** 右键点击时的行号 */
     #row = -1;
+
     /** 右键点击时的列号 */
     #col = -1;
+
     /** 当前右击上下文：cell / rowHeader / colHeader */
     #context = "cell";
+
     /**
      * 所有菜单项 key → {label, action} 映射
      * 包含内置项（未被 disabledItems 过滤）和自定义项
      * 用于 click 委托时 O(1) 查找目标菜单项
      */
     #menuItemMap = new Map();
+
     /** 被禁用的内置菜单项 key 集合 */
     #disabledKeys = new Set();
+
     /** 自定义菜单项原始配置（保留 contexts 等信息用于按上下文过滤） */
     #customItems = [];
 
@@ -527,6 +533,7 @@ export class ContextMenuStrategy extends EventStrategy {
         } else if (hit.type === HIT_TYPE.COL_HEADER) {
             this.#handleColHeaderHit(hit, e);
         }
+
         // HIT_TYPE.CORNER（左上角）不弹出菜单
     }
 

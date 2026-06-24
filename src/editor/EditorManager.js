@@ -19,6 +19,7 @@ export class EditorManager {
     constructor(renderEngine, sheet) {
         this.renderEngine = renderEngine;
         this.#sheet = sheet;
+
         /** 已注册的编辑器映射表，key 为编辑器类型名 */
         this.editors = new Map();
 

@@ -3,10 +3,13 @@ import { isObject, isString } from "../core/utils.js";
 
 /** 拖拽源行头/列头的半透明高亮色 */
 const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";
+
 /** 普通表头文字颜色 */
 const HEADER_TEXT_COLOR = "#555";
+
 /** 列头文字水平内边距（px） */
 const HEADER_COL_PADDING = 4;
+
 /** 行头文字水平内边距（px） */
 const HEADER_ROW_PADDING = 6;
 

@@ -17,6 +17,7 @@ import { BatchCommand } from "../../model";
 export class BatchOperationManager {
     /** 是否处于批量模式 */
     #inBatch = false;
+
     /** 暂存的子命令队列 */
     #batchCommands = [];
 

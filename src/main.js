@@ -43,6 +43,7 @@ const initApp = () => {
             {
                 name: "Sheet1",
                 readOnly: false,
+
                 // data: [
                 //     ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
                 //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
@@ -62,6 +63,7 @@ const initApp = () => {
                 ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
+
                 // 固定行列数上限（使用 maxRows/maxCols）
                 // maxRows: 20,
                 // maxCols: 12,
@@ -175,6 +177,7 @@ const initApp = () => {
                 customItems: [
                     {
                         label: "高亮选中行",
+
                         // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
                         contexts: ["cell", "rowHeader"],
                         action: (row, col, sheet) => {
@@ -222,8 +225,10 @@ const initApp = () => {
                         },
                     },
                 ],
+
                 // disabledItems: ["mergeCells", "unmergeCells"],
             },
+
             // rowMove: { enabled: false }
             freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
         },

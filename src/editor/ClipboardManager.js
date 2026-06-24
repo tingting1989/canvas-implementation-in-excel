@@ -26,6 +26,7 @@ import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 export class ClipboardManager {
     /** @type {{ sourceSheetName:string, topRow:number, topCol:number, rows:number, cols:number, cells:Array, columnTypes:Array<string> }|null} */
     #data = null;
+
     /**
      * 单元格富内容缓存：key = "sheetName,realR,col", value = { type, blob, objectUrl }
      * 与 Cell 模型解耦，由外部模块独立管理
@@ -42,6 +43,7 @@ export class ClipboardManager {
     copy(sheet) {
         const range = sheet.selection.getRange();
         const cells = [];
+
         // 记录每个复制列的类型名称，用于粘贴时的类型一致性检查
         const columnTypes = [];
         for (let c = range.topCol; c <= range.bottomCol; c++) {
@@ -265,6 +267,7 @@ export class ClipboardManager {
     pasteText(sheet, text) {
         const [targetRow, targetCol] = sheet.selection.getActive();
         const rows = text.split("\n");
+
         // 计算源列数（取最长行的列数）
         let srcCols = 0;
         for (let r = 0; r < rows.length; r++) {
@@ -296,6 +299,7 @@ export class ClipboardManager {
             }
         }
         sheet.endBatch();
+
         // 标记所有瓦片为脏，确保粘贴内容被完整重绘
         sheet.invalidateAll();
         sheet.render();
@@ -325,6 +329,7 @@ export class ClipboardManager {
                 const tr = targetRow + r;
                 const tc = targetCol + c;
                 if (sheet.isDisabled(tr, tc)) continue;
+
                 // 先用源列格式化为显示字符串，再用目标列的类型系统解析
                 const srcR = this.#data.topRow + r;
                 const srcC = this.#data.topCol + c;
@@ -334,6 +339,7 @@ export class ClipboardManager {
             }
         }
         sheet.endBatch();
+
         // 标记所有瓦片为脏，确保粘贴内容被完整重绘
         sheet.invalidateAll();
         sheet.render();

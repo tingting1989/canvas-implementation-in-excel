@@ -15,18 +15,22 @@ export class RowColManager {
 
     /** 隐藏列集合（存储实际列号） */
     #hiddenCols = new Set();
+
     /** 隐藏列的原始宽度缓存（隐藏前保存，显示时恢复） */
     #originalColWidths = new Map();
 
     /** 隐藏行集合（存储实际行号） */
     #hiddenRows = new Set();
+
     /** 隐藏行的原始高度缓存（隐藏前保存，显示时恢复） */
     #originalRowHeights = new Map();
 
     /** 实际使用的列数（由 ensureSize 设置） */
     #usedCols = 0;
+
     /** 实际使用的行数（由 ensureSize 设置） */
     #usedRows = 0;
+
     /** 是否通过 resetSize() 显式设置了行列数（优先级最高） */
     #explicitlySized = false;
 
@@ -37,6 +41,7 @@ export class RowColManager {
             return endY - startY;
         }
         this.#ensureRowPrefix();
+
         // 使用实际行数计算总高度
         const actualRowCount = Math.max(this.#usedRows, this.#rowHeights.length);
         return this.#allocatedHeight + Math.max(0, actualRowCount - this.#rowHeights.length) * CONFIG.DEFAULT_ROW_HEIGHT;
@@ -44,6 +49,7 @@ export class RowColManager {
 
     get totalWidth() {
         this.#ensureColPrefix();
+
         // 使用实际列数计算总宽度
         const actualColCount = Math.max(this.#usedCols, this.#colWidths.length);
         return this.#allocatedWidth + Math.max(0, actualColCount - this.#colWidths.length) * CONFIG.DEFAULT_COL_WIDTH;
@@ -53,6 +59,7 @@ export class RowColManager {
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             return this.#pageEndRow - this.#pageStartRow;
         }
+
         // 返回实际行数（考虑显式配置）
         return Math.max(this.#usedRows, this.#rowHeights.length, 1);
     }

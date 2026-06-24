@@ -13,22 +13,31 @@ import { EVENT_NAMES } from "../constants/eventNames.js";
 export class FormulaBar {
     /** @type {HTMLElement} */
     #bar = null;
+
     /** @type {HTMLElement} */
     #cellRef = null;
+
     /** @type {HTMLInputElement} */
     #input = null;
+
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
+
     /** @type {HTMLElement} 容器元素引用 */
     #container = null;
+
     /** 当前编辑中单元格的行号 */
     #activeRow = -1;
+
     /** 当前编辑中单元格的列号 */
     #activeCol = -1;
+
     /** 进入编辑前的原始值 */
     #originalValue = "";
+
     /** keydown 事件处理器引用 */
     #handleKeydown = null;
+
     /** focus 事件处理器引用 */
     #handleFocus = null;
 

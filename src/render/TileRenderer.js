@@ -52,6 +52,7 @@ export class TileRenderer {
     constructor(tileCache) {
         /** @type {TileCache} 瓦片缓存，用于获取/创建瓦片 */
         this.tileCache = tileCache;
+
         /**
          * 图片异步加载完成时的回调
          * 由 RenderEngine 设置，用于在图片就绪后触发重绘

@@ -20,6 +20,7 @@ import { CONFIG } from "../constants/config";
 export class TileCache {
     /** @type {{key: string, tile: Tile, prev: object|null, next: object|null}|null} 双向链表头节点（最久未使用） */
     #head = null;
+
     /** @type {{key: string, tile: Tile, prev: object|null, next: object|null}|null} 双向链表尾节点（最近使用） */
     #tail = null;
 
@@ -30,8 +31,10 @@ export class TileCache {
     constructor() {
         /** @type {Map<string, {key: string, tile: Tile, prev: object|null, next: object|null}>} 瓦片映射表 */
         this.tiles = new Map();
+
         /** @type {number} 最大缓存瓦片数量，超出时触发 LRU 淘汰 */
         this.maxSize = CONFIG.TILE_CACHE_MAX;
+
         /** @type {number} 设备像素比，从 CONFIG.DPR 读取并缓存 */
         this.dpr = CONFIG.DPR;
     }

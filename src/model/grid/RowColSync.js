@@ -19,6 +19,7 @@ import { isNumber, isObject } from "../../core/utils.js";
 export class RowColSync {
     /** @type {import("../../workbook/Sheet.js").Sheet} */
     #sheet;
+
     /** @type {"row"|"col"} */
     #axis;
 

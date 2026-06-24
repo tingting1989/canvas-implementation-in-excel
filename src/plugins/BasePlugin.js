@@ -32,16 +32,22 @@ import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 export class BasePlugin {
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
+
     /** 插件是否已初始化 */
     #initialized = false;
+
     /** 插件是否已启用 */
     #enabled = true;
+
     /** 插件自定义配置 */
     #options = {};
+
     /** 本插件注册的钩子引用（用于 destroy 时自动清理） */
     #registeredHooks = [];
+
     /** 本插件注册的策略名称列表（用于 destroy 时自动清理） */
     #registeredStrategies = [];
+
     /** 本插件注册的 DOM 事件引用（用于 destroy 时自动清理） */
     #registeredDOMEvents = [];
 

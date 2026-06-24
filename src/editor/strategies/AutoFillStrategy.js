@@ -19,12 +19,16 @@ export class AutoFillStrategy extends EventStrategy {
 
     /** 是否正在拖拽填充 */
     #filling = false;
+
     /** 源选区（拖拽开始时的选区范围） */
     #sourceRange = null;
+
     /** 填充方向：down / up / right / left */
     #fillDirection = null;
+
     /** 填充目标终点行号 */
     #fillEndRow = 0;
+
     /** 填充目标终点列号 */
     #fillEndCol = 0;
 

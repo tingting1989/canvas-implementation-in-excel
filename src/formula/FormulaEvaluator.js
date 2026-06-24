@@ -20,8 +20,10 @@ export class FormulaEvaluator {
      */
     constructor(workbook) {
         this.workbook = workbook;
+
         /** @type {Set<string>} 当前求值中引用的单元格 key 集合 */
         this.dependencies = new Set();
+
         /**
          * 调用栈（用于循环引用检测）
          * @type {Set<string>}

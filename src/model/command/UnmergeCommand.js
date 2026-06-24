@@ -18,6 +18,7 @@ export class UnmergeCommand {
         this.manager = manager;
         this.row = row;
         this.col = col;
+
         /** @type {{ topRow:number, topCol:number, bottomRow:number, bottomCol:number }|null} 快照的合并区域，撤销时用于恢复 */
         this.oldMerge = null;
     }

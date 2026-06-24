@@ -75,6 +75,7 @@ export class ScrollManager {
     #maxScrollY = 0;
     #headerH = CONFIG.HEADER_HEIGHT;
     #headerW = CONFIG.HEADER_WIDTH;
+
     /** 冻结区域尺寸（用于滚动条轨道计算） */
     #frozenRowsH = 0;
     #frozenColsW = 0;
@@ -83,6 +84,7 @@ export class ScrollManager {
     #wheelHandler = null;
     #dragMoveHandler = null;
     #dragEndHandler = null;
+
     /** thumb 的 mousedown 处理器引用（destroy 时需移除） */
     #hThumbDownHandler = null;
     #vThumbDownHandler = null;
@@ -93,6 +95,7 @@ export class ScrollManager {
     #hBar = null;
     #vBar = null;
     #corner = null;
+
     /** rAF 合并标志：scroll 回调是否已在本帧调度 */
     #pendingScrollCallback = false;
 
@@ -154,6 +157,7 @@ export class ScrollManager {
             if (dragging === "h") {
                 const dx = e.clientX - startMouse;
                 const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
+
                 // trackW 必须与 CSS half-and-half 布局一致，否则拖拽距离与滚动距离比例错误
                 const trackW = (this.#viewW - CONFIG.SCROLLBAR_WIDTH) / 2;
                 const dataViewW = this.#viewW - hw - this.#frozenColsW;
@@ -381,6 +385,7 @@ export class ScrollManager {
             document.removeEventListener(EVENT_NAMES.MOUSEUP, this.#dragEndHandler);
             this.#dragEndHandler = null;
         }
+
         // 移除 thumb 上的 mousedown 监听（之前未保存引用导致泄漏）
         if (this.#hThumb && this.#hThumbDownHandler) {
             this.#hThumb.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#hThumbDownHandler);

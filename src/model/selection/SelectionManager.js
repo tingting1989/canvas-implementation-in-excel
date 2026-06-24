@@ -13,10 +13,13 @@
 export class SelectionManager {
     /** 锚点行号 */
     #anchorRow = 0;
+
     /** 锚点列号 */
     #anchorCol = 0;
+
     /** 焦点行号 */
     #focusRow = 0;
+
     /** 焦点列号 */
     #focusCol = 0;
 

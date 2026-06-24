@@ -30,6 +30,7 @@ export class FormulaPlugin extends BasePlugin {
 
     /** @type {FormulaEngine} */
     #engine = null;
+
     /** @type {FormulaBar} */
     #bar = null;
 

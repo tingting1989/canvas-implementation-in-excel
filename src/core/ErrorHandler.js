@@ -22,10 +22,13 @@ import { isFunction } from "./utils.js";
 class ErrorHandler {
     /** 当前错误级别阈值，低于此级别的消息将被忽略 */
     #level = ERROR_LEVEL.WARN;
+
     /** 是否在 FATAL 级别时自动抛出异常 */
     #throwOnFatal = true;
+
     /** 自定义错误监听器列表 */
     #listeners = [];
+
     /** 是否处于开发模式 */
     #devMode = false;
 

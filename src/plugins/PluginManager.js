@@ -28,6 +28,7 @@ export class PluginManager {
 
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
+
     /** 已加载的插件实例：插件名 → 插件实例 */
     #plugins = new Map();
 

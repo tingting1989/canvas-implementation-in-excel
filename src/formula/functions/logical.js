@@ -44,6 +44,7 @@ function _toBoolean(value) {
         const upperValue = value.toUpperCase().trim();
         if (upperValue === "TRUE") return true;
         if (upperValue === "FALSE") return false;
+
         // 其他非空字符串视为 true（Excel 行为）
         return value !== "";
     }

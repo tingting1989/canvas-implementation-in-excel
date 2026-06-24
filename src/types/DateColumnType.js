@@ -76,10 +76,13 @@ export class DateColumnType extends ColumnType {
         const formats = [
             // YYYY-MM-DD
             /^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/,
+
             // DD/MM/YYYY
             /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/,
+
             // MM/DD/YYYY
             /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/,
+
             // YYYY年MM月DD日
             /^(\d{4})年(\d{1,2})月(\d{1,2})日$/,
         ];
@@ -98,6 +101,7 @@ export class DateColumnType extends ColumnType {
                     const part1 = parseInt(match[1], 10);
                     const part2 = parseInt(match[2], 10);
                     year = parseInt(match[3], 10);
+
                     // 启发式判断：如果 part1 > 12 则可能是日/月格式
                     if (part1 > 12) {
                         day = part1;

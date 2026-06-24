@@ -4,6 +4,7 @@ export class MergeManager {
     constructor() {
         /** @type {Map<number, {topRow:number, topCol:number, bottomRow:number, bottomCol:number, rowSpan:number, colSpan:number}>} */
         this.merges = new Map();
+
         /** @type {Map<number, number>} 每个单元格 → 其所属合并区域左上角的 key */
         this.cellMap = new Map();
     }

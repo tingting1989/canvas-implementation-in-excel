@@ -17,6 +17,7 @@ export class Hooks {
     constructor() {
         /** 钩子映射表：钩子名 → 回调函数数组 */
         this.hooks = new Map();
+
         /** 是否已初始化 */
         this.initialized = false;
     }

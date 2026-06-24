@@ -23,14 +23,19 @@ export class RowMoveStrategy extends EventStrategy {
 
     /** 是否处于 mousedown 状态（尚未超过拖拽阈值） */
     #moving = false;
+
     /** 是否已进入真正的拖拽状态（移动距离超过阈值） */
     #dragStarted = false;
+
     /** 拖拽源行索引 */
     #sourceRow = -1;
+
     /** 拖拽目标行索引（鼠标当前位置对应的行） */
     #targetRow = -1;
+
     /** 拖拽起始时鼠标在 canvas 内的 Y 坐标 */
     #dragStartY = 0;
+
     /** mousedown 时鼠标在屏幕上的 Y 坐标（用于计算阈值） */
     #mouseDownY = 0;
 

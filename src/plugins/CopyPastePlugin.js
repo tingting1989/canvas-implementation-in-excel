@@ -50,12 +50,16 @@ export class CopyPastePlugin extends BasePlugin {
 
     /** @type {CopyPasteStrategy|null} */
     #strategy = null;
+
     /** @type {ClipboardManager|null} */
     #clipboard = null;
+
     /** 是否允许复制 */
     #allowCopy = true;
+
     /** 是否允许粘贴 */
     #allowPaste = true;
+
     /** 是否允许剪切 */
     #allowCut = true;
 
@@ -78,6 +82,7 @@ export class CopyPastePlugin extends BasePlugin {
 
         // 创建 ClipboardManager 实例（替代 Workbook 中直接 new 的方式）
         this.#clipboard = new ClipboardManager();
+
         // 将 clipboard 引用挂到 workbook 上（保持向后兼容）
         this.workbook.clipboard = this.#clipboard;
 

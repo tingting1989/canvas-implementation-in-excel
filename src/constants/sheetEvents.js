@@ -1,0 +1,15 @@
+export const SHEET_EVENTS = Object.freeze({
+    INVALIDATE_ALL: "sheet:invalidate-all",
+    INVALIDATE_CELL: "sheet:invalidate-cell",
+    RENDER_REQUEST: "sheet:render-request",
+    CELL_VALUE_SET: "sheet:cell-value-set",
+    FORMULA_SET: "sheet:formula-set",
+    FORMULA_REMOVE: "sheet:formula-remove",
+    CELL_CHANGED: "sheet:cell-changed",
+    AFTER_CHANGE: "sheet:after-change",
+    UNDO: "sheet:undo",
+    REDO: "sheet:redo",
+    DATA_LOADED: "sheet:data-loaded",
+    ROW_COL_RESIZE: "sheet:row-col-resize",
+    PAGINATION_REFRESH: "sheet:pagination-refresh",
+});

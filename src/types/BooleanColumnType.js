@@ -47,6 +47,7 @@ export class BooleanColumnType extends ColumnType {
         if (input === "" || input === undefined || input === null) return "";
         const boolVal = this.#toBoolean(input);
         if (boolVal !== null) return boolVal;
+
         // 无法解析，返回原值
         return input;
     }

@@ -40,19 +40,26 @@ export class Tile {
     constructor(tileRow, tileCol) {
         /** @type {number} 瓦片行号 */
         this.tileRow = tileRow;
+
         /** @type {number} 瓦片列号 */
         this.tileCol = tileCol;
+
         /** @type {boolean} 脏标记，true 表示需要重新绘制 */
         this.dirty = true;
+
         /** @type {number} 设备像素比，从 CONFIG.DPR 读取并缓存到实例 */
         this.dpr = CONFIG.DPR;
+
         /** @type {HTMLCanvasElement} 离屏 Canvas，瓦片的绘制目标 */
         this.canvas = document.createElement("canvas");
+
         // Canvas 物理像素尺寸 = 逻辑尺寸 x DPR，确保高清屏清晰
         this.canvas.width = CONFIG.TILE_SIZE * CONFIG.DPR;
         this.canvas.height = CONFIG.TILE_SIZE * CONFIG.DPR;
+
         /** @type {CanvasRenderingContext2D} 离屏 Canvas 的 2D 渲染上下文 */
         this.ctx = this.canvas.getContext("2d");
+
         // 缩放上下文，使后续绘制代码以逻辑像素坐标工作
         this.ctx.scale(CONFIG.DPR, CONFIG.DPR);
     }
@@ -96,6 +103,7 @@ export class Tile {
             this.canvas.width = 0;
             this.canvas.height = 0;
         }
+
         // 断开引用，让 JS GC 回收宿主对象
         this.ctx = null;
         this.canvas = null;

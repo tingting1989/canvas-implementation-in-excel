@@ -23,6 +23,7 @@ export class SheetStyleManager {
 
     /** 行级样式映射 row → styleId */
     #rowStyles = new Map();
+
     /** 列级样式映射 col → styleId */
     #colStyles = new Map();
 
@@ -49,6 +50,7 @@ export class SheetStyleManager {
     get rowStyles() {
         return this.#rowStyles;
     }
+
     /** 列级样式 Map（供 RowColSync 等内部模块访问） */
     get colStyles() {
         return this.#colStyles;
@@ -118,16 +120,20 @@ export class SheetStyleManager {
      */
     setCellStyle(r, c, styleObj) {
         const realR = this.#sheet.toRealRow(r);
+
         // 确保行列表尺寸足够容纳目标单元格
         this.#sheet.rowColManager.ensureSize(realR + 1, c + 1);
         const cell = this.#sheet.cellStore.get(realR, c);
         const currentStyleId = cell?.styleId || 0;
+
         // 获取当前样式对象，styleId 为 0 时表示无自定义样式
         const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
+
         // 增量合并：新样式覆盖同名属性
         const mergedStyle = { ...currentStyle, ...styleObj };
         const newStyleId = stylePool.getStyleId(mergedStyle);
         const value = cell?.value ?? "";
+
         // 保留原有 value 和 disabled 状态，仅更新 styleId
         this.#sheet.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
         this.invalidateCache();
@@ -268,8 +274,10 @@ export class SheetStyleManager {
         // 第 2 层：列样式
         let style = base;
         if (colStyleId) style = { ...style, ...stylePool.getStyle(colStyleId) };
+
         // 第 3 层：行样式
         if (rowStyleId) style = { ...style, ...stylePool.getStyle(rowStyleId) };
+
         // 第 4 层：单元格样式
         if (cellStyleId) style = { ...style, ...stylePool.getStyle(cellStyleId) };
 

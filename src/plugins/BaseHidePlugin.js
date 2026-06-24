@@ -38,10 +38,13 @@ export class BaseHidePlugin extends BasePlugin {
 
     /** 行维度标识 */
     static AXIS_ROW = CONFIG.AXIS_ROW;
+
     /** 列维度标识 */
     static AXIS_COL = CONFIG.AXIS_COL;
+
     /** 行维度首字母大写（用于拼接 RowColManager API 后缀） */
     static DIM_ROW = "Row";
+
     /** 列维度首字母大写（用于拼接 RowColManager API 后缀） */
     static DIM_COLUMN = "Column";
 
@@ -407,6 +410,7 @@ export class BaseHidePlugin extends BasePlugin {
         for (let i = idx + 1; i < idx + 100; i++) {
             if (!this.#rcIsHidden(i)) return i;
         }
+
         // 再向负方向搜索
         for (let i = idx - 1; i >= 0; i--) {
             if (!this.#rcIsHidden(i)) return i;

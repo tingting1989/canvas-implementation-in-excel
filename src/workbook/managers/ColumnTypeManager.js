@@ -21,6 +21,7 @@ export class ColumnTypeManager {
 
     /** 列配置映射 col → ColumnConfig */
     #columnsConfig = new Map();
+
     /** 单元格级别类型配置映射 key("r,c") → {name, options} */
     #cellTypes = new Map();
 
@@ -35,6 +36,7 @@ export class ColumnTypeManager {
     get columnsConfig() {
         return this.#columnsConfig;
     }
+
     /** 单元格类型 Map（供 RowColSync 等内部模块访问） */
     get cellTypes() {
         return this.#cellTypes;

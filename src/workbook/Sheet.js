@@ -1,23 +1,8 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 import { HOOKS } from "../constants/hookNames.js";
-
-/** @constant {string} 数据变更事件类型：全量失效 */
-export const SHEET_CHANGE_ALL = "all";
-/** @constant {string} 数据变更事件类型：单格失效 */
-export const SHEET_CHANGE_CELL = "cell";
-/** @constant {string} 数据变更事件类型：触发渲染 */
-export const SHEET_CHANGE_RENDER = "render";
-
-/** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
-const SUB = {
-    INSERT_ROW: "insertRow",
-    INSERT_COL: "insertCol",
-    DELETE_ROW: "deleteRow",
-    DELETE_COL: "deleteCol",
-    MOVE_ROW: "moveRow",
-    MOVE_COL: "moveCol",
-};
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { EventBus } from "../core/EventBus.js";
 
 import {
     ChunkedCellStore,
@@ -38,6 +23,25 @@ import { ColumnTypeManager } from "./managers/ColumnTypeManager.js";
 import { HeaderLabelManager } from "./managers/HeaderLabelManager.js";
 import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js";
 import { BatchOperationManager } from "./managers/BatchOperationManager.js";
+
+/** @constant {string} 数据变更事件类型：全量失效 */
+export const SHEET_CHANGE_ALL = "all";
+
+/** @constant {string} 数据变更事件类型：单格失效 */
+export const SHEET_CHANGE_CELL = "cell";
+
+/** @constant {string} 数据变更事件类型：触发渲染 */
+export const SHEET_CHANGE_RENDER = "render";
+
+/** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
+const SUB = {
+    INSERT_ROW: "insertRow",
+    INSERT_COL: "insertCol",
+    DELETE_ROW: "deleteRow",
+    DELETE_COL: "deleteCol",
+    MOVE_ROW: "moveRow",
+    MOVE_COL: "moveCol",
+};
 
 /**
  * 工作表
@@ -60,33 +64,50 @@ import { BatchOperationManager } from "./managers/BatchOperationManager.js";
 export class Sheet {
     /**
      * 数据变更通知回调（由 Workbook 注入，替代直接持有 RenderEngine）
+     * @deprecated 使用 bus 事件代替，仅向后兼容保留
      * 签名：(event: { type: SHEET_CHANGE_ALL | SHEET_CHANGE_CELL | SHEET_CHANGE_RENDER, r?: number, c?: number, pageRow?: number, sheet?: Sheet }) => void
      */
     #onChange = null;
+
+    /** 事件总线（Sheet 持有，Workbook 及各子系统订阅） */
+    #bus = new EventBus();
+
     /** 批量操作管理器 */
     #batchOp = new BatchOperationManager();
+
     /** 样式缓存版本号，供 #invalidateAll 递增 */
     #styleCacheVersion = 0;
+
     /** 行同步器 */
     #rowSync = null;
+
     /** 列同步器 */
     #colSync = null;
+
     /** 样式管理器 */
     #styleManager = null;
+
     /** 列类型管理器 */
     #typeManager = null;
+
     /** 表头标签管理器 */
     #headerLabels = null;
+
     /** 条件格式管理器 */
     #conditionalFormat = null;
+
     /** 冻结行像素高度缓存（-1 表示需重新计算） */
     #cachedFrozenRowsHeight = -1;
+
     /** 冻结列像素宽度缓存（-1 表示需重新计算） */
     #cachedFrozenColsWidth = -1;
+
     /** 冻结行数（顶部固定行数，不随垂直滚动移动），通过 getter/setter 访问以维护缓存 */
     #fixedRowsTop = 0;
+
     /** 冻结列数（左侧固定列数，不随水平滚动移动），通过 getter/setter 访问以维护缓存 */
     #fixedColumnsStart = 0;
+
     /** 只读模式：禁止所有数据修改 */
     #readOnly = false;
 
@@ -104,33 +125,44 @@ export class Sheet {
      */
     constructor(name) {
         this.name = name;
-        /** 所属工作簿引用（由 Workbook.addSheet 时注入） */
+
+        /** 所属工作簿引用（由 Workbook.addSheet 时注入）
+         * @deprecated 仅过渡期保留，新代码应通过 bus 事件通信 */
         this.workbook = null;
+
         /** 是否可见 */
         this.visible = true;
 
         /** 单元格数据存储（分块存储，按行分 chunk） */
         this.cellStore = new ChunkedCellStore();
+
         /** 选区管理器 */
         this.selection = new SelectionManager();
+
         /** 操作历史栈（支持 undo/redo） */
         this.history = new HistoryStack();
+
         /** 合并单元格管理器 */
         this.mergeManager = new MergeManager();
+
         /** 行列尺寸与坐标计算管理器 */
         this.rowColManager = new RowColManager();
+
         /**
          * cell 配置数组，每个元素指定 {row, col, style?, disabled?, readOnly?, value?}
          * 静态声明式配置，初始化时一次性应用（参考 Handsontable cell 选项）
          */
         this.cellConfig = [];
+
         /**
          * cells 函数 (row, col) => {style?, disabled?, readOnly?, value?}
          * 动态计算式配置，每次 resolveCellProperties 时调用（参考 Handsontable cells 选项）
          */
         this.cellsFn = null;
+
         /** 单元格文字内边距（px），左右两侧各保留此宽度 */
         this.cellPadding = CONFIG.CELL_PADDING;
+
         /** 单元格文字溢出时是否显示省略号（...） */
         this.textOverflowEllipsis = CONFIG.TEXT_OVERFLOW_ELLIPSIS;
 
@@ -149,10 +181,19 @@ export class Sheet {
 
     /**
      * 设置数据变更通知回调
+     * @deprecated 使用 bus.on(SHEET_EVENTS.INVALIDATE_ALL, ...) 代替
      * @param {(event: { type: string, r?: number, c?: number, pageRow?: number }) => void} fn
      */
     set onChange(fn) {
         this.#onChange = fn;
+    }
+
+    /**
+     * 获取事件总线
+     * @returns {EventBus}
+     */
+    get bus() {
+        return this.#bus;
     }
 
     // ============================================================
@@ -210,6 +251,7 @@ export class Sheet {
     get fixedRowsTop() {
         return this.#fixedRowsTop;
     }
+
     /** @param {number} v 冻结行数，变化时自动失效高度缓存 */
     set fixedRowsTop(v) {
         if (this.#fixedRowsTop !== v) {
@@ -222,6 +264,7 @@ export class Sheet {
     get fixedColumnsStart() {
         return this.#fixedColumnsStart;
     }
+
     /** @param {number} v 冻结列数，变化时自动失效宽度缓存 */
     set fixedColumnsStart(v) {
         if (this.#fixedColumnsStart !== v) {
@@ -234,6 +277,7 @@ export class Sheet {
     get readOnly() {
         return this.#readOnly;
     }
+
     /** @param {boolean} v 只读模式，阻止所有数据修改 */
     set readOnly(v) {
         this.#readOnly = !!v;
@@ -244,6 +288,7 @@ export class Sheet {
         if (this.#fixedRowsTop <= 0) return 0;
         if (this.#cachedFrozenRowsHeight >= 0) return this.#cachedFrozenRowsHeight;
         const rc = this.rowColManager;
+
         // 使用实际行号计算（绕过页面偏移），因为冻结行始终是数据的真实行 0..fixedRowsTop-1
         const realRow = this.#fixedRowsTop - 1;
         this.#cachedFrozenRowsHeight = rc.getRealRowY(realRow) + rc.getRealRowHeight(realRow);
@@ -304,11 +349,14 @@ export class Sheet {
         this.#styleCacheVersion++;
         this.#styleManager.invalidateCache();
         this.#onChange?.({ type: SHEET_CHANGE_ALL });
+        this.#bus.emit(SHEET_EVENTS.INVALIDATE_ALL, { sheet: this });
     }
 
     #invalidateCell(r, c) {
         this.#styleManager.invalidateCache();
-        this.#onChange?.({ type: SHEET_CHANGE_CELL, r, c, pageRow: this.toPageRow(r) });
+        const pageRow = this.toPageRow(r);
+        this.#onChange?.({ type: SHEET_CHANGE_CELL, r, c, pageRow });
+        this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, { sheet: this, r, c, pageRow });
     }
 
     /**
@@ -700,6 +748,7 @@ export class Sheet {
      */
     mergeCells(topRow, topCol, bottomRow, bottomCol) {
         if (!this.#ensureWritable()) return false;
+
         // 禁止跨不同列类型合并
         if (!this.#checkColumnTypeConsistency(topCol, bottomCol)) {
             return false;

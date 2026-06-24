@@ -20,8 +20,10 @@ export class StylePool {
     constructor() {
         /** ID → 样式对象 */
         this.idToStyle = new Map();
+
         /** 标准化 key → ID */
         this.styleToId = new Map();
+
         /** 下一个可用 ID */
         this.nextId = 1;
     }

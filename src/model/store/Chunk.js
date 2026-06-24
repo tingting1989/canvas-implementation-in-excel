@@ -32,8 +32,10 @@ export class Chunk {
     constructor(rowStart, colStart) {
         /** @type {number} Chunk 在逻辑坐标系中的起始行号 */
         this.rowStart = rowStart;
+
         /** @type {number} Chunk 在逻辑坐标系中的起始列号 */
         this.colStart = colStart;
+
         /**
          * 单元格存储 Map
          * key: 整数编码 rowOffset * CHUNK_COL_SIZE + colOffset
@@ -104,7 +106,7 @@ export class Chunk {
      *
      * @yields {{row: number, col: number, cell: import("../Cell.js").Cell}}
      */
-    *iterate() {
+    * iterate() {
         const colSize = CONFIG.CHUNK_COL_SIZE;
         for (const [key, cell] of this.cells) {
             const rowOffset = (key / colSize) | 0;

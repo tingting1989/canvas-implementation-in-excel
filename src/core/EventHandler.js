@@ -18,6 +18,7 @@ import { Hooks } from "../editor/Hooks.js";
 export class EventHandler {
     /** 事件委托映射表 target:eventType → [{name, handler, priority}] */
     #delegateMap = new Map();
+
     /** 已绑定的 DOM 监听器 target:eventType → boundListener */
     #boundListeners = new Map();
 
@@ -184,6 +185,7 @@ export class EventHandler {
                 const boundListener = (e) => {
                     const entries = this.#delegateMap.get(key);
                     if (!entries) return;
+
                     // 先拷贝快照，防止迭代过程中 entries 被修改（如某个 handler 触发了 removeStrategy）
                     const snapshot = [...entries];
                     for (const { name: strategyName, handler: h } of snapshot) {

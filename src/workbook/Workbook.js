@@ -29,8 +29,10 @@ import { SettingsApplier } from "./managers/SettingsApplier.js";
 export class Workbook {
     /** @type {string} */
     #containerId;
+
     /** @type {object} */
     #initOptions;
+
     /** @type {Array<{type:string, name?:string, PluginClass?:Function, options:object}>} */
     #pendingPlugins = [];
 
@@ -66,8 +68,10 @@ export class Workbook {
     constructor(containerId, options = {}) {
         /** @type {Map<string, Sheet>} */
         this.sheets = new Map();
+
         /** @type {Sheet|null} */
         this.activeSheet = null;
+
         /**
          * 剪贴板管理器引用
          * 由 CopyPastePlugin 在 init() 时注入，非插件模式下为 null。
@@ -75,12 +79,16 @@ export class Workbook {
          * @type {import("../editor/ClipboardManager.js").ClipboardManager|null}
          */
         this.clipboard = null;
+
         /** @type {RenderEngine|null} */
         this.renderEngine = null;
+
         /** @type {EditorManager|null} */
         this.editor = null;
+
         /** @type {EventHandler|null} */
         this.eventHandler = null;
+
         /** @type {PluginManager|null} */
         this.pluginManager = null;
 
@@ -89,6 +97,7 @@ export class Workbook {
 
         /** @type {import("../formula/FormulaEngine.js").FormulaEngine|null} 公式引擎（由 FormulaPlugin 注入） */
         this.formulaEngine = null;
+
         /** @type {import("../ui/FormulaBar.js").FormulaBar|null} 公式栏（由 FormulaPlugin 注入） */
         this.formulaBar = null;
     }

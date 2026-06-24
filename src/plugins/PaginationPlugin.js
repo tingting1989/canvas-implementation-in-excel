@@ -37,14 +37,19 @@ export class PaginationPlugin extends BasePlugin {
 
     /** 每页行数 */
     #pageSize = DEFAULT_PAGE_SIZE;
+
     /** 当前页码（从 1 开始） */
     #currentPage = 1;
+
     /** 总行数（取 allocatedRowCount 与最大数据行号的较大值） */
     #totalRows = 0;
+
     /** 是否根据视口高度自动计算每页行数 */
     #autoPageSize = false;
+
     /** 可选的每页行数列表，供 UI 下拉框使用 */
     #pageSizeList = [10, 25, 50, 100, 200];
+
     /** 分页是否处于激活状态 */
     #active = false;
 
@@ -73,18 +78,22 @@ export class PaginationPlugin extends BasePlugin {
     get active() {
         return this.#active;
     }
+
     /** 每页行数 */
     get pageSize() {
         return this.#pageSize;
     }
+
     /** 当前页码（从 1 开始） */
     get currentPage() {
         return this.#currentPage;
     }
+
     /** 可选的每页行数列表（返回副本） */
     get pageSizeList() {
         return [...this.#pageSizeList];
     }
+
     /** 是否自动计算每页行数 */
     get autoPageSize() {
         return this.#autoPageSize;
@@ -220,14 +229,17 @@ export class PaginationPlugin extends BasePlugin {
     nextPage() {
         this.setPage(this.#currentPage + 1);
     }
+
     /** 跳转到上一页 */
     prevPage() {
         this.setPage(this.#currentPage - 1);
     }
+
     /** 跳转到第一页 */
     firstPage() {
         this.setPage(1);
     }
+
     /** 跳转到最后一页 */
     lastPage() {
         this.setPage(this.totalPages);

@@ -32,10 +32,13 @@ export class Cell {
     constructor(value = "", styleId = 0, disabled = false, formula = null) {
         /** @type {*} 单元格的值 */
         this.value = value;
+
         /** @type {number} 样式 ID，引用 StyleManager 中的样式表 */
         this.styleId = styleId;
+
         /** @type {boolean} 是否禁用（禁用后不可编辑，渲染灰色背景） */
         this.disabled = disabled;
+
         /** @type {string|null} 公式字符串，非公式单元格为 null */
         this.formula = formula;
     }
