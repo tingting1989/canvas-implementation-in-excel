@@ -66,7 +66,14 @@ export class CellEditor {
     }
 
     get canvasContext() {
-        return this._canvasContext ?? this.renderEngine;
+        if (this._canvasContext) return this._canvasContext;
+        const re = this.renderEngine;
+        if (!re) return null;
+        return {
+            get canvas() { return re.canvas; },
+            get canvasParent() { return re.canvas?.parentElement ?? null; },
+            render(sheet) { re.render(sheet); },
+        };
     }
 
     // ─── 模板方法（子类覆盖） ──────────────────────────────
