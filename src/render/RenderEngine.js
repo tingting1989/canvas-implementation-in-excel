@@ -397,7 +397,7 @@ export class RenderEngine {
 
     invalidateAll() {
         this.tileLayer.markAllDirty();
-        this.frozenLayer.markDirty();
+        this.frozenLayer.markAllDirty();
         this.overlayLayer.markDirty();
         this.resizeLayer.markDirty();
         this.headerLayer.markDirty();

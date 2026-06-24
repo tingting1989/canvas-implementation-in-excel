@@ -79,7 +79,7 @@ export class UILayer extends BaseLayer {
         const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const frozenColsW = sheet.frozenColsWidth;
-        const frozenRowsH = sheet.frozenRowsH;
+        const frozenRowsH = sheet.frozenRowsHeight;
         const viewW = options.viewW;
         const viewH = options.viewH;
 

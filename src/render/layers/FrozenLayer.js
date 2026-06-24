@@ -127,7 +127,7 @@ export class FrozenLayer extends BaseLayer {
         if (!this.enabled) return;
 
         const frozenColsW = sheet.frozenColsWidth;
-        const frozenRowsH = sheet.frozenRowsH;
+        const frozenRowsH = sheet.frozenRowsHeight;
 
         if (frozenColsW === 0 && frozenRowsH === 0) {
             return;
