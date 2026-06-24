@@ -2,7 +2,11 @@ import {defineConfig, globalIgnores} from "eslint/config";
 import globals from "globals";
 import js from "@eslint/js";
 import importX from "eslint-plugin-import-x";
+import {fileURLToPath} from "url";
 import path from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export default defineConfig([
     {
@@ -259,8 +263,6 @@ export default defineConfig([
                     newIsCapExceptions: ["events"],
                 },
             ],
-            // 强制 Vue <template> 中的 HTML 标签使用 4 个空格缩进
-            "vue/html-indent": ["error", 4],
         },
     },
 ]);
