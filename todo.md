@@ -33,14 +33,9 @@ License Key	商业授权	本项目无需
 
 
 
-📋 建议执行顺序
-阶段	任务	预估工作量
-Phase 1	删除废弃的 ResizeHandleRenderer / DragIndicatorRenderer	0.5 天
-Phase 2	BaseLayer 添加 watchForDirty()，清理空回调	0.5 天
-Phase 3	HeaderLayer 依赖注入替代 layers 查找	0.5 天
-Phase 4	CellEditor 基类重构，消除子类重复代码	2 天
-Phase 5	移除 lodash-es 依赖	1 天
-Phase 6	Sheet ↔ Workbook 解耦（事件机制）	3 天 ✅ 已完成
-Phase 7	Strategy 接口抽象（ViewportService）	3 天
-Phase 8	FrozenLayer 拆分重构	2 天
-需要我直接开始执行哪个阶段的重构？
+Phase 1	ChartModel + ChartManager + ChartLayer 骨架	1 天
+Phase 2	ChartRenderer 柱状图 + 折线图	2 天
+Phase 3	ChartPlugin + API 集成 + hitTest	1 天
+Phase 4	饼图 + 面积图 + 图例	1 天
+Phase 5	图表选中/拖拽/缩放交互	2 天
+Phase 6	数据联动（单元格变化自动刷新图表）	1 天
