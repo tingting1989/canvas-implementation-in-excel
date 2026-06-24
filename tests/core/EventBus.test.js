@@ -415,4 +415,72 @@ describe("EventBus - Aggressive Tests", () => {
             expect(envelope.sheetId).toBe("");
         });
     });
+
+    describe("Contract validation (strict mode)", () => {
+        it("should throw when source is not in emitters list", () => {
+            const strictBus = new EventBus("UnknownSource", "s1", { strict: true });
+            const fn = vi.fn();
+            strictBus.on("sheet:invalidate-all", fn);
+            expect(() => strictBus.emit("sheet:invalidate-all")).toThrow(
+                /契约校验/
+            );
+            expect(fn).not.toHaveBeenCalled();
+        });
+
+        it("should allow emit when source is in emitters list", () => {
+            const strictBus = new EventBus("Sheet", "s1", { strict: true });
+            const fn = vi.fn();
+            strictBus.on("sheet:invalidate-all", fn);
+            expect(() => strictBus.emit("sheet:invalidate-all")).not.toThrow();
+            expect(fn).toHaveBeenCalledOnce();
+        });
+
+        it("should allow source override that matches emitters", () => {
+            const strictBus = new EventBus("Sheet", "s1", { strict: true });
+            const fn = vi.fn();
+            strictBus.on("sheet:before-change", fn);
+            expect(() =>
+                strictBus.emit("sheet:before-change", [], { source: "CellEditor" })
+            ).not.toThrow();
+            expect(fn).toHaveBeenCalledOnce();
+        });
+
+        it("should throw when override source is not in emitters", () => {
+            const strictBus = new EventBus("Sheet", "s1", { strict: true });
+            const fn = vi.fn();
+            strictBus.on("sheet:before-change", fn);
+            expect(() =>
+                strictBus.emit("sheet:before-change", [], { source: "Hacker" })
+            ).toThrow(/契约校验/);
+        });
+
+        it("should warn but not throw for unregistered events", () => {
+            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+            const strictBus = new EventBus("Sheet", "s1", { strict: true });
+            const fn = vi.fn();
+            strictBus.on("custom:unregistered", fn);
+            expect(() => strictBus.emit("custom:unregistered")).not.toThrow();
+            expect(warnSpy).toHaveBeenCalledWith(
+                expect.stringContaining("未在 EVENT_FLOW_REGISTRY 中声明")
+            );
+            expect(fn).toHaveBeenCalledOnce();
+            warnSpy.mockRestore();
+        });
+
+        it("should not validate when strict is false (default)", () => {
+            const looseBus = new EventBus("Hacker", "s1");
+            const fn = vi.fn();
+            looseBus.on("sheet:invalidate-all", fn);
+            expect(() => looseBus.emit("sheet:invalidate-all")).not.toThrow();
+            expect(fn).toHaveBeenCalledOnce();
+        });
+
+        it("should allow events with empty emitters list", () => {
+            const strictBus = new EventBus("Anyone", "s1", { strict: true });
+            const fn = vi.fn();
+            strictBus.on("sheet:cell-value-set", fn);
+            expect(() => strictBus.emit("sheet:cell-value-set")).not.toThrow();
+            expect(fn).toHaveBeenCalledOnce();
+        });
+    });
 });

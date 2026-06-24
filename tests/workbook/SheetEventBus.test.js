@@ -284,7 +284,7 @@ describe("Sheet - EventBus Integration", () => {
         it("should resolve GET_CLIPBOARD via bus", () => {
             const mockClipboard = { copy: vi.fn() };
             sheet.bus.on(SHEET_EVENTS.GET_CLIPBOARD, () => mockClipboard);
-            const result = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD);
+            const result = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "TileRenderer" });
             expect(result).toBe(mockClipboard);
         });
 
@@ -293,17 +293,17 @@ describe("Sheet - EventBus Integration", () => {
             sheet.bus.on(SHEET_EVENTS.GET_PLUGIN, (envelope) => {
                 if (envelope.payload.name === "freeze") return mockPlugin;
             });
-            const result = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" });
+            const result = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
             expect(result).toBe(mockPlugin);
         });
 
         it("should return undefined for GET_CLIPBOARD when no listener", () => {
-            const result = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD);
+            const result = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "TileRenderer" });
             expect(result).toBeUndefined();
         });
 
         it("should return undefined for GET_PLUGIN when no listener", () => {
-            const result = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "nonexistent" });
+            const result = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "nonexistent" }, { source: "ContextMenuStrategy" });
             expect(result).toBeUndefined();
         });
     });
@@ -313,7 +313,7 @@ describe("Sheet - EventBus Integration", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.BEFORE_CHANGE, handler);
             const changes = [{ row: 0, col: 0, oldValue: "", newValue: "test" }];
-            sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, changes);
+            sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, changes, { source: "CellEditor" });
             expect(handler).toHaveBeenCalledOnce();
             const envelope = handler.mock.calls[0][0];
             expect(envelope.payload).toBe(changes);

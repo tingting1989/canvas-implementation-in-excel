@@ -12,18 +12,24 @@
  * @property {*}      payload   - 业务数据（纯数据，不含 Sheet 对象引用）
  */
 
+import { EVENT_FLOW_REGISTRY } from "../constants/sheetEvents.js";
+
 export class EventBus {
     #listeners = new Map();
     #source;
     #instanceId;
+    #strict;
 
     /**
      * @param {string} source     - 默认发射方模块标识
      * @param {string} instanceId - 默认实例标识（如工作表名称）
+     * @param {Object} [options]
+     * @param {boolean} [options.strict=false] - 是否启用契约校验
      */
-    constructor(source = "", instanceId = "") {
+    constructor(source = "", instanceId = "", options = {}) {
         this.#source = source;
         this.#instanceId = instanceId;
+        this.#strict = options.strict ?? false;
     }
 
     on(event, listener) {
@@ -52,6 +58,10 @@ export class EventBus {
     /**
      * 发射事件，自动将 payload 包装为标准信封
      *
+     * 当 strict 模式启用时，会对照 EVENT_FLOW_REGISTRY 校验：
+     * - 事件是否在注册表中声明
+     * - 发射方 source 是否在合法 emitters 列表中
+     *
      * @param {string} event    - 事件类型（SHEET_EVENTS 常量）
      * @param {*}      payload  - 业务数据
      * @param {Object}  [options]             - 覆盖默认元数据
@@ -60,13 +70,18 @@ export class EventBus {
      * @returns {*} 最后一个监听器的非 undefined 返回值
      */
     emit(event, payload, options = {}) {
+        const source = options.source ?? this.#source;
         const envelope = {
-            source: options.source ?? this.#source,
+            source,
             sheetId: options.sheetId ?? this.#instanceId,
             timestamp: Date.now(),
             type: event,
             payload: payload === undefined ? {} : payload,
         };
+
+        if (this.#strict) {
+            this.#validateContract(event, source);
+        }
 
         const list = this.#listeners.get(event);
         if (!list) return undefined;
@@ -77,6 +92,28 @@ export class EventBus {
             if (ret !== undefined) result = ret;
         }
         return result;
+    }
+
+    /**
+     * 契约校验：对照 EVENT_FLOW_REGISTRY 验证事件发射合法性
+     *
+     * @param {string} event  - 事件类型
+     * @param {string} source - 发射方模块标识
+     */
+    #validateContract(event, source) {
+        const entry = EVENT_FLOW_REGISTRY[event];
+        if (!entry) {
+            console.warn(
+                `[EventBus] 契约校验: 事件 "${event}" 未在 EVENT_FLOW_REGISTRY 中声明`
+            );
+            return;
+        }
+        if (entry.emitters.length > 0 && !entry.emitters.includes(source)) {
+            const msg =
+                `[EventBus] 契约校验: 事件 "${event}" 的发射方 "${source}" 不在合法列表 [${entry.emitters.join(", ")}] 中`;
+            console.error(msg);
+            throw new Error(msg);
+        }
     }
 
     removeAll() {

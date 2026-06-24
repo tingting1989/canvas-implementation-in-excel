@@ -109,7 +109,7 @@ export class Sheet {
     constructor(name) {
         this.name = name;
 
-        this.#bus = new EventBus("Sheet", name);
+        this.#bus = new EventBus("Sheet", name, { strict: true });
 
         /** 是否可见 */
         this.visible = true;
