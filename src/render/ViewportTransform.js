@@ -4,7 +4,7 @@ import { CONFIG } from "../constants/config";
  * 视口坐标转换器（ViewportTransform）
  *
  * 统一管理「行列号 ↔ 视口像素坐标」的双向转换，消除散落在
- * RenderEngine / HeaderRenderer / OverlayRenderer / DragIndicatorRenderer /
+ * RenderEngine / HeaderRenderer / OverlayRenderer / DragIndicatorLayer /
  * Workbook 等多处的手写坐标计算，避免坐标系不一致导致的 bug。
  *
  * ## 坐标体系

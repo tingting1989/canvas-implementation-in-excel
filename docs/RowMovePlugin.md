@@ -299,5 +299,5 @@ Sheet
 - [BaseMovePlugin.md](./BaseMovePlugin.md) — 行/列移动基类详细文档
 - [ColumnMovePlugin.md](./ColumnMovePlugin.md) — 列拖拽移动插件文档
 - [BasePlugin.md](./BasePlugin.md) — 插件基类详细文档
-- [DragIndicatorRenderer.md](./DragIndicatorRenderer.md) — 拖拽指示器渲染文档
+- [DragIndicatorLayer.md](./DragIndicatorLayer.md) — 拖拽指示器渲染文档
 - [plugin-system.md](./plugin-system.md) — 插件系统完整架构

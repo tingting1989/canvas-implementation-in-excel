@@ -29,3 +29,18 @@ Gantt Chart	甘特图扩展	属 Handsontable Pro 功能，非免费
 Trim Rows	自动裁剪底部空行	当前已通过稀疏存储实现类似效果
 Min/Max Cols/Rows	限制行列数范围	当前已有 MAX_ROWS/MAX_COLS 上限
 License Key	商业授权	本项目无需
+
+
+
+
+📋 建议执行顺序
+阶段	任务	预估工作量
+Phase 1	删除废弃的 ResizeHandleRenderer / DragIndicatorRenderer	0.5 天
+Phase 2	BaseLayer 添加 watchForDirty()，清理空回调	0.5 天
+Phase 3	HeaderLayer 依赖注入替代 layers 查找	0.5 天
+Phase 4	CellEditor 基类重构，消除子类重复代码	2 天
+Phase 5	移除 lodash-es 依赖	1 天
+Phase 6	Sheet ↔ Workbook 解耦（事件机制）	3 天
+Phase 7	Strategy 接口抽象（ViewportService）	3 天
+Phase 8	FrozenLayer 拆分重构	2 天
+需要我直接开始执行哪个阶段的重构？

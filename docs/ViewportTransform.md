@@ -27,7 +27,7 @@
 | `RenderEngine.js` | `headerW + getColX(col) - (col<fixedCols?0:sx)` | ~12 |
 | `HeaderRenderer.js` | `headerW + getColX(c) - scrollX` | ~9 |
 | `OverlayRenderer.js` | `headerW + x1 - scrollX` | ~8 |
-| `DragIndicatorRenderer.js` | `headerW + getColX(col) - scrollX` | ~4 |
+| `DragIndicatorLayer.js` | `headerW + getColX(col) - scrollX` | ~4 |
 | `Workbook.js` | 手写冻结区域可见性判断 | ~30行 |
 
 **后果**：每次新增功能或调整冻结逻辑，需要同步修改多处，容易遗漏导致坐标系不一致的 bug。历史上多次出现的"拖拽列宽后错位"、"冻结列右侧空白"、"列头与单元格不对齐"等 bug，根因都是某处忘记同步冻结区域的 `effectiveSx = col < fixedCols ? 0 : sx` 判断。
@@ -347,7 +347,7 @@ const { x, w } = vt.cellToViewRect(row, col);
 |------|-----------|
 | `HeaderRenderer` | 列头/行头坐标计算 |
 | `OverlayRenderer` | 选区/合并边框坐标 |
-| `DragIndicatorRenderer` | 移动指示线坐标 |
+| `DragIndicatorLayer` | 移动指示线坐标 |
 
 ### 注意事项
 
