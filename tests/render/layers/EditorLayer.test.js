@@ -113,12 +113,13 @@ describe("EditorLayer", () => {
         const sheet = {
             getMerge: () => merge,
         };
+        const mergeToViewRect = vi.fn(() => ({ x: 0, y: 0, w: 160, h: 56 }));
         const viewport = {
-            mergeToViewRect: () => ({ x: 0, y: 0, w: 160, h: 56 }),
+            mergeToViewRect,
         };
 
         layer.render(ctx, sheet, viewport, { viewW: 800, viewH: 600 });
-        expect(viewport.mergeToViewRect).toHaveBeenCalled();
+        expect(mergeToViewRect).toHaveBeenCalledWith(merge);
         expect(ctx.strokeRect).toHaveBeenCalledWith(0, 0, 160, 56);
     });
 

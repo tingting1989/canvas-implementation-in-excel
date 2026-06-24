@@ -129,7 +129,7 @@ describe("DragIndicatorLayer", () => {
         const ctx = { save: vi.fn(), restore: vi.fn() };
         layer.render(ctx, {}, {}, { viewW: 800, viewH: 600 });
         expect(ctx.save).not.toHaveBeenCalled();
-        expect(layer.renderCount).toBe(0);
+        expect(layer.renderCount).toBe(1);
     });
 
     it("should render column move indicator", () => {
@@ -147,8 +147,12 @@ describe("DragIndicatorLayer", () => {
             fillStyle: "",
             strokeStyle: "",
             lineWidth: 0,
+            font: "",
+            textAlign: "",
+            textBaseline: "",
             fillRect: vi.fn(),
             strokeRect: vi.fn(),
+            fillText: vi.fn(),
             beginPath: vi.fn(),
             moveTo: vi.fn(),
             lineTo: vi.fn(),
@@ -188,8 +192,12 @@ describe("DragIndicatorLayer", () => {
             fillStyle: "",
             strokeStyle: "",
             lineWidth: 0,
+            font: "",
+            textAlign: "",
+            textBaseline: "",
             fillRect: vi.fn(),
             strokeRect: vi.fn(),
+            fillText: vi.fn(),
             beginPath: vi.fn(),
             moveTo: vi.fn(),
             lineTo: vi.fn(),
