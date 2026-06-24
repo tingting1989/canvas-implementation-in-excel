@@ -22,7 +22,6 @@ export class EventBus {
         if (!list) return;
         const idx = list.indexOf(listener);
         if (idx > -1) list.splice(idx, 1);
-        
     }
 
     emit(event, ...args) {
