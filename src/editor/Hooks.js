@@ -122,8 +122,9 @@ export class Hooks {
             return undefined;
         }
 
+        const snapshot = callbacks.slice();
         let result;
-        for (const callback of callbacks) {
+        for (const callback of snapshot) {
             try {
                 result = callback(...args);
             } catch (error) {

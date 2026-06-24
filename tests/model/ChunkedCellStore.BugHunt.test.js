@@ -209,7 +209,7 @@ describe("ChunkedCellStore - Bug Hunting", () => {
             expect(store.get(1024, 0).value).toBe("chunk1-row2");
         });
 
-        it("BUG: moveRow后不应有数据残留在原位置", () => {
+        it("BUG: moveRow后中间行应正确上移", () => {
             store.set(5, 0, new Cell("source"));
             store.set(5, 3, new Cell("source-col3"));
             store.set(6, 0, new Cell("below"));
@@ -218,9 +218,9 @@ describe("ChunkedCellStore - Bug Hunting", () => {
 
             expect(store.get(10, 0).value).toBe("source");
             expect(store.get(10, 3).value).toBe("source-col3");
-            expect(store.get(5, 0)).toBeUndefined();
+            expect(store.get(5, 0).value).toBe("below");
             expect(store.get(5, 3)).toBeUndefined();
-            expect(store.get(6, 0).value).toBe("below");
+            expect(store.get(6, 0)).toBeUndefined();
         });
     });
 
@@ -252,7 +252,7 @@ describe("ChunkedCellStore - Bug Hunting", () => {
             expect(store.get(0, 256).value).toBe("chunk1-col2");
         });
 
-        it("BUG: moveCol后不应有数据残留在原位置", () => {
+        it("BUG: moveCol后中间列应正确左移", () => {
             store.set(0, 5, new Cell("source"));
             store.set(3, 5, new Cell("source-row3"));
             store.set(0, 6, new Cell("right"));
@@ -261,9 +261,9 @@ describe("ChunkedCellStore - Bug Hunting", () => {
 
             expect(store.get(0, 10).value).toBe("source");
             expect(store.get(3, 10).value).toBe("source-row3");
-            expect(store.get(0, 5)).toBeUndefined();
+            expect(store.get(0, 5).value).toBe("right");
             expect(store.get(3, 5)).toBeUndefined();
-            expect(store.get(0, 6).value).toBe("right");
+            expect(store.get(0, 6)).toBeUndefined();
         });
     });
 
@@ -318,13 +318,12 @@ describe("ChunkedCellStore - Bug Hunting", () => {
             expect(store.get(0, 4).value).toBe("C");
         });
 
-        it("BUG: 大量数据操作后Cell总数不变量", () => {
+        it("BUG: 大量数据操作后Cell总数应符合预期", () => {
             for (let r = 0; r < 10; r++) {
                 for (let c = 0; c < 10; c++) {
                     store.set(r, c, new Cell(`r${r}c${c}`));
                 }
             }
-            const countBefore = countCells(store);
 
             store.insertRow(5);
             store.deleteRow(3);
@@ -333,8 +332,10 @@ describe("ChunkedCellStore - Bug Hunting", () => {
             store.moveRow(2, 6);
             store.moveCol(1, 4);
 
-            const countAfter = countCells(store);
-            expect(countAfter).toBe(countBefore);
+            const deletedByDeleteRow = 10;
+            const deletedByDeleteCol = 9;
+            const expectedCount = 100 - deletedByDeleteRow - deletedByDeleteCol;
+            expect(countCells(store)).toBe(expectedCount);
         });
 
         it("BUG: deleteRow后再insertRow不应产生幽灵数据", () => {

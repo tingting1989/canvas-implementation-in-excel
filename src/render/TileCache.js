@@ -109,8 +109,8 @@ export class TileCache {
         const tileSize = CONFIG.TILE_SIZE;
         for (const node of this.tiles.values()) {
             const tile = node.tile;
-            const tileStartRow = tile.tileRow;
-            const tileStartCol = tile.tileCol;
+            const tileStartRow = tile.tileRow * tileSize;
+            const tileStartCol = tile.tileCol * tileSize;
             const tileEndRow = tileStartRow + tileSize;
             const tileEndCol = tileStartCol + tileSize;
             if (tileEndRow >= startRow && tileStartRow <= endRow && tileEndCol >= startCol && tileStartCol <= endCol) {
