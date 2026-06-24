@@ -41,10 +41,10 @@ export class ColumnMoveStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
 
-        const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        const resizeHit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
         if (resizeHit) return;
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit || hit.type !== HIT_TYPE.COL_HEADER) return;
 
         this.#moving = true;
@@ -69,10 +69,10 @@ export class ColumnMoveStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (this.#moving) return;
 
-        const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        const resizeHit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
         if (resizeHit) return;
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (hit && hit.type === HIT_TYPE.COL_HEADER) {
             this.handler.canvas.style.cursor = "grab";
             this.#cursorOwned = true;
@@ -96,7 +96,7 @@ export class ColumnMoveStrategy extends EventStrategy {
             this.handler.canvas.style.cursor = "grabbing";
         }
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (hit && (hit.type === HIT_TYPE.COL_HEADER || hit.type === HIT_TYPE.CELL)) {
             this.#targetCol = hit.type === HIT_TYPE.COL_HEADER ? hit.index : hit.col;
         }
@@ -113,7 +113,7 @@ export class ColumnMoveStrategy extends EventStrategy {
             colW: rc.getColWidth(this.#sourceCol),
         });
 
-        this.handler.renderEngine.invalidateAll();
+        this.handler.viewport.invalidateAll();
         this.handler.render();
 
         return false;
@@ -132,7 +132,7 @@ export class ColumnMoveStrategy extends EventStrategy {
                 this.#sourceCol = -1;
                 this.#targetCol = -1;
                 this.#dragStarted = false;
-                this.handler.renderEngine.invalidateAll();
+                this.handler.viewport.invalidateAll();
                 this.handler.render();
                 return;
             }
@@ -153,7 +153,7 @@ export class ColumnMoveStrategy extends EventStrategy {
         this.#targetCol = -1;
         this.#dragStarted = false;
 
-        this.handler.renderEngine.invalidateAll();
+        this.handler.viewport.invalidateAll();
         this.handler.render();
     }
 

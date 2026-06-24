@@ -47,6 +47,17 @@ export class CellEditor {
         this.originalValue = "";
     }
 
+    /**
+     * @param {import("../../render/ViewportService.js").ViewportService} viewport
+     */
+    set viewport(viewport) {
+        this._viewport = viewport;
+    }
+
+    get viewport() {
+        return this._viewport ?? this.renderEngine;
+    }
+
     // ─── 模板方法（子类覆盖） ──────────────────────────────
 
     getElementType() {
@@ -162,7 +173,7 @@ export class CellEditor {
         this.composing = false;
 
         const merge = this.sheet.getMerge(row, col);
-        const rect = this.renderEngine.getCellRect(row, col, merge);
+        const rect = this.viewport.getCellRect(row, col, merge);
 
         this.editor.style.display = "block";
         this.editor.style.left = rect.x + "px";
@@ -213,7 +224,7 @@ export class CellEditor {
         if (this.activeRow < 0 || !this.editor) return;
         this.#scrollHiding = false;
         const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
-        const rect = this.renderEngine.getCellRect(this.activeRow, this.activeCol, merge);
+        const rect = this.viewport.getCellRect(this.activeRow, this.activeCol, merge);
         this.editor.style.display = "block";
         this.editor.style.left = rect.x + "px";
         this.editor.style.top = rect.y + "px";
@@ -252,8 +263,8 @@ export class CellEditor {
         }
 
         this.hide();
-        if (this.renderEngine && isFunction(this.renderEngine.invalidateAll)) {
-            this.renderEngine.invalidateAll();
+        if (this.viewport && isFunction(this.viewport.invalidateAll)) {
+            this.viewport.invalidateAll();
         }
         this.#render();
     }
@@ -332,7 +343,7 @@ export class CellEditor {
             } else {
                 this.sheet.selection.setActive(targetRow, currentCol);
             }
-            this.renderEngine.scrollToCell(targetRow, currentCol);
+            this.viewport.scrollToCell(targetRow, currentCol);
         } else if (direction === "tab") {
             const nextCol = shiftKey ? currentCol - 1 : currentCol + 1;
             const colMerge = this.sheet.getMerge(currentRow, currentCol);
@@ -352,7 +363,7 @@ export class CellEditor {
             } else {
                 this.sheet.selection.setActive(currentRow, finalCol);
             }
-            this.renderEngine.scrollToCell(currentRow, finalCol);
+            this.viewport.scrollToCell(currentRow, finalCol);
         }
 
         this.#render();
@@ -367,8 +378,8 @@ export class CellEditor {
     }
 
     #render() {
-        if (this.sheet && this.renderEngine && isFunction(this.renderEngine.render)) {
-            this.renderEngine.render(this.sheet);
+        if (this.sheet && this.viewport && isFunction(this.viewport.render)) {
+            this.viewport.render(this.sheet);
         }
     }
 

@@ -524,7 +524,7 @@ export class ContextMenuStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         e.preventDefault();
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit) return;
 
         if (hit.type === HIT_TYPE.CELL) {

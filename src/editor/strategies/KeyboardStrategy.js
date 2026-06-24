@@ -61,7 +61,7 @@ export class KeyboardStrategy extends EventStrategy {
      * 处理导航、删除、格式化、批量赋值等操作
      */
     #handleNavigationKey(e) {
-        const { sheet, editor, renderEngine } = this.handler;
+        const { sheet, editor } = this.handler;
         const [r, c] = sheet.selection.getActive();
 
         // Ctrl/Meta 快捷键检测（独立于 switch，避免拦截非 Ctrl 时的字母输入）
@@ -303,7 +303,7 @@ export class KeyboardStrategy extends EventStrategy {
         } else {
             this.#selectCellOrMerge(sheet, target.row, col);
         }
-        renderEngine.scrollToCell(target.row, col);
+        this.handler.viewport.scrollToCell(target.row, col);
         this.handler.render();
     }
 
@@ -321,7 +321,7 @@ export class KeyboardStrategy extends EventStrategy {
         } else {
             this.#selectCellOrMerge(sheet, target.row, col);
         }
-        renderEngine.scrollToCell(target.row, col);
+        this.handler.viewport.scrollToCell(target.row, col);
         this.handler.render();
     }
 
@@ -346,7 +346,7 @@ export class KeyboardStrategy extends EventStrategy {
         } else {
             this.#selectCellOrMerge(sheet, row, target.col);
         }
-        renderEngine.scrollToCell(row, target.col);
+        this.handler.viewport.scrollToCell(row, target.col);
         this.handler.render();
     }
 
@@ -369,7 +369,7 @@ export class KeyboardStrategy extends EventStrategy {
         } else {
             this.#selectCellOrMerge(sheet, row, target.col);
         }
-        renderEngine.scrollToCell(row, target.col);
+        this.handler.viewport.scrollToCell(row, target.col);
         this.handler.render();
     }
 
@@ -390,7 +390,7 @@ export class KeyboardStrategy extends EventStrategy {
 
         const target = this.#getTopLeft(row, nextCol);
         this.#selectCellOrMerge(sheet, row, target.col);
-        renderEngine.scrollToCell(row, target.col);
+        this.handler.viewport.scrollToCell(row, target.col);
         this.handler.render();
     }
 

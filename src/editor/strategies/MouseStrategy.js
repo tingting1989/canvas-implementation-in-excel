@@ -61,7 +61,7 @@ export class MouseStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit) return;
 
         if (hit.type === HIT_TYPE.CORNER || hit.type === HIT_TYPE.COL_HEADER || hit.type === HIT_TYPE.ROW_HEADER) {
@@ -94,7 +94,7 @@ export class MouseStrategy extends EventStrategy {
     #handleMouseMove(e) {
         if (!this.#dragging || !this.handler.sheet) return;
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit) return;
 
         const { row, col } = this.#getTopLeft(hit.row, hit.col);
@@ -133,7 +133,7 @@ export class MouseStrategy extends EventStrategy {
 
         this.#debouncedCellClick.cancel();
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit) return;
         if (hit.type !== HIT_TYPE.CELL) return;
 

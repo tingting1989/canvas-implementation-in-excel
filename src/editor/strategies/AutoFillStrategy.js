@@ -70,7 +70,7 @@ export class AutoFillStrategy extends EventStrategy {
             return false;
         }
 
-        const isFillHandle = this.handler.renderEngine.fillHandleHitTest(e.clientX, e.clientY);
+        const isFillHandle = this.handler.viewport.fillHandleHitTest(e.clientX, e.clientY);
         if (isFillHandle) {
             canvas.style.cursor = "crosshair";
             this.#cursorOwned = true;
@@ -92,7 +92,7 @@ export class AutoFillStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
 
-        const isFillHandle = this.handler.renderEngine.fillHandleHitTest(e.clientX, e.clientY);
+        const isFillHandle = this.handler.viewport.fillHandleHitTest(e.clientX, e.clientY);
         if (!isFillHandle) return;
 
         e.preventDefault();
@@ -114,7 +114,7 @@ export class AutoFillStrategy extends EventStrategy {
     #onMouseMove(e) {
         if (!this.#filling) return;
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit) return false;
 
         const { row, col } = hit;
@@ -183,7 +183,7 @@ export class AutoFillStrategy extends EventStrategy {
 
         this.#sourceRange = null;
         this.#fillDirection = null;
-        this.handler.renderEngine.invalidateAll();
+        this.handler.viewport.invalidateAll();
         this.handler.render();
     }
 

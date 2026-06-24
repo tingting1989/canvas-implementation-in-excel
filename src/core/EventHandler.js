@@ -1,5 +1,6 @@
 import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
 import { Hooks } from "../editor/Hooks.js";
+import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
 
 /**
  * 事件处理器
@@ -35,6 +36,8 @@ export class EventHandler {
         this.clipboard = clipboard || null;
         this.canvas = renderEngine.canvas;
         this.wrap = renderEngine.canvas.parentElement;
+
+        this.viewport = new RenderEngineViewportService(renderEngine);
 
         this.hooks = new Hooks();
         this.hooks.init();

@@ -26,6 +26,16 @@ export class EditorManager {
         this.#initEditors();
     }
 
+    /**
+     * 注入 ViewportService 到所有编辑器
+     * @param {import("../render/ViewportService.js").ViewportService} viewport
+     */
+    setViewport(viewport) {
+        for (const editor of this.editors.values()) {
+            editor.viewport = viewport;
+        }
+    }
+
     get sheet() {
         return this.#sheet;
     }

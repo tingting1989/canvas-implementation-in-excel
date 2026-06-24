@@ -1,6 +1,6 @@
 import { Sheet } from "./Sheet.js";
 import { RenderEngine } from "../render/RenderEngine.js";
-import { ViewportTransform } from "../render/ViewportTransform.js";
+import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
 import { EditorManager } from "../editor/EditorManager.js";
 import { EventHandler } from "../core/EventHandler.js";
 import { isFunction, isObject } from "../core/utils.js";
@@ -222,6 +222,7 @@ export class Workbook {
     #createSubSystems() {
         this.editor = new EditorManager(this.renderEngine, this.activeSheet);
         this.eventHandler = new EventHandler(this.activeSheet, this.renderEngine, this.editor, null);
+        this.editor.setViewport(this.eventHandler.viewport);
         this.pluginManager = new PluginManager(this);
     }
 
@@ -319,14 +320,15 @@ export class Workbook {
             if (!activeEditor || activeEditor.activeRow < 0) return;
 
             const { activeRow: row, activeCol: col } = activeEditor;
-            const sheet = this.activeSheet;
             const dpr = window.devicePixelRatio || 1;
             const tabH = CONFIG.SHEET_TAB_HEIGHT;
             const canvasW = this.renderEngine.canvas.width / dpr;
             const canvasH = this.renderEngine.canvas.height / dpr;
 
-            const vt = new ViewportTransform(sheet, this.renderEngine.scrollX, this.renderEngine.scrollY);
-            const visible = vt.isCellVisible(row, col, canvasW, canvasH, tabH);
+            const viewport = this.eventHandler?.viewport;
+            const visible = viewport
+                ? viewport.isCellVisible(row, col, canvasW, canvasH, tabH)
+                : true;
 
             if (visible) {
                 activeEditor.restoreFromScroll();

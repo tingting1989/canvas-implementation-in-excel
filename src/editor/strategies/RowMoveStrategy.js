@@ -68,10 +68,10 @@ export class RowMoveStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
 
-        const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        const resizeHit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
         if (resizeHit) return;
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit || hit.type !== HIT_TYPE.ROW_HEADER) return;
 
         this.#moving = true;
@@ -96,10 +96,10 @@ export class RowMoveStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (this.#moving) return;
 
-        const resizeHit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        const resizeHit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
         if (resizeHit) return;
 
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (hit && hit.type === HIT_TYPE.ROW_HEADER) {
             this.handler.canvas.style.cursor = "grab";
             this.#cursorOwned = true;
@@ -131,7 +131,7 @@ export class RowMoveStrategy extends EventStrategy {
         }
 
         // 更新目标行：行头或单元格区域均可
-        const hit = this.handler.renderEngine.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (hit && (hit.type === HIT_TYPE.ROW_HEADER || hit.type === HIT_TYPE.CELL)) {
             this.#targetRow = hit.type === HIT_TYPE.ROW_HEADER ? hit.index : hit.row;
         }
@@ -149,7 +149,7 @@ export class RowMoveStrategy extends EventStrategy {
             rowH: rc.getRowHeight(this.#sourceRow),
         });
 
-        this.handler.renderEngine.invalidateAll();
+        this.handler.viewport.invalidateAll();
         this.handler.render();
 
         return false;
@@ -170,21 +170,18 @@ export class RowMoveStrategy extends EventStrategy {
         this.#clearIndicator();
 
         if (this.#dragStarted && this.#sourceRow !== this.#targetRow && this.#targetRow >= 0) {
-            // 钩子可返回 false 阻止移动
             const cancelled = this.handler.runHooksUntil(HOOKS.BEFORE_ROW_MOVE, this.#sourceRow, this.#targetRow);
             if (cancelled === false) {
                 this.#sourceRow = -1;
                 this.#targetRow = -1;
                 this.#dragStarted = false;
-                this.handler.renderEngine.invalidateAll();
+                this.handler.viewport.invalidateAll();
                 this.handler.render();
                 return;
             }
 
-            // 执行行移动
             this.handler.sheet.moveRow(this.#sourceRow, this.#targetRow);
 
-            // 调整选区：跟随源行移动到目标位置
             const sheet = this.handler.sheet;
             const range = sheet.selection.getRange();
             const delta = this.#targetRow - this.#sourceRow;
@@ -199,7 +196,7 @@ export class RowMoveStrategy extends EventStrategy {
         this.#targetRow = -1;
         this.#dragStarted = false;
 
-        this.handler.renderEngine.invalidateAll();
+        this.handler.viewport.invalidateAll();
         this.handler.render();
     }
 

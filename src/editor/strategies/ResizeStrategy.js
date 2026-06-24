@@ -44,7 +44,7 @@ export class ResizeStrategy extends EventStrategy {
     #onMouseDown(e) {
         if (!this.enabled || !this.handler.sheet) return;
 
-        const hit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
         if (!hit) return;
 
         e.preventDefault();
@@ -77,7 +77,7 @@ export class ResizeStrategy extends EventStrategy {
     #handleDrag(e) {
         const sheet = this.handler.sheet;
         const rc = sheet.rowColManager;
-        const renderEngine = this.handler.renderEngine;
+        const viewport = this.handler.viewport;
 
         if (this.#resizeType === HIT_TYPE.COL_RESIZE) {
             const delta = e.clientX - this.#startPos;
@@ -86,7 +86,7 @@ export class ResizeStrategy extends EventStrategy {
 
             const rect = this.handler.canvas.getBoundingClientRect();
             const lineX = e.clientX - rect.left;
-            renderEngine.setResizeLine(HIT_TYPE.COL_RESIZE, this.#resizeIndex, lineX);
+            viewport.setResizeLine(HIT_TYPE.COL_RESIZE, this.#resizeIndex, lineX);
         } else {
             const delta = e.clientY - this.#startPos;
             const newHeight = Math.max(CONFIG.MIN_ROW_HEIGHT, this.#startSize + delta);
@@ -94,10 +94,10 @@ export class ResizeStrategy extends EventStrategy {
 
             const rect = this.handler.canvas.getBoundingClientRect();
             const lineY = e.clientY - rect.top;
-            renderEngine.setResizeLine(HIT_TYPE.ROW_RESIZE, this.#resizeIndex, lineY);
+            viewport.setResizeLine(HIT_TYPE.ROW_RESIZE, this.#resizeIndex, lineY);
         }
 
-        renderEngine.invalidateAll();
+        viewport.invalidateAll();
         this.handler.render();
     }
 
@@ -109,7 +109,7 @@ export class ResizeStrategy extends EventStrategy {
      * - 仅在本策略曾设置光标时才清除，避免误清其他策略的光标
      */
     #handleHover(e) {
-        const hit = this.handler.renderEngine.headerHitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
 
         if (hit) {
             this.handler.canvas.style.cursor = hit.type === HIT_TYPE.COL_RESIZE ? "col-resize" : "row-resize";
@@ -133,8 +133,8 @@ export class ResizeStrategy extends EventStrategy {
     }
 
     #clearResizeLine() {
-        if (this.handler.renderEngine) {
-            this.handler.renderEngine.clearResizeLine();
+        if (this.handler.viewport) {
+            this.handler.viewport.clearResizeLine();
         }
     }
 }
