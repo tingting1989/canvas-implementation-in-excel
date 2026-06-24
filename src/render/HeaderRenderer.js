@@ -28,8 +28,7 @@ const HEADER_ROW_PADDING = 6;
  * 3. 左上角
  */
 export class HeaderRenderer {
-    constructor() {
-    }
+    constructor() {}
 
     /**
      * 主渲染入口
