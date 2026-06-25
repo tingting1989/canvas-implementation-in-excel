@@ -95,8 +95,12 @@ describe("Utils - _toNum", () => {
         expect(isNaN(_toNum(undefined))).toBe(true);
     });
 
-    it("should return NaN for boolean", () => {
-        expect(isNaN(_toNum(true))).toBe(true);
+    it("should convert boolean true to 1", () => {
+        expect(_toNum(true)).toBe(1);
+    });
+
+    it("should convert boolean false to 0", () => {
+        expect(_toNum(false)).toBe(0);
     });
 
     it("should return NaN for object", () => {

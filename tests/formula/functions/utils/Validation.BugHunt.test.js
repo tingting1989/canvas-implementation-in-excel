@@ -54,14 +54,16 @@ describe("Utils BugHunt - _validateNumericArg", () => {
         expect(result.valid).toBe(false);
     });
 
-    it("should return invalid for boolean true", () => {
+    it("should convert boolean true to 1", () => {
         const result = _validateNumericArg([true], 0, "value", "TEST");
-        expect(result.valid).toBe(false);
+        expect(result.valid).toBe(true);
+        expect(result.value).toBe(1);
     });
 
-    it("should return invalid for boolean false", () => {
+    it("should convert boolean false to 0", () => {
         const result = _validateNumericArg([false], 0, "value", "TEST");
-        expect(result.valid).toBe(false);
+        expect(result.valid).toBe(true);
+        expect(result.value).toBe(0);
     });
 
     it("should parse negative zero string correctly", () => {

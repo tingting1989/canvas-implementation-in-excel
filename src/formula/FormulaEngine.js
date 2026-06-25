@@ -185,7 +185,9 @@ export class FormulaEngine {
         for (const key of this.dependsOn.keys()) {
             if (!key.startsWith(prefix)) continue;
             const [, r, c] = this.#parseKey(key);
-            if (r >= row || c >= col) {
+            if (row > 0 && r >= row) {
+                keysToRemove.push(key);
+            } else if (col > 0 && c >= col) {
                 keysToRemove.push(key);
             }
         }

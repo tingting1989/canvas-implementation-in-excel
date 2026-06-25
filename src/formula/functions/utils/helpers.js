@@ -67,6 +67,7 @@ export function _flatten(arr) {
  */
 export function _toNum(v) {
     if (typeof v === "number") return v;
+    if (typeof v === "boolean") return v ? 1 : 0;
     if (typeof v === "string" && v.trim() !== "") {
         const trimmed = v.trim();
         if (/^0[xX]/.test(trimmed)) return NaN;

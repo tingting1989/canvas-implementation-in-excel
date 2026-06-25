@@ -304,6 +304,7 @@ describe("FormulaEvaluator BugHunt - Circular reference chain", () => {
 
     it("should clean up callStack after evaluation", () => {
         const sheet = createMockSheet();
+        const workbook = { getSheet: () => sheet };
         const evaluator = new FormulaEvaluator(workbook);
         evaluator.evaluate(
             { type: "literal", value: 1 },

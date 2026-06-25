@@ -54,7 +54,15 @@ export const statisticalFunctions = {
     COUNTA: (args) => {
         if (!_validateArgs(args, 1, Infinity, "COUNTA")) return "#VALUE!";
 
-        return _flatten(args).filter((v) => v !== "" && v !== null && v !== undefined).length;
+        let count = 0;
+        for (const item of args) {
+            if (Array.isArray(item)) {
+                count += _flatten(item).filter((v) => !_isBlank(v)).length;
+            } else if (!_isBlank(item)) {
+                count++;
+            }
+        }
+        return count;
     },
 
     /**
@@ -77,16 +85,9 @@ export const statisticalFunctions = {
      * =COUNTBLANK(A1:D10)              // 计算整个区域中的空单元格
      */
     COUNTBLANK: (args) => {
-        if (!_validateArgs(args, 1, 1, "COUNTBLANK")) return "#VALUE!";
+        if (!_validateArgs(args, 1, Infinity, "COUNTBLANK")) return "#VALUE!";
 
-        const range = args[0];
-
-        let flatRange;
-        if (Array.isArray(range)) {
-            flatRange = _flatten(range);
-        } else {
-            flatRange = [range];
-        }
+        const flatRange = _flatten(args);
 
         let blankCount = 0;
         for (const value of flatRange) {

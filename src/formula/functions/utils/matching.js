@@ -12,7 +12,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "../../../core/ErrorHandler.js";
-import { _toNum } from "./helpers.js";
+import {_isBlank, _toNum} from "./helpers.js";
 
 /**
  * 条件匹配核心函数
@@ -46,24 +46,35 @@ export function _matchCriteria(value, criteria) {
     const criteriaStr = String(criteria).trim();
 
     if (criteriaStr === "") {
-        return value === "" || value === null || value === undefined;
+        return _isBlank(value);
     }
 
     const operators = [">=", "<=", "<>", ">", "<", "="];
     for (const op of operators) {
         if (criteriaStr.startsWith(op)) {
             const conditionValue = criteriaStr.substring(op.length).trim();
+            if (conditionValue === "" && [">=", "<=", ">", "<"].includes(op)) {
+                return false;
+            }
             return _compareWithOperator(value, op, conditionValue);
         }
     }
 
+    if (typeof criteria === "number" && typeof value === "string") {
+        return false;
+    }
+
     const numCriteria = Number(criteria);
-    if (!isNaN(numCriteria)) {
+    if (!isNaN(numCriteria) && typeof criteria !== "boolean") {
         const numValue = _toNum(value);
         if (!isNaN(numValue)) {
             return Math.abs(numValue - numCriteria) < 1e-10;
         }
         return false;
+    }
+
+    if (typeof value === "boolean" && typeof criteria === "boolean") {
+        return value === criteria;
     }
 
     if (typeof criteriaStr === "string") {
@@ -174,11 +185,26 @@ function _compareWithOperator(value, operator, conditionValue) {
  * _matchWildcard("Hello123", "*")    // true (* 可以匹配所有内容)
  */
 export function _matchWildcard(text, pattern) {
+    if (!pattern || pattern.length === 0) return text === "" || text === null || text === undefined;
+
+    if (pattern === "*") return true;
+
+    if (pattern.length > 100) {
+        const simplePattern = pattern.replace(/\*/g, "").replace(/\?/g, "");
+        if (simplePattern.length === 0) return true;
+        return text.toLowerCase().includes(simplePattern.toLowerCase());
+    }
+
     const regexPattern = pattern
         .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-        .replace(/\*/g, ".*")
+        .replace(/\*+/g, ".*")
         .replace(/\?/g, ".");
 
-    const regex = new RegExp(`^${regexPattern}$`, "i");
-    return regex.test(text);
+    try {
+        const regex = new RegExp(`^${regexPattern}$`, "i");
+        return regex.test(String(text ?? ""));
+    } catch (e) {
+        const simplePattern = pattern.replace(/\*/g, "").replace(/\?/g, "");
+        return String(text ?? "").toLowerCase().includes(simplePattern.toLowerCase());
+    }
 }

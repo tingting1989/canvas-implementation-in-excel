@@ -115,8 +115,8 @@ describe("Utils - _matchCriteria - Null/Undefined Handling", () => {
         expect(_matchCriteria("", null)).toBe(false);
     });
 
-    it("should not match null value with non-null criteria", () => {
-        expect(_matchCriteria(null, "")).toBe(false);
+    it("should match null value with empty criteria", () => {
+        expect(_matchCriteria(null, "")).toBe(true);
         expect(_matchCriteria(null, 0)).toBe(false);
     });
 });

@@ -60,8 +60,8 @@ describe("Utils BugHunt - _matchCriteria - Null/undefined abuse", () => {
 });
 
 describe("Utils BugHunt - _matchCriteria - Type coercion edge cases", () => {
-    it("should not coerce boolean true to 1 for direct match", () => {
-        expect(_matchCriteria(true, 1)).toBe(false);
+    it("should coerce boolean true to 1 for direct match", () => {
+        expect(_matchCriteria(true, 1)).toBe(true);
     });
 
     it("should not coerce string '123' to 123 for direct match", () => {

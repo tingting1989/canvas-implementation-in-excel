@@ -91,6 +91,8 @@ export class FormulaEvaluator {
 
         const key = this.#cellKey(targetSheet.name, node.row, node.col);
 
+        this.dependencies.add(key);
+
         if (this._callStack.has(key)) {
             errorHandler.handle(ERROR_CODE.FORMULA_CIRCULAR_REFERENCE, `检测到循环引用: ${key}`, {
                 circularCell: key,
@@ -103,7 +105,6 @@ export class FormulaEvaluator {
         }
 
         const cell = targetSheet.cellStore.get(node.row, node.col);
-        this.dependencies.add(key);
 
         if (cell && cell.formula) {
             const astCache = this.workbook?.formulaEngine?.astCache;
