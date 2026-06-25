@@ -4,6 +4,7 @@ import { SortState } from "./sort/SortState.js";
 import { SortEngine } from "./sort/SortEngine.js";
 import { SortStrategy } from "../editor/strategies/SortStrategy.js";
 import { SortUIManager } from "./sort/SortUIManager.js";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
  * 排序插件（Sort Plugin）
@@ -152,15 +153,9 @@ export class SortPlugin extends BasePlugin {
         if (!sheet) return;
 
         const cellStore = sheet.cellStore;
-        // ✅ 修复：从 rowColManager 获取正确的行数
         const rowCount = sheet.rowColManager?.rowCount || 1000;
-        console.log('[SortPlugin] init - rowCount:', rowCount, 'fixedRowsTop:', sheet.fixedRowsTop);
-        console.log('[SortPlugin] cellStore:', cellStore ? '✓' : '✗');
-        console.log('[SortPlugin] toRealRow exists:', typeof sheet.toRealRow);
 
-        this.#sortEngine = new SortEngine(cellStore, this.#sortState, rowCount, {
-            rowMapper: (row) => sheet.toRealRow(row)  // ✅ 传入行号映射函数
-        });
+        this.#sortEngine = new SortEngine(cellStore, this.#sortState, rowCount);
         this.#fixedRowsTop = sheet.fixedRowsTop || 0;
 
         // 创建并注册排序策略到 EventHandler（标准化方式）
@@ -271,7 +266,7 @@ export class SortPlugin extends BasePlugin {
      */
     destroy() {
         this.disable();
-        this.#unregisterHeaderRenderer();  // 注销列头渲染器
+        this.#unregisterHeaderRenderer(); // 注销列头渲染器
         this.#sortState?.reset();
         this.#sortEngine = null;
         this.#sortUIManager = null;
@@ -294,13 +289,13 @@ export class SortPlugin extends BasePlugin {
      */
     sortRows(colIndex, options = {}) {
         if (!this.#sortEngine) {
-            console.warn("[SortPlugin] Engine not initialized");
+            errorHandler.warn(ERROR_CODE.SORT_ENGINE_NOT_INITIALIZED, "Sort engine not initialized");
             return { swapped: 0, time: 0 };
         }
 
         const sortOptions = {
             ...options,
-            fixedRows: options.fixedRows ?? this.#fixedRowsTop
+            fixedRows: options.fixedRows ?? this.#fixedRowsTop,
         };
 
         const result = this.#sortEngine.sortRows(colIndex, sortOptions);
@@ -321,13 +316,13 @@ export class SortPlugin extends BasePlugin {
      */
     sortMultiple(columns, options = {}) {
         if (!this.#sortEngine) {
-            console.warn("[SortPlugin] Engine not initialized");
+            errorHandler.warn(ERROR_CODE.SORT_ENGINE_NOT_INITIALIZED, "Sort engine not initialized");
             return { swapped: 0, time: 0 };
         }
 
         const sortOptions = {
             ...options,
-            fixedRows: options.fixedRows ?? this.#fixedRowsTop
+            fixedRows: options.fixedRows ?? this.#fixedRowsTop,
         };
 
         const result = this.#sortEngine.sortMultiple(columns, sortOptions);
@@ -427,7 +422,7 @@ export class SortPlugin extends BasePlugin {
         if (!sheet) return;
 
         // 1. 重置选区到起始位置（SelectionManager 没有 clear() 方法）
-        if (sheet.selection && typeof sheet.selection.setActive === 'function') {
+        if (sheet.selection && typeof sheet.selection.setActive === "function") {
             sheet.selection.setActive(0, 0);
         }
 

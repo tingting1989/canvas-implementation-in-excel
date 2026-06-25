@@ -119,10 +119,7 @@ export class SortStrategy extends EventStrategy {
         const now = Date.now();
         const currentCol = hit.index;
 
-        const isDoubleClick = (
-            currentCol === this.#lastClickCol &&
-            now - this.#lastClickTime < this.#clickThreshold
-        );
+        const isDoubleClick = currentCol === this.#lastClickCol && now - this.#lastClickTime < this.#clickThreshold;
 
         if (isDoubleClick) {
             e.preventDefault();

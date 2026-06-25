@@ -44,7 +44,7 @@ export class HeaderRenderer {
      * @param {Function} renderer - 渲染函数 (ctx, colIndex, x, y, width, height) => void
      */
     registerColumnHeaderRenderer(renderer) {
-        if (typeof renderer === 'function') {
+        if (typeof renderer === "function") {
             this.#columnHeaderRenderers.push(renderer);
         }
     }
@@ -177,7 +177,7 @@ export class HeaderRenderer {
                     try {
                         renderer(ctx, c, x, clipY, w, rowH);
                     } catch (e) {
-                        console.warn('[HeaderRenderer] columnHeaderRenderer error:', e);
+                        console.warn("[HeaderRenderer] columnHeaderRenderer error:", e);
                     }
                 }
 

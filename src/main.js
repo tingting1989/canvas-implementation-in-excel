@@ -14,7 +14,7 @@ import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./core/utils.js";
 import { errorHandler, ERROR_LEVEL } from "./core/ErrorHandler.js";
-import {SortPlugin} from "@/plugins";
+import { SortPlugin } from "@/plugins";
 
 const initApp = () => {
     console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -36,7 +36,7 @@ const initApp = () => {
     Workbook.registerPlugin("rowMove", RowMovePlugin);
     Workbook.registerPlugin("freeze", FreezePlugin);
     Workbook.registerPlugin("formula", FormulaPlugin);
-     Workbook.registerPlugin("sort", SortPlugin);
+    Workbook.registerPlugin("sort", SortPlugin);
 
     const wb = new Workbook("grid", {
         // height:600,
@@ -51,18 +51,18 @@ const initApp = () => {
                 //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
                 //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 // ],
-                colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                //colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
                 rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
-                nestedHeaders: [
-                    [
-                        { label: "基本信息", colspan: 2 },
-                        { label: "工作信息", colspan: 4 },
-                    ],
-                    ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
-                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                ],
+                // nestedHeaders: [
+                //     [
+                //         { label: "基本信息", colspan: 2 },
+                //         { label: "工作信息", colspan: 4 },
+                //     ],
+                //     ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+                //     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                // ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
 
@@ -172,7 +172,7 @@ const initApp = () => {
             "rowMove",
             "freeze",
             "formula",
-            "sort"
+            "sort",
         ],
         pluginOptions: {
             contextMenu: {

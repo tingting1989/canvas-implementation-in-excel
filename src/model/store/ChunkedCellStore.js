@@ -580,10 +580,12 @@ export class ChunkedCellStore {
             }
         }
 
-        return chain.filter((row, i) => {
+        const movedCount = chain.filter((row, i) => {
             const target = chain[(i + 1) % chain.length];
             return row !== target;
         }).length;
+
+        return movedCount;
     }
 
     /**

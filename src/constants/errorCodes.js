@@ -83,6 +83,10 @@ export const ERROR_CODE = {
     /** 参数数量无效 */
     FORMULA_ARGUMENT_COUNT_INVALID: "FORMULA_ARGUMENT_COUNT_INVALID",
 
+    // ── 排序 ──
+    /** 排序引擎未初始化 */
+    SORT_ENGINE_NOT_INITIALIZED: "SORT_ENGINE_NOT_INITIALIZED",
+
     // ── 通用 ──
     /** 未知错误 */
     UNKNOWN: "UNKNOWN",

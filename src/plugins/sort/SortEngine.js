@@ -35,30 +35,15 @@ export class SortEngine {
      */
     #rowCount;
 
-    /**
-     * 行号转换函数（用于分页模式下的 行号映射）
-     * @type {Function|null}
-     */
-    #rowMapper;
-
-    constructor(cellStore, sortState, rowCount, options = {}) {
+    constructor(cellStore, sortState, rowCount) {
         this.#cellStore = cellStore;
         this.#sortState = sortState;
         this.#rowCount = rowCount;
-        this.#rowMapper = options.rowMapper || null;  // 可选的行号映射函数
     }
 
     // ═══════════════════════════════════════════════════════════════
     // 公共 API
     // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * 行号转换（支持分页模式）
-     * @private
-     */
-    #mapRow(row) {
-        return this.#rowMapper ? this.#rowMapper(row) : row;
-    }
 
     /**
      * 单列排序
@@ -124,11 +109,8 @@ export class SortEngine {
         const fixedRows = options.fixedRows || 0;
         const hiddenRows = options.hiddenRows || [];
 
-        console.log('[SortEngine] sortMultiple - columns:', columns, 'fixedRows:', fixedRows, 'totalRows:', this.#rowCount);
-
         // 1️⃣ 构建可排序索引数组（排除冻结行和隐藏行）
         const sortableIndices = this.#buildSortableIndices(fixedRows, hiddenRows);
-        console.log('[SortEngine] sortableIndices length:', sortableIndices.length, 'indices:', sortableIndices.slice(0, 10));
 
         if (sortableIndices.length <= 1) {
             return { swapped: 0, time: performance.now() - startTime, rowCount: this.#rowCount };
@@ -139,34 +121,25 @@ export class SortEngine {
 
         // 3️⃣ 预提取排序列数据（避免重复访问 cellStore）
         const columnDataArrays = this.#extractColumnData(columns, sortableIndices);
-        console.log('[SortEngine] columnDataArrays[0] (first 5):', columnDataArrays[0]?.slice(0, 5));
-        console.log('[SortEngine] raw values (first 5):', columnDataArrays[0]?.slice(0, 5).map(d => d.rawValue));
-        console.log('[SortEngine] normalized values (first 5):', columnDataArrays[0]?.slice(0, 5).map(d => d.value));
 
         // 4️⃣ 构建 Map 索引（关键性能优化！）
         const rowToIndexMap = this.#buildRowToIndexMap(sortableIndices);
 
         // 5️⃣ 创建多级比较器并排序
         const comparatorConfigs = this.#buildComparatorConfigs(columns, columnDataArrays);
-
-        console.log('[SortEngine] BEFORE sort - indices:', sortableIndices.slice(0, 10));
         sortableIndices.sort((idxA, idxB) => this.#multiLevelCompare(idxA, idxB, rowToIndexMap, comparatorConfigs));
-        console.log('[SortEngine] AFTER sort - indices:', sortableIndices.slice(0, 10));
 
         // 6️⃣ 记录排序信息
         this.#sortState.setCurrentSort(columns[0].col, columns[0].order || "asc");
 
-        // 7️⃣ 构建目标位置映射并批量移动
+        // 7️⃣ 构建移动映射表
         const mapping = this.#buildMapping(sortableIndices, fixedRows);
-        console.log('[SortEngine] mapping size:', mapping.size, 'sample:', Array.from(mapping.entries()).slice(0, 5));
 
         if (mapping.size === 0) {
-            console.log('[SortEngine] ⚠️ mapping is empty - no rows to move!');
             return { swapped: 0, time: performance.now() - startTime, rowCount: this.#rowCount };
         }
 
         const swapped = this.#cellStore.batchMoveRows(mapping, { fixedRows, hiddenRows });
-        console.log('[SortEngine] batchMoveRows result - swapped:', swapped);
 
         // 8️⃣ 记录排序后的行顺序（用于恢复功能）
         this.#sortState.setPostSortOrder(sortableIndices);
@@ -221,9 +194,7 @@ export class SortEngine {
     #extractColumnData(columns, sortableIndices) {
         return columns.map(({ col }) => {
             return sortableIndices.map((row) => {
-                const realRow = this.#mapRow(row);  // ✅ 转换为实际行号
-                const cell = this.#cellStore.get(realRow, col);
-                console.log(`[SortEngine] get(${realRow}, ${col}) [pageRow=${row}]:`, cell, 'value:', cell?.value);
+                const cell = this.#cellStore.get(row, col);
                 const rawValue = cell?.value;
                 return {
                     row,
@@ -290,14 +261,22 @@ export class SortEngine {
             const dataB = dataArray[indexB];
 
             let cmp;
+            let isNullComparison = false;
+
             if (customComparator) {
                 cmp = customComparator(dataA.rawValue, dataB.rawValue); // 传原始值
             } else {
+                isNullComparison = dataA.value.type === 'null' || dataB.value.type === 'null';
                 cmp = this.#compareNormalized(dataA.value, dataB.value);
             }
 
             if (cmp !== 0) {
-                return order === "desc" ? -cmp : cmp;
+                // 🔑 关键修复：null 比较不参与降序反转
+                // #compareNormalized 已保证 null 始终排最后，不能被反转！
+                if (order === "desc" && !isNullComparison) {
+                    return -cmp;  // 正常的降序反转
+                }
+                return cmp;  // null 比较保持原方向（始终排最后）
             }
         }
         return 0; // 所有列都相等（稳定排序保证原始顺序）
@@ -309,17 +288,28 @@ export class SortEngine {
 
     /**
      * 归一化值比较
-     * @private
+     *
+     * ⚠️ 关键修复：null/undefined 必须始终排在最后，无论升降序！
+     *
+     * @param {{type: string, value: any}} a
+     * @param {{type: string, value: any}} b
+     * @returns {number} 负数=a<b, 正数=a>b, 0=相等
      */
     #compareNormalized(a, b) {
-        // 类型优先级: boolean < number < date < string < unknown < null
-        // ⚠️ null 排在最后（符合 Excel 行为：空单元格在升序时排末尾）
-        const typeOrder = { boolean: 0, number: 1, date: 2, string: 3, unknown: 4, null: 5 };
-        const typeDiff = (typeOrder[a.type] || 4) - (typeOrder[b.type] || 4);
+        // 特殊规则：null/undefined 始终排最后（无论升降序）
+        if (a.type === 'null' && b.type !== 'null') return 1;   // a 是 null，排后面
+        if (a.type !== 'null' && b.type === 'null') return -1;  // b 是 null，排后面
+        if (a.type === 'null' && b.type === 'null') return 0;   // 都是 null
+
+        // 非-null 类型的正常比较
+        const typeOrder = { boolean: 0, number: 1, date: 2, string: 3, unknown: 4 };
+        const typeDiff = (typeOrder[a.type] ?? 4) - (typeOrder[b.type] ?? 4);
         if (typeDiff !== 0) return typeDiff;
 
         if (a.value === b.value) return 0;
-        if (a.value == null) return 1; // null 在同类型中排最后
+
+        // 处理空字符串等边界情况
+        if (a.value == null) return 1;
         if (b.value == null) return -1;
 
         return a.value < b.value ? -1 : 1;
@@ -360,7 +350,7 @@ export class SortEngine {
     /**
      * 构建目标位置映射表
      *
-     * mapping: originalRow → targetPosition
+     * mapping: realOriginalRow → realTargetPosition (使用实际行号)
      *
      * @private
      */
@@ -369,9 +359,7 @@ export class SortEngine {
 
         sortedIndices.forEach((originalRow, newPosition) => {
             const targetPosition = newPosition + fixedRows;
-            if (originalRow !== targetPosition) {
-                mapping.set(originalRow, targetPosition);
-            }
+            mapping.set(originalRow, targetPosition);
         });
 
         return mapping;
