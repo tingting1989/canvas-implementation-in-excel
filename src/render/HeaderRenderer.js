@@ -498,7 +498,13 @@ export class HeaderRenderer {
                 const endX = vt.colRightToViewX(frozenEnd);
 
                 if (endX > startX && endX > headerW) {
-                    this.#drawSelectionLine(ctx, Math.max(startX, headerW), y, Math.min(endX, headerW + frozenColsW) - Math.max(startX, headerW), true);
+                    this.#drawSelectionLine(
+                        ctx,
+                        Math.max(startX, headerW),
+                        y,
+                        Math.min(endX, headerW + frozenColsW) - Math.max(startX, headerW),
+                        true,
+                    );
                 }
             }
         }
