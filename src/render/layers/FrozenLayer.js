@@ -231,8 +231,42 @@ export class FrozenLayer extends BaseLayer {
 
         this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, tileOptions);
         this.overlayRenderer.renderMerges(ctx, sheet, viewport);
-        this.overlayRenderer.renderSelection(ctx, sheet, viewport, viewW, viewH);
+
+        if (this.#isSelectionInClipArea(sheet, viewport, clipX, clipY, clipW, clipH)) {
+            this.overlayRenderer.renderSelection(ctx, sheet, viewport, viewW, viewH);
+        }
 
         ctx.restore();
+    }
+
+    #isSelectionInClipArea(sheet, viewport, clipX, clipY, clipW, clipH) {
+        const range = sheet.selection.getRange();
+        const selectionRect = viewport.mergeToViewRect(range);
+
+        const selRight = selectionRect.x + selectionRect.w;
+        const selBottom = selectionRect.y + selectionRect.h;
+        const clipRight = clipX + clipW;
+        const clipBottom = clipY + clipH;
+
+        const intersects =
+            selectionRect.x < clipRight &&
+            selRight > clipX &&
+            selectionRect.y < clipBottom &&
+            selBottom > clipY;
+
+        if (!intersects) return false;
+
+        const fixedCols = sheet.fixedColumnsStart;
+        const fixedRows = sheet.fixedRowsTop;
+
+        const isSelectionInFrozenCols = range.topCol < fixedCols || range.bottomCol < fixedCols;
+        const isSelectionInFrozenRows = range.topRow < fixedRows || range.bottomRow < fixedRows;
+        const isClipAreaFrozenCols = clipX >= sheet.getHeaderWidth() && clipX + clipW <= sheet.getHeaderWidth() + sheet.frozenColsWidth;
+        const isClipAreaFrozenRows = clipY >= sheet.getHeaderHeight() && clipY + clipH <= sheet.getHeaderHeight() + sheet.frozenRowsHeight;
+
+        if (isClipAreaFrozenCols && !isSelectionInFrozenCols) return false;
+        if (isClipAreaFrozenRows && !isSelectionInFrozenRows) return false;
+
+        return true;
     }
 }

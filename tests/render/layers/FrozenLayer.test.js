@@ -10,8 +10,15 @@ function createMockSheet(overrides = {}) {
         frozenColsWidth,
         frozenRowsH,
         frozenRowsHeight,
+        fixedColumnsStart: overrides.fixedColumnsStart ?? 0,
+        fixedRowsTop: overrides.fixedRowsTop ?? 0,
         getHeaderWidth: vi.fn(() => 50),
         getHeaderHeight: vi.fn(() => 25),
+        selection: {
+            getRange: vi.fn(() => ({ topRow: 0, topCol: 0, bottomRow: 0, bottomCol: 0 })),
+            getFocus: vi.fn(() => [0, 0]),
+            ...overrides.selection,
+        },
         rowColManager: {
             totalWidth: 2000,
             totalHeight: 2000,
@@ -147,7 +154,7 @@ describe("FrozenLayer", () => {
             clip: vi.fn(),
         };
         const sheet = createMockSheet({ frozenColsWidth: 120, frozenRowsH: 0 });
-        const viewport = { scrollX: 0, scrollY: 0 };
+        const viewport = { scrollX: 0, scrollY: 0, mergeToViewRect: (range) => range };
         const options = { viewW: 800, viewH: 600 };
 
         layer.render(ctx, sheet, viewport, options);
@@ -491,5 +498,392 @@ describe("FrozenLayer", () => {
 
         const info = layer.getDebugInfo();
         expect(info.watcherCount).toBeGreaterThanOrEqual(4);
+    });
+});
+
+describe("FrozenLayer - Selection Rendering with Frozen Columns", () => {
+    let layer;
+    let ctx;
+
+    beforeEach(() => {
+        layer = new FrozenLayer();
+        ctx = {
+            save: vi.fn(),
+            restore: vi.fn(),
+            beginPath: vi.fn(),
+            rect: vi.fn(),
+            clip: vi.fn(),
+        };
+    });
+
+    function createSheetWithSelection(overrides = {}) {
+        return {
+            ...createMockSheet(overrides),
+            fixedColumnsStart: overrides.fixedColumnsStart ?? 1,
+            fixedRowsTop: overrides.fixedRowsTop ?? 0,
+            selection: {
+                getRange: () => overrides.selectionRange ?? { topRow: 2, topCol: 3, bottomRow: 5, bottomCol: 3 },
+                getFocus: () => [2, 3],
+            },
+        };
+    }
+
+    function createViewport(scrollX = 100, scrollY = 50) {
+        return {
+            scrollX,
+            scrollY,
+            mergeToViewRect: (range) => ({
+                x: 150 + range.topCol * 80,
+                y: 25 + range.topRow * 25,
+                w: (range.bottomCol - range.topCol + 1) * 80,
+                h: (range.bottomRow - range.topRow + 1) * 25,
+            }),
+        };
+    }
+
+    it("should render selection in frozen column when selected cell is in frozen column", () => {
+        const sheet = createSheetWithSelection({
+            frozenColsWidth: 120,
+            fixedColumnsStart: 1,
+            selectionRange: { topRow: 2, topCol: 0, bottomRow: 5, bottomCol: 0 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, createViewport(), { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should NOT render non-frozen selection in frozen column area", () => {
+        const sheet = createSheetWithSelection({
+            frozenColsWidth: 120,
+            fixedColumnsStart: 1,
+            selectionRange: { topRow: 2, topCol: 3, bottomRow: 5, bottomCol: 3 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, createViewport(), { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).not.toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should render selection in overlay when selection is not in frozen area", () => {
+        const sheet = createSheetWithSelection({
+            frozenColsWidth: 120,
+            fixedColumnsStart: 1,
+            selectionRange: { topRow: 2, topCol: 3, bottomRow: 5, bottomCol: 3 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, createViewport(), { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).not.toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should render selection spanning both frozen and non-frozen columns", () => {
+        const sheet = createSheetWithSelection({
+            frozenColsWidth: 120,
+            fixedColumnsStart: 1,
+            selectionRange: { topRow: 2, topCol: 0, bottomRow: 5, bottomCol: 3 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, createViewport(), { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should handle selection at boundary of frozen columns", () => {
+        const sheet = createSheetWithSelection({
+            frozenColsWidth: 120,
+            fixedColumnsStart: 1,
+            selectionRange: { topRow: 2, topCol: 1, bottomRow: 5, bottomCol: 1 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, createViewport(), { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+});
+
+describe("FrozenLayer - Selection Rendering with Frozen Rows", () => {
+    let layer;
+    let ctx;
+
+    beforeEach(() => {
+        layer = new FrozenLayer();
+        ctx = {
+            save: vi.fn(),
+            restore: vi.fn(),
+            beginPath: vi.fn(),
+            rect: vi.fn(),
+            clip: vi.fn(),
+        };
+    });
+
+    function createSheetWithFrozenRows(overrides = {}) {
+        return {
+            ...createMockSheet(overrides),
+            fixedColumnsStart: 0,
+            fixedRowsTop: overrides.fixedRowsTop ?? 1,
+            selection: {
+                getRange: () =>
+                    overrides.selectionRange ?? { topRow: 3, topCol: 2, bottomRow: 3, bottomCol: 5 },
+                getFocus: () => [3, 2],
+            },
+        };
+    }
+
+    it("should render selection in frozen row when selected cell is in frozen row", () => {
+        const sheet = createSheetWithFrozenRows({
+            frozenRowsH: 40,
+            fixedRowsTop: 1,
+            selectionRange: { topRow: 0, topCol: 2, bottomRow: 0, bottomCol: 5 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 50, scrollY: 100, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should NOT render non-frozen row selection in frozen row area", () => {
+        const sheet = createSheetWithFrozenRows({
+            frozenRowsH: 40,
+            fixedRowsTop: 1,
+            selectionRange: { topRow: 3, topCol: 2, bottomRow: 3, bottomCol: 5 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 50, scrollY: 100, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).not.toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+});
+
+describe("FrozenLayer - Selection Rendering with Both Frozen Rows and Cols", () => {
+    let layer;
+    let ctx;
+
+    beforeEach(() => {
+        layer = new FrozenLayer();
+        ctx = {
+            save: vi.fn(),
+            restore: vi.fn(),
+            beginPath: vi.fn(),
+            rect: vi.fn(),
+            clip: vi.fn(),
+        };
+    })
+
+    function createSheetWithBothFrozen(overrides = {}) {
+        return {
+            ...createMockSheet(overrides),
+            fixedColumnsStart: overrides.fixedColumnsStart ?? 1,
+            fixedRowsTop: overrides.fixedRowsTop ?? 1,
+            selection: {
+                getRange: () =>
+                    overrides.selectionRange ?? { topRow: 2, topCol: 2, bottomRow: 2, bottomCol: 2 },
+                getFocus: () => [2, 2],
+            },
+        };
+    }
+
+    it("should render selection in corner area when cell is in frozen corner", () => {
+        const sheet = createSheetWithBothFrozen({
+            frozenColsWidth: 120,
+            frozenRowsH: 40,
+            fixedColumnsStart: 1,
+            fixedRowsTop: 1,
+            selectionRange: { topRow: 0, topCol: 0, bottomRow: 0, bottomCol: 0 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 100, scrollY: 80, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should NOT render non-corner selection in frozen corner area", () => {
+        const sheet = createSheetWithBothFrozen({
+            frozenColsWidth: 120,
+            frozenRowsH: 40,
+            fixedColumnsStart: 1,
+            fixedRowsTop: 1,
+            selectionRange: { topRow: 3, topCol: 3, bottomRow: 3, bottomCol: 3 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 100, scrollY: 80, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).not.toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should render selection correctly in each region based on location", () => {
+        const sheet = createSheetWithBothFrozen({
+            frozenColsWidth: 120,
+            frozenRowsH: 40,
+            fixedColumnsStart: 1,
+            fixedRowsTop: 1,
+            selectionRange: { topRow: 0, topCol: 2, bottomRow: 0, bottomCol: 2 },
+        });
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 100, scrollY: 80, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).toHaveBeenCalledTimes(1);
+        selectionSpy.mockRestore();
+    });
+});
+
+describe("FrozenLayer - Edge Cases for Selection Rendering", () => {
+    let layer;
+    let ctx;
+
+    beforeEach(() => {
+        layer = new FrozenLayer();
+        ctx = {
+            save: vi.fn(),
+            restore: vi.fn(),
+            beginPath: vi.fn(),
+            rect: vi.fn(),
+            clip: vi.fn(),
+        };
+    });
+
+    it("should handle no selection gracefully", () => {
+        const sheet = {
+            ...createMockSheet({ frozenColsWidth: 120 }),
+            fixedColumnsStart: 1,
+            selection: {
+                getRange: () => null,
+                getFocus: () => [0, 0],
+            },
+        };
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        expect(() => {
+                layer.render(ctx, sheet, { scrollX: 100, scrollY: 0, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+        }).not.toThrow();
+
+        selectionSpy.mockRestore();
+    });
+
+    it("should handle empty selection range", () => {
+        const sheet = {
+            ...createMockSheet({ frozenColsWidth: 120 }),
+            fixedColumnsStart: 1,
+            selection: {
+                getRange: () => ({ topRow: -1, topCol: -1, bottomRow: -1, bottomCol: -1 }),
+                getFocus: () => [-1, -1],
+            },
+        };
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        expect(() => {
+            layer.render(ctx, sheet, { scrollX: 100, scrollY: 0, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+        }).not.toThrow();
+
+        selectionSpy.mockRestore();
+    });
+
+    it("should always render merges regardless of selection position", () => {
+        const sheet = createMockSheet({ frozenColsWidth: 120 });
+        sheet.fixedColumnsStart = 1;
+        sheet.selection = {
+            getRange: () => ({ topRow: 10, topCol: 5, bottomRow: 15, bottomCol: 8 }),
+            getFocus: () => [10, 5],
+        };
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        const mergesSpy = vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 200, scrollY: 0, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(mergesSpy).toHaveBeenCalled();
+        mergesSpy.mockRestore();
+    });
+
+    it("should work correctly after horizontal scrolling", () => {
+        const sheet = createMockSheet({ frozenColsWidth: 120 });
+        sheet.fixedColumnsStart = 1;
+        sheet.selection = {
+            getRange: () => ({ topRow: 2, topCol: 3, bottomRow: 5, bottomCol: 3 }),
+            getFocus: () => [2, 3],
+        };
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 300, scrollY: 0, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).not.toHaveBeenCalled();
+        selectionSpy.mockRestore();
+    });
+
+    it("should work correctly after vertical scrolling", () => {
+        const sheet = createMockSheet({ frozenRowsH: 40 });
+        sheet.fixedRowsTop = 1;
+        sheet.selection = {
+            getRange: () => ({ topRow: 8, topCol: 2, bottomRow: 12, bottomCol: 5 }),
+            getFocus: () => [8, 2],
+        };
+
+        vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
+        vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        const selectionSpy = vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+
+        layer.render(ctx, sheet, { scrollX: 0, scrollY: 200, mergeToViewRect: (range) => range }, { viewW: 800, viewH: 600 });
+
+        expect(selectionSpy).not.toHaveBeenCalled();
+        selectionSpy.mockRestore();
     });
 });
