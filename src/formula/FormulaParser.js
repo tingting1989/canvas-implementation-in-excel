@@ -274,7 +274,7 @@ function tokenize(formula) {
             continue;
         }
 
-        if (ch >= "0" && ch <= "9") {
+        if (ch >= "0" && ch <= "9" || ch === ".") {
             let num = "";
             while (i < formula.length && ((formula[i] >= "0" && formula[i] <= "9") || formula[i] === ".")) {
                 num += formula[i];
@@ -295,6 +295,7 @@ function tokenize(formula) {
 
             if (i < formula.length && formula[i] === "!") {
                 tokens.push({ type: TOKEN.SHEET_REF, value: word });
+                tokens.push({ type: TOKEN.OPERATOR, value: "!" });
                 i++; // skip "!"
                 continue;
             }
@@ -314,7 +315,7 @@ function tokenize(formula) {
             continue;
         }
 
-        i++;
+        throw new Error(`Unexpected character: "${ch}" at position ${i}`);
     }
 
     function readWord() {

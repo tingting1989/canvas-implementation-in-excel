@@ -71,6 +71,7 @@ export class AutoFillStrategy extends EventStrategy {
         }
 
         const isFillHandle = this.handler.viewport.fillHandleHitTest(e.clientX, e.clientY);
+
         if (isFillHandle) {
             canvas.style.cursor = "crosshair";
             this.#cursorOwned = true;

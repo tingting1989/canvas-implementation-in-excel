@@ -93,6 +93,7 @@ export class OverlayRenderer {
         const range = sheet.selection.getRange();
         const [focusRow, focusCol] = sheet.selection.getFocus();
 
+
         this.#renderRangeHighlight(ctx, vt, range);
         this.#renderHeaderHighlight(ctx, vt, range);
         this.#renderActiveCell(ctx, vt, focusRow, focusCol, sheet);
