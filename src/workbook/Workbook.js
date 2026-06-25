@@ -520,10 +520,14 @@ export class Workbook {
 
         // ① 通过 EventBus 通知内部模块（插件间通信）
         if (previousSheet) {
-            previousSheet.bus.emit(SHEET_EVENTS.SHEET_SWITCHED, {
-                previousSheet: previousSheet.name,
-                currentSheet: sheet.name,
-            }, { source: "Workbook" });
+            previousSheet.bus.emit(
+                SHEET_EVENTS.SHEET_SWITCHED,
+                {
+                    previousSheet: previousSheet.name,
+                    currentSheet: sheet.name,
+                },
+                { source: "Workbook" },
+            );
         }
 
         // ② 通过 Hooks 通知用户扩展代码（公开 API）

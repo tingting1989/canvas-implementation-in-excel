@@ -210,16 +210,13 @@ export class SortPlugin extends BasePlugin {
         this.#unbindSheetSwitchListener();
 
         // 监听工作表切换事件
-        this.#sheetSwitchUnsubscribe = sheet.bus.on(
-            SHEET_EVENTS.SHEET_SWITCHED,
-            (envelope) => {
-                const { currentSheet } = envelope.payload;
-                const newSheet = this.workbook.sheets.get(currentSheet);
-                if (newSheet) {
-                    this.#onSheetSwitched(newSheet);
-                }
+        this.#sheetSwitchUnsubscribe = sheet.bus.on(SHEET_EVENTS.SHEET_SWITCHED, (envelope) => {
+            const { currentSheet } = envelope.payload;
+            const newSheet = this.workbook.sheets.get(currentSheet);
+            if (newSheet) {
+                this.#onSheetSwitched(newSheet);
             }
-        );
+        });
     }
 
     /**
