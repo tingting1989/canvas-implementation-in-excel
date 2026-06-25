@@ -175,7 +175,7 @@ export class SortPlugin extends BasePlugin {
      */
     sortRows(colIndex, options = {}) {
         if (!this.#sortEngine) {
-            console.warn('[SortPlugin] Engine not initialized');
+            console.warn("[SortPlugin] Engine not initialized");
             return { swapped: 0, time: 0 };
         }
 
@@ -197,7 +197,7 @@ export class SortPlugin extends BasePlugin {
      */
     sortMultiple(columns, options = {}) {
         if (!this.#sortEngine) {
-            console.warn('[SortPlugin] Engine not initialized');
+            console.warn("[SortPlugin] Engine not initialized");
             return { swapped: 0, time: 0 };
         }
 

@@ -81,7 +81,7 @@ export class SortUIManager {
      * 可选：注册到 HeaderRenderer 的绘制钩子
      */
     init() {
-        if (typeof Path2D !== 'undefined') {
+        if (typeof Path2D !== "undefined") {
             this.#preCacheArrows();
         }
     }
@@ -132,9 +132,9 @@ export class SortUIManager {
             ctx.strokeStyle = SortUIManager.ACTIVE_COLOR;
             ctx.lineWidth = 2; // 加粗
 
-            if (state.order === 'asc') {
+            if (state.order === "asc") {
                 this.#drawUpArrow(ctx, arrowX, arrowY, arrowSize);
-            } else if (state.order === 'desc') {
+            } else if (state.order === "desc") {
                 this.#drawDownArrow(ctx, arrowX, arrowY, arrowSize);
             }
         } else {
@@ -200,7 +200,7 @@ export class SortUIManager {
      * @private
      */
     #drawUpArrow(ctx, x, y, size) {
-        const path = this.#getOrCreatePath('up', size);
+        const path = this.#getOrCreatePath("up", size);
 
         ctx.beginPath();
         ctx.moveTo(x + size / 2, y);
@@ -268,12 +268,12 @@ export class SortUIManager {
         if (!this.#arrowCache.has(key)) {
             const path = new Path2D();
 
-            if (type === 'up') {
+            if (type === "up") {
                 path.moveTo(size / 2, 0);
                 path.lineTo(size, size);
                 path.lineTo(0, size);
                 path.closePath();
-            } else if (type === 'down') {
+            } else if (type === "down") {
                 path.moveTo(0, 0);
                 path.lineTo(size, 0);
                 path.lineTo(size / 2, size);
@@ -293,8 +293,8 @@ export class SortUIManager {
     #preCacheArrows() {
         const sizes = [6, 8, 10, 12];
         for (const size of sizes) {
-            this.#getOrCreatePath('up', size);
-            this.#getOrCreatePath('down', size);
+            this.#getOrCreatePath("up", size);
+            this.#getOrCreatePath("down", size);
         }
     }
 }

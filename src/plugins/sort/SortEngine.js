@@ -58,12 +58,17 @@ export class SortEngine {
      */
     sortRows(colIndex, options = {}) {
         const { fixedRows, hiddenRows, order, comparator, caseSensitive } = options;
-        return this.sortMultiple([{
-            col: colIndex,
-            order,
-            comparator,
-            caseSensitive
-        }], { fixedRows, hiddenRows });
+        return this.sortMultiple(
+            [
+                {
+                    col: colIndex,
+                    order,
+                    comparator,
+                    caseSensitive,
+                },
+            ],
+            { fixedRows, hiddenRows },
+        );
     }
 
     /**
@@ -122,12 +127,10 @@ export class SortEngine {
 
         // 5️⃣ 创建多级比较器并排序
         const comparatorConfigs = this.#buildComparatorConfigs(columns, columnDataArrays);
-        sortableIndices.sort((idxA, idxB) =>
-            this.#multiLevelCompare(idxA, idxB, rowToIndexMap, comparatorConfigs)
-        );
+        sortableIndices.sort((idxA, idxB) => this.#multiLevelCompare(idxA, idxB, rowToIndexMap, comparatorConfigs));
 
         // 6️⃣ 记录排序信息
-        this.#sortState.setCurrentSort(columns[0].col, columns[0].order || 'asc');
+        this.#sortState.setCurrentSort(columns[0].col, columns[0].order || "asc");
 
         // 7️⃣ 构建目标位置映射并批量移动
         const mapping = this.#buildMapping(sortableIndices, fixedRows);
@@ -190,13 +193,13 @@ export class SortEngine {
      */
     #extractColumnData(columns, sortableIndices) {
         return columns.map(({ col }) => {
-            return sortableIndices.map(row => {
+            return sortableIndices.map((row) => {
                 const cell = this.#cellStore.get(row, col);
                 const rawValue = cell?.value;
                 return {
                     row,
                     rawValue,
-                    value: this.#normalizeValue(rawValue)
+                    value: this.#normalizeValue(rawValue),
                 };
             });
         });
@@ -236,7 +239,7 @@ export class SortEngine {
     #buildComparatorConfigs(columns, columnDataArrays) {
         return columns.map(({ col, order, comparator }, colIdx) => ({
             dataArray: columnDataArrays[colIdx],
-            order: order || 'asc',
+            order: order || "asc",
             customComparator: comparator,
         }));
     }
@@ -265,7 +268,7 @@ export class SortEngine {
             }
 
             if (cmp !== 0) {
-                return order === 'desc' ? -cmp : cmp;
+                return order === "desc" ? -cmp : cmp;
             }
         }
         return 0; // 所有列都相等（稳定排序保证原始顺序）
@@ -307,18 +310,18 @@ export class SortEngine {
      * @private
      */
     #normalizeValue(value) {
-        if (value == null) return { type: 'null', value: null };
-        if (typeof value === 'number') return { type: 'number', value };
-        if (typeof value === 'boolean') return { type: 'boolean', value };
-        if (value instanceof Date) return { type: 'date', value: value.getTime() };
-        if (typeof value === 'string') {
+        if (value == null) return { type: "null", value: null };
+        if (typeof value === "number") return { type: "number", value };
+        if (typeof value === "boolean") return { type: "boolean", value };
+        if (value instanceof Date) return { type: "date", value: value.getTime() };
+        if (typeof value === "string") {
             const num = parseFloat(value);
-            if (!isNaN(num) && value.trim() !== '') {
-                return { type: 'number', value: num };
+            if (!isNaN(num) && value.trim() !== "") {
+                return { type: "number", value: num };
             }
-            return { type: 'string', value: value.toLowerCase() };
+            return { type: "string", value: value.toLowerCase() };
         }
-        return { type: 'unknown', value: String(value) };
+        return { type: "unknown", value: String(value) };
     }
 
     // ═══════════════════════════════════════════════════════════════

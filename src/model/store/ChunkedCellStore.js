@@ -568,7 +568,7 @@ export class ChunkedCellStore {
      */
     #moveChainSafely(chain, mapping) {
         // Step 1: 提取所有行的完整快照
-        const snapshots = chain.map(row => this.#extractRowSnapshot(row));
+        const snapshots = chain.map((row) => this.#extractRowSnapshot(row));
 
         // Step 2: 按目标位置回填快照数据
         for (let i = 0; i < chain.length; i++) {
@@ -654,7 +654,7 @@ export class ChunkedCellStore {
      *
      * @yields {Chunk}
      */
-    * chunks() {
+    *chunks() {
         for (const chunk of this.#chunks.values()) {
             yield chunk;
         }

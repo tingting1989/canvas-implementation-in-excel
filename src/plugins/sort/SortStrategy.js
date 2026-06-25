@@ -75,11 +75,7 @@ export class SortStrategy {
         const canvas = this.#plugin.renderEngine?.canvas;
         if (!canvas) return;
 
-        canvas.addEventListener(
-            "mousedown",
-            this.#handleMouseDown.bind(this),
-            { capture: true }
-        );
+        canvas.addEventListener("mousedown", this.#handleMouseDown.bind(this), { capture: true });
     }
 
     /**
@@ -123,9 +119,7 @@ export class SortStrategy {
         const now = Date.now();
         const currentCol = hit.index;
 
-        const isDoubleClick =
-            currentCol === this.#lastClickCol &&
-            now - this.#lastClickTime < this.#clickThreshold;
+        const isDoubleClick = currentCol === this.#lastClickCol && now - this.#lastClickTime < this.#clickThreshold;
 
         if (isDoubleClick) {
             e.preventDefault();
@@ -167,15 +161,15 @@ export class SortStrategy {
         let newOrder;
 
         if (currentState.col === colIndex) {
-            if (currentState.order === 'asc') {
-                newOrder = 'desc';
-            } else if (currentState.order === 'desc') {
-                newOrder = 'asc'; // 循环回升序（非清除）
+            if (currentState.order === "asc") {
+                newOrder = "desc";
+            } else if (currentState.order === "desc") {
+                newOrder = "asc"; // 循环回升序（非清除）
             } else {
-                newOrder = 'asc';
+                newOrder = "asc";
             }
         } else {
-            newOrder = 'asc'; // 新列默认升序
+            newOrder = "asc"; // 新列默认升序
         }
 
         this.#plugin.sortRows(colIndex, { order: newOrder });
