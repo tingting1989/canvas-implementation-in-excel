@@ -42,10 +42,14 @@ describe("Logical Functions BugHunt - AND", () => {
     });
 
     it("should short-circuit: stop at first false", () => {
-        let callCount = 0;
-        const spyValues = [true, false, (() => { callCount++; return true; })()];
-        AND(spyValues);
-        expect(callCount).toBe(0);
+        let evalOrder = [];
+        const trackedTrue = { valueOf: () => { evalOrder.push("3rd"); return true; } };
+        const trackedFalse = { valueOf: () => { evalOrder.push("2nd"); return false; } };
+        const trackedFirst = { valueOf: () => { evalOrder.push("1st"); return true; } };
+
+        AND([trackedFirst, trackedFalse, trackedTrue]);
+        expect(evalOrder).toEqual(["1st", "2nd"]);
+        expect(evalOrder).not.toContain("3rd");
     });
 
     it("should propagate error values immediately", () => {
@@ -74,10 +78,14 @@ describe("Logical Functions BugHunt - OR", () => {
     const OR = logicalFunctions.OR;
 
     it("should short-circuit: stop at first true", () => {
-        let callCount = 0;
-        const spyValues = [false, true, (() => { callCount++; return true; })()];
-        OR(spyValues);
-        expect(callCount).toBe(0);
+        let evalOrder = [];
+        const trackedTrue = { valueOf: () => { evalOrder.push("2nd"); return true; } };
+        const trackedFalse = { valueOf: () => { evalOrder.push("1st"); return false; } };
+        const trackedLast = { valueOf: () => { evalOrder.push("3rd"); return true; } };
+
+        OR([trackedFalse, trackedTrue, trackedLast]);
+        expect(evalOrder).toEqual(["1st", "2nd"]);
+        expect(evalOrder).not.toContain("3rd");
     });
 
     it("should return false for all-false input including 0 and empty string", () => {

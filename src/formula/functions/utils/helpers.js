@@ -23,16 +23,21 @@
  */
 export function _flatten(arr) {
     const result = [];
-    const stack = [...arr];
+    const stack = [{ arr: arr, index: 0 }];
 
     while (stack.length > 0) {
-        const item = stack.pop();
+        const frame = stack[stack.length - 1];
+
+        if (frame.index >= frame.arr.length) {
+            stack.pop();
+            continue;
+        }
+
+        const item = frame.arr[frame.index];
+        frame.index++;
 
         if (Array.isArray(item)) {
-            // 反向推入以保持原始顺序
-            for (let i = item.length - 1; i >= 0; i--) {
-                stack.push(item[i]);
-            }
+            stack.push({ arr: item, index: 0 });
         } else {
             result.push(item);
         }
@@ -63,6 +68,8 @@ export function _flatten(arr) {
 export function _toNum(v) {
     if (typeof v === "number") return v;
     if (typeof v === "string" && v.trim() !== "") {
+        const trimmed = v.trim();
+        if (/^0[xX]/.test(trimmed)) return NaN;
         const n = parseFloat(v);
         return isNaN(n) ? NaN : n;
     }

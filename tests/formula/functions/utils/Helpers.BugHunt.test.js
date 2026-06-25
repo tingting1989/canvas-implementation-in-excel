@@ -12,7 +12,7 @@ describe("Utils BugHunt - _flatten", () => {
 
     it("should handle mixed types including functions and symbols", () => {
         const result = _flatten([1, "a", null, undefined, true, false, {}, [], function() {}]);
-        expect(result).toEqual([1, "a", null, undefined, true, false, {}, [], expect.any(Function)]);
+        expect(result).toEqual([1, "a", null, undefined, true, false, {}, expect.any(Function)]);
     });
 
     it("should preserve object references (not clone)", () => {

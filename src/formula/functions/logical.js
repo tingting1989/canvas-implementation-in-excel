@@ -42,6 +42,10 @@ function _toBoolean(value) {
 
     if (typeof value === "string") {
         const upperValue = value.toUpperCase().trim();
+
+        // 错误值传播（必须在字符串处理内部）
+        if (value.startsWith("#")) return value;
+
         if (upperValue === "TRUE") return true;
         if (upperValue === "FALSE") return false;
 
@@ -51,8 +55,14 @@ function _toBoolean(value) {
 
     if (value === null || value === undefined) return false;
 
-    // 错误值传播
-    if (typeof value === "string" && value.startsWith("#")) return value;
+    // 对象：尝试转换为原始值
+    if (typeof value === "object" && value !== null) {
+        if (typeof value.valueOf === "function") {
+            const primitive = value.valueOf();
+            return _toBoolean(primitive);
+        }
+        return true;
+    }
 
     // 其他情况视为 true
     return true;

@@ -274,7 +274,7 @@ function tokenize(formula) {
             continue;
         }
 
-        if (ch >= "0" && ch <= "9" || ch === ".") {
+        if ((ch >= "0" && ch <= "9") || ch === ".") {
             let num = "";
             while (i < formula.length && ((formula[i] >= "0" && formula[i] <= "9") || formula[i] === ".")) {
                 num += formula[i];

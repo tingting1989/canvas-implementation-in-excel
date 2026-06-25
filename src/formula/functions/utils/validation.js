@@ -10,6 +10,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "../../../core/ErrorHandler.js";
+import { _toNum } from "./helpers.js";
 
 /**
  * 统一的参数校验器
@@ -34,7 +35,7 @@ import { errorHandler, ERROR_CODE } from "../../../core/ErrorHandler.js";
  */
 export function _validateArgs(args, minArgs, maxArgs = Infinity, functionName) {
     if (!Array.isArray(args)) {
-        errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: 参数必须是数组`, {
+        errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: 参数必须是数组`, {
             receivedType: typeof args,
             functionName,
         });
