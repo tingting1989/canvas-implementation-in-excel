@@ -168,7 +168,7 @@ describe("EditorLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("editor");
-        expect(info.zIndex).toBe(8);
+        expect(info.zIndex).toBe(80);
         expect(info.enabled).toBe(true);
     });
 });

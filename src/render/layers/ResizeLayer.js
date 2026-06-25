@@ -6,7 +6,7 @@ export class ResizeLayer extends BaseLayer {
     #resizeLine = null;
 
     constructor() {
-        super("resize", 3);
+        super("resize", 30);
     }
 
     bindStore(store) {

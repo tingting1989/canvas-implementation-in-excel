@@ -2,14 +2,14 @@
  * 表头层 (HeaderLayer)
  *
  * 负责渲染 Excel 的行号头和列标头。
- * 表头位于视口的最顶层（zIndex=3），包含：
+ * 表头位于视口的最顶层（zIndex=50），包含：
  * - 列标头 (A, B, C...)：显示在数据区上方
  * - 行号头 (1, 2, 3...)：显示在数据区左侧
  * - 左上角空白角：行号头和列标头的交叉区域
  *
  * ## 图层定位
  *
- * zIndex = 3，位于 FrozenLayer(2.5) 之上、OverlayLayer(4) 之下。
+ * zIndex = 50，位于 FrozenLayer(40) 之上、OverlayLayer(20) 之下。
  * 这保证了表头始终显示在冻结区域数据之上，但在 UI 层（调试信息等）之下。
  *
  * ## 滚动行为
@@ -33,7 +33,7 @@ export class HeaderLayer extends BaseLayer {
     #dragIndicatorLayer = null;
 
     constructor() {
-        super("headers", 5);
+        super("headers", 50);
 
         this.headerRenderer = new HeaderRenderer();
     }

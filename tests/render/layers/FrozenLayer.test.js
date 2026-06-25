@@ -789,7 +789,7 @@ describe("FrozenLayer", () => {
         it("should return correct debug info", () => {
             const info = layer.getDebugInfo();
             expect(info.name).toBe("frozen");
-            expect(info.zIndex).toBe(4);
+            expect(info.zIndex).toBe(40);
             expect(info.enabled).toBe(true);
         });
     });

@@ -138,7 +138,7 @@ describe("HeaderLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("headers");
-        expect(info.zIndex).toBe(5);
+        expect(info.zIndex).toBe(50);
         expect(info.enabled).toBe(true);
     });
 });
@@ -188,7 +188,7 @@ describe("HeaderLayer - setDragIndicator", () => {
         layer.setDragIndicator(dragLayer);
 
         const renderSpy = vi.spyOn(layer.headerRenderer, "render").mockImplementation(() => {});
-        const fakeLayers = [{ name: "drag-indicator", zIndex: 6 }];
+        const fakeLayers = [{ name: "drag-indicator", zIndex: 60 }];
 
         layer.render({}, {}, {}, { viewW: 800, viewH: 600, layers: fakeLayers });
 

@@ -36,7 +36,7 @@ import { OverlayRenderer } from "../OverlayRenderer.js";
 
 export class FrozenLayer extends BaseLayer {
     constructor() {
-        super("frozen", 4);
+        super("frozen", 40);
 
         this.tileRenderer = new TileRenderer(new TileCache());
         this.overlayRenderer = new OverlayRenderer();

@@ -19,9 +19,9 @@ describe("UILayer", () => {
         layer = new UILayer();
     });
 
-    it("should have name 'ui' and zIndex 7", () => {
+    it("should have name 'ui' and zIndex 70", () => {
         expect(layer.name).toBe("ui");
-        expect(layer.zIndex).toBe(7);
+        expect(layer.zIndex).toBe(70);
     });
 
     it("should be dirty on construction", () => {
@@ -235,7 +235,7 @@ describe("UILayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("ui");
-        expect(info.zIndex).toBe(7);
+        expect(info.zIndex).toBe(70);
         expect(info.enabled).toBe(true);
     });
 

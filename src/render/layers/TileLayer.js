@@ -14,8 +14,8 @@
  *
  * ## 图层定位
  *
- * zIndex = 1，是所有数据图层中最底层的。
- * 位于 FrozenLayer(2.5)、HeaderLayer(3)、OverlayLayer(4) 之下。
+ * zIndex = 10，是所有数据图层中最底层的。
+ * 位于 FrozenLayer(40)、HeaderLayer(50)、OverlayLayer(20) 之下。
  * 这保证了主数据区域作为背景层，其他图层在其上叠加。
  *
  * ## 内容就绪回调
@@ -45,7 +45,7 @@ export class TileLayer extends BaseLayer {
      *   传入 null 时会创建新的独立缓存。传入已有实例可实现跨图层缓存共享。
      */
     constructor(tileCache = null) {
-        super("tiles", 1);
+        super("tiles", 10);
 
         /** 瓦片渲染器，负责瓦片的创建、管理和绘制 */
         this.tileRenderer = new TileRenderer(tileCache || new TileCache());

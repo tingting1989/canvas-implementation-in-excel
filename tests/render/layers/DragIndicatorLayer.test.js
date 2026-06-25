@@ -238,7 +238,7 @@ describe("DragIndicatorLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("drag-indicator");
-        expect(info.zIndex).toBe(6);
+        expect(info.zIndex).toBe(60);
         expect(info.enabled).toBe(true);
     });
 });

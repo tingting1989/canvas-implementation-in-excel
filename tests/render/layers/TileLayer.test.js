@@ -10,9 +10,9 @@ describe("TileLayer", () => {
         layer = new TileLayer();
     });
 
-    it("should have name 'tiles' and zIndex 1", () => {
+    it("should have name 'tiles' and zIndex 10", () => {
         expect(layer.name).toBe("tiles");
-        expect(layer.zIndex).toBe(1);
+        expect(layer.zIndex).toBe(10);
     });
 
     it("should be dirty on construction", () => {

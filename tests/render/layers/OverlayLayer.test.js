@@ -109,7 +109,7 @@ describe("OverlayLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("overlays");
-        expect(info.zIndex).toBe(2);
+        expect(info.zIndex).toBe(20);
         expect(info.enabled).toBe(true);
     });
 

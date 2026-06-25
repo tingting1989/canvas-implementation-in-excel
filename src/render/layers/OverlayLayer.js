@@ -3,7 +3,7 @@ import { OverlayRenderer } from "../OverlayRenderer.js";
 
 export class OverlayLayer extends BaseLayer {
     constructor() {
-        super("overlays", 2);
+        super("overlays", 20);
 
         this.overlayRenderer = new OverlayRenderer();
     }
