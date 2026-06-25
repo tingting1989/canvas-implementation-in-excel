@@ -57,7 +57,12 @@ export const statisticalFunctions = {
         let count = 0;
         for (const item of args) {
             if (Array.isArray(item)) {
-                count += _flatten(item).filter((v) => !_isBlank(v)).length;
+                const flattened = _flatten(item);
+                if (flattened.length === 0) {
+                    count++;
+                } else {
+                    count += flattened.filter((v) => !_isBlank(v)).length;
+                }
             } else if (!_isBlank(item)) {
                 count++;
             }

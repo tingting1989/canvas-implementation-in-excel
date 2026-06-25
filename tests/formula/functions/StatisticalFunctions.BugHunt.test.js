@@ -97,7 +97,8 @@ describe("Statistical Functions BugHunt - COUNTBLANK", () => {
         expect(COUNTBLANK([])).toBe("#VALUE!");
     });
 
-    it("should return #VALUE! for wrong arg count (>1)", () => {
-        expect(COUNTBLANK([["a"], ["b"]])).toBe("#VALUE!");
+    it("should count blanks in 2D array", () => {
+        expect(COUNTBLANK([["a"], ["b"]])).toBe(0);
+        expect(COUNTBLANK([[""], [null]])).toBe(2);
     });
 });

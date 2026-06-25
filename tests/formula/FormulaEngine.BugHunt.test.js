@@ -97,7 +97,7 @@ describe("FormulaEngine BugHunt - Dependency graph edge cases", () => {
         expect(deps.has("S1!0,1")).toBe(true);
 
         const oldDependents = engine.dependents.get("S1!0,0");
-        expect(oldDependents.has("S1!2,0")).toBe(false);
+        expect(oldDependents).toBeUndefined();
     });
 });
 

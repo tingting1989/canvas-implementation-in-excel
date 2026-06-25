@@ -108,8 +108,13 @@ describe("Statistical Functions - COUNTBLANK", () => {
         expect(COUNTBLANK([range])).toBe(2);
     });
 
-    it("should return #VALUE! for wrong arg count", () => {
+    it("should return #VALUE! for empty args", () => {
         expect(COUNTBLANK([])).toBe("#VALUE!");
-        expect(COUNTBLANK(["a", "b"])).toBe("#VALUE!");
+    });
+
+    it("should count blanks across multiple arguments", () => {
+        expect(COUNTBLANK(["a", "b"])).toBe(0);
+        expect(COUNTBLANK(["", "a"])).toBe(1);
+        expect(COUNTBLANK(["", null])).toBe(2);
     });
 });

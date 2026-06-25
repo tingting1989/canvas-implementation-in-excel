@@ -98,8 +98,12 @@ describe("Math Functions BugHunt - ABS", () => {
         expect(ABS(["-999"])).toBe(999);
     });
 
-    it("should return #VALUE! for boolean input", () => {
-        expect(ABS([true])).toBe("#VALUE!");
+    it("should convert boolean true to 1", () => {
+        expect(ABS([true])).toBe(1);
+    });
+
+    it("should convert boolean false to 0", () => {
+        expect(ABS([false])).toBe(0);
     });
 
     it("should return #VALUE! for empty args", () => {

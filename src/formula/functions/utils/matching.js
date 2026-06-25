@@ -12,7 +12,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "../../../core/ErrorHandler.js";
-import {_isBlank, _toNum} from "./helpers.js";
+import { _isBlank, _toNum } from "./helpers.js";
 
 /**
  * 条件匹配核心函数
@@ -205,6 +205,8 @@ export function _matchWildcard(text, pattern) {
         return regex.test(String(text ?? ""));
     } catch (e) {
         const simplePattern = pattern.replace(/\*/g, "").replace(/\?/g, "");
-        return String(text ?? "").toLowerCase().includes(simplePattern.toLowerCase());
+        return String(text ?? "")
+            .toLowerCase()
+            .includes(simplePattern.toLowerCase());
     }
 }
