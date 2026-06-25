@@ -507,6 +507,7 @@ export class Workbook {
         const sheet = this.sheets.get(name);
         if (!sheet || this.activeSheet === sheet) return;
 
+        const previousSheet = this.activeSheet;
         this.activeSheet = sheet;
         if (this.editor) this.editor.sheet = sheet;
         if (this.eventHandler) this.eventHandler.sheet = sheet;
@@ -516,6 +517,17 @@ export class Workbook {
         }
         this.render();
         this.#refreshTabBar();
+
+        // ① 通过 EventBus 通知内部模块（插件间通信）
+        if (previousSheet) {
+            previousSheet.bus.emit(SHEET_EVENTS.SHEET_SWITCHED, {
+                previousSheet: previousSheet.name,
+                currentSheet: sheet.name,
+            }, { source: "Workbook" });
+        }
+
+        // ② 通过 Hooks 通知用户扩展代码（公开 API）
+        this.runHooks(HOOKS.AFTER_SHEET_SWITCH, previousSheet, sheet);
     }
 
     /** @returns {Sheet|null} */

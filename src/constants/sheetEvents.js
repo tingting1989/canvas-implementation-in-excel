@@ -15,6 +15,9 @@ export const SHEET_EVENTS = Object.freeze({
     PAGINATION_REFRESH: "sheet:pagination-refresh",
     GET_CLIPBOARD: "sheet:get-clipboard",
     GET_PLUGIN: "sheet:get-plugin",
+
+    // 工作表切换（Workbook 内部事件）
+    SHEET_SWITCHED: "workbook:sheet-switched",
 });
 
 /**
@@ -93,5 +96,10 @@ export const EVENT_FLOW_REGISTRY = Object.freeze({
     [SHEET_EVENTS.GET_PLUGIN]: {
         emitters: ["ContextMenuStrategy"],
         listeners: ["Workbook"],
+    },
+
+    [SHEET_EVENTS.SHEET_SWITCHED]: {
+        emitters: ["Workbook"],
+        listeners: ["SortPlugin", "FreezePlugin", "PaginationPlugin"],
     },
 });

@@ -81,6 +81,9 @@ export const HOOKS = Object.freeze({
     AFTER_FREEZE: "afterFreeze",
     AFTER_UNFREEZE: "afterUnfreeze",
 
+    /** 工作表切换相关 */
+    AFTER_SHEET_SWITCH: "afterSheetSwitch",
+
     /** 排序相关 */
     AFTER_SORT: "afterSort",
     AFTER_SORT_RESTORE: "afterSortRestore",

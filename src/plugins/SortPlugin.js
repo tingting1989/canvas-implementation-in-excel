@@ -1,5 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { HOOKS } from "../constants/hookNames.js";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { SortState } from "./sort/SortState.js";
 import { SortEngine } from "./sort/SortEngine.js";
 import { SortStrategy } from "../editor/strategies/SortStrategy.js";
@@ -119,6 +120,9 @@ export class SortPlugin extends BasePlugin {
     /** @type {Function|null} 列头渲染回调（用于绘制排序UI） */
     #headerRendererCallback = null;
 
+    /** @type {Function|null} 工作表切换事件取消订阅函数 */
+    #sheetSwitchUnsubscribe = null;
+
     // ═══════════════════════════════════════════════════════════════
     // 构造函数
     // ═══════════════════════════════════════════════════════════════
@@ -152,11 +156,7 @@ export class SortPlugin extends BasePlugin {
         const sheet = this.sheet;
         if (!sheet) return;
 
-        const cellStore = sheet.cellStore;
-        const rowCount = sheet.rowColManager?.rowCount || 1000;
-
-        this.#sortEngine = new SortEngine(cellStore, this.#sortState, rowCount);
-        this.#fixedRowsTop = sheet.fixedRowsTop || 0;
+        this.#initSortEngine(sheet);
 
         // 创建并注册排序策略到 EventHandler（标准化方式）
         this.#sortStrategy = new SortStrategy(this.eventHandler, this);
@@ -171,8 +171,87 @@ export class SortPlugin extends BasePlugin {
             this.#sortUIManager.updateIndicators();
         });
 
+        // 通过 EventBus 监听工作表切换（内部模块通信，非用户扩展点）
+        this.#bindSheetSwitchListener(sheet);
+
         // 标记为激活状态并触发初始渲染
         this.#active = true;
+        this.renderEngine?.invalidateAll();
+        this.render();
+    }
+
+    /**
+     * 初始化/重新初始化排序引擎
+     * @param {import("../workbook/Sheet.js").Sheet} sheet - 目标工作表
+     * @private
+     */
+    #initSortEngine(sheet) {
+        if (!sheet) return;
+
+        const cellStore = sheet.cellStore;
+        const rowCount = sheet.rowColManager?.rowCount || 1000;
+
+        this.#sortEngine = new SortEngine(cellStore, this.#sortState, rowCount);
+        this.#fixedRowsTop = sheet.fixedRowsTop || 0;
+    }
+
+    /**
+     * 绑定工作表切换事件监听器
+     *
+     * 使用 EventBus（内部模块通信）而非 Hooks（用户扩展接口）
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
+     * @private
+     */
+    #bindSheetSwitchListener(sheet) {
+        if (!sheet?.bus) return;
+
+        // 先移除旧监听器（防止重复绑定）
+        this.#unbindSheetSwitchListener();
+
+        // 监听工作表切换事件
+        this.#sheetSwitchUnsubscribe = sheet.bus.on(
+            SHEET_EVENTS.SHEET_SWITCHED,
+            (envelope) => {
+                const { currentSheet } = envelope.payload;
+                const newSheet = this.workbook.sheets.get(currentSheet);
+                if (newSheet) {
+                    this.#onSheetSwitched(newSheet);
+                }
+            }
+        );
+    }
+
+    /**
+     * 解绑工作表切换事件监听器
+     * @private
+     */
+    #unbindSheetSwitchListener() {
+        if (this.#sheetSwitchUnsubscribe) {
+            this.#sheetSwitchUnsubscribe();
+            this.#sheetSwitchUnsubscribe = null;
+        }
+    }
+
+    /**
+     * 工作表切换时的回调处理
+     * @param {import("../workbook/Sheet.js").Sheet} newSheet - 新的工作表
+     * @private
+     */
+    #onSheetSwitched(newSheet) {
+        if (!newSheet) return;
+
+        // 重新绑定SortEngine到新sheet的数据存储
+        this.#initSortEngine(newSheet);
+
+        // 重新绑定事件监听到新sheet
+        this.#bindSheetSwitchListener(newSheet);
+
+        // 清除旧的排序状态和UI
+        this.#sortState.clear();
+        this.#sortUIManager.updateIndicators();
+
+        // 触发重新渲染
         this.renderEngine?.invalidateAll();
         this.render();
     }
@@ -267,6 +346,7 @@ export class SortPlugin extends BasePlugin {
     destroy() {
         this.disable();
         this.#unregisterHeaderRenderer(); // 注销列头渲染器
+        this.#unbindSheetSwitchListener(); // 解绑工作表切换监听
         this.#sortState?.reset();
         this.#sortEngine = null;
         this.#sortUIManager = null;

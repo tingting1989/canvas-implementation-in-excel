@@ -30,7 +30,7 @@ const initApp = () => {
     Workbook.registerPlugin("columnMove", ColumnMovePlugin);
     Workbook.registerPlugin("copyPaste", CopyPastePlugin);
     Workbook.registerPlugin("exportFile", ExportFilePlugin);
-    Workbook.registerPlugin("pagination", PaginationPlugin);
+    // Workbook.registerPlugin("pagination", PaginationPlugin);
     Workbook.registerPlugin("hiddenColumns", HiddenColumnsPlugin);
     Workbook.registerPlugin("hiddenRows", HiddenRowsPlugin);
     Workbook.registerPlugin("rowMove", RowMovePlugin);
@@ -55,14 +55,14 @@ const initApp = () => {
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
                 rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
-                // nestedHeaders: [
-                //     [
-                //         { label: "基本信息", colspan: 2 },
-                //         { label: "工作信息", colspan: 4 },
-                //     ],
-                //     ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
-                //     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                // ],
+                nestedHeaders: [
+                    [
+                        { label: "基本信息", colspan: 2 },
+                        { label: "工作信息", colspan: 4 },
+                    ],
+                    ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                ],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
 
@@ -165,7 +165,7 @@ const initApp = () => {
             "contextMenu",
             "columnMove",
             "copyPaste",
-            "pagination",
+            //"pagination",
             "exportFile",
             "hiddenColumns",
             "hiddenRows",
