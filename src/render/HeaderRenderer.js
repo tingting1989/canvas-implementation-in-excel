@@ -108,9 +108,7 @@ export class HeaderRenderer {
         }
 
         if (!this._dragIndicator?.hasColumnMove()) {
-            const topColX = vt.colToViewX(range.topCol);
-            const bottomColRight = vt.colRightToViewX(range.bottomCol);
-            this.#drawSelectionLine(ctx, topColX, totalHeaderH, bottomColRight - topColX, true);
+            this.#drawColSelectionLines(ctx, sheet, vt, totalHeaderH, viewW, range, frozenColsW, fixedCols);
         }
     }
 
@@ -465,5 +463,62 @@ export class HeaderRenderer {
         }
         ctx.stroke();
         ctx.lineWidth = 1;
+    }
+
+    /**
+     * 分段绘制列头选区高亮线，防止穿透冻结区域
+     *
+     * 核心问题：
+     * 当选中列跨越冻结/非冻结边界时（如选中第1列，第0列冻结），
+     * 水平滚动会导致高亮线错误地延伸到冻结列区域。
+     *
+     * 解决方案：
+     * 将选区分割为冻结段和非冻结段，分别只在对应区域内绘制：
+     * - 冻结段：[max(topCol, 0), min(bottomCol, fixedCols-1)]
+     * - 非冻结段：[max(topCol, fixedCols), bottomCol]
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {ViewportTransform} vt
+     * @param {number} y - 高亮线的 Y 坐标（header 底部）
+     * @param {number} viewW - 视口宽度
+     * @param {object} range - 选区范围 {topCol, bottomCol}
+     * @param {number} frozenColsW - 冻结列宽度
+     * @param {number} fixedCols - 冻结列数
+     */
+    #drawColSelectionLines(ctx, sheet, vt, y, viewW, range, frozenColsW, fixedCols) {
+        const headerW = vt.headerW;
+
+        if (fixedCols > 0) {
+            const frozenStart = range.topCol;
+            const frozenEnd = Math.min(range.bottomCol, fixedCols - 1);
+
+            if (frozenStart <= frozenEnd && frozenEnd >= 0) {
+                const startX = vt.colToViewX(Math.max(frozenStart, 0));
+                const endX = vt.colRightToViewX(frozenEnd);
+
+                if (endX > startX && endX > headerW) {
+                    this.#drawSelectionLine(ctx, Math.max(startX, headerW), y, Math.min(endX, headerW + frozenColsW) - Math.max(startX, headerW), true);
+                }
+            }
+        }
+
+        if (range.bottomCol >= fixedCols) {
+            const scrollStart = Math.max(range.topCol, fixedCols);
+            const scrollEnd = range.bottomCol;
+
+            const startX = vt.colToViewX(scrollStart);
+            const endX = vt.colRightToViewX(scrollEnd);
+
+            const clipLeft = headerW + frozenColsW;
+            const clipRight = viewW;
+
+            const visibleStart = Math.max(startX, clipLeft);
+            const visibleEnd = Math.min(endX, clipRight);
+
+            if (visibleEnd > visibleStart) {
+                this.#drawSelectionLine(ctx, visibleStart, y, visibleEnd - visibleStart, true);
+            }
+        }
     }
 }
