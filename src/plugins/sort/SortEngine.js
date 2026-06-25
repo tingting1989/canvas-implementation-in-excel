@@ -266,7 +266,7 @@ export class SortEngine {
             if (customComparator) {
                 cmp = customComparator(dataA.rawValue, dataB.rawValue); // 传原始值
             } else {
-                isNullComparison = dataA.value.type === 'null' || dataB.value.type === 'null';
+                isNullComparison = dataA.value.type === "null" || dataB.value.type === "null";
                 cmp = this.#compareNormalized(dataA.value, dataB.value);
             }
 
@@ -274,9 +274,9 @@ export class SortEngine {
                 // 🔑 关键修复：null 比较不参与降序反转
                 // #compareNormalized 已保证 null 始终排最后，不能被反转！
                 if (order === "desc" && !isNullComparison) {
-                    return -cmp;  // 正常的降序反转
+                    return -cmp; // 正常的降序反转
                 }
-                return cmp;  // null 比较保持原方向（始终排最后）
+                return cmp; // null 比较保持原方向（始终排最后）
             }
         }
         return 0; // 所有列都相等（稳定排序保证原始顺序）
@@ -297,9 +297,9 @@ export class SortEngine {
      */
     #compareNormalized(a, b) {
         // 特殊规则：null/undefined 始终排最后（无论升降序）
-        if (a.type === 'null' && b.type !== 'null') return 1;   // a 是 null，排后面
-        if (a.type !== 'null' && b.type === 'null') return -1;  // b 是 null，排后面
-        if (a.type === 'null' && b.type === 'null') return 0;   // 都是 null
+        if (a.type === "null" && b.type !== "null") return 1; // a 是 null，排后面
+        if (a.type !== "null" && b.type === "null") return -1; // b 是 null，排后面
+        if (a.type === "null" && b.type === "null") return 0; // 都是 null
 
         // 非-null 类型的正常比较
         const typeOrder = { boolean: 0, number: 1, date: 2, string: 3, unknown: 4 };
