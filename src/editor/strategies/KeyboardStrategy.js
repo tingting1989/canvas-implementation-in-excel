@@ -289,48 +289,71 @@ export class KeyboardStrategy extends EventStrategy {
     #handleArrowDown(row, col, shiftKey) {
         const { sheet } = this.handler;
         const rc = sheet.rowColManager;
-        let nextRow = Math.min(rc.rowCount - 1, row + 1);
-        const merge = sheet.getMerge(row, col);
-        if (merge && row + 1 <= merge.bottomRow) {
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let nextRow = Math.min(rc.rowCount - 1, currentRow + 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge && currentRow + 1 <= merge.bottomRow) {
             nextRow = merge.bottomRow + 1;
         }
         nextRow = Math.min(CONFIG.MAX_ROWS - 1, nextRow);
-        const target = this.#getTopLeft(nextRow, col);
+        const target = this.#getTopLeft(nextRow, currentCol);
 
         if (shiftKey) {
-            const [focusRow, focusCol] = sheet.selection.getFocus();
-            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, col);
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, currentCol);
         } else {
-            this.#selectCellOrMerge(sheet, target.row, col);
+            this.#selectCellOrMerge(sheet, target.row, currentCol);
         }
-        this.handler.viewport.scrollToCell(target.row, col);
+        this.handler.viewport.scrollToCell(target.row, currentCol);
         this.handler.render();
     }
 
     #handleArrowUp(row, col, shiftKey) {
         const { sheet } = this.handler;
-        let prevRow = Math.max(0, row - 1);
-        const merge = sheet.getMerge(row, col);
-        if (merge && row - 1 >= merge.topRow) {
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let prevRow = Math.max(0, currentRow - 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge && currentRow - 1 >= merge.topRow) {
             prevRow = merge.topRow - 1;
         }
-        const target = this.#getTopLeft(prevRow, col);
+        const target = this.#getTopLeft(prevRow, currentCol);
 
         if (shiftKey) {
-            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, col);
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, currentCol);
         } else {
-            this.#selectCellOrMerge(sheet, target.row, col);
+            this.#selectCellOrMerge(sheet, target.row, currentCol);
         }
-        this.handler.viewport.scrollToCell(target.row, col);
+        this.handler.viewport.scrollToCell(target.row, currentCol);
         this.handler.render();
     }
 
     #handleArrowRight(row, col, shiftKey) {
         const { sheet } = this.handler;
         const rc = sheet.rowColManager;
-        let nextCol = Math.min(rc.colCount - 1, col + 1);
-        const merge = sheet.getMerge(row, col);
-        if (merge && col + 1 <= merge.bottomCol) {
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let nextCol = Math.min(rc.colCount - 1, currentCol + 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge && currentCol + 1 <= merge.bottomCol) {
             nextCol = merge.bottomCol + 1;
         }
         nextCol = Math.min(CONFIG.MAX_COLS - 1, nextCol);
@@ -339,22 +362,30 @@ export class KeyboardStrategy extends EventStrategy {
             nextCol++;
         }
 
-        const target = this.#getTopLeft(row, nextCol);
+        const target = this.#getTopLeft(currentRow, nextCol);
 
         if (shiftKey) {
-            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], row, target.col);
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], currentRow, target.col);
         } else {
-            this.#selectCellOrMerge(sheet, row, target.col);
+            this.#selectCellOrMerge(sheet, currentRow, target.col);
         }
-        this.handler.viewport.scrollToCell(row, target.col);
+        this.handler.viewport.scrollToCell(currentRow, target.col);
         this.handler.render();
     }
 
     #handleArrowLeft(row, col, shiftKey) {
         const { sheet } = this.handler;
-        let prevCol = Math.max(0, col - 1);
-        const merge = sheet.getMerge(row, col);
-        if (merge && col - 1 >= merge.topCol) {
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let prevCol = Math.max(0, currentCol - 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge && currentCol - 1 >= merge.topCol) {
             prevCol = merge.topCol - 1;
         }
 
@@ -362,14 +393,14 @@ export class KeyboardStrategy extends EventStrategy {
             prevCol--;
         }
 
-        const target = this.#getTopLeft(row, prevCol);
+        const target = this.#getTopLeft(currentRow, prevCol);
 
         if (shiftKey) {
-            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], row, target.col);
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], currentRow, target.col);
         } else {
-            this.#selectCellOrMerge(sheet, row, target.col);
+            this.#selectCellOrMerge(sheet, currentRow, target.col);
         }
-        this.handler.viewport.scrollToCell(row, target.col);
+        this.handler.viewport.scrollToCell(currentRow, target.col);
         this.handler.render();
     }
 
