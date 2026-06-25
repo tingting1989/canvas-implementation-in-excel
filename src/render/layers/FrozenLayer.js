@@ -240,7 +240,9 @@ export class FrozenLayer extends BaseLayer {
     }
 
     #isSelectionInClipArea(sheet, viewport, clipX, clipY, clipW, clipH) {
-        const range = sheet.selection.getRange();
+        const range = sheet.selection?.getRange();
+        if (!range || !viewport?.mergeToViewRect) return false;
+
         const selectionRect = viewport.mergeToViewRect(range);
 
         const selRight = selectionRect.x + selectionRect.w;
@@ -248,11 +250,7 @@ export class FrozenLayer extends BaseLayer {
         const clipRight = clipX + clipW;
         const clipBottom = clipY + clipH;
 
-        const intersects =
-            selectionRect.x < clipRight &&
-            selRight > clipX &&
-            selectionRect.y < clipBottom &&
-            selBottom > clipY;
+        const intersects = selectionRect.x < clipRight && selRight > clipX && selectionRect.y < clipBottom && selBottom > clipY;
 
         if (!intersects) return false;
 
