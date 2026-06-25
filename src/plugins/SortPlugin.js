@@ -2,7 +2,7 @@ import { BasePlugin } from "./BasePlugin.js";
 import { HOOKS } from "../constants/hookNames.js";
 import { SortState } from "./sort/SortState.js";
 import { SortEngine } from "./sort/SortEngine.js";
-import { SortStrategy } from "./sort/SortStrategy.js";
+import { SortStrategy } from "../editor/strategies/SortStrategy.js";
 import { SortUIManager } from "./sort/SortUIManager.js";
 
 /**
@@ -88,6 +88,13 @@ export class SortPlugin extends BasePlugin {
     #sortEngine;
 
     /**
+     * 冻结行数
+     * @type {number}
+     * @private
+     */
+    #fixedRowsTop;
+
+    /**
      * 排序事件策略
      * @type {SortStrategy}
      * @private
@@ -101,6 +108,16 @@ export class SortPlugin extends BasePlugin {
      */
     #sortUIManager;
 
+    /**
+     * 插件是否处于激活状态（已初始化且未禁用）
+     * @type {boolean}
+     * @private
+     */
+    #active = false;
+
+    /** @type {Function|null} 列头渲染回调（用于绘制排序UI） */
+    #headerRendererCallback = null;
+
     // ═══════════════════════════════════════════════════════════════
     // 构造函数
     // ═══════════════════════════════════════════════════════════════
@@ -113,8 +130,8 @@ export class SortPlugin extends BasePlugin {
 
         this.#sortState = new SortState();
         this.#sortUIManager = new SortUIManager(this);
-        this.#sortStrategy = new SortStrategy(this);
         this.#sortEngine = null; // 延迟初始化，需要 cellStore 和 rowCount
+        // 注意：SortStrategy 在 init() 中创建，因为需要 eventHandler
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -135,28 +152,130 @@ export class SortPlugin extends BasePlugin {
         if (!sheet) return;
 
         const cellStore = sheet.cellStore;
-        const rowCount = sheet.rowCount || 1000;
+        // ✅ 修复：从 rowColManager 获取正确的行数
+        const rowCount = sheet.rowColManager?.rowCount || 1000;
+        console.log('[SortPlugin] init - rowCount:', rowCount, 'fixedRowsTop:', sheet.fixedRowsTop);
+        console.log('[SortPlugin] cellStore:', cellStore ? '✓' : '✗');
+        console.log('[SortPlugin] toRealRow exists:', typeof sheet.toRealRow);
 
-        this.#sortEngine = new SortEngine(cellStore, this.#sortState, rowCount);
+        this.#sortEngine = new SortEngine(cellStore, this.#sortState, rowCount, {
+            rowMapper: (row) => sheet.toRealRow(row)  // ✅ 传入行号映射函数
+        });
+        this.#fixedRowsTop = sheet.fixedRowsTop || 0;
 
-        this.#sortStrategy.init();
+        // 创建并注册排序策略到 EventHandler（标准化方式）
+        this.#sortStrategy = new SortStrategy(this.eventHandler, this);
+        this.addStrategy("sort", this.#sortStrategy);
+
         this.#sortUIManager.init();
+
+        // 注册列头渲染器（用于绘制排序箭头和高亮）
+        this.#registerHeaderRenderer();
 
         this.addHook(HOOKS.AFTER_SORT, () => {
             this.#sortUIManager.updateIndicators();
         });
+
+        // 标记为激活状态并触发初始渲染
+        this.#active = true;
+        this.renderEngine?.invalidateAll();
+        this.render();
+    }
+
+    /**
+     * 注册列头扩展渲染器
+     * @private
+     */
+    #registerHeaderRenderer() {
+        if (!this.renderEngine?.headerRenderer) return;
+
+        /** @type {Function} 渲染回调函数 */
+        this.#headerRendererCallback = (ctx, colIndex, x, y, width, height) => {
+            if (!this.active) return;
+
+            this.#sortUIManager.drawSortIndicator(ctx, colIndex, x, y, width, height);
+            this.#sortUIManager.highlightSortedColumn(ctx, colIndex, x, y, width, height);
+        };
+
+        this.renderEngine.headerRenderer.registerColumnHeaderRenderer(this.#headerRendererCallback);
+    }
+
+    /**
+     * 注销列头扩展渲染器
+     * @private
+     */
+    #unregisterHeaderRenderer() {
+        if (this.renderEngine?.headerRenderer && this.#headerRendererCallback) {
+            this.renderEngine.headerRenderer.unregisterColumnHeaderRenderer(this.#headerRendererCallback);
+            this.#headerRendererCallback = null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 只读属性
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 插件是否处于激活状态
+     * @returns {boolean}
+     */
+    get active() {
+        return this.#active;
+    }
+
+    /**
+     * 获取冻结行数
+     * @returns {number}
+     */
+    get fixedRowsTop() {
+        return this.#fixedRowsTop || 0;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 启用 / 禁用 / 销毁
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 启用插件
+     *
+     * 恢复激活状态。注意：不会自动恢复之前的排序状态，
+     * 需要手动调用 sortRows() 或 restoreOriginalOrder() 等方法。
+     */
+    enable() {
+        super.enable();
+        this.#active = true;
+        if (this.#sortStrategy) {
+            this.#sortStrategy.enable();
+        }
+    }
+
+    /**
+     * 禁用插件
+     *
+     * 清除排序状态和 UI 指示器，失效缓存并重新渲染。
+     * 禁用后用户无法看到任何排序效果（箭头、高亮等）。
+     */
+    disable() {
+        super.disable();
+        this.#active = false;
+        this.clearSort();
+        this.renderEngine?.invalidateAll();
+        this.render();
     }
 
     /**
      * 销毁插件
      *
-     * 清理所有资源：策略、UI、钩子等
+     * 先禁用（清除排序状态），再调用父类销毁清理所有注册资源。
+     * 策略会由基类 removeOwnStrategies() 自动清理。
      */
     destroy() {
-        this.#sortStrategy?.destroy();
-        this.#sortUIManager?.destroy();
+        this.disable();
+        this.#unregisterHeaderRenderer();  // 注销列头渲染器
         this.#sortState?.reset();
         this.#sortEngine = null;
+        this.#sortUIManager = null;
+        this.#sortStrategy = null;
         super.destroy();
     }
 
@@ -179,7 +298,12 @@ export class SortPlugin extends BasePlugin {
             return { swapped: 0, time: 0 };
         }
 
-        const result = this.#sortEngine.sortRows(colIndex, options);
+        const sortOptions = {
+            ...options,
+            fixedRows: options.fixedRows ?? this.#fixedRowsTop
+        };
+
+        const result = this.#sortEngine.sortRows(colIndex, sortOptions);
 
         this.hooks?.runHooks(HOOKS.AFTER_SORT, colIndex, options, result);
 
@@ -201,7 +325,12 @@ export class SortPlugin extends BasePlugin {
             return { swapped: 0, time: 0 };
         }
 
-        const result = this.#sortEngine.sortMultiple(columns, options);
+        const sortOptions = {
+            ...options,
+            fixedRows: options.fixedRows ?? this.#fixedRowsTop
+        };
+
+        const result = this.#sortEngine.sortMultiple(columns, sortOptions);
 
         this.hooks?.runHooks(HOOKS.AFTER_SORT, columns, options, result);
 
@@ -297,9 +426,9 @@ export class SortPlugin extends BasePlugin {
         const sheet = this.sheet;
         if (!sheet) return;
 
-        // 1. 清空选区
-        if (sheet.selection) {
-            sheet.selection.clear();
+        // 1. 重置选区到起始位置（SelectionManager 没有 clear() 方法）
+        if (sheet.selection && typeof sheet.selection.setActive === 'function') {
+            sheet.selection.setActive(0, 0);
         }
 
         // 2. 重置滚动位置（如果有冻结行）
@@ -323,6 +452,10 @@ export class SortPlugin extends BasePlugin {
 
     get sortEngine() {
         return this.#sortEngine;
+    }
+
+    get sortStrategy() {
+        return this.#sortStrategy;
     }
 
     get sortUIManager() {

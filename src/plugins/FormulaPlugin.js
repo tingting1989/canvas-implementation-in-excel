@@ -28,11 +28,54 @@ export class FormulaPlugin extends BasePlugin {
         return "formula";
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // 私有实例字段
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 插件是否处于激活状态（已初始化且未禁用）
+     * @type {boolean}
+     * @private
+     */
+    #active = false;
+
     /** @type {FormulaEngine} */
     #engine = null;
 
     /** @type {FormulaBar} */
     #bar = null;
+
+    // ═══════════════════════════════════════════════════════════════
+    // 只读属性
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 插件是否处于激活状态
+     * @returns {boolean}
+     */
+    get active() {
+        return this.#active;
+    }
+
+    /**
+     * 获取公式引擎实例
+     * @returns {FormulaEngine|null}
+     */
+    get engine() {
+        return this.#engine;
+    }
+
+    /**
+     * 获取公式栏实例
+     * @returns {FormulaBar|null}
+     */
+    get bar() {
+        return this.#bar;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 生命周期
+    // ═══════════════════════════════════════════════════════════════
 
     /**
      * 初始化公式插件
@@ -55,10 +98,15 @@ export class FormulaPlugin extends BasePlugin {
             this.workbook.formulaBar = this.#bar;
             this.#hookFormulaBar();
         }
+
+        this.#active = true;
+        this.renderEngine?.invalidateAll();
+        this.render();
     }
 
     /**
      * 将公式栏更新 hook 到渲染引擎的渲染周期
+     * @private
      */
     #hookFormulaBar() {
         const re = this.workbook.renderEngine;
@@ -71,10 +119,43 @@ export class FormulaPlugin extends BasePlugin {
         };
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    // 启用 / 禁用 / 销毁
+    // ═══════════════════════════════════════════════════════════════
+
     /**
-     * 销毁插件，清理引擎和公式栏
+     * 启用插件
+     *
+     * 恢复激活状态。注意：不会自动重新创建引擎或公式栏，
+     * 需要手动调用 init() 或在启用前确保资源存在。
+     */
+    enable() {
+        super.enable();
+        this.#active = true;
+    }
+
+    /**
+     * 禁用插件
+     *
+     * 停止公式计算功能，但保留引擎和公式栏实例。
+     * 禁用后用户无法使用公式功能，但不会销毁已创建的资源。
+     */
+    disable() {
+        super.disable();
+        this.#active = false;
+        this.renderEngine?.invalidateAll();
+        this.render();
+    }
+
+    /**
+     * 销毁插件
+     *
+     * 先禁用（停止激活状态），再清理引擎和公式栏，
+     * 最后调用父类销毁清理所有注册资源。
      */
     destroy() {
+        this.disable();
+
         if (this.#bar) {
             this.#bar.destroy();
             this.#bar = null;

@@ -95,22 +95,37 @@ describe("FormulaPlugin", () => {
     });
 
     describe("Constructor & Initialization", () => {
+        it("should not be active before init()", () => {
+            expect(plugin.active).toBe(false);
+        });
+
         it("should initialize with default options", () => {
             plugin.init();
 
             expect(plugin.initialized).toBe(true);
+            expect(plugin.active).toBe(true);
+            expect(plugin.enabled).toBe(true);
             expect(workbook.formulaEngine).toBeDefined();
+        });
+
+        it("should create FormulaEngine instance", () => {
+            plugin.init();
+
+            expect(plugin.engine).toBeDefined();
+            expect(workbook.formulaEngine).toBe(plugin.engine);
         });
 
         it("should create FormulaBar by default", () => {
             plugin.init();
 
-            expect(workbook.formulaBar).toBeDefined();
+            expect(plugin.bar).toBeDefined();
+            expect(workbook.formulaBar).toBe(plugin.bar);
         });
 
         it("should not create FormulaBar when showFormulaBar is false", () => {
             plugin.init({ showFormulaBar: false });
 
+            expect(plugin.bar).toBeNull();
             expect(workbook.formulaBar).toBeNull();
         });
 
@@ -119,14 +134,103 @@ describe("FormulaPlugin", () => {
 
             expect(typeof workbook.renderEngine.onAfterRender).toBe("function");
         });
+
+        it("should trigger invalidateAll and render on init", () => {
+            plugin.init();
+
+            expect(workbook.renderEngine.invalidateAll).toHaveBeenCalled();
+            expect(workbook.render).toHaveBeenCalled();
+        });
+    });
+
+    describe("Read-only Properties", () => {
+        it("should expose engine through getter", () => {
+            plugin.init();
+
+            expect(plugin.engine).toBe(workbook.formulaEngine);
+        });
+
+        it("should expose bar through getter", () => {
+            plugin.init();
+
+            expect(plugin.bar).toBe(workbook.formulaBar);
+        });
+
+        it("should return null for engine before init", () => {
+            expect(plugin.engine).toBeNull();
+        });
+
+        it("should return null for bar when showFormulaBar is false", () => {
+            plugin.init({ showFormulaBar: false });
+
+            expect(plugin.bar).toBeNull();
+        });
+    });
+
+    describe("enable() / disable()", () => {
+        beforeEach(() => {
+            plugin.init();
+        });
+
+        it("should enable plugin and set active to true", () => {
+            plugin.disable();
+            plugin.enable();
+
+            expect(plugin.active).toBe(true);
+            expect(plugin.enabled).toBe(true);
+        });
+
+        it("should disable plugin and set active to false", () => {
+            plugin.disable();
+
+            expect(plugin.active).toBe(false);
+            expect(plugin.enabled).toBe(false);
+        });
+
+        it("should trigger render on disable", () => {
+            plugin.disable();
+
+            expect(workbook.renderEngine.invalidateAll).toHaveBeenCalled();
+            expect(workbook.render).toHaveBeenCalled();
+        });
+
+        it("should preserve engine and bar instances after disable", () => {
+            const engine = plugin.engine;
+            const bar = plugin.bar;
+
+            plugin.disable();
+
+            expect(plugin.engine).toBe(engine);
+            expect(plugin.bar).toBe(bar);
+        });
     });
 
     describe("destroy()", () => {
-        it("should clean up engine and bar", () => {
+        it("should call disable first, then clean up resources", () => {
+            plugin.init();
+
+            const disableSpy = vi.spyOn(plugin, 'disable');
+            plugin.destroy();
+
+            expect(disableSpy).toHaveBeenCalled();
+            expect(plugin.initialized).toBe(false);
+            expect(plugin.active).toBe(false);
+            expect(plugin.enabled).toBe(false);
+        });
+
+        it("should clean up engine and bar references", () => {
             plugin.init();
             plugin.destroy();
 
-            expect(plugin.initialized).toBe(false);
+            expect(plugin.engine).toBeNull();
+            expect(plugin.bar).toBeNull();
+            expect(workbook.formulaEngine).toBeNull();
+            expect(workbook.formulaBar).toBeNull();
+        });
+
+        it("should handle destroy without init gracefully", () => {
+            expect(() => plugin.destroy()).not.toThrow();
+            expect(plugin.active).toBe(false);
         });
     });
 });

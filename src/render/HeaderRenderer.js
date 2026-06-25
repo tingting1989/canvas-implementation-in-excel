@@ -31,7 +31,35 @@ const HEADER_ROW_PADDING = 6;
  * 3. 左上角
  */
 export class HeaderRenderer {
-    constructor() {}
+    constructor() {
+        this.#columnHeaderRenderers = [];
+    }
+
+    /** @type {Array<Function>} 列头扩展渲染器列表 */
+    #columnHeaderRenderers;
+
+    /**
+     * 注册列头扩展渲染器（用于插件绘制自定义UI）
+     *
+     * @param {Function} renderer - 渲染函数 (ctx, colIndex, x, y, width, height) => void
+     */
+    registerColumnHeaderRenderer(renderer) {
+        if (typeof renderer === 'function') {
+            this.#columnHeaderRenderers.push(renderer);
+        }
+    }
+
+    /**
+     * 移除列头扩展渲染器
+     *
+     * @param {Function} renderer - 要移除的渲染函数引用
+     */
+    unregisterColumnHeaderRenderer(renderer) {
+        const index = this.#columnHeaderRenderers.indexOf(renderer);
+        if (index > -1) {
+            this.#columnHeaderRenderers.splice(index, 1);
+        }
+    }
 
     /**
      * 主渲染入口
@@ -135,6 +163,7 @@ export class HeaderRenderer {
         } else {
             const startCol = this.#calcStartCol(vt, rc, fixedCols, isFrozen, clipW);
             const endCol = this.#calcEndCol(vt, rc, fixedCols, isFrozen, clipW);
+
             for (let c = startCol; c < endCol; c++) {
                 const w = rc.getColWidth(c);
                 if (w <= 0) continue;
@@ -143,6 +172,15 @@ export class HeaderRenderer {
                 const highlighted = c >= range.topCol && c <= range.bottomCol;
                 this.#drawHeaderCell(ctx, x, clipY, w, rowH, isSource, highlighted, defaultStyle);
                 this.#drawHeaderText(ctx, sheet.getColHeader(c), x + HEADER_COL_PADDING, clipY + rowH - 8, null, headerFont);
+
+                for (const renderer of this.#columnHeaderRenderers) {
+                    try {
+                        renderer(ctx, c, x, clipY, w, rowH);
+                    } catch (e) {
+                        console.warn('[HeaderRenderer] columnHeaderRenderer error:', e);
+                    }
+                }
+
                 this.#drawSeparator(ctx, x + w, clipY, x + w, clipY + rowH);
             }
         }

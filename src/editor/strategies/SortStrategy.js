@@ -1,7 +1,9 @@
+import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
- * 排序事件策略（Sort Strategy）
+ * 排序事件策略（Sort Strategy）- 标准化实现
  *
  * ## 职责
  * 监听列头点击事件，判断用户意图：
@@ -9,6 +11,8 @@ import { HIT_TYPE } from "../../constants/hitType.js";
  * - 双击 → 触发排序（升序 ↔ 降序切换）
  *
  * ## 设计原则
+ * - 继承 EventStrategy 基类，符合项目统一架构
+ * - 使用事件委托模式（getEventHandlers 声明式绑定）
  * - 优先级高于 MouseStrategy（150 vs 默认值）
  * - 仅拦截双击排序事件，单击事件透传给其他策略
  * - 遵循设计文档：双击仅在 asc 和 desc 之间切换，不自动清除排序
@@ -16,8 +20,9 @@ import { HIT_TYPE } from "../../constants/hitType.js";
  * ## 与设计文档的一致性
  * ✅ 移除第四次点击清除排序逻辑
  * ✅ 清除排序仅通过：右键菜单 / API / 工具栏按钮
+ * ✅ 使用 EventHandler 委托模式统一管理生命周期
  */
-export class SortStrategy {
+export class SortStrategy extends EventStrategy {
     /**
      * 策略名称
      * @type {string}
@@ -52,42 +57,38 @@ export class SortStrategy {
     #clickThreshold = 300;
 
     /**
-     * 所属插件实例
-     * @type {import("../SortPlugin.js").SortPlugin}
+     * 所属插件实例（用于调用排序API）
+     * @type {import("../plugins/SortPlugin.js").SortPlugin}
      * @private
      */
     #plugin;
 
-    constructor(plugin) {
+    /**
+     * @param {import("../../core/EventHandler.js").EventHandler} handler - 事件处理器实例
+     * @param {import("../plugins/SortPlugin.js").SortPlugin} plugin - 排序插件实例
+     */
+    constructor(handler, plugin) {
+        super(handler);
         this.#plugin = plugin;
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // 生命周期
+    // 事件声明（委托模式）
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * 初始化策略
+     * 声明此策略需要监听的事件处理器
      *
-     * 注册 mousedown 事件监听器到 canvas
-     */
-    init() {
-        const canvas = this.#plugin.renderEngine?.canvas;
-        if (!canvas) return;
-
-        canvas.addEventListener("mousedown", this.#handleMouseDown.bind(this), { capture: true });
-    }
-
-    /**
-     * 销毁策略
+     * 使用 EventHandler 统一绑定的委托模式：
+     * - 键格式: "target:eventType"（如 "canvas:mousedown"）
+     * - 返回 false 可阻止后续低优先级策略接收同一事件
      *
-     * 清理事件监听器
+     * @returns {Object<string, Function>} 事件处理器映射
      */
-    destroy() {
-        const canvas = this.#plugin.renderEngine?.canvas;
-        if (canvas) {
-            canvas.removeEventListener("mousedown", this.#handleMouseDown.bind(this));
-        }
+    getEventHandlers() {
+        return {
+            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#handleMouseDown(e),
+        };
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -107,10 +108,9 @@ export class SortStrategy {
      * @returns {boolean} 是否阻止后续策略处理
      */
     #handleMouseDown(e) {
-        const viewport = this.#plugin.eventHandler?.viewport;
-        if (!viewport) return true;
+        if (!this.enabled) return true;
 
-        const hit = viewport.hitTest(e.clientX, e.clientY);
+        const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
 
         if (!hit || hit.type !== HIT_TYPE.COL_HEADER) {
             return true; // 非列头区域，让其他策略处理
@@ -119,7 +119,10 @@ export class SortStrategy {
         const now = Date.now();
         const currentCol = hit.index;
 
-        const isDoubleClick = currentCol === this.#lastClickCol && now - this.#lastClickTime < this.#clickThreshold;
+        const isDoubleClick = (
+            currentCol === this.#lastClickCol &&
+            now - this.#lastClickTime < this.#clickThreshold
+        );
 
         if (isDoubleClick) {
             e.preventDefault();
@@ -148,10 +151,10 @@ export class SortStrategy {
      * - 同一列且当前为降序 → 切换为升序（循环）
      * - 不同列 → 默认升序
      *
-     * ⚠️ 符合设计文档要求：
-     * ✅ 双击仅在 asc 和 desc 之间切换
-     * ✅ 不自动清除排序
-     * ✅ 清除排序通过右键菜单/API/工具栏按钮实现
+     * 符合设计文档要求：
+     * 双击仅在 asc 和 desc 之间切换
+     * 不自动清除排序
+     * 清除排序通过右键菜单/API/工具栏按钮实现
      *
      * @param {number} colIndex - 点击的列索引
      * @private

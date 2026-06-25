@@ -14,6 +14,7 @@ import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./core/utils.js";
 import { errorHandler, ERROR_LEVEL } from "./core/ErrorHandler.js";
+import {SortPlugin} from "@/plugins";
 
 const initApp = () => {
     console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -35,6 +36,7 @@ const initApp = () => {
     Workbook.registerPlugin("rowMove", RowMovePlugin);
     Workbook.registerPlugin("freeze", FreezePlugin);
     Workbook.registerPlugin("formula", FormulaPlugin);
+     Workbook.registerPlugin("sort", SortPlugin);
 
     const wb = new Workbook("grid", {
         // height:600,
@@ -170,6 +172,7 @@ const initApp = () => {
             "rowMove",
             "freeze",
             "formula",
+            "sort"
         ],
         pluginOptions: {
             contextMenu: {
@@ -264,6 +267,10 @@ const initApp = () => {
 
     wb.addHook(HOOKS.AFTER_COLUMN_MOVE, (sourceCol, targetCol) => {
         console.log(`列移动完成 ${sourceCol} → ${targetCol}`);
+    });
+
+    wb.addHook(HOOKS.AFTER_SORT, (colIndex, options, result) => {
+        console.log(`排序完成！列 ${colIndex}, 耗时 ${result.time}ms`);
     });
     window.wb = wb;
 
