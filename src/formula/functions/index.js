@@ -107,7 +107,7 @@ class FunctionRegistry {
         }
 
         // 包装函数，添加异常捕获
-        const wrappedFn = function (...args) {
+        const wrappedFn = function(...args) {
             try {
                 return fn.apply(this, args);
             } catch (error) {

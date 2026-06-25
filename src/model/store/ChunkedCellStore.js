@@ -456,11 +456,205 @@ export class ChunkedCellStore {
     }
 
     /**
+     * 批量移动行（Batch Move Rows）— 高效的多行重排
+     *
+     * ⚠️ 旧实现问题（已废弃）：
+     * ```javascript
+     * // ❌ 错误的链式移动（会导致数据覆盖！）
+     * for (const [from, to] of mapping) {
+     *     this.moveRow(from, to);  // 每次都读取/写入，数据会被覆盖！
+     * }
+     * ```
+     *
+     * ✅ 新实现：基于快照的链条安全移动算法
+     *
+     * 核心原理：
+     * 1. 将映射表分解为独立的「移动链条」
+     * 2. 对每个链条：
+     *    a. 先提取所有源行的完整快照（避免后续覆盖）
+     *    b. 再按目标位置回填快照数据
+     * 3. 链条间互不影响，可并行处理
+     *
+     * 示例（mapping: {0→2, 1→0, 2→1}）：
+     * - 分解为单条链条：[0 → 2 → 1 → 0]
+     * - 快照提取：[row0_data, row2_data, row1_data]
+     * - 回填位置：row2=row0_data, row1=row2_data, row0=row1_data
+     *
+     * 性能特征：
+     * - 时间复杂度：O(n × m)，n=移动行数，m=平均每行列数
+     * - 空间复杂度：O(k × m)，k=最长链条长度
+     * - IO次数：2次（1次提取 + 1次回填），非 n 次 moveRow
+     *
+     * @param {Map<number, number>} mapping - 行映射表 (originalRow → targetRow)
+     * @param {object} [options={}] - 选项
+     * @param {number} [options.fixedRows=0] - 冻结行数
+     * @param {Array<number>} [options.hiddenRows=[]] - 隐藏行数组
+     * @returns {number} 实际移动的行数
+     */
+    batchMoveRows(mapping, options = {}) {
+        if (!mapping || mapping.size === 0) return 0;
+
+        // 1️⃣ 分解为独立链条
+        const chains = this.#decomposeMappingToChains(mapping);
+
+        if (chains.length === 0) return 0;
+
+        // 2️⃣ 逐个链条安全移动
+        let totalSwapped = 0;
+        for (const chain of chains) {
+            const swapped = this.#moveChainSafely(chain, mapping);
+            totalSwapped += swapped;
+        }
+
+        return totalSwapped;
+    }
+
+    /**
+     * 将映射表分解为独立的移动链条
+     *
+     * 链条定义：一系列行形成闭环 A→B→C→...→A
+     * 不同链条之间完全独立，可以分别处理
+     *
+     * @private
+     * @param {Map<number, number>} mapping - 行映射表
+     * @returns {Array<Array<number>>} 链条数组
+     */
+    #decomposeMappingToChains(mapping) {
+        const visited = new Set();
+        const chains = [];
+
+        for (const [source] of mapping) {
+            if (visited.has(source)) continue;
+
+            const chain = [];
+            let current = source;
+
+            while (!visited.has(current)) {
+                visited.add(current);
+                chain.push(current);
+                current = mapping.get(current);
+
+                if (current === undefined || chain.length > mapping.size) {
+                    break; // 异常情况保护
+                }
+            }
+
+            if (chain.length > 1) {
+                chains.push(chain);
+            }
+        }
+
+        return chains;
+    }
+
+    /**
+     * 安全地移动单个链条（基于快照机制）
+     *
+     * ⚠️ 关键改进：解决链式移动的数据覆盖问题
+     *
+     * ❌ 旧方案（错误）：
+     *   直接复制行数据，导致源数据被覆盖
+     *   链条越长，数据丢失越严重
+     *
+     * ✅ 新方案（正确）：
+     *   1. 先提取所有行的完整快照
+     *   2. 再按目标位置回填快照数据
+     *   确保数据完整性
+     *
+     * @private
+     * @param {Array<number>} chain - 行号链条 [source, target1, target2, ...]
+     modal.msgSuccess("修改成功");     * @param {Map<number, number>} mapping - 完整的行映射表
+     * @returns {number} 实际移动的行数
+     */
+    #moveChainSafely(chain, mapping) {
+        // Step 1: 提取所有行的完整快照
+        const snapshots = chain.map(row => this.#extractRowSnapshot(row));
+
+        // Step 2: 按目标位置回填快照数据
+        for (let i = 0; i < chain.length; i++) {
+            const sourceRow = chain[i];
+            const targetRow = mapping.get(sourceRow);
+
+            if (targetRow !== undefined && sourceRow !== targetRow) {
+                this.#restoreRowFromSnapshot(targetRow, snapshots[i]);
+            }
+        }
+
+        return chain.filter((row, i) => {
+            const target = chain[(i + 1) % chain.length];
+            return row !== target;
+        }).length;
+    }
+
+    /**
+     * 提取指定行的完整数据快照
+     *
+     * @private
+     * @param {number} row - 行号
+     * @returns {Map<number, import("../Cell.js").Cell>} 列→单元格 映射
+     */
+    #extractRowSnapshot(row) {
+        const snapshot = new Map();
+
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
+
+            for (const { row: r, col, cell } of chunk.iterate()) {
+                if (r === row) {
+                    snapshot.set(col, cell);
+                }
+            }
+        }
+
+        return snapshot;
+    }
+
+    /**
+     * 从快照恢复整行数据到目标行
+     *
+     * @private
+     * @param {number} targetRow - 目标行号
+     * @param {Map<number, import("../Cell.js").Cell>} snapshot - 行快照
+     */
+    #restoreRowFromSnapshot(targetRow, snapshot) {
+        // 先清除目标行现有数据
+        this.#clearRow(targetRow);
+
+        // 从快照恢复数据
+        for (const [col, cell] of snapshot) {
+            this.set(targetRow, col, cell);
+        }
+    }
+
+    /**
+     * 清除指定行的所有数据
+     *
+     * @private
+     * @param {number} row - 行号
+     */
+    #clearRow(row) {
+        for (const [, chunk] of this.#chunks) {
+            if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
+
+            const cellsToDelete = [];
+            for (const { row: r, col } of chunk.iterate()) {
+                if (r === row) {
+                    cellsToDelete.push(col);
+                }
+            }
+
+            for (const col of cellsToDelete) {
+                chunk.delete(row, col);
+            }
+        }
+    }
+
+    /**
      * 遍历所有块（生成器方法）
      *
      * @yields {Chunk}
      */
-    *chunks() {
+    * chunks() {
         for (const chunk of this.#chunks.values()) {
             yield chunk;
         }
