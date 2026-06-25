@@ -6,7 +6,9 @@
 排序	点击列头排序、多列排序、自定义排序函数	数据查看体验严重受限	在 ColumnType 基础上，实现 sortRows(col, order) 和列头排序 UI
 筛选/过滤	列头下拉筛选、条件筛选、搜索过滤	大数据量下无法快速定位数据	在 RowColManager 层实现 filterRows(predicate)，配合虚拟滚动
 查找替换	Ctrl+F 查找、Ctrl+H 替换、正则匹配	编辑效率大打折扣	可从 KeyboardStrategy 扩展，逐行搜索 + 高亮匹配 Cell
-🟡 中优先级（用户体验提升）
+
+
+中优先级（用户体验提升）
 功能	Handsontable 实现	影响	建议
 只读模式	readOnly: true 全局禁用编辑	查看模式必备	实现简单：Sheet 加 #readOnly 标志，EditorManager 拦截编辑请求
 列宽自适应	autoColumnSize、stretchH: "all"	列宽不能自动撑满容器	stretchH 较容易：根据容器宽度 + 列数重新计算 colWidths
@@ -33,9 +35,6 @@ License Key	商业授权	本项目无需
 
 
 
-Phase 1	ChartModel + ChartManager + ChartLayer 骨架	1 天
-Phase 2	ChartRenderer 柱状图 + 折线图	2 天
-Phase 3	ChartPlugin + API 集成 + hitTest	1 天
-Phase 4	饼图 + 面积图 + 图例	1 天
-Phase 5	图表选中/拖拽/缩放交互	2 天
-Phase 6	数据联动（单元格变化自动刷新图表）	1 天
+Phase 1	排序	3 天	🔴 最高	无依赖
+Phase 2	筛选/过滤	4 天	🔴 最高	可与 Phase 1 并行
+Phase 3	查找替换	3 天	🔴 最高	可与前两阶段并行
