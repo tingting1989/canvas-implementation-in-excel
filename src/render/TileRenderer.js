@@ -168,17 +168,13 @@ export class TileRenderer {
                 const colW = rc.getColWidth(c);
                 if (colW <= 0) continue;
 
-                // 检查是否属于某个合并区域
                 const merge = sheet.getMerge(r, c);
+                const isMerged = sheet.isMergedCell(realR, c);
 
-                // 如果是合并区域内非左上角的格子
-                if (sheet.isMergedCell(realR, c)) {
-                    // 如果合并区域的左上角在本瓦片范围内且尚未渲染过，则由左上角统一绘制
-                    // 如果左上角不在本瓦片范围（合并区域从外部延伸进来），需要在此处补绘
+                if (isMerged) {
                     if (merge) {
                         const mergeKey = `${merge.topRow},${merge.topCol}`;
                         if (!renderedMerges.has(mergeKey)) {
-                            // 合并左上角不在当前瓦片的遍历范围内，需要在此补全绘制
                             this.#drawMergeRegion(tileCtx, sheet, merge, rc, pixelX0, pixelY0, tileSize);
                             renderedMerges.add(mergeKey);
                         }
@@ -207,11 +203,20 @@ export class TileRenderer {
 
                 this.#drawCellBackground(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
 
-                // 富内容单元格（图片等）：绘制富内容而非文本
                 const hasContent = this.#drawCellContent(tileCtx, sheet, realR, c, drawX, drawY, w, h);
                 if (!hasContent) {
                     this.#drawCellBorder(tileCtx, merge, drawX, drawY, w, h);
-                    this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+
+                    if (merge && (drawX < 0 || drawY < 0 || drawX + w > tileSize || drawY + h > tileSize)) {
+                        tileCtx.save();
+                        tileCtx.beginPath();
+                        tileCtx.rect(Math.max(0, drawX), Math.max(0, drawY), Math.min(tileSize, drawX + w) - Math.max(0, drawX), Math.min(tileSize, drawY + h) - Math.max(0, drawY));
+                        tileCtx.clip();
+                        this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+                        tileCtx.restore();
+                    } else {
+                        this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+                    }
                 }
             }
         }
@@ -245,7 +250,18 @@ export class TileRenderer {
         const hasContent = this.#drawCellContent(ctx, sheet, realTopR, topCol, drawX, drawY, drawW, drawH);
         if (!hasContent) {
             this.#drawCellBorder(ctx, merge, drawX, drawY, drawW, drawH);
-            this.#drawCellText(ctx, sheet, realTopR, topCol, cell, drawX, drawY, drawW, drawH, merge);
+
+            const fullDrawX = mergeLeft - pixelX0;
+            const fullDrawY = mergeTop - pixelY0;
+            const fullW = mergeRight - mergeLeft;
+            const fullH = mergeBottom - mergeTop;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(drawX, drawY, drawW, drawH);
+            ctx.clip();
+            this.#drawCellText(ctx, sheet, realTopR, topCol, cell, fullDrawX, fullDrawY, fullW, fullH, merge);
+            ctx.restore();
         }
     }
 

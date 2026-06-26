@@ -187,15 +187,15 @@ export class KeyboardStrategy extends EventStrategy {
      * 选中区域后直接输入可打印字符：
      * 1. 先清空选区所有单元格
      * 2. 将输入的字符作为初始值进入编辑状态
-     * 3. 编辑完成（blur/Enter）时，将值填充到整个选区
+     * 3. 编辑完成（blur/Enter）时，将值写入活动单元格
+     *    （Ctrl+Enter 时写入整个选区）
      *
      * 行为与 Excel 一致：
-     * - 选中 A1:C3 → 输入 "hello" → A1:C3 全部变为 "hello"
-     * - 选中 A1:A3 → 输入 1 → A1:A3 全部变为 "1"
+     * - 选中 A1:C3 → 输入 "hello" → 仅 A1 变为 "hello"（活动单元格）
+     * - 选中 A1:C3 → 输入 "hello" → Ctrl+Enter → A1:C3 全部变为 "hello"
      */
     #handleDirectInput(e) {
         const { sheet, editor } = this.handler;
-        const range = sheet.selection.getRange();
 
         const [ar, ac] = sheet.selection.getActive();
         editor.show(ar, ac);
@@ -210,8 +210,6 @@ export class KeyboardStrategy extends EventStrategy {
                 inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
             }
         }
-
-        this.#markBatchFill(sheet, range);
     }
 
     /**

@@ -45,8 +45,8 @@ export class OverlayRenderer {
      * @param {import("./ViewportTransform.js").ViewportTransform} vt - 视口坐标转换器
      */
     renderMerges(ctx, sheet, vt) {
-        ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = CONFIG.GRID_COLOR;
+        ctx.lineWidth = 1;
 
         const pageStart = sheet.rowColManager.pageStartRow;
         const pageEnd = sheet.rowColManager.pageEndRow;
@@ -67,8 +67,6 @@ export class OverlayRenderer {
             const rect = vt.mergeToViewRect({ topRow: pageTopRow, topCol, bottomRow: pageBottomRow, bottomCol });
             ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
         }
-
-        ctx.lineWidth = 1;
     }
 
     /**
