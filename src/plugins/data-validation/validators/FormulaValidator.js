@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 
@@ -67,7 +68,7 @@ export class FormulaValidator extends BaseValidator {
                       metadata: { formula: rule.formula },
                   });
         } catch (error) {
-            console.error("[FormulaValidator] 公式求值失败:", error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 公式求值失败:", error);
             return ValidationResult.failure(`公式验证错误: ${error.message}`, "warning", {
                 value,
                 ruleId: rule.id,
@@ -94,7 +95,7 @@ export class FormulaValidator extends BaseValidator {
      */
     async evaluateInSandbox(value, rule, context) {
         if (!this.#formulaEngine?.evaluateForValidation) {
-            console.warn("[FormulaValidator] FormulaEngine 未实现 evaluateForValidation 接口，使用降级方案");
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] FormulaEngine 未实现 evaluateForValidation 接口，使用降级方案");
             return this.fallbackEvaluation(value, rule, context);
         }
 
@@ -137,8 +138,9 @@ export class FormulaValidator extends BaseValidator {
 
             return !!result;
         } catch (error) {
-            console.error("[FormulaValidator] 降级求值失败:", error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 降级求值失败:", error);
             throw error;
         }
     }
 }
+

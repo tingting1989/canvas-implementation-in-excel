@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 
@@ -87,7 +88,7 @@ export class RegexValidator extends BaseValidator {
                       metadata: { pattern: rule.pattern },
                   });
         } catch (error) {
-            console.error("[RegexValidator] 正则表达式执行失败:", error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[RegexValidator] 正则表达式执行失败:", error);
             return ValidationResult.failure(`正则表达式错误: ${error.message}`, "warning", {
                 value,
                 ruleId: rule.id,
@@ -120,7 +121,7 @@ export class RegexValidator extends BaseValidator {
             this.#patternCache.set(pattern, regex);
             return regex;
         } catch (e) {
-            console.error("[RegexValidator] 编译正则表达式失败:", e);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[RegexValidator] 编译正则表达式失败:", e);
             return null;
         }
     }
@@ -132,3 +133,4 @@ export class RegexValidator extends BaseValidator {
         this.#patternCache.clear();
     }
 }
+

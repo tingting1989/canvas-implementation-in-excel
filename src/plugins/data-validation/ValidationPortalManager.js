@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 /**
  * ValidationPortalManager - 验证 UI 门户管理器
  *
@@ -117,7 +118,7 @@ export class ValidationPortalManager {
         window.addEventListener("scroll", this.#handleScroll.bind(this), true);
 
         this.#initialized = true;
-        console.log("[ValidationPortalManager] 初始化完成");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 初始化完成");
     }
 
     /**
@@ -143,7 +144,7 @@ export class ValidationPortalManager {
         }
 
         if (this.#portals.size >= this.config.maxPortals) {
-            console.warn(`[ValidationPortalManager] 达到最大 Portal 数量限制 (${this.config.maxPortals})，移除最旧的`);
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationPortalManager] 达到最大 Portal 数量限制 (${this.config.maxPortals})，移除最旧的`);
             this.#removeOldestPortal();
         }
 
@@ -241,7 +242,7 @@ export class ValidationPortalManager {
     destroyAll() {
         this.#portals.forEach((portal) => portal.remove());
         this.#portals.clear();
-        console.log("[ValidationPortalManager] 已清除所有 Portal");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 已清除所有 Portal");
     }
 
     /**
@@ -259,7 +260,7 @@ export class ValidationPortalManager {
 
         this.#initialized = false;
         this.#renderEngine = null;
-        console.log("[ValidationPortalManager] 已销毁");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 已销毁");
     }
 
     /**
@@ -376,3 +377,4 @@ export class ValidationPortalManager {
         this.removePortal(firstKey);
     }
 }
+

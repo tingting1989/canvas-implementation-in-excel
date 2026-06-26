@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { BasePlugin } from "../BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
@@ -101,7 +102,7 @@ export class DataValidationPlugin extends BasePlugin {
                         const rule = new ValidationRule(ruleConfig);
                         this.#engine.addRule(rule);
                     } catch (e) {
-                        console.error(`[DataValidation] 加载规则失败:`, e);
+                        errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
                     }
                 }
             }
@@ -109,9 +110,9 @@ export class DataValidationPlugin extends BasePlugin {
             this.registerHooks();
             this.#active = true;
 
-            console.log(`[DataValidation] 初始化完成，已加载 ${this.#engine.rules.size} 条规则`);
+            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] 初始化完成，已加载 ${this.#engine.rules.size} 条规则`);
         } catch (error) {
-            console.error("[DataValidation] 初始化失败:", error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[DataValidation] 初始化失败:", error);
             throw error;
         }
     }
@@ -190,7 +191,7 @@ export class DataValidationPlugin extends BasePlugin {
         const rule = this.#engine.rules.get(ruleId);
 
         if (!rule) {
-            console.warn(`[DataValidation] 规则不存在: ${ruleId}`);
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 规则不存在: ${ruleId}`);
             return false;
         }
 
@@ -251,13 +252,13 @@ export class DataValidationPlugin extends BasePlugin {
     enable() {
         super.enable();
         this.#active = true;
-        console.log("[DataValidation] 已启用");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已启用");
     }
 
     disable() {
         this.#active = false;
         super.disable();
-        console.log("[DataValidation] 已禁用");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已禁用");
     }
 
     destroy() {
@@ -274,7 +275,7 @@ export class DataValidationPlugin extends BasePlugin {
         }
 
         super.destroy();
-        console.log("[DataValidation] 已销毁");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已销毁");
     }
 
     exportRules() {
@@ -296,10 +297,11 @@ export class DataValidationPlugin extends BasePlugin {
                 const ruleId = this.setValidation(rule);
                 importedIds.push(ruleId);
             } catch (e) {
-                console.error(`[DataValidation] 导入规则失败:`, e);
+                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 导入规则失败:`, e);
             }
         }
 
         return importedIds;
     }
 }
+

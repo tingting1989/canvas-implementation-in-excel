@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 
@@ -91,7 +92,7 @@ export class UniqueValidatorV3 extends BaseValidator {
                       },
                   });
         } catch (error) {
-            console.error("[UniqueValidator] 验证失败:", error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[UniqueValidator] 验证失败:", error);
             return ValidationResult.failure(`唯一性校验失败: ${error.message}`, "warning", { value, ruleId: rule.id });
         }
     }
@@ -167,7 +168,7 @@ export class UniqueValidatorV3 extends BaseValidator {
      * @param {string} reason - 原因（如 'sort', 'paste', 'undo'）
      */
     markIndexStale(reason) {
-        console.log(`[UniqueValidator] 索引标记为不可信 (原因: ${reason})`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[UniqueValidator] 索引标记为不可信 (原因: ${reason})`);
         this.#indexTrusted = false;
         this.scheduleIndexRebuild();
     }
@@ -229,20 +230,21 @@ export class UniqueValidatorV3 extends BaseValidator {
         if (typeof requestIdleCallback !== "undefined") {
             requestIdleCallback(
                 () => {
-                    console.log("[UniqueValidator] 开始后台重建索引...");
+                    errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[UniqueValidator] 开始后台重建索引...");
 
                     // TODO: 从 CellStore 全量扫描并重建索引
-                    console.log("[UniqueValidator] 索引重建完成");
+                    errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[UniqueValidator] 索引重建完成");
                 },
                 { timeout: 2000 },
             );
         } else {
             setTimeout(() => {
-                console.log("[UniqueValidator] 开始后台重建索引...");
+                errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[UniqueValidator] 开始后台重建索引...");
 
                 // TODO: 从 CellStore 全量扫描并重建索引
-                console.log("[UniqueValidator] 索引重建完成");
+                errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[UniqueValidator] 索引重建完成");
             }, 100);
         }
     }
 }
+

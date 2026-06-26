@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { NumberValidator } from "./validators/NumberValidator.js";
 import { TextLengthValidator } from "./validators/TextLengthValidator.js";
 import { ListValidator } from "./validators/ListValidator.js";
@@ -66,7 +67,7 @@ export class ValidationEngine {
         this.registerValidator("time", new TimeValidator());
         this.registerValidator("regex", new RegexValidator());
 
-        console.log("[ValidationEngine] 初始化完成，已注册验证器:", [...this.#validators.keys()]);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 初始化完成，已注册验证器:", [...this.#validators.keys()]);
     }
 
     /**
@@ -92,7 +93,7 @@ export class ValidationEngine {
         this.#rules.set(rule.id, rule);
         this.invalidateCache(rule.range);
 
-        console.log(`[ValidationEngine] 添加规则: ${rule.id} (${rule.type}) 范围: ${rule.range}`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationEngine] 添加规则: ${rule.id} (${rule.type}) 范围: ${rule.range}`);
         return rule.id;
     }
 
@@ -106,7 +107,7 @@ export class ValidationEngine {
         if (rule) {
             this.#rules.delete(ruleId);
             this.invalidateCache(rule.range);
-            console.log(`[ValidationEngine] 移除规则: ${ruleId}`);
+            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationEngine] 移除规则: ${ruleId}`);
             return true;
         }
         return false;
@@ -195,7 +196,7 @@ export class ValidationEngine {
         for (const rule of rules) {
             const validator = this.#validators.get(rule.type);
             if (!validator) {
-                console.warn(`[ValidationEngine] 未找到类型为 ${rule.type} 的验证器`);
+                errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationEngine] 未找到类型为 ${rule.type} 的验证器`);
                 continue;
             }
 
@@ -387,6 +388,7 @@ export class ValidationEngine {
         this.#validators.clear();
         this.#rules.clear();
         this.#cache.clear();
-        console.log("[ValidationEngine] 已销毁");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 已销毁");
     }
 }
+

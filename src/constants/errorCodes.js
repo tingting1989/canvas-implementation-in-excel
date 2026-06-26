@@ -1,4 +1,4 @@
-export const ERROR_LEVEL = {
+﻿export const ERROR_LEVEL = {
     DEBUG: 0,
     INFO: 1,
     WARN: 2,
@@ -90,4 +90,31 @@ export const ERROR_CODE = {
     // ── 通用 ──
     /** 未知错误 */
     UNKNOWN: "UNKNOWN",
+
+
+    // 数据验证相关
+    /** 数据验证异常 */
+    VALIDATION_ERROR: "VALIDATION_ERROR",
+    /** 数据验证器未注册 */
+    VALIDATOR_NOT_REGISTERED: "VALIDATOR_NOT_REGISTERED",
+    /** 数据验证规则无效 */
+    VALIDATION_RULE_INVALID: "VALIDATION_RULE_INVALID",
+    /** 公式求值错误 */
+    FORMULA_EVALUATION_ERROR: "FORMULA_EVALUATION_ERROR",
+    /** 正则表达式执行失败 */
+    REGEX_EXECUTION_ERROR: "REGEX_EXECUTION_ERROR",
+    /** 列表验证功能未实现 */
+    LIST_VALIDATION_NOT_IMPLEMENTED: "LIST_VALIDATION_NOT_IMPLEMENTED",
+    /** 条件格式插件未初始化 */
+    CONDITIONAL_FORMAT_NOT_INITIALIZED: "CONDITIONAL_FORMAT_NOT_INITIALIZED",
+    /** 格式模板未找到 */
+    FORMAT_TEMPLATE_NOT_FOUND: "FORMAT_TEMPLATE_NOT_FOUND",
+    /** 格式应用失败 */
+    FORMAT_APPLY_ERROR: "FORMAT_APPLY_ERROR",
+    /** 格式移除失败 */
+    FORMAT_REMOVE_ERROR: "FORMAT_REMOVE_ERROR",
+    /** 公式引擎接口无法实现 */
+    FORMULA_ENGINE_INTERFACE_MISSING: "FORMULA_ENGINE_INTERFACE_MISSING",
+    /** 用于调试时的信息日志 */
+    VALIDATION_DEBUG_LOG: "VALIDATION_DEBUG_LOG",
 };

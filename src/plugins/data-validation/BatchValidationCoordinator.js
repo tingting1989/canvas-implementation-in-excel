@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { ValidationResult } from "./ValidationResult.js";
 
 const BATCH_EVENTS = {
@@ -109,7 +110,7 @@ export class BatchValidationCoordinator {
             throw new Error(`已经在批量模式中，当前操作: ${this.#currentOperation}`);
         }
 
-        console.log(`[BatchValidation] 进入 ${operation} 模式，预估 ${estimatedCount} 行`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 进入 ${operation} 模式，预估 ${estimatedCount} 行`);
         this.#isBatchMode = true;
         this.#currentOperation = operation;
         this.#estimatedCount = estimatedCount;
@@ -135,13 +136,13 @@ export class BatchValidationCoordinator {
 
         const startTime = performance.now();
 
-        console.log(`[BatchValidation] 开始批量验证，共 ${this.#pendingValidations.length} 项`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 开始批量验证，共 ${this.#pendingValidations.length} 项`);
 
         let report;
         try {
             report = await this.#processBatch();
         } catch (error) {
-            console.error("[BatchValidation] 批量验证失败:", error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[BatchValidation] 批量验证失败:", error);
             this.#emit(BATCH_EVENTS.BATCH_ERROR, { error, operation: this.#currentOperation });
 
             const duration = performance.now() - startTime;
@@ -152,8 +153,8 @@ export class BatchValidationCoordinator {
 
         const duration = performance.now() - startTime;
 
-        console.log(`[BatchValidation] 批量验证完成，耗时 ${duration.toFixed(2)}ms`);
-        console.log(`[BatchValidation] 总计: ${report.totalChecked}, 有效: ${report.validCount}, 无效: ${report.invalidCount}`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 批量验证完成，耗时 ${duration.toFixed(2)}ms`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 总计: ${report.totalChecked}, 有效: ${report.validCount}, 无效: ${report.invalidCount}`);
 
         this.#emit(BATCH_EVENTS.BATCH_COMPLETE, {
             ...report,
@@ -200,7 +201,7 @@ export class BatchValidationCoordinator {
     cancel() {
         if (!this.#isBatchMode) return;
 
-        console.log(`[BatchValidation] 取消批量操作: ${this.#currentOperation}`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 取消批量操作: ${this.#currentOperation}`);
         this.#emit(BATCH_EVENTS.BATCH_COMPLETE, {
             totalChecked: 0,
             invalidCount: 0,
@@ -263,7 +264,7 @@ export class BatchValidationCoordinator {
                     ...result.toJSON(),
                 });
             } catch (error) {
-                console.error(`[BatchValidation] 单元格 (${item.row},${item.col}) 验证失败:`, error);
+                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[BatchValidation] 单元格 (${item.row},${item.col}) 验证失败:`, error);
                 results.push({
                     row: item.row,
                     col: item.col,
@@ -348,8 +349,9 @@ export class BatchValidationCoordinator {
         this.cancel();
         this.#engine = null;
         this.#eventBus = null;
-        console.log("[BatchValidationCoordinator] 已销毁");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[BatchValidationCoordinator] 已销毁");
     }
 }
 
 export { BATCH_EVENTS };
+

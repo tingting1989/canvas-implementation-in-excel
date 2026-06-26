@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 /**
  * 验证-条件格式桥接器
  *
@@ -162,7 +163,7 @@ export class ValidationFormattingBridge {
      */
     #applyErrorFormat(row, col, rule, result) {
         if (!this.#conditionalFormatPlugin) {
-            console.warn("[ValidationFormattingBridge] 条件格式插件未初始化");
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationFormattingBridge] 条件格式插件未初始化");
             return;
         }
 
@@ -170,7 +171,7 @@ export class ValidationFormattingBridge {
         const template = ValidationFormattingBridge.FORMAT_TEMPLATES[formatKey];
 
         if (!template) {
-            console.warn(`[ValidationFormattingBridge] 未找到类型 ${rule.type} 的格式模板`);
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 未找到类型 ${rule.type} 的格式模板`);
             return;
         }
 
@@ -189,9 +190,9 @@ export class ValidationFormattingBridge {
 
             this.#formatMap.set(`${row},${col}`, rule.id);
 
-            console.log(`[ValidationFormattingBridge] 应用错误格式 (${row},${col}) [${rule.type}]`);
+            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationFormattingBridge] 应用错误格式 (${row},${col}) [${rule.type}]`);
         } catch (error) {
-            console.error(`[ValidationFormattingBridge] 应用格式失败 (${row},${col}):`, error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 应用格式失败 (${row},${col}):`, error);
         }
     }
 
@@ -209,9 +210,9 @@ export class ValidationFormattingBridge {
             this.#conditionalFormatPlugin.removeFormat(row, col, `validation_${rule.id}`);
             this.#formatMap.delete(`${row},${col}`);
 
-            console.log(`[ValidationFormattingBridge] 移除错误格式 (${row},${col})`);
+            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationFormattingBridge] 移除错误格式 (${row},${col})`);
         } catch (error) {
-            console.error(`[ValidationFormattingBridge] 移除格式失败 (${row},${col}):`, error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 移除格式失败 (${row},${col}):`, error);
         }
     }
 
@@ -247,12 +248,12 @@ export class ValidationFormattingBridge {
             try {
                 this.#conditionalFormatPlugin.removeFormat(row, col, `validation_${ruleId}`);
             } catch (error) {
-                console.error(`[ValidationFormattingBridge] 清除格式失败 (${cellKey}):`, error);
+                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 清除格式失败 (${cellKey}):`, error);
             }
         }
 
         this.#formatMap.clear();
-        console.log("[ValidationFormattingBridge] 已清除所有验证格式");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationFormattingBridge] 已清除所有验证格式");
     }
 
     /**
@@ -274,7 +275,7 @@ export class ValidationFormattingBridge {
             this.clearAllFormats();
         }
 
-        console.log(`[ValidationFormattingBridge] 桥接功能已${enabled ? "启用" : "禁用"}`);
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationFormattingBridge] 桥接功能已${enabled ? "启用" : "禁用"}`);
     }
 
     /**
@@ -284,6 +285,7 @@ export class ValidationFormattingBridge {
         this.clearAllFormats();
         this.#conditionalFormatPlugin = null;
         this.#validationPlugin = null;
-        console.log("[ValidationFormattingBridge] 已销毁");
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationFormattingBridge] 已销毁");
     }
 }
+

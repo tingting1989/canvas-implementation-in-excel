@@ -1,3 +1,4 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 
@@ -72,7 +73,7 @@ export class ListValidator extends BaseValidator {
      */
     async resolveDynamicSource(sourceRef, context) {
         // TODO Phase 2: 实现动态区域引用解析
-        console.warn("[ListValidator] 动态区域引用尚未实现，返回空数组");
+        errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] 动态区域引用尚未实现，返回空数组");
         return [];
     }
 
@@ -94,3 +95,4 @@ export class ListValidator extends BaseValidator {
         return [];
     }
 }
+
