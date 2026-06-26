@@ -91,7 +91,6 @@ export const ERROR_CODE = {
     /** 未知错误 */
     UNKNOWN: "UNKNOWN",
 
-
     // 数据验证相关
     /** 数据验证异常 */
     VALIDATION_ERROR: "VALIDATION_ERROR",

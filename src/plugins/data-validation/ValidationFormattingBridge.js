@@ -288,4 +288,3 @@ export class ValidationFormattingBridge {
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationFormattingBridge] 已销毁");
     }
 }
-

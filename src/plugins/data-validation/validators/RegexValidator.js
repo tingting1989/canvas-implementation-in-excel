@@ -133,4 +133,3 @@ export class RegexValidator extends BaseValidator {
         this.#patternCache.clear();
     }
 }
-

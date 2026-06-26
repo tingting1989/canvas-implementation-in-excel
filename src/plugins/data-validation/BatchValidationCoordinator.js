@@ -154,7 +154,10 @@ export class BatchValidationCoordinator {
         const duration = performance.now() - startTime;
 
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 批量验证完成，耗时 ${duration.toFixed(2)}ms`);
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 总计: ${report.totalChecked}, 有效: ${report.validCount}, 无效: ${report.invalidCount}`);
+        errorHandler.debug(
+            ERROR_CODE.VALIDATION_DEBUG_LOG,
+            `[BatchValidation] 总计: ${report.totalChecked}, 有效: ${report.validCount}, 无效: ${report.invalidCount}`,
+        );
 
         this.#emit(BATCH_EVENTS.BATCH_COMPLETE, {
             ...report,
@@ -354,4 +357,3 @@ export class BatchValidationCoordinator {
 }
 
 export { BATCH_EVENTS };
-

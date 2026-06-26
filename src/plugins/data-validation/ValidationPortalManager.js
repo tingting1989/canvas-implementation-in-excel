@@ -144,7 +144,10 @@ export class ValidationPortalManager {
         }
 
         if (this.#portals.size >= this.config.maxPortals) {
-            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationPortalManager] 达到最大 Portal 数量限制 (${this.config.maxPortals})，移除最旧的`);
+            errorHandler.warn(
+                ERROR_CODE.VALIDATION_ERROR,
+                `[ValidationPortalManager] 达到最大 Portal 数量限制 (${this.config.maxPortals})，移除最旧的`,
+            );
             this.#removeOldestPortal();
         }
 
@@ -377,4 +380,3 @@ export class ValidationPortalManager {
         this.removePortal(firstKey);
     }
 }
-
