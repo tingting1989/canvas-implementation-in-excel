@@ -1,5 +1,5 @@
 import { ColumnType } from "./ColumnType.js";
-import { isBoolean, isNumber, isString } from "../core/utils.js";
+import { isBoolean, isNumber, isString } from "../utils/utils.js";
 
 /**
  * 布尔列类型

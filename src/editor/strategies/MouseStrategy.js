@@ -2,7 +2,7 @@ import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
-import { debounce } from "../../core/utils.js";
+import { debounce } from "../../utils/utils.js";
 
 /**
  * 鼠标交互策略

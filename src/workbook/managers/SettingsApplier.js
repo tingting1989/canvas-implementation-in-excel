@@ -1,5 +1,5 @@
 import { stylePool } from "../../model/styles";
-import { isFunction, isNumber } from "../../core/utils.js";
+import { isFunction, isNumber } from "../../utils/utils.js";
 
 /**
  * 配置应用器

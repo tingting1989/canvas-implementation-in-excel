@@ -1,5 +1,5 @@
 import { ERROR_LEVEL, ERROR_CODE } from "../constants/errorCodes.js";
-import { isFunction } from "./utils.js";
+import { isFunction } from "../utils/utils.js";
 
 /**
  * 统一错误处理器

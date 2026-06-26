@@ -1,5 +1,5 @@
 ﻿import { CONFIG } from "../constants/config";
-import { isObject, isString } from "../core/utils.js";
+import { isObject, isString } from "../utils/utils.js";
 
 /** 拖拽源行头/列头的半透明高亮色 */
 const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";

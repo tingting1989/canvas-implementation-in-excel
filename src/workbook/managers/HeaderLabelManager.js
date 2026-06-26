@@ -1,5 +1,5 @@
 import { CONFIG } from "../../constants/config";
-import { isFunction, isObject, isString } from "../../core/utils.js";
+import { isFunction, isObject, isString } from "../../utils/utils.js";
 
 /**
  * 表头标签管理器

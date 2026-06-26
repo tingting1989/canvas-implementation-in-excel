@@ -1,7 +1,7 @@
 import { CONFIG } from "../../constants/config";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
-import { isFunction } from "../../core/utils.js";
+import { isFunction } from "../../utils/utils.js";
 
 /**
  * 单元格编辑器基类

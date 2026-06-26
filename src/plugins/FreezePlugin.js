@@ -1,6 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { HOOKS } from "../constants/hookNames.js";
-import { isNumber } from "../core/utils.js";
+import { isNumber } from "../utils/utils.js";
 
 /**
  * 冻结行列插件

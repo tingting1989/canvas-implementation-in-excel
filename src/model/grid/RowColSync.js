@@ -1,5 +1,5 @@
 import { CONFIG } from "../../constants/config";
-import { isNumber, isObject } from "../../core/utils.js";
+import { isNumber, isObject } from "../../utils/utils.js";
 
 /**
  * 行列同步器

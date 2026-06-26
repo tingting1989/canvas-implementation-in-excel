@@ -1,5 +1,5 @@
 import { ColumnType } from "./ColumnType.js";
-import { isNumber } from "../core/utils.js";
+import { isNumber } from "../utils/utils.js";
 
 /**
  * 数字列类型

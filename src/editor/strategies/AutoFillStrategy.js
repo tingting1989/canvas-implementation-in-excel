@@ -1,6 +1,6 @@
 import { EventStrategy } from "./EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
-import { isNumber } from "../../core/utils.js";
+import { isNumber } from "../../utils/utils.js";
 
 /**
  * 自动填充策略（AutoFill）
