@@ -14,7 +14,7 @@ import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./core/utils.js";
 import { errorHandler, ERROR_LEVEL } from "./core/ErrorHandler.js";
-import { SortPlugin } from "@/plugins";
+import { SortPlugin, DataValidationPlugin } from "@/plugins";
 
 const initApp = () => {
     console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -30,6 +30,7 @@ const initApp = () => {
     Workbook.registerPlugin("columnMove", ColumnMovePlugin);
     Workbook.registerPlugin("copyPaste", CopyPastePlugin);
     Workbook.registerPlugin("exportFile", ExportFilePlugin);
+
     // Workbook.registerPlugin("pagination", PaginationPlugin);
     Workbook.registerPlugin("hiddenColumns", HiddenColumnsPlugin);
     Workbook.registerPlugin("hiddenRows", HiddenRowsPlugin);
@@ -37,6 +38,7 @@ const initApp = () => {
     Workbook.registerPlugin("freeze", FreezePlugin);
     Workbook.registerPlugin("formula", FormulaPlugin);
     Workbook.registerPlugin("sort", SortPlugin);
+    Workbook.registerPlugin("dataValidation", DataValidationPlugin);
 
     const wb = new Workbook("grid", {
         // height:600,
@@ -51,7 +53,7 @@ const initApp = () => {
                 //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
                 //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 // ],
-                //colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
                 rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
@@ -165,7 +167,8 @@ const initApp = () => {
             "contextMenu",
             "columnMove",
             "copyPaste",
-            //"pagination",
+
+            // "pagination",
             "exportFile",
             "hiddenColumns",
             "hiddenRows",

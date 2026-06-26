@@ -106,7 +106,7 @@ export class Chunk {
      *
      * @yields {{row: number, col: number, cell: import("../Cell.js").Cell}}
      */
-    *iterate() {
+    * iterate() {
         const colSize = CONFIG.CHUNK_COL_SIZE;
         for (const [key, cell] of this.cells) {
             const rowOffset = (key / colSize) | 0;

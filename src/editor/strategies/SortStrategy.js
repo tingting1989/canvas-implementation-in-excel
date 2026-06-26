@@ -129,11 +129,11 @@ export class SortStrategy extends EventStrategy {
 
             this.#lastClickTime = 0; // 重置，防止三击触发
             return false; // 阻止 MouseStrategy 处理
-        } else {
+        } 
             this.#lastClickCol = currentCol;
             this.#lastClickTime = now;
             return true; // 允许 MouseStrategy 处理选中操作
-        }
+        
     }
 
     // ═══════════════════════════════════════════════════════════════
