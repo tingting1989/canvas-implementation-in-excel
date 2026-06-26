@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 时间范围验证器
@@ -18,7 +18,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class TimeValidator extends BaseValidator {
     static get TYPE() {
-        return 'time';
+        return "time";
     }
 
     /**
@@ -33,17 +33,16 @@ export class TimeValidator extends BaseValidator {
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || '不允许为空', rule.errorStyle, { ruleId: rule.id });
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         const timeValue = this.parseTime(value);
 
         if (timeValue === null) {
-            return ValidationResult.failure(
-                rule.errorMessage || `"${value}" 不是有效的时间格式（HH:mm 或 HH:mm:ss）`,
-                rule.errorStyle,
-                { value, ruleId: rule.id }
-            );
+            return ValidationResult.failure(rule.errorMessage || `"${value}" 不是有效的时间格式（HH:mm 或 HH:mm:ss）`, rule.errorStyle, {
+                value,
+                ruleId: rule.id,
+            });
         }
 
         try {
@@ -51,22 +50,22 @@ export class TimeValidator extends BaseValidator {
             let isValid;
 
             switch (rule.operator) {
-                case 'before':
+                case "before":
                     isValid = timeValue < minTime;
                     break;
-                case 'after':
+                case "after":
                     isValid = timeValue > maxTime;
                     break;
-                case 'between':
+                case "between":
                     isValid = timeValue >= minTime && timeValue <= maxTime;
                     break;
-                case 'notBetween':
+                case "notBetween":
                     isValid = timeValue < minTime || timeValue > maxTime;
                     break;
-                case 'equalTo':
+                case "equalTo":
                     isValid = Math.abs(timeValue - minTime) < 1;
                     break;
-                case 'notEqualTo':
+                case "notEqualTo":
                     isValid = Math.abs(timeValue - minTime) >= 1;
                     break;
                 default:
@@ -77,7 +76,7 @@ export class TimeValidator extends BaseValidator {
                 ? ValidationResult.success()
                 : ValidationResult.failure(this.buildErrorMessage(timeValue, rule), rule.errorStyle, { value, ruleId: rule.id });
         } catch (error) {
-            return ValidationResult.failure(`时间验证失败: ${error.message}`, 'warning', { value, ruleId: rule.id });
+            return ValidationResult.failure(`时间验证失败: ${error.message}`, "warning", { value, ruleId: rule.id });
         }
     }
 
@@ -88,7 +87,7 @@ export class TimeValidator extends BaseValidator {
      * @returns {number|null}
      */
     parseTime(value) {
-        if (typeof value !== 'string') return null;
+        if (typeof value !== "string") return null;
 
         const match = value.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
         if (!match) return null;
@@ -111,10 +110,7 @@ export class TimeValidator extends BaseValidator {
      */
     parseTimeRange(value) {
         if (Array.isArray(value)) {
-            return [
-                this.parseTime(value[0]) || 0,
-                this.parseTime(value[1])
-            ];
+            return [this.parseTime(value[0]) || 0, this.parseTime(value[1])];
         }
 
         const time = this.parseTime(value) || 0;
@@ -130,7 +126,7 @@ export class TimeValidator extends BaseValidator {
     formatTime(minutes) {
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
-        return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
     }
 
     /**
@@ -146,20 +142,20 @@ export class TimeValidator extends BaseValidator {
         const [min, max] = this.parseTimeRange(rule.value);
 
         switch (rule.operator) {
-            case 'before':
+            case "before":
                 return `时间必须在 ${this.formatTime(min)} 之前`;
-            case 'after':
+            case "after":
                 return `时间必须在 ${this.formatTime(max)} 之后`;
-            case 'between':
+            case "between":
                 return `时间必须在 ${this.formatTime(min)} 和 ${this.formatTime(max)} 之间`;
-            case 'notBetween':
+            case "notBetween":
                 return `时间不能在 ${this.formatTime(min)} 和 ${this.formatTime(max)} 之间`;
-            case 'equalTo':
+            case "equalTo":
                 return `时间必须等于 ${this.formatTime(min)}`;
-            case 'notEqualTo':
+            case "notEqualTo":
                 return `时间不能等于 ${this.formatTime(min)}`;
             default:
-                return '时间验证失败';
+                return "时间验证失败";
         }
     }
 }

@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 日期范围验证器
@@ -21,7 +21,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class DateValidator extends BaseValidator {
     static get TYPE() {
-        return 'date';
+        return "date";
     }
 
     /**
@@ -36,17 +36,13 @@ export class DateValidator extends BaseValidator {
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || '不允许为空', rule.errorStyle, { ruleId: rule.id });
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         const dateValue = this.parseDate(value);
 
         if (!dateValue) {
-            return ValidationResult.failure(
-                rule.errorMessage || `"${value}" 不是有效的日期格式`,
-                rule.errorStyle,
-                { value, ruleId: rule.id }
-            );
+            return ValidationResult.failure(rule.errorMessage || `"${value}" 不是有效的日期格式`, rule.errorStyle, { value, ruleId: rule.id });
         }
 
         try {
@@ -54,22 +50,22 @@ export class DateValidator extends BaseValidator {
             let isValid;
 
             switch (rule.operator) {
-                case 'before':
+                case "before":
                     isValid = dateValue < minDate;
                     break;
-                case 'after':
+                case "after":
                     isValid = dateValue > maxDate;
                     break;
-                case 'between':
+                case "between":
                     isValid = dateValue >= minDate && dateValue <= maxDate;
                     break;
-                case 'notBetween':
+                case "notBetween":
                     isValid = dateValue < minDate || dateValue > maxDate;
                     break;
-                case 'equalTo':
+                case "equalTo":
                     isValid = dateValue.getTime() === minDate.getTime();
                     break;
-                case 'notEqualTo':
+                case "notEqualTo":
                     isValid = dateValue.getTime() !== minDate.getTime();
                     break;
                 default:
@@ -80,7 +76,7 @@ export class DateValidator extends BaseValidator {
                 ? ValidationResult.success()
                 : ValidationResult.failure(this.buildErrorMessage(dateValue, rule), rule.errorStyle, { value, ruleId: rule.id });
         } catch (error) {
-            return ValidationResult.failure(`日期验证失败: ${error.message}`, 'warning', { value, ruleId: rule.id });
+            return ValidationResult.failure(`日期验证失败: ${error.message}`, "warning", { value, ruleId: rule.id });
         }
     }
 
@@ -95,14 +91,14 @@ export class DateValidator extends BaseValidator {
             return value;
         }
 
-        if (typeof value === 'string') {
+        if (typeof value === "string") {
             const parsed = new Date(value);
             if (!isNaN(parsed)) {
                 return parsed;
             }
         }
 
-        if (typeof value === 'number') {
+        if (typeof value === "number") {
             const parsed = new Date(value);
             if (!isNaN(parsed)) {
                 return parsed;
@@ -120,10 +116,7 @@ export class DateValidator extends BaseValidator {
      */
     parseDateRange(value) {
         if (Array.isArray(value)) {
-            return [
-                this.parseDate(value[0]) || new Date(0),
-                this.parseDate(value[1])
-            ];
+            return [this.parseDate(value[0]) || new Date(0), this.parseDate(value[1])];
         }
 
         const date = this.parseDate(value) || new Date(0);
@@ -140,24 +133,24 @@ export class DateValidator extends BaseValidator {
     buildErrorMessage(dateValue, rule) {
         if (rule.errorMessage) return rule.errorMessage;
 
-        const formatDate = (d) => d.toISOString().split('T')[0];
+        const formatDate = (d) => d.toISOString().split("T")[0];
         const [min, max] = this.parseDateRange(rule.value);
 
         switch (rule.operator) {
-            case 'before':
+            case "before":
                 return `日期必须在 ${formatDate(min)} 之前`;
-            case 'after':
+            case "after":
                 return `日期必须在 ${formatDate(max)} 之后`;
-            case 'between':
+            case "between":
                 return `日期必须在 ${formatDate(min)} 和 ${formatDate(max)} 之间`;
-            case 'notBetween':
+            case "notBetween":
                 return `日期不能在 ${formatDate(min)} 和 ${formatDate(max)} 之间`;
-            case 'equalTo':
+            case "equalTo":
                 return `日期必须等于 ${formatDate(min)}`;
-            case 'notEqualTo':
+            case "notEqualTo":
                 return `日期不能等于 ${formatDate(min)}`;
             default:
-                return '日期验证失败';
+                return "日期验证失败";
         }
     }
 }

@@ -50,7 +50,7 @@ export class ValidationPortalManager {
         zIndex: 9999,
         autoCleanup: true,
         cleanupDelay: 3000,
-        maxPortals: 50
+        maxPortals: 50,
     };
 
     /** @type {Object} 当前配置 */
@@ -89,35 +89,35 @@ export class ValidationPortalManager {
      */
     init(rootContainer) {
         if (this.#initialized) {
-            throw new Error('ValidationPortalManager 已经初始化');
+            throw new Error("ValidationPortalManager 已经初始化");
         }
 
         if (!rootContainer || !(rootContainer instanceof HTMLElement)) {
-            throw new Error('rootContainer 必须是有效的 HTMLElement');
+            throw new Error("rootContainer 必须是有效的 HTMLElement");
         }
 
-        this.#portalContainer = document.createElement('div');
-        this.#portalContainer.id = 'validation-portal-root';
-        this.#portalContainer.className = 'validation-portal-container';
+        this.#portalContainer = document.createElement("div");
+        this.#portalContainer.id = "validation-portal-root";
+        this.#portalContainer.className = "validation-portal-container";
 
         Object.assign(this.#portalContainer.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            pointerEvents: 'none',
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
             zIndex: String(this.config.zIndex),
-            overflow: 'visible'
+            overflow: "visible",
         });
 
         rootContainer.appendChild(this.#portalContainer);
 
-        window.addEventListener('resize', this.#handleResize.bind(this));
-        window.addEventListener('scroll', this.#handleScroll.bind(this), true);
+        window.addEventListener("resize", this.#handleResize.bind(this));
+        window.addEventListener("scroll", this.#handleScroll.bind(this), true);
 
         this.#initialized = true;
-        console.log('[ValidationPortalManager] 初始化完成');
+        console.log("[ValidationPortalManager] 初始化完成");
     }
 
     /**
@@ -139,7 +139,7 @@ export class ValidationPortalManager {
      */
     createPortal(id, type, position, options = {}) {
         if (!this.#initialized) {
-            throw new Error('ValidationPortalManager 未初始化，请先调用 init()');
+            throw new Error("ValidationPortalManager 未初始化，请先调用 init()");
         }
 
         if (this.#portals.size >= this.config.maxPortals) {
@@ -149,7 +149,7 @@ export class ValidationPortalManager {
 
         this.removePortal(id);
 
-        const portalEl = document.createElement('div');
+        const portalEl = document.createElement("div");
         portalEl.dataset.portalId = id;
         portalEl.dataset.portalType = type;
         portalEl.className = `validation-portal validation-portal-${type}`;
@@ -157,13 +157,13 @@ export class ValidationPortalManager {
         const rect = this.#calculateFixedPosition(position, options);
 
         Object.assign(portalEl.style, {
-            position: 'absolute',
+            position: "absolute",
             left: `${rect.x}px`,
             top: `${rect.y}px`,
-            width: rect.width ? `${rect.width}px` : 'auto',
-            height: rect.height ? `${rect.height}px` : 'auto',
-            pointerEvents: 'auto',
-            ...(options.style || {})
+            width: rect.width ? `${rect.width}px` : "auto",
+            height: rect.height ? `${rect.height}px` : "auto",
+            pointerEvents: "auto",
+            ...(options.style || {}),
         });
 
         this.#portalContainer.appendChild(portalEl);
@@ -239,9 +239,9 @@ export class ValidationPortalManager {
      * 销毁所有 Portal（插件销毁时调用）
      */
     destroyAll() {
-        this.#portals.forEach(portal => portal.remove());
+        this.#portals.forEach((portal) => portal.remove());
         this.#portals.clear();
-        console.log('[ValidationPortalManager] 已清除所有 Portal');
+        console.log("[ValidationPortalManager] 已清除所有 Portal");
     }
 
     /**
@@ -251,15 +251,15 @@ export class ValidationPortalManager {
         this.destroyAll();
 
         if (this.#portalContainer) {
-            window.removeEventListener('resize', this.#handleResize.bind(this));
-            window.removeEventListener('scroll', this.#handleScroll.bind(this), true);
+            window.removeEventListener("resize", this.#handleResize.bind(this));
+            window.removeEventListener("scroll", this.#handleScroll.bind(this), true);
             this.#portalContainer.remove();
             this.#portalContainer = null;
         }
 
         this.#initialized = false;
         this.#renderEngine = null;
-        console.log('[ValidationPortalManager] 已销毁');
+        console.log("[ValidationPortalManager] 已销毁");
     }
 
     /**
@@ -290,10 +290,10 @@ export class ValidationPortalManager {
         const frozenOffset = this.#getFrozenOffset(options);
 
         return {
-            x: canvasRect.left + (x * zoom) + frozenOffset.x,
-            y: canvasRect.top + (y * zoom) + frozenOffset.y,
+            x: canvasRect.left + x * zoom + frozenOffset.x,
+            y: canvasRect.top + y * zoom + frozenOffset.y,
             width: (width || 0) * zoom,
-            height: (height || 0) * zoom
+            height: (height || 0) * zoom,
         };
     }
 

@@ -39,7 +39,7 @@ export class ValidationResult {
      * @param {string|null} [message=null] - 错误消息
      * @param {string} [errorStyle='stop'] - 错误样式
      */
-    constructor(valid, message = null, errorStyle = 'stop') {
+    constructor(valid, message = null, errorStyle = "stop") {
         this.valid = valid;
         this.message = message;
         this.errorStyle = errorStyle;
@@ -61,7 +61,7 @@ export class ValidationResult {
      * @param {Object} [options={}] - 额外选项
      * @returns {ValidationResult}
      */
-    static failure(message, errorStyle = 'stop', options = {}) {
+    static failure(message, errorStyle = "stop", options = {}) {
         const result = new ValidationResult(false, message, errorStyle);
         result.failedValue = options.value;
         result.ruleId = options.ruleId;
@@ -83,7 +83,7 @@ export class ValidationResult {
             failedValue: this.failedValue,
             ruleId: this.ruleId,
             timestamp: this.timestamp.toISOString(),
-            metadata: this.metadata
+            metadata: this.metadata,
         };
     }
 }

@@ -1,10 +1,10 @@
-import { ValidationResult } from './ValidationResult.js';
+import { ValidationResult } from "./ValidationResult.js";
 
 const BATCH_EVENTS = {
-    BATCH_START: 'validation:batch:start',
-    BATCH_PROGRESS: 'validation:batch:progress',
-    BATCH_COMPLETE: 'validation:batch:complete',
-    BATCH_ERROR: 'validation:batch:error'
+    BATCH_START: "validation:batch:start",
+    BATCH_PROGRESS: "validation:batch:progress",
+    BATCH_COMPLETE: "validation:batch:complete",
+    BATCH_ERROR: "validation:batch:error",
 };
 
 /**
@@ -117,7 +117,7 @@ export class BatchValidationCoordinator {
 
         this.#emit(BATCH_EVENTS.BATCH_START, {
             operation,
-            estimatedCount
+            estimatedCount,
         });
     }
 
@@ -141,7 +141,7 @@ export class BatchValidationCoordinator {
         try {
             report = await this.#processBatch();
         } catch (error) {
-            console.error('[BatchValidation] 批量验证失败:', error);
+            console.error("[BatchValidation] 批量验证失败:", error);
             this.#emit(BATCH_EVENTS.BATCH_ERROR, { error, operation: this.#currentOperation });
 
             const duration = performance.now() - startTime;
@@ -158,7 +158,7 @@ export class BatchValidationCoordinator {
         this.#emit(BATCH_EVENTS.BATCH_COMPLETE, {
             ...report,
             duration,
-            operation: this.#currentOperation
+            operation: this.#currentOperation,
         });
 
         this.#resetState();
@@ -167,7 +167,7 @@ export class BatchValidationCoordinator {
             totalChecked: report.totalChecked,
             invalidCount: report.invalidCount,
             violations: report.violations,
-            duration
+            duration,
         };
     }
 
@@ -182,7 +182,7 @@ export class BatchValidationCoordinator {
      */
     onCellChange(row, col, newValue, oldValue = undefined) {
         if (!this.#isBatchMode) {
-            throw new Error('不在批量模式中，请先调用 enterBatchMode()');
+            throw new Error("不在批量模式中，请先调用 enterBatchMode()");
         }
 
         this.#pendingValidations.push({
@@ -190,7 +190,7 @@ export class BatchValidationCoordinator {
             col,
             newValue,
             oldValue,
-            timestamp: Date.now()
+            timestamp: Date.now(),
         });
     }
 
@@ -206,7 +206,7 @@ export class BatchValidationCoordinator {
             invalidCount: 0,
             violations: [],
             cancelled: true,
-            operation: this.#currentOperation
+            operation: this.#currentOperation,
         });
 
         this.#resetState();
@@ -232,7 +232,7 @@ export class BatchValidationCoordinator {
             this.#emit(BATCH_EVENTS.BATCH_PROGRESS, {
                 processed,
                 total,
-                percentage: ((processed / total) * 100).toFixed(1)
+                percentage: ((processed / total) * 100).toFixed(1),
             });
 
             if (i + this.BATCH_SIZE < total) {
@@ -254,17 +254,13 @@ export class BatchValidationCoordinator {
 
         for (const item of batch) {
             try {
-                const result = await this.#engine.validateCell(
-                    item.row,
-                    item.col,
-                    item.newValue
-                );
+                const result = await this.#engine.validateCell(item.row, item.col, item.newValue);
 
                 results.push({
                     row: item.row,
                     col: item.col,
                     value: item.newValue,
-                    ...result.toJSON()
+                    ...result.toJSON(),
                 });
             } catch (error) {
                 console.error(`[BatchValidation] 单元格 (${item.row},${item.col}) 验证失败:`, error);
@@ -274,7 +270,7 @@ export class BatchValidationCoordinator {
                     value: item.newValue,
                     valid: false,
                     message: `验证异常: ${error.message}`,
-                    errorStyle: 'warning'
+                    errorStyle: "warning",
                 });
             }
         }
@@ -288,8 +284,8 @@ export class BatchValidationCoordinator {
      * @returns {Promise<void>}
      */
     #yieldToMainThread() {
-        return new Promise(resolve => {
-            if (typeof requestIdleCallback !== 'undefined') {
+        return new Promise((resolve) => {
+            if (typeof requestIdleCallback !== "undefined") {
                 requestIdleCallback(() => resolve(), { timeout: 50 });
             } else {
                 setTimeout(() => resolve(), 0);
@@ -304,21 +300,21 @@ export class BatchValidationCoordinator {
      * @returns {Object}
      */
     #generateReport(results) {
-        const violations = results.filter(r => !r.valid);
-        const validCount = results.filter(r => r.valid).length;
+        const violations = results.filter((r) => !r.valid);
+        const validCount = results.filter((r) => r.valid).length;
 
         return {
             totalChecked: results.length,
             validCount,
             invalidCount: violations.length,
-            violations: violations.map(v => ({
+            violations: violations.map((v) => ({
                 cell: `(${v.row},${v.col})`,
                 row: v.row,
                 col: v.col,
                 value: v.value,
                 message: v.message,
-                errorStyle: v.errorStyle
-            }))
+                errorStyle: v.errorStyle,
+            })),
         };
     }
 
@@ -340,7 +336,7 @@ export class BatchValidationCoordinator {
      * @param {Object} data - 事件数据
      */
     #emit(event, data) {
-        if (this.#eventBus && typeof this.#eventBus.emit === 'function') {
+        if (this.#eventBus && typeof this.#eventBus.emit === "function") {
             this.#eventBus.emit(event, data);
         }
     }
@@ -352,7 +348,7 @@ export class BatchValidationCoordinator {
         this.cancel();
         this.#engine = null;
         this.#eventBus = null;
-        console.log('[BatchValidationCoordinator] 已销毁');
+        console.log("[BatchValidationCoordinator] 已销毁");
     }
 }
 

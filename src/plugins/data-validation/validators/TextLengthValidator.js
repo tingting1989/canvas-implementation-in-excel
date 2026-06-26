@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 文本长度验证器
@@ -21,7 +21,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class TextLengthValidator extends BaseValidator {
     static get TYPE() {
-        return 'text';
+        return "text";
     }
 
     /**
@@ -36,11 +36,7 @@ export class TextLengthValidator extends BaseValidator {
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    rule.errorMessage || '不允许为空',
-                    rule.errorStyle,
-                    { ruleId: rule.id }
-                  );
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         const textValue = String(value);
@@ -49,8 +45,8 @@ export class TextLengthValidator extends BaseValidator {
         try {
             let operator = rule.operator;
 
-            if (operator.startsWith('length')) {
-                operator = operator.replace('length', '');
+            if (operator.startsWith("length")) {
+                operator = operator.replace("length", "");
                 operator = operator.charAt(0).toLowerCase() + operator.slice(1);
             }
 
@@ -58,17 +54,13 @@ export class TextLengthValidator extends BaseValidator {
 
             return isValid
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    this.buildErrorMessage(length, rule),
-                    rule.errorStyle,
-                    { value, ruleId: rule.id }
-                  );
+                : ValidationResult.failure(this.buildErrorMessage(length, rule), rule.errorStyle, { value, ruleId: rule.id });
         } catch (error) {
-            return ValidationResult.failure(
-                `文本长度验证失败: ${error.message}`,
-                'warning',
-                { value, ruleId: rule.id, metadata: { error: error.message } }
-            );
+            return ValidationResult.failure(`文本长度验证失败: ${error.message}`, "warning", {
+                value,
+                ruleId: rule.id,
+                metadata: { error: error.message },
+            });
         }
     }
 
@@ -85,24 +77,24 @@ export class TextLengthValidator extends BaseValidator {
         }
 
         const [min, max] = Array.isArray(rule.value) ? rule.value : [rule.value];
-        const operator = rule.operator.replace('length', '');
+        const operator = rule.operator.replace("length", "");
 
         switch (operator) {
-            case 'between':
+            case "between":
                 return `长度必须在 ${min} 和 ${max} 个字符之间（当前: ${length}）`;
-            case 'notBetween':
+            case "notBetween":
                 return `长度不能在 ${min} 和 ${max} 个字符之间（当前: ${length}）`;
-            case 'greaterThan':
+            case "greaterThan":
                 return `长度必须大于 ${min} 个字符（当前: ${length}）`;
-            case 'lessThan':
+            case "lessThan":
                 return `长度必须小于 ${min} 个字符（当前: ${length}）`;
-            case 'greaterThanOrEqual':
+            case "greaterThanOrEqual":
                 return `长度必须大于或等于 ${min} 个字符（当前: ${length}）`;
-            case 'lessThanOrEqual':
+            case "lessThanOrEqual":
                 return `长度必须小于或等于 ${min} 个字符（当前: ${length}）`;
-            case 'equalTo':
+            case "equalTo":
                 return `长度必须等于 ${min} 个字符（当前: ${length}）`;
-            case 'notEqualTo':
+            case "notEqualTo":
                 return `长度不能等于 ${min} 个字符（当前: ${length}）`;
             default:
                 return `文本长度验证失败（当前: ${length}）`;

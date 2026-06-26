@@ -41,70 +41,70 @@ export class ValidationFormattingBridge {
         /** 数值超出范围 */
         NUMBER_OUT_OF_RANGE: {
             style: {
-                backgroundColor: '#FFCDD2',
-                color: '#B71C1C',
-                textDecoration: 'line-through'
+                backgroundColor: "#FFCDD2",
+                color: "#B71C1C",
+                textDecoration: "line-through",
             },
-            icon: '❌'
+            icon: "❌",
         },
 
         /** 文本长度不符 */
         TEXT_LENGTH_INVALID: {
             style: {
-                backgroundColor: '#FFF9C4',
-                color: '#F57F17',
-                fontStyle: 'italic'
+                backgroundColor: "#FFF9C4",
+                color: "#F57F17",
+                fontStyle: "italic",
             },
-            icon: '⚠️'
+            icon: "⚠️",
         },
 
         /** 下拉列表无效选项 */
         LIST_INVALID_OPTION: {
             style: {
-                backgroundColor: '#FFCDD2',
-                border: '2px solid #F44336'
+                backgroundColor: "#FFCDD2",
+                border: "2px solid #F44336",
             },
-            icon: '🔽'
+            icon: "🔽",
         },
 
         /** 唯一性冲突 */
         DUPLICATE_VALUE: {
             style: {
-                backgroundColor: '#FCE4EC',
-                color: '#880E4F',
-                borderBottom: '2px dashed #C2185B'
+                backgroundColor: "#FCE4EC",
+                color: "#880E4F",
+                borderBottom: "2px dashed #C2185B",
             },
-            icon: '⚠️'
+            icon: "⚠️",
         },
 
         /** 日期/时间无效 */
         DATETIME_INVALID: {
             style: {
-                backgroundColor: '#FFCDD2',
-                color: '#C62828'
+                backgroundColor: "#FFCDD2",
+                color: "#C62828",
             },
-            icon: '📅'
+            icon: "📅",
         },
 
         /** 正则不匹配 */
         REGEX_MISMATCH: {
             style: {
-                backgroundColor: '#FFF9C4',
-                color: '#E65100',
-                border: '1px dashed #FF9800'
+                backgroundColor: "#FFF9C4",
+                color: "#E65100",
+                border: "1px dashed #FF9800",
             },
-            icon: '✗'
+            icon: "✗",
         },
 
         /** 公式验证失败 */
         FORMULA_VALIDATION_FAILED: {
             style: {
-                backgroundColor: '#FCE4EC',
-                color: '#AD1457',
-                fontWeight: 'bold'
+                backgroundColor: "#FCE4EC",
+                color: "#AD1457",
+                fontWeight: "bold",
             },
-            icon: '📊'
-        }
+            icon: "📊",
+        },
     };
 
     /**
@@ -144,15 +144,10 @@ export class ValidationFormattingBridge {
     syncBatchResults(report) {
         if (!this.enabled || !report?.violations) return;
 
-        report.violations.forEach(violation => {
+        report.violations.forEach((violation) => {
             const rule = this.#validationPlugin?.getRuleById(violation.ruleId);
             if (rule) {
-                this.#applyErrorFormat(
-                    violation.row,
-                    violation.col,
-                    rule,
-                    violation
-                );
+                this.#applyErrorFormat(violation.row, violation.col, rule, violation);
             }
         });
     }
@@ -167,7 +162,7 @@ export class ValidationFormattingBridge {
      */
     #applyErrorFormat(row, col, rule, result) {
         if (!this.#conditionalFormatPlugin) {
-            console.warn('[ValidationFormattingBridge] 条件格式插件未初始化');
+            console.warn("[ValidationFormattingBridge] 条件格式插件未初始化");
             return;
         }
 
@@ -189,7 +184,7 @@ export class ValidationFormattingBridge {
             this.#conditionalFormatPlugin.applyFormat(row, col, format, {
                 source: `validation_${rule.id}`,
                 priority: 1000,
-                temporary: true
+                temporary: true,
             });
 
             this.#formatMap.set(`${row},${col}`, rule.id);
@@ -228,17 +223,17 @@ export class ValidationFormattingBridge {
      */
     #getFormatTemplateKey(type) {
         const typeToKey = {
-            'number': 'NUMBER_OUT_OF_RANGE',
-            'text': 'TEXT_LENGTH_INVALID',
-            'list': 'LIST_INVALID_OPTION',
-            'unique': 'DUPLICATE_VALUE',
-            'date': 'DATETIME_INVALID',
-            'time': 'DATETIME_INVALID',
-            'regex': 'REGEX_MISMATCH',
-            'custom': 'FORMULA_VALIDATION_FAILED'
+            number: "NUMBER_OUT_OF_RANGE",
+            text: "TEXT_LENGTH_INVALID",
+            list: "LIST_INVALID_OPTION",
+            unique: "DUPLICATE_VALUE",
+            date: "DATETIME_INVALID",
+            time: "DATETIME_INVALID",
+            regex: "REGEX_MISMATCH",
+            custom: "FORMULA_VALIDATION_FAILED",
         };
 
-        return typeToKey[type] || 'NUMBER_OUT_OF_RANGE';
+        return typeToKey[type] || "NUMBER_OUT_OF_RANGE";
     }
 
     /**
@@ -248,7 +243,7 @@ export class ValidationFormattingBridge {
         if (!this.#conditionalFormatPlugin) return;
 
         for (const [cellKey, ruleId] of this.#formatMap) {
-            const [row, col] = cellKey.split(',').map(Number);
+            const [row, col] = cellKey.split(",").map(Number);
             try {
                 this.#conditionalFormatPlugin.removeFormat(row, col, `validation_${ruleId}`);
             } catch (error) {
@@ -257,7 +252,7 @@ export class ValidationFormattingBridge {
         }
 
         this.#formatMap.clear();
-        console.log('[ValidationFormattingBridge] 已清除所有验证格式');
+        console.log("[ValidationFormattingBridge] 已清除所有验证格式");
     }
 
     /**
@@ -279,7 +274,7 @@ export class ValidationFormattingBridge {
             this.clearAllFormats();
         }
 
-        console.log(`[ValidationFormattingBridge] 桥接功能已${enabled ? '启用' : '禁用'}`);
+        console.log(`[ValidationFormattingBridge] 桥接功能已${enabled ? "启用" : "禁用"}`);
     }
 
     /**
@@ -289,6 +284,6 @@ export class ValidationFormattingBridge {
         this.clearAllFormats();
         this.#conditionalFormatPlugin = null;
         this.#validationPlugin = null;
-        console.log('[ValidationFormattingBridge] 已销毁');
+        console.log("[ValidationFormattingBridge] 已销毁");
     }
 }

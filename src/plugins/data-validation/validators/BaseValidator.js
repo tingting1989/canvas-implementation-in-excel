@@ -9,7 +9,7 @@
 export class BaseValidator {
     /** @type {string} 验证器类型标识 */
     static get TYPE() {
-        throw new Error('子类必须实现 TYPE 静态属性');
+        throw new Error("子类必须实现 TYPE 静态属性");
     }
 
     /**
@@ -21,7 +21,7 @@ export class BaseValidator {
      * @abstract
      */
     async validate(value, rule, context = {}) {
-        throw new Error('子类必须实现 validate() 方法');
+        throw new Error("子类必须实现 validate() 方法");
     }
 
     /**
@@ -31,10 +31,10 @@ export class BaseValidator {
      * @returns {{ isBlank: boolean, allowed: boolean }}
      */
     checkBlank(value, rule) {
-        const isBlank = value === null || value === undefined || value === '';
+        const isBlank = value === null || value === undefined || value === "";
         return {
             isBlank,
-            allowed: isBlank && rule.allowBlank
+            allowed: isBlank && rule.allowBlank,
         };
     }
 
@@ -47,21 +47,21 @@ export class BaseValidator {
      */
     compare(a, b, operator) {
         switch (operator) {
-            case 'equalTo':
+            case "equalTo":
                 return a === b;
-            case 'notEqualTo':
+            case "notEqualTo":
                 return a !== b;
-            case 'greaterThan':
+            case "greaterThan":
                 return a > b;
-            case 'lessThan':
+            case "lessThan":
                 return a < b;
-            case 'greaterThanOrEqual':
+            case "greaterThanOrEqual":
                 return a >= b;
-            case 'lessThanOrEqual':
+            case "lessThanOrEqual":
                 return a <= b;
-            case 'between':
+            case "between":
                 return Array.isArray(b) && a >= b[0] && a <= b[1];
-            case 'notBetween':
+            case "notBetween":
                 return Array.isArray(b) && (a < b[0] || a > b[1]);
             default:
                 throw new Error(`不支持的运算符: ${operator}`);

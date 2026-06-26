@@ -1,7 +1,7 @@
-import { BasePlugin } from '../BasePlugin.js';
-import { ValidationEngine } from './ValidationEngine.js';
-import { ValidationRule } from './ValidationRule.js';
-import { HOOKS } from '../../constants/hookNames.js';
+import { BasePlugin } from "../BasePlugin.js";
+import { ValidationEngine } from "./ValidationEngine.js";
+import { ValidationRule } from "./ValidationRule.js";
+import { HOOKS } from "../../constants/hookNames.js";
 
 /**
  * 数据验证插件
@@ -111,7 +111,7 @@ export class DataValidationPlugin extends BasePlugin {
 
             console.log(`[DataValidation] 初始化完成，已加载 ${this.#engine.rules.size} 条规则`);
         } catch (error) {
-            console.error('[DataValidation] 初始化失败:', error);
+            console.error("[DataValidation] 初始化失败:", error);
             throw error;
         }
     }
@@ -149,7 +149,7 @@ export class DataValidationPlugin extends BasePlugin {
 
         this.hooks?.call(HOOKS.VALIDATION_FAILED, row, col, value, result);
 
-        if (result.errorStyle === 'stop') {
+        if (result.errorStyle === "stop") {
             return false;
         }
 
@@ -171,7 +171,7 @@ export class DataValidationPlugin extends BasePlugin {
         const validation = rule.validate();
 
         if (!validation.valid) {
-            throw new Error(`规则无效: ${validation.errors.join(', ')}`);
+            throw new Error(`规则无效: ${validation.errors.join(", ")}`);
         }
 
         this.hooks?.call(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, null, rule);
@@ -251,13 +251,13 @@ export class DataValidationPlugin extends BasePlugin {
     enable() {
         super.enable();
         this.#active = true;
-        console.log('[DataValidation] 已启用');
+        console.log("[DataValidation] 已启用");
     }
 
     disable() {
         this.#active = false;
         super.disable();
-        console.log('[DataValidation] 已禁用');
+        console.log("[DataValidation] 已禁用");
     }
 
     destroy() {
@@ -274,18 +274,18 @@ export class DataValidationPlugin extends BasePlugin {
         }
 
         super.destroy();
-        console.log('[DataValidation] 已销毁');
+        console.log("[DataValidation] 已销毁");
     }
 
     exportRules() {
         if (!this.#engine) return [];
 
-        return this.getAllRules().map(rule => rule.toJSON());
+        return this.getAllRules().map((rule) => rule.toJSON());
     }
 
     importRules(rulesJSON) {
         if (!Array.isArray(rulesJSON)) {
-            throw new Error('导入数据必须是数组格式');
+            throw new Error("导入数据必须是数组格式");
         }
 
         const importedIds = [];

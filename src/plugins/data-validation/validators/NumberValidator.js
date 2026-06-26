@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 数值范围验证器
@@ -22,7 +22,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class NumberValidator extends BaseValidator {
     static get TYPE() {
-        return 'number';
+        return "number";
     }
 
     /**
@@ -37,19 +37,11 @@ export class NumberValidator extends BaseValidator {
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    rule.errorMessage || '不允许为空',
-                    rule.errorStyle,
-                    { ruleId: rule.id }
-                  );
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
-        if (typeof value !== 'number' || isNaN(value)) {
-            return ValidationResult.failure(
-                rule.errorMessage || `必须是数值类型`,
-                rule.errorStyle,
-                { value, ruleId: rule.id }
-            );
+        if (typeof value !== "number" || isNaN(value)) {
+            return ValidationResult.failure(rule.errorMessage || `必须是数值类型`, rule.errorStyle, { value, ruleId: rule.id });
         }
 
         try {
@@ -57,17 +49,9 @@ export class NumberValidator extends BaseValidator {
 
             return isValid
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    this.buildErrorMessage(value, rule),
-                    rule.errorStyle,
-                    { value, ruleId: rule.id }
-                  );
+                : ValidationResult.failure(this.buildErrorMessage(value, rule), rule.errorStyle, { value, ruleId: rule.id });
         } catch (error) {
-            return ValidationResult.failure(
-                `验证失败: ${error.message}`,
-                'warning',
-                { value, ruleId: rule.id, metadata: { error: error.message } }
-            );
+            return ValidationResult.failure(`验证失败: ${error.message}`, "warning", { value, ruleId: rule.id, metadata: { error: error.message } });
         }
     }
 
@@ -86,21 +70,21 @@ export class NumberValidator extends BaseValidator {
         const [min, max] = Array.isArray(rule.value) ? rule.value : [rule.value];
 
         switch (rule.operator) {
-            case 'between':
+            case "between":
                 return `必须在 ${min} 和 ${max} 之间`;
-            case 'notBetween':
+            case "notBetween":
                 return `不能在 ${min} 和 ${max} 之间`;
-            case 'greaterThan':
+            case "greaterThan":
                 return `必须大于 ${min}`;
-            case 'lessThan':
+            case "lessThan":
                 return `必须小于 ${min}`;
-            case 'greaterThanOrEqual':
+            case "greaterThanOrEqual":
                 return `必须大于或等于 ${min}`;
-            case 'lessThanOrEqual':
+            case "lessThanOrEqual":
                 return `必须小于或等于 ${min}`;
-            case 'equalTo':
+            case "equalTo":
                 return `必须等于 ${min}`;
-            case 'notEqualTo':
+            case "notEqualTo":
                 return `不能等于 ${min}`;
             default:
                 return `数值验证失败`;

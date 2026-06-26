@@ -51,16 +51,16 @@ export class ValidationRule {
     errorMessage;
 
     /** @type {string} 错误标题（默认 "输入错误"） */
-    errorTitle = '输入错误';
+    errorTitle = "输入错误";
 
     /** @type {string} 错误处理方式：stop|warning|information（默认 "stop"） */
-    errorStyle = 'stop';
+    errorStyle = "stop";
 
     /** @type {string|null} 输入提示消息（当用户选中单元格时显示） */
     inputMessage;
 
     /** @type {string} 输入提示标题（默认 "提示"） */
-    inputTitle = '提示';
+    inputTitle = "提示";
 
     /** @type {number} 规则优先级（数字越小优先级越高，用于多规则冲突解决，默认 0） */
     priority = 0;
@@ -111,7 +111,7 @@ export class ValidationRule {
             inputTitle: this.inputTitle,
             priority: this.priority,
             createdAt: this.createdAt.toISOString(),
-            updatedAt: this.updatedAt.toISOString()
+            updatedAt: this.updatedAt.toISOString(),
         };
     }
 
@@ -124,7 +124,7 @@ export class ValidationRule {
         const rule = new ValidationRule({
             ...json,
             createdAt: new Date(json.createdAt),
-            updatedAt: new Date(json.updatedAt)
+            updatedAt: new Date(json.updatedAt),
         });
         return rule;
     }
@@ -137,37 +137,37 @@ export class ValidationRule {
         const errors = [];
 
         if (!this.range) {
-            errors.push('缺少必需属性: range');
+            errors.push("缺少必需属性: range");
         }
 
         if (!this.type) {
-            errors.push('缺少必需属性: type');
+            errors.push("缺少必需属性: type");
         }
 
-        const validTypes = ['number', 'text', 'list', 'custom', 'date', 'time', 'regex', 'unique'];
+        const validTypes = ["number", "text", "list", "custom", "date", "time", "regex", "unique"];
         if (this.type && !validTypes.includes(this.type)) {
-            errors.push(`无效的验证类型: ${this.type}，必须是 ${validTypes.join(',')} 之一`);
+            errors.push(`无效的验证类型: ${this.type}，必须是 ${validTypes.join(",")} 之一`);
         }
 
-        if (this.type === 'number' && !this.operator) {
-            errors.push('数值验证需要指定 operator');
+        if (this.type === "number" && !this.operator) {
+            errors.push("数值验证需要指定 operator");
         }
 
-        if (this.type === 'list' && !this.source) {
-            errors.push('列表验证需要指定 source');
+        if (this.type === "list" && !this.source) {
+            errors.push("列表验证需要指定 source");
         }
 
-        if (this.type === 'custom' && !this.formula) {
-            errors.push('自定义公式验证需要指定 formula');
+        if (this.type === "custom" && !this.formula) {
+            errors.push("自定义公式验证需要指定 formula");
         }
 
-        if (this.type === 'regex' && !this.pattern) {
-            errors.push('正则表达式验证需要指定 pattern');
+        if (this.type === "regex" && !this.pattern) {
+            errors.push("正则表达式验证需要指定 pattern");
         }
 
         return {
             valid: errors.length === 0,
-            errors
+            errors,
         };
     }
 }

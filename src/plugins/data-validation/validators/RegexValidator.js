@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 正则表达式验证器
@@ -22,7 +22,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class RegexValidator extends BaseValidator {
     static get TYPE() {
-        return 'regex';
+        return "regex";
     }
 
     /**
@@ -38,17 +38,17 @@ export class RegexValidator extends BaseValidator {
      * @static
      */
     static PRESETS = {
-        email: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
-        phoneCN: '^1[3-9]\\d{9}$',
-        idCardCN: '^[1-9]\\d{5}(18|19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx]$',
-        url: '^https?:\\/\\/[^\\s/$.?#].[^\\s]*$',
-        ipV4: '^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$',
-        username: '^[a-zA-Z0-9_]{3,20}$',
-        passwordStrong: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$',
-        zipCodeUS: '^\\d{5}(-\\d{4})?$',
-        numeric: '^-?\\d+(\\.\\d+)?$',
-        alpha: '^[a-zA-Z]+$',
-        alphanumeric: '^[a-zA-Z0-9]+$'
+        email: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        phoneCN: "^1[3-9]\\d{9}$",
+        idCardCN: "^[1-9]\\d{5}(18|19|20)\\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\\d|3[01])\\d{3}[0-9Xx]$",
+        url: "^https?:\\/\\/[^\\s/$.?#].[^\\s]*$",
+        ipV4: "^((25[0-5]|2[0-4]\\d|[01]?\\d\\d?)\\.){3}(25[0-5]|2[0-4]\\d|[01]?\\d\\d?)$",
+        username: "^[a-zA-Z0-9_]{3,20}$",
+        passwordStrong: "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
+        zipCodeUS: "^\\d{5}(-\\d{4})?$",
+        numeric: "^-?\\d+(\\.\\d+)?$",
+        alpha: "^[a-zA-Z]+$",
+        alphanumeric: "^[a-zA-Z0-9]+$",
     };
 
     /**
@@ -63,44 +63,36 @@ export class RegexValidator extends BaseValidator {
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || '不允许为空', rule.errorStyle, { ruleId: rule.id });
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
-        if (typeof value !== 'string') {
-            return ValidationResult.failure(
-                rule.errorMessage || '正则表达式验证只能用于文本类型',
-                'warning',
-                { value, ruleId: rule.id }
-            );
+        if (typeof value !== "string") {
+            return ValidationResult.failure(rule.errorMessage || "正则表达式验证只能用于文本类型", "warning", { value, ruleId: rule.id });
         }
 
         try {
             const regex = this.getCompiledPattern(rule.pattern);
 
             if (!regex) {
-                return ValidationResult.failure(
-                    `无效的正则表达式: ${rule.pattern}`,
-                    'warning',
-                    { value, ruleId: rule.id }
-                );
+                return ValidationResult.failure(`无效的正则表达式: ${rule.pattern}`, "warning", { value, ruleId: rule.id });
             }
 
             const isValid = regex.test(value);
 
             return isValid
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    rule.errorMessage || `"${value}" 不符合要求的格式`,
-                    rule.errorStyle,
-                    { value, ruleId: rule.id, metadata: { pattern: rule.pattern } }
-                  );
+                : ValidationResult.failure(rule.errorMessage || `"${value}" 不符合要求的格式`, rule.errorStyle, {
+                      value,
+                      ruleId: rule.id,
+                      metadata: { pattern: rule.pattern },
+                  });
         } catch (error) {
-            console.error('[RegexValidator] 正则表达式执行失败:', error);
-            return ValidationResult.failure(
-                `正则表达式错误: ${error.message}`,
-                'warning',
-                { value, ruleId: rule.id, metadata: { error: error.message } }
-            );
+            console.error("[RegexValidator] 正则表达式执行失败:", error);
+            return ValidationResult.failure(`正则表达式错误: ${error.message}`, "warning", {
+                value,
+                ruleId: rule.id,
+                metadata: { error: error.message },
+            });
         }
     }
 
@@ -128,7 +120,7 @@ export class RegexValidator extends BaseValidator {
             this.#patternCache.set(pattern, regex);
             return regex;
         } catch (e) {
-            console.error('[RegexValidator] 编译正则表达式失败:', e);
+            console.error("[RegexValidator] 编译正则表达式失败:", e);
             return null;
         }
     }

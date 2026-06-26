@@ -1,12 +1,12 @@
-import { NumberValidator } from './validators/NumberValidator.js';
-import { TextLengthValidator } from './validators/TextLengthValidator.js';
-import { ListValidator } from './validators/ListValidator.js';
-import { UniqueValidatorV3 } from './validators/UniqueValidatorV3.js';
-import { FormulaValidator } from './validators/FormulaValidator.js';
-import { DateValidator } from './validators/DateValidator.js';
-import { TimeValidator } from './validators/TimeValidator.js';
-import { RegexValidator } from './validators/RegexValidator.js';
-import { ValidationResult } from './ValidationResult.js';
+import { NumberValidator } from "./validators/NumberValidator.js";
+import { TextLengthValidator } from "./validators/TextLengthValidator.js";
+import { ListValidator } from "./validators/ListValidator.js";
+import { UniqueValidatorV3 } from "./validators/UniqueValidatorV3.js";
+import { FormulaValidator } from "./validators/FormulaValidator.js";
+import { DateValidator } from "./validators/DateValidator.js";
+import { TimeValidator } from "./validators/TimeValidator.js";
+import { RegexValidator } from "./validators/RegexValidator.js";
+import { ValidationResult } from "./ValidationResult.js";
 
 /**
  * 数据验证引擎
@@ -43,7 +43,7 @@ export class ValidationEngine {
     #maxCacheSize = 10000;
 
     /** @type {string} 规则冲突解决策略：short-circuit|priority|aggregate */
-    #conflictStrategy = 'short-circuit';
+    #conflictStrategy = "short-circuit";
 
     /**
      * 构造验证引擎
@@ -57,16 +57,16 @@ export class ValidationEngine {
      * 初始化引擎（注册所有内置验证器）
      */
     async init(formulaEngine = null) {
-        this.registerValidator('number', new NumberValidator());
-        this.registerValidator('text', new TextLengthValidator());
-        this.registerValidator('list', new ListValidator());
-        this.registerValidator('unique', new UniqueValidatorV3(this.#cellStore));
-        this.registerValidator('custom', new FormulaValidator(formulaEngine));
-        this.registerValidator('date', new DateValidator());
-        this.registerValidator('time', new TimeValidator());
-        this.registerValidator('regex', new RegexValidator());
+        this.registerValidator("number", new NumberValidator());
+        this.registerValidator("text", new TextLengthValidator());
+        this.registerValidator("list", new ListValidator());
+        this.registerValidator("unique", new UniqueValidatorV3(this.#cellStore));
+        this.registerValidator("custom", new FormulaValidator(formulaEngine));
+        this.registerValidator("date", new DateValidator());
+        this.registerValidator("time", new TimeValidator());
+        this.registerValidator("regex", new RegexValidator());
 
-        console.log('[ValidationEngine] 初始化完成，已注册验证器:', [...this.#validators.keys()]);
+        console.log("[ValidationEngine] 初始化完成，已注册验证器:", [...this.#validators.keys()]);
     }
 
     /**
@@ -86,7 +86,7 @@ export class ValidationEngine {
     addRule(rule) {
         const validation = rule.validate();
         if (!validation.valid) {
-            throw new Error(`规则验证失败: ${validation.errors.join(', ')}`);
+            throw new Error(`规则验证失败: ${validation.errors.join(", ")}`);
         }
 
         this.#rules.set(rule.id, rule);
@@ -152,11 +152,11 @@ export class ValidationEngine {
         const context = { row, col, sheet: this.#cellStore.sheetName };
 
         switch (this.#conflictStrategy) {
-            case 'short-circuit':
+            case "short-circuit":
                 return await this.validateWithShortCircuit(rules, value, context);
-            case 'priority':
+            case "priority":
                 return await this.validateWithPriority(rules, value, context);
-            case 'aggregate':
+            case "aggregate":
                 return await this.validateWithAggregate(rules, value, context);
             default:
                 return await this.validateWithShortCircuit(rules, value, context);
@@ -177,13 +177,13 @@ export class ValidationEngine {
             results.push({ row, col, ...result.toJSON() });
         }
 
-        const validCount = results.filter(r => r.valid).length;
+        const validCount = results.filter((r) => r.valid).length;
 
         return {
             total: results.length,
             valid: validCount,
             invalid: results.length - validCount,
-            results
+            results,
         };
     }
 
@@ -246,9 +246,7 @@ export class ValidationEngine {
             }
         }
 
-        const finalResult = errors.length > 0
-            ? ValidationResult.failure(errors.join('; '), 'warning')
-            : ValidationResult.success();
+        const finalResult = errors.length > 0 ? ValidationResult.failure(errors.join("; "), "warning") : ValidationResult.success();
 
         this.setToCache(`${context.row},${context.col}`, value, finalResult);
         return finalResult;
@@ -317,7 +315,7 @@ export class ValidationEngine {
                 cells.push({
                     row,
                     col,
-                    value: cell?.value
+                    value: cell?.value,
                 });
             }
         }
@@ -358,7 +356,7 @@ export class ValidationEngine {
         }
 
         for (const key of this.#cache.keys()) {
-            const [row, col] = key.split(',').map(Number);
+            const [row, col] = key.split(",").map(Number);
             if (this.isCellInRange(row, col, range)) {
                 this.#cache.delete(key);
             }
@@ -374,7 +372,7 @@ export class ValidationEngine {
     }
 
     set conflictStrategy(strategy) {
-        const validStrategies = ['short-circuit', 'priority', 'aggregate'];
+        const validStrategies = ["short-circuit", "priority", "aggregate"];
         if (!validStrategies.includes(strategy)) {
             throw new Error(`无效的冲突策略: ${strategy}`);
         }
@@ -389,6 +387,6 @@ export class ValidationEngine {
         this.#validators.clear();
         this.#rules.clear();
         this.#cache.clear();
-        console.log('[ValidationEngine] 已销毁');
+        console.log("[ValidationEngine] 已销毁");
     }
 }

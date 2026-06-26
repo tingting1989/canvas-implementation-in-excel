@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 自定义公式验证器（沙箱隔离版本）
@@ -22,7 +22,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class FormulaValidator extends BaseValidator {
     static get TYPE() {
-        return 'custom';
+        return "custom";
     }
 
     /** @type {Object|null} FormulaEngine 实例 */
@@ -46,18 +46,14 @@ export class FormulaValidator extends BaseValidator {
      */
     async validate(value, rule, context = {}) {
         if (!this.#formulaEngine) {
-            return ValidationResult.failure(
-                'FormulaEngine 未初始化',
-                'warning',
-                { ruleId: rule.id }
-            );
+            return ValidationResult.failure("FormulaEngine 未初始化", "warning", { ruleId: rule.id });
         }
 
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || '不允许为空', rule.errorStyle, { ruleId: rule.id });
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         try {
@@ -65,18 +61,18 @@ export class FormulaValidator extends BaseValidator {
 
             return result
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    rule.errorMessage || `公式 "${rule.formula}" 返回 FALSE`,
-                    rule.errorStyle,
-                    { value, ruleId: rule.id, metadata: { formula: rule.formula } }
-                  );
+                : ValidationResult.failure(rule.errorMessage || `公式 "${rule.formula}" 返回 FALSE`, rule.errorStyle, {
+                      value,
+                      ruleId: rule.id,
+                      metadata: { formula: rule.formula },
+                  });
         } catch (error) {
-            console.error('[FormulaValidator] 公式求值失败:', error);
-            return ValidationResult.failure(
-                `公式验证错误: ${error.message}`,
-                'warning',
-                { value, ruleId: rule.id, metadata: { error: error.message } }
-            );
+            console.error("[FormulaValidator] 公式求值失败:", error);
+            return ValidationResult.failure(`公式验证错误: ${error.message}`, "warning", {
+                value,
+                ruleId: rule.id,
+                metadata: { error: error.message },
+            });
         }
     }
 
@@ -98,7 +94,7 @@ export class FormulaValidator extends BaseValidator {
      */
     async evaluateInSandbox(value, rule, context) {
         if (!this.#formulaEngine?.evaluateForValidation) {
-            console.warn('[FormulaValidator] FormulaEngine 未实现 evaluateForValidation 接口，使用降级方案');
+            console.warn("[FormulaValidator] FormulaEngine 未实现 evaluateForValidation 接口，使用降级方案");
             return this.fallbackEvaluation(value, rule, context);
         }
 
@@ -106,7 +102,7 @@ export class FormulaValidator extends BaseValidator {
             row: context.row ?? 0,
             col: context.col ?? 0,
             value,
-            sheet: context.sheet || 'Sheet1'
+            sheet: context.sheet || "Sheet1",
         };
 
         const result = await this.#formulaEngine.evaluateForValidation(rule.formula, validationContext);
@@ -127,7 +123,7 @@ export class FormulaValidator extends BaseValidator {
     fallbackEvaluation(value, rule, context) {
         try {
             if (!this.#formulaEngine?.evaluateFormula) {
-                throw new Error('FormulaEngine 缺少必要的求值方法');
+                throw new Error("FormulaEngine 缺少必要的求值方法");
             }
 
             const row = context.row ?? 0;
@@ -135,13 +131,13 @@ export class FormulaValidator extends BaseValidator {
 
             const result = this.#formulaEngine.evaluateFormula(rule.formula, {
                 currentCell: { row, col, value },
-                sheet: context.sheet || 'Sheet1',
-                mode: 'validation'
+                sheet: context.sheet || "Sheet1",
+                mode: "validation",
             });
 
             return !!result;
         } catch (error) {
-            console.error('[FormulaValidator] 降级求值失败:', error);
+            console.error("[FormulaValidator] 降级求值失败:", error);
             throw error;
         }
     }

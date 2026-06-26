@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 唯一性校验器 (v3.0 - CellStore 单一数据源版本)
@@ -25,7 +25,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class UniqueValidatorV3 extends BaseValidator {
     static get TYPE() {
-        return 'unique';
+        return "unique";
     }
 
     /**
@@ -67,11 +67,7 @@ export class UniqueValidatorV3 extends BaseValidator {
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    rule.errorMessage || '不允许为空',
-                    rule.errorStyle,
-                    { ruleId: rule.id }
-                  );
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         try {
@@ -80,31 +76,23 @@ export class UniqueValidatorV3 extends BaseValidator {
 
             const report = await this.fullValidate(value, {
                 range,
-                excludeRow
+                excludeRow,
             });
 
             return report.isUnique
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    rule.errorMessage || `"${value}" 已存在重复值`,
-                    rule.errorStyle,
-                    {
-                        value,
-                        ruleId: rule.id,
-                        metadata: {
-                            duplicateCount: report.duplicateCount,
-                            scannedCount: report.scannedCount,
-                            dataSource: report.dataSource
-                        }
-                    }
-                  );
+                : ValidationResult.failure(rule.errorMessage || `"${value}" 已存在重复值`, rule.errorStyle, {
+                      value,
+                      ruleId: rule.id,
+                      metadata: {
+                          duplicateCount: report.duplicateCount,
+                          scannedCount: report.scannedCount,
+                          dataSource: report.dataSource,
+                      },
+                  });
         } catch (error) {
-            console.error('[UniqueValidator] 验证失败:', error);
-            return ValidationResult.failure(
-                `唯一性校验失败: ${error.message}`,
-                'warning',
-                { value, ruleId: rule.id }
-            );
+            console.error("[UniqueValidator] 验证失败:", error);
+            return ValidationResult.failure(`唯一性校验失败: ${error.message}`, "warning", { value, ruleId: rule.id });
         }
     }
 
@@ -128,22 +116,22 @@ export class UniqueValidatorV3 extends BaseValidator {
                 if (row === context.excludeRow) continue;
 
                 const cell = this.#cellStore.get(row, col);
-                if (cell?.value != null && cell?.value !== '') {
+                if (cell?.value != null && cell?.value !== "") {
                     actualValues.push(cell.value);
                 }
             }
         }
 
-        const duplicateCount = actualValues.filter(v => v === value).length;
+        const duplicateCount = actualValues.filter((v) => v === value).length;
 
         this.syncAuxiliaryIndex(actualValues);
 
         return {
             isUnique: duplicateCount === 0,
             duplicateCount,
-            dataSource: 'cellstore',
+            dataSource: "cellstore",
             scannedCount: actualValues.length,
-            timestamp: Date.now()
+            timestamp: Date.now(),
         };
     }
 
@@ -158,20 +146,20 @@ export class UniqueValidatorV3 extends BaseValidator {
      */
     quickCheck(value, columnKey) {
         if (!this.#indexTrusted) {
-            return { valid: undefined, confidence: 'stale' };
+            return { valid: undefined, confidence: "stale" };
         }
 
         const indexData = this.#auxiliaryIndex.get(columnKey);
 
         if (!indexData) {
-            return { valid: true, confidence: 'high' };
+            return { valid: true, confidence: "high" };
         }
 
         if (indexData.has(value)) {
-            return { valid: false, confidence: 'low' };
+            return { valid: false, confidence: "low" };
         }
 
-        return { valid: true, confidence: 'high' };
+        return { valid: true, confidence: "high" };
     }
 
     /**
@@ -209,7 +197,7 @@ export class UniqueValidatorV3 extends BaseValidator {
             startRow: parseInt(match[2]) - 1,
             startCol: colToNum(match[1]),
             endRow: parseInt(match[4]) - 1,
-            endCol: colToNum(match[3])
+            endCol: colToNum(match[3]),
         };
     }
 
@@ -238,19 +226,22 @@ export class UniqueValidatorV3 extends BaseValidator {
      * @private
      */
     scheduleIndexRebuild() {
-        if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(() => {
-                console.log('[UniqueValidator] 开始后台重建索引...');
+        if (typeof requestIdleCallback !== "undefined") {
+            requestIdleCallback(
+                () => {
+                    console.log("[UniqueValidator] 开始后台重建索引...");
 
-                // TODO: 从 CellStore 全量扫描并重建索引
-                console.log('[UniqueValidator] 索引重建完成');
-            }, { timeout: 2000 });
+                    // TODO: 从 CellStore 全量扫描并重建索引
+                    console.log("[UniqueValidator] 索引重建完成");
+                },
+                { timeout: 2000 },
+            );
         } else {
             setTimeout(() => {
-                console.log('[UniqueValidator] 开始后台重建索引...');
+                console.log("[UniqueValidator] 开始后台重建索引...");
 
                 // TODO: 从 CellStore 全量扫描并重建索引
-                console.log('[UniqueValidator] 索引重建完成');
+                console.log("[UniqueValidator] 索引重建完成");
             }, 100);
         }
     }

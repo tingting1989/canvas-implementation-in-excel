@@ -1,5 +1,5 @@
-import { BaseValidator } from './BaseValidator.js';
-import { ValidationResult } from '../ValidationResult.js';
+import { BaseValidator } from "./BaseValidator.js";
+import { ValidationResult } from "../ValidationResult.js";
 
 /**
  * 下拉列表验证器
@@ -20,7 +20,7 @@ import { ValidationResult } from '../ValidationResult.js';
  */
 export class ListValidator extends BaseValidator {
     static get TYPE() {
-        return 'list';
+        return "list";
     }
 
     /**
@@ -35,44 +35,32 @@ export class ListValidator extends BaseValidator {
         if (isBlank) {
             return allowed
                 ? ValidationResult.success()
-                : ValidationResult.failure(
-                    rule.errorMessage || '请选择一个选项',
-                    rule.errorStyle,
-                    { ruleId: rule.id }
-                  );
+                : ValidationResult.failure(rule.errorMessage || "请选择一个选项", rule.errorStyle, { ruleId: rule.id });
         }
 
         let options;
 
         if (Array.isArray(rule.source)) {
             options = rule.source;
-        } else if (typeof rule.source === 'string') {
+        } else if (typeof rule.source === "string") {
             options = await this.resolveDynamicSource(rule.source, context);
         } else {
-            return ValidationResult.failure(
-                '无效的下拉列表配置',
-                'warning',
-                { ruleId: rule.id }
-            );
+            return ValidationResult.failure("无效的下拉列表配置", "warning", { ruleId: rule.id });
         }
 
         if (!options || options.length === 0) {
-            return ValidationResult.failure(
-                '下拉列表为空',
-                'warning',
-                { ruleId: rule.id }
-            );
+            return ValidationResult.failure("下拉列表为空", "warning", { ruleId: rule.id });
         }
 
-        const isValid = options.some(option => String(option) === String(value));
+        const isValid = options.some((option) => String(option) === String(value));
 
         return isValid
             ? ValidationResult.success()
-            : ValidationResult.failure(
-                rule.errorMessage || `"${value}" 不在允许的选项列表中`,
-                rule.errorStyle,
-                { value, ruleId: rule.id, metadata: { availableOptions: options } }
-              );
+            : ValidationResult.failure(rule.errorMessage || `"${value}" 不在允许的选项列表中`, rule.errorStyle, {
+                  value,
+                  ruleId: rule.id,
+                  metadata: { availableOptions: options },
+              });
     }
 
     /**
@@ -84,7 +72,7 @@ export class ListValidator extends BaseValidator {
      */
     async resolveDynamicSource(sourceRef, context) {
         // TODO Phase 2: 实现动态区域引用解析
-        console.warn('[ListValidator] 动态区域引用尚未实现，返回空数组');
+        console.warn("[ListValidator] 动态区域引用尚未实现，返回空数组");
         return [];
     }
 
@@ -99,7 +87,7 @@ export class ListValidator extends BaseValidator {
             return rule.source;
         }
 
-        if (typeof rule.source === 'string') {
+        if (typeof rule.source === "string") {
             return await this.resolveDynamicSource(rule.source, context);
         }
 
