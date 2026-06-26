@@ -13,7 +13,7 @@ import { FreezePlugin } from "./plugins/FreezePlugin.js";
 import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./utils/utils.js";
-import {errorHandler, ERROR_LEVEL, ERROR_CODE} from "./core/ErrorHandler.js";
+import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
 import { SortPlugin, DataValidationPlugin } from "@/plugins";
 
 const initApp = () => {
@@ -359,4 +359,3 @@ const initApp = () => {
 };
 
 document.addEventListener("DOMContentLoaded", initApp);
-

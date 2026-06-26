@@ -127,7 +127,8 @@ export class RowColManager {
             this.#colPrefixDirty = true;
         }
 
-        errorHandler.debug(ERROR_CODE.DEBUG_LOG, 
+        errorHandler.debug(
+            ERROR_CODE.DEBUG_LOG,
             `[RowColManager] resetSize complete: rowHeights.len=${this.#rowHeights.length}, colWidths.len=${this.#colWidths.length}, explicitlySized=${this.#explicitlySized}`,
         );
     }
@@ -554,4 +555,3 @@ export class RowColManager {
         this.#colPrefixDirty = false;
     }
 }
-

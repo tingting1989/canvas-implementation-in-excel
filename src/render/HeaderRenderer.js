@@ -568,4 +568,3 @@ export class HeaderRenderer {
         }
     }
 }
-

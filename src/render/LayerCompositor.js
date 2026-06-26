@@ -195,4 +195,3 @@ export class LayerCompositor {
         this._needsSort = true;
     }
 }
-

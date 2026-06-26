@@ -39,7 +39,10 @@ export class SettingsApplier {
             if (settings.startRows !== undefined || settings.startCols !== undefined) {
                 const rows = settings.startRows || 100;
                 const cols = settings.startCols || 26;
-                errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`);
+                errorHandler.debug(
+                    ERROR_CODE.DEBUG_LOG,
+                    `[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`,
+                );
                 sheet.rowColManager.resetSize(rows, cols);
             } else {
                 errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ℹ️ No maxRows/maxCols or startRows/startCols in settings`);
@@ -166,4 +169,3 @@ export class SettingsApplier {
         }
     }
 }
-

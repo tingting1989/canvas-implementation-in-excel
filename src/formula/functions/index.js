@@ -306,4 +306,3 @@ export function getFunctionStats() {
 // 初始化日志
 errorHandler.debug(ERROR_CODE.DEBUG_LOG, "[FormulaEngine] ✅ 函数注册表初始化完成");
 errorHandler.debug(ERROR_CODE.DEBUG_LOG, `  统计信息:`, registry.getStats());
-

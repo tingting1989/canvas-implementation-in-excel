@@ -960,7 +960,10 @@ export class Sheet {
             errorHandler.warn(ERROR_CODE.GENERIC_WARN, `[Sheet] setGridSize: invalid size ${rows}x${cols}, must be integers >= 1`);
             return;
         }
-        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[Sheet] setGridSize: ${this.rowColManager.rowCount}x${this.rowColManager.colCount} → ${rows}x${cols}`);
+        errorHandler.debug(
+            ERROR_CODE.DEBUG_LOG,
+            `[Sheet] setGridSize: ${this.rowColManager.rowCount}x${this.rowColManager.colCount} → ${rows}x${cols}`,
+        );
         this.rowColManager.resetSize(rows, cols);
         this.#syncPaginationAfterResize();
         this.#invalidateAll();
@@ -996,4 +999,3 @@ export class Sheet {
         return this.#typeManager.parseCellValue(r, c, input);
     }
 }
-

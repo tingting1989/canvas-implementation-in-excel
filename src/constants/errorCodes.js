@@ -123,5 +123,5 @@ export const ERROR_CODE = {
     /** 通用警告 */
     GENERIC_WARN: "GENERIC_WARN",
     /** 调试信息 */
-    DEBUG_LOG: "DEBUG_LOG",};
-
+    DEBUG_LOG: "DEBUG_LOG",
+};

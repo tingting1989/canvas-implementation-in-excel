@@ -333,4 +333,3 @@ export class ReactiveStore {
         this._proxyMap = new WeakMap();
     }
 }
-

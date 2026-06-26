@@ -138,7 +138,10 @@ export class PaginationPlugin extends BasePlugin {
             // 用户显式配置了行列数：严格使用配置值，不扩展
             // 这样可以确保 maxRows/maxCols 配置始终生效
             this.#totalRows = actualRowCount;
-            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[PaginationPlugin] #updateTotalRows: explicitlySized → using config=${actualRowCount} (data=${maxDataRow})`);
+            errorHandler.debug(
+                ERROR_CODE.DEBUG_LOG,
+                `[PaginationPlugin] #updateTotalRows: explicitlySized → using config=${actualRowCount} (data=${maxDataRow})`,
+            );
         } else {
             // 未显式配置：使用传统逻辑（允许根据数据自动扩展）
             this.#totalRows = Math.max(allocated, maxDataRow >= 0 ? maxDataRow + 1 : 0);
@@ -330,4 +333,3 @@ export class PaginationPlugin extends BasePlugin {
         super.destroy();
     }
 }
-
