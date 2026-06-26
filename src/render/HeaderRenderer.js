@@ -1,4 +1,6 @@
-﻿import { CONFIG } from "../constants/config";
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+
+import { CONFIG } from "../constants/config";
 import { isObject, isString } from "../utils/utils.js";
 
 /** 拖拽源行头/列头的半透明高亮色 */
@@ -177,7 +179,7 @@ export class HeaderRenderer {
                     try {
                         renderer(ctx, c, x, clipY, w, rowH);
                     } catch (e) {
-                        console.warn("[HeaderRenderer] columnHeaderRenderer error:", e);
+                        errorHandler.warn(ERROR_CODE.GENERIC_WARN, "[HeaderRenderer] columnHeaderRenderer error:", e);
                     }
                 }
 
@@ -566,3 +568,4 @@ export class HeaderRenderer {
         }
     }
 }
+

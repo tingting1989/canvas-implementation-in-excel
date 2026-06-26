@@ -1,3 +1,5 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+
 import { stylePool } from "../../model/styles";
 import { isFunction, isNumber } from "../../utils/utils.js";
 
@@ -19,7 +21,7 @@ export class SettingsApplier {
      * @param {object} params.settings
      */
     static apply({ sheet, renderEngine, settings }) {
-        console.log(`[SettingsApplier] Applying settings to sheet "${sheet.name}":`, {
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplier] Applying settings to sheet "${sheet.name}":`, {
             maxRows: settings.maxRows,
             maxCols: settings.maxCols,
             rowHeights: settings.rowHeights?.length || "not set",
@@ -30,17 +32,17 @@ export class SettingsApplier {
         if (settings.maxRows !== undefined || settings.maxCols !== undefined) {
             const rows = settings.maxRows || CONFIG.MAX_ROWS;
             const cols = settings.maxCols || CONFIG.MAX_COLS;
-            console.log(`[SettingsApplying] ✅ Found maxRows/maxCols! Calling resetSize(${rows}, ${cols})`);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ✅ Found maxRows/maxCols! Calling resetSize(${rows}, ${cols})`);
             sheet.rowColManager.resetSize(rows, cols);
         } else {
             // 兼容旧的 startRows/startCols 配置
             if (settings.startRows !== undefined || settings.startCols !== undefined) {
                 const rows = settings.startRows || 100;
                 const cols = settings.startCols || 26;
-                console.log(`[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`);
+                errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`);
                 sheet.rowColManager.resetSize(rows, cols);
             } else {
-                console.log(`[SettingsApplying] ℹ️ No maxRows/maxCols or startRows/startCols in settings`);
+                errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ℹ️ No maxRows/maxCols or startRows/startCols in settings`);
             }
         }
 
@@ -164,3 +166,4 @@ export class SettingsApplier {
         }
     }
 }
+

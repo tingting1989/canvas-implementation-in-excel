@@ -14,7 +14,7 @@
  * @module formula/functions/conditional
  */
 
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { _flatten, _toNum, _validateArgs, _matchCriteria, _matchWildcard } from "./utils/index.js";
 
 /**

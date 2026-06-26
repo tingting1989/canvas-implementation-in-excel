@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 公式函数注册表（模块化版本）
  *
  * 架构设计：
@@ -33,7 +33,7 @@
  * ```
  */
 
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 
 // 导入所有功能模块
 import { mathFunctions } from "./math.js";
@@ -304,5 +304,6 @@ export function getFunctionStats() {
 }
 
 // 初始化日志
-console.log("[FormulaEngine] ✅ 函数注册表初始化完成");
-console.log(`  统计信息:`, registry.getStats());
+errorHandler.debug(ERROR_CODE.DEBUG_LOG, "[FormulaEngine] ✅ 函数注册表初始化完成");
+errorHandler.debug(ERROR_CODE.DEBUG_LOG, `  统计信息:`, registry.getStats());
+

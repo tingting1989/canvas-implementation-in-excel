@@ -1,3 +1,5 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+
 /**
  * 事件信封结构
  *
@@ -103,12 +105,12 @@ export class EventBus {
     #validateContract(event, source) {
         const entry = EVENT_FLOW_REGISTRY[event];
         if (!entry) {
-            console.warn(`[EventBus] 契约校验: 事件 "${event}" 未在 EVENT_FLOW_REGISTRY 中声明`);
+            errorHandler.warn(ERROR_CODE.GENERIC_WARN, `[EventBus] 契约校验: 事件 "${event}" 未在 EVENT_FLOW_REGISTRY 中声明`);
             return;
         }
         if (entry.emitters.length > 0 && !entry.emitters.includes(source)) {
             const msg = `[EventBus] 契约校验: 事件 "${event}" 的发射方 "${source}" 不在合法列表 [${entry.emitters.join(", ")}] 中`;
-            console.error(msg);
+            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, msg);
             throw new Error(msg);
         }
     }
@@ -125,3 +127,4 @@ export class EventBus {
         return [...this.#listeners.keys()];
     }
 }
+

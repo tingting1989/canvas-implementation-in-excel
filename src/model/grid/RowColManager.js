@@ -1,3 +1,5 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+
 import { CONFIG } from "../../constants/config";
 
 export class RowColManager {
@@ -101,7 +103,7 @@ export class RowColManager {
     resetSize(rows, cols) {
         rows = Math.min(rows, CONFIG.MAX_ROWS);
         cols = Math.min(cols, CONFIG.MAX_COLS);
-        console.log(`[RowColManager] resetSize: ${rows}rows x ${cols}cols (force override)`);
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[RowColManager] resetSize: ${rows}rows x ${cols}cols (force override)`);
         this.#usedRows = rows;
         this.#usedCols = cols;
         this.#explicitlySized = true; // 标记为显式配置
@@ -125,7 +127,7 @@ export class RowColManager {
             this.#colPrefixDirty = true;
         }
 
-        console.log(
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, 
             `[RowColManager] resetSize complete: rowHeights.len=${this.#rowHeights.length}, colWidths.len=${this.#colWidths.length}, explicitlySized=${this.#explicitlySized}`,
         );
     }
@@ -552,3 +554,4 @@ export class RowColManager {
         this.#colPrefixDirty = false;
     }
 }
+

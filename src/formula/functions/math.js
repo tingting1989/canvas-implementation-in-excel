@@ -12,7 +12,7 @@
  * @module formula/functions/math
  */
 
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { _flatten, _toNum, _validateArgs } from "./utils/index.js";
 
 /**

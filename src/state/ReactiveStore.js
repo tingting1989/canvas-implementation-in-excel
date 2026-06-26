@@ -1,3 +1,5 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+
 const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (fn) => setTimeout(fn, 16);
 const caf = typeof cancelAnimationFrame === "function" ? cancelAnimationFrame : clearTimeout;
 
@@ -36,7 +38,7 @@ export class Scheduler {
             try {
                 job.run();
             } catch (err) {
-                console.error("[Scheduler] job error:", err);
+                errorHandler.handle(ERROR_CODE.GENERIC_ERROR, "[Scheduler] job error:", err);
             }
         }
 
@@ -162,7 +164,7 @@ export class ReactiveStore {
             try {
                 e.run(newValue, oldValue);
             } catch (err) {
-                console.error(`[ReactiveStore] sync watcher error on "${path}":`, err);
+                errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] sync watcher error on "${path}":`, err);
             }
         }
 
@@ -175,7 +177,7 @@ export class ReactiveStore {
                         const currentVal = this._getValueByPath(this.state, path);
                         effectRef.run(currentVal, oldValue);
                     } catch (err) {
-                        console.error(`[ReactiveStore] watcher error on "${path}":`, err);
+                        errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] watcher error on "${path}":`, err);
                     }
                 },
             });
@@ -331,3 +333,4 @@ export class ReactiveStore {
         this._proxyMap = new WeakMap();
     }
 }
+

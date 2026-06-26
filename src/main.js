@@ -13,11 +13,11 @@ import { FreezePlugin } from "./plugins/FreezePlugin.js";
 import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./utils/utils.js";
-import { errorHandler, ERROR_LEVEL } from "./core/ErrorHandler.js";
+import {errorHandler, ERROR_LEVEL, ERROR_CODE} from "./core/ErrorHandler.js";
 import { SortPlugin, DataValidationPlugin } from "@/plugins";
 
 const initApp = () => {
-    console.log("Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 
     // 配置统一错误处理：开发模式输出所有级别日志
     errorHandler.configure({
@@ -211,7 +211,7 @@ const initApp = () => {
                         label: "取消单元格样式",
                         contexts: ["cell", "rowHeader", "colHeader"],
                         action: (row, col, sheet) => {
-                            console.log("Clear cell style");
+                            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Clear cell style");
                             const range = sheet.selection.getRange();
                             for (let r = range.topRow; r <= range.bottomRow; r++) {
                                 sheet.clearRowStyle(r);
@@ -226,7 +226,7 @@ const initApp = () => {
                     {
                         label: "导出选中区域",
                         action: (row, col, sheet) => {
-                            console.log("Export from", row, col);
+                            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Export from", row, col);
                             alert("导出功能（示例）");
                         },
                     },
@@ -240,14 +240,14 @@ const initApp = () => {
         },
         hooks: {
             [HOOKS.ON_CELL_CLICK]: (row, col) => {
-                console.log("Cell clicked: (" + row + ", " + col + ")");
+                errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Cell clicked: (" + row + ", " + col + ")");
                 if (isFunction(updateToolbarStyleState)) {
                     updateToolbarStyleState();
                 }
             },
         },
         afterInit(wb) {
-            console.log("afterInit");
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "afterInit");
             const s2 = wb.sheets.get("Sheet2");
             if (s2) {
                 s2.setCell(2, 0, "Switch to Sheet1 to paste");
@@ -265,15 +265,15 @@ const initApp = () => {
     });
 
     wb.addHook(HOOKS.BEFORE_COLUMN_MOVE, (sourceCol, targetCol) => {
-        console.log(`即将移动列 ${sourceCol} → ${targetCol}`);
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `即将移动列 ${sourceCol} → ${targetCol}`);
     });
 
     wb.addHook(HOOKS.AFTER_COLUMN_MOVE, (sourceCol, targetCol) => {
-        console.log(`列移动完成 ${sourceCol} → ${targetCol}`);
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `列移动完成 ${sourceCol} → ${targetCol}`);
     });
 
     wb.addHook(HOOKS.AFTER_SORT, (colIndex, options, result) => {
-        console.log(`排序完成！列 ${colIndex}, 耗时 ${result.time}ms`);
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `排序完成！列 ${colIndex}, 耗时 ${result.time}ms`);
     });
     window.wb = wb;
 
@@ -285,21 +285,21 @@ const initApp = () => {
         setRows: (rows) => {
             const sheet = wb.getActiveSheet();
             sheet.setRowCount(rows);
-            console.log(`✅ 行数已调整为: ${rows}`);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 行数已调整为: ${rows}`);
         },
 
         /** 设置列数 */
         setCols: (cols) => {
             const sheet = wb.getActiveSheet();
             sheet.setColCount(cols);
-            console.log(`✅ 列数已调整为: ${cols}`);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 列数已调整为: ${cols}`);
         },
 
         /** 同时设置行数和列数 */
         setSize: (rows, cols) => {
             const sheet = wb.getActiveSheet();
             sheet.setGridSize(rows, cols);
-            console.log(`✅ 网格大小已调整为: ${rows}行 x ${cols}列`);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 网格大小已调整为: ${rows}行 x ${cols}列`);
         },
 
         /** 获取当前网格大小 */
@@ -329,7 +329,7 @@ const initApp = () => {
                 pg.setPageSize(pageSize);
             }
 
-            console.log(`✅ 大数据模式已启用: ${rows}行, 每页${pageSize}行, 共${Math.ceil(rows / pageSize)}页`);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 大数据模式已启用: ${rows}行, 每页${pageSize}行, 共${Math.ceil(rows / pageSize)}页`);
         },
 
         /** 切换到"小表格模式"（可选禁用分页） */
@@ -344,7 +344,7 @@ const initApp = () => {
                 wb.disablePlugin("pagination");
             }
 
-            console.log(`✅ 小表格模式已启用: ${rows}行, 分页${disablePagination ? "已禁用" : "仍启用"}`);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 小表格模式已启用: ${rows}行, 分页${disablePagination ? "已禁用" : "仍启用"}`);
         },
     };
 
@@ -353,9 +353,10 @@ const initApp = () => {
     //     window.resizeGrid.setSize(30, 15);
     // }, 5000);
 
-    console.log(wb.getActiveSheet().name);
-    console.log("Loaded plugins:", wb.pluginManager.getLoadedNames());
-    console.log("App started! Tile Rendering + Plugin System ready.");
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, wb.getActiveSheet().name);
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Loaded plugins:", wb.pluginManager.getLoadedNames());
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "App started! Tile Rendering + Plugin System ready.");
 };
 
 document.addEventListener("DOMContentLoaded", initApp);
+

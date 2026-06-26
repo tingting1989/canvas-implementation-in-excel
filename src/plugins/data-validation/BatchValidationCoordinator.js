@@ -1,4 +1,4 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { ValidationResult } from "./ValidationResult.js";
 
 const BATCH_EVENTS = {

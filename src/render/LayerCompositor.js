@@ -1,3 +1,5 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+
 import { BaseLayer } from "./BaseLayer.js";
 import { CONFIG } from "../constants/config.js";
 
@@ -153,7 +155,7 @@ export class LayerCompositor {
                     mainCtx.drawImage(layer.canvas, 0, 0, srcW, srcH, 0, 0, viewW, viewH);
                 }
             } catch (error) {
-                console.error(`[LayerCompositor] Error rendering layer "${layer.name}":`, error);
+                errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[LayerCompositor] Error rendering layer "${layer.name}":`, error);
             }
         }
 
@@ -193,3 +195,4 @@ export class LayerCompositor {
         this._needsSort = true;
     }
 }
+

@@ -9,7 +9,7 @@
  * @module formula/functions/utils/validation
  */
 
-import { errorHandler, ERROR_CODE } from "../../../core/ErrorHandler.js";
+import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { _toNum } from "./helpers.js";
 
 /**

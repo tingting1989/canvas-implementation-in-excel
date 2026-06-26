@@ -18,7 +18,7 @@
  * @module formula/functions/text
  */
 
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { _validateArgs } from "./utils/index.js";
 
 /**

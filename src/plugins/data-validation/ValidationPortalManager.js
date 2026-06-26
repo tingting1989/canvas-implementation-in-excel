@@ -1,4 +1,4 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../../core/ErrorHandler.js";
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 /**
  * ValidationPortalManager - 验证 UI 门户管理器
  *

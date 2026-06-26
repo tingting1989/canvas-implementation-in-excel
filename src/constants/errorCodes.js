@@ -116,4 +116,12 @@ export const ERROR_CODE = {
     FORMULA_ENGINE_INTERFACE_MISSING: "FORMULA_ENGINE_INTERFACE_MISSING",
     /** 用于调试时的信息日志 */
     VALIDATION_DEBUG_LOG: "VALIDATION_DEBUG_LOG",
-};
+
+    // 通用日志分类
+    /** 通用错误 */
+    GENERIC_ERROR: "GENERIC_ERROR",
+    /** 通用警告 */
+    GENERIC_WARN: "GENERIC_WARN",
+    /** 调试信息 */
+    DEBUG_LOG: "DEBUG_LOG",};
+

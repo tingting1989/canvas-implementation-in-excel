@@ -1,3 +1,5 @@
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+
 /**
  * 图层基类 (BaseLayer)
  *
@@ -55,7 +57,7 @@ export class BaseLayer {
      */
     watch(path, callback) {
         if (!this.#store) {
-            console.warn(`[${this.name}] Cannot watch: no store bound. Call bindStore() first.`);
+            errorHandler.warn(ERROR_CODE.GENERIC_WARN, `[${this.name}] Cannot watch: no store bound. Call bindStore() first.`);
             return () => {};
         }
 
@@ -184,3 +186,4 @@ export class BaseLayer {
         };
     }
 }
+

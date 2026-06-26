@@ -1,4 +1,4 @@
-import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
+﻿import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { EventBus } from "../core/EventBus.js";
@@ -921,11 +921,11 @@ export class Sheet {
      */
     setRowCount(rows) {
         if (!Number.isInteger(rows) || rows < 1) {
-            console.warn(`[Sheet] setRowCount: invalid rows=${rows}, must be integer >= 1`);
+            errorHandler.warn(ERROR_CODE.GENERIC_WARN, `[Sheet] setRowCount: invalid rows=${rows}, must be integer >= 1`);
             return;
         }
         const currentCols = this.rowColManager.colCount;
-        console.log(`[Sheet] setRowCount: ${this.rowColManager.rowCount} → ${rows}`);
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[Sheet] setRowCount: ${this.rowColManager.rowCount} → ${rows}`);
         this.rowColManager.resetSize(rows, currentCols);
         this.#syncPaginationAfterResize();
         this.#invalidateAll();
@@ -939,11 +939,11 @@ export class Sheet {
      */
     setColCount(cols) {
         if (!Number.isInteger(cols) || cols < 1) {
-            console.warn(`[Sheet] setColCount: invalid cols=${cols}, must be integer >= 1`);
+            errorHandler.warn(ERROR_CODE.GENERIC_WARN, `[Sheet] setColCount: invalid cols=${cols}, must be integer >= 1`);
             return;
         }
         const currentRows = this.rowColManager.rowCount;
-        console.log(`[Sheet] setColCount: ${this.rowColManager.colCount} → ${cols}`);
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[Sheet] setColCount: ${this.rowColManager.colCount} → ${cols}`);
         this.rowColManager.resetSize(currentRows, cols);
         this.#invalidateAll();
         this.render();
@@ -957,10 +957,10 @@ export class Sheet {
      */
     setGridSize(rows, cols) {
         if (!Number.isInteger(rows) || rows < 1 || !Number.isInteger(cols) || cols < 1) {
-            console.warn(`[Sheet] setGridSize: invalid size ${rows}x${cols}, must be integers >= 1`);
+            errorHandler.warn(ERROR_CODE.GENERIC_WARN, `[Sheet] setGridSize: invalid size ${rows}x${cols}, must be integers >= 1`);
             return;
         }
-        console.log(`[Sheet] setGridSize: ${this.rowColManager.rowCount}x${this.rowColManager.colCount} → ${rows}x${cols}`);
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[Sheet] setGridSize: ${this.rowColManager.rowCount}x${this.rowColManager.colCount} → ${rows}x${cols}`);
         this.rowColManager.resetSize(rows, cols);
         this.#syncPaginationAfterResize();
         this.#invalidateAll();
@@ -996,3 +996,4 @@ export class Sheet {
         return this.#typeManager.parseCellValue(r, c, input);
     }
 }
+
