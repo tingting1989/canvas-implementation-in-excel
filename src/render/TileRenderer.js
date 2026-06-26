@@ -210,7 +210,12 @@ export class TileRenderer {
                     if (merge && (drawX < 0 || drawY < 0 || drawX + w > tileSize || drawY + h > tileSize)) {
                         tileCtx.save();
                         tileCtx.beginPath();
-                        tileCtx.rect(Math.max(0, drawX), Math.max(0, drawY), Math.min(tileSize, drawX + w) - Math.max(0, drawX), Math.min(tileSize, drawY + h) - Math.max(0, drawY));
+                        tileCtx.rect(
+                            Math.max(0, drawX),
+                            Math.max(0, drawY),
+                            Math.min(tileSize, drawX + w) - Math.max(0, drawX),
+                            Math.min(tileSize, drawY + h) - Math.max(0, drawY),
+                        );
                         tileCtx.clip();
                         this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
                         tileCtx.restore();
