@@ -6,18 +6,22 @@
  * @module types/renderers/SparklineType
  */
 
-import { BaseColumnType } from '../BaseColumnType.js';
+import { BaseColumnType } from "../BaseColumnType.js";
 
 export class SparklineType extends BaseColumnType {
-    get name() { return 'sparkline'; }
+    get name() {
+        return "sparkline";
+    }
 
-    get editorType() { return 'text'; }
+    get editorType() {
+        return "text";
+    }
 
     format(value) {
         if (Array.isArray(value)) {
-            return value.length > 0 ? `${value.length} 个数据点` : '';
+            return value.length > 0 ? `${value.length} 个数据点` : "";
         }
-        return String(value ?? '');
+        return String(value ?? "");
     }
 
     /**
@@ -28,7 +32,7 @@ export class SparklineType extends BaseColumnType {
         const { ctx, x, y, width, height, value } = context;
 
         const data = Array.isArray(value) ? value : [];
-        const chartType = this.options?.type || 'line';
+        const chartType = this.options?.type || "line";
         const padding = 4;
 
         if (data.length === 0) return;
@@ -43,7 +47,7 @@ export class SparklineType extends BaseColumnType {
         const maxVal = Math.max(...data);
         const range = maxVal - minVal || 1;
 
-        if (chartType === 'bar') {
+        if (chartType === "bar") {
             this.#renderBarChart(ctx, data, chartX, chartY, chartW, chartH, minVal, range);
         } else {
             this.#renderLineChart(ctx, data, chartX, chartY, chartW, chartH, minVal, range);
@@ -54,8 +58,8 @@ export class SparklineType extends BaseColumnType {
      * 渲染折线图
      */
     #renderLineChart(ctx, data, x, y, w, h, minVal, range) {
-        const lineColor = this.options?.lineColor || '#2196f3';
-        const fillColor = this.options?.fillColor || 'rgba(33,150,243,0.2)';
+        const lineColor = this.options?.lineColor || "#2196f3";
+        const fillColor = this.options?.fillColor || "rgba(33,150,243,0.2)";
         const showDots = this.options?.showDots ?? false;
 
         const stepX = w / (data.length - 1 || 1);
@@ -108,7 +112,7 @@ export class SparklineType extends BaseColumnType {
      * 渲染柱状图
      */
     #renderBarChart(ctx, data, x, y, w, h, minVal, range) {
-        const barColor = this.options?.barColor || '#4caf50';
+        const barColor = this.options?.barColor || "#4caf50";
         const barGap = 1;
         const barW = (w - barGap * (data.length - 1)) / data.length;
 

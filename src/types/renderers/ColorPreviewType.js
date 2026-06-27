@@ -6,21 +6,25 @@
  * @module types/renderers/ColorPreviewType
  */
 
-import { BaseColumnType } from '../BaseColumnType.js';
+import { BaseColumnType } from "../BaseColumnType.js";
 
 export class ColorPreviewType extends BaseColumnType {
-    get name() { return 'colorPreview'; }
+    get name() {
+        return "colorPreview";
+    }
 
-    get editorType() { return 'text'; }
+    get editorType() {
+        return "text";
+    }
 
     format(value) {
-        return String(value ?? '');
+        return String(value ?? "");
     }
 
     validate(value) {
-        if (value === '' || value == null) return true;
+        if (value === "" || value == null) return true;
         const str = String(value).trim();
-        if (!this.#isValidColor(str)) return '无效的颜色值';
+        if (!this.#isValidColor(str)) return "无效的颜色值";
         return true;
     }
 
@@ -31,7 +35,7 @@ export class ColorPreviewType extends BaseColumnType {
     render(context) {
         const { ctx, x, y, width, height, value } = context;
 
-        const colorStr = String(value ?? '').trim();
+        const colorStr = String(value ?? "").trim();
         if (!colorStr) return;
 
         const padding = 4;
@@ -47,7 +51,7 @@ export class ColorPreviewType extends BaseColumnType {
 
         // 边框
         if (this.options?.showBorder !== false) {
-            ctx.strokeStyle = '#ccc';
+            ctx.strokeStyle = "#ccc";
             ctx.lineWidth = 1;
             context.drawRoundedRect(colorX, colorY, size, size, radius);
             ctx.stroke();
@@ -61,14 +65,14 @@ export class ColorPreviewType extends BaseColumnType {
         if (!color) return false;
         const s = new Option().style;
         s.color = color;
-        return s.color !== '';
+        return s.color !== "";
     }
 
     /**
      * 标准化颜色值
      */
     #normalizeColor(color) {
-        if (!color) return 'transparent';
+        if (!color) return "transparent";
 
         // 如果是有效的颜色值，直接返回
         if (this.#isValidColor(color)) return color;
@@ -78,6 +82,6 @@ export class ColorPreviewType extends BaseColumnType {
             return `#${color}`;
         }
 
-        return 'transparent';
+        return "transparent";
     }
 }

@@ -72,8 +72,8 @@ export class CellRenderContext {
         // ★★★ 双轨行列号体系 ★★★
         this._row = row;
         this._col = col;
-        this._realRow = realRow !== null ? realRow : row;  // 默认回退到页面行号
-        this._realCol = realCol !== null ? realCol : col;   // 默认回退到页面列号
+        this._realRow = realRow !== null ? realRow : row; // 默认回退到页面行号
+        this._realCol = realCol !== null ? realCol : col; // 默认回退到页面列号
 
         this._isSelected = isSelected;
         this._isDisabled = isDisabled;
@@ -205,7 +205,7 @@ export class CellRenderContext {
      * @returns {number} 实际行号
      */
     toRealRow(pageRow) {
-        if (this._sheet && typeof this._sheet.toRealRow === 'function') {
+        if (this._sheet && typeof this._sheet.toRealRow === "function") {
             return this._sheet.toRealRow(pageRow);
         }
 
@@ -225,7 +225,7 @@ export class CellRenderContext {
      * @returns {number} 页面行号
      */
     toPageRow(realRow) {
-        if (this._sheet && typeof this._sheet.toPageRow === 'function') {
+        if (this._sheet && typeof this._sheet.toPageRow === "function") {
             return this._sheet.toPageRow(realRow);
         }
 
@@ -245,7 +245,7 @@ export class CellRenderContext {
      * @returns {number} 实际列号
      */
     toRealCol(pageCol) {
-        if (this._sheet && typeof this._sheet.toRealCol === 'function') {
+        if (this._sheet && typeof this._sheet.toRealCol === "function") {
             return this._sheet.toRealCol(pageCol);
         }
         return pageCol;
@@ -258,7 +258,7 @@ export class CellRenderContext {
      * @returns {number} 页面列号
      */
     toPageCol(realCol) {
-        if (this._sheet && typeof this._sheet.toPageCol === 'function') {
+        if (this._sheet && typeof this._sheet.toPageCol === "function") {
             return this._sheet.toPageCol(realCol);
         }
         return realCol;

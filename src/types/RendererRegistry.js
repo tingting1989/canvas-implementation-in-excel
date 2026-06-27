@@ -34,21 +34,18 @@ class RendererRegistry {
      * registerRenderer('progress', ProgressBarType);
      */
     static registerRenderer(name, rendererClass) {
-        if (!name || typeof name !== 'string') {
-            errorHandler.warn(ERROR_CODE.INVALID_RENDERER_NAME,
-                "Renderer name must be a non-empty string");
+        if (!name || typeof name !== "string") {
+            errorHandler.warn(ERROR_CODE.INVALID_RENDERER_NAME, "Renderer name must be a non-empty string");
             return false;
         }
 
-        if (typeof rendererClass !== 'function') {
-            errorHandler.warn(ERROR_CODE.INVALID_RENDERER_CLASS,
-                "Renderer must be a constructor function");
+        if (typeof rendererClass !== "function") {
+            errorHandler.warn(ERROR_CODE.INVALID_RENDERER_CLASS, "Renderer must be a constructor function");
             return false;
         }
 
         if (this.#renderers.has(name)) {
-            errorHandler.warn(ERROR_CODE.DUPLICATE_RENDERER,
-                `Renderer "${name}" already registered, will be overwritten`);
+            errorHandler.warn(ERROR_CODE.DUPLICATE_RENDERER, `Renderer "${name}" already registered, will be overwritten`);
         }
 
         this.#renderers.set(name, rendererClass);
@@ -68,16 +65,13 @@ class RendererRegistry {
     static getRenderer(name, options = {}) {
         const RendererClass = this.#renderers.get(name);
         if (!RendererClass) {
-            errorHandler.warn(ERROR_CODE.RENDERER_NOT_FOUND,
-                `Renderer "${name}" not found`);
+            errorHandler.warn(ERROR_CODE.RENDERER_NOT_FOUND, `Renderer "${name}" not found`);
             return null;
         }
         try {
             return new RendererClass(options);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.RENDERER_INSTANTIATION_ERROR,
-                `Failed to instantiate renderer "${name}"`,
-                { originalError: error });
+            errorHandler.handle(ERROR_CODE.RENDERER_INSTANTIATION_ERROR, `Failed to instantiate renderer "${name}"`, { originalError: error });
             return null;
         }
     }

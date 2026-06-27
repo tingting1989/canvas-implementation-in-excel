@@ -6,26 +6,30 @@
  * @module types/renderers/BooleanCheckboxType
  */
 
-import { BaseColumnType } from '../BaseColumnType.js';
+import { BaseColumnType } from "../BaseColumnType.js";
 
 export class BooleanCheckboxType extends BaseColumnType {
-    get name() { return 'checkbox'; }
+    get name() {
+        return "checkbox";
+    }
 
-    get editorType() { return 'text'; }
+    get editorType() {
+        return "text";
+    }
 
     getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: 'center' };
+        return { ...baseStyle, textAlign: "center" };
     }
 
     format(value) {
-        return String(value ?? '');
+        return String(value ?? "");
     }
 
     parse(input) {
-        if (input === '' || input == null) return '';
+        if (input === "" || input == null) return "";
         const str = String(input).toLowerCase().trim();
-        if (['true', 'yes', '1', '是'].includes(str)) return true;
-        if (['false', 'no', '0', '否'].includes(str)) return false;
+        if (["true", "yes", "1", "是"].includes(str)) return true;
+        if (["false", "no", "0", "否"].includes(str)) return false;
         return input;
     }
 
@@ -44,22 +48,22 @@ export class BooleanCheckboxType extends BaseColumnType {
         const radius = boxSize * 0.15;
 
         // 未选中：空心方框
-        ctx.strokeStyle = this.options?.uncheckedColor || '#999';
+        ctx.strokeStyle = this.options?.uncheckedColor || "#999";
         ctx.lineWidth = 2;
         context.drawRoundedRect(boxX, boxY, boxSize, boxSize, radius);
         ctx.stroke();
 
         if (isChecked) {
             // 选中：填充背景 + 对勾
-            ctx.fillStyle = this.options?.checkedColor || '#4caf50';
+            ctx.fillStyle = this.options?.checkedColor || "#4caf50";
             context.drawRoundedRect(boxX, boxY, boxSize, boxSize, radius);
             ctx.fill();
 
             // 绘制对勾
-            ctx.strokeStyle = '#fff';
+            ctx.strokeStyle = "#fff";
             ctx.lineWidth = 2.5;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
 
             const checkSize = boxSize * 0.5;
             const cx = boxX + boxSize / 2;
@@ -75,7 +79,7 @@ export class BooleanCheckboxType extends BaseColumnType {
         // 禁用态：降低透明度
         if (isDisabled) {
             ctx.globalAlpha = 0.4;
-            ctx.fillStyle = '#ccc';
+            ctx.fillStyle = "#ccc";
             context.drawRoundedRect(boxX, boxY, boxSize, boxSize, radius);
             ctx.fill();
             ctx.globalAlpha = 1;

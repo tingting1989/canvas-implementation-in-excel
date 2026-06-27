@@ -6,26 +6,30 @@
  * @module types/renderers/ProgressBarType
  */
 
-import { BaseColumnType } from '../BaseColumnType.js';
+import { BaseColumnType } from "../BaseColumnType.js";
 
 export class ProgressBarType extends BaseColumnType {
-    get name() { return 'progressBar'; }
+    get name() {
+        return "progressBar";
+    }
 
-    get editorType() { return 'numeric'; }
+    get editorType() {
+        return "numeric";
+    }
 
     getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: 'center' };
+        return { ...baseStyle, textAlign: "center" };
     }
 
     format(value) {
-        return value != null ? `${value}%` : '';
+        return value != null ? `${value}%` : "";
     }
 
     validate(value) {
-        if (value === '' || value == null) return true;
+        if (value === "" || value == null) return true;
         const num = Number(value);
         if (isNaN(num)) return false;
-        if (num < 0 || num > 100) return '数值必须在 0-100 之间';
+        if (num < 0 || num > 100) return "数值必须在 0-100 之间";
         return true;
     }
 
@@ -47,18 +51,18 @@ export class ProgressBarType extends BaseColumnType {
         // 根据百分比选择颜色
         const colors = this.options?.colors || {};
         let fillColor;
-        if (percent < 30) fillColor = colors.low || '#f44336';
-        else if (percent < 70) fillColor = colors.medium || '#ff9800';
-        else fillColor = colors.high || '#4caf50';
+        if (percent < 30) fillColor = colors.low || "#f44336";
+        else if (percent < 70) fillColor = colors.medium || "#ff9800";
+        else fillColor = colors.high || "#4caf50";
 
         // 背景轨道
-        ctx.fillStyle = '#e0e0e0';
+        ctx.fillStyle = "#e0e0e0";
         context.drawRoundedRect(barX, barY, barW, barH, radius);
         ctx.fill();
 
         // 进度条（带圆角裁剪）
         if (percent > 0) {
-            const fillW = Math.max(radius * 2, barW * percent / 100);
+            const fillW = Math.max(radius * 2, (barW * percent) / 100);
             ctx.save();
             ctx.beginPath();
             context.drawRoundedRect(barX, barY, barW, barH, radius);
@@ -76,10 +80,10 @@ export class ProgressBarType extends BaseColumnType {
 
         // 百分比文字
         if (this.options?.showPercent !== false) {
-            ctx.fillStyle = style.color || '#333';
-            ctx.font = `bold ${style.fontSize || 11}px ${style.fontFamily || 'Segoe UI'}`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            ctx.fillStyle = style.color || "#333";
+            ctx.font = `bold ${style.fontSize || 11}px ${style.fontFamily || "Segoe UI"}`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
             ctx.fillText(`${Math.round(percent)}%`, context.getCenterX(), context.getCenterY());
         }
     }
@@ -88,10 +92,10 @@ export class ProgressBarType extends BaseColumnType {
      * 颜色变亮
      */
     #lightenColor(hex, percent) {
-        const num = parseInt(hex.replace('#', ''), 16);
+        const num = parseInt(hex.replace("#", ""), 16);
         const r = Math.min(255, (num >> 16) + percent);
-        const g = Math.min(255, ((num >> 8) & 0x00FF) + percent);
-        const b = Math.min(255, (num & 0x0000FF) + percent);
-        return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
+        const g = Math.min(255, ((num >> 8) & 0x00ff) + percent);
+        const b = Math.min(255, (num & 0x0000ff) + percent);
+        return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
     }
 }

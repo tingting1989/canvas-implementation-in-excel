@@ -6,23 +6,27 @@
  * @module types/renderers/StarRatingType
  */
 
-import { BaseColumnType } from '../BaseColumnType.js';
+import { BaseColumnType } from "../BaseColumnType.js";
 
 export class StarRatingType extends BaseColumnType {
-    get name() { return 'starRating'; }
+    get name() {
+        return "starRating";
+    }
 
-    get editorType() { return 'numeric'; }
+    get editorType() {
+        return "numeric";
+    }
 
     getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: 'left' };
+        return { ...baseStyle, textAlign: "left" };
     }
 
     format(value) {
-        return value != null ? `${value} 星` : '';
+        return value != null ? `${value} 星` : "";
     }
 
     validate(value) {
-        if (value === '' || value == null) return true;
+        if (value === "" || value == null) return true;
         const num = Number(value);
         const max = this.options?.maxStars || 5;
         if (isNaN(num) || num < 0 || num > max) return `评分必须在 0-${max} 之间`;
@@ -42,8 +46,8 @@ export class StarRatingType extends BaseColumnType {
         const startX = x + (width - (starSize * 5 + gap * 4)) / 2; // 居中
         const centerY = y + height / 2;
 
-        const filledColor = this.options?.color || '#ffc107';
-        const emptyColor = this.options?.emptyColor || '#e0e0e0';
+        const filledColor = this.options?.color || "#ffc107";
+        const emptyColor = this.options?.emptyColor || "#e0e0e0";
 
         for (let i = 0; i < 5; i++) {
             const starX = startX + i * (starSize + gap);
@@ -93,7 +97,7 @@ export class StarRatingType extends BaseColumnType {
         ctx.beginPath();
         for (let i = 0; i < spikes * 2; i++) {
             const radius = i % 2 === 0 ? outerRadius : innerRadius;
-            const angle = (i * Math.PI / spikes) - Math.PI / 2;
+            const angle = (i * Math.PI) / spikes - Math.PI / 2;
             const px = Math.cos(angle) * radius;
             const py = Math.sin(angle) * radius;
 
