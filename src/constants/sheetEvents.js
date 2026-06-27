@@ -101,9 +101,43 @@ export const SHEET_EVENTS = Object.freeze({
     GET_PLUGIN: "sheet:get-plugin",
 
     /*
+     * ==================== 编辑器生命周期事件 ====================
+     * 单元格编辑器的完整生命周期，用于触发对应的 Hooks
+     */
+
+    /** 即将开始编辑 - 编辑器显示前，可返回 false 阻止 */
+    EDITOR_BEFORE_BEGIN: "editor:before-begin",
+
+    /** 已开始编辑 - 编辑器显示后 */
+    EDITOR_AFTER_BEGIN: "editor:after-begin",
+
+    /** 即将提交编辑 - 值变更前，可返回 false 阻止 */
+    EDITOR_BEFORE_FINISH: "editor:before-finish",
+
+    /** 已完成编辑 - 编辑器隐藏后 */
+    EDITOR_AFTER_FINISH: "editor:after-finish",
+
+    /*
+     * ==================== 鼠标交互事件 ====================
+     * 单元格级别的鼠标交互，用于触发对应 Hooks
+     */
+
+    /** 鼠标进入单元格 */
+    CELL_MOUSE_OVER: "cell:mouse-over",
+
+    /** 鼠标离开单元格 */
+    CELL_MOUSE_OUT: "cell:mouse-out",
+
+    /*
      * ==================== Workbook 级别事件 ====================
      * 工作簿内部的全局事件（非 Sheet 实例事件）
      */
+
+    /** 工作簿初始化完成 - 所有子系统创建完毕 */
+    WORKBOOK_INIT: "workbook:init",
+
+    /** 工作簿即将销毁 - 销毁前清理资源 */
+    WORKBOOK_DESTROY: "workbook:destroy",
 
     /** 工作表已切换 - 用户点击标签栏切换了当前活动工作表 */
     SHEET_SWITCHED: "workbook:sheet-switched",
@@ -219,5 +253,49 @@ export const EVENT_FLOW_REGISTRY = Object.freeze({
     [SHEET_EVENTS.SHEET_SWITCHED]: {
         emitters: ["Workbook"],
         listeners: ["SortPlugin", "FreezePlugin", "PaginationPlugin"],
+    },
+
+    /*
+     * ==================== 编辑器生命周期事件流向 ====================
+     */
+    [SHEET_EVENTS.EDITOR_BEFORE_BEGIN]: {
+        emitters: ["CellEditor"],
+        listeners: ["EventHandler"],
+    },
+    [SHEET_EVENTS.EDITOR_AFTER_BEGIN]: {
+        emitters: ["CellEditor"],
+        listeners: ["EventHandler"],
+    },
+    [SHEET_EVENTS.EDITOR_BEFORE_FINISH]: {
+        emitters: ["CellEditor"],
+        listeners: ["EventHandler"],
+    },
+    [SHEET_EVENTS.EDITOR_AFTER_FINISH]: {
+        emitters: ["CellEditor"],
+        listeners: ["EventHandler"],
+    },
+
+    /*
+     * ==================== 鼠标交互事件流向 ====================
+     */
+    [SHEET_EVENTS.CELL_MOUSE_OVER]: {
+        emitters: ["MouseStrategy"],
+        listeners: ["EventHandler"],
+    },
+    [SHEET_EVENTS.CELL_MOUSE_OUT]: {
+        emitters: ["MouseStrategy"],
+        listeners: ["EventHandler"],
+    },
+
+    /*
+     * ==================== Workbook 生命周期事件流向 ====================
+     */
+    [SHEET_EVENTS.WORKBOOK_INIT]: {
+        emitters: ["Workbook"],
+        listeners: ["EventHandler"],
+    },
+    [SHEET_EVENTS.WORKBOOK_DESTROY]: {
+        emitters: ["Workbook"],
+        listeners: ["EventHandler"],
     },
 });

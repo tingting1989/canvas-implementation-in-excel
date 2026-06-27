@@ -201,6 +201,14 @@ export class Workbook {
         this.#applyInitOptions();
         this.#setupScrollCallback();
         this.#setupSheetTabBar();
+
+        // ✅ 通过 EventBus 发射工作簿初始化完成事件（指定 source 为 Workbook）
+        // EventHandler 会订阅此事件并触发 INIT hook
+        this.activeSheet?.bus?.emit(
+            SHEET_EVENTS.WORKBOOK_INIT,
+            [this],
+            { source: "Workbook" }
+        );
     }
 
     /**
@@ -837,6 +845,14 @@ export class Workbook {
     // ============================================================
 
     destroy() {
+        // ✅ 通过 EventBus 发射工作簿即将销毁事件（指定 source 为 Workbook）
+        // EventHandler 会订阅此事件并触发 DESTROY hook
+        this.activeSheet?.bus?.emit(
+            SHEET_EVENTS.WORKBOOK_DESTROY,
+            [this],
+            { source: "Workbook" }
+        );
+
         this.pluginManager?.destroyAll();
         this.pluginManager = null;
 

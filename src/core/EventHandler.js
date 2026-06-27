@@ -1,5 +1,7 @@
 import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
 import { Hooks } from "../editor/Hooks.js";
+import { HOOKS } from "../constants/hookNames.js";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
 import { RenderEngineCanvasContext } from "../render/RenderEngineCanvasContext.js";
 
@@ -47,6 +49,97 @@ export class EventHandler {
         this.strategies = new Map();
 
         this.#initStrategies();
+
+        // ✅ 订阅 EventBus 事件，桥接到 Hooks 系统
+        this.#subscribeEditorEvents();
+    }
+
+    /**
+     * 订阅编辑器生命周期事件并转换为 Hooks 调用
+     *
+     * 这是 EventBus 与 Hooks 之间的桥梁层：
+     * - CellEditor/MouseStrategy/Workbook 通过 EventBus 发射事件
+     * - EventHandler 订阅这些事件并触发对应的 hooks
+     *
+     * 好处：
+     * 1. CellEditor 不需要知道 EventHandler 的存在（完全解耦）
+     * 2. 可以灵活地决定哪些事件转换为 hooks，哪些不转换
+     * 3. 易于测试和扩展
+     */
+    #subscribeEditorEvents() {
+        const bus = this.sheet.bus;
+        if (!bus) return;
+
+        // ==================== 编辑器生命周期事件 ====================
+        // 注意：EventBus.emit() 会将参数包装成 envelope 对象传给监听器
+        // envelope = { source, sheetId, timestamp, type, payload }
+        // 所以需要从 envelope.payload 中提取实际参数
+
+        // 即将开始编辑 → BEFORE_BEGIN_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_BEFORE_BEGIN, (envelope) => {
+            const [row, col] = envelope.payload;
+            return this.runHooksUntil(HOOKS.BEFORE_BEGIN_EDITING, row, col);
+        });
+
+        // 已开始编辑 → AFTER_BEGIN_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_AFTER_BEGIN, (envelope) => {
+            const [row, col] = envelope.payload;
+            this.runHooks(HOOKS.AFTER_BEGIN_EDITING, row, col);
+        });
+
+        // 即将提交编辑 → BEFORE_FINISH_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_BEFORE_FINISH, (envelope) => {
+            const [row, col] = envelope.payload;
+            return this.runHooksUntil(HOOKS.BEFORE_FINISH_EDITING, row, col);
+        });
+
+        // 已完成编辑 → AFTER_FINISH_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_AFTER_FINISH, (envelope) => {
+            const [row, col, oldValue, newValue] = envelope.payload;
+            this.runHooks(HOOKS.AFTER_FINISH_EDITING, row, col, oldValue, newValue);
+        });
+
+        // ==================== 数据变更事件 ====================
+
+        // 值变更前 → BEFORE_CHANGE hook
+        bus.on(SHEET_EVENTS.BEFORE_CHANGE, (envelope) => {
+            const [changes] = envelope.payload;
+            return this.runHooksUntil(HOOKS.BEFORE_CHANGE, changes);
+        });
+
+        // 值变更后 → AFTER_CHANGE hook
+        bus.on(SHEET_EVENTS.AFTER_CHANGE, (envelope) => {
+            const [changes] = envelope.payload;
+            this.runHooks(HOOKS.AFTER_CHANGE, changes);
+        });
+
+        // ==================== 鼠标交互事件 ====================
+
+        // 鼠标进入单元格 → ON_CELL_MOUSE_OVER hook
+        bus.on(SHEET_EVENTS.CELL_MOUSE_OVER, (envelope) => {
+            const [row, col, event] = envelope.payload;
+            this.runHooks(HOOKS.ON_CELL_MOUSE_OVER, row, col, event);
+        });
+
+        // 鼠标离开单元格 → ON_CELL_MOUSE_OUT hook
+        bus.on(SHEET_EVENTS.CELL_MOUSE_OUT, (envelope) => {
+            const [row, col, event] = envelope.payload;
+            this.runHooks(HOOKS.ON_CELL_MOUSE_OUT, row, col, event);
+        });
+
+        // ==================== Workbook 生命周期事件 ====================
+
+        // 工作簿初始化完成 → INIT hook
+        bus.on(SHEET_EVENTS.WORKBOOK_INIT, (envelope) => {
+            const [workbook] = envelope.payload;
+            this.runHooks(HOOKS.INIT, workbook);
+        });
+
+        // 工作簿即将销毁 → DESTROY hook
+        bus.on(SHEET_EVENTS.WORKBOOK_DESTROY, (envelope) => {
+            const [workbook] = envelope.payload;
+            this.runHooks(HOOKS.DESTROY, workbook);
+        });
     }
 
     /**

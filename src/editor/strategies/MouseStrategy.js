@@ -2,6 +2,7 @@ import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { debounce } from "../../utils/utils.js";
 
 /**
@@ -91,13 +92,54 @@ export class MouseStrategy extends EventStrategy {
         this.handler.render();
     }
 
+    /** 上一次鼠标悬停的单元格位置 */
+    #lastHoverCell = { row: -1, col: -1 };
+
     #handleMouseMove(e) {
-        if (!this.#dragging || !this.handler.sheet) return;
+        // ✅ 修复：移除 #dragging 限制，所有鼠标移动都应触发事件
+        if (!this.handler.sheet) return;
 
         const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
-        if (!hit) return;
+
+        // 鼠标离开单元格区域
+        if (!hit) {
+            if (this.#lastHoverCell.row !== -1) {
+                // ✅ 通过 EventBus 发射鼠标移出事件（指定 source 为 MouseStrategy）
+                this.handler.sheet.bus.emit(
+                    SHEET_EVENTS.CELL_MOUSE_OUT,
+                    [this.#lastHoverCell.row, this.#lastHoverCell.col, e],
+                    { source: "MouseStrategy" }
+                );
+                this.#lastHoverCell = { row: -1, col: -1 };
+            }
+            return;
+        }
 
         const { row, col } = this.#getTopLeft(hit.row, hit.col);
+
+        // 检测鼠标移出单元格
+        if (this.#lastHoverCell.row !== -1 && (this.#lastHoverCell.row !== row || this.#lastHoverCell.col !== col)) {
+            // ✅ 通过 EventBus 发射鼠标移出事件（指定 source 为 MouseStrategy）
+            this.handler.sheet.bus.emit(
+                SHEET_EVENTS.CELL_MOUSE_OUT,
+                [this.#lastHoverCell.row, this.#lastHoverCell.col, e],
+                { source: "MouseStrategy" }
+            );
+        }
+
+        // 更新最后悬停位置并触发鼠标悬停事件
+        if (this.#lastHoverCell.row !== row || this.#lastHoverCell.col !== col) {
+            this.#lastHoverCell = { row, col };
+            // ✅ 通过 EventBus 发射鼠标悬停事件（指定 source 为 MouseStrategy）
+            this.handler.sheet.bus.emit(
+                SHEET_EVENTS.CELL_MOUSE_OVER,
+                [row, col, e],
+                { source: "MouseStrategy" }
+            );
+        }
+
+        // 拖拽选择逻辑（仅在拖拽时执行）
+        if (!this.#dragging) return;
 
         const merge = this.handler.sheet.getMerge(row, col);
         const focusRow = merge ? merge.bottomRow : row;

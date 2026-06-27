@@ -191,6 +191,16 @@ export class CellEditor {
     show(row, col, cursorMode = "select") {
         if (!this.sheet || this.sheet.isDisabled(row, col)) return;
         if (!this.editor) return;
+
+        // ✅ 通过 EventBus 发射"即将开始编辑"事件（指定 source 为 CellEditor）
+        // EventHandler 会订阅此事件并触发 BEFORE_BEGIN_EDITING hook
+        const canBegin = this.sheet.bus?.emit(
+            SHEET_EVENTS.EDITOR_BEFORE_BEGIN,
+            [row, col],
+            { source: "CellEditor" }
+        );
+        if (canBegin === false) return;
+
         this.activeRow = row;
         this.activeCol = col;
         this.#scrollHiding = false;
@@ -213,6 +223,14 @@ export class CellEditor {
         this.editor.focus();
 
         this.setCursorMode(cursorMode);
+
+        // ✅ 通过 EventBus 发射"已开始编辑"事件（指定 source 为 CellEditor）
+        this.sheet.bus?.emit(
+            SHEET_EVENTS.EDITOR_AFTER_BEGIN,
+            [row, col],
+            { source: "CellEditor" }
+        );
+
         this.afterShow(row, col, cursorMode);
     }
 
@@ -262,6 +280,15 @@ export class CellEditor {
         if (this.composing) return;
         if (this.activeRow < 0 || !this.sheet) return;
 
+        // ✅ 通过 EventBus 发射"即将提交编辑"事件（指定 source 为 CellEditor）
+        // EventHandler 会订阅此事件并触发 BEFORE_FINISH_EDITING hook
+        const canFinish = this.sheet.bus?.emit(
+            SHEET_EVENTS.EDITOR_BEFORE_FINISH,
+            [this.activeRow, this.activeCol],
+            { source: "CellEditor" }
+        );
+        if (canFinish === false) return;
+
         let newValue = this.getEditorValue();
         const batchRange = this.sheet._batchFillRange;
 
@@ -292,10 +319,34 @@ export class CellEditor {
                 this.#render();
                 return;
             }
+            // ✅ 通过 EventBus 发射 BEFORE_CHANGE 事件（值变更前，指定 source 为 CellEditor）
+            const changeData = [{ row: targetRow, col: targetCol, oldValue: oldCell?.value, newValue }];
+            const canChange = this.sheet.bus?.emit(
+                SHEET_EVENTS.BEFORE_CHANGE,
+                [changeData],
+                { source: "CellEditor" }
+            );
+            if (canChange === false) return;
+
             this.sheet.setCell(targetRow, targetCol, newValue, oldCell?.styleId || 0);
+
+            // ✅ 通过 EventBus 发射 AFTER_CHANGE 事件（值变更后，指定 source 为 CellEditor）
+            this.sheet.bus?.emit(
+                SHEET_EVENTS.AFTER_CHANGE,
+                [changeData],
+                { source: "CellEditor" }
+            );
         }
 
         this.hide();
+
+        // ✅ 通过 EventBus 发射"已完成编辑"事件（指定 source 为 CellEditor）
+        this.sheet.bus?.emit(
+            SHEET_EVENTS.EDITOR_AFTER_FINISH,
+            [this.activeRow, this.activeCol, this.originalValue, newValue],
+            { source: "CellEditor" }
+        );
+
         if (this.viewport && isFunction(this.viewport.invalidateAll)) {
             this.viewport.invalidateAll();
         }
