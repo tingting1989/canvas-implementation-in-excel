@@ -17,10 +17,10 @@ export class ProgressBarType extends BaseColumnType {
         borderRadius: 4,
         showPercent: true,
         colors: {
-            low: '#f44336',
-            medium: '#ff9800',
-            high: '#4caf50'
-        }
+            low: "#f44336",
+            medium: "#ff9800",
+            high: "#4caf50",
+        },
     };
 
     constructor(options = {}) {

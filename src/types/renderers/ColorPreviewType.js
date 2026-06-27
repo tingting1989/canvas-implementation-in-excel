@@ -81,23 +81,41 @@ export class ColorPreviewType extends BaseColumnType {
         const hslaPattern = /^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/;
 
         // CSS 预定义颜色名称
-        const namedColors = ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta',
-                           'white', 'black', 'gray', 'grey', 'orange', 'purple',
-                           'pink', 'brown', 'transparent', 'inherit', 'initial'];
+        const namedColors = [
+            "red",
+            "green",
+            "blue",
+            "yellow",
+            "cyan",
+            "magenta",
+            "white",
+            "black",
+            "gray",
+            "grey",
+            "orange",
+            "purple",
+            "pink",
+            "brown",
+            "transparent",
+            "inherit",
+            "initial",
+        ];
 
-        return hexPattern.test(color) ||
-               rgbPattern.test(color) ||
-               rgbaPattern.test(color) ||
-               hslPattern.test(color) ||
-               hslaPattern.test(color) ||
-               namedColors.includes(color.toLowerCase());
+        return (
+            hexPattern.test(color) ||
+            rgbPattern.test(color) ||
+            rgbaPattern.test(color) ||
+            hslPattern.test(color) ||
+            hslaPattern.test(color) ||
+            namedColors.includes(color.toLowerCase())
+        );
     }
 
     /**
      * 标准化颜色值（确保返回有效颜色或 transparent）
      */
     #normalizeColor(color) {
-        if (!color || color.trim() === '') return "transparent";
+        if (!color || color.trim() === "") return "transparent";
 
         const trimmedColor = color.trim();
 
