@@ -1,6 +1,7 @@
  import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DragIndicatorLayer } from "../../../src/render/layers/DragIndicatorLayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 describe("DragIndicatorLayer", () => {
     let layer;
@@ -11,7 +12,7 @@ describe("DragIndicatorLayer", () => {
 
     it("should have name 'drag-indicator' and zIndex 6", () => {
         expect(layer.name).toBe("drag-indicator");
-        expect(layer.zIndex).toBe(6);
+        expect(layer.zIndex).toBe(LAYER_Z_INDEX.DRAG_INDICATOR);
     });
 
     it("should be dirty on construction", () => {
@@ -238,7 +239,7 @@ describe("DragIndicatorLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("drag-indicator");
-        expect(info.zIndex).toBe(60);
+        expect(info.zIndex).toBe(LAYER_Z_INDEX.DRAG_INDICATOR);
         expect(info.enabled).toBe(true);
     });
 });

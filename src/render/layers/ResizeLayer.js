@@ -1,12 +1,13 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { CONFIG } from "../../constants/config";
 import { HIT_TYPE } from "../../constants/hitType";
+import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
 
 export class ResizeLayer extends BaseLayer {
     #resizeLine = null;
 
     constructor() {
-        super("resize", 30);
+        super("resize", LAYER_Z_INDEX.RESIZE);
     }
 
     bindStore(store) {

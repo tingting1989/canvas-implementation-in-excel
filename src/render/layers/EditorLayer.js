@@ -1,9 +1,10 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { CONFIG } from "../../constants/config";
+import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
 
 export class EditorLayer extends BaseLayer {
     constructor() {
-        super("editor", 80);
+        super("editor", LAYER_Z_INDEX.EDITOR);
     }
 
     bindStore(store) {

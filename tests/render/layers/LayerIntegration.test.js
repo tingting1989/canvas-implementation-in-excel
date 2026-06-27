@@ -6,6 +6,7 @@ import { FrozenLayer } from "../../../src/render/layers/FrozenLayer.js";
 import { HeaderLayer } from "../../../src/render/layers/HeaderLayer.js";
 import { UILayer } from "../../../src/render/layers/UILayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 describe("Layer Integration", () => {
     let compositor;
@@ -33,15 +34,15 @@ describe("Layer Integration", () => {
 
         const sorted = compositor.getSortedLayers();
         expect(sorted[0].name).toBe("tiles");
-        expect(sorted[0].zIndex).toBe(10);
+        expect(sorted[0].zIndex).toBe(LAYER_Z_INDEX.TILE);
         expect(sorted[1].name).toBe("overlays");
-        expect(sorted[1].zIndex).toBe(20);
+        expect(sorted[1].zIndex).toBe(LAYER_Z_INDEX.OVERLAY);
         expect(sorted[2].name).toBe("frozen");
-        expect(sorted[2].zIndex).toBe(40);
+        expect(sorted[2].zIndex).toBe(LAYER_Z_INDEX.FROZEN);
         expect(sorted[3].name).toBe("headers");
-        expect(sorted[3].zIndex).toBe(50);
+        expect(sorted[3].zIndex).toBe(LAYER_Z_INDEX.HEADER);
         expect(sorted[4].name).toBe("ui");
-        expect(sorted[4].zIndex).toBe(70);
+        expect(sorted[4].zIndex).toBe(LAYER_Z_INDEX.UI);
     });
 
     it("should bind all layers to store", () => {

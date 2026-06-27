@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { UILayer } from "../../../src/render/layers/UILayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 function createMockSheet(overrides = {}) {
     return {
@@ -21,7 +22,7 @@ describe("UILayer", () => {
 
     it("should have name 'ui' and zIndex 70", () => {
         expect(layer.name).toBe("ui");
-        expect(layer.zIndex).toBe(70);
+        expect(layer.zIndex).toBe(LAYER_Z_INDEX.UI);
     });
 
     it("should be dirty on construction", () => {
@@ -235,7 +236,7 @@ describe("UILayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("ui");
-        expect(info.zIndex).toBe(70);
+        expect(info.zIndex).toBe(LAYER_Z_INDEX.UI);
         expect(info.enabled).toBe(true);
     });
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ResizeLayer } from "../../../src/render/layers/ResizeLayer.js";
 import { HIT_TYPE } from "../../../src/constants/hitType.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 describe("ResizeLayer", () => {
     let layer;
@@ -12,7 +13,7 @@ describe("ResizeLayer", () => {
 
     it("should have name 'resize' and zIndex 30", () => {
         expect(layer.name).toBe("resize");
-        expect(layer.zIndex).toBe(30);
+        expect(layer.zIndex).toBe(LAYER_Z_INDEX.RESIZE);
     });
 
     it("should be dirty on construction", () => {

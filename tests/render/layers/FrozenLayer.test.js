@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { FrozenLayer } from "../../../src/render/layers/FrozenLayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 function createMockSheet(overrides = {}) {
     const frozenColsWidth = overrides.frozenColsWidth ?? 0;
@@ -51,7 +52,7 @@ describe("FrozenLayer", () => {
     describe("Constructor & Initialization", () => {
         it("should have name 'frozen' and zIndex 4", () => {
             expect(layer.name).toBe("frozen");
-            expect(layer.zIndex).toBe(4);
+            expect(layer.zIndex).toBe(LAYER_Z_INDEX.FROZEN);
         });
 
         it("should be dirty on construction", () => {
@@ -789,7 +790,7 @@ describe("FrozenLayer", () => {
         it("should return correct debug info", () => {
             const info = layer.getDebugInfo();
             expect(info.name).toBe("frozen");
-            expect(info.zIndex).toBe(40);
+            expect(info.zIndex).toBe(LAYER_Z_INDEX.FROZEN);
             expect(info.enabled).toBe(true);
         });
     });

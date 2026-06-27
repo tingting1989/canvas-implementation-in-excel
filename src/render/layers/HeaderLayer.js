@@ -28,12 +28,13 @@
 
 import { BaseLayer } from "../BaseLayer.js";
 import { HeaderRenderer } from "../HeaderRenderer.js";
+import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
 
 export class HeaderLayer extends BaseLayer {
     #dragIndicatorLayer = null;
 
     constructor() {
-        super("headers", 50);
+        super("headers", LAYER_Z_INDEX.HEADER);
 
         this.headerRenderer = new HeaderRenderer();
     }

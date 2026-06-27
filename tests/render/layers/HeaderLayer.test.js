@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HeaderLayer } from "../../../src/render/layers/HeaderLayer.js";
 import { DragIndicatorLayer } from "../../../src/render/layers/DragIndicatorLayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 describe("HeaderLayer", () => {
     let layer;
@@ -12,7 +13,7 @@ describe("HeaderLayer", () => {
 
     it("should have name 'headers' and zIndex 5", () => {
         expect(layer.name).toBe("headers");
-        expect(layer.zIndex).toBe(5);
+        expect(layer.zIndex).toBe(LAYER_Z_INDEX.HEADER);
     });
 
     it("should be dirty on construction", () => {
@@ -138,7 +139,7 @@ describe("HeaderLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("headers");
-        expect(info.zIndex).toBe(50);
+        expect(info.zIndex).toBe(LAYER_Z_INDEX.HEADER);
         expect(info.enabled).toBe(true);
     });
 });

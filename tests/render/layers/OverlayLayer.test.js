@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { OverlayLayer } from "../../../src/render/layers/OverlayLayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 describe("OverlayLayer", () => {
     let layer;
@@ -11,7 +12,7 @@ describe("OverlayLayer", () => {
 
     it("should have name 'overlays' and zIndex 2", () => {
         expect(layer.name).toBe("overlays");
-        expect(layer.zIndex).toBe(2);
+        expect(layer.zIndex).toBe(LAYER_Z_INDEX.OVERLAY);
     });
 
     it("should be dirty on construction", () => {
@@ -109,7 +110,7 @@ describe("OverlayLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("overlays");
-        expect(info.zIndex).toBe(20);
+        expect(info.zIndex).toBe(LAYER_Z_INDEX.OVERLAY);
         expect(info.enabled).toBe(true);
     });
 

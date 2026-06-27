@@ -33,10 +33,11 @@ import { BaseLayer } from "../BaseLayer.js";
 import { TileRenderer } from "../TileRenderer.js";
 import { TileCache } from "../TileCache.js";
 import { OverlayRenderer } from "../OverlayRenderer.js";
+import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
 
 export class FrozenLayer extends BaseLayer {
     constructor() {
-        super("frozen", 40);
+        super("frozen", LAYER_Z_INDEX.FROZEN);
 
         this.tileRenderer = new TileRenderer(new TileCache());
         this.overlayRenderer = new OverlayRenderer();

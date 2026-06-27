@@ -34,10 +34,11 @@
  */
 
 import { BaseLayer } from "../BaseLayer.js";
+import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
 
 export class UILayer extends BaseLayer {
     constructor() {
-        super("ui", 70);
+        super("ui", LAYER_Z_INDEX.UI);
 
         /** 是否开启调试模式，显示图层运行状态信息 */
         this.debugMode = false;

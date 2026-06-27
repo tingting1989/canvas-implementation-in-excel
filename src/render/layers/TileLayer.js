@@ -36,6 +36,7 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { TileRenderer } from "../TileRenderer.js";
 import { TileCache } from "../TileCache.js";
+import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
 
 export class TileLayer extends BaseLayer {
     /**
@@ -45,7 +46,7 @@ export class TileLayer extends BaseLayer {
      *   传入 null 时会创建新的独立缓存。传入已有实例可实现跨图层缓存共享。
      */
     constructor(tileCache = null) {
-        super("tiles", 10);
+        super("tiles", LAYER_Z_INDEX.TILE);
 
         /** 瓦片渲染器，负责瓦片的创建、管理和绘制 */
         this.tileRenderer = new TileRenderer(tileCache || new TileCache());

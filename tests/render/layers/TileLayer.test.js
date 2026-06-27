@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TileLayer } from "../../../src/render/layers/TileLayer.js";
 import { TileCache } from "../../../src/render/TileCache.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 describe("TileLayer", () => {
     let layer;
@@ -12,7 +13,7 @@ describe("TileLayer", () => {
 
     it("should have name 'tiles' and zIndex 10", () => {
         expect(layer.name).toBe("tiles");
-        expect(layer.zIndex).toBe(10);
+        expect(layer.zIndex).toBe(LAYER_Z_INDEX.TILE);
     });
 
     it("should be dirty on construction", () => {
@@ -193,7 +194,7 @@ describe("TileLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("tiles");
-        expect(info.zIndex).toBe(1);
+        expect(info.zIndex).toBe(LAYER_Z_INDEX.TILE);
         expect(info.enabled).toBe(true);
     });
 

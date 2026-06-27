@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { EditorLayer } from "../../../src/render/layers/EditorLayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
+import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
 describe("EditorLayer", () => {
     let layer;
@@ -11,7 +12,7 @@ describe("EditorLayer", () => {
 
     it("should have name 'editor' and zIndex 8", () => {
         expect(layer.name).toBe("editor");
-        expect(layer.zIndex).toBe(8);
+        expect(layer.zIndex).toBe(LAYER_Z_INDEX.EDITOR);
     });
 
     it("should be dirty on construction", () => {
@@ -168,7 +169,7 @@ describe("EditorLayer", () => {
     it("should return correct debug info", () => {
         const info = layer.getDebugInfo();
         expect(info.name).toBe("editor");
-        expect(info.zIndex).toBe(80);
+        expect(info.zIndex).toBe(LAYER_Z_INDEX.EDITOR);
         expect(info.enabled).toBe(true);
     });
 });
