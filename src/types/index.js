@@ -144,8 +144,9 @@ export function resolveCellType(r, c, cellTypes, columnsConfig) {
         return getType(colConfig.type, extractTypeOptions(colConfig));
     }
 
-    // 3. 默认 text 类型
-    return registry.get("text");
+    // 3. 默认 text 类型 - 返回实例而非整个 entry 对象
+    const defaultEntry = registry.get("text");
+    return defaultEntry ? defaultEntry.instance : null;
 }
 
 export function formatValue(cellType, value) {

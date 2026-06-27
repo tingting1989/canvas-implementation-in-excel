@@ -1,14 +1,14 @@
-import { Sheet } from "./Sheet.js";
-import { RenderEngine } from "../render/RenderEngine.js";
-import { EditorManager } from "../editor/EditorManager.js";
-import { EventHandler } from "../core/EventHandler.js";
-import { isFunction, isObject } from "../utils/utils.js";
-import { PluginManager } from "../plugins/PluginManager.js";
-import { stylePool } from "../model/styles";
-import { CONFIG } from "../constants/config";
-import { SettingsApplier } from "./managers/SettingsApplier.js";
-import { SHEET_EVENTS } from "../constants/sheetEvents.js";
-import { HOOKS } from "../constants/hookNames.js";
+import {Sheet} from "./Sheet.js";
+import {RenderEngine} from "../render/RenderEngine.js";
+import {EditorManager} from "../editor/EditorManager.js";
+import {EventHandler} from "../core/EventHandler.js";
+import {isFunction, isObject} from "../utils/utils.js";
+import {PluginManager} from "../plugins/PluginManager.js";
+import {stylePool} from "../model/styles";
+import {CONFIG} from "../constants/config";
+import {SettingsApplier} from "./managers/SettingsApplier.js";
+import {SHEET_EVENTS} from "../constants/sheetEvents.js";
+import {HOOKS} from "../constants/hookNames.js";
 
 /**
  * 工作簿
@@ -55,7 +55,6 @@ export class Workbook {
      * @param {number} [options.width] - 画布宽度（px），默认自适应容器
      * @param {number} [options.height] - 画布高度（px），默认自适应容器
      * @param {number|number[]} [options.rowHeights] - 行高配置
-     * @param {number|number[]} [options.colWidths] - 列宽配置
      * @param {number} [options.startRows=100] - 初始行数
      * @param {number} [options.startCols=26] - 初始列数
      * @param {string[]} [options.plugins] - 要加载的插件名称列表
@@ -134,7 +133,7 @@ export class Workbook {
     /** @returns {?import("../plugins/BasePlugin.js").BasePlugin} */
     loadPlugin(name, options = {}) {
         if (!this.pluginManager) {
-            this.#pendingPlugins.push({ type: "name", name, options });
+            this.#pendingPlugins.push({type: "name", name, options});
             return null;
         }
         return this.pluginManager.loadPlugin(name, options);
@@ -143,7 +142,7 @@ export class Workbook {
     /** @returns {?import("../plugins/BasePlugin.js").BasePlugin} */
     loadPluginClass(PluginClass, options = {}) {
         if (!this.pluginManager) {
-            this.#pendingPlugins.push({ type: "class", PluginClass, options });
+            this.#pendingPlugins.push({type: "class", PluginClass, options});
             return null;
         }
         return this.pluginManager.loadPluginClass(PluginClass, options);
@@ -206,7 +205,7 @@ export class Workbook {
 
     #ensureDefaultSheet() {
         if (this.sheets.size === 0) {
-            this.addSheet(this.#initOptions?.sheetName || "Sheet1");
+            this.addSheet(this.#initOptions?.sheetName || `${CONFIG.DEFAULT_SHEET_NAME}1`);
         }
     }
 
@@ -247,7 +246,7 @@ export class Workbook {
         });
 
         bus.on(SHEET_EVENTS.INVALIDATE_CELL, (envelope) => {
-            const { pageRow, c } = envelope.payload;
+            const {pageRow, c} = envelope.payload;
             this.renderEngine?.invalidateCell(pageRow, c);
         });
 
@@ -257,19 +256,19 @@ export class Workbook {
 
         bus.on(SHEET_EVENTS.FORMULA_SET, (envelope) => {
             if (this.formulaEngine) {
-                const { r, c, formula } = envelope.payload;
+                const {r, c, formula} = envelope.payload;
                 return this.formulaEngine.setFormula(sheet, r, c, formula);
             }
             return undefined;
         });
 
         bus.on(SHEET_EVENTS.FORMULA_REMOVE, (envelope) => {
-            const { r, c } = envelope.payload;
+            const {r, c} = envelope.payload;
             this.formulaEngine?.removeFormula(sheet, r, c);
         });
 
         bus.on(SHEET_EVENTS.CELL_CHANGED, (envelope) => {
-            const { r, c } = envelope.payload;
+            const {r, c} = envelope.payload;
             this.formulaEngine?.onCellChanged(sheet, r, c);
         });
 
@@ -319,7 +318,7 @@ export class Workbook {
             const activeEditor = this.editor?.getActiveEditor();
             if (!activeEditor || activeEditor.activeRow < 0) return;
 
-            const { activeRow: row, activeCol: col } = activeEditor;
+            const {activeRow: row, activeCol: col} = activeEditor;
             const dpr = window.devicePixelRatio || 1;
             const tabH = CONFIG.SHEET_TAB_HEIGHT;
             const canvasW = this.renderEngine.canvas.width / dpr;
@@ -372,8 +371,8 @@ export class Workbook {
 
     #generateSheetName() {
         let idx = this.sheets.size + 1;
-        while (this.sheets.has(`Sheet${idx}`)) idx++;
-        return `Sheet${idx}`;
+        while (this.sheets.has(`${CONFIG.DEFAULT_SHEET_NAME}${idx}`)) idx++;
+        return `${CONFIG.DEFAULT_SHEET_NAME}${idx}`;
     }
 
     // ============================================================
@@ -405,9 +404,9 @@ export class Workbook {
             const name = sheetConfig.name || this.#generateSheetName();
             const sheet = this.sheets.get(name);
             if (!sheet) continue;
-            const settings = { ...opts, ...sheetConfig };
+            const settings = {...opts, ...sheetConfig};
             delete settings.sheets;
-            SettingsApplier.apply({ sheet, renderEngine: this.renderEngine, settings });
+            SettingsApplier.apply({sheet, renderEngine: this.renderEngine, settings});
         }
     }
 
@@ -454,8 +453,7 @@ export class Workbook {
 
         const opts = this.#initOptions;
 
-        console.log(opts);
-        sheet.rowColManager.ensureSize(opts?.startRows || 100, opts?.startCols || 26);
+        sheet.rowColManager.ensureSize(opts?.startRows || CONFIG.DEFAULT_START_ROWS, opts?.startCols || CONFIG.DEFAULT_START_COLS);
 
         this.sheets.set(name, sheet);
         this.#activateIfFirst(sheet);
@@ -515,6 +513,8 @@ export class Workbook {
         if (this.eventHandler) this.eventHandler.sheet = sheet;
         if (this.renderEngine) {
             this.#bindSheetEvents(sheet);
+            // 切换 Sheet 时重置滚动位置到顶部左侧
+            this.renderEngine.scrollMgr?.setScrollPosition(0, 0);
             this.renderEngine.invalidateAll();
         }
         this.render();
@@ -528,7 +528,7 @@ export class Workbook {
                     previousSheet: previousSheet.name,
                     currentSheet: sheet.name,
                 },
-                { source: "Workbook" },
+                {source: "Workbook"},
             );
         }
 
@@ -703,7 +703,7 @@ export class Workbook {
      */
     updateSettings(settings = {}) {
         this.#withActiveSheet((s) => {
-            SettingsApplier.apply({ sheet: s, renderEngine: this.renderEngine, settings });
+            SettingsApplier.apply({sheet: s, renderEngine: this.renderEngine, settings});
             this.render();
         });
     }

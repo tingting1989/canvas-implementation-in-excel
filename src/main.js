@@ -47,9 +47,9 @@ const initApp = () => {
         // width: 800,
 
         // 初始行数
-        startRows: 10,
+        // startRows: 10,
         // 初始列数
-        startCols: 10,
+        // startCols: 10,
 
         sheets: [
             {
@@ -90,7 +90,6 @@ const initApp = () => {
                 textOverflowEllipsis: false,
                 // 每个单元格的内边距（像素值）
                 cellPadding: 10,
-
                 // 固定行列数上限（使用 maxRows/maxCols）
                 // maxRows: 20,
                 // maxCols: 12,

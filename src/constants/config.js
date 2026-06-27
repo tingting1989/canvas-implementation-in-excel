@@ -126,4 +126,7 @@ export const CONFIG = {
 
     /** 列轴标识 */
     AXIS_COL: "col",
+
+    /** Sheet 名称 */
+    DEFAULT_SHEET_NAME: "Sheet",
 };
