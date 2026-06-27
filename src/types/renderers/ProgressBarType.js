@@ -9,6 +9,24 @@
 import { BaseColumnType } from "../BaseColumnType.js";
 
 export class ProgressBarType extends BaseColumnType {
+    /**
+     * 默认配置选项
+     */
+    static defaultOptions = {
+        heightRatio: 0.6,
+        borderRadius: 4,
+        showPercent: true,
+        colors: {
+            low: '#f44336',
+            medium: '#ff9800',
+            high: '#4caf50'
+        }
+    };
+
+    constructor(options = {}) {
+        super({ ...ProgressBarType.defaultOptions, ...options });
+    }
+
     get name() {
         return "progressBar";
     }

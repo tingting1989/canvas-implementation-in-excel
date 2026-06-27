@@ -97,12 +97,21 @@ class RendererRegistry {
     }
 
     /**
-     * 获取所有已注册的渲染器名称
+     * 获取所有已注册的渲染器名称（别名：listRenderers）
      *
      * @returns {string[]}
      */
     static getRegisteredRenderers() {
         return Array.from(this.#renderers.keys());
+    }
+
+    /**
+     * 列出所有已注册的渲染器名称
+     *
+     * @returns {string[]}
+     */
+    static listRenderers() {
+        return this.getRegisteredRenderers();
     }
 
     /**
@@ -130,6 +139,9 @@ export const getRenderer = RendererRegistry.getRenderer.bind(RendererRegistry);
 export const hasRenderer = RendererRegistry.hasRenderer.bind(RendererRegistry);
 export const unregisterRenderer = RendererRegistry.unregisterRenderer.bind(RendererRegistry);
 export const getRegisteredRenderers = RendererRegistry.getRegisteredRenderers.bind(RendererRegistry);
+export const listRenderers = RendererRegistry.listRenderers.bind(RendererRegistry);
+export const clear = RendererRegistry.clear.bind(RendererRegistry);
+export const size = RendererRegistry.size.bind(RendererRegistry);
 
 // 导出类本身（用于高级用法或测试）
 export default RendererRegistry;

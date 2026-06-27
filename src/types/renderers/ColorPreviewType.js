@@ -59,29 +59,58 @@ export class ColorPreviewType extends BaseColumnType {
     }
 
     /**
-     * 验证颜色值是否有效
+     * 验证颜色值是否有效（跨平台兼容）
      */
     #isValidColor(color) {
         if (!color) return false;
-        const s = new Option().style;
-        s.color = color;
-        return s.color !== "";
+
+        // 方法1: 尝试使用浏览器 API（如果可用）
+        try {
+            const s = new Option().style;
+            s.color = color;
+            if (s.color !== "") return true;
+        } catch {
+            // Node.js 环境下 Option 可能不可用，继续使用正则表达式
+        }
+
+        // 方法2: 正则表达式验证（备选方案）
+        const hexPattern = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+        const rgbPattern = /^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/;
+        const rgbaPattern = /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/;
+        const hslPattern = /^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/;
+        const hslaPattern = /^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/;
+
+        // CSS 预定义颜色名称
+        const namedColors = ['red', 'green', 'blue', 'yellow', 'cyan', 'magenta',
+                           'white', 'black', 'gray', 'grey', 'orange', 'purple',
+                           'pink', 'brown', 'transparent', 'inherit', 'initial'];
+
+        return hexPattern.test(color) ||
+               rgbPattern.test(color) ||
+               rgbaPattern.test(color) ||
+               hslPattern.test(color) ||
+               hslaPattern.test(color) ||
+               namedColors.includes(color.toLowerCase());
     }
 
     /**
-     * 标准化颜色值
+     * 标准化颜色值（确保返回有效颜色或 transparent）
      */
     #normalizeColor(color) {
-        if (!color) return "transparent";
+        if (!color || color.trim() === '') return "transparent";
+
+        const trimmedColor = color.trim();
 
         // 如果是有效的颜色值，直接返回
-        if (this.#isValidColor(color)) return color;
+        if (this.#isValidColor(trimmedColor)) return trimmedColor;
 
-        // 尝试添加 # 前缀
-        if (/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(color)) {
-            return `#${color}`;
+        // 尝试添加 # 前缀（处理缺少 # 的 hex 颜色）
+        if (/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(trimmedColor)) {
+            const withHash = `#${trimmedColor}`;
+            if (this.#isValidColor(withHash)) return withHash;
         }
 
+        // 所有尝试都失败，返回 transparent 作为安全回退
         return "transparent";
     }
 }

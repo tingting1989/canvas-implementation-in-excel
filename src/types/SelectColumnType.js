@@ -22,6 +22,10 @@ export class SelectColumnType extends BaseColumnType {
         return "select";
     }
 
+    get source() {
+        return this.options?.source || [];
+    }
+
     format(value) {
         if (value === undefined || value === null) return "";
         return String(value);
