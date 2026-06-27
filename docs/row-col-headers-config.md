@@ -18,7 +18,7 @@
 
 所有默认值定义在 `src/constants/config.js` 中：
 
-```js
+```
 DEFAULT_COL_WIDTH: 100,      // 默认列宽
 DEFAULT_ROW_HEIGHT: 28,      // 默认行高
 HEADER_WIDTH: 46,            // 默认行头列宽度
@@ -38,7 +38,11 @@ RESIZE_HIT_AREA: 5,          // 行列调整的命中检测区域（px）
 
 ```js
 const wb = new Workbook("grid", {
-    rowHeaderWidth: 120,  // 行头列宽度 = 120px
+    sheets:{
+        name:"Sheet1",
+        rowHeaderWidth: 120,  // 行头列宽度 = 120px
+    }
+   
 });
 ```
 
@@ -50,7 +54,7 @@ const wb = new Workbook("grid", {
 | 不配置 | 使用默认值 `HEADER_WIDTH`（46px） |
 | `null` / `undefined` | 同"不配置"，回退到默认值 |
 
-### 动态修改
+### 动态修改当前激活的sheet
 
 ```js
 wb.updateSettings({ rowHeaderWidth: 80 });
@@ -66,13 +70,18 @@ wb.updateSettings({ rowHeaderWidth: 80 });
 
 ```js
 const wb = new Workbook("grid", {
-    data: [
-        ["张三", 25, "北京"],
-        ["李四", 30, "上海"],
-    ],
-    rowHeaders: ["姓名", "年龄", "城市"],  // 中文行头
-    rowHeaderWidth: 80,                    // 加宽以适应中文
-    colHeaders: ["Name", "Age", "City"],
+    sheets: {
+        name: "Sheet1",
+        rowHeaderWidth: 120,  // 行头列宽度 = 120px
+
+        data: [
+            ["张三", 25, "北京"],
+            ["李四", 30, "上海"],
+        ],
+        rowHeaders: ["姓名", "年龄", "城市"],  // 中文行头
+        rowHeaderWidth: 80,                    // 加宽以适应中文
+        colHeaders: ["Name", "Age", "City"],
+    }
 });
 ```
 
@@ -110,7 +119,7 @@ rowHeaders: false,  // 或 null，不显示行头标签
 | `Function(row)` | 每行调用，参数 `row` 为行号（从 0 开始），返回值作为标签 |
 | `false` / `null` | 不显示行头 |
 
-### 动态修改
+### 动态修改当前激活的sheet
 
 ```js
 wb.updateSettings({ rowHeaders: ["行1", "行2", "行3"] });
@@ -156,7 +165,7 @@ rowHeights: [30, 50, 90],
 | `number[]` | 按索引逐行设置高度，数组长度内的行使用对应值，超出的行使用默认值 |
 | 不配置 | 所有行使用默认值 `DEFAULT_ROW_HEIGHT`（28px） |
 
-### 动态修改
+### 动态修改当前激活的sheet
 
 ```js
 // 统一高度
@@ -202,14 +211,17 @@ if (typeof rowHeights === "number") {
 
 ```js
 const wb = new Workbook("grid", {
-    data: [
-        ["标题行", "", ""],
-        ["张三", 25, "北京"],
-        ["李四", 30, "上海"],
-    ],
-    rowHeights: [50, 30, 30],   // 标题行稍高
-    rowHeaders: ["标题", "数据1", "数据2"],
-    colHeaders: ["Name", "Age", "City"],
+    sheets: {
+        name: "Sheet1",
+        data: [
+            ["标题行", "", ""],
+            ["张三", 25, "北京"],
+            ["李四", 30, "上海"],
+        ],
+        rowHeights: [50, 30, 30],   // 标题行稍高
+        rowHeaders: ["标题", "数据1", "数据2"],
+        colHeaders: ["Name", "Age", "City"],
+    }
 });
 ```
 
@@ -351,12 +363,15 @@ if (typeof colWidths === "number") {
 ```js
 // columns[].width 优先级高于 colWidths
 const wb = new Workbook("grid", {
-    colWidths: [100, 100, 100],
-    columns: [
-        { type: "text", width: 120 },     // 覆盖为 120
-        { type: "numeric" },               // 回退到 colWidths[1] = 100
-        { type: "text", width: 200 },     // 覆盖为 200
-    ],
+    sheets: {
+        name: "Sheet1",
+        colWidths: [100, 100, 100],
+        columns: [
+            { type: "text", width: 120 },     // 覆盖为 120
+            { type: "numeric" },               // 回退到 colWidths[1] = 100
+            { type: "text", width: 200 },     // 覆盖为 200
+        ],
+    }
 });
 ```
 
@@ -372,12 +387,15 @@ const wb = new Workbook("grid", {
 
 ```js
 const wb = new Workbook("grid", {
-    rowHeaderWidth: 80,
-    rowHeaders: ["行1", "行2"],
-    rowHeights: [30, 50],
-    colHeaders: ["A列", "B列"],
-    colWidths: [120, 200],
-    data: [["hello", "world"]],
+    sheets: {
+        name: "Sheet1",
+        rowHeaderWidth: 80,
+        rowHeaders: ["行1", "行2"],
+        rowHeights: [30, 50],
+        colHeaders: ["A列", "B列"],
+        colWidths: [120, 200],
+        data: [["hello", "world"]],
+    }
 });
 ```
 
@@ -432,26 +450,30 @@ SettingsApplier.apply({ sheet, renderEngine, settings })
 
 ```js
 const wb = new Workbook("grid", {
-    // 行头配置
-    rowHeaderWidth: 80,
-    rowHeaders: ["姓名", "年龄", "城市", "部门", "薪资", "入职日期"],
-    rowHeights: [40, 30, 30],   // 第0行（表头行）稍高
-
-    // 列头配置
-    colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-    colWidths: [120, 80, 100, 100, 100, 200],
-
-    // 数据
-    data: [
-        ["张三", 25, "北京", "技术", 15000, "2020-03-15"],
-        ["李四", 30, "上海", "市场", 18000, "2019-07-01"],
-        ["王五", 28, "广州", "技术", 16000, "2021-01-10"],
-    ],
-
-    defaultStyle: {
-        fontSize: 14,
-        fontFamily: "Microsoft YaHei",
-    },
+    sheets: {
+        name: "Sheet1",
+        
+        // 行头配置
+        rowHeaderWidth: 80,
+        rowHeaders: ["姓名", "年龄", "城市", "部门", "薪资", "入职日期"],
+        rowHeights: [40, 30, 30],   // 第0行（表头行）稍高
+    
+        // 列头配置
+        colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+        colWidths: [120, 80, 100, 100, 100, 200],
+    
+        // 数据
+        data: [
+            ["张三", 25, "北京", "技术", 15000, "2020-03-15"],
+            ["李四", 30, "上海", "市场", 18000, "2019-07-01"],
+            ["王五", 28, "广州", "技术", 16000, "2021-01-10"],
+        ],
+    
+        defaultStyle: {
+            fontSize: 14,
+            fontFamily: "Microsoft YaHei",
+        },
+    }
 });
 ```
 
@@ -459,7 +481,10 @@ const wb = new Workbook("grid", {
 
 ```js
 const wb = new Workbook("grid", {
-    data: [["A", "B", "C"]],
+    sheets: {
+        name: "Sheet1",
+        data: [["A", "B", "C"]],
+    }
 });
 // rowHeaderWidth: 46px（默认）
 // rowHeaders: "1", "2", "3" ...（默认）

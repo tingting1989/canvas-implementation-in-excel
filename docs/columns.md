@@ -6,11 +6,14 @@
 
 ```js
 const wb = new Workbook("grid", {
-  columns: [
-    { type: "text", width: 120 },
-    { type: "numeric", width: 100, numericFormat: { pattern: "0,0.00" } },
-    { type: "numeric", width: 80, numericFormat: { pattern: "$0,0.00" } },
-  ],
+    sheets: {
+        name: "Sheet1",
+        columns: [
+            { type: "text", width: 120 },
+            { type: "numeric", width: 100, numericFormat: { pattern: "0,0.00" } },
+            { type: "numeric", width: 80, numericFormat: { pattern: "$0,0.00" } },
+        ],
+    }
 });
 ```
 
@@ -85,15 +88,18 @@ const wb = new Workbook("grid", {
 
 ```js
 const wb = new Workbook("grid", {
-  columns: [
-    { type: "text", width: 120 },
-    (col) => {
-      if (col >= 1 && col <= 3) {
-        return { type: "numeric", width: 100, numericFormat: { pattern: "0,0.00" } };
-      }
-      return { type: "text", width: 80 };
-    },
-  ],
+    sheets: {
+        name: "Sheet1",
+        columns: [
+            { type: "text", width: 120 },
+            (col) => {
+                if (col >= 1 && col <= 3) {
+                    return { type: "numeric", width: 100, numericFormat: { pattern: "0,0.00" } };
+                }
+                return { type: "text", width: 80 };
+            },
+        ],
+    }
 });
 ```
 
@@ -201,24 +207,28 @@ const wb = new Workbook("grid", {
 
 ```js
 const wb = new Workbook("grid", {
-  data: [
-    ["产品", "单价", "折扣", "库存", "总价"],
-    ["键盘", 299, 0.95, 150, 42557.5],
-    ["鼠标", 149, 0.9, 300, 40230],
-    ["显示器", 2499, 0.85, 50, 106207.5],
-  ],
-  colHeaders: true,
-  columns: [
-    { type: "text", width: 120, style: { fontWeight: "bold" } },
-    { type: "numeric", width: 100, numericFormat: { pattern: "\u00a50,0.00" } },
-    { type: "numeric", width: 80, numericFormat: { pattern: "0.00%" } },
-    { type: "numeric", width: 80, numericFormat: { pattern: "0,0" } },
-    { type: "numeric", width: 120, numericFormat: { pattern: "\u00a50,0.00" }, style: { color: "#e74c3c" } },
-  ],
-  defaultStyle: {
-    fontSize: 14,
-    fontFamily: "Microsoft YaHei",
-  },
+    sheets: {
+        name: "Sheet1",
+   
+          data: [
+            ["产品", "单价", "折扣", "库存", "总价"],
+            ["键盘", 299, 0.95, 150, 42557.5],
+            ["鼠标", 149, 0.9, 300, 40230],
+            ["显示器", 2499, 0.85, 50, 106207.5],
+          ],
+          colHeaders: true,
+          columns: [
+            { type: "text", width: 120, style: { fontWeight: "bold" } },
+            { type: "numeric", width: 100, numericFormat: { pattern: "\u00a50,0.00" } },
+            { type: "numeric", width: 80, numericFormat: { pattern: "0.00%" } },
+            { type: "numeric", width: 80, numericFormat: { pattern: "0,0" } },
+            { type: "numeric", width: 120, numericFormat: { pattern: "\u00a50,0.00" }, style: { color: "#e74c3c" } },
+          ],
+          defaultStyle: {
+            fontSize: 14,
+            fontFamily: "Microsoft YaHei",
+          },
+    }
 });
 
 wb.initRender();

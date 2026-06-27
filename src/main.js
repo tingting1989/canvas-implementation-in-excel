@@ -50,7 +50,6 @@ const initApp = () => {
         // startRows: 10,
         // 初始列数
         // startCols: 10,
-
         sheets: [
             {
                 // 工作表名称
@@ -64,7 +63,6 @@ const initApp = () => {
                 //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
                 //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 // ],
-
                 // 列表头配置，用于替换默认的行号表头 A,B,C...
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 // 行表头宽度配置
@@ -121,12 +119,16 @@ const initApp = () => {
                 // 列配置
                 columns: [
                     { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text", width: 100 },
-                    { type: "text", width: 100 },
-                    { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date", width: 300 },
+                    { type: "numeric",  style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
+                    { type: "text",},
+                    { type: "text",  },
+                    { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
+                    { type: "date",  },
                 ],
+                // 配置列的宽度 number|number[],优先级比columns中的width 低
+                colWidths: 200,
+
+                // colWidths: [120, 80, 100, 100, 100, 300],
 
                 // 默认单元格样式
                 defaultStyle: {
@@ -274,6 +276,10 @@ const initApp = () => {
                 if (isFunction(updateToolbarStyleState)) {
                     updateToolbarStyleState();
                 }
+            },
+            // 值改变时触发
+            [HOOKS.AFTER_CHANGE]: () => {
+                console.log("值改变时触发");
             },
         },
         afterInit(wb) {

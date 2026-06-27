@@ -52,7 +52,8 @@ export class Workbook {
      * @param {string} [options.sheetName='Sheet1'] - 初始工作表名称
      * @param {true|string[]|Function} [options.colHeaders=true] - 列头标签
      * @param {true|string[]|Function} [options.rowHeaders=true] - 行头标签
-     * @param {number} [options.width] - 画布宽度（px），默认自适应容器
+     * @param {number} [options.width] - 画布宽
+     * 度（px），默认自适应容器
      * @param {number} [options.height] - 画布高度（px），默认自适应容器
      * @param {number|number[]} [options.rowHeights] - 行高配置
      * @param {number} [options.startRows=100] - 初始行数
