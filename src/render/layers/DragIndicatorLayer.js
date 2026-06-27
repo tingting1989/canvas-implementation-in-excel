@@ -1,6 +1,6 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { CONFIG } from "../../constants/config";
-import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
 const GHOST_FILL = "rgba(76, 139, 245, 0.15)";
 const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";

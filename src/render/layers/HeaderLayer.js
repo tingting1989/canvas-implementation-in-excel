@@ -28,7 +28,7 @@
 
 import { BaseLayer } from "../BaseLayer.js";
 import { HeaderRenderer } from "../HeaderRenderer.js";
-import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
 export class HeaderLayer extends BaseLayer {
     #dragIndicatorLayer = null;

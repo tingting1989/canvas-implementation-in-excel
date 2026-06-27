@@ -1,6 +1,6 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { CONFIG } from "../../constants/config";
-import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
 export class EditorLayer extends BaseLayer {
     constructor() {

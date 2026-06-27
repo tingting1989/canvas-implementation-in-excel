@@ -34,7 +34,7 @@
  */
 
 import { BaseLayer } from "../BaseLayer.js";
-import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
 export class UILayer extends BaseLayer {
     constructor() {

@@ -1,6 +1,6 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { OverlayRenderer } from "../OverlayRenderer.js";
-import {LAYER_Z_INDEX} from "@/constants/layerZIndex";
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
 export class OverlayLayer extends BaseLayer {
     constructor() {
