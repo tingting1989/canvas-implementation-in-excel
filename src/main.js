@@ -47,15 +47,14 @@ const initApp = () => {
         // width: 800,
 
         // 初始行数
-        startRows:10,
+        startRows: 10,
         // 初始列数
-        startCols:10,
+        startCols: 10,
 
         sheets: [
             {
                 // 工作表名称
                 name: "Sheet1",
-
 
                 // 是否只读
                 readOnly: false,
@@ -70,7 +69,6 @@ const initApp = () => {
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 // 行表头宽度配置
                 rowHeaderWidth: 120,
-
 
                 // 行高配置
                 rowHeights: [30, 50, 90],

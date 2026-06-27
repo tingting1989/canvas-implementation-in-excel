@@ -18,13 +18,13 @@ const typeConstructors = {
     numeric: NumericColumnType,
     date: DateColumnType,
     boolean: BooleanColumnType,
-    select: SelectColumnType
+    select: SelectColumnType,
 };
 
 Object.entries(typeConstructors).forEach(([name, Constructor]) => {
     registry.set(name, {
         instance: new Constructor(),
-        constructor: Constructor
+        constructor: Constructor,
     });
 });
 
@@ -72,7 +72,7 @@ export function registerType(typeInstance) {
 
     registry.set(typeInstance.name, {
         instance: typeInstance,
-        constructor: typeInstance.constructor
+        constructor: typeInstance.constructor,
     });
 }
 

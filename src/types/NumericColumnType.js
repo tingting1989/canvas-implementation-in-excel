@@ -65,7 +65,7 @@ export class NumericColumnType extends BaseColumnType {
         const na = isNumber(a) ? a : parseFloat(a);
         const nb = isNumber(b) ? b : parseFloat(b);
 
-        if (isNaN(na) && isNaN(nb)) return 0;  // 两个都无法解析，视为相等
+        if (isNaN(na) && isNaN(nb)) return 0; // 两个都无法解析，视为相等
 
         const va = isNaN(na) ? -Infinity : na;
         const vb = isNaN(nb) ? -Infinity : nb;
