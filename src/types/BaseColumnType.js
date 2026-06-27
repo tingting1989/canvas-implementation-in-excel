@@ -8,7 +8,7 @@
  * 使用方式：
  *   1. 继承 BaseColumnType，重写 name/editorType/format/validate/parse/getDefaultStyle
  *   2. 在 src/types/index.js 的 registry 中注册
- *   3. 通过 columnsConfig.type 或 cellTypes 指定类型名称
+ *   3. 通过 columnsConfig.type columns 或 cellTypes 指定类型名称
  */
 export class BaseColumnType {
     /**

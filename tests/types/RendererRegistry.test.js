@@ -59,14 +59,18 @@ describe('RendererRegistry - 基础功能测试', () => {
                 123,
                 {},
                 [],
-                function(){},
-                () => {},
+                () => {},  // 箭头函数没有 prototype，不能作为构造函数
             ];
 
             invalidConstructors.forEach(ctor => {
                 const result = RendererRegistry.registerRenderer('test', ctor);
                 expect(result).toBe(false);
             });
+
+            // 注意: function(){} 是有效的构造函数（可以用 new 调用），所以会返回 true
+            // 这是 JavaScript 的正常行为
+            const validFunction = function() {};
+            expect(RendererRegistry.registerRenderer('valid-function', validFunction)).toBe(true);
         });
     });
 

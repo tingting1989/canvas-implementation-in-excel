@@ -45,6 +45,7 @@ export class BooleanColumnType extends BaseColumnType {
 
     parse(input) {
         if (input === "" || input === undefined || input === null) return "";
+
         const boolVal = this.#toBoolean(input);
         if (boolVal !== null) return boolVal;
 
@@ -67,6 +68,7 @@ export class BooleanColumnType extends BaseColumnType {
      */
     #toBoolean(value) {
         if (isBoolean(value)) return value;
+        if (value instanceof Boolean) return value.valueOf();  // 处理 Boolean 对象
         if (isNumber(value)) {
             if (value === 1) return true;
             if (value === 0) return false;

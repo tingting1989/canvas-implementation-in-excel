@@ -9,15 +9,16 @@
 
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
+/** @type {Map<string, Function>} 模块级渲染器注册表 (name → Constructor) */
+const renderers = new Map();
+
 /**
  * 渲染器注册表类
  *
  * 提供全局渲染器的注册、查询、注销和管理功能。
+ * 注意：使用模块级变量存储注册表，避免私有字段在 bind() 后无法访问的问题。
  */
 class RendererRegistry {
-    /** @type {Map<string, Function>} 渲染器类映射 (name → Constructor) */
-    #renderers = new Map();
-
     /**
      * 注册渲染器类
      *
@@ -34,21 +35,21 @@ class RendererRegistry {
      * registerRenderer('progress', ProgressBarType);
      */
     static registerRenderer(name, rendererClass) {
-        if (!name || typeof name !== "string") {
+        if (!name || typeof name !== "string" || !name.trim()) {
             errorHandler.warn(ERROR_CODE.INVALID_RENDERER_NAME, "Renderer name must be a non-empty string");
             return false;
         }
 
-        if (typeof rendererClass !== "function") {
-            errorHandler.warn(ERROR_CODE.INVALID_RENDERER_CLASS, "Renderer must be a constructor function");
+        if (typeof rendererClass !== "function" || rendererClass.prototype === undefined) {
+            errorHandler.warn(ERROR_CODE.INVALID_RENDERER_CLASS, "Renderer must be a constructor function (class or function with prototype)");
             return false;
         }
 
-        if (this.#renderers.has(name)) {
+        if (renderers.has(name)) {
             errorHandler.warn(ERROR_CODE.DUPLICATE_RENDERER, `Renderer "${name}" already registered, will be overwritten`);
         }
 
-        this.#renderers.set(name, rendererClass);
+        renderers.set(name, rendererClass);
         return true;
     }
 
@@ -63,7 +64,7 @@ class RendererRegistry {
      * const renderer = getRenderer('progress', { color: '#ff5722' });
      */
     static getRenderer(name, options = {}) {
-        const RendererClass = this.#renderers.get(name);
+        const RendererClass = renderers.get(name);
         if (!RendererClass) {
             errorHandler.warn(ERROR_CODE.RENDERER_NOT_FOUND, `Renderer "${name}" not found`);
             return null;
@@ -83,7 +84,7 @@ class RendererRegistry {
      * @returns {boolean}
      */
     static hasRenderer(name) {
-        return this.#renderers.has(name);
+        return renderers.has(name);
     }
 
     /**
@@ -93,7 +94,7 @@ class RendererRegistry {
      * @returns {boolean} 成功返回 true，不存在返回 false
      */
     static unregisterRenderer(name) {
-        return this.#renderers.delete(name);
+        return renderers.delete(name);
     }
 
     /**
@@ -102,7 +103,7 @@ class RendererRegistry {
      * @returns {string[]}
      */
     static getRegisteredRenderers() {
-        return Array.from(this.#renderers.keys());
+        return Array.from(renderers.keys());
     }
 
     /**
@@ -111,7 +112,7 @@ class RendererRegistry {
      * @returns {string[]}
      */
     static listRenderers() {
-        return this.getRegisteredRenderers();
+        return Array.from(renderers.keys());
     }
 
     /**
@@ -120,7 +121,7 @@ class RendererRegistry {
      * @returns {void}
      */
     static clear() {
-        this.#renderers.clear();
+        renderers.clear();
     }
 
     /**
@@ -129,7 +130,7 @@ class RendererRegistry {
      * @returns {number}
      */
     static size() {
-        return this.#renderers.size;
+        return renderers.size;
     }
 }
 

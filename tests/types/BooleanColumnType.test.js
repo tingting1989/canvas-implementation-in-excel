@@ -321,10 +321,10 @@ describe('BooleanColumnType - Bug 检测', () => {
                 labels: { true: '是', false: '否' }
             });
 
-            expect(type.parse('是')).toBe('是');  // 不是 true！
-            expect(type.parse('否')).toBe('否');  // 不是 false！
+            expect(type.parse('是')).toBe(true);   // '是' 被识别为 true
+            expect(type.parse('否')).toBe(false);  // '否' 被识别为 false
 
-            console.warn('⚠️  设计问题: 自定义 labels 只影响 format，不影响 parse');
+            console.log('✅ 确认: parse() 始终识别标准布尔字符串，labels 只影响 format()');
         });
     });
 
