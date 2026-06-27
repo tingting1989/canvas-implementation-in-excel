@@ -1,4 +1,4 @@
-import { ColumnType } from "./ColumnType.js";
+import { BaseColumnType } from "./BaseColumnType.js";
 import { TextColumnType } from "./TextColumnType.js";
 import { NumericColumnType } from "./NumericColumnType.js";
 import { DateColumnType } from "./DateColumnType.js";
@@ -10,7 +10,7 @@ import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 /**
  * 全局类型注册表
  * key: 类型名称字符串
- * value: ColumnType 实例（作为原型/模板）
+ * value: BaseColumnType 实例（作为原型/模板）
  */
 const registry = new Map();
 registry.set("text", new TextColumnType());
@@ -25,7 +25,7 @@ registry.set("select", new SelectColumnType());
  *
  * @param {string} name - 类型名称
  * @param {object} [options] - 类型配置选项
- * @returns {ColumnType}
+ * @returns {BaseColumnType}
  */
 export function getType(name, options = undefined) {
     const base = registry.get(name);
@@ -40,13 +40,13 @@ export function getType(name, options = undefined) {
 /**
  * 注册自定义类型
  *
- * @param {ColumnType} typeInstance - 类型实例
+ * @param {BaseColumnType} typeInstance - 类型实例
  *
  * @example
  * import { registerType } from './types/index.js';
- * import { ColumnType } from './types/ColumnType.js';
+ * import { BaseColumnType } from './types/BaseColumnType.js';
  *
- * class MyCustomType extends ColumnType {
+ * class MyCustomType extends BaseColumnType {
  *   get name() { return 'myCustom'; }
  *   // ...
  * }
@@ -87,11 +87,11 @@ function extractTypeOptions(config) {
 }
 
 /**
- * 从列配置创建 ColumnType 实例
+ * 从列配置创建 BaseColumnType 实例
  * 用于 Sheet 获取列级别的类型行为
  *
  * @param {object} colConfig - 列配置对象
- * @returns {ColumnType}
+ * @returns {BaseColumnType}
  */
 export function getColumnTypeFromConfig(colConfig) {
     if (!colConfig?.type) {
@@ -101,7 +101,7 @@ export function getColumnTypeFromConfig(colConfig) {
 }
 
 /**
- * 解析指定单元格的类型实例（ColumnType）
+ * 解析指定单元格的类型实例（BaseColumnType）
  *
  * 优先级：
  *   1. cellTypes Map 中的单元格级别类型配置
@@ -112,7 +112,7 @@ export function getColumnTypeFromConfig(colConfig) {
  * @param {number} c - 列号
  * @param {Map<string, object>} [cellTypes] - 单元格类型配置映射 (key: "r,c")
  * @param {Map<number, object>} [columnsConfig] - 列配置映射
- * @returns {ColumnType}
+ * @returns {BaseColumnType}
  */
 export function resolveCellType(r, c, cellTypes, columnsConfig) {
     // 1. 单元格级别类型配置

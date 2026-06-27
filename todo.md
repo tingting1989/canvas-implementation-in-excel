@@ -3,7 +3,7 @@
 🔴 高优先级（核心表格能力缺失）
 功能	Handsontable 实现	影响	建议
 公式引擎	=SUM()、=AVERAGE()、=IF()、跨表引用等	没有公式就不是真正意义上的电子表格	这是最大的功能鸿沟。建议引入 hyperformula 或自研最小可用公式引擎
-排序	点击列头排序、多列排序、自定义排序函数	数据查看体验严重受限	在 ColumnType 基础上，实现 sortRows(col, order) 和列头排序 UI
+排序	点击列头排序、多列排序、自定义排序函数	数据查看体验严重受限	在 BaseColumnType 基础上，实现 sortRows(col, order) 和列头排序 UI
 筛选/过滤	列头下拉筛选、条件筛选、搜索过滤	大数据量下无法快速定位数据	在 RowColManager 层实现 filterRows(predicate)，配合虚拟滚动
 查找替换	Ctrl+F 查找、Ctrl+H 替换、正则匹配	编辑效率大打折扣	可从 KeyboardStrategy 扩展，逐行搜索 + 高亮匹配 Cell
 

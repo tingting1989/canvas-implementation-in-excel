@@ -1,4 +1,4 @@
-import { ColumnType } from "./ColumnType.js";
+import { BaseColumnType } from "./BaseColumnType.js";
 
 /**
  * 下拉选择列类型
@@ -13,7 +13,7 @@ import { ColumnType } from "./ColumnType.js";
  *   allowInvalid: boolean — 是否允许不在列表中的值（默认 false）
  *   strict: boolean — 严格模式，仅允许选择不能手动输入（默认 false）
  */
-export class SelectColumnType extends ColumnType {
+export class SelectColumnType extends BaseColumnType {
     get name() {
         return "select";
     }

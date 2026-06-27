@@ -1,4 +1,4 @@
-import { ColumnType } from "./ColumnType.js";
+import { BaseColumnType } from "./BaseColumnType.js";
 import { isBoolean, isNumber, isString } from "../utils/utils.js";
 
 /**
@@ -12,7 +12,7 @@ import { isBoolean, isNumber, isString } from "../utils/utils.js";
  * 配置选项：
  *   labels: { true: '✓', false: '✗' } — 自定义显示标签
  */
-export class BooleanColumnType extends ColumnType {
+export class BooleanColumnType extends BaseColumnType {
     get name() {
         return "boolean";
     }

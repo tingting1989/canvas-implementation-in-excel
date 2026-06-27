@@ -1,4 +1,4 @@
-import { ColumnType } from "./ColumnType.js";
+import { BaseColumnType } from "./BaseColumnType.js";
 import { isNumber, isString } from "../utils/utils.js";
 
 /**
@@ -17,7 +17,7 @@ import { isNumber, isString } from "../utils/utils.js";
  *   max: '2030-12-31' — 最大日期
  *   allowInvalid: boolean — 是否允许无效日期
  */
-export class DateColumnType extends ColumnType {
+export class DateColumnType extends BaseColumnType {
     get name() {
         return "date";
     }

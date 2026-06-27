@@ -1,4 +1,4 @@
-import { ColumnType } from "./ColumnType.js";
+import { BaseColumnType } from "./BaseColumnType.js";
 
 /**
  * 文本列类型
@@ -8,7 +8,7 @@ import { ColumnType } from "./ColumnType.js";
  * - trim 空白字符
  * - 可配置最大长度限制
  */
-export class TextColumnType extends ColumnType {
+export class TextColumnType extends BaseColumnType {
     get name() {
         return "text";
     }

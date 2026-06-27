@@ -1,65 +1,65 @@
 import { describe, it, expect } from "vitest";
-import { ColumnType } from "@/types/ColumnType";
+import { BaseColumnType } from "@/types/BaseColumnType";
 import { NumericColumnType } from "@/types/NumericColumnType";
 import { getType, registerType, getRegisteredTypes, resolveCellType, formatValue, parseValue, validateValue } from "@/types";
 
-describe("ColumnType - Base Class", () => {
+describe("BaseColumnType - Base Class", () => {
     it("should have default name 'text'", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.name).toBe("text");
     });
 
     it("should have default editorType 'text'", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.editorType).toBe("text");
     });
 
     it("should format value as string", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.format(42)).toBe("42");
         expect(ct.format("hello")).toBe("hello");
     });
 
     it("should return empty string for null/undefined in format", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.format(null)).toBe("");
         expect(ct.format(undefined)).toBe("");
     });
 
     it("should validate as true by default", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.validate("anything")).toBe(true);
     });
 
     it("should parse input as-is by default", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.parse("hello")).toBe("hello");
     });
 
     it("should return base style from getDefaultStyle", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         const base = { color: "red" };
         expect(ct.getDefaultStyle(base)).toBe(base);
     });
 
     it("should return empty editor options", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.getEditorOptions()).toEqual({});
     });
 
     it("should return empty string as default value", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.getDefaultValue()).toBe("");
     });
 
     it("should compare strings", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.compare("a", "b")).toBeLessThan(0);
         expect(ct.compare("b", "a")).toBeGreaterThan(0);
     });
 
     it("should reverse comparison for desc order", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         expect(ct.compare("a", "b", "desc")).toBeGreaterThan(0);
     });
 });
@@ -224,7 +224,7 @@ describe("Type Registry", () => {
     });
 
     it("should register and retrieve custom type", () => {
-        class CustomType extends ColumnType {
+        class CustomType extends BaseColumnType {
             get name() { return "custom"; }
         }
         registerType(new CustomType());
@@ -284,7 +284,7 @@ describe("formatValue / parseValue / validateValue", () => {
     });
 
     it("should use custom validator from colConfig", () => {
-        const ct = new ColumnType();
+        const ct = new BaseColumnType();
         const colConfig = { validator: (v) => v === "ok" };
         expect(validateValue(ct, "ok", colConfig)).toBe(true);
         expect(validateValue(ct, "bad", colConfig)).toBe(false);

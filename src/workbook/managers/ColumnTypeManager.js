@@ -10,7 +10,7 @@ import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
  * - 列配置的读取与查询（getColumnConfig / getColumnType）
  * - 列类型实例的创建（getColumnTypeInstance / getCellTypeInstance）
  * - 列配置的应用（applyColumnsConfig）：将 columns 数组解析到 columnsConfig、colStyles、列宽等
- * - 单元格值的格式化、验证、解析（委托 ColumnType 实例）
+ * - 单元格值的格式化、验证、解析（委托 BaseColumnType 实例）
  *
  * 类型解析优先级（getCellTypeInstance）：
  *   单元格级别类型（cellTypes） → 列级别类型（columnsConfig） → 默认 text 类型
@@ -78,27 +78,27 @@ export class ColumnTypeManager {
     }
 
     /**
-     * 获取列级别的 ColumnType 实例
+     * 获取列级别的 BaseColumnType 实例
      *
      * 仅根据列配置（columnsConfig）创建类型实例，不考虑单元格级别覆盖。
      * 适用于需要列级别类型行为的场景（如列默认样式）。
      *
      * @param {number} col - 列号
-     * @returns {import("../../types/ColumnType.js").ColumnType} 列类型实例
+     * @returns {import("../../types/BaseColumnType.js").BaseColumnType} 列类型实例
      */
     getColumnTypeInstance(col) {
         return getColumnTypeFromConfig(this.#columnsConfig.get(col));
     }
 
     /**
-     * 获取单元格级别的 ColumnType 实例
+     * 获取单元格级别的 BaseColumnType 实例
      *
      * 解析优先级：单元格类型配置（cellTypes） → 列配置（columnsConfig） → 默认 text
      * 适用于需要精确单元格类型行为的场景（如格式化、验证、编辑器选择）。
      *
      * @param {number} r - 页面行号（pageRow）
      * @param {number} c - 列号
-     * @returns {import("../../types/ColumnType.js").ColumnType} 单元格类型实例
+     * @returns {import("../../types/BaseColumnType.js").BaseColumnType} 单元格类型实例
      */
     getCellTypeInstance(r, c) {
         const realR = this.#sheet.toRealRow(r);
@@ -160,7 +160,7 @@ export class ColumnTypeManager {
     /**
      * 格式化单元格值用于显示
      *
-     * 委托 ColumnType.format() 将原始值转为显示文本。
+     * 委托 BaseColumnType.format() 将原始值转为显示文本。
      * 例如：数字类型添加千分位，日期类型按模式格式化。
      *
      * @param {number} r - 页面行号
@@ -175,7 +175,7 @@ export class ColumnTypeManager {
     /**
      * 验证单元格值是否有效
      *
-     * 委托 ColumnType.validate() 和列配置中的 validator 进行双重验证。
+     * 委托 BaseColumnType.validate() 和列配置中的 validator 进行双重验证。
      *
      * @param {number} r - 页面行号
      * @param {number} c - 列号
@@ -189,7 +189,7 @@ export class ColumnTypeManager {
     /**
      * 解析用户输入为原始值
      *
-     * 委托 ColumnType.parse() 将用户输入的字符串转为对应类型的值。
+     * 委托 BaseColumnType.parse() 将用户输入的字符串转为对应类型的值。
      * 例如：数字类型将 "123" 转为 123，日期类型将 "2024-01-15" 转为 Date。
      *
      * @param {number} r - 页面行号

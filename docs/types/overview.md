@@ -5,12 +5,12 @@
 类型系统由两层组成：
 
 ```
-ColumnType（类型基类）       ← 定义类型行为，子类实现具体类型
+BaseColumnType（类型基类）       ← 定义类型行为，子类实现具体类型
     ↑
-类型注册表（全局）          ← src/types/index.js，维护 name → ColumnType 的映射
+类型注册表（全局）          ← src/types/index.js，维护 name → BaseColumnType 的映射
 ```
 
-ColumnType 实例直接作为运行时类型对象使用，包含完整的 `format`/`validate`/`parse`/`getDefaultStyle`/`compare`/`getEditorOptions` 方法。
+BaseColumnType 实例直接作为运行时类型对象使用，包含完整的 `format`/`validate`/`parse`/`getDefaultStyle`/`compare`/`getEditorOptions` 方法。
 
 ## 类型配置优先级
 
@@ -75,13 +75,13 @@ const wb = new Workbook('grid', {
 
 ## 自定义类型
 
-继承 `ColumnType`，重写关键方法，然后注册：
+继承 `BaseColumnType`，重写关键方法，然后注册：
 
 ```js
-import { ColumnType } from './types/ColumnType.js';
+import { BaseColumnType } from './types/BaseColumnType.js';
 import { registerType } from './types/index.js';
 
-class ColorColumnType extends ColumnType {
+class ColorColumnType extends BaseColumnType {
     get name() { return 'color'; }
     get editorType() { return 'color'; }
     format(value) { return value ?? ''; }
@@ -95,9 +95,9 @@ registerType(new ColorColumnType());
 
 同时需要在 `EditorManager` 中注册对应的编辑器。
 
-## ColumnType 方法说明
+## BaseColumnType 方法说明
 
-每个 `ColumnType` 子类需实现以下方法：
+每个 `BaseColumnType` 子类需实现以下方法：
 
 | 方法 | 返回值 | 说明 |
 |------|--------|------|

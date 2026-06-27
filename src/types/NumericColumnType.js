@@ -1,4 +1,4 @@
-import { ColumnType } from "./ColumnType.js";
+import { BaseColumnType } from "./BaseColumnType.js";
 import { isNumber } from "../utils/utils.js";
 
 /**
@@ -10,7 +10,7 @@ import { isNumber } from "../utils/utils.js";
  * - 右对齐默认样式
  * - 数字排序
  */
-export class NumericColumnType extends ColumnType {
+export class NumericColumnType extends BaseColumnType {
     get name() {
         return "numeric";
     }
