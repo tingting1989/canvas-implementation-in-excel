@@ -34,10 +34,11 @@ export class TextColumnType extends BaseColumnType {
 
     parse(input) {
         const trimmed = input?.trim?.() ?? input;
-        const maxLength = this.options?.maxLength;
-        if (maxLength != null && trimmed.length > maxLength) {
-            return trimmed.slice(0, maxLength);
-        }
+
+        if (trimmed === "") return "";
+
+        // parse() 只负责 trim 和类型转换，不做长度截断
+        // 长度限制应该由 validate() 检查，或者由 UI 层处理
         return trimmed;
     }
 

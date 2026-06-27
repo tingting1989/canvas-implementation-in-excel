@@ -37,8 +37,13 @@ export class SelectColumnType extends BaseColumnType {
         const source = this.options?.source;
         if (!Array.isArray(source) || source.length === 0) return true;
 
-        const strValue = String(value);
-        const found = source.some((item) => String(item) === strValue);
+        // 严格匹配
+        const exactMatch = source.some((item) => item === value);
+
+        // 宽松匹配（类型转换后比较）
+        const looseMatch = !exactMatch && source.some((item) => String(item) === String(value));
+
+        const found = exactMatch || looseMatch;
 
         if (!found && !this.options?.allowInvalid) {
             return false;
@@ -55,8 +60,8 @@ export class SelectColumnType extends BaseColumnType {
 
         const strInput = String(input).trim();
 
-        // 尝试精确匹配
-        const exactMatch = source.find((item) => String(item) === strInput);
+        // 尝试严格匹配（保留类型）
+        const exactMatch = source.find((item) => item === input || String(item) === strInput);
         if (exactMatch !== undefined) return exactMatch;
 
         // 如果不允许无效值，返回空字符串

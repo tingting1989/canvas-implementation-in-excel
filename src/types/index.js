@@ -10,14 +10,23 @@ import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 /**
  * 全局类型注册表
  * key: 类型名称字符串
- * value: BaseColumnType 实例（作为原型/模板）
+ * value: { instance: BaseColumnType, constructor: Function }
  */
 const registry = new Map();
-registry.set("text", new TextColumnType());
-registry.set("numeric", new NumericColumnType());
-registry.set("date", new DateColumnType());
-registry.set("boolean", new BooleanColumnType());
-registry.set("select", new SelectColumnType());
+const typeConstructors = {
+    text: TextColumnType,
+    numeric: NumericColumnType,
+    date: DateColumnType,
+    boolean: BooleanColumnType,
+    select: SelectColumnType
+};
+
+Object.entries(typeConstructors).forEach(([name, Constructor]) => {
+    registry.set(name, {
+        instance: new Constructor(),
+        constructor: Constructor
+    });
+});
 
 /**
  * 获取指定名称的类型实例
@@ -28,13 +37,16 @@ registry.set("select", new SelectColumnType());
  * @returns {BaseColumnType}
  */
 export function getType(name, options = undefined) {
-    const base = registry.get(name);
-    if (!base) {
+    const entry = registry.get(name);
+    if (!entry) {
         errorHandler.warn(ERROR_CODE.TYPE_NOT_REGISTERED, `Type "${name}" not registered, falling back to text`);
-        return registry.get("text");
+        return registry.get("text").instance;
     }
-    if (!options) return base;
-    return new base.constructor(options);
+    if (!options) return entry.instance;
+
+    // 使用保存的构造函数创建新实例，确保类型正确
+    const { constructor: TypeConstructor } = entry;
+    return new TypeConstructor(options);
 }
 
 /**
@@ -57,7 +69,11 @@ export function registerType(typeInstance) {
         errorHandler.warn(ERROR_CODE.TYPE_INVALID_INSTANCE, "Invalid type instance, registration skipped");
         return;
     }
-    registry.set(typeInstance.name, typeInstance);
+
+    registry.set(typeInstance.name, {
+        instance: typeInstance,
+        constructor: typeInstance.constructor
+    });
 }
 
 /**
@@ -95,7 +111,7 @@ function extractTypeOptions(config) {
  */
 export function getColumnTypeFromConfig(colConfig) {
     if (!colConfig?.type) {
-        return registry.get("text");
+        return registry.get("text").instance;
     }
     return getType(colConfig.type, extractTypeOptions(colConfig));
 }

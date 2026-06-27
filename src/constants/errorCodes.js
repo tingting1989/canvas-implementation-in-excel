@@ -58,6 +58,22 @@ export const ERROR_CODE = {
     /** 渲染异常 */
     RENDER_ERROR: "RENDER_ERROR",
 
+    // ── 渲染器注册表 ──
+    /** 渲染器名称无效（空或非字符串） */
+    INVALID_RENDERER_NAME: "INVALID_RENDERER_NAME",
+
+    /** 渲染器类无效（非构造函数） */
+    INVALID_RENDERER_CLASS: "INVALID_RENDERER_CLASS",
+
+    /** 渲染器已存在，将被覆盖 */
+    DUPLICATE_RENDERER: "DUPLICATE_RENDERER",
+
+    /** 渲染器未找到 */
+    RENDERER_NOT_FOUND: "RENDERER_NOT_FOUND",
+
+    /** 渲染器实例化失败 */
+    RENDERER_INSTANTIATION_ERROR: "RENDERER_INSTANTIATION_ERROR",
+
     // ── 公式 ──
     /** 函数名无效（空或非字符串） */
     FORMULA_INVALID_FUNCTION_NAME: "FORMULA_INVALID_FUNCTION_NAME",

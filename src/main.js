@@ -41,22 +41,44 @@ const initApp = () => {
     Workbook.registerPlugin("dataValidation", DataValidationPlugin);
 
     const wb = new Workbook("grid", {
-        // height:600,
-        // width:800,
+        // 工作表高度和宽度（像素值）
+        // height: 600,
+        // 工作表高度和宽度（像素值）
+        // width: 800,
+
+        // 初始行数
+        startRows:10,
+        // 初始列数
+        startCols:10,
+
         sheets: [
             {
+                // 工作表名称
                 name: "Sheet1",
-                readOnly: false,
 
+
+                // 是否只读
+                readOnly: false,
+                // 初始数据
                 // data: [
                 //     ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
                 //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
                 //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 // ],
+
+                // 列表头配置，用于替换默认的行号表头 A,B,C...
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                // 行表头宽度配置
                 rowHeaderWidth: 120,
+
+
+                // 行高配置
                 rowHeights: [30, 50, 90],
+
+                // 行表头配置，用于替换默认的行号表头 1,2,3...
                 rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
+
+                // 嵌套表头配置
                 nestedHeaders: [
                     [
                         { label: "基本信息", colspan: 2 },
@@ -65,7 +87,10 @@ const initApp = () => {
                     ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
                     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 ],
+
+                // 单元格内容超出单元格宽度时是否显示省略号
                 textOverflowEllipsis: false,
+                // 每个单元格的内边距（像素值）
                 cellPadding: 10,
 
                 // 固定行列数上限（使用 maxRows/maxCols）
@@ -78,11 +103,15 @@ const initApp = () => {
                         style: { backgroundColor: "#ffcccc" },
                     },
                 ],
+
+                // 单元格样式配置
                 cell: [
                     { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
                     { row: 1, col: 3, disabled: true },
                     { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
                 ],
+
+                // 单元格样式配置函数
                 cells: (row, col) => {
                     if (row === 0) {
                         return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
@@ -91,6 +120,8 @@ const initApp = () => {
                         return { style: { textAlign: "right", fontWeight: "bold" } };
                     }
                 },
+
+                // 列配置
                 columns: [
                     { type: "text", width: 120, style: { textAlign: "left" } },
                     { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
@@ -99,6 +130,8 @@ const initApp = () => {
                     { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
                     { type: "date", width: 300 },
                 ],
+
+                // 默认单元格样式
                 defaultStyle: {
                     fontSize: 14,
                     fontFamily: "Microsoft YaHei",

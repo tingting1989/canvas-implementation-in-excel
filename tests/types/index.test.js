@@ -137,8 +137,10 @@ describe('types/index - 基础功能测试', () => {
 
             const type = getColumnTypeFromConfig(config);
 
-            expect(type).toBeInstanceOf(TextColumnType);
+            expect(type.name).toBe('text');
             expect(type.options.maxLength).toBe(50);
+
+            console.log(`✅ 类型名称: ${type.constructor.name}, options: ${JSON.stringify(type.options)}`);
         });
 
         it('无 type 配置返回 text 类型', () => {

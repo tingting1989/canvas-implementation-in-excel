@@ -453,6 +453,9 @@ export class Workbook {
         if (this.renderEngine) this.#bindSheetEvents(sheet);
 
         const opts = this.#initOptions;
+
+
+        console.log(opts)
         sheet.rowColManager.ensureSize(opts?.startRows || 100, opts?.startCols || 26);
 
         this.sheets.set(name, sheet);

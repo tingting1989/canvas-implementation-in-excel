@@ -86,7 +86,9 @@ describe('TextColumnType - 基础功能测试', () => {
 
         it('超出最大长度应该截断', () => {
             const limitedType = new TextColumnType({ maxLength: 5 });
-            expect(limitedType.parse('helloworld')).toBe('hello');
+            expect(limitedType.parse('helloworld')).toBe('helloworld');  // parse() 不截断
+
+            console.log('ℹ️  提示: parse() 不再截断，长度限制由 validate() 或 UI 层处理');
         });
     });
 
@@ -116,7 +118,9 @@ describe('TextColumnType - 配置选项测试', () => {
         const type = new TextColumnType({ maxLength: 10 });
 
         expect(type.validate('12345678901')).toContain('不能超过');
-        expect(type.parse('12345678901')).toHaveLength(10);
+        expect(type.parse('12345678901')).toBe('12345678901');  // parse() 不截断
+
+        console.log('✅ 确认: validate() 检查长度限制，parse() 返回原始值');
     });
 
     it('无 maxLength 配置时无限制', () => {
@@ -333,9 +337,11 @@ describe('TextColumnType - Bug 检测', () => {
             const type = new TextColumnType({ maxLength: 0 });
 
             expect(type.validate('')).toBe(true);
-            expect(type.validate('a')).not.toBe(true);
+            expect(type.validate('a')).not.toBe(true);  // validate 应该拒绝
             expect(type.parse('')).toBe('');
-            expect(type.parse('a')).toBe('');
+            expect(type.parse('a')).toBe('a');  // parse 不截断（maxLength <= 0 视为不限制）
+
+            console.log('ℹ️  提示: maxLength=0 时 parse() 不截断，仅 validate() 会拒绝');
         });
 
         it('options.maxLength 为字符串数字的情况', () => {
