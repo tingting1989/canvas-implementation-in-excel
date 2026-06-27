@@ -37,6 +37,9 @@ export class Workbook {
     /** @type {Array<{type:string, name?:string, PluginClass?:Function, options:object}>} */
     #pendingPlugins = [];
 
+    /** @type {Map<string, Function[]>} Early Hooks 缓存 */
+    #earlyHooks;
+
     /** @type {Set<import("./Sheet.js").Sheet>} 已绑定事件的 Sheet 集合（防止 switchTo 重复绑定） */
     #boundSheets = new Set();
 
@@ -95,6 +98,13 @@ export class Workbook {
 
         /** @type {PluginManager|null} */
         this.pluginManager = null;
+
+        /**
+         * Early Hooks 缓存（eventHandler 创建前注册的 hooks）
+         * key: hookName, value: callback[]
+         * @type {Map<string, Function[]>}
+         */
+        this.#earlyHooks = new Map();
 
         this.#containerId = containerId || CONFIG.CANVAS_ID;
         this.#initOptions = options;
@@ -224,6 +234,25 @@ export class Workbook {
         this.editor.setViewport(this.eventHandler.viewport);
         this.editor.setCanvasContext(this.eventHandler.canvasContext);
         this.pluginManager = new PluginManager(this);
+
+        // 应用 Early Hooks 缓存（eventHandler 创建前注册的 hooks）
+        this.#flushEarlyHooks();
+    }
+
+    /**
+     * 将缓存的 early hooks 应用到 eventHandler
+     */
+    #flushEarlyHooks() {
+        if (!this.eventHandler || this.#earlyHooks.size === 0) return;
+
+        for (const [hookName, callbacks] of this.#earlyHooks) {
+            for (const callback of callbacks) {
+                this.eventHandler.addHook(hookName, callback);
+            }
+        }
+
+        // 清空缓存
+        this.#earlyHooks.clear();
     }
 
     #linkSheetsToRenderEngine() {
@@ -666,23 +695,68 @@ export class Workbook {
     }
 
     // ============================================================
-    // 钩子系统（委托到 EventHandler）
+    // 钩子系统（委托到 EventHandler，支持 Early Hooks 缓存）
     // ============================================================
 
+    /**
+     * 添加钩子监听器
+     * 如果 eventHandler 尚未创建，会缓存到 #earlyHooks 中，待 eventHandler 创建后自动应用
+     *
+     * @param {string} hookName - 钩子名称
+     * @param {Function} callback - 回调函数
+     */
     addHook(hookName, callback) {
-        this.eventHandler?.addHook(hookName, callback);
+        if (this.eventHandler) {
+            // eventHandler 已存在，直接添加
+            this.eventHandler.addHook(hookName, callback);
+        } else {
+            // eventHandler 未创建，缓存到 earlyHooks
+            if (!this.#earlyHooks.has(hookName)) {
+                this.#earlyHooks.set(hookName, []);
+            }
+            this.#earlyHooks.get(hookName).push(callback);
+        }
     }
 
+    /**
+     * 添加一次性钩子监听器
+     * @param {string} hookName - 钩子名称
+     * @param {Function} callback - 回调函数
+     */
     addHookOnce(hookName, callback) {
-        this.eventHandler?.addHookOnce(hookName, callback);
+        if (this.eventHandler) {
+            this.eventHandler.addHookOnce(hookName, callback);
+        } else {
+            // 对于 early hooks，使用包装函数实现一次性逻辑
+            const onceCallback = (...args) => {
+                callback(...args);
+                this.removeHook(hookName, onceCallback);
+            };
+            this.addHook(hookName, onceCallback);
+        }
     }
 
     removeHook(hookName, callback) {
-        this.eventHandler?.removeHook(hookName, callback);
+        if (this.eventHandler) {
+            this.eventHandler.removeHook(hookName, callback);
+        } else {
+            // 从 earlyHooks 中移除
+            const callbacks = this.#earlyHooks.get(hookName);
+            if (callbacks) {
+                const index = callbacks.indexOf(callback);
+                if (index > -1) {
+                    callbacks.splice(index, 1);
+                }
+            }
+        }
     }
 
     clearHook(hookName) {
-        this.eventHandler?.clearHook(hookName);
+        if (this.eventHandler) {
+            this.eventHandler.clearHook(hookName);
+        } else {
+            this.#earlyHooks.delete(hookName);
+        }
     }
 
     /** @returns {boolean} */

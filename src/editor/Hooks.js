@@ -171,7 +171,9 @@ export class Hooks {
      * @returns {Function[]}
      */
     getHooks(hookName) {
-        return this.hooks.get(hookName) || [];
+        const callbacks = this.hooks.get(hookName);
+        // 返回副本以防止外部修改影响内部状态
+        return callbacks ? callbacks.slice() : [];
     }
 
     /**
