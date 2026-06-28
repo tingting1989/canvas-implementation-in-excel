@@ -508,7 +508,6 @@ const initApp = () => {
     //     }
     // });
 
-
     setTimeout(() => {
         wb.destroy();
     }, 5000);

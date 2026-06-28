@@ -78,13 +78,12 @@ describe("RenderEngine 销毁（P0 修复验证）", () => {
         const wrap = re.wrap;
         
         // 验证初始状态
-        expect(wrap.children.length).toBeGreaterThan(0); // canvas + scrollbar + tabbar
+        expect(wrap.children.length).toBeGreaterThan(0);
         
         re.destroy();
         
-        // 验证 wrap 已移除
+        // 验证 wrap 已移除（canvas 也被一起移除）
         expect(container.contains(wrap)).toBe(false);
-        // canvas 应该回到 container（因为 RenderEngine 只是移除 wrap，不移除 canvas）
-        expect(container.contains(canvas)).toBe(true);
+        expect(container.contains(canvas)).toBe(false);
     });
 });

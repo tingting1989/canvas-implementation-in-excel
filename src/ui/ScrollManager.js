@@ -280,5 +280,6 @@ export class ScrollManager extends DOMComponent {
         this.#pendingScrollCallback = false;
         this.wrap = null;
         this.canvas = null;
+        super.onDestroy();
     }
 }
