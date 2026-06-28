@@ -90,7 +90,9 @@ export class CellEditor extends DOMComponent {
     }
 
     /** 子类覆写返回变体 CSS class（如 "cs-cell-editor--numeric"） */
-    getEditorCssClass() { return ""; }
+    getEditorCssClass() {
+        return "";
+    }
 
     getEditorAttributes() {
         return {};

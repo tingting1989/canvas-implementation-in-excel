@@ -1,96 +1,96 @@
 /* Sheet Tab 样式 — SheetTabBar */
 .cs-sheet-tab-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: calc((100% - 14px) / 2);
-  height: 30px;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
-  display: flex;
-  align-items: center;
-  z-index: 12;
-  user-select: none;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: calc((100% - 14px) / 2);
+    height: 30px;
+    background: #f5f5f5;
+    border-top: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    z-index: 12;
+    user-select: none;
 }
 .cs-sheet-add-btn {
-  width: var(--header-width, 46px);
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: #555;
-  cursor: pointer;
-  flex-shrink: 0;
-  border-right: 1px solid #ddd;
+    width: var(--header-width, 46px);
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    color: #555;
+    cursor: pointer;
+    flex-shrink: 0;
+    border-right: 1px solid #ddd;
 }
 .cs-sheet-add-btn:hover {
-  background: #e0e0e0;
-  color: #217346;
+    background: #e0e0e0;
+    color: #217346;
 }
 .cs-sheet-tabs-scroll {
-  flex: 1;
-  overflow: hidden;
-  height: 100%;
-  position: relative;
+    flex: 1;
+    overflow: hidden;
+    height: 100%;
+    position: relative;
 }
 .cs-sheet-tabs {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  white-space: nowrap;
-  transition: transform 0.15s ease;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    white-space: nowrap;
+    transition: transform 0.15s ease;
 }
 .cs-sheet-tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 8px;
-  height: 100%;
-  font-size: 12px;
-  color: #444;
-  cursor: pointer;
-  border-right: 1px solid #ddd;
-  position: relative;
-  flex-shrink: 0;
-  background: #eaeaea;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 8px;
+    height: 100%;
+    font-size: 12px;
+    color: #444;
+    cursor: pointer;
+    border-right: 1px solid #ddd;
+    position: relative;
+    flex-shrink: 0;
+    background: #eaeaea;
 }
 .cs-sheet-tab:hover {
-  background: #ddd;
+    background: #ddd;
 }
 .cs-sheet-tab.active {
-  background: #fff;
-  color: #217346;
-  font-weight: 600;
+    background: #fff;
+    color: #217346;
+    font-weight: 600;
 }
 .cs-sheet-tab-close {
-  display: none;
-  margin-left: 6px;
-  width: 16px;
-  height: 16px;
-  line-height: 16px;
-  text-align: center;
-  font-size: 11px;
-  border-radius: 50%;
-  color: #888;
-  cursor: pointer;
+    display: none;
+    margin-left: 6px;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    font-size: 11px;
+    border-radius: 50%;
+    color: #888;
+    cursor: pointer;
 }
 .cs-sheet-tab-close:hover {
-  background: #c0c0c0;
-  color: #333;
+    background: #c0c0c0;
+    color: #333;
 }
 .cs-sheet-tab.active .cs-sheet-tab-close,
 .cs-sheet-tab:hover .cs-sheet-tab-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .cs-sheet-rename-input {
-  border: none;
-  outline: none;
-  background: #fff;
-  font: inherit;
-  color: inherit;
-  padding: 0;
-  width: 60px;
-  box-sizing: border-box;
+    border: none;
+    outline: none;
+    background: #fff;
+    font: inherit;
+    color: inherit;
+    padding: 0;
+    width: 60px;
+    box-sizing: border-box;
 }

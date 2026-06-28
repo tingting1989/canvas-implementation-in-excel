@@ -1,34 +1,34 @@
 /* 公式栏样式 — FormulaBar */
 .cs-formula-bar {
-  display: flex;
-  align-items: center;
-  height: 28px;
-  border-bottom: 1px solid #ccc;
-  background: #fff;
-  flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    height: 28px;
+    border-bottom: 1px solid #ccc;
+    background: #fff;
+    flex-shrink: 0;
 }
 .cs-formula-cell-ref {
-  width: 72px;
-  min-width: 72px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-right: 1px solid #ccc;
-  font-size: 12px;
-  font-family: Consolas, monospace;
-  color: #333;
-  background: #fafafa;
-  user-select: none;
+    width: 72px;
+    min-width: 72px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #ccc;
+    font-size: 12px;
+    font-family: Consolas, monospace;
+    color: #333;
+    background: #fafafa;
+    user-select: none;
 }
 .cs-formula-input {
-  flex: 1;
-  height: 100%;
-  border: none;
-  outline: none;
-  padding: 0 8px;
-  font-size: 13px;
-  font-family: Consolas, monospace;
-  color: #333;
-  background: transparent;
+    flex: 1;
+    height: 100%;
+    border: none;
+    outline: none;
+    padding: 0 8px;
+    font-size: 13px;
+    font-family: Consolas, monospace;
+    color: #333;
+    background: transparent;
 }

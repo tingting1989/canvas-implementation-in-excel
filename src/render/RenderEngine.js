@@ -44,10 +44,10 @@ export class RenderEngine extends DOMComponent {
         this.wrap.appendChild(this.canvas);
 
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
-        this.trackChild(this.scrollMgr);       // 级联销毁
+        this.trackChild(this.scrollMgr); // 级联销毁
 
         this.sheetTabBar = new SheetTabBar(this.wrap, null);
-        this.trackChild(this.sheetTabBar);      // 级联销毁 ← 之前遗漏！
+        this.trackChild(this.sheetTabBar); // 级联销毁 ← 之前遗漏！
 
         this.#initLayerSystem();
         this.#initCanvasSize();

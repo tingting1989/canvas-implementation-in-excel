@@ -31,10 +31,14 @@ export class SheetTabBar extends DOMComponent {
     #createDOM(wrap) {
         const bar = this.createElement("div", { className: "cs-sheet-tab-bar" }, wrap);
 
-        const addBtn = this.createElement("div", {
-            className: "cs-sheet-add-btn",
-            textContent: "+",
-        }, bar);
+        const addBtn = this.createElement(
+            "div",
+            {
+                className: "cs-sheet-add-btn",
+                textContent: "+",
+            },
+            bar,
+        );
 
         this.#scrollWrap = this.createElement("div", { className: "cs-sheet-tabs-scroll" }, bar);
         this.#tabsContainer = this.createElement("div", { className: "cs-sheet-tabs" }, this.#scrollWrap);
@@ -79,14 +83,19 @@ export class SheetTabBar extends DOMComponent {
             if (this.#onSwitch) this.#onSwitch(name);
         });
 
-        this.trackEvent(this._bar, EVENT_NAMES.WHEEL, (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
-            this.#scrollOffset += delta;
-            this.#clampScroll();
-            this.#applyScroll();
-        }, { passive: false });
+        this.trackEvent(
+            this._bar,
+            EVENT_NAMES.WHEEL,
+            (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+                this.#scrollOffset += delta;
+                this.#clampScroll();
+                this.#applyScroll();
+            },
+            { passive: false },
+        );
     }
 
     #clampScroll() {

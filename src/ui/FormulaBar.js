@@ -48,15 +48,23 @@ export class FormulaBar extends DOMComponent {
     #createDOM(container) {
         const bar = this.createElement("div", { className: "cs-formula-bar" });
 
-        const cellRef = this.createElement("div", {
-            className: "cs-formula-cell-ref",
-        }, bar);
+        const cellRef = this.createElement(
+            "div",
+            {
+                className: "cs-formula-cell-ref",
+            },
+            bar,
+        );
 
-        this.#input = this.createElement("input", {
-            className: "cs-formula-input",
-            type: "text",
-            placeholder: "输入值或公式...",
-        }, bar);
+        this.#input = this.createElement(
+            "input",
+            {
+                className: "cs-formula-input",
+                type: "text",
+                placeholder: "输入值或公式...",
+            },
+            bar,
+        );
 
         this._cellRef = cellRef;
 

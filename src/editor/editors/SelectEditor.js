@@ -9,7 +9,9 @@ export class SelectEditor extends CellEditor {
         return "select";
     }
 
-    getEditorCssClass() { return "cs-cell-editor--select"; }
+    getEditorCssClass() {
+        return "cs-cell-editor--select";
+    }
 
     afterShow(row, col) {
         const cellType = this.sheet.getCellTypeInstance(row, col);

@@ -135,14 +135,19 @@ export class ScrollManager extends DOMComponent {
     }
 
     bind() {
-        this.trackEvent(this.wrap, EVENT_NAMES.WHEEL, (e) => {
-            e.preventDefault();
-            const dx = e.deltaX || 0;
-            const dy = e.deltaY || 0;
-            this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, this.#scrollX + dx));
-            this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, this.#scrollY + dy));
-            this.#scheduleScrollCallbacks();
-        }, { passive: false });
+        this.trackEvent(
+            this.wrap,
+            EVENT_NAMES.WHEEL,
+            (e) => {
+                e.preventDefault();
+                const dx = e.deltaX || 0;
+                const dy = e.deltaY || 0;
+                this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, this.#scrollX + dx));
+                this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, this.#scrollY + dy));
+                this.#scheduleScrollCallbacks();
+            },
+            { passive: false },
+        );
     }
 
     /**

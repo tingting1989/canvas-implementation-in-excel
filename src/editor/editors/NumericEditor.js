@@ -2,7 +2,9 @@ import { CellEditor } from "./CellEditor.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 export class NumericEditor extends CellEditor {
-    getEditorCssClass() { return "cs-cell-editor--numeric"; }
+    getEditorCssClass() {
+        return "cs-cell-editor--numeric";
+    }
 
     getEditorAttributes() {
         return { type: "text", inputmode: "decimal" };

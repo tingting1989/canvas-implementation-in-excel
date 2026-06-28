@@ -3,7 +3,9 @@ import { CellEditor } from "./CellEditor.js";
 export class DateEditor extends CellEditor {
     #useNativePicker = true;
 
-    getEditorCssClass() { return "cs-cell-editor--date"; }
+    getEditorCssClass() {
+        return "cs-cell-editor--date";
+    }
 
     afterCreateEditor() {
         this.#useNativePicker = this.#supportsDateInput();

@@ -1,28 +1,28 @@
 /* 右键菜单样式 — ContextMenuStrategy */
 .ctx-menu {
-  position: fixed;
-  display: none;
-  z-index: 10000;
-  background: #fff;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  padding: 4px 0;
-  min-width: 180px;
-  font-family: 12px sans-serif;
-  font-size: 13px;
-  user-select: none;
+    position: fixed;
+    display: none;
+    z-index: 10000;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    padding: 4px 0;
+    min-width: 180px;
+    font-family: 12px sans-serif;
+    font-size: 13px;
+    user-select: none;
 }
 .ctx-menu .ctx-item {
-  padding: 6px 16px;
-  cursor: pointer;
-  color: #333;
+    padding: 6px 16px;
+    cursor: pointer;
+    color: #333;
 }
 .ctx-menu .ctx-item:hover {
-  background: #f0f4ff;
+    background: #f0f4ff;
 }
 .ctx-menu .ctx-separator {
-  height: 1px;
-  background: #e0e0e0;
-  margin: 4px 8px;
+    height: 1px;
+    background: #e0e0e0;
+    margin: 4px 8px;
 }
