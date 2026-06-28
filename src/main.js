@@ -272,223 +272,223 @@ const initApp = () => {
         },
         hooks: {
             // ==================== 编辑相关钩子 ====================
-            // ❌ 未执行
-            [HOOKS.BEFORE_BEGIN_EDITING]: (...args) => {
-                console.log("[HOOK] beforeBeginEditing 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_BEGIN_EDITING]: (...args) => {
-                console.log("[HOOK] afterBeginEditing 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.BEFORE_FINISH_EDITING]: (...args) => {
-                console.log("[HOOK] beforeFinishEditing 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_FINISH_EDITING]: (...args) => {
-                console.log("[HOOK] afterFinishEditing 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.BEFORE_CHANGE]: (...args) => {
-                console.log("[HOOK] beforeChange 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_CHANGE]: (...args) => {
-                console.log("[HOOK] afterChange 执行了", ...args);
-            },
-
-            // ==================== 选择相关钩子 ====================
-            // ❌ 未执行
-            [HOOKS.BEFORE_SELECTION]: (...args) => {
-                console.log("[HOOK] beforeSelection 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_SELECTION]: (...args) => {
-                console.log("[HOOK] afterSelection 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.BEFORE_SELECTION_END]: (...args) => {
-                console.log("[HOOK] beforeSelectionEnd 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_SELECTION_END]: (...args) => {
-                console.log("[HOOK] afterSelectionEnd 执行了", ...args);
-            },
-
-            // ==================== 单元格交互钩子 ====================
-            // ❌ 未执行
-            [HOOKS.ON_CELL_MOUSE_DOWN]: (...args) => {
-                console.log("[HOOK] onCellMouseDown 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.ON_CELL_MOUSE_OVER]: (...args) => {
-                console.log("[HOOK] onCellMouseOver 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.ON_CELL_MOUSE_OUT]: (...args) => {
-                console.log("[HOOK] onCellMouseOut 执行了", ...args);
-            },
             // ✅ 已执行
-            [HOOKS.ON_CELL_CLICK]: (...args) => {
-                console.log("[HOOK] onCellClick 执行了", ...args);
-                if (isFunction(updateToolbarStyleState)) {
-                    updateToolbarStyleState();
-                }
-            },
-            // ✅ 已执行
-            [HOOKS.ON_CELL_DBL_CLICK]: (...args) => {
-                console.log("[HOOK] onCellDblClick 执行了", ...args);
-            },
-
-            // ==================== 键盘相关钩子 ====================
-            // ❌ 未执行
-            [HOOKS.BEFORE_KEY_DOWN]: (...args) => {
-                console.log("[HOOK] beforeKeyDown 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_KEY_DOWN]: (...args) => {
-                console.log("[HOOK] afterKeyDown 执行了", ...args);
-            },
-
-            // ==================== 滚动相关钩子 ====================
-            // ❌ 未执行
-            [HOOKS.AFTER_SCROLL_HORIZONTALLY]: (...args) => {
-                console.log("[HOOK] afterScrollHorizontally 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_SCROLL_VERTICALLY]: (...args) => {
-                console.log("[HOOK] afterScrollVertically 执行了", ...args);
-            },
-
-            // ==================== 合并单元格相关钩子 ====================
-            // ❌ 未执行
-            [HOOKS.BEFORE_MERGE_CELLS]: (...args) => {
-                console.log("[HOOK] beforeMergeCells 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_MERGE_CELLS]: (...args) => {
-                console.log("[HOOK] afterMergeCells 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.BEFORE_UNMERGE_CELLS]: (...args) => {
-                console.log("[HOOK] beforeUnmergeCells 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_UNMERGE_CELLS]: (...args) => {
-                console.log("[HOOK] afterUnmergeCells 执行了", ...args);
-            },
-
-            // ==================== 剪贴板相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.BEFORE_COPY]: (...args) => {
-                console.log("[HOOK] beforeCopy 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_COPY]: (...args) => {
-                console.log("[HOOK] afterCopy 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.BEFORE_CUT]: (...args) => {
-                console.log("[HOOK] beforeCut 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_CUT]: (...args) => {
-                console.log("[HOOK] afterCut 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.BEFORE_PASTE]: (...args) => {
-                console.log("[HOOK] beforePaste 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_PASTE]: (...args) => {
-                console.log("[HOOK] afterPaste 执行了", ...args);
-            },
-
-            // ==================== 列移动相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.BEFORE_COLUMN_MOVE]: (...args) => {
-                console.log("[HOOK] beforeColumnMove 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_COLUMN_MOVE]: (...args) => {
-                console.log("[HOOK] afterColumnMove 执行了", ...args);
-            },
-
-            // ==================== 行移动相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.BEFORE_ROW_MOVE]: (...args) => {
-                console.log("[HOOK] beforeRowMove 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_ROW_MOVE]: (...args) => {
-                console.log("[HOOK] afterRowMove 执行了", ...args);
-            },
-
-            // ==================== 分页相关钩子 ====================
-            // ❌ 未执行
-            [HOOKS.AFTER_PAGE_CHANGE]: (...args) => {
-                console.log("[HOOK] afterPageChange 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_PAGE_SIZE_CHANGE]: (...args) => {
-                console.log("[HOOK] afterPageSizeChange 执行了", ...args);
-            },
-
-            // ==================== 隐藏列相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.AFTER_HIDE_COLUMN]: (...args) => {
-                console.log("[HOOK] afterHideColumn 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_SHOW_COLUMN]: (...args) => {
-                console.log("[HOOK] afterShowColumn 执行了", ...args);
-            },
-
-            // ==================== 隐藏行相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.AFTER_HIDE_ROW]: (...args) => {
-                console.log("[HOOK] afterHideRow 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_SHOW_ROW]: (...args) => {
-                console.log("[HOOK] afterShowRow 执行了", ...args);
-            },
-
-            // ==================== 冻结行列相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.AFTER_FREEZE]: (...args) => {
-                console.log("[HOOK] afterFreeze 执行了", ...args);
-            },
-            // ✅ 已执行
-            [HOOKS.AFTER_UNFREEZE]: (...args) => {
-                console.log("[HOOK] afterUnfreeze 执行了", ...args);
-            },
-
-            // ==================== 工作表切换相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
-                console.log("[HOOK] afterSheetSwitch 执行了", ...args);
-            },
-
-            // ==================== 排序相关钩子 ====================
-            // ✅ 已执行
-            [HOOKS.AFTER_SORT]: (...args) => {
-                console.log("[HOOK] afterSort 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.AFTER_SORT_RESTORE]: (...args) => {
-                console.log("[HOOK] afterSortRestore 执行了", ...args);
-            },
-
-            // ==================== 生命周期钩子 ====================
-            // ❌ 未执行
-            [HOOKS.INIT]: (...args) => {
-                console.log("[HOOK] init 执行了", ...args);
-            },
-            // ❌ 未执行
-            [HOOKS.DESTROY]: (...args) => {
-                console.log("[HOOK] destroy 执行了", ...args);
-            },
+            // [HOOKS.BEFORE_BEGIN_EDITING]: (...args) => {
+            //     console.log("[HOOK] beforeBeginEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_BEGIN_EDITING]: (...args) => {
+            //     console.log("[HOOK] afterBeginEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_FINISH_EDITING]: (...args) => {
+            //     console.log("[HOOK] beforeFinishEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_FINISH_EDITING]: (...args) => {
+            //     console.log("[HOOK] afterFinishEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行    
+            // [HOOKS.BEFORE_CHANGE]: (...args) => {
+            //     console.log("[HOOK] beforeChange 执行了", ...args);
+            // },
+            // // ✅ 已执行            
+            // [HOOKS.AFTER_CHANGE]: (...args) => {
+            //     console.log("[HOOK] afterChange 执行了", ...args);
+            // },
+            //
+            // // ==================== 选择相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SELECTION]: (...args) => {
+            //     console.log("[HOOK] beforeSelection 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SELECTION]: (...args) => {
+            //     console.log("[HOOK] afterSelection 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SELECTION_END]: (...args) => {
+            //     console.log("[HOOK] beforeSelectionEnd 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SELECTION_END]: (...args) => {
+            //     console.log("[HOOK] afterSelectionEnd 执行了", ...args);
+            // },
+            //
+            // // ==================== 单元格交互钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_MOUSE_DOWN]: (...args) => {
+            //     console.log("[HOOK] onCellMouseDown 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_MOUSE_OVER]: (...args) => {
+            //     console.log("[HOOK] onCellMouseOver 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_MOUSE_OUT]: (...args) => {
+            //     console.log("[HOOK] onCellMouseOut 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_CLICK]: (...args) => {
+            //     console.log("[HOOK] onCellClick 执行了", ...args);
+            //     if (isFunction(updateToolbarStyleState)) {
+            //         updateToolbarStyleState();
+            //     }
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_DBL_CLICK]: (...args) => {
+            //     console.log("[HOOK] onCellDblClick 执行了", ...args);
+            // },
+            //
+            // // ==================== 键盘相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_KEY_DOWN]: (...args) => {
+            //     console.log("[HOOK] beforeKeyDown 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_KEY_DOWN]: (...args) => {
+            //     console.log("[HOOK] afterKeyDown 执行了", ...args);
+            // },
+            //
+            // // ==================== 滚动相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SCROLL_HORIZONTALLY]: (...args) => {
+            //     console.log("[HOOK] afterScrollHorizontally 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SCROLL_VERTICALLY]: (...args) => {
+            //     console.log("[HOOK] afterScrollVertically 执行了", ...args);
+            // },
+            //
+            // // ==================== 合并单元格相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_MERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] beforeMergeCells 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_MERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] afterMergeCells 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_UNMERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] beforeUnmergeCells 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_UNMERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] afterUnmergeCells 执行了", ...args);
+            // },
+            //
+            // // ==================== 剪贴板相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_COPY]: (...args) => {
+            //     console.log("[HOOK] beforeCopy 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_COPY]: (...args) => {
+            //     console.log("[HOOK] afterCopy 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_CUT]: (...args) => {
+            //     console.log("[HOOK] beforeCut 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_CUT]: (...args) => {
+            //     console.log("[HOOK] afterCut 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_PASTE]: (...args) => {
+            //     console.log("[HOOK] beforePaste 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_PASTE]: (...args) => {
+            //     console.log("[HOOK] afterPaste 执行了", ...args);
+            // },
+            //
+            // // ==================== 列移动相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_COLUMN_MOVE]: (...args) => {
+            //     console.log("[HOOK] beforeColumnMove 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_COLUMN_MOVE]: (...args) => {
+            //     console.log("[HOOK] afterColumnMove 执行了", ...args);
+            // },
+            //
+            // // ==================== 行移动相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_ROW_MOVE]: (...args) => {
+            //     console.log("[HOOK] beforeRowMove 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_ROW_MOVE]: (...args) => {
+            //     console.log("[HOOK] afterRowMove 执行了", ...args);
+            // },
+            //
+            // // ==================== 分页相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_PAGE_CHANGE]: (...args) => {
+            //     console.log("[HOOK] afterPageChange 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_PAGE_SIZE_CHANGE]: (...args) => {
+            //     console.log("[HOOK] afterPageSizeChange 执行了", ...args);
+            // },
+            //
+            // // ==================== 隐藏列相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_HIDE_COLUMN]: (...args) => {
+            //     console.log("[HOOK] afterHideColumn 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHOW_COLUMN]: (...args) => {
+            //     console.log("[HOOK] afterShowColumn 执行了", ...args);
+            // },
+            //
+            // // ==================== 隐藏行相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_HIDE_ROW]: (...args) => {
+            //     console.log("[HOOK] afterHideRow 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHOW_ROW]: (...args) => {
+            //     console.log("[HOOK] afterShowRow 执行了", ...args);
+            // },
+            //
+            // // ==================== 冻结行列相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_FREEZE]: (...args) => {
+            //     console.log("[HOOK] afterFreeze 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_UNFREEZE]: (...args) => {
+            //     console.log("[HOOK] afterUnfreeze 执行了", ...args);
+            // },
+            //
+            // // ==================== 工作表切换相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
+            //     console.log("[HOOK] afterSheetSwitch 执行了", ...args);
+            // },
+            //
+            // // ==================== 排序相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SORT]: (...args) => {
+            //     console.log("[HOOK] afterSort 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SORT_RESTORE]: (...args) => {
+            //     console.log("[HOOK] afterSortRestore 执行了", ...args);
+            // },
+            //
+            // // ==================== 生命周期钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.INIT]: (...args) => {
+            //     console.log("[HOOK] init 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.DESTROY]: (...args) => {
+            //     console.log("[HOOK] destroy 执行了", ...args);
+            // },
         },
         afterInit(wb) {
             errorHandler.debug(ERROR_CODE.DEBUG_LOG, "afterInit");
