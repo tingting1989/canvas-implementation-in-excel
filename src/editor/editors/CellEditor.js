@@ -205,11 +205,33 @@ export class CellEditor {
         const merge = this.sheet.getMerge(row, col);
         const rect = this.viewport.getCellRect(row, col, merge);
 
-        this.editor.style.display = "block";
-        this.editor.style.left = rect.x + "px";
-        this.editor.style.top = rect.y + "px";
-        this.editor.style.width = rect.w + "px";
-        this.editor.style.height = rect.h + "px";
+        // 将编辑器约束在可视数据区域内，防止：
+        // 1. 非冻结列滚动到冻结列后面时编辑器覆盖冻结区域
+        // 2. 边缘列的编辑器超出 canvas 可视区域
+        const headerW = this.sheet.getHeaderWidth();
+        const headerH = this.sheet.getHeaderHeight();
+        const frozenColsW = this.sheet.frozenColsWidth || 0;
+        const frozenRowsH = this.sheet.frozenRowsHeight || 0;
+        const viewW = this.viewport.viewW;
+        const viewH = this.viewport.viewH;
+
+        const minX = headerW + frozenColsW;
+        const maxX = viewW;
+        const minY = headerH + frozenRowsH;
+        const maxY = viewH;
+
+        const clampedX = Math.max(rect.x, minX);
+        const clampedY = Math.max(rect.y, minY);
+        const clampedRight = Math.min(rect.x + rect.w, maxX);
+        const clampedBottom = Math.min(rect.y + rect.h, maxY);
+        const clampedW = Math.max(0, clampedRight - clampedX);
+        const clampedH = Math.max(0, clampedBottom - clampedY);
+
+        this.editor.style.display = clampedW > 0 && clampedH > 0 ? "block" : "none";
+        this.editor.style.left = clampedX + "px";
+        this.editor.style.top = clampedY + "px";
+        this.editor.style.width = clampedW + "px";
+        this.editor.style.height = clampedH + "px";
 
         this.#syncFontStyle(row, col, rect.h);
 
@@ -259,11 +281,32 @@ export class CellEditor {
         this.#scrollHiding = false;
         const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
         const rect = this.viewport.getCellRect(this.activeRow, this.activeCol, merge);
-        this.editor.style.display = "block";
-        this.editor.style.left = rect.x + "px";
-        this.editor.style.top = rect.y + "px";
-        this.editor.style.width = rect.w + "px";
-        this.editor.style.height = rect.h + "px";
+
+        // 与 show() 相同的约束逻辑，防止编辑器超出可视区域
+        const headerW = this.sheet.getHeaderWidth();
+        const headerH = this.sheet.getHeaderHeight();
+        const frozenColsW = this.sheet.frozenColsWidth || 0;
+        const frozenRowsH = this.sheet.frozenRowsHeight || 0;
+        const viewW = this.viewport.viewW;
+        const viewH = this.viewport.viewH;
+
+        const minX = headerW + frozenColsW;
+        const maxX = viewW;
+        const minY = headerH + frozenRowsH;
+        const maxY = viewH;
+
+        const clampedX = Math.max(rect.x, minX);
+        const clampedY = Math.max(rect.y, minY);
+        const clampedRight = Math.min(rect.x + rect.w, maxX);
+        const clampedBottom = Math.min(rect.y + rect.h, maxY);
+        const clampedW = Math.max(0, clampedRight - clampedX);
+        const clampedH = Math.max(0, clampedBottom - clampedY);
+
+        this.editor.style.display = clampedW > 0 && clampedH > 0 ? "block" : "none";
+        this.editor.style.left = clampedX + "px";
+        this.editor.style.top = clampedY + "px";
+        this.editor.style.width = clampedW + "px";
+        this.editor.style.height = clampedH + "px";
         this.editor.focus();
     }
 

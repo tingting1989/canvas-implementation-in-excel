@@ -8,7 +8,7 @@
 
 ```
 BaseLayer
-  └── TileLayer (zIndex: 1)
+  └── TileLayer (zIndex: 10)
         ├── tileRenderer: TileRenderer   // 瓦片渲染核心
         │     └── cache: TileCache       // LRU 瓦片缓存池
         └── onContentReady: Function     // 异步资源就绪回调
@@ -46,10 +46,10 @@ BaseLayer
 ## 图层位置
 
 ```
-zIndex 4: UILayer         ← 最顶层
-zIndex 3: HeaderLayer
-zIndex 2.5: FrozenLayer
-zIndex 1: TileLayer       ← 【本层】最底层
+zIndex 70: UILayer         ← 最顶层
+zIndex 50: HeaderLayer
+zIndex 40: FrozenLayer
+zIndex 10: TileLayer       ← 【本层】最底层
 ```
 
 ## 脏标记管理

@@ -8,7 +8,7 @@
 
 ```
 BaseLayer
-  └── FrozenLayer (zIndex: 2.5)
+  └── FrozenLayer (zIndex: 40)
         ├── tileRenderer: TileRenderer      // 冻结区域瓦片渲染器
         └── overlayRenderer: OverlayRenderer // 叠加效果渲染器
 ```

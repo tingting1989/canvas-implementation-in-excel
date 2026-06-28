@@ -8,7 +8,7 @@
 
 ```
 BaseLayer
-  └── HeaderLayer (zIndex: 3)
+  └── HeaderLayer (zIndex: 50)
         └── headerRenderer: HeaderRenderer  // 表头渲染委托
 ```
 
@@ -38,10 +38,10 @@ BaseLayer
 ## 图层关系
 
 ```
-zIndex 4: UILayer         ← 调试信息、冻结线
-zIndex 3: HeaderLayer     ← 【本层】行号头 + 列标头
-zIndex 2.5: FrozenLayer   ← 冻结区域数据
-zIndex 1: TileLayer       ← 主数据区域
+zIndex 70: UILayer         ← 调试信息、冻结线
+zIndex 50: HeaderLayer     ← 【本层】行号头 + 列标头
+zIndex 40: FrozenLayer   ← 冻结区域数据
+zIndex 10: TileLayer       ← 主数据区域
 ```
 
 ## 状态监听

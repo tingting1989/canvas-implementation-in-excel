@@ -8,7 +8,7 @@
 
 ```
 BaseLayer
-  └── UILayer (zIndex: 4)
+  └── UILayer (zIndex: 70)
         ├── debugMode: boolean     // 调试开关
         ├── #renderFreezeLines()   // 冻结分割线
         └── #renderDebugInfo()     // 调试信息面板
@@ -61,11 +61,11 @@ BaseLayer
 ## 图层层级
 
 ```
-zIndex 4: UILayer         ← 【本层】最顶层
-zIndex 4: OverlayLayer    ← 同级
-zIndex 3: HeaderLayer
-zIndex 2.5: FrozenLayer
-zIndex 1: TileLayer       ← 最底层
+zIndex 70: UILayer         ← 【本层】最顶层
+zIndex 20: OverlayLayer    ← 同级
+zIndex 50: HeaderLayer
+zIndex 40: FrozenLayer
+zIndex 10: TileLayer       ← 最底层
 ```
 
 ## 状态监听
