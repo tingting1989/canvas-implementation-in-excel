@@ -1,5 +1,5 @@
 import { HOOKS } from "../constants/hookNames.js";
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { errorHandler, ERROR_CODE } from "./ErrorHandler.js";
 import { isFunction } from "../utils/utils.js";
 
 /**

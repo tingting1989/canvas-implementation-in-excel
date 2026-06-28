@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, beforeAll } from 'vitest';
-import { HOOKS } from '../../src/constants/hookNames.js';
-import { Workbook } from '../../src/workbook/Workbook.js';
+import { HOOKS } from '@/constants/hookNames.js';
+import { Workbook } from '@/workbook/Workbook.js';
 
 describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
     describe('Bug: options.hooks 配置不生效', () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Hooks } from "@/editor/Hooks";
+import { Hooks } from "@/core/Hooks";
 
 describe("Hooks - init", () => {
     it("should initialize with default hook names", () => {

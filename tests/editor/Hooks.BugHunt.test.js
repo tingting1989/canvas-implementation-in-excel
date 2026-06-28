@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Hooks } from "../../src/editor/Hooks.js";
+import { Hooks } from "@/core/Hooks.js";
 
 describe("Hooks - Bug Hunting", () => {
     let hooks;

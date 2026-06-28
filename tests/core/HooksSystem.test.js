@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HOOKS } from '../../src/constants/hookNames.js';
-import { Hooks } from '../../src/editor/Hooks.js';
+import { HOOKS } from '@/constants/hookNames.js';
+import { Hooks } from '@/core/Hooks.js';
 
 describe('Hooks 系统 - 单元测试', () => {
     let hooks;

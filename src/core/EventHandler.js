@@ -1,5 +1,5 @@
 import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
-import { Hooks } from "../editor/Hooks.js";
+import { Hooks } from "./Hooks.js";
 import { HOOKS } from "../constants/hookNames.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
