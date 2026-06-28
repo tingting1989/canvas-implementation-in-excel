@@ -206,24 +206,31 @@ export class CellEditor {
         const rect = this.viewport.getCellRect(row, col, merge);
 
         // 将编辑器约束在可视数据区域内，防止：
-        // 1. 非冻结列滚动到冻结列后面时编辑器覆盖冻结区域
+        // 1. 非冻结列滚动到冻结列后面时编辑器 DOM 覆盖冻结区域
         // 2. 边缘列的编辑器超出 canvas 可视区域
-        const headerW = this.sheet.getHeaderWidth();
-        const headerH = this.sheet.getHeaderHeight();
+        //
+        // 编辑器是 DOM 元素，渲染在 canvas 之上，不受 canvas clip 裁剪。
+        // 关键区分：
+        // - 冻结区域内的单元格：编辑器约束到表头边界（headerW/headerH），在冻结区域内正常显示
+        // - 非冻结区域的单元格：编辑器约束到非冻结区域起点（headerW + frozenColsW），
+        //   防止滚动时编辑器穿透冻结区域
+        const headerW = this.sheet.getHeaderWidth?.() ?? 0;
+        const headerH = this.sheet.getHeaderHeight?.() ?? 0;
         const frozenColsW = this.sheet.frozenColsWidth || 0;
         const frozenRowsH = this.sheet.frozenRowsHeight || 0;
-        const viewW = this.viewport.viewW;
-        const viewH = this.viewport.viewH;
+        const viewW = this.viewport?.viewW ?? Infinity;
+        const viewH = this.viewport?.viewH ?? Infinity;
+        const fixedCols = this.sheet.fixedColumnsStart || 0;
+        const fixedRows = this.sheet.fixedRowsTop || 0;
 
-        const minX = headerW + frozenColsW;
-        const maxX = viewW;
-        const minY = headerH + frozenRowsH;
-        const maxY = viewH;
+        // 冻结区域内的单元格使用表头边界，非冻结区域单元格使用冻结区域+表头边界
+        const minX = col < fixedCols ? headerW : headerW + frozenColsW;
+        const minY = row < fixedRows ? headerH : headerH + frozenRowsH;
 
         const clampedX = Math.max(rect.x, minX);
         const clampedY = Math.max(rect.y, minY);
-        const clampedRight = Math.min(rect.x + rect.w, maxX);
-        const clampedBottom = Math.min(rect.y + rect.h, maxY);
+        const clampedRight = Math.min(rect.x + rect.w, viewW);
+        const clampedBottom = Math.min(rect.y + rect.h, viewH);
         const clampedW = Math.max(0, clampedRight - clampedX);
         const clampedH = Math.max(0, clampedBottom - clampedY);
 
@@ -283,22 +290,22 @@ export class CellEditor {
         const rect = this.viewport.getCellRect(this.activeRow, this.activeCol, merge);
 
         // 与 show() 相同的约束逻辑，防止编辑器超出可视区域
-        const headerW = this.sheet.getHeaderWidth();
-        const headerH = this.sheet.getHeaderHeight();
+        const headerW = this.sheet.getHeaderWidth?.() ?? 0;
+        const headerH = this.sheet.getHeaderHeight?.() ?? 0;
         const frozenColsW = this.sheet.frozenColsWidth || 0;
         const frozenRowsH = this.sheet.frozenRowsHeight || 0;
-        const viewW = this.viewport.viewW;
-        const viewH = this.viewport.viewH;
+        const viewW = this.viewport?.viewW ?? Infinity;
+        const viewH = this.viewport?.viewH ?? Infinity;
+        const fixedCols = this.sheet.fixedColumnsStart || 0;
+        const fixedRows = this.sheet.fixedRowsTop || 0;
 
-        const minX = headerW + frozenColsW;
-        const maxX = viewW;
-        const minY = headerH + frozenRowsH;
-        const maxY = viewH;
+        const minX = this.activeCol < fixedCols ? headerW : headerW + frozenColsW;
+        const minY = this.activeRow < fixedRows ? headerH : headerH + frozenRowsH;
 
         const clampedX = Math.max(rect.x, minX);
         const clampedY = Math.max(rect.y, minY);
-        const clampedRight = Math.min(rect.x + rect.w, maxX);
-        const clampedBottom = Math.min(rect.y + rect.h, maxY);
+        const clampedRight = Math.min(rect.x + rect.w, viewW);
+        const clampedBottom = Math.min(rect.y + rect.h, viewH);
         const clampedW = Math.max(0, clampedRight - clampedX);
         const clampedH = Math.max(0, clampedBottom - clampedY);
 
