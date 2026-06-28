@@ -248,32 +248,18 @@ function createMockCtx() {
     return ctx;
 }
 
-class MockCanvas {
-    constructor(width = 800, height = 600) {
-        this.width = width;
-        this.height = height;
-        this.style = {};
-        this._ctx = createMockCtx();
-    }
-    getContext(type) {
-        if (type === "2d") return this._ctx;
-        return null;
-    }
-    toDataURL() {
-        return "";
-    }
-    addEventListener() {}
-    removeEventListener() {}
-}
-
-if (typeof HTMLCanvasElement === "undefined") {
-    global.HTMLCanvasElement = MockCanvas;
-}
-
 const _origCreateElement = document.createElement.bind(document);
 document.createElement = (tag, options) => {
     if (tag === "canvas") {
-        return new MockCanvas();
+        const canvas = _origCreateElement("canvas");
+        canvas.width = 800;
+        canvas.height = 600;
+        canvas._ctx = createMockCtx();
+        canvas.getContext = (type) => {
+            if (type === "2d") return canvas._ctx;
+            return null;
+        };
+        return canvas;
     }
     try {
         return _origCreateElement(tag, options);

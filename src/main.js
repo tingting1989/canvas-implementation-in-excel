@@ -508,6 +508,11 @@ const initApp = () => {
     //     }
     // });
 
+
+    setTimeout(() => {
+        wb.destroy();
+    }, 5000);
+
     // 注意：BEFORE_COLUMN_MOVE、AFTER_COLUMN_MOVE、AFTER_SORT 已在 hooks 配置中注册，
     // 无需重复通过 addHook 注册，否则会触发两次回调。
 

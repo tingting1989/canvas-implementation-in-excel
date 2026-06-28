@@ -274,5 +274,6 @@ export class SheetTabBar extends DOMComponent {
         this.#onAdd = null;
         this.#onRemove = null;
         this.#onRename = null;
+        super.onDestroy();
     }
 }
