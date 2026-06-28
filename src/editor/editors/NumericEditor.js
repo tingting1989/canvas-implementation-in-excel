@@ -2,17 +2,7 @@ import { CellEditor } from "./CellEditor.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 export class NumericEditor extends CellEditor {
-    getEditorId() {
-        return "numeric-editor";
-    }
-
-    getExtraCssText() {
-        return "text-align: right;";
-    }
-
-    getDefaultTextAlign() {
-        return "right";
-    }
+    getEditorCssClass() { return "cs-cell-editor--numeric"; }
 
     getEditorAttributes() {
         return { type: "text", inputmode: "decimal" };
@@ -27,8 +17,8 @@ export class NumericEditor extends CellEditor {
     }
 
     bindEditorEvents() {
-        this.editor.addEventListener(EVENT_NAMES.INPUT, (e) => this.#onInput(e));
-        this.editor.addEventListener(EVENT_NAMES.PASTE, (e) => this.#onPaste(e));
+        this.trackEvent(this.editor, EVENT_NAMES.INPUT, (e) => this.#onInput(e));
+        this.trackEvent(this.editor, EVENT_NAMES.PASTE, (e) => this.#onPaste(e));
     }
 
     #onInput(e) {

@@ -1,74 +1,9 @@
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { CONFIG } from "../constants/config";
+import { DOMComponent } from "../core/DOMComponent.js";
+import "./scrollbar.css";
 
-let scrollbarStyleInjected = false;
-
-function injectScrollbarStyles() {
-    if (scrollbarStyleInjected) return;
-    scrollbarStyleInjected = true;
-
-    const style = document.createElement("style");
-    style.textContent = `
-.cs-scrollbar-h {
-  position: absolute;
-  bottom: 0;
-  left: calc((100% - ${CONFIG.SCROLLBAR_WIDTH}px) / 2);
-  right: ${CONFIG.SCROLLBAR_WIDTH}px;
-  height: ${CONFIG.SHEET_TAB_HEIGHT}px;
-  background: #f1f1f1;
-  border-top: 1px solid #ddd;
-  z-index: 10;
-}
-.cs-scrollbar-h-thumb {
-  position: absolute;
-  top: ${(CONFIG.SHEET_TAB_HEIGHT - CONFIG.SCROLLBAR_WIDTH + 2) / 2}px;
-  height: ${CONFIG.SCROLLBAR_WIDTH - 2}px;
-  min-width: ${CONFIG.SCROLLBAR_MIN_SIZE}px;
-  background: #c1c1c1;
-  border-radius: 6px;
-  cursor: pointer;
-  border-left: 1px solid #ccc;
-}
-.cs-scrollbar-h-thumb:hover {
-  background: #a8a8a8;
-}
-.cs-scrollbar-v {
-  position: absolute;
-  top: var(--header-height, ${CONFIG.HEADER_HEIGHT}px);
-  right: 0;
-  bottom: ${CONFIG.SHEET_TAB_HEIGHT}px;
-  width: ${CONFIG.SCROLLBAR_WIDTH}px;
-  background: #f1f1f1;
-  border-left: 1px solid #ddd;
-  z-index: 10;
-}
-.cs-scrollbar-v-thumb {
-  position: absolute;
-  left: 1px;
-  width: ${CONFIG.SCROLLBAR_WIDTH - 2}px;
-  min-height: ${CONFIG.SCROLLBAR_MIN_SIZE}px;
-  background: #c1c1c1;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.cs-scrollbar-v-thumb:hover {
-  background: #a8a8a8;
-}
-.cs-scrollbar-corner {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: ${CONFIG.SCROLLBAR_WIDTH}px;
-  height: ${CONFIG.SHEET_TAB_HEIGHT}px;
-  background: #f1f1f1;
-  border-top: 1px solid #ddd;
-  border-left: 1px solid #ddd;
-  z-index: 11;
-}`;
-    document.head.appendChild(style);
-}
-
-export class ScrollManager {
+export class ScrollManager extends DOMComponent {
     #scrollX = 0;
     #scrollY = 0;
     #maxScrollX = 0;
@@ -81,25 +16,16 @@ export class ScrollManager {
     #frozenColsW = 0;
     #onScrollCallback = null;
     #onAfterScroll = null;
-    #wheelHandler = null;
-    #dragMoveHandler = null;
-    #dragEndHandler = null;
-
-    /** thumb 的 mousedown 处理器引用（destroy 时需移除） */
-    #hThumbDownHandler = null;
-    #vThumbDownHandler = null;
     #viewW = 0;
     #viewH = 0;
     #hThumb = null;
     #vThumb = null;
-    #hBar = null;
-    #vBar = null;
-    #corner = null;
 
     /** rAF 合并标志：scroll 回调是否已在本帧调度 */
     #pendingScrollCallback = false;
 
     constructor(wrap, canvas) {
+        super();
         this.wrap = wrap;
         this.canvas = canvas;
         this.#headerH = CONFIG.HEADER_HEIGHT;
@@ -108,26 +34,15 @@ export class ScrollManager {
     }
 
     #createScrollbarDOM() {
-        injectScrollbarStyles();
+        this.#hThumb = this.createElement("div", { className: "cs-scrollbar-h-thumb" });
+        const hBar = this.createElement("div", { className: "cs-scrollbar-h" }, this.wrap);
+        hBar.appendChild(this.#hThumb);
 
-        this.#hBar = document.createElement("div");
-        this.#hBar.className = "cs-scrollbar-h";
-        this.#hThumb = document.createElement("div");
-        this.#hThumb.className = "cs-scrollbar-h-thumb";
-        this.#hBar.appendChild(this.#hThumb);
+        this.#vThumb = this.createElement("div", { className: "cs-scrollbar-v-thumb" });
+        const vBar = this.createElement("div", { className: "cs-scrollbar-v" }, this.wrap);
+        vBar.appendChild(this.#vThumb);
 
-        this.#vBar = document.createElement("div");
-        this.#vBar.className = "cs-scrollbar-v";
-        this.#vThumb = document.createElement("div");
-        this.#vThumb.className = "cs-scrollbar-v-thumb";
-        this.#vBar.appendChild(this.#vThumb);
-
-        this.#corner = document.createElement("div");
-        this.#corner.className = "cs-scrollbar-corner";
-
-        this.wrap.appendChild(this.#hBar);
-        this.wrap.appendChild(this.#vBar);
-        this.wrap.appendChild(this.#corner);
+        this.createElement("div", { className: "cs-scrollbar-corner" }, this.wrap);
     }
 
     #bindThumbDrag() {
@@ -135,30 +50,10 @@ export class ScrollManager {
         let startMouse = 0;
         let startScroll = 0;
 
-        const onHThumbDown = (e) => {
-            e.preventDefault();
-            dragging = "h";
-            startMouse = e.clientX;
-            startScroll = this.#scrollX;
-            document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
-            document.addEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
-        };
-
-        const onVThumbDown = (e) => {
-            e.preventDefault();
-            dragging = "v";
-            startMouse = e.clientY;
-            startScroll = this.#scrollY;
-            document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
-            document.addEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
-        };
-
         const onDragMove = (e) => {
             if (dragging === "h") {
                 const dx = e.clientX - startMouse;
                 const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
-
-                // trackW 必须与 CSS half-and-half 布局一致，否则拖拽距离与滚动距离比例错误
                 const trackW = (this.#viewW - CONFIG.SCROLLBAR_WIDTH) / 2;
                 const dataViewW = this.#viewW - hw - this.#frozenColsW;
                 const totalContent = this.#maxScrollX + dataViewW;
@@ -183,14 +78,23 @@ export class ScrollManager {
             document.removeEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
         };
 
-        this.#hThumb.addEventListener(EVENT_NAMES.MOUSEDOWN, onHThumbDown);
-        this.#vThumb.addEventListener(EVENT_NAMES.MOUSEDOWN, onVThumbDown);
+        this.trackEvent(this.#hThumb, EVENT_NAMES.MOUSEDOWN, (e) => {
+            e.preventDefault();
+            dragging = "h";
+            startMouse = e.clientX;
+            startScroll = this.#scrollX;
+            document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
+            document.addEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
+        });
 
-        // 保存所有 handler 引用，供 destroy() 统一移除
-        this.#hThumbDownHandler = onHThumbDown;
-        this.#vThumbDownHandler = onVThumbDown;
-        this.#dragMoveHandler = onDragMove;
-        this.#dragEndHandler = onDragEnd;
+        this.trackEvent(this.#vThumb, EVENT_NAMES.MOUSEDOWN, (e) => {
+            e.preventDefault();
+            dragging = "v";
+            startMouse = e.clientY;
+            startScroll = this.#scrollY;
+            document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
+            document.addEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
+        });
     }
 
     get scrollX() {
@@ -231,15 +135,14 @@ export class ScrollManager {
     }
 
     bind() {
-        this.#wheelHandler = (e) => {
+        this.trackEvent(this.wrap, EVENT_NAMES.WHEEL, (e) => {
             e.preventDefault();
             const dx = e.deltaX || 0;
             const dy = e.deltaY || 0;
             this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, this.#scrollX + dx));
             this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, this.#scrollY + dy));
             this.#scheduleScrollCallbacks();
-        };
-        this.wrap.addEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler, { passive: false });
+        }, { passive: false });
     }
 
     /**
@@ -323,11 +226,6 @@ export class ScrollManager {
         }
 
         if (this.#hThumb && this.#maxScrollX > 0) {
-            // 滚动条轨道实际宽度由 CSS "half-and-half" 布局决定：
-            // hBar.left = (viewW - SCROLLBAR_WIDTH) / 2, hBar.right = SCROLLBAR_WIDTH
-            // 轨道宽度 = viewW - hBar.left - hBar.right = viewW - (viewW-SCROLLBAR_WIDTH)/2 - SCROLLBAR_WIDTH
-            //           = (viewW - SCROLLBAR_WIDTH) / 2 ≈ viewW / 2
-            // thumb 的 left 和 width 都应基于此轨道宽度计算，而非 dataViewW
             const trackW = (this.#viewW - CONFIG.SCROLLBAR_WIDTH) / 2;
             const dataViewW = this.#viewW - hw - this.#frozenColsW;
             const totalW = this.#maxScrollX + dataViewW;
@@ -372,44 +270,9 @@ export class ScrollManager {
         this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, this.#scrollY));
     }
 
-    destroy() {
-        if (this.#wheelHandler) {
-            this.wrap.removeEventListener(EVENT_NAMES.WHEEL, this.#wheelHandler);
-            this.#wheelHandler = null;
-        }
-        if (this.#dragMoveHandler) {
-            document.removeEventListener(EVENT_NAMES.MOUSEMOVE, this.#dragMoveHandler);
-            this.#dragMoveHandler = null;
-        }
-        if (this.#dragEndHandler) {
-            document.removeEventListener(EVENT_NAMES.MOUSEUP, this.#dragEndHandler);
-            this.#dragEndHandler = null;
-        }
-
-        // 移除 thumb 上的 mousedown 监听（之前未保存引用导致泄漏）
-        if (this.#hThumb && this.#hThumbDownHandler) {
-            this.#hThumb.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#hThumbDownHandler);
-            this.#hThumbDownHandler = null;
-        }
-        if (this.#vThumb && this.#vThumbDownHandler) {
-            this.#vThumb.removeEventListener(EVENT_NAMES.MOUSEDOWN, this.#vThumbDownHandler);
-            this.#vThumbDownHandler = null;
-        }
+    /** @override */
+    onDestroy() {
         this.#pendingScrollCallback = false;
-        if (this.#hBar && this.#hBar.parentElement) {
-            this.#hBar.parentElement.removeChild(this.#hBar);
-        }
-        if (this.#vBar && this.#vBar.parentElement) {
-            this.#vBar.parentElement.removeChild(this.#vBar);
-        }
-        if (this.#corner && this.#corner.parentElement) {
-            this.#corner.parentElement.removeChild(this.#corner);
-        }
-        this.#hBar = null;
-        this.#vBar = null;
-        this.#corner = null;
-        this.#hThumb = null;
-        this.#vThumb = null;
         this.wrap = null;
         this.canvas = null;
     }

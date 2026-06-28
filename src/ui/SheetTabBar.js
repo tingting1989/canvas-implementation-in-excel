@@ -1,117 +1,11 @@
 import { CONFIG } from "../constants/config";
 import { EVENT_NAMES } from "../constants/eventNames";
+import { DOMComponent } from "../core/DOMComponent.js";
+import "./sheetTabBar.css";
 
-let sheetTabStyleInjected = false;
-
-function injectSheetTabStyles() {
-    if (sheetTabStyleInjected) return;
-    sheetTabStyleInjected = true;
-
-    const style = document.createElement("style");
-    style.textContent = `
-.cs-sheet-tab-bar {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: calc((100% - ${CONFIG.SCROLLBAR_WIDTH}px) / 2);
-  height: ${CONFIG.SHEET_TAB_HEIGHT}px;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
-  display: flex;
-  align-items: center;
-  z-index: 12;
-  user-select: none;
-}
-.cs-sheet-add-btn {
-  width: var(--header-width, ${CONFIG.HEADER_WIDTH}px);
-  height: ${CONFIG.SHEET_TAB_HEIGHT}px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: #555;
-  cursor: pointer;
-  flex-shrink: 0;
-  border-right: 1px solid #ddd;
-}
-.cs-sheet-add-btn:hover {
-  background: #e0e0e0;
-  color: #217346;
-}
-.cs-sheet-tabs-scroll {
-  flex: 1;
-  overflow: hidden;
-  height: 100%;
-  position: relative;
-}
-.cs-sheet-tabs {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  white-space: nowrap;
-  transition: transform 0.15s ease;
-}
-.cs-sheet-tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 8px;
-  height: 100%;
-  font-size: 12px;
-  color: #444;
-  cursor: pointer;
-  border-right: 1px solid #ddd;
-  position: relative;
-  flex-shrink: 0;
-  background: #eaeaea;
-}
-.cs-sheet-tab:hover {
-  background: #ddd;
-}
-.cs-sheet-tab.active {
-  background: #fff;
-  color: #217346;
-  font-weight: 600;
-}
-.cs-sheet-tab-close {
-  display: none;
-  margin-left: 6px;
-  width: 16px;
-  height: 16px;
-  line-height: 16px;
-  text-align: center;
-  font-size: 11px;
-  border-radius: 50%;
-  color: #888;
-  cursor: pointer;
-}
-.cs-sheet-tab-close:hover {
-  background: #c0c0c0;
-  color: #333;
-}
-.cs-sheet-tab.active .cs-sheet-tab-close,
-.cs-sheet-tab:hover .cs-sheet-tab-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.cs-sheet-rename-input {
-  border: none;
-  outline: none;
-  background: #fff;
-  font: inherit;
-  color: inherit;
-  padding: 0;
-  width: 60px;
-  box-sizing: border-box;
-}`;
-    document.head.appendChild(style);
-}
-
-export class SheetTabBar {
-    #bar = null;
+export class SheetTabBar extends DOMComponent {
     #tabsContainer = null;
     #scrollWrap = null;
-    #addBtn = null;
     #workbook = null;
     #onSwitch = null;
     #onAdd = null;
@@ -125,46 +19,37 @@ export class SheetTabBar {
     #renameHandleMousedown = null;
     #renameHandleKeydown = null;
     #renameHandleBlur = null;
-    #handleAddClick = null;
-    #handleTabClick = null;
-    #handleWheel = null;
 
     constructor(wrap, workbook) {
+        super();
         this.#workbook = workbook;
-        injectSheetTabStyles();
         this.#createDOM(wrap);
         this.#bindEvents();
         this.refresh();
     }
 
     #createDOM(wrap) {
-        this.#bar = document.createElement("div");
-        this.#bar.className = "cs-sheet-tab-bar";
+        const bar = this.createElement("div", { className: "cs-sheet-tab-bar" }, wrap);
 
-        this.#addBtn = document.createElement("div");
-        this.#addBtn.className = "cs-sheet-add-btn";
-        this.#addBtn.textContent = "+";
+        const addBtn = this.createElement("div", {
+            className: "cs-sheet-add-btn",
+            textContent: "+",
+        }, bar);
 
-        this.#scrollWrap = document.createElement("div");
-        this.#scrollWrap.className = "cs-sheet-tabs-scroll";
+        this.#scrollWrap = this.createElement("div", { className: "cs-sheet-tabs-scroll" }, bar);
+        this.#tabsContainer = this.createElement("div", { className: "cs-sheet-tabs" }, this.#scrollWrap);
 
-        this.#tabsContainer = document.createElement("div");
-        this.#tabsContainer.className = "cs-sheet-tabs";
-
-        this.#scrollWrap.appendChild(this.#tabsContainer);
-        this.#bar.appendChild(this.#addBtn);
-        this.#bar.appendChild(this.#scrollWrap);
-        wrap.appendChild(this.#bar);
+        // 保存引用供外部方法使用
+        this._addBtn = addBtn;
+        this._bar = bar;
     }
 
     #bindEvents() {
-        this.#handleAddClick = () => {
-            if (this.#onAdd) {
-                this.#onAdd();
-            }
-        };
+        this.trackEvent(this._addBtn, EVENT_NAMES.CLICK, () => {
+            if (this.#onAdd) this.#onAdd();
+        });
 
-        this.#handleTabClick = (e) => {
+        this.trackEvent(this.#tabsContainer, EVENT_NAMES.CLICK, (e) => {
             if (this.#renaming) return;
 
             const tabEl = e.target.closest(".cs-sheet-tab");
@@ -174,9 +59,7 @@ export class SheetTabBar {
             if (closeBtn) {
                 e.stopPropagation();
                 const name = tabEl.dataset.sheetName;
-                if (this.#onRemove) {
-                    this.#onRemove(name);
-                }
+                if (this.#onRemove) this.#onRemove(name);
                 return;
             }
 
@@ -186,35 +69,24 @@ export class SheetTabBar {
             if (this.#lastClickName === name && now - this.#lastClickTime < 400) {
                 this.#lastClickName = null;
                 this.#lastClickTime = 0;
-
                 const activeTab = this.#tabsContainer.querySelector(".cs-sheet-tab.active");
-                if (activeTab) {
-                    this.#startRename(activeTab);
-                }
+                if (activeTab) this.#startRename(activeTab);
                 return;
             }
 
             this.#lastClickName = name;
             this.#lastClickTime = now;
+            if (this.#onSwitch) this.#onSwitch(name);
+        });
 
-            if (this.#onSwitch) {
-                this.#onSwitch(name);
-            }
-        };
-
-        this.#handleWheel = (e) => {
+        this.trackEvent(this._bar, EVENT_NAMES.WHEEL, (e) => {
             e.preventDefault();
             e.stopPropagation();
-
             const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
             this.#scrollOffset += delta;
             this.#clampScroll();
             this.#applyScroll();
-        };
-
-        this.#addBtn.addEventListener(EVENT_NAMES.CLICK, this.#handleAddClick);
-        this.#tabsContainer.addEventListener(EVENT_NAMES.CLICK, this.#handleTabClick);
-        this.#bar.addEventListener(EVENT_NAMES.WHEEL, this.#handleWheel, { passive: false });
+        }, { passive: false });
     }
 
     #clampScroll() {
@@ -282,7 +154,6 @@ export class SheetTabBar {
         if (!label) return;
 
         this.#cleanupRename();
-
         this.#renaming = true;
 
         const input = document.createElement("input");
@@ -386,30 +257,10 @@ export class SheetTabBar {
         this.#applyScroll();
     }
 
-    destroy() {
+    /** @override */
+    onDestroy() {
         this.#cleanupRename();
-
-        if (this.#addBtn && this.#handleAddClick) {
-            this.#addBtn.removeEventListener(EVENT_NAMES.CLICK, this.#handleAddClick);
-        }
-        if (this.#tabsContainer && this.#handleTabClick) {
-            this.#tabsContainer.removeEventListener(EVENT_NAMES.CLICK, this.#handleTabClick);
-        }
-        if (this.#bar && this.#handleWheel) {
-            this.#bar.removeEventListener(EVENT_NAMES.WHEEL, this.#handleWheel);
-        }
-
-        if (this.#bar && this.#bar.parentElement) {
-            this.#bar.parentElement.removeChild(this.#bar);
-        }
-        this.#bar = null;
-        this.#tabsContainer = null;
-        this.#scrollWrap = null;
-        this.#addBtn = null;
         this.#workbook = null;
-        this.#handleAddClick = null;
-        this.#handleTabClick = null;
-        this.#handleWheel = null;
         this.#onSwitch = null;
         this.#onAdd = null;
         this.#onRemove = null;

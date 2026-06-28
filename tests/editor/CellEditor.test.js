@@ -91,10 +91,8 @@ describe("CellEditor - Template Method Defaults", () => {
         const editor = new CellEditor(engine, sheet);
 
         expect(editor.getElementType()).toBe("input");
-        expect(editor.getEditorId()).toBe("cell-editor");
-        expect(editor.getExtraCssText()).toBe("");
+        expect(editor.getEditorCssClass()).toBe("");
         expect(editor.getEditorAttributes()).toEqual({});
-        expect(editor.getDefaultTextAlign()).toBe("left");
         expect(editor.validateBeforeCommit("any")).toBe(true);
         expect(editor.areValuesEqual("a", "a")).toBe(true);
         expect(editor.areValuesEqual("a", "b")).toBe(false);
@@ -183,21 +181,20 @@ describe("CellEditor - Subclass Differentiation", () => {
         expect(editor.useBatchInBatchFill()).toBe(true);
     });
 
-    it("TextEditor should inherit default getEditorId from base", () => {
+    it("TextEditor should inherit default getEditorCssClass from base", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
         const editor = new TextEditor(engine, sheet);
 
-        expect(editor.getEditorId()).toBe("cell-editor");
+        expect(editor.getEditorCssClass()).toBe("");
     });
 
-    it("NumericEditor should have right text align and trim value", () => {
+    it("NumericEditor should have numeric CSS class and trim value", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
         const editor = new NumericEditor(engine, sheet);
 
-        expect(editor.getDefaultTextAlign()).toBe("right");
-        expect(editor.getEditorId()).toBe("numeric-editor");
+        expect(editor.getEditorCssClass()).toBe("cs-cell-editor--numeric");
         expect(editor.getEditorAttributes()).toEqual({ type: "text", inputmode: "decimal" });
     });
 
@@ -224,13 +221,12 @@ describe("CellEditor - Subclass Differentiation", () => {
         expect(editor.validateBeforeCommit("123")).toBe(true);
     });
 
-    it("DateEditor should have center text align", () => {
+    it("DateEditor should have date CSS class", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
         const editor = new DateEditor(engine, sheet);
 
-        expect(editor.getDefaultTextAlign()).toBe("center");
-        expect(editor.getEditorId()).toBe("date-editor");
+        expect(editor.getEditorCssClass()).toBe("cs-cell-editor--date");
     });
 
     it("DateEditor should compare Date objects by timestamp", () => {
@@ -261,7 +257,7 @@ describe("CellEditor - Subclass Differentiation", () => {
         const editor = new SelectEditor(engine, sheet);
 
         expect(editor.getElementType()).toBe("select");
-        expect(editor.getEditorId()).toBe("select-editor");
+        expect(editor.getEditorCssClass()).toBe("cs-cell-editor--select");
     });
 
     it("SelectEditor setCursorMode should be no-op", () => {
@@ -505,7 +501,8 @@ describe("CellEditor - Public API", () => {
         expect(editor.editor).toBeNull();
         expect(editor.renderEngine).toBeNull();
         expect(editor.sheet).toBeNull();
-        expect(domElement.parentElement.removeChild).toHaveBeenCalledWith(domElement);
+        // DOM 移除由 DOMComponent 基类通过 createElement 跟踪管理
+        // 手动赋值的 editor 不会被基类跟踪，但引用会被清空
     });
 
     it("destroy should be safe when editor has no parentElement", () => {
@@ -730,7 +727,9 @@ describe("SelectEditor - Options Building", () => {
 
         editor.bindEditorEvents();
 
-        expect(domElement.addEventListener).toHaveBeenCalledWith("change", expect.any(Function));
+        // trackEvent 内部调用 target.addEventListener(type, handler, options)
+        // options 未传递时为 undefined，需要精确匹配三个参数
+        expect(domElement.addEventListener).toHaveBeenCalledWith("change", expect.any(Function), undefined);
     });
 });
 
@@ -1593,14 +1592,12 @@ describe("CellEditor - Aggressive: DateEditor Edge Cases", () => {
 });
 
 describe("CellEditor - Aggressive: SelectEditor Edge Cases", () => {
-    it("getExtraCssText should contain appearance:none", () => {
+    it("getEditorCssClass should return select variant", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
         const editor = new SelectEditor(engine, sheet);
 
-        const css = editor.getExtraCssText();
-        expect(css).toContain("appearance: none");
-        expect(css).toContain("cursor: pointer");
+        expect(editor.getEditorCssClass()).toBe("cs-cell-editor--select");
     });
 
     it("afterShow should handle empty source array", () => {
@@ -1643,12 +1640,12 @@ describe("CellEditor - Aggressive: SelectEditor Edge Cases", () => {
 });
 
 describe("CellEditor - Aggressive: NumericEditor Edge Cases", () => {
-    it("getExtraCssText should return right align", () => {
+    it("getEditorCssClass should return numeric variant", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
         const editor = new NumericEditor(engine, sheet);
 
-        expect(editor.getExtraCssText()).toBe("text-align: right;");
+        expect(editor.getEditorCssClass()).toBe("cs-cell-editor--numeric");
     });
 
     it("getEditorAttributes should return correct attributes", () => {

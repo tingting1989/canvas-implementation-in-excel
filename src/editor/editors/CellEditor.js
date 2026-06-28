@@ -2,6 +2,8 @@ import { CONFIG } from "../../constants/config";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 import { isFunction } from "../../utils/utils.js";
+import { DOMComponent } from "../../core/DOMComponent.js";
+import "../editor.css";
 
 /**
  * 单元格编辑器基类
@@ -15,10 +17,8 @@ import { isFunction } from "../../utils/utils.js";
  *
  * 子类通过覆盖以下模板方法定制行为：
  * - `getElementType()` — DOM 元素类型（input/select）
- * - `getEditorId()` — 编辑器 DOM id
- * - `getExtraCssText()` — 追加的 CSS 样式
+ * - `getEditorCssClass()` — 返回编辑器变体 CSS class 名
  * - `getEditorAttributes()` — 额外的 HTML 属性
- * - `getDefaultTextAlign()` — 默认文本对齐
  * - `readCellValue(row, col)` — 读取单元格值
  * - `formatValueForEditor(rawValue)` — 格式化值用于编辑器显示
  * - `validateBeforeCommit(newValue)` — 提交前验证
@@ -30,7 +30,7 @@ import { isFunction } from "../../utils/utils.js";
  * - `afterShow(row, col, cursorMode)` — 显示编辑器后的钩子
  * - `setCursorMode(cursorMode)` — 设置光标模式
  */
-export class CellEditor {
+export class CellEditor extends DOMComponent {
     #scrollHiding = false;
 
     /**
@@ -38,6 +38,7 @@ export class CellEditor {
      * @param {import("../../workbook/Sheet.js").Sheet} sheet
      */
     constructor(renderEngine, sheet) {
+        super();
         this.renderEngine = renderEngine;
         this.sheet = sheet;
         this.editor = null;
@@ -88,20 +89,11 @@ export class CellEditor {
         return "input";
     }
 
-    getEditorId() {
-        return "cell-editor";
-    }
-
-    getExtraCssText() {
-        return "";
-    }
+    /** 子类覆写返回变体 CSS class（如 "cs-cell-editor--numeric"） */
+    getEditorCssClass() { return ""; }
 
     getEditorAttributes() {
         return {};
-    }
-
-    getDefaultTextAlign() {
-        return "left";
     }
 
     readCellValue(row, col) {
@@ -148,21 +140,10 @@ export class CellEditor {
     // ─── 通用实现 ──────────────────────────────────────────
 
     createEditor() {
-        this.editor = document.createElement(this.getElementType());
-        this.editor.id = this.getEditorId();
-
-        const baseCss = `
-            position: absolute;
-            display: none;
-            border: 2px solid ${CONFIG.SELECTION_COLOR};
-            outline: none;
-            padding: 0 4px;
-            box-sizing: border-box;
-            font: 12px/28px "Segoe UI", sans-serif;
-            background: #fff;
-            z-index: 1000;
-        `;
-        this.editor.style.cssText = baseCss + this.getExtraCssText();
+        const className = `cs-cell-editor ${this.getEditorCssClass()}`.trim();
+        this.editor = this.createElement(this.getElementType(), {
+            className,
+        });
 
         const attrs = this.getEditorAttributes();
         for (const [key, value] of Object.entries(attrs)) {
@@ -178,12 +159,12 @@ export class CellEditor {
     }
 
     #bindCommonEvents() {
-        this.editor.addEventListener(EVENT_NAMES.BLUR, () => this.#onBlur());
-        this.editor.addEventListener(EVENT_NAMES.KEYDOWN, (e) => this.#onKeyDown(e));
-        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONSTART, () => {
+        this.trackEvent(this.editor, EVENT_NAMES.BLUR, () => this.#onBlur());
+        this.trackEvent(this.editor, EVENT_NAMES.KEYDOWN, (e) => this.#onKeyDown(e));
+        this.trackEvent(this.editor, EVENT_NAMES.COMPOSITIONSTART, () => {
             this.composing = true;
         });
-        this.editor.addEventListener(EVENT_NAMES.COMPOSITIONEND, () => {
+        this.trackEvent(this.editor, EVENT_NAMES.COMPOSITIONEND, () => {
             this.composing = false;
         });
     }
@@ -264,7 +245,7 @@ export class CellEditor {
         const lineHeight = cellH || 28;
 
         this.editor.style.font = `${fontStyle} ${fontWeight} ${fontSize}px/${lineHeight}px ${fontFamily}`;
-        this.editor.style.textAlign = style.textAlign || this.getDefaultTextAlign();
+        this.editor.style.textAlign = style.textAlign || "left";
         this.editor.style.color = style.color || "#222";
         this.editor.style.backgroundColor = style.backgroundColor && style.backgroundColor !== "transparent" ? style.backgroundColor : "#fff";
     }
@@ -546,13 +527,11 @@ export class CellEditor {
         this.editor?.focus();
     }
 
-    destroy() {
-        if (this.editor && this.editor.parentElement) {
-            this.editor.parentElement.removeChild(this.editor);
-        }
-        this.editor = null;
+    /** @override */
+    onDestroy() {
         this.renderEngine = null;
         this.sheet = null;
+        this.editor = null;
         this.activeRow = -1;
         this.activeCol = -1;
         this.composing = false;

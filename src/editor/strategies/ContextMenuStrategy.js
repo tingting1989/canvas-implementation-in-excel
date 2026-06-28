@@ -2,6 +2,7 @@ import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
+import "./contextMenu.css";
 
 /**
  * 右键菜单策略
@@ -394,25 +395,6 @@ export class ContextMenuStrategy extends EventStrategy {
     #createMenu() {
         this.#menuEl = document.createElement("div");
         this.#menuEl.className = "ctx-menu";
-        Object.assign(this.#menuEl.style, {
-            position: "fixed",
-            display: "none",
-            zIndex: "10000",
-            background: "#fff",
-            border: "1px solid #d0d0d0",
-            borderRadius: "6px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
-            padding: "4px 0",
-            minWidth: "180px",
-            fontFamily: "12px sans-serif",
-            fontSize: "13px",
-            userSelect: "none",
-        });
-
-        // 内嵌 CSS：hover 效果由浏览器原生 :hover 处理，无需 JS 监听
-        const style = document.createElement("style");
-        style.textContent = `.ctx-menu .ctx-item:hover{background:#f0f4ff}`;
-        this.#menuEl.appendChild(style);
 
         // 事件委托：所有菜单项的 click 统一由容器处理
         this.#menuEl.addEventListener("click", (e) => {
@@ -437,10 +419,7 @@ export class ContextMenuStrategy extends EventStrategy {
      * 2. 过滤出当前上下文匹配的自定义项，追加到末尾
      */
     #renderMenuItems() {
-        // 保留内嵌 <style>，清空其余子元素
-        const styleEl = this.#menuEl.querySelector("style");
         this.#menuEl.innerHTML = "";
-        if (styleEl) this.#menuEl.appendChild(styleEl);
 
         const isReadOnly = this.handler.sheet?.readOnly;
 
@@ -478,11 +457,7 @@ export class ContextMenuStrategy extends EventStrategy {
     /** 追加分隔线到菜单容器 */
     #appendSeparator() {
         const sep = document.createElement("div");
-        Object.assign(sep.style, {
-            height: "1px",
-            background: "#e0e0e0",
-            margin: "4px 8px",
-        });
+        sep.className = "ctx-separator";
         this.#menuEl.appendChild(sep);
     }
 
@@ -496,11 +471,6 @@ export class ContextMenuStrategy extends EventStrategy {
         el.className = "ctx-item";
         el.dataset.key = key;
         el.textContent = label;
-        Object.assign(el.style, {
-            padding: "6px 16px",
-            cursor: "pointer",
-            color: "#333",
-        });
         this.#menuEl.appendChild(el);
     }
 

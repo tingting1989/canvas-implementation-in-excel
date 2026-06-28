@@ -1,7 +1,20 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
 
+// jsdom 环境下 mock CSS import，避免 vitest 解析 .css 文件报错
+function cssMockPlugin() {
+    return {
+        name: "css-mock",
+        transform(code, id) {
+            if (id.endsWith(".css")) {
+                return { code: "export default {};", map: null };
+            }
+        },
+    };
+}
+
 export default defineConfig({
+    plugins: [cssMockPlugin()],
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "src"),

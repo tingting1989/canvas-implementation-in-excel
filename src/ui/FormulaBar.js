@@ -1,4 +1,6 @@
 import { EVENT_NAMES } from "../constants/eventNames.js";
+import { DOMComponent } from "../core/DOMComponent.js";
+import "./formulaBar.css";
 
 /**
  * 公式栏
@@ -10,21 +12,12 @@ import { EVENT_NAMES } from "../constants/eventNames.js";
  *
  * 支持直接在公式栏中输入/编辑公式，回车确认后写入单元格。
  */
-export class FormulaBar {
-    /** @type {HTMLElement} */
-    #bar = null;
-
-    /** @type {HTMLElement} */
-    #cellRef = null;
-
+export class FormulaBar extends DOMComponent {
     /** @type {HTMLInputElement} */
     #input = null;
 
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
-
-    /** @type {HTMLElement} 容器元素引用 */
-    #container = null;
 
     /** 当前编辑中单元格的行号 */
     #activeRow = -1;
@@ -35,20 +28,14 @@ export class FormulaBar {
     /** 进入编辑前的原始值 */
     #originalValue = "";
 
-    /** keydown 事件处理器引用 */
-    #handleKeydown = null;
-
-    /** focus 事件处理器引用 */
-    #handleFocus = null;
-
     /**
      * @param {import("../workbook/Workbook.js").Workbook} workbook
      * @param {HTMLElement} container - 公式栏要插入到的容器元素
      */
     constructor(workbook, container) {
+        super();
         this.#workbook = workbook;
-        this.#container = container;
-        this.#createDOM();
+        this.#createDOM(container);
         this.#bindEvents();
     }
 
@@ -58,56 +45,23 @@ export class FormulaBar {
      * 布局：[ 单元格坐标 ] [ 输入框 fx ]
      * 整体高度 28px，与 Excel 公式栏风格一致
      */
-    #createDOM() {
-        this.#bar = document.createElement("div");
-        this.#bar.className = "cs-formula-bar";
-        Object.assign(this.#bar.style, {
-            display: "flex",
-            alignItems: "center",
-            height: "28px",
-            borderBottom: "1px solid #ccc",
-            background: "#fff",
-            flexShrink: "0",
-        });
+    #createDOM(container) {
+        const bar = this.createElement("div", { className: "cs-formula-bar" });
 
-        this.#cellRef = document.createElement("div");
-        this.#cellRef.className = "cs-formula-cell-ref";
-        Object.assign(this.#cellRef.style, {
-            width: "72px",
-            minWidth: "72px",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRight: "1px solid #ccc",
-            fontSize: "12px",
-            fontFamily: "Consolas, monospace",
-            color: "#333",
-            background: "#fafafa",
-            userSelect: "none",
-        });
+        const cellRef = this.createElement("div", {
+            className: "cs-formula-cell-ref",
+        }, bar);
 
-        this.#input = document.createElement("input");
-        this.#input.className = "cs-formula-input";
-        this.#input.type = "text";
-        this.#input.placeholder = "输入值或公式...";
-        Object.assign(this.#input.style, {
-            flex: "1",
-            height: "100%",
-            border: "none",
-            outline: "none",
-            padding: "0 8px",
-            fontSize: "13px",
-            fontFamily: "Consolas, monospace",
-            color: "#333",
-            background: "transparent",
-        });
+        this.#input = this.createElement("input", {
+            className: "cs-formula-input",
+            type: "text",
+            placeholder: "输入值或公式...",
+        }, bar);
 
-        this.#bar.appendChild(this.#cellRef);
-        this.#bar.appendChild(this.#input);
+        this._cellRef = cellRef;
 
-        if (this.#container) {
-            this.#container.insertBefore(this.#bar, this.#container.firstChild);
+        if (container) {
+            container.insertBefore(bar, container.firstChild);
         }
     }
 
@@ -115,7 +69,7 @@ export class FormulaBar {
      * 绑定事件
      */
     #bindEvents() {
-        this.#handleKeydown = (e) => {
+        this.trackEvent(this.#input, EVENT_NAMES.KEYDOWN, (e) => {
             if (e.key === "Enter") {
                 e.preventDefault();
                 this.#commit();
@@ -127,14 +81,11 @@ export class FormulaBar {
                 this.#commit();
                 this.#moveToNextCell();
             }
-        };
+        });
 
-        this.#handleFocus = () => {
+        this.trackEvent(this.#input, EVENT_NAMES.FOCUS, () => {
             this.#input.select();
-        };
-
-        this.#input.addEventListener(EVENT_NAMES.KEYDOWN, this.#handleKeydown);
-        this.#input.addEventListener(EVENT_NAMES.FOCUS, this.#handleFocus);
+        });
     }
 
     /**
@@ -144,7 +95,7 @@ export class FormulaBar {
     update() {
         const sheet = this.#workbook.activeSheet;
         if (!sheet) {
-            this.#cellRef.textContent = "";
+            this._cellRef.textContent = "";
             this.#input.value = "";
             return;
         }
@@ -154,7 +105,7 @@ export class FormulaBar {
         this.#activeCol = col;
 
         const ref = this.#toColLabel(col) + (row + 1);
-        this.#cellRef.textContent = ref;
+        this._cellRef.textContent = ref;
 
         const cell = sheet.cellStore.get(row, col);
         if (cell && cell.formula) {
@@ -234,19 +185,9 @@ export class FormulaBar {
         return label;
     }
 
-    /**
-     * 销毁公式栏，移除 DOM 元素和事件监听器
-     */
-    destroy() {
-        if (this.#input) {
-            this.#input.removeEventListener(EVENT_NAMES.KEYDOWN, this.#handleKeydown);
-            this.#input.removeEventListener(EVENT_NAMES.FOCUS, this.#handleFocus);
-        }
-        this.#bar?.remove();
-        this.#bar = null;
+    /** @override */
+    onDestroy() {
+        this.#workbook = null;
         this.#input = null;
-        this.#cellRef = null;
-        this.#handleKeydown = null;
-        this.#handleFocus = null;
     }
 }

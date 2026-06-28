@@ -3,17 +3,7 @@ import { CellEditor } from "./CellEditor.js";
 export class DateEditor extends CellEditor {
     #useNativePicker = true;
 
-    getEditorId() {
-        return "date-editor";
-    }
-
-    getExtraCssText() {
-        return "text-align: center;";
-    }
-
-    getDefaultTextAlign() {
-        return "center";
-    }
+    getEditorCssClass() { return "cs-cell-editor--date"; }
 
     afterCreateEditor() {
         this.#useNativePicker = this.#supportsDateInput();

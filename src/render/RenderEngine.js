@@ -1,4 +1,4 @@
-﻿import { ScrollManager } from "../ui/ScrollManager.js";
+import { ScrollManager } from "../ui/ScrollManager.js";
 import { SheetTabBar } from "../ui/SheetTabBar.js";
 import { ViewportTransform } from "./ViewportTransform.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
@@ -14,12 +14,12 @@ import { DragIndicatorLayer } from "./layers/DragIndicatorLayer.js";
 import { UILayer } from "./layers/UILayer.js";
 import { EditorLayer } from "./layers/EditorLayer.js";
 import { ReactiveStore } from "../state/ReactiveStore.js";
+import { DOMComponent } from "../core/DOMComponent.js";
 
-export class RenderEngine {
+export class RenderEngine extends DOMComponent {
     #currentSheet = null;
     #rafId = null;
     #pendingRender = false;
-    #resizeHandler = null;
     #viewW = 0;
     #viewH = 0;
     #cachedVT = null;
@@ -28,21 +28,26 @@ export class RenderEngine {
     #userHeight = null;
 
     constructor(canvasId) {
+        super();
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext("2d");
         this.outerWrap = this.canvas.parentElement;
 
         this.onAfterRender = null;
 
-        this.wrap = document.createElement("div");
-        this.wrap.className = "cs-canvas-wrap";
-        this.wrap.style.position = "relative";
-        this.wrap.style.overflow = "hidden";
+        // wrap 通过 createElement 创建并跟踪，destroy 时自动移除
+        this.wrap = this.createElement("div", {
+            className: "cs-canvas-wrap",
+            style: { position: "relative", overflow: "hidden" },
+        });
         this.outerWrap.insertBefore(this.wrap, this.canvas);
         this.wrap.appendChild(this.canvas);
 
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
+        this.trackChild(this.scrollMgr);       // 级联销毁
+
         this.sheetTabBar = new SheetTabBar(this.wrap, null);
+        this.trackChild(this.sheetTabBar);      // 级联销毁 ← 之前遗漏！
 
         this.#initLayerSystem();
         this.#initCanvasSize();
@@ -157,11 +162,10 @@ export class RenderEngine {
             this.requestRender();
         };
 
-        this.#resizeHandler = () => {
+        this.trackEvent(window, EVENT_NAMES.RESIZE, () => {
             this.#initCanvasSize(this.#userWidth, this.#userHeight);
             this.requestRender();
-        };
-        window.addEventListener(EVENT_NAMES.RESIZE, this.#resizeHandler);
+        });
     }
 
     requestRender() {
@@ -414,16 +418,13 @@ export class RenderEngine {
         this.requestRender();
     }
 
-    destroy() {
+    /** @override */
+    onDestroy() {
         if (this.#rafId != null) {
             cancelAnimationFrame(this.#rafId);
         }
-        if (this.#resizeHandler) {
-            window.removeEventListener(EVENT_NAMES.RESIZE, this.#resizeHandler);
-        }
         this.compositor.destroyAll();
         this.store.destroy();
-        this.scrollMgr.destroy();
         this.canvas = null;
         this.ctx = null;
     }

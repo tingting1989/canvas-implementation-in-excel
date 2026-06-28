@@ -9,19 +9,7 @@ export class SelectEditor extends CellEditor {
         return "select";
     }
 
-    getEditorId() {
-        return "select-editor";
-    }
-
-    getExtraCssText() {
-        return `
-            text-align: left;
-            cursor: pointer;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        `;
-    }
+    getEditorCssClass() { return "cs-cell-editor--select"; }
 
     afterShow(row, col) {
         const cellType = this.sheet.getCellTypeInstance(row, col);
@@ -39,7 +27,7 @@ export class SelectEditor extends CellEditor {
     }
 
     bindEditorEvents() {
-        this.editor.addEventListener("change", () => {
+        this.trackEvent(this.editor, "change", () => {
             this.editor.blur();
         });
     }

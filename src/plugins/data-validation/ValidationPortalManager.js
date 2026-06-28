@@ -1,4 +1,5 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { DOMComponent } from "@/core/DOMComponent.js";
 /**
  * ValidationPortalManager - 验证 UI 门户管理器
  *
@@ -20,7 +21,7 @@
  *
  * const dropdown = portal.createPortal('dropdown_B2', 'dropdown', { x: 100, y: 200 });
  */
-export class ValidationPortalManager {
+export class ValidationPortalManager extends DOMComponent {
     /**
      * @type {HTMLElement|null} Portal 容器
      * @private
@@ -63,6 +64,7 @@ export class ValidationPortalManager {
      * @param {Object} [config={}] - 配置选项
      */
     constructor(renderEngine, config = {}) {
+        super();
         this.#renderEngine = renderEngine;
         this.config = { ...ValidationPortalManager.DEFAULT_CONFIG, ...config };
     }
@@ -97,25 +99,25 @@ export class ValidationPortalManager {
             throw new Error("rootContainer 必须是有效的 HTMLElement");
         }
 
-        this.#portalContainer = document.createElement("div");
-        this.#portalContainer.id = "validation-portal-root";
-        this.#portalContainer.className = "validation-portal-container";
-
-        Object.assign(this.#portalContainer.style, {
-            position: "fixed",
-            top: "0",
-            left: "0",
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            zIndex: String(this.config.zIndex),
-            overflow: "visible",
+        this.#portalContainer = this.createElement("div", {
+            className: "validation-portal-container",
+            style: {
+                position: "fixed",
+                top: "0",
+                left: "0",
+                width: "100%",
+                height: "100%",
+                pointerEvents: "none",
+                zIndex: String(this.config.zIndex),
+                overflow: "visible",
+            },
         });
+        this.#portalContainer.id = "validation-portal-root";
 
         rootContainer.appendChild(this.#portalContainer);
 
-        window.addEventListener("resize", this.#handleResize.bind(this));
-        window.addEventListener("scroll", this.#handleScroll.bind(this), true);
+        this.trackEvent(window, "resize", () => this.#handleResize());
+        this.trackEvent(window, "scroll", () => this.#handleScroll(), true);
 
         this.#initialized = true;
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 初始化完成");
@@ -249,20 +251,18 @@ export class ValidationPortalManager {
     }
 
     /**
-     * 销毁 Portal 系统
+     * 销毁 Portal 系统（幂等，由基类 Disposable 保证）
      */
     destroy() {
+        super.destroy();
+    }
+
+    /** @override */
+    onDestroy() {
         this.destroyAll();
-
-        if (this.#portalContainer) {
-            window.removeEventListener("resize", this.#handleResize.bind(this));
-            window.removeEventListener("scroll", this.#handleScroll.bind(this), true);
-            this.#portalContainer.remove();
-            this.#portalContainer = null;
-        }
-
         this.#initialized = false;
         this.#renderEngine = null;
+        this.#portalContainer = null;
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 已销毁");
     }
 
