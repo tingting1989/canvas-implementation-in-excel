@@ -197,5 +197,6 @@ export class FormulaBar extends DOMComponent {
     onDestroy() {
         this.#workbook = null;
         this.#input = null;
+        super.onDestroy();
     }
 }
