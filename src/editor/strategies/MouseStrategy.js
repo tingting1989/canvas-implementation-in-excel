@@ -105,11 +105,9 @@ export class MouseStrategy extends EventStrategy {
         if (!hit) {
             if (this.#lastHoverCell.row !== -1) {
                 // ✅ 通过 EventBus 发射鼠标移出事件（指定 source 为 MouseStrategy）
-                this.handler.sheet.bus.emit(
-                    SHEET_EVENTS.CELL_MOUSE_OUT,
-                    [this.#lastHoverCell.row, this.#lastHoverCell.col, e],
-                    { source: "MouseStrategy" }
-                );
+                this.handler.sheet.bus.emit(SHEET_EVENTS.CELL_MOUSE_OUT, [this.#lastHoverCell.row, this.#lastHoverCell.col, e], {
+                    source: "MouseStrategy",
+                });
                 this.#lastHoverCell = { row: -1, col: -1 };
             }
             return;
@@ -120,22 +118,16 @@ export class MouseStrategy extends EventStrategy {
         // 检测鼠标移出单元格
         if (this.#lastHoverCell.row !== -1 && (this.#lastHoverCell.row !== row || this.#lastHoverCell.col !== col)) {
             // ✅ 通过 EventBus 发射鼠标移出事件（指定 source 为 MouseStrategy）
-            this.handler.sheet.bus.emit(
-                SHEET_EVENTS.CELL_MOUSE_OUT,
-                [this.#lastHoverCell.row, this.#lastHoverCell.col, e],
-                { source: "MouseStrategy" }
-            );
+            this.handler.sheet.bus.emit(SHEET_EVENTS.CELL_MOUSE_OUT, [this.#lastHoverCell.row, this.#lastHoverCell.col, e], {
+                source: "MouseStrategy",
+            });
         }
 
         // 更新最后悬停位置并触发鼠标悬停事件
         if (this.#lastHoverCell.row !== row || this.#lastHoverCell.col !== col) {
             this.#lastHoverCell = { row, col };
             // ✅ 通过 EventBus 发射鼠标悬停事件（指定 source 为 MouseStrategy）
-            this.handler.sheet.bus.emit(
-                SHEET_EVENTS.CELL_MOUSE_OVER,
-                [row, col, e],
-                { source: "MouseStrategy" }
-            );
+            this.handler.sheet.bus.emit(SHEET_EVENTS.CELL_MOUSE_OVER, [row, col, e], { source: "MouseStrategy" });
         }
 
         // 拖拽选择逻辑（仅在拖拽时执行）

@@ -204,11 +204,7 @@ export class Workbook {
 
         // ✅ 通过 EventBus 发射工作簿初始化完成事件（指定 source 为 Workbook）
         // EventHandler 会订阅此事件并触发 INIT hook
-        this.activeSheet?.bus?.emit(
-            SHEET_EVENTS.WORKBOOK_INIT,
-            [this],
-            { source: "Workbook" }
-        );
+        this.activeSheet?.bus?.emit(SHEET_EVENTS.WORKBOOK_INIT, [this], { source: "Workbook" });
     }
 
     /**
@@ -318,9 +314,8 @@ export class Workbook {
             this.formulaEngine?.recalculateAll(sheet);
         });
 
-        bus.on(SHEET_EVENTS.AFTER_CHANGE, (envelope) => {
-            this.runHooks(HOOKS.AFTER_CHANGE, envelope.payload.changes);
-        });
+        // BEFORE_CHANGE / AFTER_CHANGE 的 Hooks 桥接由 EventHandler.#subscribeEditorEvents 统一处理，
+        // 此处不再重复订阅，避免钩子被触发两次。
 
         bus.on(SHEET_EVENTS.PAGINATION_REFRESH, () => {
             const pg = this.getPlugin("pagination");
@@ -332,10 +327,6 @@ export class Workbook {
             if (!pg || !pg.active) return;
             sheet.rowColManager.clearPaginationBounds();
             pg.refresh();
-        });
-
-        bus.on(SHEET_EVENTS.BEFORE_CHANGE, (envelope) => {
-            this.runHooks(HOOKS.BEFORE_CHANGE, envelope.payload);
         });
 
         bus.on(SHEET_EVENTS.GET_CLIPBOARD, () => {
@@ -847,11 +838,7 @@ export class Workbook {
     destroy() {
         // ✅ 通过 EventBus 发射工作簿即将销毁事件（指定 source 为 Workbook）
         // EventHandler 会订阅此事件并触发 DESTROY hook
-        this.activeSheet?.bus?.emit(
-            SHEET_EVENTS.WORKBOOK_DESTROY,
-            [this],
-            { source: "Workbook" }
-        );
+        this.activeSheet?.bus?.emit(SHEET_EVENTS.WORKBOOK_DESTROY, [this], { source: "Workbook" });
 
         this.pluginManager?.destroyAll();
         this.pluginManager = null;

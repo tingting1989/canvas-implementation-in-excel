@@ -502,26 +502,15 @@ const initApp = () => {
     wb.initRender();
     wb.render();
 
-
-
-
     // wb.addHook(HOOKS.AFTER_CHANGE, () => {
     //     if (isFunction(window.updateToolbarStyleState)) {
     //         window.updateToolbarStyleState();
     //     }
     // });
 
-    wb.addHook(HOOKS.BEFORE_COLUMN_MOVE, (sourceCol, targetCol) => {
-        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `即将移动列 ${sourceCol} → ${targetCol}`);
-    });
+    // 注意：BEFORE_COLUMN_MOVE、AFTER_COLUMN_MOVE、AFTER_SORT 已在 hooks 配置中注册，
+    // 无需重复通过 addHook 注册，否则会触发两次回调。
 
-    wb.addHook(HOOKS.AFTER_COLUMN_MOVE, (sourceCol, targetCol) => {
-        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `列移动完成 ${sourceCol} → ${targetCol}`);
-    });
-
-    wb.addHook(HOOKS.AFTER_SORT, (colIndex, options, result) => {
-        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `排序完成！列 ${colIndex}, 耗时 ${result.time}ms`);
-    });
     window.wb = wb;
 
     // ============================================================
