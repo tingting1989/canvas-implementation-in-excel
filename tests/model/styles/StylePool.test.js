@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { StylePool, BorderStyle, CellStyle } from "@/model/styles";
+import { describe, it, expect, vi } from "vitest";
+import { StylePool, CELL_STYLE_PROPERTIES, validateStyleProperties } from "@/model/styles";
 
 describe("StylePool - getStyleId", () => {
     it("should return unique IDs for different styles", () => {
@@ -108,62 +108,44 @@ describe("StylePool - size", () => {
     });
 });
 
-describe("BorderStyle", () => {
-    it("should have default values", () => {
-        const bs = new BorderStyle();
-        expect(bs.width).toBe(1);
-        expect(bs.style).toBe("solid");
-        expect(bs.color).toBe("#000");
+describe("CELL_STYLE_PROPERTIES", () => {
+    it("should contain core font properties", () => {
+        expect(CELL_STYLE_PROPERTIES.has("fontFamily")).toBe(true);
+        expect(CELL_STYLE_PROPERTIES.has("fontSize")).toBe(true);
+        expect(CELL_STYLE_PROPERTIES.has("fontWeight")).toBe(true);
+        expect(CELL_STYLE_PROPERTIES.has("fontStyle")).toBe(true);
     });
 
-    it("should accept custom values", () => {
-        const bs = new BorderStyle({ width: 2, style: "dashed", color: "#f00" });
-        expect(bs.width).toBe(2);
-        expect(bs.style).toBe("dashed");
-        expect(bs.color).toBe("#f00");
+    it("should contain color and alignment properties", () => {
+        expect(CELL_STYLE_PROPERTIES.has("color")).toBe(true);
+        expect(CELL_STYLE_PROPERTIES.has("backgroundColor")).toBe(true);
+        expect(CELL_STYLE_PROPERTIES.has("textAlign")).toBe(true);
+        expect(CELL_STYLE_PROPERTIES.has("verticalAlign")).toBe(true);
     });
 
-    it("should accept partial overrides", () => {
-        const bs = new BorderStyle({ width: 3 });
-        expect(bs.width).toBe(3);
-        expect(bs.style).toBe("solid");
+    it("should contain border property", () => {
+        expect(CELL_STYLE_PROPERTIES.has("border")).toBe(true);
     });
 });
 
-describe("CellStyle", () => {
-    it("should have default values", () => {
-        const cs = new CellStyle();
-        expect(cs.fontFamily).toBe("Segoe UI");
-        expect(cs.fontSize).toBe(12);
-        expect(cs.fontWeight).toBe("normal");
-        expect(cs.color).toBe("#000");
-        expect(cs.backgroundColor).toBe("transparent");
-        expect(cs.textAlign).toBe("left");
-        expect(cs.verticalAlign).toBe("middle");
-        expect(cs.border).toBeNull();
+describe("validateStyleProperties", () => {
+    it("should not warn for valid properties", () => {
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        validateStyleProperties({ color: "red", fontSize: 14 });
+        expect(warnSpy).not.toHaveBeenCalled();
+        warnSpy.mockRestore();
     });
 
-    it("should accept custom values", () => {
-        const cs = new CellStyle({
-            fontFamily: "Arial",
-            fontSize: 16,
-            fontWeight: "bold",
-            color: "#333",
-            backgroundColor: "#fff",
-            textAlign: "center",
-            verticalAlign: "top",
-            border: new BorderStyle(),
-        });
-        expect(cs.fontFamily).toBe("Arial");
-        expect(cs.fontSize).toBe(16);
-        expect(cs.fontWeight).toBe("bold");
-        expect(cs.border).not.toBeNull();
+    it("should warn for unknown properties", () => {
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        validateStyleProperties({ unknownProp: "value" });
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("unknownProp"));
+        warnSpy.mockRestore();
     });
 
-    it("should accept partial overrides", () => {
-        const cs = new CellStyle({ fontSize: 18 });
-        expect(cs.fontSize).toBe(18);
-        expect(cs.fontFamily).toBe("Segoe UI");
+    it("should handle null/undefined gracefully", () => {
+        expect(() => validateStyleProperties(null)).not.toThrow();
+        expect(() => validateStyleProperties(undefined)).not.toThrow();
     });
 });
 

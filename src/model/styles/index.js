@@ -87,46 +87,30 @@ export class StylePool {
     }
 }
 
-/**
- * 边框样式
- */
-export class BorderStyle {
-    constructor({ width = 1, style = "solid", color = "#000" } = {}) {
-        this.width = width;
-        this.style = style;
-        this.color = color;
+export const CELL_STYLE_PROPERTIES = new Set([
+    "fontFamily",
+    "fontSize",
+    "fontWeight",
+    "fontStyle",
+    "color",
+    "backgroundColor",
+    "textAlign",
+    "verticalAlign",
+    "textDecoration",
+    "border",
+]);
+
+export function validateStyleProperties(styleObj) {
+    if (!styleObj || typeof styleObj !== "object") return;
+    for (const key of Object.keys(styleObj)) {
+        if (!CELL_STYLE_PROPERTIES.has(key)) {
+            console.warn(`[Style] Unknown property: "${key}"`);
+        }
     }
 }
 
-/**
- * 单元格样式定义
- */
-export class CellStyle {
-    constructor({
-        fontFamily = "Segoe UI",
-        fontSize = 12,
-        fontWeight = "normal",
-        color = "#000",
-        backgroundColor = "transparent",
-        textAlign = "left",
-        verticalAlign = "middle",
-        border = null,
-    } = {}) {
-        this.fontFamily = fontFamily;
-        this.fontSize = fontSize;
-        this.fontWeight = fontWeight;
-        this.color = color;
-        this.backgroundColor = backgroundColor;
-        this.textAlign = textAlign;
-        this.verticalAlign = verticalAlign;
-        this.border = border;
-    }
-}
-
-// 全局样式池实例
 export const stylePool = new StylePool();
 
-// 预注册默认样式
 export const DEFAULT_STYLE_ID = stylePool.getStyleId({
     fontFamily: "Segoe UI",
     fontSize: 12,
@@ -136,7 +120,6 @@ export const DEFAULT_STYLE_ID = stylePool.getStyleId({
     verticalAlign: "middle",
 });
 
-// 预注册禁用样式
 export const DISABLED_STYLE_ID = stylePool.getStyleId({
     color: "#888",
     backgroundColor: "#f5f5f5",

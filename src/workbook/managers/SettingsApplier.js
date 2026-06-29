@@ -68,6 +68,15 @@ export class SettingsApplier {
         if (settings.defaultStyle) {
             sheet.setDefaultStyle(settings.defaultStyle);
         }
+        if (settings.rowStyles) {
+            SettingsApplier.#applyRowStyles(sheet, settings.rowStyles);
+        }
+        if (settings.colStyles) {
+            SettingsApplier.#applyColStyles(sheet, settings.colStyles);
+        }
+        if (settings.rangeStyles) {
+            SettingsApplier.#applyRangeStyles(sheet, settings.rangeStyles);
+        }
         if (settings.rowHeights !== undefined) {
             SettingsApplier.#applyRowHeights(sheet, settings.rowHeights);
         }
@@ -167,6 +176,33 @@ export class SettingsApplier {
             if (ct.row == null || ct.col == null || !ct.type) continue;
             const { row, col, type: name, ...rest } = ct;
             sheet.cellTypes.set(`${row},${col}`, { name, options: rest });
+        }
+    }
+
+    /** @param {import("../Sheet.js").Sheet} sheet */
+    static #applyRowStyles(sheet, rowStyles) {
+        if (!isObject(rowStyles)) return;
+        for (const [row, styleObj] of Object.entries(rowStyles)) {
+            if (!styleObj || typeof styleObj !== "object") continue;
+            sheet.setRowStyle(Number(row), styleObj);
+        }
+    }
+
+    /** @param {import("../Sheet.js").Sheet} sheet */
+    static #applyColStyles(sheet, colStyles) {
+        if (!isObject(colStyles)) return;
+        for (const [col, styleObj] of Object.entries(colStyles)) {
+            if (!styleObj || typeof styleObj !== "object") continue;
+            sheet.setColStyle(Number(col), styleObj);
+        }
+    }
+
+    /** @param {import("../Sheet.js").Sheet} sheet */
+    static #applyRangeStyles(sheet, rangeStyles) {
+        if (!Array.isArray(rangeStyles)) return;
+        for (const rs of rangeStyles) {
+            if (!rs.range || !rs.style) continue;
+            sheet.setRangeStyle(rs.range, rs.style);
         }
     }
 }

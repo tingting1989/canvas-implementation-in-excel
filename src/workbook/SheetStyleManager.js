@@ -1,5 +1,6 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
 import { Cell } from "../model/index.js";
+import { StyleChangeRecorder, StyleChangeCommand } from "../model/command/StyleChangeRecorder.js";
 
 /**
  * 工作表样式管理器
@@ -39,6 +40,9 @@ export class SheetStyleManager {
     /** 上次缓存构建时的版本号，用于判断缓存是否过期 */
     #styleCacheFrameVersion = -1;
 
+    /** 样式变更记录器，用于 Command 化撤销/重做 */
+    #recorder = new StyleChangeRecorder();
+
     /**
      * @param {import("./Sheet.js").Sheet} sheet - 所属工作表实例
      */
@@ -77,6 +81,8 @@ export class SheetStyleManager {
      * @param {number} styleId - 样式 ID（由 stylePool.getStyleId 获得）
      */
     setRowStyle(row, styleId) {
+        const oldStyleId = this.#rowStyles.get(row) || 0;
+        this.#recorder.record("row", row, oldStyleId, styleId);
         this.#rowStyles.set(row, styleId);
         this.invalidateCache();
     }
@@ -87,6 +93,8 @@ export class SheetStyleManager {
      * @param {number} styleId - 样式 ID
      */
     setColStyle(col, styleId) {
+        const oldStyleId = this.#colStyles.get(col) || 0;
+        this.#recorder.record("col", col, oldStyleId, styleId);
         this.#colStyles.set(col, styleId);
         this.invalidateCache();
     }
@@ -96,7 +104,9 @@ export class SheetStyleManager {
      * @param {Object} styleObj - 样式对象，将通过 stylePool 转为 ID 存储
      */
     setDefaultStyle(styleObj) {
-        this.#defaultStyleId = stylePool.getStyleId(styleObj);
+        const current = this.#defaultStyleId ? stylePool.getStyle(this.#defaultStyleId) : {};
+        const merged = { ...current, ...styleObj };
+        this.#defaultStyleId = stylePool.getStyleId(merged);
         this.invalidateCache();
     }
 
@@ -121,20 +131,17 @@ export class SheetStyleManager {
     setCellStyle(r, c, styleObj) {
         const realR = this.#sheet.toRealRow(r);
 
-        // 确保行列表尺寸足够容纳目标单元格
         this.#sheet.rowColManager.ensureSize(realR + 1, c + 1);
         const cell = this.#sheet.cellStore.get(realR, c);
         const currentStyleId = cell?.styleId || 0;
 
-        // 获取当前样式对象，styleId 为 0 时表示无自定义样式
         const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
 
-        // 增量合并：新样式覆盖同名属性
         const mergedStyle = { ...currentStyle, ...styleObj };
         const newStyleId = stylePool.getStyleId(mergedStyle);
         const value = cell?.value ?? "";
 
-        // 保留原有 value 和 disabled 状态，仅更新 styleId
+        this.#recorder.record("cell", `${realR},${c}`, currentStyleId, newStyleId);
         this.#sheet.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
         this.invalidateCache();
     }
@@ -188,34 +195,53 @@ export class SheetStyleManager {
      * @param {Object} styleObj - 样式对象
      */
     setRangeStyle(range, styleObj) {
-        const styleId = stylePool.getStyleId(styleObj);
         const { topRow, topCol, bottomRow, bottomCol } = range;
         const rowColManager = this.#sheet.rowColManager;
 
-        // 整行选区优化：范围覆盖所有列时，直接设置行样式
         if (topCol === 0 && bottomCol >= rowColManager.colCount - 1) {
             for (let r = topRow; r <= bottomRow; r++) {
-                this.#rowStyles.set(this.#sheet.toRealRow(r), styleId);
+                const realR = this.#sheet.toRealRow(r);
+                const existingId = this.#rowStyles.get(realR);
+                const existing = existingId ? stylePool.getStyle(existingId) : {};
+                const merged = { ...existing, ...styleObj };
+                const newId = stylePool.getStyleId(merged);
+                this.#recorder.record("row", realR, existingId || 0, newId);
+                this.#rowStyles.set(realR, newId);
             }
             this.invalidateCache();
             return;
         }
 
-        // 整列选区优化：范围覆盖所有行时，直接设置列样式
         if (topRow === 0 && bottomRow >= rowColManager.rowCount - 1) {
             for (let c = topCol; c <= bottomCol; c++) {
-                this.#colStyles.set(c, styleId);
+                const existingId = this.#colStyles.get(c);
+                const existing = existingId ? stylePool.getStyle(existingId) : {};
+                const merged = { ...existing, ...styleObj };
+                const newId = stylePool.getStyleId(merged);
+                this.#recorder.record("col", c, existingId || 0, newId);
+                this.#colStyles.set(c, newId);
             }
             this.invalidateCache();
             return;
         }
 
-        // 一般情况：逐单元格设置，跳过禁用单元格
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
                 if (!this.#sheet.isDisabled(r, c)) {
                     this.setCellStyle(r, c, styleObj);
                 }
+            }
+        }
+        this.invalidateCache();
+    }
+
+    clearRangeStyle(range) {
+        const { topRow, topCol, bottomRow, bottomCol } = range;
+        for (let r = topRow; r <= bottomRow; r++) {
+            const realR = this.#sheet.toRealRow(r);
+            this.#rowStyles.delete(realR);
+            for (let c = topCol; c <= bottomCol; c++) {
+                this.clearCellStyle(r, c);
             }
         }
         this.invalidateCache();
@@ -301,5 +327,36 @@ export class SheetStyleManager {
 
         this.#styleCache.set(key, style);
         return style;
+    }
+
+    applyStyleId(type, key, styleId) {
+        if (type === "row") {
+            if (styleId === 0) {
+                this.#rowStyles.delete(key);
+            } else {
+                this.#rowStyles.set(key, styleId);
+            }
+        } else if (type === "col") {
+            if (styleId === 0) {
+                this.#colStyles.delete(key);
+            } else {
+                this.#colStyles.set(key, styleId);
+            }
+        } else if (type === "cell") {
+            const [r, c] = key.split(",").map(Number);
+            const cell = this.#sheet.cellStore.get(r, c);
+            if (cell) {
+                this.#sheet.cellStore.set(r, c, new Cell(cell.value, styleId, cell.disabled, cell.formula));
+            }
+        }
+        this.invalidateCache();
+    }
+
+    buildStyleCommand() {
+        return this.#recorder.buildCommand(this);
+    }
+
+    resetRecorder() {
+        this.#recorder.reset();
     }
 }

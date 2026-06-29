@@ -33,7 +33,7 @@ import "./contextMenu.css";
  * @example
  * new ContextMenuStrategy(handler, {
  *     customItems: [
- *         { label: "高亮行", contexts: ["cell", "rowHeader"], action: (r, c, s) => s.setRowStyle(r, styleId) },
+ *         { label: "高亮行", contexts: ["cell", "rowHeader"], action: (r, c, s) => s.setRowStyle(r, { backgroundColor: "yellow" }) },
  *         { type: "separator" },
  *         { label: "导出", contexts: ["cell"], action: (r, c, s) => exportSheet(s) },
  *     ],

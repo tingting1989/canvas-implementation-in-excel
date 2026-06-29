@@ -3,7 +3,7 @@
  */
 export class ConditionalRule {
     /**
-     * @param {{sr:number, sc:number, er:number, ec:number}} range - 作用范围
+     * @param {{topRow:number, topCol:number, bottomRow:number, bottomCol:number}} range - 作用范围
      * @param {Function} conditionFn - (value, cell) => boolean
      * @param {number} styleId - 命中时应使用的样式 ID
      */
@@ -21,8 +21,8 @@ export class ConditionalRule {
      * @returns {boolean}
      */
     match(row, col, cell) {
-        const { sr, sc, er, ec } = this.range;
-        if (row < sr || row > er || col < sc || col > ec) return false;
+        const { topRow, topCol, bottomRow, bottomCol } = this.range;
+        if (row < topRow || row > bottomRow || col < topCol || col > bottomCol) return false;
         return this.conditionFn(cell?.value, cell);
     }
 }

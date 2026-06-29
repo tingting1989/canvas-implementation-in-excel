@@ -371,11 +371,11 @@ export class RowColManager {
     }
 
     getVisibleRange(viewX, viewY, viewW, viewH) {
-        const sc = this.colAt(viewX);
-        const sr = this.rowAt(viewY);
-        const ec = Math.min(this.colCount, this.colAt(viewX + viewW) + 1);
-        const er = Math.min(this.rowCount, this.rowAt(viewY + viewH) + 1);
-        return { sr, sc, er, ec };
+        const topCol = this.colAt(viewX);
+        const topRow = this.rowAt(viewY);
+        const bottomCol = Math.min(this.colCount, this.colAt(viewX + viewW) + 1);
+        const bottomRow = Math.min(this.rowCount, this.rowAt(viewY + viewH) + 1);
+        return { topRow, topCol, bottomRow, bottomCol };
     }
 
     setPaginationBounds(startRow, endRow) {

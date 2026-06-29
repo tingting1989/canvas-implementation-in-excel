@@ -8,6 +8,7 @@ export { ToggleDisableCommand } from "./command/ToggleDisableCommand.js";
 export { MergeCommand } from "./command/MergeCommand.js";
 export { UnmergeCommand } from "./command/UnmergeCommand.js";
 export { BatchCommand } from "./command/BatchCommand.js";
+export { StyleChangeRecorder, StyleChangeCommand } from "./command/StyleChangeRecorder.js";
 
 export { HistoryStack } from "./history/HistoryStack.js";
 

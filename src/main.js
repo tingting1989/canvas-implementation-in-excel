@@ -1,5 +1,4 @@
 import { Workbook } from "./workbook/Workbook.js";
-import { stylePool } from "./model/styles";
 import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
 import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
@@ -41,6 +40,11 @@ const initApp = () => {
     Workbook.registerPlugin("dataValidation", DataValidationPlugin);
 
     const wb = new Workbook("grid", {
+        defaultStyle: {
+            fontSize: 14,
+            fontFamily: "Microsoft YaHei",
+            color: "#000",
+        },
         // 工作表高度和宽度（像素值）
         // height: 600,
         // 工作表高度和宽度（像素值）
@@ -52,7 +56,6 @@ const initApp = () => {
         // startCols: 10,
         sheets: [
             {
-                // 工作表名称
                 name: "Sheet1",
 
                 // 是否只读
@@ -93,7 +96,7 @@ const initApp = () => {
                 // maxCols: 12,
                 conditionalStyles: [
                     {
-                        range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
+                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
                         condition: (v) => isNumber(v) && v > 25,
                         style: { backgroundColor: "#ffcccc" },
                     },
@@ -130,12 +133,6 @@ const initApp = () => {
 
                 // colWidths: [120, 80, 100, 100, 100, 300],
 
-                // 默认单元格样式
-                defaultStyle: {
-                    fontSize: 14,
-                    fontFamily: "Microsoft YaHei",
-                    color: "#000",
-                },
             },
             {
                 name: "Sheet2",
@@ -161,7 +158,7 @@ const initApp = () => {
                 cellPadding: 10,
                 conditionalStyles: [
                     {
-                        range: { sr: 0, sc: 0, er: 10000000, ec: 25 },
+                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
                         condition: (v) => isNumber(v) && v > 25,
                         style: { backgroundColor: "#ffcccc" },
                     },
@@ -187,11 +184,6 @@ const initApp = () => {
                     { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
                     { type: "date", width: 300 },
                 ],
-                defaultStyle: {
-                    fontSize: 14,
-                    fontFamily: "Microsoft YaHei",
-                    color: "#000",
-                },
             },
         ],
         plugins: [
@@ -219,7 +211,7 @@ const initApp = () => {
                         // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
                         contexts: ["cell", "rowHeader"],
                         action: (row, col, sheet) => {
-                            sheet.setRowStyle(row, stylePool.getStyleId({ backgroundColor: "yellow" }));
+                            sheet.setRowStyle(row, { backgroundColor: "yellow" });
                             wb.render();
                         },
                     },
@@ -508,9 +500,9 @@ const initApp = () => {
     //     }
     // });
 
-    setTimeout(() => {
-        wb.destroy();
-    }, 5000);
+    // setTimeout(() => {
+    //     wb.destroy();
+    // }, 5000);
 
     // 注意：BEFORE_COLUMN_MOVE、AFTER_COLUMN_MOVE、AFTER_SORT 已在 hooks 配置中注册，
     // 无需重复通过 addHook 注册，否则会触发两次回调。

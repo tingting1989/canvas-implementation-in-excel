@@ -441,17 +441,30 @@ export class Sheet {
     // 样式操作（委托 SheetStyleManager）
     // ============================================================
 
-    /** 设置行级样式 */
-    setRowStyle(row, styleId) {
+    setRowStyle(row, styleObj) {
         if (!this.#ensureWritable()) return;
-        this.#styleManager.setRowStyle(row, styleId);
+        if (!styleObj || typeof styleObj !== "object") {
+            throw new TypeError("setRowStyle expects a style object, received: " + typeof styleObj);
+        }
+        this.#styleManager.resetRecorder();
+        const realRow = this.toRealRow(row);
+        const styleId = stylePool.getStyleId(styleObj);
+        this.#styleManager.setRowStyle(realRow, styleId);
+        const cmd = this.#styleManager.buildStyleCommand();
+        if (cmd) this.#batchOp.pushCommand(cmd, this.history);
         this.#invalidateAll();
     }
 
-    /** 设置列级样式 */
-    setColStyle(col, styleId) {
+    setColStyle(col, styleObj) {
         if (!this.#ensureWritable()) return;
+        if (!styleObj || typeof styleObj !== "object") {
+            throw new TypeError("setColStyle expects a style object, received: " + typeof styleObj);
+        }
+        this.#styleManager.resetRecorder();
+        const styleId = stylePool.getStyleId(styleObj);
         this.#styleManager.setColStyle(col, styleId);
+        const cmd = this.#styleManager.buildStyleCommand();
+        if (cmd) this.#batchOp.pushCommand(cmd, this.history);
         this.#invalidateAll();
     }
 
@@ -468,7 +481,10 @@ export class Sheet {
 
     setCellStyle(r, c, styleObj) {
         if (!this.#ensureWritable()) return;
+        this.#styleManager.resetRecorder();
         this.#styleManager.setCellStyle(r, c, styleObj);
+        const cmd = this.#styleManager.buildStyleCommand();
+        if (cmd) this.#batchOp.pushCommand(cmd, this.history);
         this.#invalidateAll();
     }
 
@@ -480,7 +496,8 @@ export class Sheet {
 
     clearRowStyle(row) {
         if (!this.#ensureWritable()) return;
-        this.#styleManager.clearRowStyle(row);
+        const realRow = this.toRealRow(row);
+        this.#styleManager.clearRowStyle(realRow);
         this.#invalidateAll();
     }
 
@@ -492,8 +509,27 @@ export class Sheet {
 
     setRangeStyle(range, styleObj) {
         if (!this.#ensureWritable()) return;
+        this.#styleManager.resetRecorder();
         this.#styleManager.setRangeStyle(range, styleObj);
+        const cmd = this.#styleManager.buildStyleCommand();
+        if (cmd) this.#batchOp.pushCommand(cmd, this.history);
         this.#invalidateAll();
+    }
+
+    clearRangeStyle(range) {
+        if (!this.#ensureWritable()) return;
+        this.#styleManager.clearRangeStyle(range);
+        this.#invalidateAll();
+    }
+
+    batchStyleUpdate(fn) {
+        this.#batchOp.beginBatch();
+        try {
+            fn(this);
+        } finally {
+            this.#batchOp.endBatch(this.history);
+            this.#invalidateAll();
+        }
     }
 
     getCellStyle(r, c) {
@@ -666,19 +702,21 @@ export class Sheet {
             const { row: r, col: c, value, style, disabled, readOnly } = item;
             this.rowColManager.ensureSize(r + 1, c + 1);
 
-            if (value !== undefined) {
-                const cell = this.cellStore.get(r, c);
-                const styleId = style ? stylePool.getStyleId(style) : cell?.styleId || 0;
-                const isDisabled = disabled ?? readOnly ?? cell?.disabled ?? false;
-                this.cellStore.set(r, c, new Cell(value, styleId, isDisabled));
-            } else if (style) {
-                this.setCellStyle(r, c, style);
-            }
+            const cell = this.cellStore.get(r, c);
+            const existingStyleId = cell?.styleId || 0;
+            const existingStyle = existingStyleId ? stylePool.getStyle(existingStyleId) : {};
+            const mergedStyle = style ? { ...existingStyle, ...style } : existingStyle;
+            const newStyleId = stylePool.getStyleId(mergedStyle);
+
+            const isDisabled = disabled ?? readOnly ?? cell?.disabled ?? false;
+            const cellValue = value !== undefined ? value : (cell?.value ?? "");
+
+            this.cellStore.set(r, c, new Cell(cellValue, newStyleId, isDisabled, cell?.formula));
 
             if (disabled === true || readOnly === true) {
-                const cell = this.cellStore.get(r, c);
-                if (cell && !cell.disabled) {
-                    this.cellStore.set(r, c, new Cell(cell.value, cell.styleId, true));
+                const updatedCell = this.cellStore.get(r, c);
+                if (updatedCell && !updatedCell.disabled) {
+                    this.cellStore.set(r, c, new Cell(updatedCell.value, updatedCell.styleId, true, updatedCell.formula));
                 }
             }
         }

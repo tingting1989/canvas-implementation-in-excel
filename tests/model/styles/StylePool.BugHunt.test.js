@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { StylePool, CellStyle, BorderStyle } from "@/model/styles";
+
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { StylePool, CELL_STYLE_PROPERTIES, validateStyleProperties } from "@/model/styles";
 
 describe("StylePool - Bug Hunting", () => {
     let pool;
@@ -139,42 +140,38 @@ describe("StylePool - Bug Hunting", () => {
         });
     });
 
-    describe("CellStyle - 类不变量", () => {
-        it("BUG: CellStyle默认值应正确 - 有默认值非undefined", () => {
-            const cs = new CellStyle();
-            expect(cs.fontFamily).toBe("Segoe UI");
-            expect(cs.fontSize).toBe(12);
-            expect(cs.color).toBe("#000");
+    describe("CELL_STYLE_PROPERTIES - 属性白名单", () => {
+        it("BUG: 白名单应包含所有合法样式属性", () => {
+            const expected = [
+                "fontFamily", "fontSize", "fontWeight", "fontStyle",
+                "color", "backgroundColor", "textAlign", "verticalAlign",
+                "textDecoration", "border",
+            ];
+            for (const prop of expected) {
+                expect(CELL_STYLE_PROPERTIES.has(prop)).toBe(true);
+            }
         });
 
-        it("BUG: CellStyle应正确存储自定义值", () => {
-            const cs = new CellStyle({ fontFamily: "Arial", fontSize: 14, color: "#333" });
-            expect(cs.fontFamily).toBe("Arial");
-            expect(cs.fontSize).toBe(14);
-            expect(cs.color).toBe("#333");
+        it("BUG: 白名单不应包含非法属性", () => {
+            expect(CELL_STYLE_PROPERTIES.has("unknownProp")).toBe(false);
+            expect(CELL_STYLE_PROPERTIES.has("value")).toBe(false);
+            expect(CELL_STYLE_PROPERTIES.has("disabled")).toBe(false);
         });
     });
 
-    describe("BorderStyle - 类不变量", () => {
-        it("BUG: BorderStyle默认值应正确", () => {
-            const bs = new BorderStyle();
-            expect(bs.width).toBe(1);
-            expect(bs.style).toBe("solid");
-            expect(bs.color).toBe("#000");
+    describe("validateStyleProperties - 校验函数", () => {
+        it("BUG: 合法属性不应产生警告", () => {
+            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+            validateStyleProperties({ color: "red", fontSize: 14 });
+            expect(warnSpy).not.toHaveBeenCalled();
+            warnSpy.mockRestore();
         });
 
-        it("BUG: BorderStyle自定义值应正确", () => {
-            const bs = new BorderStyle({ width: 2, style: "dashed", color: "#f00" });
-            expect(bs.width).toBe(2);
-            expect(bs.style).toBe("dashed");
-            expect(bs.color).toBe("#f00");
-        });
-
-        it("BUG: BorderStyle部分自定义应保留默认值", () => {
-            const bs = new BorderStyle({ width: 3 });
-            expect(bs.width).toBe(3);
-            expect(bs.style).toBe("solid");
-            expect(bs.color).toBe("#000");
+        it("BUG: 非法属性应产生警告", () => {
+            const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+            validateStyleProperties({ foo: "bar" });
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("foo"));
+            warnSpy.mockRestore();
         });
     });
 

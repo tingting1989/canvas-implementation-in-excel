@@ -205,3 +205,78 @@ describe("SheetStyleManager - setRangeStyle", () => {
         expect(cell01).toBeDefined();
     });
 });
+
+describe("SheetStyleManager - API parameter unification", () => {
+    it("should accept styleObj in setRowStyle", () => {
+        const sheet = createMockSheet();
+        const ssm = new SheetStyleManager(sheet);
+        ssm.setRowStyle(0, stylePool.getStyleId({ backgroundColor: "yellow" }));
+        const styleId = ssm.rowStyles.get(0);
+        expect(styleId).toBeDefined();
+        const style = stylePool.getStyle(styleId);
+        expect(style.backgroundColor).toBe("yellow");
+    });
+
+    it("should accept styleObj in setColStyle", () => {
+        const sheet = createMockSheet();
+        const ssm = new SheetStyleManager(sheet);
+        ssm.setColStyle(2, stylePool.getStyleId({ textAlign: "right" }));
+        const styleId = ssm.colStyles.get(2);
+        expect(styleId).toBeDefined();
+        const style = stylePool.getStyle(styleId);
+        expect(style.textAlign).toBe("right");
+    });
+});
+
+describe("SheetStyleManager - merge semantics unification", () => {
+    it("should merge row style in setRangeStyle for full-row range", () => {
+        const sheet = createMockSheet();
+        sheet.rowColManager.ensureSize(5, 10);
+        const ssm = new SheetStyleManager(sheet);
+
+        ssm.setRowStyle(0, stylePool.getStyleId({ backgroundColor: "yellow" }));
+        ssm.setRangeStyle(
+            { topRow: 0, topCol: 0, bottomRow: 0, bottomCol: 9 },
+            { fontWeight: "bold" }
+        );
+
+        const styleId = ssm.rowStyles.get(0);
+        const style = stylePool.getStyle(styleId);
+        expect(style.backgroundColor).toBe("yellow");
+        expect(style.fontWeight).toBe("bold");
+    });
+
+    it("should merge column style in setRangeStyle for full-column range", () => {
+        const sheet = createMockSheet();
+        sheet.rowColManager.ensureSize(10, 5);
+        const ssm = new SheetStyleManager(sheet);
+
+        ssm.setColStyle(0, stylePool.getStyleId({ textAlign: "left" }));
+        ssm.setRangeStyle(
+            { topRow: 0, topCol: 0, bottomRow: 9, bottomCol: 0 },
+            { fontWeight: "bold" }
+        );
+
+        const styleId = ssm.colStyles.get(0);
+        const style = stylePool.getStyle(styleId);
+        expect(style.textAlign).toBe("left");
+        expect(style.fontWeight).toBe("bold");
+    });
+
+    it("should merge individual cell styles in setRangeStyle for partial range", () => {
+        const sheet = createMockSheet();
+        sheet.rowColManager.ensureSize(10, 10);
+        const ssm = new SheetStyleManager(sheet);
+
+        ssm.setCellStyle(0, 0, { backgroundColor: "red" });
+        ssm.setRangeStyle(
+            { topRow: 0, topCol: 0, bottomRow: 0, bottomCol: 1 },
+            { fontWeight: "bold" }
+        );
+
+        const cell = sheet.cellStore.get(0, 0);
+        const style = stylePool.getStyle(cell.styleId);
+        expect(style.backgroundColor).toBe("red");
+        expect(style.fontWeight).toBe("bold");
+    });
+});

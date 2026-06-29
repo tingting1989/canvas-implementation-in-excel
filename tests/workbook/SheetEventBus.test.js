@@ -24,14 +24,14 @@ describe("Sheet - EventBus Integration", () => {
         it("should emit INVALIDATE_ALL on setRowStyle", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.INVALIDATE_ALL, handler);
-            sheet.setRowStyle(0, 1);
+            sheet.setRowStyle(0, { backgroundColor: "yellow" });
             expect(handler).toHaveBeenCalledOnce();
         });
 
         it("should emit INVALIDATE_ALL on setColStyle", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.INVALIDATE_ALL, handler);
-            sheet.setColStyle(0, 1);
+            sheet.setColStyle(0, { textAlign: "right" });
             expect(handler).toHaveBeenCalledOnce();
         });
 

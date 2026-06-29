@@ -460,16 +460,16 @@ describe("RowColManager - Bug Hunting", () => {
             rcm.ensureSize(100, 100);
             const range = rcm.getVisibleRange(0, 0, 500, 500);
 
-            expect(range.sr).toBe(0);
-            expect(range.sc).toBe(0);
+            expect(range.topRow).toBe(0);
+            expect(range.topCol).toBe(0);
         });
 
         it("BUG: 视口超出数据范围时应clamp", () => {
             rcm.ensureSize(10, 10);
             const range = rcm.getVisibleRange(0, 0, 10000, 10000);
 
-            expect(range.er).toBeLessThanOrEqual(rcm.rowCount);
-            expect(range.ec).toBeLessThanOrEqual(rcm.colCount);
+            expect(range.bottomRow).toBeLessThanOrEqual(rcm.rowCount);
+            expect(range.bottomCol).toBeLessThanOrEqual(rcm.colCount);
         });
 
         it("BUG: 隐藏行/列后getVisibleRange - rowAt跳过隐藏行列", () => {
@@ -479,8 +479,8 @@ describe("RowColManager - Bug Hunting", () => {
 
             const range = rcm.getVisibleRange(0, 0, 500, 500);
 
-            expect(range.sr).toBe(1);
-            expect(range.sc).toBe(1);
+            expect(range.topRow).toBe(1);
+            expect(range.topCol).toBe(1);
         });
     });
 

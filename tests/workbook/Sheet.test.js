@@ -253,3 +253,68 @@ describe("Sheet - Undo/Redo", () => {
         expect(cell.value).toBe("modified");
     });
 });
+
+describe("Sheet - setRowStyle / setColStyle type validation", () => {
+    it("should throw TypeError when setRowStyle receives number", () => {
+        const sheet = new Sheet("Test");
+        expect(() => sheet.setRowStyle(0, 5)).toThrow(TypeError);
+    });
+
+    it("should throw TypeError when setColStyle receives number", () => {
+        const sheet = new Sheet("Test");
+        expect(() => sheet.setColStyle(0, 5)).toThrow(TypeError);
+    });
+
+    it("should throw TypeError when setRowStyle receives null", () => {
+        const sheet = new Sheet("Test");
+        expect(() => sheet.setRowStyle(0, null)).toThrow(TypeError);
+    });
+
+    it("should throw TypeError when setRowStyle receives undefined", () => {
+        const sheet = new Sheet("Test");
+        expect(() => sheet.setRowStyle(0, undefined)).toThrow(TypeError);
+    });
+
+    it("should accept styleObj in setRowStyle", () => {
+        const sheet = new Sheet("Test");
+        sheet.setRowStyle(0, { backgroundColor: "yellow" });
+        const style = sheet.resolveStyle(0, 0);
+        expect(style.backgroundColor).toBe("yellow");
+    });
+
+    it("should accept styleObj in setColStyle", () => {
+        const sheet = new Sheet("Test");
+        sheet.setColStyle(0, { textAlign: "right" });
+        const style = sheet.resolveStyle(0, 0);
+        expect(style.textAlign).toBe("right");
+    });
+});
+
+describe("Sheet - batchStyleUpdate", () => {
+    it("should apply all style changes after batch ends", () => {
+        const sheet = new Sheet("Test");
+        sheet.batchStyleUpdate((s) => {
+            s.setCellStyle(0, 0, { fontWeight: "bold" });
+            s.setCellStyle(0, 1, { fontWeight: "bold" });
+            s.setCellStyle(0, 2, { fontWeight: "bold" });
+        });
+
+        expect(sheet.resolveStyle(0, 0).fontWeight).toBe("bold");
+        expect(sheet.resolveStyle(0, 1).fontWeight).toBe("bold");
+        expect(sheet.resolveStyle(0, 2).fontWeight).toBe("bold");
+    });
+
+    it("should still apply changes if error occurs in callback", () => {
+        const sheet = new Sheet("Test");
+        try {
+            sheet.batchStyleUpdate((s) => {
+                s.setCellStyle(0, 0, { fontWeight: "bold" });
+                throw new Error("test error");
+            });
+        } catch (e) {
+            // expected
+        }
+
+        expect(sheet.resolveStyle(0, 0).fontWeight).toBe("bold");
+    });
+});

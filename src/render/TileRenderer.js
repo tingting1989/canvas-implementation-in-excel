@@ -205,7 +205,7 @@ export class TileRenderer {
 
                 const hasContent = this.#drawCellContent(tileCtx, sheet, realR, c, drawX, drawY, w, h);
                 if (!hasContent) {
-                    this.#drawCellBorder(tileCtx, merge, drawX, drawY, w, h);
+                    this.#drawCellBorder(tileCtx, sheet, realR, c, merge, drawX, drawY, w, h);
 
                     if (merge && (drawX < 0 || drawY < 0 || drawX + w > tileSize || drawY + h > tileSize)) {
                         tileCtx.save();
@@ -254,7 +254,7 @@ export class TileRenderer {
 
         const hasContent = this.#drawCellContent(ctx, sheet, realTopR, topCol, drawX, drawY, drawW, drawH);
         if (!hasContent) {
-            this.#drawCellBorder(ctx, merge, drawX, drawY, drawW, drawH);
+            this.#drawCellBorder(ctx, sheet, realTopR, topCol, merge, drawX, drawY, drawW, drawH);
 
             const fullDrawX = mergeLeft - pixelX0;
             const fullDrawY = mergeTop - pixelY0;
@@ -301,16 +301,52 @@ export class TileRenderer {
      * 合并单元格不绘制内部网格线
      * 使用 0.5 像素偏移确保 1px 线条清晰（Canvas 像素对齐技巧）
      */
-    #drawCellBorder(ctx, merge, drawX, drawY, w, h) {
+    #drawCellBorder(ctx, sheet, r, c, merge, drawX, drawY, w, h) {
         if (merge) return;
-        ctx.strokeStyle = CONFIG.GRID_COLOR;
-        ctx.lineWidth = 1;
+        const style = sheet.resolveStyle(r, c);
+        if (style.border) {
+            const { top, right, bottom, left } = this.#normalizeBorder(style.border);
+            ctx.save();
+            if (top) this.#drawBorderEdge(ctx, drawX, drawY, drawX + w, drawY, top);
+            if (right) this.#drawBorderEdge(ctx, drawX + w, drawY, drawX + w, drawY + h, right);
+            if (bottom) this.#drawBorderEdge(ctx, drawX, drawY + h, drawX + w, drawY + h, bottom);
+            if (left) this.#drawBorderEdge(ctx, drawX, drawY, drawX, drawY + h, left);
+            ctx.restore();
+        } else {
+            ctx.strokeStyle = CONFIG.GRID_COLOR;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(drawX + w - 0.5, drawY);
+            ctx.lineTo(drawX + w - 0.5, drawY + h);
+            ctx.moveTo(drawX, drawY + h - 0.5);
+            ctx.lineTo(drawX + w, drawY + h - 0.5);
+            ctx.stroke();
+        }
+    }
+
+    #drawBorderEdge(ctx, x1, y1, x2, y2, borderDef) {
+        ctx.strokeStyle = borderDef.color || "#000";
+        ctx.lineWidth = borderDef.width || 1;
+        if (borderDef.style === "dashed") {
+            ctx.setLineDash([4, 2]);
+        } else if (borderDef.style === "dotted") {
+            ctx.setLineDash([1, 2]);
+        } else {
+            ctx.setLineDash([]);
+        }
         ctx.beginPath();
-        ctx.moveTo(drawX + w - 0.5, drawY);
-        ctx.lineTo(drawX + w - 0.5, drawY + h);
-        ctx.moveTo(drawX, drawY + h - 0.5);
-        ctx.lineTo(drawX + w, drawY + h - 0.5);
+        ctx.moveTo(x1 + 0.5, y1 + 0.5);
+        ctx.lineTo(x2 + 0.5, y2 + 0.5);
         ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    #normalizeBorder(border) {
+        if (!border) return {};
+        if (border.top || border.right || border.bottom || border.left) {
+            return border;
+        }
+        return { top: border, right: border, bottom: border, left: border };
     }
 
     /**
@@ -342,7 +378,9 @@ export class TileRenderer {
             this.#lastFont = fontString;
         }
 
-        ctx.textBaseline = "middle";
+        const verticalAlign = finalStyle.verticalAlign || "middle";
+        const baselineMap = { top: "top", middle: "middle", bottom: "bottom" };
+        ctx.textBaseline = baselineMap[verticalAlign] || "middle";
         ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || "#222";
 
         const textAlign = finalStyle.textAlign || "left";
@@ -357,7 +395,14 @@ export class TileRenderer {
             textX = Math.round(drawX + w - sheet.cellPadding);
         }
 
-        const textY = Math.round(drawY + h / 2);
+        let textY;
+        if (verticalAlign === "top") {
+            textY = Math.round(drawY + fontSize / 2 + 2);
+        } else if (verticalAlign === "bottom") {
+            textY = Math.round(drawY + h - fontSize / 2 - 2);
+        } else {
+            textY = Math.round(drawY + h / 2);
+        }
 
         // 文本超出时截断，确保左右两侧留有内边距
         // 使用二分查找定位截断点：O(log n) vs 逐字符 O(n)

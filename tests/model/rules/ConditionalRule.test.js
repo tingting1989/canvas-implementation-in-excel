@@ -5,7 +5,7 @@ import { Cell } from "@/model/store/Cell";
 describe("ConditionalRule - match", () => {
     it("should match when in range and condition is true", () => {
         const rule = new ConditionalRule(
-            { sr: 0, sc: 0, er: 5, ec: 5 },
+                { topRow: 0, topCol: 0, bottomRow: 5, bottomCol: 5 },
             (value) => value > 10,
             1,
         );
@@ -15,7 +15,7 @@ describe("ConditionalRule - match", () => {
 
     it("should not match when condition is false", () => {
         const rule = new ConditionalRule(
-            { sr: 0, sc: 0, er: 5, ec: 5 },
+            { topRow: 0, topCol: 0, bottomRow: 5, bottomCol: 5 },
             (value) => value > 10,
             1,
         );
@@ -25,7 +25,7 @@ describe("ConditionalRule - match", () => {
 
     it("should not match when row is out of range", () => {
         const rule = new ConditionalRule(
-            { sr: 0, sc: 0, er: 5, ec: 5 },
+            { topRow: 0, topCol: 0, bottomRow: 5, bottomCol: 5 },
             () => true,
             1,
         );
@@ -34,7 +34,7 @@ describe("ConditionalRule - match", () => {
 
     it("should not match when col is out of range", () => {
         const rule = new ConditionalRule(
-            { sr: 0, sc: 0, er: 5, ec: 5 },
+            { topRow: 0, topCol: 0, bottomRow: 5, bottomCol: 5 },
             () => true,
             1,
         );
@@ -43,7 +43,7 @@ describe("ConditionalRule - match", () => {
 
     it("should match boundary rows and cols", () => {
         const rule = new ConditionalRule(
-            { sr: 2, sc: 3, er: 5, ec: 7 },
+            { topRow: 2, topCol: 3, bottomRow: 5, bottomCol: 7 },
             () => true,
             1,
         );
@@ -53,7 +53,7 @@ describe("ConditionalRule - match", () => {
 
     it("should handle null cell gracefully", () => {
         const rule = new ConditionalRule(
-            { sr: 0, sc: 0, er: 5, ec: 5 },
+            { topRow: 0, topCol: 0, bottomRow: 5, bottomCol: 5 },
             (value) => value === undefined,
             1,
         );
@@ -63,7 +63,7 @@ describe("ConditionalRule - match", () => {
     it("should pass cell object to condition function", () => {
         const conditionFn = vi.fn().mockReturnValue(true);
         const rule = new ConditionalRule(
-            { sr: 0, sc: 0, er: 5, ec: 5 },
+            { topRow: 0, topCol: 0, bottomRow: 5, bottomCol: 5 },
             conditionFn,
             1,
         );
@@ -77,7 +77,7 @@ describe("ConditionalRule - match", () => {
 describe("ConditionalRule - styleId", () => {
     it("should store styleId", () => {
         const rule = new ConditionalRule(
-            { sr: 0, sc: 0, er: 5, ec: 5 },
+            { topRow: 0, topCol: 0, bottomRow: 5, bottomCol: 5 },
             () => true,
             42,
         );
@@ -87,7 +87,7 @@ describe("ConditionalRule - styleId", () => {
 
 describe("ConditionalRule - range", () => {
     it("should store range", () => {
-        const range = { sr: 1, sc: 2, er: 10, ec: 20 };
+        const range = { topRow: 1, topCol: 2, bottomRow: 10, bottomCol: 20 };
         const rule = new ConditionalRule(range, () => true, 1);
         expect(rule.range).toEqual(range);
     });

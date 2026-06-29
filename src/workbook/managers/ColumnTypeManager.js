@@ -1,4 +1,3 @@
-import { stylePool } from "../../model/styles";
 import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../../types";
 import { isFunction, isObject } from "../../utils/utils.js";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
@@ -147,7 +146,7 @@ export class ColumnTypeManager {
 
             // 应用列样式配置，通过 Sheet API（解耦，不再直接写入 colStyles Map）
             if (config.style) {
-                this.#sheet.setColStyle(c, stylePool.getStyleId(config.style));
+                this.#sheet.setColStyle(c, config.style);
             }
 
             // 禁用/只读列需要确保行列表尺寸已分配，以便渲染禁用状态

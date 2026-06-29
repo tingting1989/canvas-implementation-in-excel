@@ -509,18 +509,18 @@ describe("RowColManager - getVisibleRange", () => {
         const rcm = new RowColManager();
         rcm.ensureSize(100, 100);
         const range = rcm.getVisibleRange(0, 0, 500, 500);
-        expect(range.sr).toBe(0);
-        expect(range.sc).toBe(0);
-        expect(range.er).toBeGreaterThan(0);
-        expect(range.ec).toBeGreaterThan(0);
+        expect(range.topRow).toBe(0);
+        expect(range.topCol).toBe(0);
+        expect(range.bottomRow).toBeGreaterThan(0);
+        expect(range.bottomCol).toBeGreaterThan(0);
     });
 
     it("should handle scrolled viewport", () => {
         const rcm = new RowColManager();
         rcm.ensureSize(100, 100);
         const range = rcm.getVisibleRange(500, 500, 500, 500);
-        expect(range.sr).toBeGreaterThan(0);
-        expect(range.sc).toBeGreaterThan(0);
+        expect(range.topRow).toBeGreaterThan(0);
+        expect(range.topCol).toBeGreaterThan(0);
     });
 });
 

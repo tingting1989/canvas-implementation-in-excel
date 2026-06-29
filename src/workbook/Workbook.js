@@ -43,6 +43,9 @@ export class Workbook {
     /** @type {Set<import("./Sheet.js").Sheet>} 已绑定事件的 Sheet 集合（防止 switchTo 重复绑定） */
     #boundSheets = new Set();
 
+    /** @type {object|null} Workbook 级默认样式（所有 Sheet 的全局基础） */
+    #defaultStyle = null;
+
     // ============================================================
     // 构造函数
     // ============================================================
@@ -427,16 +430,36 @@ export class Workbook {
     /**
      * 应用 sheets 数组配置
      * 每个 sheet 配置项与顶层 opts 合并后独立应用
+     * 支持 Workbook 级 defaultStyle 继承链：
+     * - 顶层 defaultStyle 作为全局基础
+     * - Sheet 级 defaultStyle 在其基础上深度合并覆盖
      */
     #applySheetsConfig(opts) {
+        if (opts.defaultStyle) {
+            this.#defaultStyle = opts.defaultStyle;
+        }
+
         for (const sheetConfig of opts.sheets) {
             const name = sheetConfig.name || this.#generateSheetName();
             const sheet = this.sheets.get(name);
             if (!sheet) continue;
+
+            const effectiveDefaultStyle = this.#resolveDefaultStyle(sheetConfig.defaultStyle);
+
             const settings = { ...opts, ...sheetConfig };
+            if (effectiveDefaultStyle) {
+                settings.defaultStyle = effectiveDefaultStyle;
+            }
             delete settings.sheets;
             SettingsApplier.apply({ sheet, renderEngine: this.renderEngine, settings });
         }
+    }
+
+    #resolveDefaultStyle(sheetDefaultStyle) {
+        if (!this.#defaultStyle && !sheetDefaultStyle) return null;
+        if (!this.#defaultStyle) return sheetDefaultStyle;
+        if (!sheetDefaultStyle) return this.#defaultStyle;
+        return { ...this.#defaultStyle, ...sheetDefaultStyle };
     }
 
     #loadInitPlugins(opts) {
@@ -483,6 +506,10 @@ export class Workbook {
         const opts = this.#initOptions;
 
         sheet.rowColManager.ensureSize(opts?.startRows || CONFIG.DEFAULT_START_ROWS, opts?.startCols || CONFIG.DEFAULT_START_COLS);
+
+        if (this.#defaultStyle) {
+            sheet.setDefaultStyle(this.#defaultStyle);
+        }
 
         this.sheets.set(name, sheet);
         this.#activateIfFirst(sheet);
@@ -777,6 +804,9 @@ export class Workbook {
      */
     updateSettings(settings = {}) {
         this.#withActiveSheet((s) => {
+            if (settings.defaultStyle) {
+                this.#defaultStyle = settings.defaultStyle;
+            }
             SettingsApplier.apply({ sheet: s, renderEngine: this.renderEngine, settings });
             this.render();
         });
@@ -802,15 +832,65 @@ export class Workbook {
     }
 
     setDefaultStyle(styleObj) {
-        this.#withActiveSheet((s) => {
-            s.setDefaultStyle(styleObj);
-            this.render();
-        });
+        this.#defaultStyle = styleObj;
+        for (const sheet of this.sheets.values()) {
+            sheet.setDefaultStyle(styleObj);
+        }
+        this.render();
     }
 
     /** @returns {object} */
     getDefaultStyle() {
-        return this.#withActiveSheet((s) => s.getDefaultStyle(), {});
+        return this.#defaultStyle || this.#withActiveSheet((s) => s.getDefaultStyle(), {});
+    }
+
+    setRowStyle(row, styleObj) {
+        this.#withActiveSheet((s) => {
+            s.setRowStyle(row, styleObj);
+            this.render();
+        });
+    }
+
+    setColStyle(col, styleObj) {
+        this.#withActiveSheet((s) => {
+            s.setColStyle(col, styleObj);
+            this.render();
+        });
+    }
+
+    clearCellStyle(row, col) {
+        this.#withActiveSheet((s) => {
+            s.clearCellStyle(row, col);
+            this.render();
+        });
+    }
+
+    clearRowStyle(row) {
+        this.#withActiveSheet((s) => {
+            s.clearRowStyle(row);
+            this.render();
+        });
+    }
+
+    clearColStyle(col) {
+        this.#withActiveSheet((s) => {
+            s.clearColStyle(col);
+            this.render();
+        });
+    }
+
+    clearRangeStyle(range) {
+        this.#withActiveSheet((s) => {
+            s.clearRangeStyle(range);
+            this.render();
+        });
+    }
+
+    batchStyleUpdate(fn) {
+        this.#withActiveSheet((s) => {
+            s.batchStyleUpdate(fn);
+            this.render();
+        });
     }
 
     // ============================================================
