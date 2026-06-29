@@ -45,6 +45,7 @@ const initApp = () => {
             fontFamily: "Microsoft YaHei",
             color: "#000",
         },
+
         // 工作表高度和宽度（像素值）
         // height: 600,
         // 工作表高度和宽度（像素值）
@@ -60,6 +61,7 @@ const initApp = () => {
 
                 // 是否只读
                 readOnly: false,
+
                 // 初始数据
                 // data: [
                 //     ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
@@ -89,8 +91,10 @@ const initApp = () => {
 
                 // 单元格内容超出单元格宽度时是否显示省略号
                 textOverflowEllipsis: false,
+
                 // 每个单元格的内边距（像素值）
                 cellPadding: 10,
+
                 // 固定行列数上限（使用 maxRows/maxCols）
                 // maxRows: 20,
                 // maxCols: 12,
@@ -128,6 +132,7 @@ const initApp = () => {
                     { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
                     { type: "date" },
                 ],
+
                 // 配置列的宽度 number|number[],优先级比columns中的width 低
                 colWidths: 200,
 
@@ -199,6 +204,7 @@ const initApp = () => {
             "freeze",
             "formula",
             "sort",
+            "dataValidation"
         ],
         pluginOptions: {
             contextMenu: {
@@ -256,10 +262,24 @@ const initApp = () => {
                 ],
 
                 // disabledItems: ["mergeCells", "unmergeCells"],
-            },
 
-            // rowMove: { enabled: false }
-            freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+                // rowMove: { enabled: false },
+                freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+
+                dataValidation: {
+                    conflictStrategy: "short-circuit",
+                    rules: [
+                        {
+                            range: 'B:B',
+                            type: 'number',
+                            operator: 'greaterThan',
+                            value: 0,
+                            errorMessage: '必须输入正数',
+                            errorStyle: 'stop'
+                        },
+                    ]
+                },
+            },
         },
         hooks: {
             // ==================== 编辑相关钩子 ====================

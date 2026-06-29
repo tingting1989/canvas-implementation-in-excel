@@ -172,6 +172,7 @@ export class Hooks {
      */
     getHooks(hookName) {
         const callbacks = this.hooks.get(hookName);
+
         // 返回副本以防止外部修改影响内部状态
         return callbacks ? callbacks.slice() : [];
     }

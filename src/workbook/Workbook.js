@@ -569,6 +569,7 @@ export class Workbook {
         if (this.eventHandler) this.eventHandler.sheet = sheet;
         if (this.renderEngine) {
             this.#bindSheetEvents(sheet);
+
             // 切换 Sheet 时重置滚动位置到顶部左侧
             this.renderEngine.scrollMgr?.setScrollPosition(0, 0);
             this.renderEngine.invalidateAll();

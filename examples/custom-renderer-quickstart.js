@@ -13,8 +13,6 @@
 // ============================================================
 // 示例1：使用内置渲染器
 // ============================================================
-console.log('=== 示例1：使用内置渲染器 ===\n');
-
 import { registerRenderer, getRenderer } from '../src/types/index.js';
 import {
     BooleanCheckboxType,
@@ -23,6 +21,10 @@ import {
     SparklineType,
     ColorPreviewType,
 } from '../src/types/renderers/index.js';
+
+import { BaseColumnType } from '../src/types/BaseColumnType.js';
+
+console.log('=== 示例1：使用内置渲染器 ===\n');
 
 // 注册所有内置渲染器
 registerRenderer('checkbox', BooleanCheckboxType);
@@ -43,12 +45,14 @@ console.log('   - color (颜色预览)\n');
 // ============================================================
 console.log('=== 示例2：创建自定义渲染器 ===\n');
 
-import { BaseColumnType } from '../src/types/BaseColumnType.js';
-
 class TrafficLightType extends BaseColumnType {
-    get name() { return 'trafficLight'; }
+    get name() {
+ return 'trafficLight'; 
+}
 
-    get editorType() { return 'select'; }
+    get editorType() {
+ return 'select'; 
+}
 
     getEditorOptions() {
         return {
@@ -105,7 +109,9 @@ console.log('✅ 已注册自定义渲染器: trafficLight (交通灯)\n');
 console.log('=== 示例3：冻结场景下的行列号使用 ===\n');
 
 class FrozenAwareDataType extends BaseColumnType {
-    get name() { return 'frozenData'; }
+    get name() {
+ return 'frozenData'; 
+}
 
     render(context) {
         const { realRow, sheet, pageInfo } = context;
@@ -147,7 +153,9 @@ console.log('  3. 检查 pageInfo.isInFrozenArea 判断位置\n');
 console.log('=== 示例4：与图表引擎协作 ===\n');
 
 class ChartGeneratorType extends BaseColumnType {
-    get name() { return 'chartGenerator'; }
+    get name() {
+ return 'chartGenerator'; 
+}
 
     render(context) {
         const { realRow, realCol, sheet, value } = context;
@@ -194,7 +202,9 @@ console.log('  - 与图表引擎的行列号约定完全一致\n');
 console.log('=== 示例5：跨单元格依赖渲染器 ===\n');
 
 class ConditionalHighlightType extends BaseColumnType {
-    get name() { return 'conditionalHighlight'; }
+    get name() {
+ return 'conditionalHighlight'; 
+}
 
     render(context) {
         const { realRow, realCol, sheet } = context;
