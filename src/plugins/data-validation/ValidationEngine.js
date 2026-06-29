@@ -66,8 +66,6 @@ export class ValidationEngine {
         this.registerValidator("date", new DateValidator());
         this.registerValidator("time", new TimeValidator());
         this.registerValidator("regex", new RegexValidator());
-
-
     }
 
     /**

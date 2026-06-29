@@ -93,7 +93,7 @@ export class DataValidationPlugin extends BasePlugin {
      */
     async init(options = {}) {
         super.init(options);
-        console.log('options',options)
+        console.log("options", options);
         try {
             this.#engine = new ValidationEngine(this.sheet?.cellStore);
             const formulaEngine = this.workbook?.formulaEngine || null;
@@ -119,7 +119,6 @@ export class DataValidationPlugin extends BasePlugin {
             this.registerHooks();
             this.#bindSheetSwitchListener();
             this.#active = true;
-
         } catch (error) {
             throw error;
         }

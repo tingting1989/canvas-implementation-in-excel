@@ -33,7 +33,6 @@ export class NumberValidator extends BaseValidator {
      * @returns {Promise<ValidationResult>}
      */
     validate(value, rule, context = {}) {
-
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
             return allowed
