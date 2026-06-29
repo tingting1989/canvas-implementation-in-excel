@@ -132,7 +132,6 @@ const initApp = () => {
                 colWidths: 200,
 
                 // colWidths: [120, 80, 100, 100, 100, 300],
-
             },
             {
                 name: "Sheet2",
