@@ -43,8 +43,10 @@ export class EventHandler {
         this.viewport = new RenderEngineViewportService(renderEngine);
         this.canvasContext = new RenderEngineCanvasContext(renderEngine);
 
-        this.hooks = new Hooks();
-        this.hooks.init();
+        this.hooks = sheet.hooks || new Hooks();
+        if (!sheet.hooks) {
+            this.hooks.init();
+        }
 
         this.strategies = new Map();
 
@@ -101,9 +103,23 @@ export class EventHandler {
 
         // ==================== 数据变更事件 ====================
 
-        // 值变更前 → BEFORE_CHANGE hook
+        // 值变更前 → BEFORE_CHANGE hook + BEFORE_SET_VALUE_AT（逐单元格验证）
         bus.on(SHEET_EVENTS.BEFORE_CHANGE, (envelope) => {
             const [changes] = envelope.payload;
+
+            console.log("[EH-DEBUG] BEFORE_CHANGE triggered, changes =", JSON.stringify(changes));
+
+            for (const change of changes) {
+                const { row, col, newValue } = change;
+                console.log(`[EH-DEBUG] Checking BEFORE_SET_VALUE_AT for (${row},${col}) value=${newValue}`);
+                const canSet = this.runHooksUntil(HOOKS.BEFORE_SET_VALUE_AT, row, col, newValue);
+                console.log(`[EH-DEBUG] BEFORE_SET_VALUE_AT result =`, canSet, `(type=${typeof canSet})`);
+                if (canSet === false) {
+                    console.log("[EH-DEBUG] 🛑 BLOCKED by BEFORE_SET_VALUE_AT");
+                    return false;
+                }
+            }
+
             return this.runHooksUntil(HOOKS.BEFORE_CHANGE, changes);
         });
 

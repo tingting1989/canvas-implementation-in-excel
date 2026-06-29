@@ -204,7 +204,7 @@ const initApp = () => {
             "freeze",
             "formula",
             "sort",
-            "dataValidation"
+            "dataValidation",
         ],
         pluginOptions: {
             contextMenu: {
@@ -264,21 +264,23 @@ const initApp = () => {
                 // disabledItems: ["mergeCells", "unmergeCells"],
 
                 // rowMove: { enabled: false },
-                freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
 
-                dataValidation: {
-                    conflictStrategy: "short-circuit",
-                    rules: [
-                        {
-                            range: 'B:B',
-                            type: 'number',
-                            operator: 'greaterThan',
-                            value: 0,
-                            errorMessage: '必须输入正数',
-                            errorStyle: 'stop'
-                        },
-                    ]
-                },
+            },
+
+            freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+
+            dataValidation: {
+                conflictStrategy: "short-circuit",
+                rules: [
+                    {
+                        range: "B:B",
+                        type: "number",
+                        operator: "greaterThan",
+                        value: 0,
+                        errorMessage: "必须输入正数",
+                        errorStyle: "stop",
+                    },
+                ],
             },
         },
         hooks: {

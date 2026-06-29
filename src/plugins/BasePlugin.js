@@ -168,7 +168,7 @@ export class BasePlugin {
     addHook(hookName, callback) {
         const guardedCallback = (...args) => {
             if (!this.#enabled) return;
-            callback(...args);
+            return callback(...args);
         };
         this.hooks?.addHook(hookName, guardedCallback);
         this.#registeredHooks.push({ hookName, callback: guardedCallback });
@@ -189,9 +189,10 @@ export class BasePlugin {
             if (fired) return;
             fired = true;
             if (!this.#enabled) return;
-            callback(...args);
+            const result = callback(...args);
             this.hooks?.removeHook(hookName, onceCallback);
             this.#registeredHooks = this.#registeredHooks.filter((h) => h.callback !== onceCallback);
+            return result;
         };
         this.hooks?.addHook(hookName, onceCallback);
         this.#registeredHooks.push({ hookName, callback: onceCallback });

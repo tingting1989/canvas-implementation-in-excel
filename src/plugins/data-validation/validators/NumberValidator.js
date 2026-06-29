@@ -32,7 +32,9 @@ export class NumberValidator extends BaseValidator {
      * @param {Object} [context={}] - 验证上下文
      * @returns {Promise<ValidationResult>}
      */
-    async validate(value, rule, context = {}) {
+    validate(value, rule, context = {}) {
+        console.log(`[NV-DEBUG] NumberValidator.validate: value=${value}, type=${typeof value}, operator=${rule.operator}, compareValue=${rule.value}`);
+
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
             return allowed

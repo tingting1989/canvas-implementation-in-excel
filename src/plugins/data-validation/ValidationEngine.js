@@ -165,6 +165,36 @@ export class ValidationEngine {
     }
 
     /**
+     * 同步版本 - 用于 BEFORE_SET_VALUE_AT 钩子拦截（必须同步返回）
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} value - 单元格值
+     * @returns {import('./ValidationResult.js').ValidationResult}
+     */
+    validateCellSync(row, col, value) {
+        const rules = this.getRulesForCell(row, col);
+
+        console.log(`[VE-DEBUG] validateCellSync: (${row},${col}) value=${value}, found ${rules.length} rules`);
+
+        if (rules.length === 0) {
+            return ValidationResult.success();
+        }
+
+        const context = { row, col, sheet: this.#cellStore?.sheetName || "" };
+
+        switch (this.#conflictStrategy) {
+            case "short-circuit":
+                return this.validateWithShortCircuitSync(rules, value, context);
+            case "priority":
+                return this.validateWithPrioritySync(rules, value, context);
+            case "aggregate":
+                return this.validateWithAggregateSync(rules, value, context);
+            default:
+                return this.validateWithShortCircuitSync(rules, value, context);
+        }
+    }
+
+    /**
      * 批量验证区域
      * @param {string} range - 区域范围（如 "A1:A100"）
      * @returns {Promise<{total: number, valid: number, invalid: number, results: Array}>}
@@ -254,6 +284,61 @@ export class ValidationEngine {
     }
 
     /**
+     * 短路策略验证（同步版本）
+     * @private
+     */
+    validateWithShortCircuitSync(rules, value, context) {
+        for (const rule of rules) {
+            const validator = this.#validators.get(rule.type);
+            if (!validator) continue;
+
+            const validateFn = validator.validateSync || validator.validate;
+            const result = validateFn.call(validator, value, rule, context);
+            if (!result.valid) return result;
+        }
+        return ValidationResult.success();
+    }
+
+    /**
+     * 优先级策略验证（同步版本）
+     * @private
+     */
+    validateWithPrioritySync(rules, value, context) {
+        let lastResult = ValidationResult.success();
+
+        for (const rule of rules) {
+            const validator = this.#validators.get(rule.type);
+            if (!validator) continue;
+
+            const validateFn = validator.validateSync || validator.validate;
+            lastResult = validateFn.call(validator, value, rule, context);
+        }
+
+        return lastResult;
+    }
+
+    /**
+     * 聚合策略验证（同步版本）
+     * @private
+     */
+    validateWithAggregateSync(rules, value, context) {
+        const errors = [];
+
+        for (const rule of rules) {
+            const validator = this.#validators.get(rule.type);
+            if (!validator) continue;
+
+            const validateFn = validator.validateSync || validator.validate;
+            const result = validateFn.call(validator, value, rule, context);
+            if (!result.valid) {
+                errors.push(result.message);
+            }
+        }
+
+        return errors.length > 0 ? ValidationResult.failure(errors.join("; "), "warning") : ValidationResult.success();
+    }
+
+    /**
      * 检查单元格是否在范围内
      * @private
      * @param {number} row - 行号
@@ -263,24 +348,44 @@ export class ValidationEngine {
      */
     isCellInRange(row, col, rangeStr) {
         try {
-            const match = rangeStr.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
-            if (!match) return false;
-
-            const colToNum = (col) => {
+            const colToNum = (colStr) => {
                 let num = 0;
-                for (let i = 0; i < col.length; i++) {
-                    num = num * 26 + (col.charCodeAt(i) - 64);
+                for (let i = 0; i < colStr.length; i++) {
+                    num = num * 26 + (colStr.charCodeAt(i) - 64);
                 }
                 return num - 1;
             };
 
-            const startRow = parseInt(match[2]) - 1;
-            const startCol = colToNum(match[1]);
-            const endRow = parseInt(match[4]) - 1;
-            const endCol = colToNum(match[3]);
+            // 模式 1: 整列 "A:A", "B:C"
+            const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
+            if (fullColMatch) {
+                const startCol = colToNum(fullColMatch[1]);
+                const endCol = colToNum(fullColMatch[2]);
+                return col >= startCol && col <= endCol;
+            }
 
-            return row >= startRow && row <= endRow && col >= startCol && col <= endCol;
+            // 模式 2: 整行 "1:1", "2:5"
+            const fullRowMatch = rangeStr.match(/^(\d+):(\d+)$/);
+            if (fullRowMatch) {
+                const startRow = parseInt(fullRowMatch[1]) - 1;
+                const endRow = parseInt(fullRowMatch[2]) - 1;
+                return row >= startRow && row <= endRow;
+            }
+
+            // 模式 3: 标准区域 "A1:B100"
+            const rangeMatch = rangeStr.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+            if (rangeMatch) {
+                const startRow = parseInt(rangeMatch[2]) - 1;
+                const startCol = colToNum(rangeMatch[1]);
+                const endRow = parseInt(rangeMatch[4]) - 1;
+                const endCol = colToNum(rangeMatch[3]);
+
+                return row >= startRow && row <= endRow && col >= startCol && col <= endCol;
+            }
+
+            return false;
         } catch (e) {
+            console.error(`[VE-ERROR] isCellInRange failed for range="${rangeStr}"`, e);
             return false;
         }
     }

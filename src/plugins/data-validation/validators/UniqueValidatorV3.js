@@ -98,6 +98,46 @@ export class UniqueValidatorV3 extends BaseValidator {
     }
 
     /**
+     * 同步验证（降级版 - 唯一性检查需要遍历区域，同步执行可能在大数据量时有性能影响）
+     * 用于 BEFORE_SET_VALUE_AT 同步拦截场景
+     */
+    validateSync(value, rule, context = {}) {
+        const { isBlank, allowed } = this.checkBlank(value, rule);
+        if (isBlank && !allowed) {
+            return ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
+        }
+
+        try {
+            const range = this.parseRange(context.range || rule.range);
+            const actualValues = [];
+
+            for (let row = range.startRow; row <= range.endRow; row++) {
+                for (let col = range.startCol; col <= range.endCol; col++) {
+                    if (row === context.row) continue;
+                    const cell = this.#cellStore.getCell(row, col);
+                    if (cell?.value !== undefined && cell.value !== null && cell.value !== "") {
+                        actualValues.push({ row, col, value: cell.value });
+                    }
+                }
+            }
+
+            const duplicates = actualValues.filter((item) => String(item.value) === String(value));
+
+            if (duplicates.length > 0) {
+                return ValidationResult.failure(rule.errorMessage || `"${value}" 已存在重复值`, rule.errorStyle, {
+                    value,
+                    ruleId: rule.id,
+                    metadata: { duplicateCount: duplicates.length },
+                });
+            }
+
+            return ValidationResult.success();
+        } catch (error) {
+            return ValidationResult.success();
+        }
+    }
+
+    /**
      * 完整校验（始终基于 CellStore）- 唯一能给出确定性结果的接口
      *
      * ⚠️ 注意：这是唯一能给出确定性结果的接口

@@ -78,6 +78,18 @@ export class FormulaValidator extends BaseValidator {
     }
 
     /**
+     * 同步验证（降级版 - 公式验证无法同步执行，默认通过）
+     * 用于 BEFORE_SET_VALUE_AT 同步拦截场景
+     */
+    validateSync(value, rule, context = {}) {
+        const { isBlank, allowed } = this.checkBlank(value, rule);
+        if (isBlank && !allowed) {
+            return ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
+        }
+        return ValidationResult.success();
+    }
+
+    /**
      * 在隔离沙箱中执行公式求值（零副作用）
      *
      * 实现设计文档中的 evaluateForValidation 接口：

@@ -65,6 +65,31 @@ export class ListValidator extends BaseValidator {
     }
 
     /**
+     * 同步验证（降级版 - 动态源无法同步解析）
+     * 用于 BEFORE_SET_VALUE_AT 同步拦截场景
+     */
+    validateSync(value, rule, context = {}) {
+        const { isBlank, allowed } = this.checkBlank(value, rule);
+        if (isBlank && !allowed) {
+            return ValidationResult.failure(rule.errorMessage || "请选择一个选项", rule.errorStyle, { ruleId: rule.id });
+        }
+
+        if (!Array.isArray(rule.source)) {
+            return ValidationResult.success();
+        }
+
+        const options = rule.source;
+        const isValid = options.some((option) => String(option) === String(value));
+
+        return isValid
+            ? ValidationResult.success()
+            : ValidationResult.failure(rule.errorMessage || `"${value}" 不在允许的选项列表中`, rule.errorStyle, {
+                  value,
+                  ruleId: rule.id,
+              });
+    }
+
+    /**
      * 解析动态数据源（Phase 2 实现）
      * @private
      * @param {string} sourceRef - 区域引用（如 '=Sheet1!$A$1:$A$10'）

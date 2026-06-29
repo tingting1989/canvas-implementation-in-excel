@@ -75,6 +75,12 @@ export class DataValidationPlugin extends BasePlugin {
     /** @type {Object|null} Portal UI 管理器实例（Phase 2 实现） */
     #portalUI = null;
 
+    /** @type {Array} 初始规则配置（用于新 Sheet 自动加载） */
+    #initialRules = [];
+
+    /** @type {string} 冲突策略（用于新 Sheet 复用） */
+    #conflictStrategy = "short-circuit";
+
     /**
      * 初始化插件
      *
@@ -94,9 +100,14 @@ export class DataValidationPlugin extends BasePlugin {
 
             if (options.conflictStrategy) {
                 this.#engine.conflictStrategy = options.conflictStrategy;
+                this.#conflictStrategy = options.conflictStrategy;
             }
 
+            console.log("[DataValidation-DEBUG] options =", JSON.stringify(options));
+            console.log("[DataValidation-DEBUG] options.rules =", options.rules, Array.isArray(options.rules));
+
             if (options.rules && Array.isArray(options.rules)) {
+                this.#initialRules = [...options.rules];
                 for (const ruleConfig of options.rules) {
                     try {
                         const rule = new ValidationRule(ruleConfig);
@@ -108,6 +119,7 @@ export class DataValidationPlugin extends BasePlugin {
             }
 
             this.registerHooks();
+            this.#bindSheetSwitchListener();
             this.#active = true;
 
             errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] 初始化完成，已加载 ${this.#engine.rules.size} 条规则`);
@@ -141,17 +153,24 @@ export class DataValidationPlugin extends BasePlugin {
         });
     }
 
-    async interceptBeforeSetValue(row, col, value) {
+    interceptBeforeSetValue(row, col, value) {
+        console.log(`[DV-DEBUG] interceptBeforeSetValue called: (${row},${col}) value=${value}, active=${this.#active}, engine=${!!this.#engine}`);
+
         if (!this.#active || !this.#engine) return true;
 
-        const result = await this.validateCell(row, col, value);
+        const rules = this.#engine.getRulesForCell(row, col);
+        console.log(`[DV-DEBUG] Rules for cell (${row},${col}):`, rules.length, rules.map(r => r.type));
 
-        if (result.valid) return true;
+        const result = this.#engine.validateCellSync(row, col, value);
+        console.log(`[DV-DEBUG] validateCellSync result: valid=${result.valid}, message=${result.message}`);
 
-        this.hooks?.call(HOOKS.VALIDATION_FAILED, row, col, value, result);
+        if (!result.valid) {
+            this.hooks?.runHooks(HOOKS.VALIDATION_FAILED, row, col, value, result);
 
-        if (result.errorStyle === "stop") {
-            return false;
+            if (result.errorStyle === "stop") {
+                console.log("[DV-DEBUG] 🛑 Returning false (BLOCK)");
+                return false;
+            }
         }
 
         return true;
@@ -160,11 +179,53 @@ export class DataValidationPlugin extends BasePlugin {
     handleAfterSetValue(row, col, value) {
         if (!this.#active || !this.#engine) return;
 
-        this.hooks?.call(HOOKS.AFTER_VALIDATE, row, col, value);
+        this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, row, col, value);
     }
 
     interceptBeforePaste(data) {
         return true;
+    }
+
+    #sheetSwitchUnsubscribe = null;
+
+    #bindSheetSwitchListener() {
+        if (!this.sheet?.bus) return;
+
+        this.#unbindSheetSwitchListener();
+
+        this.#sheetSwitchUnsubscribe = this.sheet.bus.on(SHEET_EVENTS.SHEET_SWITCHED, (envelope) => {
+            const { currentSheet } = envelope.payload;
+            const newSheet = this.workbook.sheets.get(currentSheet);
+            if (newSheet) {
+                this.#onSheetSwitched(newSheet);
+            }
+        });
+    }
+
+    #unbindSheetSwitchListener() {
+        if (this.#sheetSwitchUnsubscribe) {
+            this.#sheetSwitchUnsubscribe();
+            this.#sheetSwitchUnsubscribe = null;
+        }
+    }
+
+    async #onSheetSwitched(newSheet) {
+        const formulaEngine = this.workbook?.formulaEngine || null;
+
+        this.#engine = new ValidationEngine(newSheet.cellStore);
+        await this.#engine.init(formulaEngine);
+        this.#engine.conflictStrategy = this.#conflictStrategy;
+
+        for (const ruleConfig of this.#initialRules) {
+            try {
+                const rule = new ValidationRule(ruleConfig);
+                this.#engine.addRule(rule);
+            } catch (e) {
+                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 新 Sheet 加载规则失败:`, e);
+            }
+        }
+
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] Sheet 切换完成，已重新加载 ${this.#engine.rules.size} 条规则`);
     }
 
     setValidation(ruleOptions) {
@@ -175,11 +236,11 @@ export class DataValidationPlugin extends BasePlugin {
             throw new Error(`规则无效: ${validation.errors.join(", ")}`);
         }
 
-        this.hooks?.call(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, null, rule);
+        this.hooks?.runHooks(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, null, rule);
 
         const ruleId = this.#engine.addRule(rule);
 
-        this.hooks?.call(HOOKS.AFTER_VALIDATION_RULE_CHANGE, rule, null);
+        this.hooks?.runHooks(HOOKS.AFTER_VALIDATION_RULE_CHANGE, rule, null);
 
         this.renderEngine?.invalidateAll();
         this.render();
@@ -195,12 +256,12 @@ export class DataValidationPlugin extends BasePlugin {
             return false;
         }
 
-        this.hooks?.call(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, rule, null);
+        this.hooks?.runHooks(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, rule, null);
 
         const success = this.#engine.removeRule(ruleId);
 
         if (success) {
-            this.hooks?.call(HOOKS.AFTER_VALIDATION_RULE_CHANGE, null, rule);
+            this.hooks?.runHooks(HOOKS.AFTER_VALIDATION_RULE_CHANGE, null, rule);
             this.renderEngine?.invalidateAll();
             this.render();
         }
@@ -213,11 +274,11 @@ export class DataValidationPlugin extends BasePlugin {
             return ValidationResult.success();
         }
 
-        this.hooks?.call(HOOKS.BEFORE_VALIDATE, value, null);
+        this.hooks?.runHooks(HOOKS.BEFORE_VALIDATE, value, null);
 
         const result = await this.#engine.validateCell(row, col, value);
 
-        this.hooks?.call(HOOKS.AFTER_VALIDATE, result);
+        this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, result);
 
         return result;
     }
@@ -229,7 +290,7 @@ export class DataValidationPlugin extends BasePlugin {
 
         const report = await this.#engine.validateRange(range);
 
-        this.hooks?.call(HOOKS.AFTER_BATCH_VALIDATION, report);
+        this.hooks?.runHooks(HOOKS.AFTER_BATCH_VALIDATION, report);
 
         return report;
     }
@@ -263,6 +324,8 @@ export class DataValidationPlugin extends BasePlugin {
 
     destroy() {
         this.disable();
+
+        this.#unbindSheetSwitchListener();
 
         if (this.#engine) {
             this.#engine.destroy();

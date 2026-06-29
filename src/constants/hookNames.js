@@ -58,6 +58,12 @@ export const HOOKS = Object.freeze({
     /** 数据变更后 - 单元格值已更新到存储层 */
     AFTER_CHANGE: "afterChange",
 
+    /** 设置单元格值前 - 单个单元格写入前触发，返回 false 可阻止写入（用于数据验证拦截） */
+    BEFORE_SET_VALUE_AT: "beforeSetValueAt",
+
+    /** 设置单元格值后 - 单个单元格写入后触发 */
+    AFTER_SET_VALUE_AT: "afterSetValueAt",
+
     /*
      * ==================== 选择相关钩子 ====================
      * 追踪单元格选择区域的变更

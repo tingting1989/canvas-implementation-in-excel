@@ -31,7 +31,7 @@ export class TextLengthValidator extends BaseValidator {
      * @param {Object} [context={}] - 验证上下文
      * @returns {Promise<ValidationResult>}
      */
-    async validate(value, rule, context = {}) {
+    validate(value, rule, context = {}) {
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
             return allowed

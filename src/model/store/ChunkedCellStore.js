@@ -656,7 +656,7 @@ export class ChunkedCellStore {
      *
      * @yields {Chunk}
      */
-    * chunks() {
+    *chunks() {
         for (const chunk of this.#chunks.values()) {
             yield chunk;
         }

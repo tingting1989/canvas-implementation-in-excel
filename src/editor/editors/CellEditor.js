@@ -344,7 +344,11 @@ export class CellEditor extends DOMComponent {
             // ✅ 通过 EventBus 发射 BEFORE_CHANGE 事件（值变更前，指定 source 为 CellEditor）
             const changeData = [{ row: targetRow, col: targetCol, oldValue: oldCell?.value, newValue }];
             const canChange = this.sheet.bus?.emit(SHEET_EVENTS.BEFORE_CHANGE, [changeData], { source: "CellEditor" });
-            if (canChange === false) return;
+            if (canChange === false) {
+                this.editor.value = this.formatValueForEditor(this.originalValue);
+                this.editor.focus();
+                return;
+            }
 
             this.sheet.setCell(targetRow, targetCol, newValue, oldCell?.styleId || 0);
 
