@@ -33,7 +33,9 @@ export class NumberValidator extends BaseValidator {
      * @returns {Promise<ValidationResult>}
      */
     validate(value, rule, context = {}) {
-        console.log(`[NV-DEBUG] NumberValidator.validate: value=${value}, type=${typeof value}, operator=${rule.operator}, compareValue=${rule.value}`);
+        console.log(
+            `[NV-DEBUG] NumberValidator.validate: value=${value}, type=${typeof value}, operator=${rule.operator}, compareValue=${rule.value}`,
+        );
 
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {

@@ -264,7 +264,6 @@ const initApp = () => {
                 // disabledItems: ["mergeCells", "unmergeCells"],
 
                 // rowMove: { enabled: false },
-
             },
 
             freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },

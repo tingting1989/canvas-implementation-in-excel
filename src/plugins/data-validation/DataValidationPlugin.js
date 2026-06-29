@@ -159,7 +159,11 @@ export class DataValidationPlugin extends BasePlugin {
         if (!this.#active || !this.#engine) return true;
 
         const rules = this.#engine.getRulesForCell(row, col);
-        console.log(`[DV-DEBUG] Rules for cell (${row},${col}):`, rules.length, rules.map(r => r.type));
+        console.log(
+            `[DV-DEBUG] Rules for cell (${row},${col}):`,
+            rules.length,
+            rules.map((r) => r.type),
+        );
 
         const result = this.#engine.validateCellSync(row, col, value);
         console.log(`[DV-DEBUG] validateCellSync result: valid=${result.valid}, message=${result.message}`);
