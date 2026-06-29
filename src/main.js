@@ -274,8 +274,38 @@ const initApp = () => {
                     {
                         range: "B:B",
                         type: "number",
+                        operator: "between",
+                        value: [0,100],
+                        errorMessage: "必须输入正数",
+                        errorStyle: "stop",
+                    },
+
+                    {
+                        range: "A:A",
+                        type: "text",
                         operator: "greaterThan",
-                        value: 0,
+                        value: 5,
+                        errorMessage: "必须输入正数",
+                        errorStyle: "stop",
+                    },
+
+                    {
+                        range: "C:C",
+                        type: "time",
+                        operator: "between",
+                        value: ['09:00', '18:00'],
+                        errorMessage: "必须输入正数",
+                        errorStyle: "stop",
+                    },
+                    {
+                        range: "D:D",
+                        type: "unique",
+                    },
+                    {
+                        range: "G:G",
+                        type: "date",
+                        operator: "between",
+                        value: ['01/01/2020', '12/31/2020'],
                         errorMessage: "必须输入正数",
                         errorStyle: "stop",
                     },

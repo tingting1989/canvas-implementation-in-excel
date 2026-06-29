@@ -67,7 +67,7 @@ export class ValidationEngine {
         this.registerValidator("time", new TimeValidator());
         this.registerValidator("regex", new RegexValidator());
 
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 初始化完成，已注册验证器:", [...this.#validators.keys()]);
+
     }
 
     /**
@@ -92,8 +92,6 @@ export class ValidationEngine {
 
         this.#rules.set(rule.id, rule);
         this.invalidateCache(rule.range);
-
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationEngine] 添加规则: ${rule.id} (${rule.type}) 范围: ${rule.range}`);
         return rule.id;
     }
 

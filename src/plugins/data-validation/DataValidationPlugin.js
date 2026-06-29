@@ -3,6 +3,7 @@ import { BasePlugin } from "../BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
 import { HOOKS } from "../../constants/hookNames.js";
+import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 
 /**
  * 数据验证插件
@@ -91,8 +92,8 @@ export class DataValidationPlugin extends BasePlugin {
      * @param {string} [options.conflictStrategy='short-circuit'] - 规则冲突解决策略
      */
     async init(options = {}) {
-        await super.init(options);
-
+        super.init(options);
+        console.log('options',options)
         try {
             this.#engine = new ValidationEngine(this.sheet?.cellStore);
             const formulaEngine = this.workbook?.formulaEngine || null;
@@ -102,9 +103,6 @@ export class DataValidationPlugin extends BasePlugin {
                 this.#engine.conflictStrategy = options.conflictStrategy;
                 this.#conflictStrategy = options.conflictStrategy;
             }
-
-            console.log("[DataValidation-DEBUG] options =", JSON.stringify(options));
-            console.log("[DataValidation-DEBUG] options.rules =", options.rules, Array.isArray(options.rules));
 
             if (options.rules && Array.isArray(options.rules)) {
                 this.#initialRules = [...options.rules];
@@ -122,9 +120,7 @@ export class DataValidationPlugin extends BasePlugin {
             this.#bindSheetSwitchListener();
             this.#active = true;
 
-            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] 初始化完成，已加载 ${this.#engine.rules.size} 条规则`);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[DataValidation] 初始化失败:", error);
             throw error;
         }
     }

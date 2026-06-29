@@ -111,10 +111,13 @@ export class UniqueValidatorV3 extends BaseValidator {
             const range = this.parseRange(context.range || rule.range);
             const actualValues = [];
 
-            for (let row = range.startRow; row <= range.endRow; row++) {
-                for (let col = range.startCol; col <= range.endCol; col++) {
+            const maxRow = range.endRow === Infinity ? this.#cellStore.getRowCount?.() || 10000 : range.endRow;
+            const maxCol = range.endCol === Infinity ? this.#cellStore.getColumnCount?.() || 100 : range.endCol;
+
+            for (let row = range.startRow; row <= maxRow; row++) {
+                for (let col = range.startCol; col <= maxCol; col++) {
                     if (row === context.row) continue;
-                    const cell = this.#cellStore.getCell(row, col);
+                    const cell = this.#cellStore.getCell ? this.#cellStore.getCell(row, col) : this.#cellStore.get(row, col);
                     if (cell?.value !== undefined && cell.value !== null && cell.value !== "") {
                         actualValues.push({ row, col, value: cell.value });
                     }
@@ -133,6 +136,7 @@ export class UniqueValidatorV3 extends BaseValidator {
 
             return ValidationResult.success();
         } catch (error) {
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[UniqueValidator] 同步验证失败:", error);
             return ValidationResult.success();
         }
     }
@@ -220,12 +224,6 @@ export class UniqueValidatorV3 extends BaseValidator {
      * @returns {{ startRow: number, startCol: number, endRow: number, endCol: number }}
      */
     parseRange(rangeStr) {
-        const match = rangeStr.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
-
-        if (!match) {
-            throw new Error(`无效的范围格式: ${rangeStr}`);
-        }
-
         const colToNum = (col) => {
             let num = 0;
             for (let i = 0; i < col.length; i++) {
@@ -234,12 +232,44 @@ export class UniqueValidatorV3 extends BaseValidator {
             return num - 1;
         };
 
-        return {
-            startRow: parseInt(match[2]) - 1,
-            startCol: colToNum(match[1]),
-            endRow: parseInt(match[4]) - 1,
-            endCol: colToNum(match[3]),
-        };
+        // 模式 1: 整列 "A:A", "B:C"
+        const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
+        if (fullColMatch) {
+            const startCol = colToNum(fullColMatch[1]);
+            const endCol = colToNum(fullColMatch[2]);
+            return {
+                startRow: 0,
+                startCol,
+                endRow: Infinity,
+                endCol,
+            };
+        }
+
+        // 模式 2: 整行 "1:1", "2:5"
+        const fullRowMatch = rangeStr.match(/^(\d+):(\d+)$/);
+        if (fullRowMatch) {
+            const startRow = parseInt(fullRowMatch[1]) - 1;
+            const endRow = parseInt(fullRowMatch[2]) - 1;
+            return {
+                startRow,
+                startCol: 0,
+                endRow,
+                endCol: Infinity,
+            };
+        }
+
+        // 模式 3: 标准区域 "A1:B100"
+        const rangeMatch = rangeStr.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
+        if (rangeMatch) {
+            return {
+                startRow: parseInt(rangeMatch[2]) - 1,
+                startCol: colToNum(rangeMatch[1]),
+                endRow: parseInt(rangeMatch[4]) - 1,
+                endCol: colToNum(rangeMatch[3]),
+            };
+        }
+
+        throw new Error(`无效的范围格式: ${rangeStr}`);
     }
 
     /**
