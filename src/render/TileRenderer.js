@@ -1,5 +1,6 @@
 import { CONFIG } from "../constants/config";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { CellRenderContext } from "../types/CellRenderContext.js";
 
 /**
  * 瓦片渲染器（TileRenderer）—— 负责将单元格数据绘制到瓦片上
@@ -217,10 +218,10 @@ export class TileRenderer {
                             Math.min(tileSize, drawY + h) - Math.max(0, drawY),
                         );
                         tileCtx.clip();
-                        this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+                        this.#drawCellContentOrText(tileCtx, sheet, r, c, realR, cell, drawX, drawY, w, h, merge, options);
                         tileCtx.restore();
                     } else {
-                        this.#drawCellText(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+                        this.#drawCellContentOrText(tileCtx, sheet, r, c, realR, cell, drawX, drawY, w, h, merge, options);
                     }
                 }
             }
@@ -265,7 +266,7 @@ export class TileRenderer {
             ctx.beginPath();
             ctx.rect(drawX, drawY, drawW, drawH);
             ctx.clip();
-            this.#drawCellText(ctx, sheet, realTopR, topCol, cell, fullDrawX, fullDrawY, fullW, fullH, merge);
+            this.#drawCellContentOrText(ctx, sheet, topRow, topCol, realTopR, cell, fullDrawX, fullDrawY, fullW, fullH, merge);
             ctx.restore();
         }
     }
@@ -347,6 +348,89 @@ export class TileRenderer {
             return border;
         }
         return { top: border, right: border, bottom: border, left: border };
+    }
+
+    /**
+     * 绘制单元格内容：自定义渲染器或默认文本
+     *
+     * 检查单元格类型是否有自定义渲染器（hasCustomRenderer）：
+     * - 有：构建 CellRenderContext 并调用 cellType.render(context)
+     * - 无：回退到默认 #drawCellText()
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} pageRow - 页面行号
+     * @param {number} col - 列号
+     * @param {number} realR - 实际行号
+     * @param {Cell|null} cell
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @param {object|null} merge
+     * @param {object} [options]
+     */
+    #drawCellContentOrText(ctx, sheet, pageRow, col, realR, cell, drawX, drawY, w, h, merge, options) {
+        const cellType = sheet.getCellTypeInstance(pageRow, col);
+        if (cellType.hasCustomRenderer) {
+            const context = this.#createRenderContext(ctx, sheet, pageRow, col, realR, cell, drawX, drawY, w, h, merge, options);
+            cellType.render(context);
+        } else {
+            this.#drawCellText(ctx, sheet, realR, col, cell, drawX, drawY, w, h, merge);
+        }
+    }
+
+    /**
+     * 创建单元格渲染上下文（支持双轨行列号体系）
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} pageRow - 页面行号
+     * @param {number} col - 列号
+     * @param {number} realR - 实际行号
+     * @param {Cell|null} cell
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @param {object|null} merge
+     * @param {object} [options]
+     * @returns {CellRenderContext}
+     */
+    #createRenderContext(ctx, sheet, pageRow, col, realR, cell, drawX, drawY, w, h, merge, options) {
+        const displayValue = sheet.formatCellValue(pageRow, col, cell?.value);
+        const style = sheet.resolveStyle(realR, col);
+
+        const rc = sheet.rowColManager;
+        const pageInfo = {
+            isPaged: typeof sheet.isPagedMode === "function" && sheet.isPagedMode(),
+            currentPage: typeof sheet.getCurrentPage === "function" ? (sheet.getCurrentPage() ?? 0) : 0,
+            pageSize: typeof rc.getPageSize === "function" ? (rc.getPageSize() ?? 0) : 0,
+            frozenRowCount: sheet.fixedRowsTop || 0,
+            frozenColCount: sheet.fixedColumnsStart || 0,
+            isInFrozenArea: pageRow < (sheet.fixedRowsTop || 0) || col < (sheet.fixedColumnsStart || 0),
+        };
+
+        return new CellRenderContext({
+            ctx,
+            x: drawX,
+            y: drawY,
+            width: w,
+            height: h,
+            value: cell?.value,
+            displayValue,
+            style,
+            sheet,
+            row: pageRow,
+            col,
+            realRow: realR,
+            realCol: col,
+            isSelected: false,
+            isDisabled: cell?.disabled === true,
+            isMerged: !!merge,
+            mergeInfo: merge,
+            pageInfo,
+        });
     }
 
     /**

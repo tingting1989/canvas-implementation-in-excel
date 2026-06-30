@@ -658,6 +658,23 @@ const columns = [
 workbook.activeSheet.applyColumnsConfig(columns);
 ```
 
+
+```javascript
+const wb = new Workbook("grid", {
+    sheets: [{
+        name: "Sheet1",
+        columns: [
+            { type: "text", width: 120 },                          // 默认文本
+            { type: "checkbox", options: { checkedColor: "#2196f3" } }, // 复选框
+            { type: "progressBar", options: { showPercent: true } },    // 进度条
+            { type: "starRating", options: { maxStars: 5 } },          // 星级评分
+            { type: "sparkline" },                                     // 迷你图
+            { type: "colorPreview" },                                  // 颜色预览
+        ],
+    }],
+});
+
+```
 #### 在单元格级别使用
 
 ```javascript
@@ -668,6 +685,35 @@ cellTypes.set('5,2', { name: 'starRating', options: { maxStars: 5, color: '#ffc1
 sheet.setCellTypes(cellTypes);
 ```
 
+
+```javascript
+const wb = new Workbook("grid", {
+    sheets: [{
+        name: "Sheet1",
+        columns: [
+            { type: "text" },
+            { type: "numeric" },
+        ],
+        // 为特定单元格设置不同类型
+        cellTypes: [
+            { row: 2, col: 1, type: "checkbox" },
+            { row: 3, col: 1, type: "progressBar" },
+        ],
+    }],
+});
+
+
+```
+
+
+#### 通过 registerType 注册到类型系统
+
+```javascript
+import { registerType } from "./types/index.js";
+
+// 注册类型实例（同时支持 format/validate/parse + render）
+registerType(new MyProgressType({ fillColor: "#2196f3" }));
+```
 #### 运行时动态切换渲染器
 
 ```javascript
@@ -682,8 +728,9 @@ sheet.markDirty();  // 触发重绘
 #### 最小化渲染器模板
 
 ```javascript
+import { registerRenderer } from "./types/RendererRegistry.js";
 import { BaseColumnType } from './BaseColumnType.js';
-
+// 1. 定义自定义渲染器
 export class MinimalRenderer extends BaseColumnType {
     get name() { return 'minimal'; }
 
@@ -706,6 +753,20 @@ export class MinimalRenderer extends BaseColumnType {
         ctx.fillText(String(value), context.getCenterX(), context.getCenterY());
     }
 }
+
+// 2. 注册到全局渲染器注册表
+registerRenderer("myProgress", MinimalRenderer);
+
+// 3. 在 Workbook 中使用
+const wb = new Workbook("grid", {
+    sheets: [{
+        name: "Sheet1",
+        columns: [
+            { type: "text" },
+            { type: "myProgress", options: { fillColor: "#ff5722" } },
+        ],
+    }],
+});
 ```
 
 #### 完整渲染器示例（带配置选项）
