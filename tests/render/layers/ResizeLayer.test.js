@@ -11,7 +11,7 @@ describe("ResizeLayer", () => {
         layer = new ResizeLayer();
     });
 
-    it("should have name 'resize' and zIndex 30", () => {
+    it("should have name 'resize' and correct zIndex", () => {
         expect(layer.name).toBe("resize");
         expect(layer.zIndex).toBe(LAYER_Z_INDEX.RESIZE);
     });

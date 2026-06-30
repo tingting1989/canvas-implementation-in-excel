@@ -50,7 +50,7 @@ describe("FrozenLayer", () => {
     });
 
     describe("Constructor & Initialization", () => {
-        it("should have name 'frozen' and zIndex 4", () => {
+        it("should have name 'frozen' and correct zIndex", () => {
             expect(layer.name).toBe("frozen");
             expect(layer.zIndex).toBe(LAYER_Z_INDEX.FROZEN);
         });
