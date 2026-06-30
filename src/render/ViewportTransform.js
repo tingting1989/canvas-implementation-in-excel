@@ -1,5 +1,3 @@
-import { CONFIG } from "../constants/config";
-
 /**
  * 视口坐标转换器（ViewportTransform）
  *
@@ -101,12 +99,15 @@ export class ViewportTransform {
     /**
      * 行顶边缘 → 视口 Y 坐标
      * 自动处理冻结行（冻结行不随垂直滚动移动）
-     * @param {number} row - 行号（页面行号）
+     * 在分页模式下，自动将实际行号（全局坐标）转换为页面行号（相对坐标）
+     *
+     * @param {number} row - 行号（可能是实际行号或页面行号）
      * @returns {number} 视口 Y 坐标
      */
     rowToViewY(row) {
-        const effectiveSy = row < this.fixedRows ? 0 : this.scrollY;
-        return this.headerH + this.rc.getRowY(row) - effectiveSy;
+        const effectiveRow = this.#adaptRowForPagination(row);
+        const effectiveSy = effectiveRow < this.fixedRows ? 0 : this.scrollY;
+        return this.headerH + this.rc.getRowY(effectiveRow) - effectiveSy;
     }
 
     /**
@@ -115,7 +116,34 @@ export class ViewportTransform {
      * @returns {number} 视口 Y 坐标（行底边缘）
      */
     rowBottomToViewY(row) {
-        return this.rowToViewY(row) + this.rc.getRowHeight(row);
+        return this.rowToViewY(row) + this.rc.getRowHeight(this.#adaptRowForPagination(row));
+    }
+
+    /**
+     * 分页模式下行号适配
+     *
+     * 将实际行号（全局坐标）转换为页面行号（相对当前页的坐标）。
+     *
+     * 为什么需要这个转换？
+     * - selection 等组件存储的是实际行号（如第2页的第52行）
+     * - 但 RowColManager.getRowY() 在分页模式下期望页面行号（如第2页的第2行）
+     * - 本方法自动检测并转换，确保坐标计算正确
+     *
+     * @param {number} row - 输入行号
+     * @returns {number} 适配后的行号
+     */
+    #adaptRowForPagination(row) {
+        const pageStartRow = this.rc.pageStartRow;
+
+        if (pageStartRow < 0) {
+            return row;
+        }
+
+        if (row >= pageStartRow) {
+            return row - pageStartRow;
+        }
+
+        return row;
     }
 
     /**

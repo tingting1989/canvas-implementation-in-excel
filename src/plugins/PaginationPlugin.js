@@ -210,9 +210,44 @@ export class PaginationPlugin extends BasePlugin {
 
         const oldPage = this.#currentPage;
         this.#currentPage = page;
+
+
         this.#applyPageBounds();
 
+        // 翻页时重置选区到当前页的第一个数据单元格
+        this.#resetSelectionToFirstCell();
+
         this.hooks?.runHooks(HOOKS.AFTER_PAGE_CHANGE, oldPage, page);
+    }
+
+    /**
+     * 重置选区到当前页的第一个数据单元格
+     *
+     * 翻页后，旧的选区（基于实际行号）可能不在当前可视范围内，
+     * 导致选框显示位置错误或消失。本方法将选区设置为新页面的
+     * 第一个单元格，确保用户体验一致。
+     *
+     * 第一个单元格的行号 = pageStartRow（包含冻结行）
+     */
+    #resetSelectionToFirstCell() {
+        const sheet = this.sheet;
+
+
+        if (!sheet || !sheet.selection) {
+
+            return;
+        }
+
+        const pageStartRow = sheet.rowColManager.pageStartRow;
+
+        if (pageStartRow < 0) {
+            return;
+        }
+        // 使用 pageStartRow 作为第一行的行号
+        // 这样无论是否有冻结行，选框都会在正确的位置显示
+        const targetRow = pageStartRow;
+        const targetCol = 0;
+        sheet.selection.setActive(targetRow, targetCol);
     }
 
     /**

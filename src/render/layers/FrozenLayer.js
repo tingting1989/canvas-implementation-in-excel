@@ -146,7 +146,23 @@ export class FrozenLayer extends BaseLayer {
         const scrollX = options.scrollX ?? viewport.scrollX;
         const scrollY = options.scrollY ?? viewport.scrollY;
         const isPaginationActive = options.isPaginationActive ?? false;
-        const tileOptions = isPaginationActive ? { useRealRows: true } : undefined;
+
+        // 分页模式下的渲染选项
+        // 关键修复：冻结列区域必须使用与 TileLayer 相同的坐标系统（useRealRows=false），
+        // 否则会导致 Y 轴滚动时冻结列与非冻结列的边框错位。
+        //
+        // 为什么？
+        // - TileRenderer 内部根据 useRealRows 选择不同的坐标计算路径：
+        //   useRealRows=false → rowAt() + getRowY() （页面相对坐标）
+        //   useRealRows=true  → rawRowAt() + getRealRowY() （全局坐标）
+        // - 如果两者混用，同样的 scrollY 会计算出不同的 localY，导致绘制位置不一致
+        //
+        // 冻结效果如何实现？
+        // - 通过 ctx.clip() 限制绘制区域（不是通过坐标转换）
+        // - 冻结行区域：clip 高度 = frozenRowsH，scrollY=0（不垂直滚动）
+        // - 冻结列区域：clip 宽度 = frozenColsW，scrollX=0（不水平滚动）
+        // - 所以即使使用 useRealRows=false，冻结区域仍然正确固定
+        const tileOptions = isPaginationActive ? { useRealRows: false } : undefined;
 
         if (frozenColsW > 0) {
             this.#renderClippedRegion(
