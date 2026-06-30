@@ -24,7 +24,7 @@ export const CONFIG = {
     MAX_COLS: 70000,
 
     /** 默认初始行数（未配置 maxRows 时使用） */
-    DEFAULT_START_ROWS: 100,
+    DEFAULT_START_ROWS: 1000,
 
     /** 默认初始列数（未配置 maxCols 时使用） */
     DEFAULT_START_COLS: 26,

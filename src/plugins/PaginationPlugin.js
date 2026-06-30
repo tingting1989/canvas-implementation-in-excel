@@ -131,6 +131,7 @@ export class PaginationPlugin extends BasePlugin {
 
         const actualRowCount = sheet.rowColManager.rowCount;
         const allocated = sheet.rowColManager.allocatedRowCount;
+        // getMaxRow() 现在已返回精确值（遍历实际单元格，而非 Chunk 范围估算）
         const maxDataRow = sheet.cellStore.getMaxRow();
         const explicitlySized = sheet.rowColManager.isExplicitlySized;
 
@@ -176,6 +177,19 @@ export class PaginationPlugin extends BasePlugin {
 
         const offset = this.rowOffset;
         const count = this.pageRowCount;
+
+        // DEBUG: 分页边界诊断
+        if (typeof window !== 'undefined' && window.__DEBUG_PAGINATION) {
+            console.log(
+                '%c[PaginationPlugin#applyPageBounds]',
+                'color: orange; font-weight: bold',
+                `\n  currentPage=${this.#currentPage}, pageSize=${this.#pageSize}`,
+                `\n  totalRows=${this.#totalRows}, totalPages=${this.totalPages}`,
+                `\n  rowOffset=${offset}, pageRowCount=${count}`,
+                `\n  setPaginationBounds(${offset}, ${offset + count})`,
+                `\n  实际数据: allocated=${sheet.rowColManager.allocatedRowCount}, getMaxRow()=${sheet.cellStore.getMaxRow()}`
+            );
+        }
 
         sheet.rowColManager.setPaginationBounds(offset, offset + count);
 

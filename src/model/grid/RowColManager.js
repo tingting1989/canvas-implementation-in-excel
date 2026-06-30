@@ -248,7 +248,23 @@ export class RowColManager {
         if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
             const pageStartY = this.#rawGetRowY(this.#pageStartRow);
             const realRow = this.rawRowAt(y + pageStartY);
-            return Math.max(0, Math.min(realRow - this.#pageStartRow, this.#pageEndRow - this.#pageStartRow - 1));
+            const maxPageRow = this.#pageEndRow - this.#pageStartRow - 1;
+            const result = Math.max(0, Math.min(realRow - this.#pageStartRow, maxPageRow));
+
+            // DEBUG: 分页模式 rowAt 诊断（仅记录 y=0 和 y=256）
+            if ((y === 0 || y === 256) && typeof window !== 'undefined' && window.__DEBUG_PAGINATION) {
+                console.log(
+                    `%c[RowColManager.rowAt]`,
+                    'color: purple; font-weight: bold',
+                    `\n  y=${y}, pageStartRow=${this.#pageStartRow}, pageEndRow=${this.#pageEndRow}`,
+                    `\n  pageStartY=${pageStartY.toFixed(1)}, #rowHeights.length=${this.#rowHeights.length}`,
+                    `\n  rawRowAt返回realRow=${realRow}`,
+                    `\n  maxPageRow=${maxPageRow} (pageEndRow-pageStartRow-1)`,
+                    `\n  最终result=${result}`
+                );
+            }
+
+            return result;
         }
         return this.rawRowAt(y);
     }
@@ -271,7 +287,20 @@ export class RowColManager {
         while (row < CONFIG.MAX_ROWS && this.#hiddenRows.has(row)) {
             row++;
         }
-        return Math.min(row, this.rowCount - 1);
+
+        // DEBUG: rawRowAt 诊断（仅当返回值 >= 1000 时记录）
+        if (row >= 1000 && typeof window !== 'undefined' && window.__DEBUG_PAGINATION) {
+            console.log(
+                `%c[rawRowAt]`,
+                'color: red; font-weight: bold',
+                `y=${y}, #allocatedHeight=${this.#allocatedHeight}, #rowHeights.length=${this.#rowHeights.length}`,
+                `\n计算出的row=${row}, 最终返回=${Math.min(row, CONFIG.MAX_ROWS)}`
+            );
+        }
+
+        // rawRowAt 返回全局坐标对应的实际行号，不应受限于当前数据范围
+        // 分页模式下可能需要访问超出 #rowHeights.length 的虚拟行号
+        return Math.min(row, CONFIG.MAX_ROWS);
     }
 
     colAt(x) {
@@ -287,7 +316,8 @@ export class RowColManager {
         while (col < CONFIG.MAX_COLS && this.#hiddenCols.has(col)) {
             col++;
         }
-        return Math.min(col, this.colCount - 1);
+        // colAt 返回全局坐标对应的实际列号，不应受限于当前数据范围
+        return Math.min(col, CONFIG.MAX_COLS);
     }
 
     #binarySearch(prefixSum, pos) {

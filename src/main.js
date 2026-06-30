@@ -1,3 +1,8 @@
+// ============================================================
+// 🔧 调试开关（分页模式诊断）
+// ============================================================
+window.__DEBUG_PAGINATION = true;  // 设置为 false 可关闭调试日志
+
 import { Workbook } from "./workbook/Workbook.js";
 import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
 import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
@@ -269,7 +274,7 @@ const initApp = () => {
                 // rowMove: { enabled: false },
             },
 
-            // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+            freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
 
             dataValidation: {
                 conflictStrategy: "short-circuit",

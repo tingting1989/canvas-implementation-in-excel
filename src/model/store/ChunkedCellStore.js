@@ -41,6 +41,12 @@ export class ChunkedCellStore {
      */
     #chunks = new Map();
 
+    /**
+     * 缓存的最大行号（-1 表示未初始化或无效）
+     * @type {number}
+     */
+    #cachedMaxRow = -1;
+
     constructor() {}
 
     /**
@@ -107,6 +113,10 @@ export class ChunkedCellStore {
      */
     set(row, col, cell) {
         this.#getChunk(row, col).set(row, col, cell);
+        // ✅ O(1) 更新缓存：如果新行号更大，直接更新
+        if (row > this.#cachedMaxRow) {
+            this.#cachedMaxRow = row;
+        }
     }
 
     /**
@@ -118,6 +128,11 @@ export class ChunkedCellStore {
     delete(row, col) {
         const chunk = this.#getChunk(row, col);
         chunk.delete(row, col);
+        // ⚠️ 删除操作可能影响最大行号，标记缓存待验证
+        // 只有当删除的行号 >= 当前缓存值时才需要重算
+        if (row >= this.#cachedMaxRow && chunk.cells.size === 0) {
+            this.#cachedMaxRow = -1; // 标记为无效，下次 getMaxRow 时重算
+        }
     }
 
     // ============================================================
@@ -663,22 +678,34 @@ export class ChunkedCellStore {
     }
 
     /**
-     * 获取当前数据区域的最大行号
+     * 获取当前数据区域的最大行号（带缓存优化）
      *
-     * 遍历所有非空 Chunk，取 rowStart + CHUNK_ROW_SIZE - 1 的最大值。
-     * 注意：返回的是 Chunk 覆盖范围的最大行号，而非精确的"最后一个有数据行"的行号。
+     * 使用缓存机制优化性能：
+     * - 缓存有效时：O(1) 直接返回（99%的场景）
+     * - 缓存失效时：O(k) 遍历所有 cell 重新计算（仅在删除操作后可能触发）
+     *
      * 无数据时返回 -1。
      *
      * @returns {number} 最大行号，-1 表示无数据
      */
     getMaxRow() {
+        // ✅ 缓存命中：O(1) 直接返回
+        if (this.#cachedMaxRow >= 0) {
+            return this.#cachedMaxRow;
+        }
+
+        // ⚠️ 缓存失效：需要重新计算（仅在某些 delete 操作后）
         let maxRow = -1;
         for (const chunk of this.#chunks.values()) {
             if (chunk.cells.size > 0) {
-                const chunkMax = chunk.rowStart + CONFIG.CHUNK_ROW_SIZE - 1;
-                if (chunkMax > maxRow) maxRow = chunkMax;
+                for (const { row } of chunk.iterate()) {
+                    if (row > maxRow) maxRow = row;
+                }
             }
         }
+
+        // 更新缓存
+        this.#cachedMaxRow = maxRow;
         return maxRow;
     }
 
