@@ -2,7 +2,11 @@
 
 /**
  * 图层基类 (BaseLayer)
- *
+ * 所有渲染图层的抽象基类。采用离屏渲染策略：
+ *   - 每个 Layer 自行创建和管理离屏 Canvas（initCanvas）
+ *  - Layer 在 render(ctx) 中只负责往传入的 ctx 上绘制内容
+ *  - LayerCompositor 调用各层 initCanvas 确保尺寸一致，
+ *     并按 z-index 顺序将各层离屏 Canvas 合成到主画布
  * 所有渲染图层的抽象基类，提供统一的接口和生命周期管理。
  * 采用 Canvas 离屏渲染策略：每个 Layer 拥有独立的离屏 canvas，
  * 最终由 LayerCompositor 合成到主画布。
