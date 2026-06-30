@@ -1,6 +1,6 @@
-﻿import {ERROR_CODE, errorHandler} from "@/core/ErrorHandler.js";
+﻿import { ERROR_CODE, errorHandler } from "@/core/ErrorHandler.js";
 
-import {CONFIG} from "../../constants/config";
+import { CONFIG } from "../../constants/config";
 
 export class RowColManager {
     #rowHeights = [];

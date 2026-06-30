@@ -147,33 +147,42 @@ export class FrozenLayer extends BaseLayer {
         const scrollY = options.scrollY ?? viewport.scrollY;
         const isPaginationActive = options.isPaginationActive ?? false;
 
-        // 分页模式下的渲染选项
-        // 关键修复：冻结列区域必须使用与 TileLayer 相同的坐标系统（useRealRows=false），
-        // 否则会导致 Y 轴滚动时冻结列与非冻结列的边框错位。
-        //
-        // 为什么？
-        // - TileRenderer 内部根据 useRealRows 选择不同的坐标计算路径：
-        //   useRealRows=false → rowAt() + getRowY() （页面相对坐标）
-        //   useRealRows=true  → rawRowAt() + getRealRowY() （全局坐标）
-        // - 如果两者混用，同样的 scrollY 会计算出不同的 localY，导致绘制位置不一致
-        //
-        // 冻结效果如何实现？
-        // - 通过 ctx.clip() 限制绘制区域（不是通过坐标转换）
-        // - 冻结行区域：clip 高度 = frozenRowsH，scrollY=0（不垂直滚动）
-        // - 冻结列区域：clip 宽度 = frozenColsW，scrollX=0（不水平滚动）
-        // - 所以即使使用 useRealRows=false，冻结区域仍然正确固定
-        const tileOptions = isPaginationActive ? { useRealRows: false } : undefined;
+        // 分页模式下的渲染选项和滚动调整
+        let tileOptions;
+        let adjustedScrollX = scrollX;
+        let adjustedScrollY = scrollY;
+
+        if (isPaginationActive) {
+            tileOptions = { useRealRows: false };
+
+            // 关键修复：分页模式下必须将全局坐标转换为页面相对坐标
+            //
+            // 问题：TileRenderer 使用 useRealRows=false 时，内部通过 rowAt() + getRowY()
+            //       计算页面相对坐标。但如果传入的 scrollY 是全局坐标（如第二页的 280px），
+            //       会导致 pixelY0 和 rowY 在不同的坐标系中，计算出的 localY 为负值，
+            //       使单元格绘制位置严重上移，穿透到冻结角区域。
+            //
+            // 解决：计算当前页起始行的全局 Y 坐标，用 scrollY 减去它得到页面相对滚动偏移。
+            //       这样 pixelY0 和 getRowY() 都在同一坐标系中（页面相对坐标）。
+            const rc = sheet.rowColManager;
+            const pageStartRow = rc.pageStartRow;
+
+            if (pageStartRow >= 0) {
+                const pageStartY = rc.getRealRowY(pageStartRow);
+                adjustedScrollY = Math.max(0, scrollY - pageStartY);
+            }
+        }
 
         if (frozenColsW > 0) {
             this.#renderClippedRegion(
                 ctx,
                 sheet,
                 headerW,
-                headerH,
+                headerH + frozenRowsH,
                 frozenColsW,
-                viewH - headerH,
+                viewH - headerH - frozenRowsH,
                 0,
-                scrollY,
+                adjustedScrollY,
                 frozenColsW + headerW,
                 viewH,
                 viewport,
@@ -185,11 +194,11 @@ export class FrozenLayer extends BaseLayer {
             this.#renderClippedRegion(
                 ctx,
                 sheet,
-                headerW,
+                headerW + frozenColsW,
                 headerH,
-                viewW - headerW,
+                viewW - headerW - frozenColsW,
                 frozenRowsH,
-                scrollX,
+                adjustedScrollX,
                 0,
                 viewW,
                 frozenRowsH + headerH,

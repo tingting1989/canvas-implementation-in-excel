@@ -113,19 +113,19 @@ const initApp = () => {
 
                 // 单元格样式配置
                 cell: [
-                    { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
+                    // { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
                     { row: 1, col: 3, disabled: true },
                     { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
                 ],
 
                 // 单元格样式配置函数
                 cells: (row, col) => {
-                    if (row === 0) {
-                        return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
-                    }
-                    if (col === 0 && row > 0) {
-                        return { style: { textAlign: "right", fontWeight: "bold" } };
-                    }
+                    // if (row === 0) {
+                    //     return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
+                    // }
+                    // if (col === 0 && row > 0) {
+                    //     return { style: { textAlign: "right", fontWeight: "bold" } };
+                    // }
                 },
 
                 // 列配置
@@ -309,7 +309,6 @@ const initApp = () => {
                     //     range: "D:D",
                     //     type: "unique",
                     // },
-
                     // {
                     //     range: "G:G",
                     //     type: "date",

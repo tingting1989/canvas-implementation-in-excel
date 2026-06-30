@@ -211,7 +211,6 @@ export class PaginationPlugin extends BasePlugin {
         const oldPage = this.#currentPage;
         this.#currentPage = page;
 
-
         this.#applyPageBounds();
 
         // 翻页时重置选区到当前页的第一个数据单元格
@@ -232,9 +231,7 @@ export class PaginationPlugin extends BasePlugin {
     #resetSelectionToFirstCell() {
         const sheet = this.sheet;
 
-
         if (!sheet || !sheet.selection) {
-
             return;
         }
 
