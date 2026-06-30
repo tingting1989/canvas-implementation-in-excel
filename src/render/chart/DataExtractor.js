@@ -12,8 +12,8 @@
 
     #calculateCellCount(range) {
         if (!range) return 0;
-        const rows = (range.endRow - range.startRow + 1);
-        const cols = (range.endCol - range.startCol + 1);
+        const rows = range.endRow - range.startRow + 1;
+        const cols = range.endCol - range.startCol + 1;
         return rows * cols;
     }
 

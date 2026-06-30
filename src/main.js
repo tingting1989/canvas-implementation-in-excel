@@ -269,7 +269,7 @@ const initApp = () => {
                 // rowMove: { enabled: false },
             },
 
-            freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+            // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
 
             dataValidation: {
                 conflictStrategy: "short-circuit",

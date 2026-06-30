@@ -98,13 +98,7 @@ export class ChartSelectionStrategy extends EventStrategy {
         if (!plugin) return false;
 
         if (this.#isDragging) {
-            plugin.moveChart(
-                this.#selectedChartId,
-                undefined,
-                undefined,
-                this.#dragStartOffsetX + dx,
-                this.#dragStartOffsetY + dy
-            );
+            plugin.moveChart(this.#selectedChartId, undefined, undefined, this.#dragStartOffsetX + dx, this.#dragStartOffsetY + dy);
         } else if (this.#isResizing) {
             let newW = this.#dragStartWidth;
             let newH = this.#dragStartHeight;

@@ -79,7 +79,7 @@ export class RenderEngine extends DOMComponent {
         this.compositor.register(this.tileLayer);
         this.compositor.register(this.selectionLayer);
         this.compositor.register(this.frozenLayer);
-    this.compositor.register(this.chartLayer);
+        this.compositor.register(this.chartLayer);
         this.compositor.register(this.interactionLayer);
         this.compositor.register(this.headerLayer);
 
@@ -197,7 +197,6 @@ export class RenderEngine extends DOMComponent {
             effectiveFrozenRowsH,
             frozenColsW,
         );
-
 
         if (headerH !== CONFIG.HEADER_HEIGHT) {
             this.wrap.style.setProperty("--header-height", `${headerH}px`);
@@ -319,7 +318,7 @@ export class RenderEngine extends DOMComponent {
 
         if (px > headerW && py > headerH) {
             const chartHit = this.chartLayer?.hitTest(px, py, sheet, vt);
-            if (chartHit && chartHit.type === 'chart') {
+            if (chartHit && chartHit.type === "chart") {
                 return { type: HIT_TYPE.CHART, ...chartHit };
             }
             const col = vt.viewXToCol(px);

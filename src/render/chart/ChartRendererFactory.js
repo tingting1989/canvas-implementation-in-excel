@@ -20,10 +20,9 @@ export class ChartRendererFactory {
                 return null;
             }
             return this.#echartsBridge;
-        } 
-            console.warn("[ChartRendererFactory] Unsupported chart type:", chartType);
-            return null;
-        
+        }
+        console.warn("[ChartRendererFactory] Unsupported chart type:", chartType);
+        return null;
     }
 
     static isNativeType(type) {

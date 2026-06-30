@@ -914,7 +914,7 @@ export class Sheet {
         this.rowColManager[method](...args);
         this.cellStore[method](...args);
         this.mergeManager[method](...args);
-        if (this.chartManager && typeof this.chartManager[method] === 'function') {
+        if (this.chartManager && typeof this.chartManager[method] === "function") {
             this.chartManager[method](...args);
         }
         this.#invalidateAll();

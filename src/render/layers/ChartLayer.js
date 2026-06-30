@@ -77,7 +77,7 @@ export class ChartLayer extends BaseLayer {
     hitTest(px, py, sheet, vt) {
         if (!sheet || !sheet.chartManager) return null;
         const charts = sheet.chartManager.getAll();
-        
+
         for (let i = charts.length - 1; i >= 0; i--) {
             const chart = charts[i];
             if (chart.containsPoint(px, py, vt)) {
