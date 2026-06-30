@@ -30,7 +30,7 @@ const initApp = () => {
     Workbook.registerPlugin("copyPaste", CopyPastePlugin);
     Workbook.registerPlugin("exportFile", ExportFilePlugin);
 
-    // Workbook.registerPlugin("pagination", PaginationPlugin);
+    Workbook.registerPlugin("pagination", PaginationPlugin);
     Workbook.registerPlugin("hiddenColumns", HiddenColumnsPlugin);
     Workbook.registerPlugin("hiddenRows", HiddenRowsPlugin);
     Workbook.registerPlugin("rowMove", RowMovePlugin);
@@ -131,6 +131,7 @@ const initApp = () => {
                     { type: "text" },
                     { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
                     { type: "date" },
+
                     // 自定义渲染器
                     { type: "progressBar", options: { showPercent: true } },
                 ],
@@ -198,7 +199,7 @@ const initApp = () => {
             "columnMove",
             "copyPaste",
 
-            // "pagination",
+            "pagination",
             "exportFile",
             "hiddenColumns",
             "hiddenRows",
@@ -303,6 +304,7 @@ const initApp = () => {
                         range: "D:D",
                         type: "unique",
                     },
+
                     // {
                     //     range: "G:G",
                     //     type: "date",

@@ -10,6 +10,7 @@ import { SelectionLayer } from "./layers/SelectionLayer.js";
 import { FrozenLayer } from "./layers/FrozenLayer.js";
 import { InteractionLayer } from "./layers/InteractionLayer.js";
 import { HeaderLayer } from "./layers/HeaderLayer.js";
+import { ChartLayer } from "./layers/ChartLayer.js";
 import { ReactiveStore } from "../state/ReactiveStore.js";
 import { DOMComponent } from "../core/DOMComponent.js";
 
@@ -59,6 +60,7 @@ export class RenderEngine extends DOMComponent {
             editor: { visible: false, row: -1, col: -1, value: "" },
             viewport: { width: 0, height: 0 },
             tile: { size: 256, cacheMax: 512 },
+            charts: { version: 0 },
         });
 
         this.compositor = new LayerCompositor();
@@ -68,6 +70,7 @@ export class RenderEngine extends DOMComponent {
         this.frozenLayer = new FrozenLayer();
         this.interactionLayer = new InteractionLayer();
         this.headerLayer = new HeaderLayer();
+        this.chartLayer = new ChartLayer();
 
         this.tileLayer.onContentReady = () => {
             this.requestRender();
@@ -76,6 +79,7 @@ export class RenderEngine extends DOMComponent {
         this.compositor.register(this.tileLayer);
         this.compositor.register(this.selectionLayer);
         this.compositor.register(this.frozenLayer);
+    this.compositor.register(this.chartLayer);
         this.compositor.register(this.interactionLayer);
         this.compositor.register(this.headerLayer);
 
@@ -193,6 +197,7 @@ export class RenderEngine extends DOMComponent {
             effectiveFrozenRowsH,
             frozenColsW,
         );
+
 
         if (headerH !== CONFIG.HEADER_HEIGHT) {
             this.wrap.style.setProperty("--header-height", `${headerH}px`);
@@ -313,6 +318,10 @@ export class RenderEngine extends DOMComponent {
         }
 
         if (px > headerW && py > headerH) {
+            const chartHit = this.chartLayer?.hitTest(px, py, sheet, vt);
+            if (chartHit && chartHit.type === 'chart') {
+                return { type: HIT_TYPE.CHART, ...chartHit };
+            }
             const col = vt.viewXToCol(px);
             const row = vt.viewYToRow(py);
             if (row >= 0 && row < rc.rowCount && col >= 0 && col < rc.colCount) {
@@ -395,6 +404,7 @@ export class RenderEngine extends DOMComponent {
         this.selectionLayer.markDirty();
         this.interactionLayer.markDirty();
         this.headerLayer.markDirty();
+        this.chartLayer?.markDirty();
         this.requestRender();
     }
 

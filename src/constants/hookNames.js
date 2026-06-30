@@ -258,4 +258,18 @@ export const HOOKS = Object.freeze({
 
     /** 销毁前 - 对象即将被清理和释放资源 */
     DESTROY: "destroy",
+
+    /*
+     * ==================== 图表相关钩子 ====================
+     * 监控图表的增删改操作
+     */
+
+    /** 图表添加后 - 新图表已创建并添加到工作表 */
+    AFTER_CHART_ADD: "afterChartAdd",
+
+    /** 图表删除后 - 图表已从工作表中移除 */
+    AFTER_CHART_REMOVE: "afterChartRemove",
+
+    /** 图表更新后 - 图表数据或样式已变更 */
+    AFTER_CHART_UPDATE: "afterChartUpdate",
 });

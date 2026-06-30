@@ -15,3 +15,5 @@ export { FreezePlugin } from "./FreezePlugin.js";
 export { FormulaPlugin } from "./FormulaPlugin.js";
 export { SortPlugin } from "./SortPlugin.js";
 export { DataValidationPlugin } from "./data-validation/DataValidationPlugin.js";
+
+export { ChartPlugin } from "./ChartPlugin.js";

@@ -22,6 +22,7 @@ import { ColumnTypeManager } from "./managers/ColumnTypeManager.js";
 import { HeaderLabelManager } from "./managers/HeaderLabelManager.js";
 import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js";
 import { BatchOperationManager } from "./managers/BatchOperationManager.js";
+import { ChartManager } from "../model/chart/ChartManager.js";
 
 /** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
 const SUB = {
@@ -913,6 +914,9 @@ export class Sheet {
         this.rowColManager[method](...args);
         this.cellStore[method](...args);
         this.mergeManager[method](...args);
+        if (this.chartManager && typeof this.chartManager[method] === 'function') {
+            this.chartManager[method](...args);
+        }
         this.#invalidateAll();
     }
 

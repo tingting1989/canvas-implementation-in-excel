@@ -79,4 +79,5 @@ export const HIT_TYPE = {
      * 鼠标通常会变成上下调整箭头样式
      */
     ROW_RESIZE: "row-resize",
+    CHART: "chart",
 };

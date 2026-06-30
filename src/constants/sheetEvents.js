@@ -139,6 +139,15 @@ export const SHEET_EVENTS = Object.freeze({
     /** 工作簿即将销毁 - 销毁前清理资源 */
     WORKBOOK_DESTROY: "workbook:destroy",
 
+    /** 图表已添加 */
+    CHART_ADDED: "chart:added",
+
+    /** 图表已移除 */
+    CHART_REMOVED: "chart:removed",
+
+    /** 图表已更新 */
+    CHART_UPDATED: "chart:updated",
+
     /** 工作表已切换 - 用户点击标签栏切换了当前活动工作表 */
     SHEET_SWITCHED: "workbook:sheet-switched",
 });

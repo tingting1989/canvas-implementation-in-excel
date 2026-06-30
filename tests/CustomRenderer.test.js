@@ -226,8 +226,6 @@ describe('CellRenderContext - 基础功能', () => {
     test('PageInfo 正确传递', () => {
         const pageInfo = {
             isPaged: true,
-            currentPage: 2,
-            pageSize: 50,
             frozenRowCount: 2,
             frozenColCount: 1,
             isInFrozenArea: false
@@ -271,31 +269,28 @@ describe('CellRenderContext - 行列号转换方法', () => {
         expect(context.toPageCol(8)).toBe(8);
     });
 
-    test('有 PageInfo 时使用偏移量计算', () => {
+    test('有 PageInfo 但无 Sheet 时转换返回原值（恒等映射）', () => {
         context = new CellRenderContext({
             ctx: mockCtx, x: 0, y: 0, width: 50, height: 20,
             value: null, displayValue: '', style: {},
             row: 0, col: 0,
             pageInfo: {
                 isPaged: true,
-                currentPage: 1,
-                pageSize: 50,
                 frozenRowCount: 2,
                 frozenColCount: 0,
                 isInFrozenArea: false
             }
         });
 
-        // toRealRow: pageRow + currentPage*pageSize + frozenRows
-        expect(context.toRealRow(0)).toBe(52);     // 0 + 1*50 + 2
-        expect(context.toRealRow(10)).toBe(62);    // 10 + 1*50 + 2
-
-        // toPageRow: realRow - currentPage*pageSize - frozenRows
-        expect(context.toPageRow(52)).toBe(0);     // 52 - 1*50 - 2
-        expect(context.toPageRow(62)).toBe(10);    // 62 - 1*50 - 2
+        // 无 Sheet 引用时，toRealRow/toPageRow 为恒等映射
+        // 行号转换逻辑已统一收敛到 Sheet.toRealRow/Sheet.toPageRow
+        expect(context.toRealRow(0)).toBe(0);
+        expect(context.toRealRow(10)).toBe(10);
+        expect(context.toPageRow(0)).toBe(0);
+        expect(context.toPageRow(10)).toBe(10);
     });
 
-    test('优先使用 Sheet 的转换方法', () => {
+    test('委托给 Sheet 的转换方法', () => {
         const customSheet = createMockSheet({
             frozenRows: 5,
             toRealRow: (pageRow) => pageRow * 2,  // 自定义逻辑
@@ -307,10 +302,10 @@ describe('CellRenderContext - 行列号转换方法', () => {
             value: null, displayValue: '', style: {},
             row: 0, col: 0,
             sheet: customSheet,
-            pageInfo: { isPaged: true }  // 有 pageInfo 但应被忽略
+            pageInfo: { isPaged: true }
         });
 
-        // 应该使用自定义的 Sheet 方法，而非 PageInfo 计算
+        // 委托给 Sheet 的转换方法
         expect(context.toRealRow(5)).toBe(10);     // 5 * 2
         expect(context.toPageRow(20)).toBe(10);    // 20 / 2
     });
@@ -928,7 +923,7 @@ describe('攻击性测试 - 异常输入与边界条件', () => {
             value: null, displayValue: '', style: {},
             row: 0, col: 0,
             sheet: sheet,
-            pageInfo: { isPaged: true, currentPage: 5, pageSize: 100, frozenRowCount: 2 }
+            pageInfo: { isPaged: true, frozenRowCount: 2 }
         });
 
         const iterations = 100000;
@@ -958,7 +953,7 @@ describe('攻击性测试 - 异常输入与边界条件', () => {
                 style: { a: 1, b: 2, c: 3 },
                 row: i, col: i,
                 sheet: createMockSheet(),
-                pageInfo: { isPaged: true, currentPage: i % 10, pageSize: 50 }
+                pageInfo: { isPaged: true }
             });
             // 不保留引用，允许 GC
         }
@@ -1042,8 +1037,6 @@ describe('冻结/分页模式专项测试', () => {
             sheet: sheet,
             pageInfo: {
                 isPaged: true,
-                currentPage: 1,
-                pageSize: 50,
                 frozenRowCount: 0,
                 frozenColCount: 0,
                 isInFrozenArea: false
@@ -1051,7 +1044,6 @@ describe('冻结/分页模式专项测试', () => {
         });
 
         expect(pagedContext.isPagedMode()).toBe(true);
-        expect(pagedContext.pageInfo.currentPage).toBe(1);
         expect(pagedContext.row).toBe(10);
         expect(pagedContext.realRow).toBe(60);
 
@@ -1077,8 +1069,6 @@ describe('冻结/分页模式专项测试', () => {
             sheet: sheet,
             pageInfo: {
                 isPaged: true,
-                currentPage: 2,
-                pageSize: 50,
                 frozenRowCount: 3,
                 frozenColCount: 1,
                 isInFrozenArea: false
