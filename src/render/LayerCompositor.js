@@ -35,10 +35,10 @@ export class LayerCompositor {
      */
     register(layer) {
         if (!(layer instanceof BaseLayer)) {
-            throw new Error("[LayerCompositor] layer must be an instance of BaseLayer");
+            errorHandler.throw(ERROR_CODE.LAYER_INVALID_INSTANCE, `[LayerCompositor] layer must be an instance of BaseLayer`);
         }
         if (this.layers.has(layer.name)) {
-            throw new Error(`[LayerCompositor] layer "${layer.name}" already registered`);
+            errorHandler.throw(ERROR_CODE.LAYER_ALREADY_REGISTERED, `[LayerCompositor] layer "${layer.name}" already registered`);
         }
 
         this.layers.set(layer.name, layer);
@@ -165,7 +165,7 @@ export class LayerCompositor {
                     }
                 }
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[LayerCompositor] Error rendering layer "${layer.name}":`, error);
+                errorHandler.handle(ERROR_CODE.LAYER_RENDER_ERROR, `[LayerCompositor] Error rendering layer "${layer.name}":`, error);
             }
         }
 

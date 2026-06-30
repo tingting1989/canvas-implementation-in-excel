@@ -58,6 +58,16 @@ export const ERROR_CODE = {
     /** 渲染异常 */
     RENDER_ERROR: "RENDER_ERROR",
 
+    // ── 图层合成器 ──
+    /** 图层实例无效（非 BaseLayer 子类） */
+    LAYER_INVALID_INSTANCE: "LAYER_INVALID_INSTANCE",
+
+    /** 图层已注册，不可重复注册 */
+    LAYER_ALREADY_REGISTERED: "LAYER_ALREADY_REGISTERED",
+
+    /** 图层渲染异常 */
+    LAYER_RENDER_ERROR: "LAYER_RENDER_ERROR",
+
     // ── 渲染器注册表 ──
     /** 渲染器名称无效（空或非字符串） */
     INVALID_RENDERER_NAME: "INVALID_RENDERER_NAME",
