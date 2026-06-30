@@ -308,6 +308,163 @@ describe("Layer Integration", () => {
         expect(frozenLayer.offscreen).toBe(true);
         expect(selectionLayer.offscreen).toBe(false);
         expect(interactionLayer.offscreen).toBe(false);
-        expect(headerLayer.offscreen).toBe(true);
+        expect(headerLayer.offscreen).toBe(false);
+    });
+
+    describe("Selection clipping - no overlap between FrozenLayer and SelectionLayer", () => {
+        it("should clip SelectionLayer to non-frozen area when frozen cols exist", () => {
+            const selectionLayer = new SelectionLayer();
+            const frozenLayer = new FrozenLayer();
+
+            const renderSelectionSpy = vi.spyOn(selectionLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+            const renderMergesSpy = vi.spyOn(selectionLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+            vi.spyOn(frozenLayer.tileRenderer, "render").mockImplementation(() => {});
+            const frozenRenderSelectionSpy = vi.spyOn(frozenLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+            vi.spyOn(frozenLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+
+            const ctx = {
+                save: vi.fn(),
+                restore: vi.fn(),
+                beginPath: vi.fn(),
+                rect: vi.fn(),
+                clip: vi.fn(),
+                clearRect: vi.fn(),
+                setTransform: vi.fn(),
+                drawImage: vi.fn(),
+            };
+
+            const sheet = {
+                frozenColsWidth: 120,
+                frozenRowsHeight: 0,
+                getHeaderWidth: vi.fn(() => 50),
+                getHeaderHeight: vi.fn(() => 25),
+                getMerge: vi.fn(() => null),
+                fixedColumnsStart: 1,
+                fixedRowsTop: 0,
+                selection: { getRange: () => ({ topRow: 0, topCol: 0, bottomRow: 2, bottomCol: 3 }) },
+            };
+
+            const viewport = {
+                mergeToViewRect: () => ({ x: 50, y: 25, w: 400, h: 84 }),
+                scrollX: 0,
+                scrollY: 0,
+            };
+
+            selectionLayer.render(ctx, sheet, viewport, { viewW: 800, viewH: 600 });
+
+            expect(ctx.rect).toHaveBeenCalledWith(50 + 120, 25, 800 - 50 - 120, 600 - 25);
+            expect(ctx.clip).toHaveBeenCalled();
+            expect(renderSelectionSpy).toHaveBeenCalled();
+
+            renderSelectionSpy.mockRestore();
+            renderMergesSpy.mockRestore();
+            frozenRenderSelectionSpy.mockRestore();
+        });
+
+        it("should clip SelectionLayer to non-frozen area when frozen rows exist", () => {
+            const selectionLayer = new SelectionLayer();
+            vi.spyOn(selectionLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+            vi.spyOn(selectionLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+
+            const ctx = {
+                save: vi.fn(),
+                restore: vi.fn(),
+                beginPath: vi.fn(),
+                rect: vi.fn(),
+                clip: vi.fn(),
+            };
+
+            const sheet = {
+                frozenColsWidth: 0,
+                frozenRowsHeight: 60,
+                getHeaderWidth: vi.fn(() => 50),
+                getHeaderHeight: vi.fn(() => 25),
+            };
+
+            selectionLayer.render(ctx, sheet, {}, { viewW: 800, viewH: 600 });
+
+            expect(ctx.rect).toHaveBeenCalledWith(50, 25 + 60, 800 - 50, 600 - 25 - 60);
+            expect(ctx.clip).toHaveBeenCalled();
+        });
+
+        it("should clip SelectionLayer to non-frozen area when both frozen cols and rows exist", () => {
+            const selectionLayer = new SelectionLayer();
+            vi.spyOn(selectionLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+            vi.spyOn(selectionLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+
+            const ctx = {
+                save: vi.fn(),
+                restore: vi.fn(),
+                beginPath: vi.fn(),
+                rect: vi.fn(),
+                clip: vi.fn(),
+            };
+
+            const sheet = {
+                frozenColsWidth: 120,
+                frozenRowsHeight: 60,
+                getHeaderWidth: vi.fn(() => 50),
+                getHeaderHeight: vi.fn(() => 25),
+            };
+
+            selectionLayer.render(ctx, sheet, {}, { viewW: 800, viewH: 600 });
+
+            expect(ctx.rect).toHaveBeenCalledWith(50 + 120, 25 + 60, 800 - 50 - 120, 600 - 25 - 60);
+            expect(ctx.clip).toHaveBeenCalled();
+        });
+
+        it("should not clip SelectionLayer when no frozen area", () => {
+            const selectionLayer = new SelectionLayer();
+            vi.spyOn(selectionLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+            vi.spyOn(selectionLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+
+            const ctx = {
+                save: vi.fn(),
+                restore: vi.fn(),
+                beginPath: vi.fn(),
+                rect: vi.fn(),
+                clip: vi.fn(),
+            };
+
+            const sheet = {
+                frozenColsWidth: 0,
+                frozenRowsHeight: 0,
+                getHeaderWidth: vi.fn(() => 50),
+                getHeaderHeight: vi.fn(() => 25),
+            };
+
+            selectionLayer.render(ctx, sheet, {}, { viewW: 800, viewH: 600 });
+
+            expect(ctx.rect).not.toHaveBeenCalled();
+            expect(ctx.clip).not.toHaveBeenCalled();
+        });
+
+        it("FrozenLayer and SelectionLayer clip areas are complementary", () => {
+            const headerW = 50;
+            const headerH = 25;
+            const frozenColsW = 120;
+            const frozenRowsH = 60;
+            const viewW = 800;
+            const viewH = 600;
+
+            const frozenColClip = { x: headerW, y: headerH, w: frozenColsW, h: viewH - headerH };
+            const frozenRowClip = { x: headerW, y: headerH, w: viewW - headerW, h: frozenRowsH };
+            const frozenCornerClip = { x: headerW, y: headerH, w: frozenColsW, h: frozenRowsH };
+            const selectionClip = { x: headerW + frozenColsW, y: headerH + frozenRowsH, w: viewW - headerW - frozenColsW, h: viewH - headerH - frozenRowsH };
+
+            function rectsOverlap(a, b) {
+                return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+            }
+
+            expect(rectsOverlap(frozenColClip, selectionClip)).toBe(false);
+            expect(rectsOverlap(frozenRowClip, selectionClip)).toBe(false);
+            expect(rectsOverlap(frozenCornerClip, selectionClip)).toBe(false);
+
+            const totalFrozenArea = (frozenColsW * (viewH - headerH)) + ((viewW - headerW - frozenColsW) * frozenRowsH);
+            const selectionArea = selectionClip.w * selectionClip.h;
+            const totalDataArea = (viewW - headerW) * (viewH - headerH);
+
+            expect(totalFrozenArea + selectionArea).toBe(totalDataArea);
+        });
     });
 });

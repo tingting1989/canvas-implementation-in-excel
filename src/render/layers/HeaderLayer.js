@@ -34,7 +34,7 @@ export class HeaderLayer extends BaseLayer {
     #selectionLayer = null;
 
     constructor() {
-        super("headers", LAYER_Z_INDEX.HEADER);
+        super("headers", LAYER_Z_INDEX.HEADER, { offscreen: false });
 
         this.headerRenderer = new HeaderRenderer();
     }

@@ -2,14 +2,22 @@
 
 /**
  * 图层基类 (BaseLayer)
- * 所有渲染图层的抽象基类。采用离屏渲染策略：
- *   - 每个 Layer 自行创建和管理离屏 Canvas（initCanvas）
- *  - Layer 在 render(ctx) 中只负责往传入的 ctx 上绘制内容
- *  - LayerCompositor 调用各层 initCanvas 确保尺寸一致，
- *     并按 z-index 顺序将各层离屏 Canvas 合成到主画布
+ *
  * 所有渲染图层的抽象基类，提供统一的接口和生命周期管理。
- * 采用 Canvas 离屏渲染策略：每个 Layer 拥有独立的离屏 canvas，
- * 最终由 LayerCompositor 合成到主画布。
+ * 支持两种渲染模式，由 offscreen 属性控制：
+ *
+ * ## 离屏渲染模式 (offscreen = true)
+ * - Layer 拥有独立的离屏 Canvas（initCanvas 创建）
+ * - Layer 在 render(ctx) 中绘制到离屏 Canvas
+ * - LayerCompositor 通过 drawImage 将离屏 Canvas 合成到主画布
+ * - 适用于重渲染层（如 TileLayer、FrozenLayer），可利用瓦片缓存减少重绘
+ *
+ * ## 直接渲染模式 (offscreen = false)
+ * - Layer 不创建离屏 Canvas
+ * - LayerCompositor 在 compose() 中直接传入主 Canvas 的 ctx
+ * - Layer 在 render(ctx) 中直接绘制到主画布
+ * - 适用于轻量级层（如 SelectionLayer、InteractionLayer、HeaderLayer），
+ *   避免离屏 Canvas 的内存开销和合成开销
  *
  * ## 设计原则
  * 1. 单一职责：每个 Layer 只负责一类视觉元素的渲染
@@ -17,6 +25,7 @@
  * 3. Z-index 排序：通过 zIndex 控制图层叠加顺序
  * 4. 可独立测试：每个 Layer 可以脱离 RenderEngine 单独测试
  * 5. 响应式集成：支持 ReactiveStore 自动触发脏标记
+ * 6. 渲染模式选择：重层用离屏缓存，轻层直接渲染，平衡性能与内存
  */
 export class BaseLayer {
     #watchers = new Map();
