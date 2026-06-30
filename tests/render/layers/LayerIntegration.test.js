@@ -171,7 +171,7 @@ describe("Layer Integration", () => {
         expect(overlayLayer.dirty).toBe(true);
         expect(frozenLayer.dirty).toBe(true);
         expect(uiLayer.dirty).toBe(true);
-        expect(tileLayer.dirty).toBe(false);
+        expect(tileLayer.dirty).toBe(true);
     });
 
     it("should handle viewport change affecting tile and header", () => {
@@ -282,6 +282,6 @@ describe("Layer Integration", () => {
         store.flush();
 
         expect(frozenLayer.dirty).toBe(true);
-        expect(tileLayer.dirty).toBe(false);
+        expect(tileLayer.dirty).toBe(true);
     });
 });

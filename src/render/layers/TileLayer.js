@@ -85,6 +85,8 @@ export class TileLayer extends BaseLayer {
         this.watchForDirty("scroll");
         this.watchForDirty("viewport");
         this.watchForDirty("tile");
+        this.watchForDirty("frozen");
+        this.watchForDirty("frozenOffset");
     }
 
     /**
@@ -114,7 +116,31 @@ export class TileLayer extends BaseLayer {
         const viewH = options.viewH;
         const useRealRows = options.useRealRows;
 
+        const frozenColsW = sheet.frozenColsWidth ?? 0;
+        const frozenRowsH = sheet.frozenRowsHeight ?? 0;
+        const headerW = typeof sheet.getHeaderWidth === "function" ? sheet.getHeaderWidth() : 0;
+        const headerH = typeof sheet.getHeaderHeight === "function" ? sheet.getHeaderHeight() : 0;
+
+        let clipped = false;
+        if (frozenColsW > 0 || frozenRowsH > 0) {
+            const clipX = headerW + frozenColsW;
+            const clipY = headerH + frozenRowsH;
+            const clipW = viewW - headerW - frozenColsW;
+            const clipH = viewH - headerH - frozenRowsH;
+            if (clipW > 0 && clipH > 0) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(clipX, clipY, clipW, clipH);
+                ctx.clip();
+                clipped = true;
+            }
+        }
+
         this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, useRealRows ? { useRealRows: true } : undefined);
+
+        if (clipped) {
+            ctx.restore();
+        }
 
         this.renderCount++;
     }
