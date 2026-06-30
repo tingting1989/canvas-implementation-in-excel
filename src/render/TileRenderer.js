@@ -151,22 +151,6 @@ export class TileRenderer {
         const er = Math.min((useRealRows ? rc.rawRowAt(pixelY1) : rc.rowAt(pixelY1)) + 1, rc.rowCount);
         const ec = Math.min(rc.colAt(pixelX1) + 1, rc.colCount);
 
-        // DEBUG: 瓦片绘制诊断日志（仅记录第一个瓦片）
-        if (tileRow === 0 && tileCol === 0 && rc.pageStartRow >= 0 && window.__DEBUG_PAGINATION) {
-            const caller = useRealRows ? '🔒 FrozenLayer' : '📄 TileLayer';
-            console.log('%c[TileRenderer]', 'color: blue; font-weight: bold', `瓦片(${tileRow},${tileCol}) 由 ${caller} 调用`);
-            console.log(`  分页: pageStartRow=${rc.pageStartRow}, pageEndRow=${rc.pageEndRow}, rowCount=${rc.rowCount}`);
-            console.log(`  像素范围: Y=[${pixelY0}-${pixelY1}], X=[${pixelX0}-${pixelX1}]`);
-            console.log(`  绘制范围: 行[${sr}-${er}) 共${er - sr}行, 列[${sc}-${ec})`);
-
-            // 显示前3行详细信息
-            for (let i = 0; i < Math.min(3, er - sr); i++) {
-                const r = sr + i;
-                const rowY = useRealRows ? rc.getRealRowY(r) : rc.getRowY(r);
-                const realR = useRealRows ? r : sheet.toRealRow(r);
-                console.log(`    → 页面行${r} → 实际行${realR} → Y=${rowY.toFixed(1)}px`);
-            }
-        }
 
         // 记录已绘制的合并区域左上角坐标，避免重复绘制
         const renderedMerges = new Set();

@@ -177,20 +177,6 @@ export class PaginationPlugin extends BasePlugin {
 
         const offset = this.rowOffset;
         const count = this.pageRowCount;
-
-        // DEBUG: 分页边界诊断
-        if (typeof window !== 'undefined' && window.__DEBUG_PAGINATION) {
-            console.log(
-                '%c[PaginationPlugin#applyPageBounds]',
-                'color: orange; font-weight: bold',
-                `\n  currentPage=${this.#currentPage}, pageSize=${this.#pageSize}`,
-                `\n  totalRows=${this.#totalRows}, totalPages=${this.totalPages}`,
-                `\n  rowOffset=${offset}, pageRowCount=${count}`,
-                `\n  setPaginationBounds(${offset}, ${offset + count})`,
-                `\n  实际数据: allocated=${sheet.rowColManager.allocatedRowCount}, getMaxRow()=${sheet.cellStore.getMaxRow()}`
-            );
-        }
-
         sheet.rowColManager.setPaginationBounds(offset, offset + count);
 
         this.renderEngine?.scrollMgr?.setScrollPosition(0, 0);
