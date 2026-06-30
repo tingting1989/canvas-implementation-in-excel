@@ -4,6 +4,7 @@ import { NumericColumnType } from "./NumericColumnType.js";
 import { DateColumnType } from "./DateColumnType.js";
 import { BooleanColumnType } from "./BooleanColumnType.js";
 import { SelectColumnType } from "./SelectColumnType.js";
+import { BUILTIN_RENDERERS } from "./renderers/index.js";
 import { isFunction } from "../utils/utils.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
@@ -22,6 +23,13 @@ const typeConstructors = {
 };
 
 Object.entries(typeConstructors).forEach(([name, Constructor]) => {
+    registry.set(name, {
+        instance: new Constructor(),
+        constructor: Constructor,
+    });
+});
+
+Object.entries(BUILTIN_RENDERERS).forEach(([name, Constructor]) => {
     registry.set(name, {
         instance: new Constructor(),
         constructor: Constructor,

@@ -131,6 +131,8 @@ const initApp = () => {
                     { type: "text" },
                     { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
                     { type: "date" },
+                    // 自定义渲染器
+                    { type: "progressBar", options: { showPercent: true } },
                 ],
 
                 // 配置列的宽度 number|number[],优先级比columns中的width 低
@@ -301,14 +303,14 @@ const initApp = () => {
                         range: "D:D",
                         type: "unique",
                     },
-                    {
-                        range: "G:G",
-                        type: "date",
-                        operator: "between",
-                        value: ["01/01/2020", "12/31/2020"],
-                        errorMessage: "必须输入正数",
-                        errorStyle: "stop",
-                    },
+                    // {
+                    //     range: "G:G",
+                    //     type: "date",
+                    //     operator: "between",
+                    //     value: ["01/01/2020", "12/31/2020"],
+                    //     errorMessage: "必须输入正数",
+                    //     errorStyle: "stop",
+                    // },
                 ],
             },
         },
