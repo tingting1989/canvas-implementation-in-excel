@@ -15,7 +15,7 @@
  * ## 图层定位
  *
  * zIndex = 10，是所有数据图层中最底层的。
- * 位于 FrozenLayer(40)、HeaderLayer(50)、OverlayLayer(20) 之下。
+ * 位于 FrozenLayer(30)、HeaderLayer(50)、SelectionLayer(20) 之下。
  * 这保证了主数据区域作为背景层，其他图层在其上叠加。
  *
  * ## 内容就绪回调

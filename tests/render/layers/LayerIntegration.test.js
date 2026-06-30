@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { LayerCompositor } from "../../../src/render/LayerCompositor.js";
 import { TileLayer } from "../../../src/render/layers/TileLayer.js";
-import { OverlayLayer } from "../../../src/render/layers/OverlayLayer.js";
+import { SelectionLayer } from "../../../src/render/layers/SelectionLayer.js";
 import { FrozenLayer } from "../../../src/render/layers/FrozenLayer.js";
+import { InteractionLayer } from "../../../src/render/layers/InteractionLayer.js";
 import { HeaderLayer } from "../../../src/render/layers/HeaderLayer.js";
-import { UILayer } from "../../../src/render/layers/UILayer.js";
 import { ReactiveStore } from "../../../src/state/ReactiveStore.js";
 import { LAYER_Z_INDEX } from "../../../src/constants/layerZIndex.js";
 
@@ -27,30 +27,30 @@ describe("Layer Integration", () => {
 
     it("should register all layers in correct zIndex order", () => {
         compositor.register(new TileLayer());
-        compositor.register(new OverlayLayer());
+        compositor.register(new SelectionLayer());
         compositor.register(new FrozenLayer());
+        compositor.register(new InteractionLayer());
         compositor.register(new HeaderLayer());
-        compositor.register(new UILayer());
 
         const sorted = compositor.getSortedLayers();
         expect(sorted[0].name).toBe("tiles");
         expect(sorted[0].zIndex).toBe(LAYER_Z_INDEX.TILE);
-        expect(sorted[1].name).toBe("overlays");
-        expect(sorted[1].zIndex).toBe(LAYER_Z_INDEX.OVERLAY);
+        expect(sorted[1].name).toBe("selection");
+        expect(sorted[1].zIndex).toBe(LAYER_Z_INDEX.SELECTION);
         expect(sorted[2].name).toBe("frozen");
         expect(sorted[2].zIndex).toBe(LAYER_Z_INDEX.FROZEN);
-        expect(sorted[3].name).toBe("headers");
-        expect(sorted[3].zIndex).toBe(LAYER_Z_INDEX.HEADER);
-        expect(sorted[4].name).toBe("ui");
-        expect(sorted[4].zIndex).toBe(LAYER_Z_INDEX.UI);
+        expect(sorted[3].name).toBe("interaction");
+        expect(sorted[3].zIndex).toBe(LAYER_Z_INDEX.INTERACTION);
+        expect(sorted[4].name).toBe("headers");
+        expect(sorted[4].zIndex).toBe(LAYER_Z_INDEX.HEADER);
     });
 
     it("should bind all layers to store", () => {
         compositor.register(new TileLayer());
-        compositor.register(new OverlayLayer());
+        compositor.register(new SelectionLayer());
         compositor.register(new FrozenLayer());
+        compositor.register(new InteractionLayer());
         compositor.register(new HeaderLayer());
-        compositor.register(new UILayer());
 
         compositor.bindAllLayers(store);
 
@@ -62,32 +62,32 @@ describe("Layer Integration", () => {
 
     it("should compose all layers with mocked renderers", () => {
         const tileLayer = new TileLayer();
-        const overlayLayer = new OverlayLayer();
+        const selectionLayer = new SelectionLayer();
         const frozenLayer = new FrozenLayer();
+        const interactionLayer = new InteractionLayer();
         const headerLayer = new HeaderLayer();
-        const uiLayer = new UILayer();
 
         vi.spyOn(tileLayer.tileRenderer, "render").mockImplementation(() => {});
-        vi.spyOn(overlayLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
-        vi.spyOn(overlayLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
+        vi.spyOn(selectionLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
+        vi.spyOn(selectionLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
         vi.spyOn(frozenLayer.tileRenderer, "render").mockImplementation(() => {});
         vi.spyOn(frozenLayer.overlayRenderer, "renderMerges").mockImplementation(() => {});
         vi.spyOn(frozenLayer.overlayRenderer, "renderSelection").mockImplementation(() => {});
         vi.spyOn(headerLayer.headerRenderer, "render").mockImplementation(() => {});
 
         compositor.register(tileLayer);
-        compositor.register(overlayLayer);
+        compositor.register(selectionLayer);
         compositor.register(frozenLayer);
+        compositor.register(interactionLayer);
         compositor.register(headerLayer);
-        compositor.register(uiLayer);
 
-        const mockMainCtx = { drawImage: vi.fn() };
+        const mockMainCtx = { drawImage: vi.fn(), save: vi.fn(), restore: vi.fn() };
         const sheet = {
             frozenColsWidth: 0,
-            frozenRowsH: 0,
             frozenRowsHeight: 0,
             getHeaderWidth: vi.fn(() => 50),
             getHeaderHeight: vi.fn(() => 25),
+            getMerge: vi.fn(() => null),
             rowColManager: {
                 totalWidth: 2000,
                 totalHeight: 2000,
@@ -106,123 +106,135 @@ describe("Layer Integration", () => {
 
     it("should handle scroll state change affecting all layers", () => {
         const tileLayer = new TileLayer();
-        const headerLayer = new HeaderLayer();
+        const selectionLayer = new SelectionLayer();
         const frozenLayer = new FrozenLayer();
+        const interactionLayer = new InteractionLayer();
+        const headerLayer = new HeaderLayer();
 
         compositor.register(tileLayer);
-        compositor.register(headerLayer);
+        compositor.register(selectionLayer);
         compositor.register(frozenLayer);
+        compositor.register(interactionLayer);
+        compositor.register(headerLayer);
         compositor.bindAllLayers(store);
 
         tileLayer.clearDirty();
-        headerLayer.clearDirty();
+        selectionLayer.clearDirty();
         frozenLayer.clearDirty();
+        interactionLayer.clearDirty();
+        headerLayer.clearDirty();
 
         store.state.scroll.x = 100;
         store.flush();
 
         expect(tileLayer.dirty).toBe(true);
-        expect(headerLayer.dirty).toBe(true);
+        expect(selectionLayer.dirty).toBe(true);
         expect(frozenLayer.dirty).toBe(true);
+        expect(interactionLayer.dirty).toBe(true);
+        expect(headerLayer.dirty).toBe(true);
     });
 
-    it("should handle selection change affecting overlay and header", () => {
-        const overlayLayer = new OverlayLayer();
+    it("should handle selection change affecting selection and header", () => {
+        const selectionLayer = new SelectionLayer();
         const headerLayer = new HeaderLayer();
         const tileLayer = new TileLayer();
 
-        compositor.register(overlayLayer);
+        compositor.register(selectionLayer);
         compositor.register(headerLayer);
         compositor.register(tileLayer);
         compositor.bindAllLayers(store);
 
-        overlayLayer.clearDirty();
+        selectionLayer.clearDirty();
         headerLayer.clearDirty();
         tileLayer.clearDirty();
 
         store.state.selection.activeRange = { row: 0, col: 0 };
         store.flush();
 
-        expect(overlayLayer.dirty).toBe(true);
+        expect(selectionLayer.dirty).toBe(true);
         expect(headerLayer.dirty).toBe(true);
         expect(tileLayer.dirty).toBe(false);
     });
 
-    it("should handle frozenOffset change affecting overlay, frozen, ui", () => {
-        const overlayLayer = new OverlayLayer();
+    it("should handle frozenOffset change affecting all layers", () => {
+        const selectionLayer = new SelectionLayer();
         const frozenLayer = new FrozenLayer();
-        const uiLayer = new UILayer();
+        const interactionLayer = new InteractionLayer();
         const tileLayer = new TileLayer();
 
-        compositor.register(overlayLayer);
+        compositor.register(selectionLayer);
         compositor.register(frozenLayer);
-        compositor.register(uiLayer);
+        compositor.register(interactionLayer);
         compositor.register(tileLayer);
         compositor.bindAllLayers(store);
 
-        overlayLayer.clearDirty();
+        selectionLayer.clearDirty();
         frozenLayer.clearDirty();
-        uiLayer.clearDirty();
+        interactionLayer.clearDirty();
         tileLayer.clearDirty();
 
         store.state.frozenOffset.colsWidth = 100;
         store.flush();
 
-        expect(overlayLayer.dirty).toBe(true);
+        expect(selectionLayer.dirty).toBe(true);
         expect(frozenLayer.dirty).toBe(true);
-        expect(uiLayer.dirty).toBe(true);
+        expect(interactionLayer.dirty).toBe(true);
         expect(tileLayer.dirty).toBe(true);
     });
 
-    it("should handle viewport change affecting tile and header", () => {
+    it("should handle viewport change affecting tile, selection and header", () => {
         const tileLayer = new TileLayer();
         const headerLayer = new HeaderLayer();
+        const selectionLayer = new SelectionLayer();
 
         compositor.register(tileLayer);
         compositor.register(headerLayer);
+        compositor.register(selectionLayer);
         compositor.bindAllLayers(store);
 
         tileLayer.clearDirty();
         headerLayer.clearDirty();
+        selectionLayer.clearDirty();
 
         store.state.viewport.width = 1024;
         store.flush();
 
         expect(tileLayer.dirty).toBe(true);
         expect(headerLayer.dirty).toBe(true);
+        expect(selectionLayer.dirty).toBe(true);
     });
 
-    it("should handle editor change affecting ui layer only", () => {
-        const uiLayer = new UILayer();
+    it("should handle editor change affecting interaction layer", () => {
+        const interactionLayer = new InteractionLayer();
         const tileLayer = new TileLayer();
-        const overlayLayer = new OverlayLayer();
+        const selectionLayer = new SelectionLayer();
 
-        compositor.register(uiLayer);
+        compositor.register(interactionLayer);
         compositor.register(tileLayer);
-        compositor.register(overlayLayer);
+        compositor.register(selectionLayer);
         compositor.bindAllLayers(store);
 
-        uiLayer.clearDirty();
+        interactionLayer.clearDirty();
         tileLayer.clearDirty();
-        overlayLayer.clearDirty();
+        selectionLayer.clearDirty();
 
         store.state.editor.visible = true;
         store.flush();
 
-        expect(uiLayer.dirty).toBe(true);
+        expect(interactionLayer.dirty).toBe(true);
         expect(tileLayer.dirty).toBe(false);
-        expect(overlayLayer.dirty).toBe(false);
+        expect(selectionLayer.dirty).toBe(false);
     });
 
     it("should handle unregister and re-register", () => {
         compositor.register(new TileLayer());
-        compositor.register(new OverlayLayer());
+        compositor.register(new SelectionLayer());
 
         expect(compositor.getSortedLayers()).toHaveLength(2);
 
         compositor.unregister("tiles");
         expect(compositor.getSortedLayers()).toHaveLength(1);
-        expect(compositor.getSortedLayers()[0].name).toBe("overlays");
+        expect(compositor.getSortedLayers()[0].name).toBe("selection");
 
         compositor.register(new TileLayer());
         expect(compositor.getSortedLayers()).toHaveLength(2);
@@ -230,7 +242,7 @@ describe("Layer Integration", () => {
 
     it("should handle destroyAll and re-register", () => {
         compositor.register(new TileLayer());
-        compositor.register(new OverlayLayer());
+        compositor.register(new SelectionLayer());
         compositor.bindAllLayers(store);
 
         compositor.destroyAll();
@@ -243,31 +255,31 @@ describe("Layer Integration", () => {
 
     it("should handle markAllDirty on compositor", () => {
         const tileLayer = new TileLayer();
-        const overlayLayer = new OverlayLayer();
+        const selectionLayer = new SelectionLayer();
 
         compositor.register(tileLayer);
-        compositor.register(overlayLayer);
+        compositor.register(selectionLayer);
 
         tileLayer.clearDirty();
-        overlayLayer.clearDirty();
+        selectionLayer.clearDirty();
 
         compositor.markAllDirty();
 
         expect(tileLayer.dirty).toBe(true);
-        expect(overlayLayer.dirty).toBe(true);
+        expect(selectionLayer.dirty).toBe(true);
     });
 
     it("should return debug info for all layers", () => {
         compositor.register(new TileLayer());
-        compositor.register(new OverlayLayer());
-        compositor.register(new UILayer());
+        compositor.register(new SelectionLayer());
+        compositor.register(new InteractionLayer());
 
         const info = compositor.getDebugInfo();
         expect(info).toHaveLength(3);
-        expect(info.map((i) => i.name)).toEqual(["tiles", "overlays", "ui"]);
+        expect(info.map((i) => i.name)).toEqual(["tiles", "selection", "interaction"]);
     });
 
-    it("should handle frozen state change affecting frozen layer", () => {
+    it("should handle frozen state change affecting frozen and tile layers", () => {
         const frozenLayer = new FrozenLayer();
         const tileLayer = new TileLayer();
 
@@ -283,5 +295,19 @@ describe("Layer Integration", () => {
 
         expect(frozenLayer.dirty).toBe(true);
         expect(tileLayer.dirty).toBe(true);
+    });
+
+    it("should have offscreen=true for TileLayer and FrozenLayer, offscreen=false for others", () => {
+        const tileLayer = new TileLayer();
+        const selectionLayer = new SelectionLayer();
+        const frozenLayer = new FrozenLayer();
+        const interactionLayer = new InteractionLayer();
+        const headerLayer = new HeaderLayer();
+
+        expect(tileLayer.offscreen).toBe(true);
+        expect(frozenLayer.offscreen).toBe(true);
+        expect(selectionLayer.offscreen).toBe(false);
+        expect(interactionLayer.offscreen).toBe(false);
+        expect(headerLayer.offscreen).toBe(true);
     });
 });

@@ -135,24 +135,34 @@ export class LayerCompositor {
 
         for (const layer of sortedLayers) {
             try {
-                layer.initCanvas(viewW, viewH);
+                if (layer.offscreen) {
+                    layer.initCanvas(viewW, viewH);
 
-                if (layer.dirty) {
-                    const dpr = CONFIG.DPR;
-                    layer.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                    layer.ctx.clearRect(0, 0, viewW, viewH);
+                    if (layer.dirty) {
+                        const dpr = CONFIG.DPR;
+                        layer.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                        layer.ctx.clearRect(0, 0, viewW, viewH);
 
-                    layer.render(layer.ctx, sheet, viewport, renderOptions);
-                    layer.clearDirty();
-                    dirtyCount++;
+                        layer.render(layer.ctx, sheet, viewport, renderOptions);
+                        layer.clearDirty();
+                        dirtyCount++;
+                    } else {
+                        cacheHitCount++;
+                    }
+
+                    if (mainCtx.drawImage) {
+                        const srcW = layer.canvas.width;
+                        const srcH = layer.canvas.height;
+                        mainCtx.drawImage(layer.canvas, 0, 0, srcW, srcH, 0, 0, viewW, viewH);
+                    }
                 } else {
-                    cacheHitCount++;
-                }
-
-                if (mainCtx.drawImage) {
-                    const srcW = layer.canvas.width;
-                    const srcH = layer.canvas.height;
-                    mainCtx.drawImage(layer.canvas, 0, 0, srcW, srcH, 0, 0, viewW, viewH);
+                    if (layer.dirty) {
+                        mainCtx.save();
+                        layer.render(mainCtx, sheet, viewport, renderOptions);
+                        mainCtx.restore();
+                        layer.clearDirty();
+                        dirtyCount++;
+                    }
                 }
             } catch (error) {
                 errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[LayerCompositor] Error rendering layer "${layer.name}":`, error);

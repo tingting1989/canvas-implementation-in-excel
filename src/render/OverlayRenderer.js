@@ -5,7 +5,7 @@
  * 包括选区高亮、合并单元格边框、填充手柄、拖拽参考线等。
  *
  * 这些内容不属于基础数据，而是交互状态的视觉反馈，
- * 因此被封装为独立渲染器，供 FrozenLayer 和 OverlayLayer 复用。
+ * 因此被封装为独立渲染器，供 FrozenLayer 和 SelectionLayer 复用。
  *
  * ## 渲染层次（自底向上）
  *
@@ -20,7 +20,7 @@
  *
  * OverlayRenderer 不是 Layer 子类，而是纯渲染工具类。
  * 这样设计的原因是：
- * - FrozenLayer 和 OverlayLayer 都需要渲染选区效果
+ * - FrozenLayer 和 SelectionLayer 都需要渲染选区效果
  * - 避免代码重复，遵循 DRY 原则
  * - 选区效果属于"装饰性"渲染，不需要独立的生命周期管理
  *

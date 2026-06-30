@@ -16,8 +16,8 @@
  *
  * ## 图层层级
  *
- * zIndex = 30，位于 OverlayLayer(20) 之上、ResizeLayer(40) 之下。
- * 这保证了冻结区域的数据在非冻结数据层之上、调整指示线之下正确显示。
+ * zIndex = 30，位于 SelectionLayer(20) 之上、InteractionLayer(40) 之下。
+这保证了冻结区域的数据在非冻结数据层之上、交互指示线之下正确显示。
  *
  * ## 性能优化
  *

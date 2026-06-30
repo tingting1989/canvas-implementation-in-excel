@@ -9,8 +9,8 @@
  *
  * ## 图层定位
  *
- * zIndex = 50，位于 FrozenLayer(40) 之上、OverlayLayer(20) 之下。
- * 这保证了表头始终显示在冻结区域数据之上，但在 UI 层（调试信息等）之下。
+ * zIndex = 50，位于 InteractionLayer(40) 之上、SelectionLayer(20) 之下。
+这保证了表头始终显示在冻结区域数据之上，但在交互层（调试信息等）之下。
  *
  * ## 滚动行为
  *
@@ -31,7 +31,7 @@ import { HeaderRenderer } from "../HeaderRenderer.js";
 import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
 export class HeaderLayer extends BaseLayer {
-    #dragIndicatorLayer = null;
+    #selectionLayer = null;
 
     constructor() {
         super("headers", LAYER_Z_INDEX.HEADER);
@@ -40,7 +40,7 @@ export class HeaderLayer extends BaseLayer {
     }
 
     setDragIndicator(layer) {
-        this.#dragIndicatorLayer = layer;
+        this.#selectionLayer = layer;
     }
 
     /**
@@ -80,7 +80,7 @@ export class HeaderLayer extends BaseLayer {
 
         const { viewW, viewH } = options;
 
-        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH, this.#dragIndicatorLayer);
+        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH, this.#selectionLayer);
 
         this.renderCount++;
     }

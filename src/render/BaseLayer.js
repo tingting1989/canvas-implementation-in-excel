@@ -22,7 +22,7 @@ export class BaseLayer {
     #watchers = new Map();
     #store = null;
 
-    constructor(name, zIndex) {
+    constructor(name, zIndex, options = {}) {
         if (!name || typeof name !== "string") {
             throw new Error(`[BaseLayer] name must be a non-empty string`);
         }
@@ -37,6 +37,7 @@ export class BaseLayer {
         this.ctx = null;
         this.enabled = true;
         this.renderCount = 0;
+        this.offscreen = options.offscreen ?? true;
     }
 
     /**
@@ -111,6 +112,8 @@ export class BaseLayer {
      * @param {number} height - Canvas高度（CSS像素）
      */
     initCanvas(width, height) {
+        if (!this.offscreen) return;
+
         if (!this.canvas) {
             this.canvas = document.createElement("canvas");
             this.ctx = this.canvas.getContext("2d");

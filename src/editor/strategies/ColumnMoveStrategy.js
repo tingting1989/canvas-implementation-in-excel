@@ -105,7 +105,7 @@ export class ColumnMoveStrategy extends EventStrategy {
         const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
         const dragX = e.clientX - rect.left;
 
-        this.handler.renderEngine.dragIndicatorLayer.setColumnMoveState({
+        this.handler.renderEngine.selectionLayer.setColumnMoveState({
             sourceCol: this.#sourceCol,
             targetCol: this.#targetCol,
             dragX: dragX,
@@ -158,8 +158,8 @@ export class ColumnMoveStrategy extends EventStrategy {
     }
 
     #clearIndicator() {
-        if (this.handler.renderEngine?.dragIndicatorLayer) {
-            this.handler.renderEngine.dragIndicatorLayer.setColumnMoveState(null);
+        if (this.handler.renderEngine?.selectionLayer) {
+            this.handler.renderEngine.selectionLayer.setColumnMoveState(null);
         }
     }
 }

@@ -11,8 +11,8 @@ import { ViewportTransform } from "./ViewportTransform.js";
  *
  * ViewportService 只暴露视口查询与操作接口，
  * 不暴露 RenderEngine 的内部结构（图层系统、合成器等）。
- * 策略需要访问的 RenderEngine 特有功能（如 dragIndicatorLayer）
- * 仍通过 handler.renderEngine 直接访问，后续可逐步迁移。
+ * 策略需要访问的 RenderEngine 特有功能（如 selectionLayer）
+仍通过 handler.renderEngine 直接访问，后续可逐步迁移。
  */
 export class RenderEngineViewportService extends ViewportService {
     /** @type {import("./RenderEngine.js").RenderEngine} */

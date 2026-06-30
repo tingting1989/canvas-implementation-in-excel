@@ -24,8 +24,8 @@ const HEADER_ROW_PADDING = 6;
  * - 左上角交叉区域
  *
  * 调整手柄和拖拽指示器已分离为独立 Layer：
- * - {@link ResizeLayer} — 列宽/行高调整虚线
- * - {@link DragIndicatorLayer} — 拖拽幽灵和插入指示线
+ * - {@link InteractionLayer} — 列宽/行高调整虚线
+ * - {@link SelectionLayer} — 拖拽幽灵和插入指示线
  *
  * 渲染层次（从底到顶）：
  * 1. 列头背景 + 文字

@@ -1,11 +1,8 @@
 export { BaseLayer } from "./BaseLayer.js";
 export { LayerCompositor } from "./LayerCompositor.js";
 export { TileLayer } from "./layers/TileLayer.js";
-export { OverlayLayer } from "./layers/OverlayLayer.js";
+export { SelectionLayer } from "./layers/SelectionLayer.js";
 export { FrozenLayer } from "./layers/FrozenLayer.js";
-export { ResizeLayer } from "./layers/ResizeLayer.js";
+export { InteractionLayer } from "./layers/InteractionLayer.js";
 export { HeaderLayer } from "./layers/HeaderLayer.js";
-export { DragIndicatorLayer } from "./layers/DragIndicatorLayer.js";
-export { UILayer } from "./layers/UILayer.js";
-export { EditorLayer } from "./layers/EditorLayer.js";
 export { ReactiveStore } from "../state/ReactiveStore.js";

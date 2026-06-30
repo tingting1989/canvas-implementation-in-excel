@@ -1,4 +1,4 @@
-import { ScrollManager } from "../ui/ScrollManager.js";
+﻿import { ScrollManager } from "../ui/ScrollManager.js";
 import { SheetTabBar } from "../ui/SheetTabBar.js";
 import { ViewportTransform } from "./ViewportTransform.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
@@ -6,13 +6,10 @@ import { CONFIG } from "../constants/config";
 import { HIT_TYPE } from "../constants/hitType";
 import { LayerCompositor } from "./LayerCompositor.js";
 import { TileLayer } from "./layers/TileLayer.js";
-import { OverlayLayer } from "./layers/OverlayLayer.js";
+import { SelectionLayer } from "./layers/SelectionLayer.js";
 import { FrozenLayer } from "./layers/FrozenLayer.js";
-import { ResizeLayer } from "./layers/ResizeLayer.js";
+import { InteractionLayer } from "./layers/InteractionLayer.js";
 import { HeaderLayer } from "./layers/HeaderLayer.js";
-import { DragIndicatorLayer } from "./layers/DragIndicatorLayer.js";
-import { UILayer } from "./layers/UILayer.js";
-import { EditorLayer } from "./layers/EditorLayer.js";
 import { ReactiveStore } from "../state/ReactiveStore.js";
 import { DOMComponent } from "../core/DOMComponent.js";
 
@@ -35,7 +32,6 @@ export class RenderEngine extends DOMComponent {
 
         this.onAfterRender = null;
 
-        // wrap 通过 createElement 创建并跟踪，destroy 时自动移除
         this.wrap = this.createElement("div", {
             className: "cs-canvas-wrap",
             style: { position: "relative", overflow: "hidden" },
@@ -44,10 +40,10 @@ export class RenderEngine extends DOMComponent {
         this.wrap.appendChild(this.canvas);
 
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
-        this.trackChild(this.scrollMgr); // 级联销毁
+        this.trackChild(this.scrollMgr);
 
         this.sheetTabBar = new SheetTabBar(this.wrap, null);
-        this.trackChild(this.sheetTabBar); // 级联销毁 ← 之前遗漏！
+        this.trackChild(this.sheetTabBar);
 
         this.#initLayerSystem();
         this.#initCanvasSize();
@@ -68,28 +64,22 @@ export class RenderEngine extends DOMComponent {
         this.compositor = new LayerCompositor();
 
         this.tileLayer = new TileLayer();
-        this.overlayLayer = new OverlayLayer();
+        this.selectionLayer = new SelectionLayer();
         this.frozenLayer = new FrozenLayer();
-        this.resizeLayer = new ResizeLayer();
+        this.interactionLayer = new InteractionLayer();
         this.headerLayer = new HeaderLayer();
-        this.dragIndicatorLayer = new DragIndicatorLayer();
-        this.uiLayer = new UILayer();
-        this.editorLayer = new EditorLayer();
 
         this.tileLayer.onContentReady = () => {
             this.requestRender();
         };
 
         this.compositor.register(this.tileLayer);
+        this.compositor.register(this.selectionLayer);
         this.compositor.register(this.frozenLayer);
-        this.compositor.register(this.overlayLayer);
-        this.compositor.register(this.resizeLayer);
+        this.compositor.register(this.interactionLayer);
         this.compositor.register(this.headerLayer);
-        this.compositor.register(this.dragIndicatorLayer);
 
-        this.headerLayer.setDragIndicator(this.dragIndicatorLayer);
-        this.compositor.register(this.uiLayer);
-        this.compositor.register(this.editorLayer);
+        this.headerLayer.setDragIndicator(this.selectionLayer);
 
         this.compositor.bindAllLayers(this.store);
     }
@@ -115,15 +105,15 @@ export class RenderEngine extends DOMComponent {
     }
 
     get overlayRenderer() {
-        return this.overlayLayer.overlayRenderer;
+        return this.selectionLayer.overlayRenderer;
     }
 
     setResizeLine(type, index, position) {
-        this.resizeLayer.setResizeLine(type, index, position);
+        this.interactionLayer.setResizeLine(type, index, position);
     }
 
     clearResizeLine() {
-        this.resizeLayer.clearResizeLine();
+        this.interactionLayer.clearResizeLine();
     }
 
     get onScrollCallback() {
@@ -402,12 +392,9 @@ export class RenderEngine extends DOMComponent {
     invalidateAll() {
         this.tileLayer.markAllDirty();
         this.frozenLayer.markAllDirty();
-        this.overlayLayer.markDirty();
-        this.resizeLayer.markDirty();
+        this.selectionLayer.markDirty();
+        this.interactionLayer.markDirty();
         this.headerLayer.markDirty();
-        this.dragIndicatorLayer.markDirty();
-        this.uiLayer.markDirty();
-        this.editorLayer.markDirty();
         this.requestRender();
     }
 
