@@ -230,9 +230,30 @@ export const HOOKS = Object.freeze({
     AFTER_UNFREEZE: "afterUnfreeze",
 
     /*
-     * ==================== 工作表切换相关钩子 ====================
-     * 响应多工作表环境中的标签切换
+     * ==================== 工作表管理相关钩子 ====================
+     * 管理工作表的增删改查操作
      */
+
+    /** 工作表新增前 - 即将创建新工作表，返回 false 可阻止 */
+    BEFORE_SHEET_ADD: "beforeSheetAdd",
+
+    /** 工作表新增后 - 新工作表已成功创建 */
+    AFTER_SHEET_ADD: "afterSheetAdd",
+
+    /** 工作表删除前 - 即将删除工作表，返回 false 可阻止 */
+    BEFORE_SHEET_REMOVE: "beforeSheetRemove",
+
+    /** 工作表删除后 - 工作表已从工作簿中移除 */
+    AFTER_SHEET_REMOVE: "afterSheetRemove",
+
+    /** 工作表重命名前 - 即将重命名工作表，返回 false 可阻止 */
+    BEFORE_SHEET_RENAME: "beforeSheetRename",
+
+    /** 工作表重命名后 - 工作表名称已更改 */
+    AFTER_SHEET_RENAME: "afterSheetRename",
+
+    /** 工作表切换前 - 即将切换到指定工作表，返回 false 可阻止 */
+    BEFORE_SHEET_SWITCH: "beforeSheetSwitch",
 
     /** 工作表切换后 - 当前活动工作表已改变 */
     AFTER_SHEET_SWITCH: "afterSheetSwitch",

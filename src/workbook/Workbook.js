@@ -500,6 +500,9 @@ export class Workbook {
      * @returns {Sheet}
      */
     addSheet(name) {
+        const cancelled = this.runHooksUntil(HOOKS.BEFORE_SHEET_ADD, name);
+        if (cancelled === false) return null;
+
         const sheet = new Sheet(name);
         if (this.renderEngine) this.#bindSheetEvents(sheet);
 
@@ -514,6 +517,8 @@ export class Workbook {
         this.sheets.set(name, sheet);
         this.#activateIfFirst(sheet);
         this.#refreshTabBar();
+
+        this.runHooks(HOOKS.AFTER_SHEET_ADD, name, sheet);
         return sheet;
     }
 
@@ -525,6 +530,9 @@ export class Workbook {
     removeSheet(name) {
         if (!this.sheets.has(name) || this.sheets.size <= 1) return false;
 
+        const cancelled = this.runHooksUntil(HOOKS.BEFORE_SHEET_REMOVE, name);
+        if (cancelled === false) return false;
+
         const removed = this.sheets.get(name);
         this.sheets.delete(name);
         this.#boundSheets.delete(removed);
@@ -534,6 +542,7 @@ export class Workbook {
         }
 
         this.#refreshTabBar();
+        this.runHooks(HOOKS.AFTER_SHEET_REMOVE, name, removed);
         return true;
     }
 
@@ -548,10 +557,15 @@ export class Workbook {
         newName = (newName || "").trim();
         if (!newName || oldName === newName || this.sheets.has(newName)) return false;
 
+        const cancelled = this.runHooksUntil(HOOKS.BEFORE_SHEET_RENAME, oldName, newName);
+        if (cancelled === false) return false;
+
         const sheet = this.sheets.get(oldName);
         this.sheets.delete(oldName);
         sheet.name = newName;
         this.sheets.set(newName, sheet);
+
+        this.runHooks(HOOKS.AFTER_SHEET_RENAME, oldName, newName);
         return true;
     }
 
@@ -562,6 +576,9 @@ export class Workbook {
     switchTo(name) {
         const sheet = this.sheets.get(name);
         if (!sheet || this.activeSheet === sheet) return;
+
+        const cancelled = this.runHooksUntil(HOOKS.BEFORE_SHEET_SWITCH, this.activeSheet, sheet);
+        if (cancelled === false) return;
 
         const previousSheet = this.activeSheet;
         this.activeSheet = sheet;
@@ -793,6 +810,11 @@ export class Workbook {
 
     runHooks(hookName, ...args) {
         return this.eventHandler?.runHooks(hookName, ...args);
+    }
+
+    runHooksUntil(hookName, ...args) {
+        if (!this.eventHandler) return undefined;
+        return this.eventHandler.runHooksUntil(hookName, ...args);
     }
 
     // ============================================================

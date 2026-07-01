@@ -539,6 +539,39 @@ const initApp = () => {
             // [HOOKS.DESTROY]: (...args) => {
             //     console.log("[HOOK] destroy 执行了", ...args);
             // },
+
+            // ==================== 工作表相关钩子 ====================
+            // ✅ 已执行
+            [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
+                console.log("[HOOK] beforeSheetRename 执行了", ...args);
+                return false;
+            },
+            [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
+                console.log("[HOOK] afterSheetRename 执行了", ...args);
+            },
+
+            [HOOKS.BEFORE_SHEET_ADD]: (...args) => {
+                console.log("[HOOK] beforeSheetAdd 执行了", ...args);
+                return true;
+            },
+            [HOOKS.AFTER_SHEET_ADD]: (...args) => {
+                console.log("[HOOK] afterSheetAdd 执行了", ...args);
+            },
+            [HOOKS.BEFORE_SHEET_REMOVE]: (...args) => {
+                console.log("[HOOK] beforeSheetRemove 执行了", ...args);
+                return true;
+            },
+            [HOOKS.AFTER_SHEET_REMOVE]: (...args) => {
+                console.log("[HOOK] afterSheetRemove 执行了", ...args);
+            },
+            [HOOKS.BEFORE_SHEET_SWITCH]: (...args) => {
+                console.log("[HOOK] beforeSheetSwitch 执行了", ...args);
+                return true;
+            },
+            [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
+                console.log("[HOOK] afterSheetSwitch 执行了", ...args);
+                return true;
+            },
         },
         afterInit(wb) {
             errorHandler.debug(ERROR_CODE.DEBUG_LOG, "afterInit");

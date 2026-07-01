@@ -3,17 +3,17 @@ import { Disposable } from "./Disposable.js";
 /**
  * WebComponent — Web Components 基类（组合 Disposable）
  *
- * ⚠️ 解决 disconnectedCallback 陷阱：
+ * 解决 disconnectedCallback 陷阱：
  * - disconnectedCallback ≠ 销毁，而是"暂时离开 DOM"
  * - 拖拽、路由切换、appendChild 移动都会触发 disconnectedCallback
  * - 使用显式销毁标记区分"临时离开"和"真正销毁"
  *
- * 使用方式：
- * 1. 子类覆写 onConnect(disposable) 注册事件
- * 2. 子类覆写 onDisconnect() 清理特有资源
- * 3. 父组件调用 el.destroy() 显式销毁
+ * 生命周期：
+ * 1. connectedCallback → 创建 Disposable → render() → onConnect(disposable)
+ * 2. disconnectedCallback → 如果 #shouldDestroy，才真正销毁
+ * 3. destroy() → 设置 #shouldDestroy = true → remove() → disconnectedCallback
  *
- * @example
+ * 使用方式：
  * class SheetTabElement extends WebComponent {
  *     onConnect(disposable) {
  *         disposable.trackEvent(this.shadowRoot, 'click', this.handleClick);
@@ -25,13 +25,14 @@ import { Disposable } from "./Disposable.js";
  * }
  *
  * // 父组件显式销毁
- * tab.destroy(); // 触发 disconnectedCallback → 真正销毁
+ * tab.destroy();
  */
 export class WebComponent extends HTMLElement {
     #disposable = null;
     #connected = false;
     #shouldDestroy = false;
-    #needsRender = false; // ✅ 新增：延迟渲染标记（解决竞态 Bug）
+    #needsRender = false;
+    #connectPromise = null;
 
     constructor() {
         super();
@@ -40,31 +41,35 @@ export class WebComponent extends HTMLElement {
         }
     }
 
-    // Web Components 生命周期
+    // ==================== Web Components 生命周期 ====================
+
     connectedCallback() {
-        if (this.#connected) return; // 防止重复连接
+        if (this.#connected) return;
         this.#connected = true;
-        
-        // ✅ 每次连接都创建新的 Disposable
+
+        // 每次连接创建新的 Disposable
         this.#disposable = new Disposable();
-        
-        // ✅ 修正顺序：先渲染模板，后注册事件
-        // 原因：
-        // 1. render() 创建 Shadow DOM 中的元素
-        // 2. onConnect() 注册事件监听器（需要访问 Shadow DOM 元素）
-        // 3. 如果 onConnect() 在 render() 之前调用，querySelector 会返回 null
-        // 4. 导致 trackEvent(target, ...) 时 target 为 null，抛出异常
-        
-        // ✅ 修正竞态 Bug：使用延迟渲染机制
+
+        // 处理延迟渲染标记
         if (this.#needsRender) {
             this.#needsRender = false;
         }
-        
-        // ✅ 先渲染模板（确保 Shadow DOM 元素存在）
+
+        // 先渲染模板（确保 Shadow DOM 元素存在）
         this.render();
-        
-        // ✅ 后注册事件（可以安全访问 Shadow DOM 元素）
-        this.onConnect(this.#disposable);
+
+        // 调用 onConnect，支持同步和异步
+        const result = this.onConnect(this.#disposable);
+
+        // 如果 onConnect 返回 Promise，等它完成后再渲染
+        if (result && typeof result.then === 'function') {
+            this.#connectPromise = result;
+            result.then(() => {
+                if (this.#connected && !this.#shouldDestroy) {
+                    this.render();
+                }
+            });
+        }
     }
 
     disconnectedCallback() {
@@ -81,10 +86,13 @@ export class WebComponent extends HTMLElement {
 
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue !== newValue) {
-            // ✅ 修正竞态 Bug：区分"已连接"和"未连接"两种情况
             if (this.#connected) {
-                // 已连接：直接渲染
-                this.render();
+                // 已连接：等待 onConnect 完成后再渲染
+                if (this.#connectPromise) {
+                    this.#connectPromise.then(() => this.render());
+                } else {
+                    this.render();
+                }
             } else {
                 // 未连接：标记需要渲染（等待 connectedCallback）
                 this.#needsRender = true;
@@ -92,43 +100,69 @@ export class WebComponent extends HTMLElement {
         }
     }
 
-    // 显式销毁方法（父组件调用）
+    // ==================== 显式销毁 ====================
+
     destroy() {
-        if (this.#shouldDestroy) return; // 防止重复销毁
+        if (this.#shouldDestroy) return;
         this.#shouldDestroy = true;
-        this.remove(); // 触发 disconnectedCallback
+
+        if (this.isConnected) {
+            this.remove(); // 在 DOM 中，走正常路径
+        } else {
+            // 不在 DOM 中，手动清理（防止 Disposable 泄漏）
+            this.onDisconnect();
+            this.#disposable?.destroy();
+            this.#disposable = null;
+            this.#connected = false;
+        }
     }
 
-    // 获取当前 Disposable（用于 trackEvent）
-    get disposable() {
-        return this.#disposable;
-    }
+    // ==================== 查询方法 ====================
 
-    // 是否已连接
-    get isConnected() {
+    /** 是否已连接 */
+    get isComponentConnected() {
         return this.#connected;
     }
 
-    // 是否已销毁
+    /** 是否已销毁 */
     get isDestroyed() {
         return this.#shouldDestroy;
     }
 
-    // 子类覆写的钩子
+    // ==================== 子类覆写的钩子 ====================
+
+    /**
+     * 组件连接时调用
+     * @param {Disposable} disposable - 用于注册事件和子对象
+     * @returns {void|Promise<void>} 可以返回 Promise（异步初始化）
+     */
     onConnect(disposable) {
         // 子类覆写：注册事件
         // disposable.trackEvent(target, type, handler)
     }
 
+    /**
+     * 组件销毁时调用（仅当 #shouldDestroy 为 true）
+     * 用于清理子类特有的资源
+     */
     onDisconnect() {
         // 子类覆写：清理特有资源
     }
 
+    /**
+     * 渲染模板（子类必须覆写）
+     * 在 connectedCallback 中自动调用
+     */
     render() {
         // 子类覆写：渲染模板
     }
 
-    // 工具方法
+    // ==================== 工具方法 ====================
+
+    /**
+     * HTML 转义（用于防止 XSS）
+     * 注意：此方法只适用于文本内容，不适用于属性值
+     */
     escapeHtml(text) {
         const div = document.createElement("div");
         div.textContent = text;
