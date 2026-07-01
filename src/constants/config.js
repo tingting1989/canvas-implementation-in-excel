@@ -104,7 +104,7 @@ export const CONFIG = {
     SCROLLBAR_MIN_SIZE: 30,
 
     /** Sheet 标签栏高度（px），位于 canvas 底部与水平滚动条同行 */
-    SHEET_TAB_HEIGHT: 30,
+    SHEET_TAB_HEIGHT: 28,
 
     /** 列宽/行高调整的命中检测区域（px），鼠标在边框附近此范围内触发拖拽调整 */
     RESIZE_HIT_AREA: 5,

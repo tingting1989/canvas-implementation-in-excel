@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { RenderEngine } from "@/render/RenderEngine.js";
 import { ScrollManager } from "@/ui/ScrollManager.js";
-import { SheetTabBar } from "@/ui/SheetTabBar.js";
+import { SheetTabManager } from "@/ui/sheetTab/SheetTabManager.js";
 import { EVENT_NAMES } from "@/constants/eventNames.js";
 
 describe("RenderEngine 销毁（P0 修复验证）", () => {

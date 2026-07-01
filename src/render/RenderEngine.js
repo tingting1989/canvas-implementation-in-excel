@@ -1,5 +1,5 @@
 ﻿import { ScrollManager } from "../ui/ScrollManager.js";
-import { SheetTabBar } from "../ui/SheetTabBar.js";
+import { SheetTabManager } from "../ui/sheetTab/SheetTabManager.js";
 import { ViewportTransform } from "./ViewportTransform.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { CONFIG } from "../constants/config";
@@ -43,7 +43,7 @@ export class RenderEngine extends DOMComponent {
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
         this.trackChild(this.scrollMgr);
 
-        this.sheetTabBar = new SheetTabBar(this.wrap, null);
+        this.sheetTabBar = new SheetTabManager(this.wrap, null);
         this.trackChild(this.sheetTabBar);
 
         this.#initLayerSystem();
