@@ -1,20 +1,18 @@
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { DOMComponent } from "../core/DOMComponent.js";
+import "./FormulaBarElement.js";  // ✅ 导入 Web Component
 import "./formulaBar.css";
 
 /**
- * 公式栏
- *
- * 位于工具栏和画布之间，模拟 Excel 的 fx 输入栏。
- * 左侧显示当前活动单元格坐标（如 A1），右侧显示单元格内容：
- * - 公式单元格：显示原始公式字符串（如 =SUM(A1:A10)）
- * - 普通单元格：显示值
- *
- * 支持直接在公式栏中输入/编辑公式，回车确认后写入单元格。
+ * FormulaBar — 公式栏（重构版）
+ * 
+ * ✅ 使用 Web Components（FormulaBarElement）
+ * ✅ 不向后兼容，彻底重构
+ * ✅ 显式销毁元素
  */
 export class FormulaBar extends DOMComponent {
-    /** @type {HTMLInputElement} */
-    #input = null;
+    /** @type {FormulaBarElement} */
+    #element = null;  // ✅ 持有 Web Component 实例
 
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
@@ -41,58 +39,42 @@ export class FormulaBar extends DOMComponent {
 
     /**
      * 创建 DOM 结构
-     *
-     * 布局：[ 单元格坐标 ] [ 输入框 fx ]
-     * 整体高度 28px，与 Excel 公式栏风格一致
+     * 
+     * ✅ 使用 Web Component（FormulaBarElement）
      */
     #createDOM(container) {
-        const bar = this.createElement("div", { className: "cs-formula-bar" });
-
-        const cellRef = this.createElement(
-            "div",
-            {
-                className: "cs-formula-cell-ref",
-            },
-            bar,
-        );
-
-        this.#input = this.createElement(
-            "input",
-            {
-                className: "cs-formula-input",
-                type: "text",
-                placeholder: "输入值或公式...",
-            },
-            bar,
-        );
-
-        this._cellRef = cellRef;
-
+        // ✅ 使用 Web Component
+        this.#element = document.createElement('formula-bar');
+        
         if (container) {
-            container.insertBefore(bar, container.firstChild);
+            container.insertBefore(this.#element, container.firstChild);
         }
+        
+        // ✅ Web Component 的销毁由 destroy() 方法控制
+        // 不需要通过 DOMComponent 的 trackElement 来跟踪
     }
 
     /**
      * 绑定事件
+     * 
+     * ✅ 监听 Web Component 事件
      */
     #bindEvents() {
-        this.trackEvent(this.#input, EVENT_NAMES.KEYDOWN, (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                this.#commit();
-            } else if (e.key === "Escape") {
-                e.preventDefault();
-                this.#cancel();
-            } else if (e.key === "Tab") {
-                e.preventDefault();
-                this.#commit();
-                this.#moveToNextCell();
-            }
+        this.trackEvent(this.#element, 'commit', (e) => {
+            this.#commitValue(e.detail.value);
         });
-
-        this.trackEvent(this.#input, EVENT_NAMES.FOCUS, () => {
-            this.#input.select();
+        
+        this.trackEvent(this.#element, 'cancel', () => {
+            this.#cancelEdit();
+        });
+        
+        this.trackEvent(this.#element, 'commit-and-move', (e) => {
+            this.#commitValue(e.detail.value);
+            this.#moveToCell(e.detail.direction);
+        });
+        
+        this.trackEvent(this.#element, 'start-edit', () => {
+            this.#originalValue = this.#element.getValue();
         });
     }
 
@@ -103,8 +85,8 @@ export class FormulaBar extends DOMComponent {
     update() {
         const sheet = this.#workbook.activeSheet;
         if (!sheet) {
-            this._cellRef.textContent = "";
-            this.#input.value = "";
+            this.#element.setAttribute('cell-ref', '');
+            this.#element.setValue('');
             return;
         }
 
@@ -113,28 +95,30 @@ export class FormulaBar extends DOMComponent {
         this.#activeCol = col;
 
         const ref = this.#toColLabel(col) + (row + 1);
-        this._cellRef.textContent = ref;
+        
+        // ✅ 使用 Web Component 属性
+        this.#element.setAttribute('cell-ref', ref);
 
         const cell = sheet.cellStore.get(row, col);
+        let value = '';
         if (cell && cell.formula) {
-            this.#input.value = cell.formula;
+            value = cell.formula;
         } else if (cell) {
-            this.#input.value = cell.value ?? "";
-        } else {
-            this.#input.value = "";
+            value = cell.value ?? '';
         }
-
-        this.#originalValue = this.#input.value;
+        
+        // ✅ 使用 Web Component 方法
+        this.#element.setValue(value);
+        this.#originalValue = value;
     }
 
     /**
      * 确认输入：将公式栏内容写入当前活动单元格
      */
-    #commit() {
+    #commitValue(value) {
         const sheet = this.#workbook.activeSheet;
         if (!sheet || this.#activeRow < 0 || this.#activeCol < 0) return;
 
-        const value = this.#input.value;
         if (value === this.#originalValue) return;
 
         if (value === "") {
@@ -151,31 +135,47 @@ export class FormulaBar extends DOMComponent {
     /**
      * 取消输入：恢复原始值
      */
-    #cancel() {
-        this.#input.value = this.#originalValue;
-        this.#input.blur();
+    #cancelEdit() {
+        // ✅ 使用 Web Component 方法
+        this.#element.setValue(this.#originalValue);
+        this.#element.cancelEdit();
         this.#workbook.renderEngine?.canvas?.focus();
     }
 
     /**
      * 确认后移动到下一个单元格（Tab）
      */
-    #moveToNextCell() {
+    #moveToCell(direction) {
         const sheet = this.#workbook.activeSheet;
         if (!sheet) return;
 
-        const nextCol = this.#activeCol + 1;
-        const rc = sheet.rowColManager;
-        const maxCol = rc.realColCount - 1;
+        let nextRow = this.#activeRow;
+        let nextCol = this.#activeCol;
 
-        if (nextCol <= maxCol) {
-            sheet.selection.setActive(this.#activeRow, nextCol);
-        } else if (this.#activeRow + 1 < rc.rowCount) {
-            sheet.selection.setActive(this.#activeRow + 1, 0);
+        if (direction === 'next') {
+            nextCol++;
+        } else if (direction === 'prev') {
+            nextCol--;
         }
 
-        this.#workbook.renderEngine?.render(sheet);
-        this.update();
+        const rc = sheet.rowColManager;
+        const maxCol = rc.realColCount - 1;
+        const maxRow = rc.rowCount - 1;
+
+        // 边界处理
+        if (nextCol > maxCol) {
+            nextCol = 0;
+            nextRow++;
+        } else if (nextCol < 0) {
+            nextCol = maxCol;
+            nextRow--;
+        }
+
+        if (nextRow >= 0 && nextRow <= maxRow && nextCol >= 0 && nextCol <= maxCol) {
+            sheet.selection.setActive(nextRow, nextCol);
+            this.#workbook.renderEngine?.render(sheet);
+            this.update();
+        }
     }
 
     /**
@@ -193,10 +193,22 @@ export class FormulaBar extends DOMComponent {
         return label;
     }
 
+    /**
+     * 开始编辑（外部调用）
+     */
+    startEdit() {
+        this.#element.focus();
+    }
+
     /** @override */
     onDestroy() {
+        // ✅ 显式销毁 Web Component
+        if (this.#element) {
+            this.#element.destroy();
+            this.#element = null;
+        }
+        
         this.#workbook = null;
-        this.#input = null;
         super.onDestroy();
     }
 }

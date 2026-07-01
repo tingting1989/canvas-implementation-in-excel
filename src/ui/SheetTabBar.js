@@ -1,8 +1,16 @@
 import { CONFIG } from "../constants/config";
 import { EVENT_NAMES } from "../constants/eventNames";
 import { DOMComponent } from "../core/DOMComponent.js";
+import "./SheetTabElement.js";  // ✅ 导入 Web Component
 import "./sheetTabBar.css";
 
+/**
+ * SheetTabBar — 工作表标签栏（重构版）
+ * 
+ * ✅ 使用 Web Components（SheetTabElement）
+ * ✅ 不向后兼容，彻底重构
+ * ✅ 显式销毁标签
+ */
 export class SheetTabBar extends DOMComponent {
     #tabsContainer = null;
     #scrollWrap = null;
@@ -13,8 +21,7 @@ export class SheetTabBar extends DOMComponent {
     #onRename = null;
     #scrollOffset = 0;
     #renaming = false;
-    #lastClickName = null;
-    #lastClickTime = 0;
+    #tabs = new Map();  // ✅ 跟踪所有标签（用于显式销毁）
     #renameInput = null;
     #renameHandleMousedown = null;
     #renameHandleKeydown = null;
@@ -43,44 +50,30 @@ export class SheetTabBar extends DOMComponent {
         this.#scrollWrap = this.createElement("div", { className: "cs-sheet-tabs-scroll" }, bar);
         this.#tabsContainer = this.createElement("div", { className: "cs-sheet-tabs" }, this.#scrollWrap);
 
-        // 保存引用供外部方法使用
         this._addBtn = addBtn;
         this._bar = bar;
     }
 
     #bindEvents() {
-        this.trackEvent(this._addBtn, EVENT_NAMES.CLICK, () => {
-            if (this.#onAdd) this.#onAdd();
+        // ✅ 监听 Web Component 事件
+        this.trackEvent(this.#tabsContainer, 'switch', (e) => {
+            if (this.#renaming) return;
+            if (this.#onSwitch) this.#onSwitch(e.detail.name);
         });
 
-        this.trackEvent(this.#tabsContainer, EVENT_NAMES.CLICK, (e) => {
+        this.trackEvent(this.#tabsContainer, 'close', (e) => {
             if (this.#renaming) return;
+            if (this.#onRemove) this.#onRemove(e.detail.name);
+        });
 
-            const tabEl = e.target.closest(".cs-sheet-tab");
-            if (!tabEl) return;
+        this.trackEvent(this.#tabsContainer, 'rename', (e) => {
+            if (this.#renaming) return;
+            const tab = this.#tabs.get(e.detail.name);
+            if (tab) this.#startRename(tab);
+        });
 
-            const closeBtn = e.target.closest(".cs-sheet-tab-close");
-            if (closeBtn) {
-                e.stopPropagation();
-                const name = tabEl.dataset.sheetName;
-                if (this.#onRemove) this.#onRemove(name);
-                return;
-            }
-
-            const name = tabEl.dataset.sheetName;
-            const now = Date.now();
-
-            if (this.#lastClickName === name && now - this.#lastClickTime < 400) {
-                this.#lastClickName = null;
-                this.#lastClickTime = 0;
-                const activeTab = this.#tabsContainer.querySelector(".cs-sheet-tab.active");
-                if (activeTab) this.#startRename(activeTab);
-                return;
-            }
-
-            this.#lastClickName = name;
-            this.#lastClickTime = now;
-            if (this.#onSwitch) this.#onSwitch(name);
+        this.trackEvent(this._addBtn, EVENT_NAMES.CLICK, () => {
+            if (this.#onAdd) this.#onAdd();
         });
 
         this.trackEvent(
@@ -117,24 +110,21 @@ export class SheetTabBar extends DOMComponent {
     }
 
     scrollToTab(sheetName) {
-        const tabs = this.#tabsContainer.querySelectorAll(".cs-sheet-tab");
-        for (const tab of tabs) {
-            if (tab.dataset.sheetName === sheetName) {
-                const tabLeft = tab.offsetLeft;
-                const tabWidth = tab.offsetWidth;
-                const viewW = this.#scrollWrap.clientWidth;
+        const tab = this.#tabs.get(sheetName);
+        if (!tab) return;
 
-                if (tabLeft < this.#scrollOffset) {
-                    this.#scrollOffset = tabLeft;
-                } else if (tabLeft + tabWidth > this.#scrollOffset + viewW) {
-                    this.#scrollOffset = tabLeft + tabWidth - viewW;
-                }
+        const tabLeft = tab.offsetLeft;
+        const tabWidth = tab.offsetWidth;
+        const viewW = this.#scrollWrap.clientWidth;
 
-                this.#clampScroll();
-                this.#applyScroll();
-                break;
-            }
+        if (tabLeft < this.#scrollOffset) {
+            this.#scrollOffset = tabLeft;
+        } else if (tabLeft + tabWidth > this.#scrollOffset + viewW) {
+            this.#scrollOffset = tabLeft + tabWidth - viewW;
         }
+
+        this.#clampScroll();
+        this.#applyScroll();
     }
 
     set onSwitch(fn) {
@@ -157,11 +147,8 @@ export class SheetTabBar extends DOMComponent {
         this.#workbook = wb;
     }
 
-    #startRename(tabEl) {
-        const oldName = tabEl.dataset.sheetName;
-        const label = tabEl.querySelector("span:not(.cs-sheet-tab-close)");
-        if (!label) return;
-
+    #startRename(tabElement) {
+        const oldName = tabElement.getAttribute('name');
         this.#cleanupRename();
         this.#renaming = true;
 
@@ -210,7 +197,13 @@ export class SheetTabBar extends DOMComponent {
         input.addEventListener(EVENT_NAMES.KEYDOWN, this.#renameHandleKeydown);
         input.addEventListener(EVENT_NAMES.BLUR, this.#renameHandleBlur);
 
-        tabEl.replaceChild(input, label);
+        // ✅ 替换 Web Component 的 label 部分
+        const label = tabElement.shadowRoot.querySelector('.label');
+        if (label) {
+            label.style.display = 'none';
+            tabElement.shadowRoot.appendChild(input);
+        }
+
         input.focus();
         input.select();
     }
@@ -226,6 +219,19 @@ export class SheetTabBar extends DOMComponent {
             if (this.#renameHandleBlur) {
                 this.#renameInput.removeEventListener(EVENT_NAMES.BLUR, this.#renameHandleBlur);
             }
+            
+            // ✅ 移除输入框，恢复 label
+            if (this.#renameInput.parentElement) {
+                const tabElement = this.#renameInput.closest('sheet-tab');
+                if (tabElement) {
+                    const label = tabElement.shadowRoot.querySelector('.label');
+                    if (label) {
+                        label.style.display = '';
+                    }
+                }
+                this.#renameInput.remove();
+            }
+            
             this.#renameInput = null;
         }
         this.#renameHandleMousedown = null;
@@ -241,25 +247,22 @@ export class SheetTabBar extends DOMComponent {
         const activeName = this.#workbook.activeSheet?.name;
 
         this.#cleanupRename();
-        this.#tabsContainer.innerHTML = "";
 
+        // ✅ 显式销毁旧标签（关键）
+        for (const [name, tab] of this.#tabs) {
+            tab.destroy();  // 触发 disconnectedCallback → 真正销毁
+        }
+        this.#tabs.clear();
+
+        // ✅ 使用 Web Components 创建新标签
         for (const [name, sheet] of sheets) {
-            const tab = document.createElement("div");
-            tab.className = "cs-sheet-tab" + (name === activeName ? " active" : "");
-            tab.dataset.sheetName = name;
-
-            const label = document.createElement("span");
-            label.textContent = name;
-            tab.appendChild(label);
-
-            if (sheets.size > 1) {
-                const closeBtn = document.createElement("span");
-                closeBtn.className = "cs-sheet-tab-close";
-                closeBtn.textContent = "\u00D7";
-                tab.appendChild(closeBtn);
-            }
-
+            const tab = document.createElement('sheet-tab');
+            tab.setAttribute('name', name);
+            if (name === activeName) tab.setAttribute('active', '');
+            if (sheets.size > 1) tab.setAttribute('closable', '');
+            
             this.#tabsContainer.appendChild(tab);
+            this.#tabs.set(name, tab);  // ✅ 跟踪标签
         }
 
         this.#scrollOffset = 0;
@@ -268,6 +271,12 @@ export class SheetTabBar extends DOMComponent {
 
     /** @override */
     onDestroy() {
+        // ✅ 显式销毁所有标签（关键）
+        for (const [name, tab] of this.#tabs) {
+            tab.destroy();
+        }
+        this.#tabs.clear();
+        
         this.#cleanupRename();
         this.#workbook = null;
         this.#onSwitch = null;

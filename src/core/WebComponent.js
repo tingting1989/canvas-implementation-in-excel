@@ -2,28 +2,28 @@ import { Disposable } from "./Disposable.js";
 
 /**
  * WebComponent — Web Components 基类（组合 Disposable）
- * 
+ *
  * ⚠️ 解决 disconnectedCallback 陷阱：
  * - disconnectedCallback ≠ 销毁，而是"暂时离开 DOM"
  * - 拖拽、路由切换、appendChild 移动都会触发 disconnectedCallback
  * - 使用显式销毁标记区分"临时离开"和"真正销毁"
- * 
+ *
  * 使用方式：
  * 1. 子类覆写 onConnect(disposable) 注册事件
  * 2. 子类覆写 onDisconnect() 清理特有资源
  * 3. 父组件调用 el.destroy() 显式销毁
- * 
+ *
  * @example
  * class SheetTabElement extends WebComponent {
  *     onConnect(disposable) {
  *         disposable.trackEvent(this.shadowRoot, 'click', this.handleClick);
  *     }
- *     
+ *
  *     onDisconnect() {
  *         console.log('SheetTab destroyed');
  *     }
  * }
- * 
+ *
  * // 父组件显式销毁
  * tab.destroy(); // 触发 disconnectedCallback → 真正销毁
  */
@@ -31,12 +31,12 @@ export class WebComponent extends HTMLElement {
     #disposable = null;
     #connected = false;
     #shouldDestroy = false;
-    #needsRender = false;  // ✅ 新增：延迟渲染标记（解决竞态 Bug）
+    #needsRender = false; // ✅ 新增：延迟渲染标记（解决竞态 Bug）
 
     constructor() {
         super();
         if (!this.shadowRoot) {
-            this.attachShadow({ mode: 'open' });
+            this.attachShadow({ mode: "open" });
         }
     }
 
@@ -48,28 +48,29 @@ export class WebComponent extends HTMLElement {
         // ✅ 每次连接都创建新的 Disposable
         this.#disposable = new Disposable();
         
-        // ✅ 修正顺序：先注册事件，后渲染模板
+        // ✅ 修正顺序：先渲染模板，后注册事件
         // 原因：
-        // 1. onConnect 中注册事件监听器
-        // 2. render 中渲染模板
-        // 3. 如果 render() 在 onConnect() 之前调用，事件监听器还未注册
-        // 4. 用户交互时，事件监听器还没有准备好
-        this.onConnect(this.#disposable);
+        // 1. render() 创建 Shadow DOM 中的元素
+        // 2. onConnect() 注册事件监听器（需要访问 Shadow DOM 元素）
+        // 3. 如果 onConnect() 在 render() 之前调用，querySelector 会返回 null
+        // 4. 导致 trackEvent(target, ...) 时 target 为 null，抛出异常
         
         // ✅ 修正竞态 Bug：使用延迟渲染机制
-        // 原因：
-        // 1. attributeChangedCallback 可能在 connectedCallback 之前被调用
-        // 2. 确保属性变化在首次渲染时正确显示
         if (this.#needsRender) {
             this.#needsRender = false;
-            this.render();
         }
+        
+        // ✅ 先渲染模板（确保 Shadow DOM 元素存在）
+        this.render();
+        
+        // ✅ 后注册事件（可以安全访问 Shadow DOM 元素）
+        this.onConnect(this.#disposable);
     }
 
     disconnectedCallback() {
         if (!this.#connected) return;
         this.#connected = false;
-        
+
         // 只有标记为销毁时才真正销毁
         if (this.#shouldDestroy) {
             this.onDisconnect();
@@ -129,7 +130,7 @@ export class WebComponent extends HTMLElement {
 
     // 工具方法
     escapeHtml(text) {
-        const div = document.createElement('div');
+        const div = document.createElement("div");
         div.textContent = text;
         return div.innerHTML;
     }
