@@ -271,7 +271,6 @@ export class SheetTabBar extends DOMComponent {
 
     /** @override */
     onDestroy() {
-        // ✅ 显式销毁所有标签（关键）
         for (const [name, tab] of this.#tabs) {
             tab.destroy();
         }
@@ -283,6 +282,5 @@ export class SheetTabBar extends DOMComponent {
         this.#onAdd = null;
         this.#onRemove = null;
         this.#onRename = null;
-        super.onDestroy();
     }
 }

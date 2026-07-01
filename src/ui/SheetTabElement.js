@@ -90,41 +90,22 @@ export class SheetTabElement extends WebComponent {
 
     #handleClick = (e) => {
         const closeBtn = e.target.closest(".close-btn");
+        const name = this.getAttribute("name");
         if (closeBtn) {
             e.stopPropagation();
-            this.dispatchEvent(
-                new CustomEvent("close", {
-                    bubbles: true,
-                    composed: true,
-                    detail: { name: this.getAttribute("name") },
-                }),
-            );
+            this.emit("close", { name });
         } else {
-            this.dispatchEvent(
-                new CustomEvent("switch", {
-                    bubbles: true,
-                    composed: true,
-                    detail: { name: this.getAttribute("name") },
-                }),
-            );
+            this.emit("switch", { name });
         }
     };
 
     #handleDblClick = (e) => {
         if (!e.target.closest(".close-btn")) {
-            this.dispatchEvent(
-                new CustomEvent("rename", {
-                    bubbles: true,
-                    composed: true,
-                    detail: { name: this.getAttribute("name") },
-                }),
-            );
+            this.emit("rename", { name: this.getAttribute("name") });
         }
     };
 
-    onDisconnect() {
-        console.log(`SheetTab [${this.getAttribute("name")}] destroyed`);
-    }
+    onDisconnect() {}
 }
 
 customElements.define("sheet-tab", SheetTabElement);

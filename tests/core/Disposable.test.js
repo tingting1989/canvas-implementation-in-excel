@@ -3,12 +3,17 @@ import { Disposable } from "@/core/Disposable.js";
 
 describe("Disposable 基类", () => {
     it("D-01: destroy 幂等 — 连续调用两次不抛异常，onDestroy 仅调用一次", () => {
-        const d = new Disposable();
-        const spy = vi.spyOn(d, "onDestroy");
+        let callCount = 0;
+        class Child extends Disposable {
+            onDestroy() {
+                callCount++;
+            }
+        }
+        const d = new Child();
         d.destroy();
         d.destroy();
         expect(d.isDisposed).toBe(true);
-        expect(spy).toHaveBeenCalledTimes(1);
+        expect(callCount).toBe(1);
     });
 
     it("D-02: trackEvent 自动清理 — destroy 时调用 removeEventListener", () => {
@@ -34,12 +39,18 @@ describe("Disposable 基类", () => {
 
     it("D-04: 多层级联销毁 — A → B → C 三层", () => {
         const order = [];
-        const a = new Disposable();
-        const b = new Disposable();
-        const c = new Disposable();
-        vi.spyOn(a, "onDestroy").mockImplementation(() => order.push("A"));
-        vi.spyOn(b, "onDestroy").mockImplementation(() => order.push("B"));
-        vi.spyOn(c, "onDestroy").mockImplementation(() => order.push("C"));
+        class A extends Disposable {
+            onDestroy() { order.push("A"); }
+        }
+        class B extends Disposable {
+            onDestroy() { order.push("B"); }
+        }
+        class C extends Disposable {
+            onDestroy() { order.push("C"); }
+        }
+        const a = new A();
+        const b = new B();
+        const c = new C();
         a.trackChild(b);
         b.trackChild(c);
         a.destroy();
@@ -59,11 +70,12 @@ describe("Disposable 基类", () => {
         const d = new Child();
         const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
         d.trackEvent(target, "click", () => calls.push("event"));
-        const child = new Disposable();
-        vi.spyOn(child, "onDestroy").mockImplementation(() => calls.push("child-destroy"));
+        class SubChild extends Disposable {
+            onDestroy() { calls.push("child-destroy"); }
+        }
+        const child = new SubChild();
         d.trackChild(child);
         d.destroy();
-        // onDestroy 应在 removeEventListener 和 child.destroy 之前调用
         expect(calls.indexOf("onDestroy")).toBeLessThan(calls.indexOf("child-destroy"));
     });
 
@@ -83,5 +95,48 @@ describe("Disposable 基类", () => {
         expect(target.addEventListener).toHaveBeenCalledWith("scroll", handler, options);
         d.destroy();
         expect(target.removeEventListener).toHaveBeenCalledWith("scroll", handler, options);
+    });
+
+    it("D-07: 原型链自动调用父类 onDestroy — 子类无需 super.onDestroy()", () => {
+        const order = [];
+        class Parent extends Disposable {
+            onDestroy() { order.push("Parent"); }
+        }
+        class Child extends Parent {
+            onDestroy() { order.push("Child"); }
+        }
+        const c = new Child();
+        c.destroy();
+        expect(order).toEqual(["Child", "Parent"]);
+    });
+
+    it("D-08: 三层继承链 onDestroy 调用顺序 — 子 → 中 → 父", () => {
+        const order = [];
+        class A extends Disposable {
+            onDestroy() { order.push("A"); }
+        }
+        class B extends A {
+            onDestroy() { order.push("B"); }
+        }
+        class C extends B {
+            onDestroy() { order.push("C"); }
+        }
+        const c = new C();
+        c.destroy();
+        expect(order).toEqual(["C", "B", "A"]);
+    });
+
+    it("D-09: 中间层未覆写 onDestroy 时不影响链式调用", () => {
+        const order = [];
+        class A extends Disposable {
+            onDestroy() { order.push("A"); }
+        }
+        class B extends A {}
+        class C extends B {
+            onDestroy() { order.push("C"); }
+        }
+        const c = new C();
+        c.destroy();
+        expect(order).toEqual(["C", "A"]);
     });
 });

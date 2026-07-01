@@ -1,4 +1,5 @@
-import { WebComponent } from "../../core/WebComponent.js";
+import { WebComponent } from "@/core/WebComponent";
+import { FORMULA_BAR_EVENTS } from "./FormulaBarEvents.js";
 
 /**
  * FormulaBarElement — 公式栏 Web Component
@@ -14,11 +15,15 @@ import { WebComponent } from "../../core/WebComponent.js";
  */
 export class FormulaBarElement extends WebComponent {
     static get observedAttributes() {
-        return ["cell-ref", "value", "editing"];
+        return ["cell-ref", "editing"];
     }
+
+    #cellRef = "A1";
+    #value = "";
 
     onConnect(disposable) {
         const input = this.shadowRoot.querySelector(".formula-input");
+        disposable.trackEvent(this, "keydown", (e) => e.stopPropagation());
 
         disposable.trackEvent(input, "keydown", this.#handleKeydown);
         disposable.trackEvent(input, "focus", this.#handleFocus);
@@ -27,61 +32,72 @@ export class FormulaBarElement extends WebComponent {
         disposable.trackEvent(input, "compositionend", () => (this.composing = false));
     }
 
-    render() {
-        const cellRef = this.getAttribute("cell-ref") || "A1";
-        const value = this.getAttribute("value") || "";
-        const editing = this.hasAttribute("editing");
+    #styleText = `
+        :host {
+            display: flex;
+            height: 28px;
+            border-bottom: 1px solid #d0d0d0;
+            background: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
 
-        this.shadowRoot.innerHTML = `
-            <style>
-                :host {
-                    display: flex;
-                    height: 28px;
-                    border-bottom: 1px solid #d0d0d0;
-                    background: #fff;
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                }
-                
-                .cell-ref {
-                    width: 80px;
-                    padding: 0 12px;
-                    background: #f5f5f5;
-                    border-right: 1px solid #d0d0d0;
-                    font-size: 13px;
-                    color: #444;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    user-select: none;
-                    font-weight: 500;
-                }
-                
-                .formula-input {
-                    flex: 1;
-                    padding: 0 12px;
-                    border: none;
-                    font-size: 13px;
-                    font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
-                    background: ${editing ? "#fffbe6" : "#fff"};
-                    transition: background 0.15s ease;
-                }
-                
-                .formula-input:focus {
-                    outline: none;
-                    background: #fffbe6;
-                }
-                
-                .formula-input::placeholder {
-                    color: #999;
-                    font-style: italic;
-                }
-            </style>
-            
-            <div class="cell-ref">${this.escapeHtml(cellRef)}</div>
-            <input class="formula-input" type="text" 
-                   value="${this.escapeHtml(value)}" 
-                   placeholder="输入值或公式...">
-        `;
+        .cell-ref {
+            width: 80px;
+            padding: 0 12px;
+            background: #f5f5f5;
+            border-right: 1px solid #d0d0d0;
+            font-size: 13px;
+            color: #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            font-weight: 500;
+        }
+
+        .formula-input {
+            flex: 1;
+            padding: 0 12px;
+            border: none;
+            font-size: 13px;
+            font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
+            background: #fff;
+            transition: background 0.15s ease;
+        }
+
+        .formula-input:focus {
+            outline: none;
+            background: #fffbe6;
+        }
+
+        .formula-input::placeholder {
+            color: #999;
+            font-style: italic;
+        }
+
+        :host([editing]) .formula-input {
+            background: #fffbe6;
+        }
+    `;
+
+    render(changedAttr) {
+        if (!this.shadowRoot.querySelector(".formula-input")) {
+            this.shadowRoot.innerHTML = `
+                <style>${this.#styleText}</style>
+                <div class="cell-ref"></div>
+                <input class="formula-input" type="text" placeholder="输入值或公式...">
+            `;
+
+            this.shadowRoot.querySelector(".cell-ref").textContent = this.#cellRef;
+            this.shadowRoot.querySelector(".formula-input").value = this.#value;
+            return;
+        }
+
+        if (!changedAttr || changedAttr === "cell-ref") {
+            this.#cellRef = this.getAttribute("cell-ref") || "A1";
+            const cellRefEl = this.shadowRoot.querySelector(".cell-ref");
+            if (cellRefEl) cellRefEl.textContent = this.#cellRef;
+        }
     }
 
     #handleKeydown = (e) => {
@@ -89,85 +105,55 @@ export class FormulaBarElement extends WebComponent {
 
         if (e.key === "Enter") {
             e.preventDefault();
-            const input = e.target;
-            this.dispatchEvent(
-                new CustomEvent("commit", {
-                    bubbles: true,
-                    composed: true,
-                    detail: { value: input.value },
-                }),
-            );
+            this.emit(FORMULA_BAR_EVENTS.COMMIT, { value: e.target.value });
         } else if (e.key === "Escape") {
             e.preventDefault();
-            this.dispatchEvent(
-                new CustomEvent("cancel", {
-                    bubbles: true,
-                    composed: true,
-                }),
-            );
+            this.emit(FORMULA_BAR_EVENTS.CANCEL);
         } else if (e.key === "Tab") {
             e.preventDefault();
-            const input = e.target;
-            this.dispatchEvent(
-                new CustomEvent("commit-and-move", {
-                    bubbles: true,
-                    composed: true,
-                    detail: { value: input.value, direction: e.shiftKey ? "prev" : "next" },
-                }),
-            );
+            this.emit(FORMULA_BAR_EVENTS.COMMIT_AND_MOVE, { value: e.target.value, direction: e.shiftKey ? "prev" : "next" });
         }
     };
 
     #handleFocus = (e) => {
         e.target.select();
         this.setAttribute("editing", "");
-        this.dispatchEvent(
-            new CustomEvent("start-edit", {
-                bubbles: true,
-                composed: true,
-            }),
-        );
+        this.emit(FORMULA_BAR_EVENTS.START_EDIT);
     };
 
     #handleBlur = (e) => {
         if (!this.hasAttribute("editing")) {
-            this.dispatchEvent(
-                new CustomEvent("cancel", {
-                    bubbles: true,
-                    composed: true,
-                }),
-            );
+            this.emit(FORMULA_BAR_EVENTS.CANCEL);
         }
         this.removeAttribute("editing");
     };
 
-    // 公开方法：设置值
     setValue(value) {
-        const input = this.shadowRoot.querySelector(".formula-input");
+        this.#value = value;
+        const input = this.shadowRoot?.querySelector(".formula-input");
         if (input) input.value = value;
     }
 
-    // 公开方法：获取值
     getValue() {
-        const input = this.shadowRoot.querySelector(".formula-input");
-        return input ? input.value : "";
+        if (this.isDestroyed) return this.#value;
+        const input = this.shadowRoot?.querySelector(".formula-input");
+        return input ? input.value : this.#value;
     }
 
-    // 公开方法：聚焦
     focus() {
-        const input = this.shadowRoot.querySelector(".formula-input");
+        const input = this.shadowRoot?.querySelector(".formula-input");
         if (input) input.focus();
     }
 
-    // 公开方法：取消编辑
     cancelEdit() {
         this.removeAttribute("editing");
-        const input = this.shadowRoot.querySelector(".formula-input");
+        const input = this.shadowRoot?.querySelector(".formula-input");
         if (input) input.blur();
     }
 
     onDisconnect() {
-        console.log("FormulaBar destroyed");
+        this.#value = "";
+        this.#cellRef = "A1";
     }
 }
 

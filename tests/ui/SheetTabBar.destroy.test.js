@@ -28,16 +28,16 @@ describe("SheetTabBar 销毁", () => {
         expect(wrap.querySelectorAll(".cs-sheet-tab-bar").length).toBe(0);
     });
 
-    it("ST-02: 事件监听器移除 — click 监听被移除", () => {
+    it("ST-02: 事件监听器移除 — switch 监听被移除", () => {
         const stb = new SheetTabBar(wrap, null);
         const tabsContainer = wrap.querySelector(".cs-sheet-tabs");
-        
+
         const removeSpy = vi.spyOn(tabsContainer, "removeEventListener");
-        
+
         stb.destroy();
-        
-        const clickCalls = removeSpy.mock.calls.filter(call => call[0] === EVENT_NAMES.CLICK);
-        expect(clickCalls.length).toBeGreaterThan(0);
+
+        const switchCalls = removeSpy.mock.calls.filter(call => call[0] === "switch");
+        expect(switchCalls.length).toBeGreaterThan(0);
         removeSpy.mockRestore();
     });
 

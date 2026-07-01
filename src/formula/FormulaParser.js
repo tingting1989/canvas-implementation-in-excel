@@ -17,6 +17,8 @@
  * - B5 → row=4, col=1
  */
 
+import { colToIndex, indexToCol } from "../utils/cellRef.js";
+
 const TOKEN = {
     NUMBER: "NUMBER",
     STRING: "STRING",
@@ -345,31 +347,4 @@ function tokenize(formula) {
     return tokens;
 }
 
-/**
- * 列字母转索引：A=0, B=1, ..., Z=25, AA=26, AB=27
- * @param {string} colStr
- * @returns {number}
- */
-export function colToIndex(colStr) {
-    let result = 0;
-    for (let i = 0; i < colStr.length; i++) {
-        result = result * 26 + (colStr.toUpperCase().charCodeAt(i) - 65 + 1);
-    }
-    return result - 1;
-}
-
-/**
- * 列索引转字母：0=A, 1=B, ..., 25=Z, 26=AA
- * @param {number} index
- * @returns {string}
- */
-export function indexToCol(index) {
-    let result = "";
-    let n = index + 1;
-    while (n > 0) {
-        const rem = (n - 1) % 26;
-        result = String.fromCharCode(65 + rem) + result;
-        n = Math.floor((n - 1) / 26);
-    }
-    return result;
-}
+export { colToIndex, indexToCol } from "../utils/cellRef.js";

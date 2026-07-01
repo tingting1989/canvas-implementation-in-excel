@@ -5,69 +5,59 @@
  * - trackEvent(): 注册事件监听器，destroy 时自动移除
  * - trackChild(): 注册子 Disposable，父级 destroy 时级联销毁
  * - destroy(): 幂等销毁入口（final 模式，子类不应覆写）
- * - onDestroy(): 子类覆写钩子，释放特有资源
+ * - onDestroy(): 子类覆写钩子，释放特有资源（无需手动 super.onDestroy()）
+ *
+ * 销毁顺序（destroy 内部）：
+ * 1. 标记 #disposed = true
+ * 2. 调用子类 onDestroy()（子类释放特有资源）
+ * 3. 沿原型链自动调用所有父类的 onDestroy()
+ * 4. 移除所有跟踪的事件监听器
+ * 5. 级联销毁子对象
  */
 export class Disposable {
     #disposed = false;
-    #eventListeners = []; // { target, type, handler, options? }
-    #children = []; // 子 Disposable（级联销毁）
+    #eventListeners = [];
+    #children = [];
 
     get isDisposed() {
         return this.#disposed;
     }
 
-    /**
-     * 注册事件监听器，destroy 时自动移除
-     * 替代直接调用 target.addEventListener()
-     * @param {EventTarget} target - 事件目标
-     * @param {string} type - 事件类型
-     * @param {Function} handler - 事件处理器
-     * @param {boolean|object} [options] - addEventListener 选项
-     */
     trackEvent(target, type, handler, options) {
         if (this.#disposed) return;
         target.addEventListener(type, handler, options);
         this.#eventListeners.push({ target, type, handler, options });
+
+        console.log('this.#eventListeners',this.#eventListeners)
     }
 
-    /**
-     * 注册子 Disposable，父级 destroy 时级联销毁
-     * 用于建立父子关系，如 RenderEngine → ScrollManager
-     * @param {Disposable} disposable - 子对象
-     */
     trackChild(disposable) {
         if (this.#disposed) return;
         this.#children.push(disposable);
     }
 
-    /**
-     * 统一的销毁入口（final 模式，子类不应覆写）
-     * 幂等设计：重复调用安全
-     */
     destroy() {
         if (this.#disposed) return;
         this.#disposed = true;
 
-        // 子类钩子：在事件清理和子对象销毁之前调用
-        this.onDestroy();
+        let proto = Object.getPrototypeOf(this);
+        while (proto && proto !== Disposable.prototype) {
+            if (proto.hasOwnProperty("onDestroy")) {
+                proto.onDestroy.call(this);
+            }
+            proto = Object.getPrototypeOf(proto);
+        }
 
-        // 移除所有跟踪的事件监听器
         for (const { target, type, handler, options } of this.#eventListeners) {
             target.removeEventListener(type, handler, options);
         }
         this.#eventListeners.length = 0;
 
-        // 级联销毁子对象
         for (const child of this.#children) {
             child.destroy();
         }
         this.#children.length = 0;
     }
 
-    /**
-     * 子类覆写：释放特有资源
-     * 类似 React 的 componentWillUnmount
-     * 在事件监听器移除和子对象销毁之前调用
-     */
     onDestroy() {}
 }

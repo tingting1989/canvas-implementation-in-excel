@@ -87,14 +87,12 @@ export class WebComponent extends HTMLElement {
     attributeChangedCallback(name, oldValue, newValue) {
         if (oldValue !== newValue) {
             if (this.#connected) {
-                // 已连接：等待 onConnect 完成后再渲染
                 if (this.#connectPromise) {
-                    this.#connectPromise.then(() => this.render());
+                    this.#connectPromise.then(() => this.render(name));
                 } else {
-                    this.render();
+                    this.render(name);
                 }
             } else {
-                // 未连接：标记需要渲染（等待 connectedCallback）
                 this.#needsRender = true;
             }
         }
@@ -167,5 +165,23 @@ export class WebComponent extends HTMLElement {
         const div = document.createElement("div");
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * 派发自定义事件
+     * @param {string} name - 事件名
+     * @param {object} [detail={}] - 事件数据
+     * @param {{ bubbles?: boolean, composed?: boolean, cancelable?: boolean }} [options] - 事件选项（默认 bubbles + composed 穿透 Shadow DOM）
+     */
+    emit(name, detail = {}, options = {}) {
+        this.dispatchEvent(
+            new CustomEvent(name, {
+                bubbles: true,
+                composed: true,
+                cancelable: false,
+                ...options,
+                detail,
+            }),
+        );
     }
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FormulaBarManager } from "@/ui/formulaBar/FormulaBarManager.js";
+import { FORMULA_BAR_EVENTS } from "@/ui/formulaBar/FormulaBarEvents.js";
 
 describe("FormulaBarManager 功能", () => {
     let container;
@@ -340,6 +341,30 @@ describe("FormulaBarManager 功能", () => {
         );
 
         expect(mockSheet.setCell).not.toHaveBeenCalled();
+
+        fb.destroy();
+    });
+
+    it("FBM-20: 构造函数 — workbook 为 null 时抛出 TypeError", () => {
+        expect(() => new FormulaBarManager(null, container)).toThrow(TypeError);
+    });
+
+    it("FBM-21: 构造函数 — workbook 为 undefined 时抛出 TypeError", () => {
+        expect(() => new FormulaBarManager(undefined, container)).toThrow(TypeError);
+    });
+
+    it("FBM-22: 构造函数 — container 为非 HTMLElement 时不插入 DOM", () => {
+        const fb = new FormulaBarManager(mockWorkbook, "not-an-element");
+
+        expect(document.querySelector("formula-bar")).toBeNull();
+
+        fb.destroy();
+    });
+
+    it("FBM-23: 构造函数 — container 为 null 时创建 element 但不插入", () => {
+        const fb = new FormulaBarManager(mockWorkbook, null);
+
+        expect(document.querySelector("formula-bar")).toBeNull();
 
         fb.destroy();
     });

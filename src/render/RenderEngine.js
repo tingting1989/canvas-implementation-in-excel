@@ -419,6 +419,5 @@ export class RenderEngine extends DOMComponent {
         this.store.destroy();
         this.canvas = null;
         this.ctx = null;
-        super.onDestroy();
     }
 }

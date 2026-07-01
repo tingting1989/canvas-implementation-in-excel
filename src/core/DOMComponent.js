@@ -75,15 +75,12 @@ export class DOMComponent extends Disposable {
         return ++DOMComponent.#counter;
     }
 
-    /** @override */
     onDestroy() {
-        // 移除所有跟踪的 DOM 元素
         for (const { el } of this.#trackedElements) {
             el?.remove?.();
         }
         this.#trackedElements.length = 0;
 
-        // 移除注入的 <style>
         for (const style of this.#injectedStyles) {
             style?.remove?.();
         }

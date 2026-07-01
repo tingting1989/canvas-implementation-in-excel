@@ -1,4 +1,6 @@
-import { DOMComponent } from "../../core/DOMComponent.js";
+import { Disposable } from "../../core/Disposable.js";
+import { FORMULA_BAR_EVENTS } from "./FormulaBarEvents.js";
+import { indexToCol } from "../../utils/cellRef.js";
 import "./FormulaBarElement.js";
 
 /**
@@ -9,10 +11,11 @@ import "./FormulaBarElement.js";
  * - 将用户输入写入当前活动单元格
  * - 根据选区变化刷新公式栏显示
  *
- * ✅ 使用 Web Components（FormulaBarElement）
- * ✅ 显式销毁元素
+ * 继承 Disposable（而非 DOMComponent）：
+ * - 只需要 trackEvent() 自动解绑事件，不需要 createElement() / injectStyle()
+ * - DOM 元素由 FormulaBarElement（Web Component）自行管理
  */
-export class FormulaBarManager extends DOMComponent {
+export class FormulaBarManager extends Disposable {
     /** @type {FormulaBarElement} */
     #element = null;
 
@@ -34,39 +37,43 @@ export class FormulaBarManager extends DOMComponent {
      */
     constructor(workbook, container) {
         super();
+        if (!workbook) throw new TypeError("FormulaBarManager: workbook is required");
         this.#workbook = workbook;
         this.#createDOM(container);
         this.#bindEvents();
+
     }
 
     #createDOM(container) {
         this.#element = document.createElement("formula-bar");
 
-        if (container) {
+        if (container instanceof HTMLElement) {
             container.insertBefore(this.#element, container.firstChild);
         }
     }
 
     #bindEvents() {
-        this.trackEvent(this.#element, "commit", (e) => {
+        this.trackEvent(this.#element, FORMULA_BAR_EVENTS.COMMIT, (e) => {
             this.#commitValue(e.detail.value);
         });
 
-        this.trackEvent(this.#element, "cancel", () => {
+        this.trackEvent(this.#element, FORMULA_BAR_EVENTS.CANCEL, () => {
             this.#cancelEdit();
         });
 
-        this.trackEvent(this.#element, "commit-and-move", (e) => {
+        this.trackEvent(this.#element, FORMULA_BAR_EVENTS.COMMIT_AND_MOVE, (e) => {
             this.#commitValue(e.detail.value);
             this.#moveToCell(e.detail.direction);
         });
 
-        this.trackEvent(this.#element, "start-edit", () => {
+        this.trackEvent(this.#element, FORMULA_BAR_EVENTS.START_EDIT, () => {
             this.#originalValue = this.#element.getValue();
         });
     }
 
     update() {
+        if (this.isDisposed || !this.#element) return;
+
         const sheet = this.#workbook.activeSheet;
         if (!sheet) {
             this.#element.setAttribute("cell-ref", "");
@@ -78,7 +85,7 @@ export class FormulaBarManager extends DOMComponent {
         this.#activeRow = row;
         this.#activeCol = col;
 
-        const ref = this.#toColLabel(col) + (row + 1);
+        const ref = indexToCol(col) + (row + 1);
 
         this.#element.setAttribute("cell-ref", ref);
 
@@ -149,17 +156,8 @@ export class FormulaBarManager extends DOMComponent {
         }
     }
 
-    #toColLabel(col) {
-        let label = "";
-        let n = col;
-        do {
-            label = String.fromCharCode(65 + (n % 26)) + label;
-            n = Math.floor(n / 26) - 1;
-        } while (n >= 0);
-        return label;
-    }
-
     startEdit() {
+        if (this.isDisposed || !this.#element) return;
         this.#element.focus();
     }
 
@@ -171,6 +169,5 @@ export class FormulaBarManager extends DOMComponent {
         }
 
         this.#workbook = null;
-        super.onDestroy();
     }
 }

@@ -1,4 +1,5 @@
 import { parseFormula } from "./FormulaParser.js";
+import { indexToCol } from "../utils/cellRef.js";
 import { FormulaEvaluator } from "./FormulaEvaluator.js";
 import { isString } from "../utils/utils.js";
 import { FUNCTIONS, registerFunction, unregisterFunction, hasFunction, getRegisteredFunctions } from "./functions/index.js";
@@ -441,9 +442,9 @@ export class FormulaEngine {
             case "literal":
                 return String(ast.value);
             case "cellRef":
-                return `${ast.sheet ? ast.sheet + "!" : ""}${this.#colToLabel(ast.col)}${ast.row + 1}`;
+                return `${ast.sheet ? ast.sheet + "!" : ""}${indexToCol(ast.col)}${ast.row + 1}`;
             case "rangeRef":
-                return `${ast.sheet ? ast.sheet + "!" : ""}${this.#colToLabel(ast.topCol)}${ast.topRow + 1}:${this.#colToLabel(ast.bottomCol)}${ast.bottomRow + 1}`;
+                return `${ast.sheet ? ast.sheet + "!" : ""}${indexToCol(ast.topCol)}${ast.topRow + 1}:${indexToCol(ast.bottomCol)}${ast.bottomRow + 1}`;
             case "function":
                 return `${ast.name}(${ast.args.map((a) => this.#astToRaw(a)).join(",")})`;
             case "binaryOp":
@@ -453,15 +454,5 @@ export class FormulaEngine {
             default:
                 return "";
         }
-    }
-
-    #colToLabel(col) {
-        let label = "";
-        let n = col;
-        do {
-            label = String.fromCharCode(65 + (n % 26)) + label;
-            n = Math.floor(n / 26) - 1;
-        } while (n >= 0);
-        return label;
     }
 }

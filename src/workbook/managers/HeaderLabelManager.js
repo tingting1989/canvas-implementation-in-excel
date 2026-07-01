@@ -1,5 +1,6 @@
 import { CONFIG } from "../../constants/config";
 import { isFunction, isObject, isString } from "../../utils/utils.js";
+import { indexToCol } from "../../utils/cellRef.js";
 
 /**
  * 表头标签管理器
@@ -68,7 +69,7 @@ export class HeaderLabelManager {
 
     /** 获取列头标签 */
     getColHeader(col) {
-        return this.#resolve(this.#colHeaders, col, this.#defaultColLabel);
+        return this.#resolve(this.#colHeaders, col, indexToCol);
     }
 
     /** 获取行头标签 */
@@ -88,22 +89,6 @@ export class HeaderLabelManager {
         if (Array.isArray(config)) return index < config.length ? config[index] : defaultFn(index);
         if (isFunction(config)) return config(index);
         return defaultFn(index);
-    }
-
-    /**
-     * 默认列标签：0→A, 1→B, ..., 25→Z, 26→AA, ...
-     * @param {number} col - 列号
-     * @returns {string}
-     */
-    #defaultColLabel(col) {
-        let label = "";
-        let n = col + 1;
-        while (n > 0) {
-            n = n - 1;
-            label = String.fromCharCode(65 + (n % 26)) + label;
-            n = Math.floor(n / 26);
-        }
-        return label || "A";
     }
 
     // ============================================================
