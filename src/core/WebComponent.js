@@ -62,7 +62,7 @@ export class WebComponent extends HTMLElement {
         const result = this.onConnect(this.#disposable);
 
         // 如果 onConnect 返回 Promise，等它完成后再渲染
-        if (result && typeof result.then === 'function') {
+        if (result && typeof result.then === "function") {
             this.#connectPromise = result;
             result.then(() => {
                 if (this.#connected && !this.#shouldDestroy) {
