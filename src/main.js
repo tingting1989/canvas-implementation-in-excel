@@ -544,7 +544,7 @@ const initApp = () => {
             // ✅ 已执行
             [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
                 console.log("[HOOK] beforeSheetRename 执行了", ...args);
-                return false;
+                return true;
             },
             [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
                 console.log("[HOOK] afterSheetRename 执行了", ...args);
