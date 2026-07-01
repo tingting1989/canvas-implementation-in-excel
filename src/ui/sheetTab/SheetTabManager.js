@@ -92,10 +92,10 @@ export class SheetTabManager extends Disposable {
     }
 
     /**
- * 设置当前对象关联的工作簿实例
- * @param {Workbook} wb - 要关联的工作簿实例
- */
-set workbook(wb) {
+     * 设置当前对象关联的工作簿实例
+     * @param {Workbook} wb - 要关联的工作簿实例
+     */
+    set workbook(wb) {
         this.#workbook = wb;
     }
 

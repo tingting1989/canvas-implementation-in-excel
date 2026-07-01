@@ -39,44 +39,44 @@ describe("SheetTabManager 功能", () => {
         const stm = new SheetTabManager(wrap, mockWorkbook);
 
         const bar = wrap.querySelector("sheet-tab-bar");
-        const tabs = bar.shadowRoot.querySelectorAll("sheet-tab-item");
+        const tabs = bar.shadowRoot.querySelectorAll(".tab");
         expect(tabs.length).toBe(2);
 
         stm.destroy();
     });
 
-    it("STM-03: 活动工作表标签有 active 属性", () => {
+    it("STM-03: 活动工作表标签有 active 类", () => {
         const stm = new SheetTabManager(wrap, mockWorkbook);
 
         const bar = wrap.querySelector("sheet-tab-bar");
-        const tabs = bar.shadowRoot.querySelectorAll("sheet-tab-item");
-        const activeTab = Array.from(tabs).find((t) => t.hasAttribute("active"));
+        const tabs = bar.shadowRoot.querySelectorAll(".tab");
+        const activeTab = Array.from(tabs).find((t) => t.classList.contains("active"));
         expect(activeTab).not.toBeNull();
-        expect(activeTab.getAttribute("name")).toBe("Sheet1");
+        expect(activeTab.dataset.name).toBe("Sheet1");
 
         stm.destroy();
     });
 
-    it("STM-04: 多个工作表时标签有 closable 属性", () => {
+    it("STM-04: 多个工作表时标签有 closable 类", () => {
         const stm = new SheetTabManager(wrap, mockWorkbook);
 
         const bar = wrap.querySelector("sheet-tab-bar");
-        const tabs = bar.shadowRoot.querySelectorAll("sheet-tab-item");
+        const tabs = bar.shadowRoot.querySelectorAll(".tab");
         tabs.forEach((tab) => {
-            expect(tab.hasAttribute("closable")).toBe(true);
+            expect(tab.classList.contains("closable")).toBe(true);
         });
 
         stm.destroy();
     });
 
-    it("STM-05: 只有一个工作表时标签没有 closable 属性", () => {
+    it("STM-05: 只有一个工作表时标签没有 closable 类", () => {
         mockWorkbook.sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         const stm = new SheetTabManager(wrap, mockWorkbook);
 
         const bar = wrap.querySelector("sheet-tab-bar");
-        const tabs = bar.shadowRoot.querySelectorAll("sheet-tab-item");
+        const tabs = bar.shadowRoot.querySelectorAll(".tab");
         tabs.forEach((tab) => {
-            expect(tab.hasAttribute("closable")).toBe(false);
+            expect(tab.classList.contains("closable")).toBe(false);
         });
 
         stm.destroy();
@@ -169,11 +169,11 @@ describe("SheetTabManager 功能", () => {
         stm.refresh();
 
         const bar = wrap.querySelector("sheet-tab-bar");
-        const tabs = bar.shadowRoot.querySelectorAll("sheet-tab-item");
+        const tabs = bar.shadowRoot.querySelectorAll(".tab");
         expect(tabs.length).toBe(3);
 
-        const activeTab = Array.from(tabs).find((t) => t.hasAttribute("active"));
-        expect(activeTab.getAttribute("name")).toBe("Sheet3");
+        const activeTab = Array.from(tabs).find((t) => t.classList.contains("active"));
+        expect(activeTab.dataset.name).toBe("Sheet3");
 
         stm.destroy();
     });
@@ -189,7 +189,7 @@ describe("SheetTabManager 功能", () => {
         stm.refresh();
 
         const bar = wrap.querySelector("sheet-tab-bar");
-        const tabs = bar.shadowRoot.querySelectorAll("sheet-tab-item");
+        const tabs = bar.shadowRoot.querySelectorAll(".tab");
         expect(tabs.length).toBe(1);
 
         stm.destroy();

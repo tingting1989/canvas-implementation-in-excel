@@ -1,7 +1,6 @@
 import { WebComponent } from "@/core/WebComponent";
 import { SHEET_TAB_EVENTS } from "./SheetTabEvents.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
-import "./SheetTabItemElement.js";
 
 /**
  * SheetTabBarElement — 工作表标签栏 Web Component
@@ -36,27 +35,30 @@ export class SheetTabBarElement extends WebComponent {
 
     onConnect(disposable) {
         const addBtn = this.shadowRoot.querySelector(".add-btn");
-        const scrollWrap = this.shadowRoot.querySelector(".tabs-scroll");
         const tabsContainer = this.shadowRoot.querySelector(".tabs");
 
         disposable.trackEvent(addBtn, EVENT_NAMES.CLICK, () => {
             this.emit(SHEET_TAB_EVENTS.ADD);
         });
 
-        disposable.trackEvent(tabsContainer, SHEET_TAB_EVENTS.SWITCH, (e) => {
+        disposable.trackEvent(tabsContainer, EVENT_NAMES.CLICK, (e) => {
             if (this.#renaming) return;
-            this.emit(SHEET_TAB_EVENTS.SWITCH, { name: e.detail.name });
+            const closeBtn = e.target.closest(".close-btn");
+            const tab = e.target.closest(".tab");
+            if (!tab) return;
+            const name = tab.dataset.name;
+            if (closeBtn) {
+                this.emit(SHEET_TAB_EVENTS.CLOSE, { name });
+            } else {
+                this.emit(SHEET_TAB_EVENTS.SWITCH, { name });
+            }
         });
 
-        disposable.trackEvent(tabsContainer, SHEET_TAB_EVENTS.CLOSE, (e) => {
+        disposable.trackEvent(tabsContainer, EVENT_NAMES.DBLCLICK, (e) => {
             if (this.#renaming) return;
-            this.emit(SHEET_TAB_EVENTS.CLOSE, { name: e.detail.name });
-        });
-
-        disposable.trackEvent(tabsContainer, SHEET_TAB_EVENTS.RENAME, (e) => {
-            if (this.#renaming) return;
-            const tab = this.#tabs.get(e.detail.name);
-            if (tab) this.#startRename(tab);
+            const tab = e.target.closest(".tab");
+            if (!tab || e.target.closest(".close-btn")) return;
+            this.#startRename(tab);
         });
 
         disposable.trackEvent(
@@ -113,6 +115,71 @@ export class SheetTabBarElement extends WebComponent {
             align-items: stretch;
             height: 100%;
             white-space: nowrap;
+        }
+
+        .tab {
+            display: inline-flex;
+            align-items: center;
+            padding: 0 10px;
+            height: 100%;
+            font-size: 11px;
+            color: #444;
+            cursor: pointer;
+            background: #e7e7e7;
+            position: relative;
+            flex-shrink: 0;
+            user-select: none;
+            border-left: 1px solid transparent;
+            border-right: 1px solid transparent;
+        }
+
+        .tab:hover {
+            background: #d8d8d8;
+        }
+
+        .tab.active {
+            background: #fff;
+            color: #000;
+            font-weight: 600;
+            border-left: 1px solid #b4b4b4;
+            border-right: 1px solid #b4b4b4;
+        }
+
+        .tab.active:hover {
+            background: #fff;
+        }
+
+        .tab .label {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 150px;
+            line-height: 1;
+        }
+
+        .tab .close-btn {
+            display: none;
+            margin-left: 6px;
+            width: 16px;
+            height: 16px;
+            border-radius: 2px;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .tab.closable .close-btn,
+        .tab.active .close-btn,
+        .tab:hover .close-btn {
+            display: inline-flex;
+        }
+
+        .tab .close-btn:hover {
+            background: #c0c0c0;
+            color: #333;
         }
 
         .rename-input {
@@ -187,16 +254,25 @@ export class SheetTabBarElement extends WebComponent {
         const tabsContainer = this.shadowRoot.querySelector(".tabs");
         if (!tabsContainer) return;
 
-        for (const [name, tab] of this.#tabs) {
-            tab.destroy();
-        }
+        tabsContainer.innerHTML = "";
         this.#tabs.clear();
 
         for (const [name] of sheets) {
-            const tab = document.createElement("sheet-tab-item");
-            tab.setAttribute("name", name);
-            if (name === activeName) tab.setAttribute("active", "");
-            if (sheets.size > 1) tab.setAttribute("closable", "");
+            const tab = document.createElement("div");
+            tab.className = "tab";
+            tab.dataset.name = name;
+            if (name === activeName) tab.classList.add("active");
+            if (sheets.size > 1) tab.classList.add("closable");
+
+            const label = document.createElement("span");
+            label.className = "label";
+            label.textContent = name;
+            tab.appendChild(label);
+
+            const closeBtn = document.createElement("span");
+            closeBtn.className = "close-btn";
+            closeBtn.textContent = "×";
+            tab.appendChild(closeBtn);
 
             tabsContainer.appendChild(tab);
             this.#tabs.set(name, tab);
@@ -207,7 +283,7 @@ export class SheetTabBarElement extends WebComponent {
     }
 
     #startRename(tabElement) {
-        const oldName = tabElement.getAttribute("name");
+        const oldName = tabElement.dataset.name;
         this.#cleanupRename();
         this.#renaming = true;
 
@@ -256,10 +332,10 @@ export class SheetTabBarElement extends WebComponent {
         input.addEventListener(EVENT_NAMES.KEYDOWN, this.#renameHandleKeydown);
         input.addEventListener(EVENT_NAMES.BLUR, this.#renameHandleBlur);
 
-        const label = tabElement.shadowRoot.querySelector(".label");
+        const label = tabElement.querySelector(".label");
         if (label) {
             label.style.display = "none";
-            tabElement.shadowRoot.appendChild(input);
+            tabElement.appendChild(input);
         }
 
         input.focus();
@@ -279,9 +355,9 @@ export class SheetTabBarElement extends WebComponent {
             }
 
             if (this.#renameInput.parentElement) {
-                const tabElement = this.#renameInput.closest("sheet-tab-item");
+                const tabElement = this.#renameInput.closest(".tab");
                 if (tabElement) {
-                    const label = tabElement.shadowRoot.querySelector(".label");
+                    const label = tabElement.querySelector(".label");
                     if (label) {
                         label.style.display = "";
                     }
@@ -298,9 +374,6 @@ export class SheetTabBarElement extends WebComponent {
     }
 
     onDisconnect() {
-        for (const [name, tab] of this.#tabs) {
-            tab.destroy();
-        }
         this.#tabs.clear();
         this.#cleanupRename();
         this.#currentSheets = null;
