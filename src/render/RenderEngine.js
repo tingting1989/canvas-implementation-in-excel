@@ -198,12 +198,8 @@ export class RenderEngine extends DOMComponent {
             frozenColsW,
         );
 
-        if (headerH !== CONFIG.HEADER_HEIGHT) {
-            this.wrap.style.setProperty("--header-height", `${headerH}px`);
-        }
-        if (headerW !== CONFIG.HEADER_WIDTH) {
-            this.wrap.style.setProperty("--header-width", `${headerW}px`);
-        }
+        this.wrap.style.setProperty("--header-height", `${headerH}px`);
+        this.wrap.style.setProperty("--header-width", `${headerW}px`);
 
         const ctx = this.ctx;
         const viewW = this.#viewW;

@@ -30,7 +30,6 @@ module.exports = [
             path: path.resolve(__dirname, "dist"),
             filename: "canvas-sheet.esm.mjs",
             library: { type: "module" },
-            clean: true,
             environment: { module: true },
         },
         experiments: { outputModule: true },
@@ -46,6 +45,7 @@ module.exports = [
                 export: "default",
             },
             globalObject: "this",
+            clean: true,
         },
     },
 ];

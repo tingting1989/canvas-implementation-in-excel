@@ -1,6 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { FormulaEngine } from "../formula/FormulaEngine.js";
-import { FormulaBar } from "../ui/FormulaBar.js";
+import { FormulaBarManager } from "../ui/FormulaBarManager.js";
 
 /**
  * 公式引擎插件
@@ -42,7 +42,7 @@ export class FormulaPlugin extends BasePlugin {
     /** @type {FormulaEngine} */
     #engine = null;
 
-    /** @type {FormulaBar} */
+    /** @type {FormulaBarManager} */
     #bar = null;
 
     // ═══════════════════════════════════════════════════════════════
@@ -67,7 +67,7 @@ export class FormulaPlugin extends BasePlugin {
 
     /**
      * 获取公式栏实例
-     * @returns {FormulaBar|null}
+     * @returns {FormulaBarManager|null}
      */
     get bar() {
         return this.#bar;
@@ -94,7 +94,7 @@ export class FormulaPlugin extends BasePlugin {
 
         if (showFormulaBar) {
             const container = this.workbook.renderEngine?.outerWrap;
-            this.#bar = new FormulaBar(this.workbook, container);
+            this.#bar = new FormulaBarManager(this.workbook, container);
             this.workbook.formulaBar = this.#bar;
             this.#hookFormulaBar();
         }

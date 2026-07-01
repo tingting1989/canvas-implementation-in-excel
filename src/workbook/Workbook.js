@@ -115,7 +115,7 @@ export class Workbook {
         /** @type {import("../formula/FormulaEngine.js").FormulaEngine|null} 公式引擎（由 FormulaPlugin 注入） */
         this.formulaEngine = null;
 
-        /** @type {import("../ui/FormulaBar.js").FormulaBar|null} 公式栏（由 FormulaPlugin 注入） */
+        /** @type {import("../ui/FormulaBarManager.js").FormulaBarManager|null} 公式栏管理器（由 FormulaPlugin 注入） */
         this.formulaBar = null;
     }
 

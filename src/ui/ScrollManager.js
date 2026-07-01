@@ -20,6 +20,7 @@ export class ScrollManager extends DOMComponent {
     #viewH = 0;
     #hThumb = null;
     #vThumb = null;
+    #topCorner = null;
 
     /** rAF 合并标志：scroll 回调是否已在本帧调度 */
     #pendingScrollCallback = false;
@@ -43,6 +44,7 @@ export class ScrollManager extends DOMComponent {
         vBar.appendChild(this.#vThumb);
 
         this.createElement("div", { className: "cs-scrollbar-corner" }, this.wrap);
+        this.#topCorner = this.createElement("div", { className: "cs-scrollbar-corner-top" }, this.wrap);
     }
 
     #bindThumbDrag() {

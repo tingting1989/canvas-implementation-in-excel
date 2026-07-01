@@ -1,5 +1,123 @@
 # Canvas Sheet
 
+
+## 发布
+
+### 1.版本设置
+
+```shell
+npm version patch # 1.0.0 → 1.0.1
+
+npm version minor # 1.0.0 → 1.1.0
+
+
+npm version major # 1.0.0 → 2.0.0
+```
+
+
+### 2.执行发布
+
+```shell
+npm publish
+```
+
+
+### 3.删除私服中的npm 包
+
+```shell
+npm unpublish zmxa-web-handsontable-6.2.2 --registry=http://10.124.26.35:4873/ --force
+```
+
+
+## 检查发布包体积
+
+```shell
+npm pack
+```
+
+
+## 项目中使用
+```shell
+npm install @canvas-sheet/core
+```
+
+## npm 镜像源
+
+### 镜像源管理
+
+通过 nrm 包来管理
+
+#### 安装
+```shell
+npm install -g nrm
+```
+
+#### 查看可用镜像源
+```shell
+nrm ls
+```
+
+#### 输出示例：
+
+    npm ---------- https://registry.npmjs.org/
+
+    yarn --------- https://registry.yarnpkg.com/
+
+    tencent ------ https://mirrors.cloud.tencent.com/npm/
+
+    cnpm --------- https://r.cnpmjs.org/
+
+    taobao ------- https://registry.npmmirror.com/
+
+    npmMirror ---- https://skimdb.npmjs.com/registry/
+
+### 测试镜像源速度
+```shell
+nrm test
+```
+
+### 切换镜像源
+```shell
+nrm use tencent
+```
+
+### 添加自定义镜像源
+```shell
+nrm add zmxa http://10.124.26.35:4873/
+```
+
+### 删除镜像源
+```shell
+nrm del my-registry
+```
+
+### 查看镜像源
+```shell
+npm config get registry
+``` 
+
+### 切换到淘宝镜像
+```shell
+npm config set registry https://registry.npmmirror.com/ 
+```
+
+### 切换回官方源
+
+```shell
+npm config set registry https://registry.npmjs.org/
+```
+
+### 切换私有镜像源
+```shell
+npm config set registry http://10.124.26.35:4873/
+```
+
+
+node 版本为 22.21.0
+
+
+
+
 基于 Canvas 的在线表格编辑器（Handsontable/Excel 级架构）
 
 ## 工程结构

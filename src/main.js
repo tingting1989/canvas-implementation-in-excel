@@ -204,7 +204,7 @@ const initApp = () => {
             "columnMove",
             "copyPaste",
 
-            "pagination",
+            // "pagination",
             "exportFile",
             "hiddenColumns",
             "hiddenRows",

@@ -1,18 +1,21 @@
-import { EVENT_NAMES } from "../constants/eventNames.js";
 import { DOMComponent } from "../core/DOMComponent.js";
-import "./FormulaBarElement.js"; // ✅ 导入 Web Component
+import "./FormulaBarElement.js";
 import "./formulaBar.css";
 
 /**
- * FormulaBar — 公式栏（重构版）
+ * FormulaBarManager — 公式栏管理器
+ *
+ * 职责：桥接 FormulaBarElement（Web Component）与 Workbook
+ * - 监听 FormulaBarElement 的自定义事件（commit / cancel / commit-and-move / start-edit）
+ * - 将用户输入写入当前活动单元格
+ * - 根据选区变化刷新公式栏显示
  *
  * ✅ 使用 Web Components（FormulaBarElement）
- * ✅ 不向后兼容，彻底重构
  * ✅ 显式销毁元素
  */
-export class FormulaBar extends DOMComponent {
+export class FormulaBarManager extends DOMComponent {
     /** @type {FormulaBarElement} */
-    #element = null; // ✅ 持有 Web Component 实例
+    #element = null;
 
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
@@ -37,28 +40,14 @@ export class FormulaBar extends DOMComponent {
         this.#bindEvents();
     }
 
-    /**
-     * 创建 DOM 结构
-     *
-     * ✅ 使用 Web Component（FormulaBarElement）
-     */
     #createDOM(container) {
-        // ✅ 使用 Web Component
         this.#element = document.createElement("formula-bar");
 
         if (container) {
             container.insertBefore(this.#element, container.firstChild);
         }
-
-        // ✅ Web Component 的销毁由 destroy() 方法控制
-        // 不需要通过 DOMComponent 的 trackElement 来跟踪
     }
 
-    /**
-     * 绑定事件
-     *
-     * ✅ 监听 Web Component 事件
-     */
     #bindEvents() {
         this.trackEvent(this.#element, "commit", (e) => {
             this.#commitValue(e.detail.value);
@@ -78,10 +67,6 @@ export class FormulaBar extends DOMComponent {
         });
     }
 
-    /**
-     * 刷新公式栏显示
-     * 根据当前活动 Sheet 的选区，读取单元格内容并更新显示
-     */
     update() {
         const sheet = this.#workbook.activeSheet;
         if (!sheet) {
@@ -96,7 +81,6 @@ export class FormulaBar extends DOMComponent {
 
         const ref = this.#toColLabel(col) + (row + 1);
 
-        // ✅ 使用 Web Component 属性
         this.#element.setAttribute("cell-ref", ref);
 
         const cell = sheet.cellStore.get(row, col);
@@ -107,14 +91,10 @@ export class FormulaBar extends DOMComponent {
             value = cell.value ?? "";
         }
 
-        // ✅ 使用 Web Component 方法
         this.#element.setValue(value);
         this.#originalValue = value;
     }
 
-    /**
-     * 确认输入：将公式栏内容写入当前活动单元格
-     */
     #commitValue(value) {
         const sheet = this.#workbook.activeSheet;
         if (!sheet || this.#activeRow < 0 || this.#activeCol < 0) return;
@@ -132,19 +112,12 @@ export class FormulaBar extends DOMComponent {
         this.#originalValue = value;
     }
 
-    /**
-     * 取消输入：恢复原始值
-     */
     #cancelEdit() {
-        // ✅ 使用 Web Component 方法
         this.#element.setValue(this.#originalValue);
         this.#element.cancelEdit();
         this.#workbook.renderEngine?.canvas?.focus();
     }
 
-    /**
-     * 确认后移动到下一个单元格（Tab）
-     */
     #moveToCell(direction) {
         const sheet = this.#workbook.activeSheet;
         if (!sheet) return;
@@ -162,7 +135,6 @@ export class FormulaBar extends DOMComponent {
         const maxCol = rc.realColCount - 1;
         const maxRow = rc.rowCount - 1;
 
-        // 边界处理
         if (nextCol > maxCol) {
             nextCol = 0;
             nextRow++;
@@ -178,11 +150,6 @@ export class FormulaBar extends DOMComponent {
         }
     }
 
-    /**
-     * 列号 → 列标签（0 → "A", 25 → "Z", 26 → "AA"）
-     * @param {number} col - 列号（0-based）
-     * @returns {string}
-     */
     #toColLabel(col) {
         let label = "";
         let n = col;
@@ -193,16 +160,12 @@ export class FormulaBar extends DOMComponent {
         return label;
     }
 
-    /**
-     * 开始编辑（外部调用）
-     */
     startEdit() {
         this.#element.focus();
     }
 
     /** @override */
     onDestroy() {
-        // ✅ 显式销毁 Web Component
         if (this.#element) {
             this.#element.destroy();
             this.#element = null;
