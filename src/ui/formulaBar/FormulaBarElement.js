@@ -1,4 +1,4 @@
-import { WebComponent } from "../core/WebComponent.js";
+import { WebComponent } from "../../core/WebComponent.js";
 
 /**
  * FormulaBarElement — 公式栏 Web Component

@@ -1,6 +1,5 @@
-import { DOMComponent } from "../core/DOMComponent.js";
+import { DOMComponent } from "../../core/DOMComponent.js";
 import "./FormulaBarElement.js";
-import "./formulaBar.css";
 
 /**
  * FormulaBarManager — 公式栏管理器
@@ -17,7 +16,7 @@ export class FormulaBarManager extends DOMComponent {
     /** @type {FormulaBarElement} */
     #element = null;
 
-    /** @type {import("../workbook/Workbook.js").Workbook} */
+    /** @type {import("../../workbook/Workbook.js").Workbook} */
     #workbook = null;
 
     /** 当前编辑中单元格的行号 */
@@ -30,7 +29,7 @@ export class FormulaBarManager extends DOMComponent {
     #originalValue = "";
 
     /**
-     * @param {import("../workbook/Workbook.js").Workbook} workbook
+     * @param {import("../../workbook/Workbook.js").Workbook} workbook
      * @param {HTMLElement} container - 公式栏要插入到的容器元素
      */
     constructor(workbook, container) {

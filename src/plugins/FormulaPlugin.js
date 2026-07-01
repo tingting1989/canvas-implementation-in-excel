@@ -1,6 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { FormulaEngine } from "../formula/FormulaEngine.js";
-import { FormulaBarManager } from "../ui/FormulaBarManager.js";
+import { FormulaBarManager } from "../ui/formulaBar/FormulaBarManager.js";
 
 /**
  * 公式引擎插件
