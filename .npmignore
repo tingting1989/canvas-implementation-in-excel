@@ -1,0 +1,15 @@
+src/
+*.md
+!README.md
+.git/
+.github/
+.husky/
+.eslintrc*
+.editorconfig
+jsconfig.json
+vitest.config.js
+eslint.config.mjs
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
