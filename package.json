@@ -14,7 +14,15 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:ui": "vitest --ui",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "push": "git push origin",
+        "push:all": "git push origin && git push internal",
+        "push:origin": "git push origin",
+        "push:internal": "git push internal",
+        "pull": "git pull origin",
+        "pull:origin": "git pull origin",
+        "pull:internal": "git pull internal",
+        "remote:list": "git remote -v"
     },
     "keywords": [],
     "author": "",

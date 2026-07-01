@@ -1,12 +1,12 @@
 import { CONFIG } from "../constants/config";
 import { EVENT_NAMES } from "../constants/eventNames";
 import { DOMComponent } from "../core/DOMComponent.js";
-import "./SheetTabElement.js";  // ✅ 导入 Web Component
+import "./SheetTabElement.js"; // ✅ 导入 Web Component
 import "./sheetTabBar.css";
 
 /**
  * SheetTabBar — 工作表标签栏（重构版）
- * 
+ *
  * ✅ 使用 Web Components（SheetTabElement）
  * ✅ 不向后兼容，彻底重构
  * ✅ 显式销毁标签
@@ -21,7 +21,7 @@ export class SheetTabBar extends DOMComponent {
     #onRename = null;
     #scrollOffset = 0;
     #renaming = false;
-    #tabs = new Map();  // ✅ 跟踪所有标签（用于显式销毁）
+    #tabs = new Map(); // ✅ 跟踪所有标签（用于显式销毁）
     #renameInput = null;
     #renameHandleMousedown = null;
     #renameHandleKeydown = null;
@@ -56,17 +56,17 @@ export class SheetTabBar extends DOMComponent {
 
     #bindEvents() {
         // ✅ 监听 Web Component 事件
-        this.trackEvent(this.#tabsContainer, 'switch', (e) => {
+        this.trackEvent(this.#tabsContainer, "switch", (e) => {
             if (this.#renaming) return;
             if (this.#onSwitch) this.#onSwitch(e.detail.name);
         });
 
-        this.trackEvent(this.#tabsContainer, 'close', (e) => {
+        this.trackEvent(this.#tabsContainer, "close", (e) => {
             if (this.#renaming) return;
             if (this.#onRemove) this.#onRemove(e.detail.name);
         });
 
-        this.trackEvent(this.#tabsContainer, 'rename', (e) => {
+        this.trackEvent(this.#tabsContainer, "rename", (e) => {
             if (this.#renaming) return;
             const tab = this.#tabs.get(e.detail.name);
             if (tab) this.#startRename(tab);
@@ -148,7 +148,7 @@ export class SheetTabBar extends DOMComponent {
     }
 
     #startRename(tabElement) {
-        const oldName = tabElement.getAttribute('name');
+        const oldName = tabElement.getAttribute("name");
         this.#cleanupRename();
         this.#renaming = true;
 
@@ -198,9 +198,9 @@ export class SheetTabBar extends DOMComponent {
         input.addEventListener(EVENT_NAMES.BLUR, this.#renameHandleBlur);
 
         // ✅ 替换 Web Component 的 label 部分
-        const label = tabElement.shadowRoot.querySelector('.label');
+        const label = tabElement.shadowRoot.querySelector(".label");
         if (label) {
-            label.style.display = 'none';
+            label.style.display = "none";
             tabElement.shadowRoot.appendChild(input);
         }
 
@@ -219,19 +219,19 @@ export class SheetTabBar extends DOMComponent {
             if (this.#renameHandleBlur) {
                 this.#renameInput.removeEventListener(EVENT_NAMES.BLUR, this.#renameHandleBlur);
             }
-            
+
             // ✅ 移除输入框，恢复 label
             if (this.#renameInput.parentElement) {
-                const tabElement = this.#renameInput.closest('sheet-tab');
+                const tabElement = this.#renameInput.closest("sheet-tab");
                 if (tabElement) {
-                    const label = tabElement.shadowRoot.querySelector('.label');
+                    const label = tabElement.shadowRoot.querySelector(".label");
                     if (label) {
-                        label.style.display = '';
+                        label.style.display = "";
                     }
                 }
                 this.#renameInput.remove();
             }
-            
+
             this.#renameInput = null;
         }
         this.#renameHandleMousedown = null;
@@ -250,19 +250,19 @@ export class SheetTabBar extends DOMComponent {
 
         // ✅ 显式销毁旧标签（关键）
         for (const [name, tab] of this.#tabs) {
-            tab.destroy();  // 触发 disconnectedCallback → 真正销毁
+            tab.destroy(); // 触发 disconnectedCallback → 真正销毁
         }
         this.#tabs.clear();
 
         // ✅ 使用 Web Components 创建新标签
         for (const [name, sheet] of sheets) {
-            const tab = document.createElement('sheet-tab');
-            tab.setAttribute('name', name);
-            if (name === activeName) tab.setAttribute('active', '');
-            if (sheets.size > 1) tab.setAttribute('closable', '');
-            
+            const tab = document.createElement("sheet-tab");
+            tab.setAttribute("name", name);
+            if (name === activeName) tab.setAttribute("active", "");
+            if (sheets.size > 1) tab.setAttribute("closable", "");
+
             this.#tabsContainer.appendChild(tab);
-            this.#tabs.set(name, tab);  // ✅ 跟踪标签
+            this.#tabs.set(name, tab); // ✅ 跟踪标签
         }
 
         this.#scrollOffset = 0;
@@ -276,7 +276,7 @@ export class SheetTabBar extends DOMComponent {
             tab.destroy();
         }
         this.#tabs.clear();
-        
+
         this.#cleanupRename();
         this.#workbook = null;
         this.#onSwitch = null;

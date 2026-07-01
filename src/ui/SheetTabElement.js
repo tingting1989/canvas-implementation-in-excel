@@ -1,12 +1,11 @@
-import {WebComponent} from "@/core/WebComponent";
-
+import { WebComponent } from "@/core/WebComponent";
 
 /**
  * SheetTabElement — 工作表标签 Web Component
- * 
+ *
  * 使用方式：
  * <sheet-tab name="Sheet1" active closable></sheet-tab>
- * 
+ *
  * 事件：
  * - switch: 点击标签时触发（detail: { name }）
  * - close: 点击关闭按钮时触发（detail: { name }）
@@ -14,18 +13,18 @@ import {WebComponent} from "@/core/WebComponent";
  */
 export class SheetTabElement extends WebComponent {
     static get observedAttributes() {
-        return ['name', 'active', 'closable'];
+        return ["name", "active", "closable"];
     }
 
     onConnect(disposable) {
-        disposable.trackEvent(this.shadowRoot, 'click', this.#handleClick);
-        disposable.trackEvent(this.shadowRoot, 'dblclick', this.#handleDblClick);
+        disposable.trackEvent(this.shadowRoot, "click", this.#handleClick);
+        disposable.trackEvent(this.shadowRoot, "dblclick", this.#handleDblClick);
     }
 
     render() {
-        const name = this.getAttribute('name') || '';
-        const isActive = this.hasAttribute('active');
-        const closable = this.hasAttribute('closable');
+        const name = this.getAttribute("name") || "";
+        const isActive = this.hasAttribute("active");
+        const closable = this.hasAttribute("closable");
 
         this.shadowRoot.innerHTML = `
             <style>
@@ -38,7 +37,7 @@ export class SheetTabElement extends WebComponent {
                     color: #444;
                     cursor: pointer;
                     border-right: 1px solid #d0d0d0;
-                    background: ${isActive ? '#fff' : '#e8e8e8'};
+                    background: ${isActive ? "#fff" : "#e8e8e8"};
                     position: relative;
                     flex-shrink: 0;
                     user-select: none;
@@ -46,7 +45,7 @@ export class SheetTabElement extends WebComponent {
                 }
                 
                 :host(:hover) {
-                    background: ${isActive ? '#fff' : '#d8d8d8'};
+                    background: ${isActive ? "#fff" : "#d8d8d8"};
                 }
                 
                 :host([active]) {
@@ -65,7 +64,7 @@ export class SheetTabElement extends WebComponent {
                 }
                 
                 .close-btn {
-                    display: ${closable ? 'inline-flex' : 'none'};
+                    display: ${closable ? "inline-flex" : "none"};
                     margin-left: 8px;
                     width: 18px;
                     height: 18px;
@@ -90,36 +89,42 @@ export class SheetTabElement extends WebComponent {
     }
 
     #handleClick = (e) => {
-        const closeBtn = e.target.closest('.close-btn');
+        const closeBtn = e.target.closest(".close-btn");
         if (closeBtn) {
             e.stopPropagation();
-            this.dispatchEvent(new CustomEvent('close', {
-                bubbles: true,
-                composed: true,
-                detail: { name: this.getAttribute('name') }
-            }));
+            this.dispatchEvent(
+                new CustomEvent("close", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { name: this.getAttribute("name") },
+                }),
+            );
         } else {
-            this.dispatchEvent(new CustomEvent('switch', {
-                bubbles: true,
-                composed: true,
-                detail: { name: this.getAttribute('name') }
-            }));
+            this.dispatchEvent(
+                new CustomEvent("switch", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { name: this.getAttribute("name") },
+                }),
+            );
         }
-    }
+    };
 
     #handleDblClick = (e) => {
-        if (!e.target.closest('.close-btn')) {
-            this.dispatchEvent(new CustomEvent('rename', {
-                bubbles: true,
-                composed: true,
-                detail: { name: this.getAttribute('name') }
-            }));
+        if (!e.target.closest(".close-btn")) {
+            this.dispatchEvent(
+                new CustomEvent("rename", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { name: this.getAttribute("name") },
+                }),
+            );
         }
-    }
+    };
 
     onDisconnect() {
-        console.log(`SheetTab [${this.getAttribute('name')}] destroyed`);
+        console.log(`SheetTab [${this.getAttribute("name")}] destroyed`);
     }
 }
 
-customElements.define('sheet-tab', SheetTabElement);
+customElements.define("sheet-tab", SheetTabElement);

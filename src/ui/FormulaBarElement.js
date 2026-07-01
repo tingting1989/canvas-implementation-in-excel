@@ -2,10 +2,10 @@ import { WebComponent } from "../core/WebComponent.js";
 
 /**
  * FormulaBarElement — 公式栏 Web Component
- * 
+ *
  * 使用方式：
  * <formula-bar cell-ref="A1" value="=SUM(A1:A10)"></formula-bar>
- * 
+ *
  * 事件：
  * - commit: 回车确认时触发（detail: { value }）
  * - cancel: Esc取消时触发
@@ -14,23 +14,23 @@ import { WebComponent } from "../core/WebComponent.js";
  */
 export class FormulaBarElement extends WebComponent {
     static get observedAttributes() {
-        return ['cell-ref', 'value', 'editing'];
+        return ["cell-ref", "value", "editing"];
     }
 
     onConnect(disposable) {
-        const input = this.shadowRoot.querySelector('.formula-input');
-        
-        disposable.trackEvent(input, 'keydown', this.#handleKeydown);
-        disposable.trackEvent(input, 'focus', this.#handleFocus);
-        disposable.trackEvent(input, 'blur', this.#handleBlur);
-        disposable.trackEvent(input, 'compositionstart', () => this.composing = true);
-        disposable.trackEvent(input, 'compositionend', () => this.composing = false);
+        const input = this.shadowRoot.querySelector(".formula-input");
+
+        disposable.trackEvent(input, "keydown", this.#handleKeydown);
+        disposable.trackEvent(input, "focus", this.#handleFocus);
+        disposable.trackEvent(input, "blur", this.#handleBlur);
+        disposable.trackEvent(input, "compositionstart", () => (this.composing = true));
+        disposable.trackEvent(input, "compositionend", () => (this.composing = false));
     }
 
     render() {
-        const cellRef = this.getAttribute('cell-ref') || 'A1';
-        const value = this.getAttribute('value') || '';
-        const editing = this.hasAttribute('editing');
+        const cellRef = this.getAttribute("cell-ref") || "A1";
+        const value = this.getAttribute("value") || "";
+        const editing = this.hasAttribute("editing");
 
         this.shadowRoot.innerHTML = `
             <style>
@@ -62,7 +62,7 @@ export class FormulaBarElement extends WebComponent {
                     border: none;
                     font-size: 13px;
                     font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
-                    background: ${editing ? '#fffbe6' : '#fff'};
+                    background: ${editing ? "#fffbe6" : "#fff"};
                     transition: background 0.15s ease;
                 }
                 
@@ -86,79 +86,89 @@ export class FormulaBarElement extends WebComponent {
 
     #handleKeydown = (e) => {
         if (this.composing) return;
-        
-        if (e.key === 'Enter') {
+
+        if (e.key === "Enter") {
             e.preventDefault();
             const input = e.target;
-            this.dispatchEvent(new CustomEvent('commit', {
-                bubbles: true,
-                composed: true,
-                detail: { value: input.value }
-            }));
-        } else if (e.key === 'Escape') {
+            this.dispatchEvent(
+                new CustomEvent("commit", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { value: input.value },
+                }),
+            );
+        } else if (e.key === "Escape") {
             e.preventDefault();
-            this.dispatchEvent(new CustomEvent('cancel', {
-                bubbles: true,
-                composed: true
-            }));
-        } else if (e.key === 'Tab') {
+            this.dispatchEvent(
+                new CustomEvent("cancel", {
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
+        } else if (e.key === "Tab") {
             e.preventDefault();
             const input = e.target;
-            this.dispatchEvent(new CustomEvent('commit-and-move', {
-                bubbles: true,
-                composed: true,
-                detail: { value: input.value, direction: e.shiftKey ? 'prev' : 'next' }
-            }));
+            this.dispatchEvent(
+                new CustomEvent("commit-and-move", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { value: input.value, direction: e.shiftKey ? "prev" : "next" },
+                }),
+            );
         }
-    }
+    };
 
     #handleFocus = (e) => {
         e.target.select();
-        this.setAttribute('editing', '');
-        this.dispatchEvent(new CustomEvent('start-edit', {
-            bubbles: true,
-            composed: true
-        }));
-    }
+        this.setAttribute("editing", "");
+        this.dispatchEvent(
+            new CustomEvent("start-edit", {
+                bubbles: true,
+                composed: true,
+            }),
+        );
+    };
 
     #handleBlur = (e) => {
-        if (!this.hasAttribute('editing')) {
-            this.dispatchEvent(new CustomEvent('cancel', {
-                bubbles: true,
-                composed: true
-            }));
+        if (!this.hasAttribute("editing")) {
+            this.dispatchEvent(
+                new CustomEvent("cancel", {
+                    bubbles: true,
+                    composed: true,
+                }),
+            );
         }
-        this.removeAttribute('editing');
-    }
+        this.removeAttribute("editing");
+    };
 
     // 公开方法：设置值
     setValue(value) {
-        const input = this.shadowRoot.querySelector('.formula-input');
+        const input = this.shadowRoot.querySelector(".formula-input");
         if (input) input.value = value;
     }
 
     // 公开方法：获取值
     getValue() {
-        const input = this.shadowRoot.querySelector('.formula-input');
-        return input ? input.value : '';
+        const input = this.shadowRoot.querySelector(".formula-input");
+        return input ? input.value : "";
     }
 
     // 公开方法：聚焦
     focus() {
-        const input = this.shadowRoot.querySelector('.formula-input');
+        const input = this.shadowRoot.querySelector(".formula-input");
         if (input) input.focus();
     }
 
     // 公开方法：取消编辑
     cancelEdit() {
-        this.removeAttribute('editing');
-        const input = this.shadowRoot.querySelector('.formula-input');
+        this.removeAttribute("editing");
+        const input = this.shadowRoot.querySelector(".formula-input");
         if (input) input.blur();
     }
 
     onDisconnect() {
-        console.log('FormulaBar destroyed');
+        console.log("FormulaBar destroyed");
     }
 }
 
-customElements.define('formula-bar', FormulaBarElement);
+customElements.define("formula-bar", FormulaBarElement);

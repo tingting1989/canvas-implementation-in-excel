@@ -1,18 +1,18 @@
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { DOMComponent } from "../core/DOMComponent.js";
-import "./FormulaBarElement.js";  // ✅ 导入 Web Component
+import "./FormulaBarElement.js"; // ✅ 导入 Web Component
 import "./formulaBar.css";
 
 /**
  * FormulaBar — 公式栏（重构版）
- * 
+ *
  * ✅ 使用 Web Components（FormulaBarElement）
  * ✅ 不向后兼容，彻底重构
  * ✅ 显式销毁元素
  */
 export class FormulaBar extends DOMComponent {
     /** @type {FormulaBarElement} */
-    #element = null;  // ✅ 持有 Web Component 实例
+    #element = null; // ✅ 持有 Web Component 实例
 
     /** @type {import("../workbook/Workbook.js").Workbook} */
     #workbook = null;
@@ -39,41 +39,41 @@ export class FormulaBar extends DOMComponent {
 
     /**
      * 创建 DOM 结构
-     * 
+     *
      * ✅ 使用 Web Component（FormulaBarElement）
      */
     #createDOM(container) {
         // ✅ 使用 Web Component
-        this.#element = document.createElement('formula-bar');
-        
+        this.#element = document.createElement("formula-bar");
+
         if (container) {
             container.insertBefore(this.#element, container.firstChild);
         }
-        
+
         // ✅ Web Component 的销毁由 destroy() 方法控制
         // 不需要通过 DOMComponent 的 trackElement 来跟踪
     }
 
     /**
      * 绑定事件
-     * 
+     *
      * ✅ 监听 Web Component 事件
      */
     #bindEvents() {
-        this.trackEvent(this.#element, 'commit', (e) => {
+        this.trackEvent(this.#element, "commit", (e) => {
             this.#commitValue(e.detail.value);
         });
-        
-        this.trackEvent(this.#element, 'cancel', () => {
+
+        this.trackEvent(this.#element, "cancel", () => {
             this.#cancelEdit();
         });
-        
-        this.trackEvent(this.#element, 'commit-and-move', (e) => {
+
+        this.trackEvent(this.#element, "commit-and-move", (e) => {
             this.#commitValue(e.detail.value);
             this.#moveToCell(e.detail.direction);
         });
-        
-        this.trackEvent(this.#element, 'start-edit', () => {
+
+        this.trackEvent(this.#element, "start-edit", () => {
             this.#originalValue = this.#element.getValue();
         });
     }
@@ -85,8 +85,8 @@ export class FormulaBar extends DOMComponent {
     update() {
         const sheet = this.#workbook.activeSheet;
         if (!sheet) {
-            this.#element.setAttribute('cell-ref', '');
-            this.#element.setValue('');
+            this.#element.setAttribute("cell-ref", "");
+            this.#element.setValue("");
             return;
         }
 
@@ -95,18 +95,18 @@ export class FormulaBar extends DOMComponent {
         this.#activeCol = col;
 
         const ref = this.#toColLabel(col) + (row + 1);
-        
+
         // ✅ 使用 Web Component 属性
-        this.#element.setAttribute('cell-ref', ref);
+        this.#element.setAttribute("cell-ref", ref);
 
         const cell = sheet.cellStore.get(row, col);
-        let value = '';
+        let value = "";
         if (cell && cell.formula) {
             value = cell.formula;
         } else if (cell) {
-            value = cell.value ?? '';
+            value = cell.value ?? "";
         }
-        
+
         // ✅ 使用 Web Component 方法
         this.#element.setValue(value);
         this.#originalValue = value;
@@ -152,9 +152,9 @@ export class FormulaBar extends DOMComponent {
         let nextRow = this.#activeRow;
         let nextCol = this.#activeCol;
 
-        if (direction === 'next') {
+        if (direction === "next") {
             nextCol++;
-        } else if (direction === 'prev') {
+        } else if (direction === "prev") {
             nextCol--;
         }
 
@@ -207,7 +207,7 @@ export class FormulaBar extends DOMComponent {
             this.#element.destroy();
             this.#element = null;
         }
-        
+
         this.#workbook = null;
         super.onDestroy();
     }
