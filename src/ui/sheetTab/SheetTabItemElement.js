@@ -2,17 +2,17 @@ import { WebComponent } from "@/core/WebComponent";
 import { SHEET_TAB_EVENTS } from "./SheetTabEvents.js";
 
 /**
- * SheetTabElement — 工作表标签 Web Component
+ * SheetTabItemElement — 单个工作表标签 Web Component
  *
  * 使用方式：
- * <sheet-tab name="Sheet1" active closable></sheet-tab>
+ * <sheet-tab-item name="Sheet1" active closable></sheet-tab-item>
  *
  * 事件：
  * - switch: 点击标签时触发（detail: { name }）
  * - close: 点击关闭按钮时触发（detail: { name }）
  * - rename: 双击标签时触发（detail: { name }）
  */
-export class SheetTabElement extends WebComponent {
+export class SheetTabItemElement extends WebComponent {
     static get observedAttributes() {
         return ["name", "active", "closable"];
     }
@@ -133,4 +133,4 @@ export class SheetTabElement extends WebComponent {
     onDisconnect() {}
 }
 
-customElements.define("sheet-tab", SheetTabElement);
+customElements.define("sheet-tab-item", SheetTabItemElement);

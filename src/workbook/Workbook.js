@@ -382,10 +382,13 @@ export class Workbook {
 
         tabBar.onAdd = () => {
             const newName = this.#generateSheetName();
-            this.addSheet(newName);
-            this.switchTo(newName);
+
+            const sheet = this.addSheet(newName);
+            if (sheet) {
+                this.switchTo(newName);
+                tabBar.scrollToTab(newName);
+            }
             tabBar.refresh();
-            tabBar.scrollToTab(newName);
         };
 
         tabBar.onRemove = (name) => {
@@ -394,8 +397,9 @@ export class Workbook {
         };
 
         tabBar.onRename = (oldName, newName) => {
-            this.renameSheet(oldName, newName);
+            const success = this.renameSheet(oldName, newName);
             tabBar.refresh();
+            return success;
         };
 
         tabBar.refresh();
