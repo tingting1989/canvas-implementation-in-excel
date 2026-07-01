@@ -41,7 +41,6 @@ export class FormulaBarManager extends Disposable {
         this.#workbook = workbook;
         this.#createDOM(container);
         this.#bindEvents();
-
     }
 
     #createDOM(container) {

@@ -1,7 +1,7 @@
-
 # FormulaBar 事件与数据流详解
 
 ## 整体架构
+
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        DOM 层级                                  │
@@ -25,7 +25,9 @@
 ```
 
 ## 一、事件流：从用户操作到数据写入
+
 FormulaBarElement 是纯 UI 层，只负责渲染和派发事件；FormulaBarManager 是逻辑层，负责监听事件并与 Workbook 交互。
+
 ### 1. 键盘事件拦截（原生 DOM 事件 → 阻止冒泡）
 
 ```text
@@ -51,6 +53,7 @@ FormulaBarElement 是纯 UI 层，只负责渲染和派发事件；FormulaBarMan
 按 Escape   ──→  e.preventDefault()  ──→  emit("cancel")
 按 Tab      ──→  e.preventDefault()  ──→  emit("commit-and-move", { value, direction })
 ```
+
 emit() 内部调用 this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true, detail }))，事件穿透 Shadow DOM 冒泡到 <formula-bar> 宿主元素上。
 
 ### 3. 焦点事件
@@ -72,21 +75,25 @@ input 失去焦点  ──→  #handleBlur
 
 ```javascript
 // Manager 通过 trackEvent 监听 Element 派发的自定义事件
-this.trackEvent(this.#element, "commit",         (e) => this.#commitValue(e.detail.value));
-this.trackEvent(this.#element, "cancel",         ()  => this.#cancelEdit());
-this.trackEvent(this.#element, "commit-and-move", (e) => { this.#commitValue(e.detail.value); this.#moveToCell(e.detail.direction); });
-this.trackEvent(this.#element, "start-edit",     ()  => { this.#originalValue = this.#element.getValue(); });
+this.trackEvent(this.#element, "commit", (e) => this.#commitValue(e.detail.value));
+this.trackEvent(this.#element, "cancel", () => this.#cancelEdit());
+this.trackEvent(this.#element, "commit-and-move", (e) => {
+    this.#commitValue(e.detail.value);
+    this.#moveToCell(e.detail.direction);
+});
+this.trackEvent(this.#element, "start-edit", () => {
+    this.#originalValue = this.#element.getValue();
+});
 ```
 
 每个事件的处理逻辑：
 
-| 事件 | Manager 响应 | 数据变更 |
-|------|-------------|---------|
-| `commit` | `#commitValue(value)` — 比较新旧值，不同则写入 Workbook | `sheet.setCell(row, col, value)` |
-| `cancel` | `#cancelEdit()` — 恢复原始值，焦点回到 Canvas | 无数据变更 |
-| `commit-and-move` | 先 `#commitValue`，再 `#moveToCell(direction)` | 写入 + 选区移动 |
-| `start-edit` | 记录 `#originalValue` | 无数据变更，仅快照 |
-
+| 事件              | Manager 响应                                            | 数据变更                         |
+| ----------------- | ------------------------------------------------------- | -------------------------------- |
+| `commit`          | `#commitValue(value)` — 比较新旧值，不同则写入 Workbook | `sheet.setCell(row, col, value)` |
+| `cancel`          | `#cancelEdit()` — 恢复原始值，焦点回到 Canvas           | 无数据变更                       |
+| `commit-and-move` | 先 `#commitValue`，再 `#moveToCell(direction)`          | 写入 + 选区移动                  |
+| `start-edit`      | 记录 `#originalValue`                                   | 无数据变更，仅快照               |
 
 ## 二、数据流：从 Workbook 到 UI 显示
 
@@ -122,8 +129,8 @@ Shadow DOM 更新：
   <input class="formula-input" value="=SUM(A1:A10)">
 ```
 
-
 ## 三、完整交互时序图
+
 ```text
 时间 ──────────────────────────────────────────────────────────→
 
@@ -158,11 +165,11 @@ Shadow DOM 更新：
 
 ## 四、关键设计决策
 
-| 决策 | 原因 |
-|------|------|
-| Element 用 `emit()` 派发自定义事件，Manager 用 `trackEvent()` 监听 | 解耦 UI 与逻辑，Element 不知道 Workbook 的存在 |
-| `keydown` 在宿主元素上 `stopPropagation()` | 防止事件冒泡到 document 被 KeyboardStrategy 拦截 |
-| 事件名提取为 `FORMULA_BAR_EVENTS` 常量 | 避免硬编码字符串，派发端和监听端引用同一常量 |
-| Manager 继承 `Disposable` 而非 `DOMComponent` | Manager 不需要创建/管理 DOM，只需要事件自动解绑 |
-| `#originalValue` 快照 | cancel 时可以恢复原始值，commit 时可以跳过无变更写入 |
-| `composed: true` | 事件穿透 Shadow DOM，Manager 可以在宿主元素上监听 |
+| 决策                                                               | 原因                                                 |
+| ------------------------------------------------------------------ | ---------------------------------------------------- |
+| Element 用 `emit()` 派发自定义事件，Manager 用 `trackEvent()` 监听 | 解耦 UI 与逻辑，Element 不知道 Workbook 的存在       |
+| `keydown` 在宿主元素上 `stopPropagation()`                         | 防止事件冒泡到 document 被 KeyboardStrategy 拦截     |
+| 事件名提取为 `FORMULA_BAR_EVENTS` 常量                             | 避免硬编码字符串，派发端和监听端引用同一常量         |
+| Manager 继承 `Disposable` 而非 `DOMComponent`                      | Manager 不需要创建/管理 DOM，只需要事件自动解绑      |
+| `#originalValue` 快照                                              | cancel 时可以恢复原始值，commit 时可以跳过无变更写入 |
+| `composed: true`                                                   | 事件穿透 Shadow DOM，Manager 可以在宿主元素上监听    |
