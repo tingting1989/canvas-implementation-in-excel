@@ -50,7 +50,7 @@ const initApp = () => {
             fontFamily: "Microsoft YaHei",
             color: "#000",
         },
-
+        readOnly:true,
         // 工作表高度和宽度（像素值）
         // height: 600,
         // 工作表高度和宽度（像素值）
@@ -65,7 +65,7 @@ const initApp = () => {
                 name: "Sheet1",
 
                 // 是否只读
-                readOnly: false,
+                // readOnly: false,
 
                 // 初始数据
                 // data: [
@@ -542,36 +542,42 @@ const initApp = () => {
 
             // ==================== 工作表相关钩子 ====================
             // ✅ 已执行
-            [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
-                console.log("[HOOK] beforeSheetRename 执行了", ...args);
-                return true;
-            },
-            [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
-                console.log("[HOOK] afterSheetRename 执行了", ...args);
-            },
-
-            [HOOKS.BEFORE_SHEET_ADD]: (...args) => {
-                console.log("[HOOK] beforeSheetAdd 执行了", ...args);
-                return true;
-            },
-            [HOOKS.AFTER_SHEET_ADD]: (...args) => {
-                console.log("[HOOK] afterSheetAdd 执行了", ...args);
-            },
-            [HOOKS.BEFORE_SHEET_REMOVE]: (...args) => {
-                console.log("[HOOK] beforeSheetRemove 执行了", ...args);
-                return true;
-            },
-            [HOOKS.AFTER_SHEET_REMOVE]: (...args) => {
-                console.log("[HOOK] afterSheetRemove 执行了", ...args);
-            },
-            [HOOKS.BEFORE_SHEET_SWITCH]: (...args) => {
-                console.log("[HOOK] beforeSheetSwitch 执行了", ...args);
-                return true;
-            },
-            [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
-                console.log("[HOOK] afterSheetSwitch 执行了", ...args);
-                return true;
-            },
+            // [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
+            //     console.log("[HOOK] beforeSheetRename 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
+            //     console.log("[HOOK] afterSheetRename 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SHEET_ADD]: (...args) => {
+            //     console.log("[HOOK] beforeSheetAdd 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_ADD]: (...args) => {
+            //     console.log("[HOOK] afterSheetAdd 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SHEET_REMOVE]: (...args) => {
+            //     console.log("[HOOK] beforeSheetRemove 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_REMOVE]: (...args) => {
+            //     console.log("[HOOK] afterSheetRemove 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SHEET_SWITCH]: (...args) => {
+            //     console.log("[HOOK] beforeSheetSwitch 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
+            //     console.log("[HOOK] afterSheetSwitch 执行了", ...args);
+            //     return true;
+            // },
         },
         afterInit(wb) {
             errorHandler.debug(ERROR_CODE.DEBUG_LOG, "afterInit");
