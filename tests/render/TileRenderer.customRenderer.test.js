@@ -242,4 +242,45 @@ describe("TileRenderer - Custom Renderer Integration", () => {
 
         expect(getCellTypeInstanceSpy).toHaveBeenCalled();
     });
+
+    it("should mark all tiles spanned by a wide cell as dirty", () => {
+        // 模拟列 A 宽 120，列 B 宽 200；瓦片大小 256。
+        // 单元格 B2 占据 x=120..320，跨越瓦片列 0 与 1。
+        const rc = {
+            pageContext: {
+                getPageRowY: vi.fn(() => 0),
+                getPageRowHeight: vi.fn(() => 24),
+                getColX: vi.fn((c) => (c === 1 ? 120 : 0)),
+                getColWidth: vi.fn((c) => (c === 1 ? 200 : 120)),
+            },
+        };
+
+        // 预创建两个瓦片并清脏，模拟已缓存状态
+        tileCache.getOrCreate(0, 0).dirty = false;
+        tileCache.getOrCreate(0, 1).dirty = false;
+
+        renderer.invalidateCell(0, 1, rc);
+
+        expect(tileCache.get(0, 0)?.dirty).toBe(true);
+        expect(tileCache.get(0, 1)?.dirty).toBe(true);
+    });
+
+    it("should mark only the single tile for a cell within one tile", () => {
+        const rc = {
+            pageContext: {
+                getPageRowY: vi.fn(() => 0),
+                getPageRowHeight: vi.fn(() => 24),
+                getColX: vi.fn((c) => c * 80),
+                getColWidth: vi.fn(() => 80),
+            },
+        };
+
+        tileCache.getOrCreate(0, 0).dirty = false;
+        tileCache.getOrCreate(0, 1).dirty = false;
+
+        renderer.invalidateCell(0, 0, rc);
+
+        expect(tileCache.get(0, 0)?.dirty).toBe(true);
+        expect(tileCache.get(0, 1)?.dirty).toBe(false);
+    });
 });

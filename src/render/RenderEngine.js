@@ -191,7 +191,7 @@ export class RenderEngine extends DOMComponent {
         // 分页模式下冻结行处理：
         // - 第 1 页（pageStart == 0）：冻结行数据在当前页内，正常使用 frozenRowsH
         // - 第 2 页及以后（pageStart > 0）：冻结行不在当前页，冻结行高度计为 0
-        const effectiveFrozenRowsH = (isPaginationActive && pc.pageStart > 0) ? 0 : frozenRowsH;
+        const effectiveFrozenRowsH = isPaginationActive && pc.pageStart > 0 ? 0 : frozenRowsH;
         this.scrollMgr.updateScrollBounds(
             rc.totalWidth,
             rc.totalHeight,

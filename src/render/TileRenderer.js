@@ -149,14 +149,9 @@ export class TileRenderer {
         const pixelX1 = pixelX0 + tileSize;
 
         // 使用 PageContext 显式选择坐标体系
-        const sr = useRealRows
-            ? pc.realRowAt(pixelY0)
-            : pc.pageRowAt(pixelY0);
+        const sr = useRealRows ? pc.realRowAt(pixelY0) : pc.pageRowAt(pixelY0);
         const sc = rc.colAt(pixelX0);
-        const er = Math.min(
-            (useRealRows ? pc.realRowAt(pixelY1) : pc.pageRowAt(pixelY1)) + 1,
-            useRealRows ? pc.raw.rowCount : pc.pageViewRowCount,
-        );
+        const er = Math.min((useRealRows ? pc.realRowAt(pixelY1) : pc.pageRowAt(pixelY1)) + 1, useRealRows ? pc.raw.rowCount : pc.pageViewRowCount);
         const ec = Math.min(rc.colAt(pixelX1) + 1, rc.colCount);
 
         // 记录已绘制的合并区域左上角坐标，避免重复绘制
@@ -674,8 +669,13 @@ export class TileRenderer {
     }
 
     /**
-     * 将指定单元格对应的瓦片标记为脏
-     * 通过单元格的像素坐标计算其所属的瓦片行列号
+     * 将指定单元格覆盖的所有瓦片标记为脏
+     *
+     * 单元格的宽度/高度可能跨越多个瓦片（例如列宽 200px、列起点 120px，
+     * 会同时落在瓦片 0 与瓦片 1 中）。旧实现只根据左上角坐标标记一个瓦片，
+     * 导致宽单元格被部分重绘，出现“内容被瓦片边界截断”的现象。
+     *
+     * 修正后计算单元格矩形覆盖的瓦片行列范围，并逐个标记为脏。
      *
      * @param {number} row - 单元格页面行号
      * @param {number} col - 单元格列号
@@ -684,10 +684,26 @@ export class TileRenderer {
     invalidateCell(row, col, rc) {
         if (!rc) return;
         const pc = rc.pageContext;
+        if (!pc) return;
+
         const tileSize = CONFIG.TILE_SIZE;
-        const tileRow = Math.floor(pc.getPageRowY(row) / tileSize);
-        const tileCol = Math.floor(pc.getColX(col) / tileSize);
-        this.tileCache.markDirty(tileRow, tileCol);
+        const rowY = pc.getPageRowY(row);
+        const rowH = pc.getPageRowHeight(row);
+        const colX = pc.getColX(col);
+        const colW = pc.getColWidth(col);
+
+        if (rowH <= 0 || colW <= 0) return;
+
+        const startTileRow = Math.floor(rowY / tileSize);
+        const endTileRow = Math.floor((rowY + rowH) / tileSize);
+        const startTileCol = Math.floor(colX / tileSize);
+        const endTileCol = Math.floor((colX + colW) / tileSize);
+
+        for (let tr = startTileRow; tr <= endTileRow; tr++) {
+            for (let tc = startTileCol; tc <= endTileCol; tc++) {
+                this.tileCache.markDirty(tr, tc);
+            }
+        }
     }
 
     /**
