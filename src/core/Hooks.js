@@ -1,6 +1,6 @@
-import { HOOKS } from "../constants/hookNames.js";
+import { HOOKS } from "@/constants/hookNames";
 import { errorHandler, ERROR_CODE } from "./ErrorHandler.js";
-import { isFunction } from "../utils/utils.js";
+import { isFunction } from "@/utils/utils";
 
 /**
  * Hooks 系统
@@ -153,6 +153,60 @@ export class Hooks {
         for (const callback of callbacks) {
             try {
                 const result = callback(...args);
+                if (result !== undefined) {
+                    return result;
+                }
+            } catch (error) {
+                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+            }
+        }
+
+        return undefined;
+    }
+
+    /**
+     * 触发钩子（使用自定义调用器）
+     * 允许调用方控制如何执行每个回调（如绑定 this 上下文）
+     *
+     * @param {string} hookName - 钩子名称
+     * @param {Function} invoker - 调用器函数 (callback) => result
+     * @returns {*} 最后一个回调的返回值
+     */
+    runHooksWithCallback(hookName, invoker) {
+        const callbacks = this.hooks.get(hookName);
+        if (!callbacks || callbacks.length === 0) {
+            return undefined;
+        }
+
+        const snapshot = callbacks.slice();
+        let result;
+        for (const callback of snapshot) {
+            try {
+                result = invoker(callback);
+            } catch (error) {
+                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 触发钩子直到有回调返回非 undefined 值（使用自定义调用器）
+     *
+     * @param {string} hookName - 钩子名称
+     * @param {Function} invoker - 调用器函数 (callback) => result
+     * @returns {*} 第一个非 undefined 的返回值
+     */
+    runHooksUntilWithCallback(hookName, invoker) {
+        const callbacks = this.hooks.get(hookName);
+        if (!callbacks || callbacks.length === 0) {
+            return undefined;
+        }
+
+        for (const callback of callbacks) {
+            try {
+                const result = invoker(callback);
                 if (result !== undefined) {
                     return result;
                 }

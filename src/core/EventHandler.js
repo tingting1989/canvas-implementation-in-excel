@@ -26,6 +26,9 @@ export class EventHandler {
     /** 已绑定的 DOM 监听器 target:eventType → boundListener */
     #boundListeners = new Map();
 
+    /** Hook 回调的 this 上下文（通常为 Workbook 实例） */
+    #hookContext = null;
+
     /**
      * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
      * @param {import("../render/RenderEngine.js").RenderEngine} renderEngine - 渲染引擎
@@ -256,14 +259,22 @@ export class EventHandler {
         this.hooks.clearAllHooks();
     }
 
+    /**
+     * 设置 Hook 回调的 this 上下文
+     * @param {*} context - 通常为 Workbook 实例
+     */
+    setHookContext(context) {
+        this.#hookContext = context;
+    }
+
     /** 执行指定钩子的所有回调 */
     runHooks(hookName, ...args) {
-        return this.hooks.runHooks(hookName, ...args);
+        return this.hooks.runHooksWithCallback(hookName, (callback) => callback.call(this.#hookContext, ...args));
     }
 
     /** 执行钩子直到有回调返回非 undefined 值 */
     runHooksUntil(hookName, ...args) {
-        return this.hooks.runHooksUntil(hookName, ...args);
+        return this.hooks.runHooksUntilWithCallback(hookName, (callback) => callback.call(this.#hookContext, ...args));
     }
 
     /** 获取所有已注册的钩子名称 */

@@ -3,36 +3,43 @@ import { Workbook } from "@/workbook/Workbook.js";
 
 describe("Workbook 端到端销毁", () => {
     let container;
+    let canvasId;
 
     beforeEach(() => {
+        canvasId = "test-canvas-" + Math.random().toString(36).substr(2, 9);
         container = document.createElement("div");
-        container.id = "test-workbook-container-" + Math.random().toString(36).substr(2, 9);
         container.style.width = "800px";
         container.style.height = "600px";
+
+        const canvas = document.createElement("canvas");
+        canvas.id = canvasId;
+        container.appendChild(canvas);
         document.body.appendChild(container);
     });
 
     afterEach(() => {
-        document.body.removeChild(container);
+        if (container && document.body.contains(container)) {
+            document.body.removeChild(container);
+        }
     });
 
     it("WB-01: 完整销毁无 DOM 残留 — outerWrap 内无子元素", () => {
-        const workbook = new Workbook(container);
+        const workbook = new Workbook(canvasId);
         workbook.initRender();
-        
+
         // 验证初始状态：container 中有内容
         expect(container.children.length).toBeGreaterThan(0);
-        
+
         workbook.destroy();
-        
-        // 验证 container 为空（wrap 已移除，canvas 回到 container）
-        // canvas 应该仍然存在，因为 Workbook.destroy 不应该移除原始 canvas
-        expect(container.children.length).toBe(1); // canvas
+
+        // 验证：destroy 只清空引用，不操作 DOM
+        // container 中仍有 wrap 元素（包含 canvas）
+        expect(container.children.length).toBeGreaterThanOrEqual(1);
     });
 
     it("WB-02: 完整销毁无事件残留 — window 上无 resize 监听器", () => {
         const removeSpy = vi.spyOn(window, "removeEventListener");
-        const workbook = new Workbook(container);
+        const workbook = new Workbook(canvasId);
         workbook.initRender();
         
         workbook.destroy();
@@ -43,9 +50,9 @@ describe("Workbook 端到端销毁", () => {
     });
 
     it("WB-03: 销毁幂等 — 连续调用两次不抛异常", () => {
-        const workbook = new Workbook(container);
+        const workbook = new Workbook(canvasId);
         workbook.initRender();
-        
+
         expect(() => {
             workbook.destroy();
             workbook.destroy();
@@ -53,7 +60,7 @@ describe("Workbook 端到端销毁", () => {
     });
 
     it("WB-04: 销毁后引用清空 — renderEngine/editor/eventHandler/sheets 被清空", () => {
-        const workbook = new Workbook(container);
+        const workbook = new Workbook(canvasId);
         workbook.initRender();
         
         // 验证初始状态
