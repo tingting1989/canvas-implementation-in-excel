@@ -173,12 +173,12 @@ export class CopyPastePlugin extends BasePlugin {
         this.#clipboard.copy(sheet);
 
         // 删除选区内容（批量操作，一次撤销）
+        const accessor = sheet.cellDataAccessor;
         const changes = [];
         for (let r = range.topRow; r <= range.bottomRow; r++) {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (!sheet.isDisabled(r, c)) {
-                    const realR = sheet.toRealRow(r);
-                    const oldCell = sheet.cellStore.get(realR, c);
+                    const oldCell = accessor.get(r, c);
                     if (oldCell && oldCell.value !== "") {
                         changes.push({ row: r, col: c, oldValue: oldCell.value, newValue: "" });
                     }
@@ -189,8 +189,7 @@ export class CopyPastePlugin extends BasePlugin {
             this.eventHandler?.runHooks(HOOKS.BEFORE_CHANGE, changes);
             sheet.beginBatch();
             for (const { row, col } of changes) {
-                const realR = sheet.toRealRow(row);
-                const oldCell = sheet.cellStore.get(realR, col);
+                const oldCell = accessor.get(row, col);
                 sheet.setCell(row, col, "", oldCell?.styleId || 0);
             }
             sheet.endBatch();

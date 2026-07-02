@@ -42,6 +42,7 @@ export class ClipboardManager {
      */
     copy(sheet) {
         const range = sheet.selection.getRange();
+        const accessor = sheet.cellDataAccessor;
         const cells = [];
 
         // 记录每个复制列的类型名称，用于粘贴时的类型一致性检查
@@ -51,10 +52,9 @@ export class ClipboardManager {
             columnTypes.push(cellType ? cellType.name : "text");
         }
         for (let r = range.topRow; r <= range.bottomRow; r++) {
-            const realR = sheet.toRealRow(r);
             const row = [];
             for (let c = range.topCol; c <= range.bottomCol; c++) {
-                const cell = sheet.cellStore.get(realR, c);
+                const cell = accessor.get(r, c);
                 row.push(cell ? { value: cell.value, styleId: cell.styleId || 0 } : null);
             }
             cells.push(row);

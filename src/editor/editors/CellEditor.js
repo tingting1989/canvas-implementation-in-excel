@@ -1,8 +1,8 @@
-import { CONFIG } from "../../constants/config";
-import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
-import { isFunction } from "../../utils/utils.js";
-import { DOMComponent } from "../../core/DOMComponent.js";
+import { CONFIG } from "@/constants/config";
+import { SHEET_EVENTS } from "@/constants/sheetEvents";
+import { EVENT_NAMES } from "@/constants/eventNames";
+import { isFunction } from "@/utils/utils";
+import { DOMComponent } from "@/core/DOMComponent";
 import "../editor.css";
 
 /**
@@ -438,7 +438,7 @@ export class CellEditor extends DOMComponent {
 
         if (changes.length === 0) return;
 
-        this.sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, changes, { source: "CellEditor" });
+        this.sheet.bus.emit(SHEET_EVENTS.BEFORE_CHANGE, [changes], { source: "CellEditor" });
 
         if (this.useBatchInBatchFill()) {
             this.sheet.beginBatch();
@@ -452,7 +452,7 @@ export class CellEditor extends DOMComponent {
             this.sheet.endBatch();
         }
 
-        this.sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, changes, { source: "CellEditor" });
+        this.sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, [changes], { source: "CellEditor" });
     }
 
     #onKeyDown(e) {

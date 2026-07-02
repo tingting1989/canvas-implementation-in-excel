@@ -16,6 +16,7 @@ import {
 } from "@/model";
 import { RowColManager } from "../model/grid/RowColManager.js";
 import { RowColSync } from "../model/grid/RowColSync.js";
+import { CellDataAccessor } from "../model/grid/CellDataAccessor.js";
 import { CONFIG } from "../constants/config";
 import { SheetStyleManager } from "./SheetStyleManager.js";
 import { ColumnTypeManager } from "./managers/ColumnTypeManager.js";
@@ -94,6 +95,9 @@ export class Sheet {
 
     /** 只读模式：禁止所有数据修改 */
     #readOnly = false;
+
+    /** 单元格数据访问代理（懒初始化） */
+    #cellDataAccessor = null;
 
     /**
      * 检查当前工作表是否可写，只读模式下返回 false
@@ -294,6 +298,21 @@ export class Sheet {
      */
     get pageContext() {
         return this.rowColManager.pageContext;
+    }
+
+    /**
+     * 获取单元格数据访问代理（CellDataAccessor）
+     * 统一管理分页模式下的数据读写，自动处理行号转换。
+     * 所有 Strategy/Plugin 层代码应优先使用此属性访问 cellStore，
+     * 避免遗漏 toRealRow() 转换导致的 bug。
+     *
+     * @returns {import("../model/grid/CellDataAccessor.js").CellDataAccessor}
+     */
+    get cellDataAccessor() {
+        if (!this.#cellDataAccessor) {
+            this.#cellDataAccessor = new CellDataAccessor(this);
+        }
+        return this.#cellDataAccessor;
     }
 
     /** 页面行号 → 实际行号（委托 PageContext） */

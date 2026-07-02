@@ -179,14 +179,14 @@ export class CopyPasteStrategy extends EventStrategy {
      */
     #handleDelete() {
         const { sheet } = this.handler;
+        const accessor = sheet.cellDataAccessor;
         const range = sheet.selection.getRange();
 
         const changes = [];
         for (let r = range.topRow; r <= range.bottomRow; r++) {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (!sheet.isDisabled(r, c)) {
-                    const realR = sheet.toRealRow(r);
-                    const oldCell = sheet.cellStore.get(realR, c);
+                    const oldCell = accessor.get(r, c);
                     if (oldCell && oldCell.value !== "") {
                         changes.push({ row: r, col: c, oldValue: oldCell.value, newValue: "" });
                     }
@@ -199,8 +199,7 @@ export class CopyPasteStrategy extends EventStrategy {
         this.handler.runHooks("beforeChange", changes);
 
         for (const { row, col } of changes) {
-            const realR = sheet.toRealRow(row);
-            const oldCell = sheet.cellStore.get(realR, col);
+            const oldCell = accessor.get(row, col);
             sheet.setCell(row, col, "", oldCell?.styleId || 0);
         }
 

@@ -93,7 +93,8 @@ export class FormulaBarManager extends Disposable {
 
         this.#element.setAttribute("cell-ref", ref);
 
-        const cell = sheet.cellStore.get(realRow, col);
+        const accessor = sheet.cellDataAccessor;
+        const cell = accessor.get(this.#activeRow, col);
         let value = "";
         if (cell && cell.formula) {
             value = cell.formula;
@@ -111,13 +112,12 @@ export class FormulaBarManager extends Disposable {
 
         if (value === this.#originalValue) return;
 
-        // #activeRow 是页面相对行号，cellStore 索引需要实际行号
-        const realRow = sheet.toRealRow(this.#activeRow);
+        const accessor = sheet.cellDataAccessor;
 
         if (value === "") {
             sheet.setCell(this.#activeRow, this.#activeCol, "");
         } else {
-            const styleId = sheet.cellStore.get(realRow, this.#activeCol)?.styleId || 0;
+            const styleId = accessor.get(this.#activeRow, this.#activeCol)?.styleId || 0;
             sheet.setCell(this.#activeRow, this.#activeCol, value, styleId);
         }
 
