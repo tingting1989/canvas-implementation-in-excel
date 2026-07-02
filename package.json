@@ -1,6 +1,6 @@
 {
     "name": "@canvas-sheet/core",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Canvas-based spreadsheet engine with Web Components UI",
     "main": "dist/canvas-sheet.umd.js",
     "module": "dist/canvas-sheet.esm.mjs",
