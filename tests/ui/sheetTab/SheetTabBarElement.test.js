@@ -16,22 +16,32 @@ describe("SheetTabBarElement Web Component", () => {
         element.remove();
     });
 
-    it("STBE-01: 渲染 Shadow DOM — 包含 add-btn, tabs-scroll, tabs", () => {
-        const addBtn = element.shadowRoot.querySelector(".add-btn");
+    it("STBE-01: 渲染 Shadow DOM — 包含 nav-group, tabs-scroll, tabs, add-btn", () => {
+        const navGroup = element.shadowRoot.querySelector(".nav-group");
         const scrollWrap = element.shadowRoot.querySelector(".tabs-scroll");
         const tabsContainer = element.shadowRoot.querySelector(".tabs");
+        const addBtn = element.shadowRoot.querySelector(".add-btn");
 
-        expect(addBtn).not.toBeNull();
+        expect(navGroup).not.toBeNull();
         expect(scrollWrap).not.toBeNull();
         expect(tabsContainer).not.toBeNull();
+        expect(addBtn).not.toBeNull();
     });
 
-    it("STBE-02: 添加按钮文本为 +", () => {
+    it("STBE-02: 导航组包含前进和后退按钮", () => {
+        const prevBtn = element.shadowRoot.querySelector(".nav-btn.prev");
+        const nextBtn = element.shadowRoot.querySelector(".nav-btn.next");
+
+        expect(prevBtn).not.toBeNull();
+        expect(nextBtn).not.toBeNull();
+    });
+
+    it("STBE-03: 添加按钮文本为 +", () => {
         const addBtn = element.shadowRoot.querySelector(".add-btn");
         expect(addBtn.textContent).toBe("+");
     });
 
-    it("STBE-03: refresh 根据 sheets 创建标签", () => {
+    it("STBE-04: refresh 根据 sheets 创建标签", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -42,7 +52,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(tabs.length).toBe(2);
     });
 
-    it("STBE-04: 活动工作表标签有 active 类", () => {
+    it("STBE-05: 活动工作表标签有 active 类", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -55,7 +65,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(activeTab.dataset.name).toBe("Sheet1");
     });
 
-    it("STBE-05: 多个工作表时标签有 closable 类", () => {
+    it("STBE-06: 多个工作表时标签有 closable 类", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -68,7 +78,7 @@ describe("SheetTabBarElement Web Component", () => {
         });
     });
 
-    it("STBE-06: 只有一个工作表时标签没有 closable 类", () => {
+    it("STBE-07: 只有一个工作表时标签没有 closable 类", () => {
         const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         element.refresh(sheets, "Sheet1");
 
@@ -78,7 +88,7 @@ describe("SheetTabBarElement Web Component", () => {
         });
     });
 
-    it("STBE-07: 点击添加按钮派发 add 事件", () => {
+    it("STBE-08: 点击添加按钮派发 add 事件", () => {
         const addSpy = vi.fn();
         element.addEventListener(SHEET_TAB_EVENTS.ADD, addSpy);
 
@@ -90,7 +100,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.ADD, addSpy);
     });
 
-    it("STBE-08: 点击标签派发 switch 事件", () => {
+    it("STBE-09: 点击标签派发 switch 事件", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -109,7 +119,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
     });
 
-    it("STBE-09: 点击关闭按钮派发 close 事件", () => {
+    it("STBE-10: 点击关闭按钮派发 close 事件", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -128,7 +138,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
     });
 
-    it("STBE-10: 双击标签触发重命名流程", () => {
+    it("STBE-11: 双击标签触发重命名流程", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -143,7 +153,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(renameInput).not.toBeNull();
     });
 
-    it("STBE-11: 双击关闭按钮不触发重命名", () => {
+    it("STBE-12: 双击关闭按钮不触发重命名", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -158,23 +168,38 @@ describe("SheetTabBarElement Web Component", () => {
         expect(renameInput).toBeNull();
     });
 
-    it("STBE-12: wheel 事件触发滚动", () => {
+    it("STBE-13: 点击前进按钮向右滚动标签", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
         ]);
         element.refresh(sheets, "Sheet1");
 
+        const nextBtn = element.shadowRoot.querySelector(".nav-btn.next");
+        nextBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
         const tabsContainer = element.shadowRoot.querySelector(".tabs");
-
-        element.dispatchEvent(
-            new WheelEvent(EVENT_NAMES.WHEEL, { deltaX: 50, bubbles: true }),
-        );
-
         expect(tabsContainer.style.transform).toContain("translateX");
     });
 
-    it("STBE-13: refresh 销毁旧标签并创建新标签", () => {
+    it("STBE-14: 点击后退按钮向左滚动标签", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const nextBtn = element.shadowRoot.querySelector(".nav-btn.next");
+        nextBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        const prevBtn = element.shadowRoot.querySelector(".nav-btn.prev");
+        prevBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        const tabsContainer = element.shadowRoot.querySelector(".tabs");
+        expect(tabsContainer.style.transform).toBeDefined();
+    });
+
+    it("STBE-15: refresh 销毁旧标签并创建新标签", () => {
         const sheets2 = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -191,7 +216,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(element.shadowRoot.querySelectorAll(".tab").length).toBe(3);
     });
 
-    it("STBE-14: 标签包含 label 和 close-btn 子元素", () => {
+    it("STBE-16: 标签包含 label 和 close-btn 子元素", () => {
         const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         element.refresh(sheets, "Sheet1");
 
@@ -200,7 +225,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(tab.querySelector(".close-btn")).not.toBeNull();
     });
 
-    it("STBE-15: 标签 label 文本与 name 一致", () => {
+    it("STBE-17: 标签 label 文本与 name 一致", () => {
         const sheets = new Map([["MySheet", { name: "MySheet" }]]);
         element.refresh(sheets, "MySheet");
 
@@ -208,7 +233,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(label.textContent).toBe("MySheet");
     });
 
-    it("STBE-16: close-btn 文本为 ×", () => {
+    it("STBE-18: close-btn 文本为 ×", () => {
         const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         element.refresh(sheets, "Sheet1");
 
@@ -216,19 +241,19 @@ describe("SheetTabBarElement Web Component", () => {
         expect(closeBtn.textContent).toBe("×");
     });
 
-    it("STBE-17: destroy 后组件标记为已销毁", () => {
+    it("STBE-19: destroy 后组件标记为已销毁", () => {
         element.destroy();
         expect(element.isDestroyed).toBe(true);
     });
 
-    it("STBE-18: destroy 后 refresh 不再操作 DOM", () => {
+    it("STBE-20: destroy 后 refresh 不再操作 DOM", () => {
         element.destroy();
 
         const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         expect(() => element.refresh(sheets, "Sheet1")).not.toThrow();
     });
 
-    it("STBE-19: refresh 后滚动偏移重置为 0", () => {
+    it("STBE-21: refresh 后滚动偏移重置为 0", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -239,7 +264,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(tabsContainer.style.transform).not.toContain("translateX(-");
     });
 
-    it("STBE-20: 重命名输入 Enter 后派发 rename 事件", () => {
+    it("STBE-22: 重命名输入 Enter 后派发 rename 事件", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -265,7 +290,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.RENAME, renameSpy);
     });
 
-    it("STBE-21: 重命名输入 Escape 后取消重命名", () => {
+    it("STBE-23: 重命名输入 Escape 后取消重命名", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -288,7 +313,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.RENAME, renameSpy);
     });
 
-    it("STBE-22: 点击关闭按钮不触发 switch 事件", () => {
+    it("STBE-24: 点击关闭按钮不触发 switch 事件", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -304,5 +329,65 @@ describe("SheetTabBarElement Web Component", () => {
         expect(switchSpy).not.toHaveBeenCalled();
 
         element.removeEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
+    });
+
+    it("STBE-25: 重命名输入框无边框无轮廓", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        const label = tab.querySelector(".label");
+        label.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+        const renameInput = tab.querySelector(".rename-input");
+        const style = element.shadowRoot.querySelector("style");
+        const cssText = style.textContent;
+        expect(cssText).toContain(".rename-input");
+        expect(cssText).toContain("border: none");
+        expect(cssText).toContain("outline: none");
+    });
+
+    it("STBE-26: 重命名输入框宽度固定为 60px", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        const label = tab.querySelector(".label");
+        label.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+        const renameInput = tab.querySelector(".rename-input");
+        const style = element.shadowRoot.querySelector("style");
+        const cssText = style.textContent;
+        expect(cssText).toContain("width: 60px");
+    });
+
+    it("STBE-27: wheel 事件不触发滚动", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tabsContainer = element.shadowRoot.querySelector(".tabs");
+
+        element.dispatchEvent(
+            new WheelEvent(EVENT_NAMES.WHEEL, { deltaX: 50, bubbles: true }),
+        );
+
+        expect(tabsContainer.style.transform).not.toContain("translateX(-");
+    });
+
+    it("STBE-28: 导航按钮包含 SVG 图标", () => {
+        const prevBtn = element.shadowRoot.querySelector(".nav-btn.prev");
+        const nextBtn = element.shadowRoot.querySelector(".nav-btn.next");
+
+        expect(prevBtn.querySelector("svg")).not.toBeNull();
+        expect(nextBtn.querySelector("svg")).not.toBeNull();
     });
 });

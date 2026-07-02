@@ -22,6 +22,12 @@
         "test:watch": "vitest",
         "test:ui": "vitest --ui",
         "test:coverage": "vitest run --coverage",
+        "preversion": "npm test",
+        "version": "npm run build:lib && git add -A",
+        "postversion": "npm run publish:lib && git push origin && git push origin --tags",
+        "prepublishOnly": "node -e \"if(process.env.npm_config_registry&&!process.env.npm_config_registry.includes('10.124.26.35')){console.error('Blocked: only private registry allowed');process.exit(1)}\" && npm run build:lib",
+        "publish:lib": "npm publish --registry http://10.124.26.35:4873/",
+        "unpublish": "npm unpublish @canvas-sheet/core --registry http://10.124.26.35:4873/ --force",
         "push": "git push origin",
         "push:all": "git push origin && git push internal",
         "push:origin": "git push origin",
@@ -29,10 +35,8 @@
         "pull": "git pull origin",
         "pull:origin": "git pull origin",
         "pull:internal": "git pull internal",
-        "remote:list": "git remote -v",
-        "prepublishOnly": "node -e \"if(process.env.npm_config_registry&&!process.env.npm_config_registry.includes('10.124.26.35')){console.error('Blocked: only private registry allowed');process.exit(1)}\" && npm run build:lib",
-        "publish:lib": "npm publish --registry http://10.124.26.35:4873/",
-        "unpublish": "npm unpublish @canvas-sheet/core --registry http://10.124.26.35:4873/ --force"
+        "remote:list": "git remote -v"
+
     },
     "publishConfig": {
         "registry": "http://10.124.26.35:4873/"

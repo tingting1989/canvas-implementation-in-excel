@@ -1,23 +1,7 @@
 import { WebComponent } from "@/core/WebComponent";
 import { SHEET_TAB_EVENTS } from "./SheetTabEvents.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { EVENT_NAMES } from "@/constants/eventNames";
 
-/**
- * SheetTabBarElement — 工作表标签栏 Web Component
- *
- * 使用方式：
- * <sheet-tab-bar></sheet-tab-bar>
- *
- * 方法：
- * - refresh(sheets, activeName): 刷新标签列表
- * - scrollToTab(sheetName): 滚动到指定标签
- *
- * 事件：
- * - switch: 点击标签时触发（detail: { name }）
- * - close: 点击关闭按钮时触发（detail: { name }）
- * - rename: 双击标签确认重命名时触发（detail: { oldName, newName }）
- * - add: 点击添加按钮时触发
- */
 export class SheetTabBarElement extends WebComponent {
     static get observedAttributes() {
         return [];
@@ -34,8 +18,18 @@ export class SheetTabBarElement extends WebComponent {
     #currentActiveName = null;
 
     onConnect(disposable) {
+        const prevBtn = this.shadowRoot.querySelector(".nav-btn.prev");
+        const nextBtn = this.shadowRoot.querySelector(".nav-btn.next");
         const addBtn = this.shadowRoot.querySelector(".add-btn");
         const tabsContainer = this.shadowRoot.querySelector(".tabs");
+
+        disposable.trackEvent(prevBtn, EVENT_NAMES.CLICK, () => {
+            this.#scrollBy(-120);
+        });
+
+        disposable.trackEvent(nextBtn, EVENT_NAMES.CLICK, () => {
+            this.#scrollBy(120);
+        });
 
         disposable.trackEvent(addBtn, EVENT_NAMES.CLICK, () => {
             this.emit(SHEET_TAB_EVENTS.ADD);
@@ -60,20 +54,6 @@ export class SheetTabBarElement extends WebComponent {
             if (!tab || e.target.closest(".close-btn")) return;
             this.#startRename(tab);
         });
-
-        disposable.trackEvent(
-            this,
-            EVENT_NAMES.WHEEL,
-            (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
-                this.#scrollOffset += delta;
-                this.#clampScroll();
-                this.#applyScroll();
-            },
-            { passive: false },
-        );
     }
 
     #styleText = `
@@ -86,21 +66,35 @@ export class SheetTabBarElement extends WebComponent {
             font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
         }
 
-        .add-btn {
-            width: 28px;
+        .nav-group {
+            display: flex;
+            flex-shrink: 0;
+            border-right: 1px solid #c6c6c6;
+        }
+
+        .nav-btn {
+            width: 24px;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
-            color: #444;
             cursor: pointer;
-            flex-shrink: 0;
+            color: #555;
+            font-size: 12px;
         }
 
-        .add-btn:hover {
+        .nav-btn:hover {
             background: #d8d8d8;
             color: #217346;
+        }
+
+        .nav-btn.prev {
+            border-right: 1px solid #c6c6c6;
+        }
+
+        .nav-btn svg {
+            width: 12px;
+            height: 12px;
         }
 
         .tabs-scroll {
@@ -183,14 +177,32 @@ export class SheetTabBarElement extends WebComponent {
         }
 
         .rename-input {
-            border: 1px solid #217346;
+            border: none;
             outline: none;
-            background: #fff;
+            background: transparent;
             font: inherit;
             color: #000;
-            padding: 0 4px;
+            padding: 0;
             width: 60px;
             box-sizing: border-box;
+        }
+
+        .add-btn {
+            width: 28px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #444;
+            cursor: pointer;
+            flex-shrink: 0;
+            border-left: 1px solid #c6c6c6;
+        }
+
+        .add-btn:hover {
+            background: #d8d8d8;
+            color: #217346;
         }
     `;
 
@@ -198,12 +210,30 @@ export class SheetTabBarElement extends WebComponent {
         if (!this.shadowRoot.querySelector(".tabs")) {
             this.shadowRoot.innerHTML = `
                 <style>${this.#styleText}</style>
-                <div class="add-btn">+</div>
+                <div class="nav-group">
+                    <div class="nav-btn prev">
+                        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="8,2 4,6 8,10"></polyline>
+                        </svg>
+                    </div>
+                    <div class="nav-btn next">
+                        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="4,2 8,6 4,10"></polyline>
+                        </svg>
+                    </div>
+                </div>
                 <div class="tabs-scroll">
                     <div class="tabs"></div>
                 </div>
+                <div class="add-btn">+</div>
             `;
         }
+    }
+
+    #scrollBy(delta) {
+        this.#scrollOffset += delta;
+        this.#clampScroll();
+        this.#applyScroll();
     }
 
     #clampScroll() {

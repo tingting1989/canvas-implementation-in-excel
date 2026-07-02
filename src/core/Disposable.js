@@ -27,8 +27,6 @@ export class Disposable {
         if (this.#disposed) return;
         target.addEventListener(type, handler, options);
         this.#eventListeners.push({ target, type, handler, options });
-
-        console.log("this.#eventListeners", this.#eventListeners);
     }
 
     trackChild(disposable) {
