@@ -238,8 +238,9 @@ export class AutoFillStrategy extends EventStrategy {
         const srcValues = [];
         for (let r = src.topRow; r <= src.bottomRow; r++) {
             const rowData = [];
+            const realR = sheet.toRealRow(r);
             for (let c = src.topCol; c <= src.bottomCol; c++) {
-                const cell = sheet.cellStore.get(r, c);
+                const cell = sheet.cellStore.get(realR, c);
                 rowData.push(cell ? cell.value : "");
             }
             srcValues.push(rowData);
