@@ -172,8 +172,14 @@ export class HeaderRenderer {
                 const x = vt.colToViewX(c);
                 const isSource = this._dragIndicator?.isColumnSource(c) ?? false;
                 const highlighted = c >= range.topCol && c <= range.bottomCol;
-                this.#drawHeaderCell(ctx, x, clipY, w, rowH, isSource, highlighted, defaultStyle);
-                this.#drawHeaderText(ctx, sheet.getColHeader(c), x + HEADER_COL_PADDING, clipY + rowH - 8, null, headerFont);
+                const colStyle = sheet.getColHeaderStyle(c);
+                const mergedStyle = this.#mergeHeaderStyle(defaultStyle, colStyle);
+                this.#drawHeaderCell(ctx, x, clipY, w, rowH, isSource, highlighted, mergedStyle);
+
+                const textFont = this.#buildNestedHeaderFont(headerFont, colStyle);
+                const textAlign = colStyle?.textAlign || "left";
+                const textX = this.#calculateTextX(x, w, textAlign);
+                this.#drawHeaderText(ctx, sheet.getColHeader(c), textX, clipY + rowH - 8, mergedStyle?.color, textFont, w - HEADER_COL_PADDING * 2, textAlign);
 
                 for (const renderer of this.#columnHeaderRenderers) {
                     try {
@@ -242,7 +248,6 @@ export class HeaderRenderer {
      */
     #renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle) {
         const nestedCount = sheet.getNestedHeaderRowCount();
-        const isFrozenRegion = sc === 0;
 
         for (let layerIdx = 0; layerIdx < nestedCount; layerIdx++) {
             const layerY = layerIdx * rowH;
@@ -254,6 +259,7 @@ export class HeaderRenderer {
                 const item = row[i];
                 const label = isString(item) ? item : (item?.label ?? "");
                 const colspan = item && isObject(item) && item.colspan ? item.colspan : 1;
+                const style = item?.style || null;
 
                 const startCol = consumed;
                 const endCol = consumed + colspan - 1;
@@ -270,17 +276,38 @@ export class HeaderRenderer {
                 }
                 if (visibleStartCol > visEnd) continue;
 
-                const x = vt.colToViewX(visStart);
+                const x = vt.colToViewX(visibleStartCol);
                 const rightX = vt.colRightToViewX(visEnd);
                 const totalW = rightX - x;
 
                 if (totalW <= 0) continue;
 
                 const isSource = this._dragIndicator?.isColumnSource(startCol) ?? false;
-                this.#drawHeaderCell(ctx, x, layerY, totalW, rowH, isSource, false, defaultStyle);
+                const mergedStyle = this.#mergeHeaderStyle(defaultStyle, style);
 
-                if (label && !(colspan > 1 && !isFrozenRegion && startCol < sc)) {
-                    this.#drawHeaderText(ctx, label, x + HEADER_COL_PADDING, layerY + rowH - 8, null, headerFont);
+                // 判断单元格是否跨越冻结/非冻结边界
+                const crossesFrozenBoundary = vt.fixedCols > 0 && startCol < vt.fixedCols && endCol >= vt.fixedCols;
+
+                this.#drawStyledHeaderCell(ctx, x, layerY, totalW, rowH, isSource, false, mergedStyle);
+
+                if (label) {
+                    let textX, maxTextWidth;
+
+                    if (crossesFrozenBoundary) {
+                        // 跨边界单元格：文本基于冻结列宽度对齐
+                        const frozenColX = vt.colToViewX(startCol);
+                        const frozenColW = rc.getColWidth(startCol);
+                        const textAlign = style?.textAlign || "left";
+                        textX = this.#calculateTextX(frozenColX, frozenColW, textAlign);
+                        maxTextWidth = frozenColW - HEADER_COL_PADDING * 2;
+                        this.#drawHeaderText(ctx, label, textX, layerY + rowH - 8, mergedStyle?.color, this.#buildNestedHeaderFont(headerFont, style), maxTextWidth, textAlign);
+                    } else {
+                        // 普通单元格
+                        const textAlign = style?.textAlign || "left";
+                        textX = this.#calculateTextX(x, totalW, textAlign);
+                        maxTextWidth = totalW - HEADER_COL_PADDING * 2;
+                        this.#drawHeaderText(ctx, label, textX, layerY + rowH - 8, mergedStyle?.color, this.#buildNestedHeaderFont(headerFont, style), maxTextWidth, textAlign);
+                    }
                 }
 
                 this.#drawSeparator(ctx, rightX, layerY, rightX, layerY + rowH);
@@ -290,6 +317,100 @@ export class HeaderRenderer {
                 this.#drawNestedLayerSeparator(ctx, vt, rc, sc, ec, layerY + rowH);
             }
         }
+    }
+
+    /**
+     * 合并默认样式和自定义样式
+     * 自定义样式优先级高于默认样式
+     *
+     * @param {object} baseStyle - 基础默认样式
+     * @param {object|null} customStyle - 自定义样式（可选）
+     * @returns {object} 合并后的样式对象
+     */
+    #mergeHeaderStyle(baseStyle, customStyle) {
+        if (!customStyle) return baseStyle;
+
+        return {
+            ...baseStyle,
+            ...customStyle,
+            color: customStyle.color || baseStyle?.color || null,
+            backgroundColor: customStyle.backgroundColor || baseStyle?.backgroundColor || null,
+        };
+    }
+
+    /**
+     * 根据嵌套表头样式配置构建字体字符串
+     *
+     * @param {string} baseFont - 基础字体（如 "12px sans-serif"）
+     * @param {object|null} style - 样式配置
+     * @returns {string} 完整的字体字符串
+     */
+    #buildNestedHeaderFont(baseFont, style) {
+        if (!style) return baseFont;
+
+        const parts = [];
+        if (style.fontStyle) parts.push(style.fontStyle);
+        if (style.fontWeight) parts.push(style.fontWeight);
+        if (style.fontSize) parts.push(style.fontSize);
+        else parts.push(baseFont.match(/^[\d.]+px/)?.[0] || "12px");
+        parts.push(baseFont.match(/\s+(.+)$/)?.[1] || "sans-serif");
+
+        return parts.join(" ");
+    }
+
+    /**
+     * 根据对齐方式计算文本 X 坐标
+     *
+     * @param {number} cellX - 单元格左边界 X 坐标
+     * @param {number} cellWidth - 单元格宽度
+     * @param {string} textAlign - 对齐方式（left/center/right）
+     * @returns {number} 文本 X 坐标
+     */
+    #calculateTextX(cellX, cellWidth, textAlign) {
+        switch (textAlign) {
+            case "center":
+                return cellX + cellWidth / 2;
+            case "right":
+                return cellX + cellWidth - HEADER_COL_PADDING;
+            case "left":
+            default:
+                return cellX + HEADER_COL_PADDING;
+        }
+    }
+
+    /**
+     * 绘制支持完整样式的表头单元格
+     * 支持背景色、文字颜色、边框等样式属性
+     *
+     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
+     * @param {number} x - X 坐标
+     * @param {number} y - Y 坐标
+     * @param {number} w - 宽度
+     * @param {number} h - 高度
+     * @param {boolean} isSource - 是否为拖拽源
+     * @param {boolean} highlighted - 是否高亮
+     * @param {object} style - 样式配置对象
+     */
+    #drawStyledHeaderCell(ctx, x, y, w, h, isSource, highlighted, style) {
+        ctx.save();
+
+        if (isSource) {
+            ctx.fillStyle = MOVE_SOURCE_FILL;
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
+        } else if (highlighted) {
+            ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_BG;
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
+        } else {
+            if (style?.backgroundColor) {
+                ctx.fillStyle = style.backgroundColor;
+                ctx.fillRect(x, y, w, h);
+            }
+            ctx.fillStyle = style?.color || HEADER_TEXT_COLOR;
+        }
+
+        ctx.restore();
     }
 
     /**
@@ -398,15 +519,21 @@ export class HeaderRenderer {
 
             const isSource = this._dragIndicator?.isRowSource(r) ?? false;
             const highlighted = r >= range.topRow && r <= range.bottomRow;
+            const realRow = sheet.toRealRow(r);
+            const rowStyle = sheet.getRowHeaderStyle(realRow);
+            const mergedStyle = this.#mergeHeaderStyle(defaultStyle, rowStyle);
 
-            this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, defaultStyle);
+            this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, mergedStyle);
 
+            const textFont = this.#buildNestedHeaderFont(headerFont, rowStyle);
+            const textAlign = rowStyle?.textAlign || "left";
+            const textX = this.#calculateTextX(0, headerW, textAlign);
             const textMaxW = headerW - HEADER_ROW_PADDING * 2;
             ctx.save();
             ctx.beginPath();
             ctx.rect(HEADER_ROW_PADDING, y, textMaxW, h);
             ctx.clip();
-            this.#drawHeaderText(ctx, sheet.getRowHeader(sheet.toRealRow(r)), HEADER_ROW_PADDING, y + h / 2 + 4, null, headerFont, textMaxW);
+            this.#drawHeaderText(ctx, sheet.getRowHeader(realRow), textX, y + h / 2 + 4, mergedStyle?.color, textFont, textMaxW, textAlign);
             ctx.restore();
 
             this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
@@ -452,11 +579,20 @@ export class HeaderRenderer {
     }
 
     /**
-     * 绘制表头文字，支持溢出截断
+     * 绘制表头文字，支持溢出截断和对齐方式
+     *
+     * @param {CanvasRenderingContext2D} ctx - Canvas 上下文
+     * @param {string} text - 要绘制的文本
+     * @param {number} x - X 坐标
+     * @param {number} y - Y 坐标
+     * @param {string|null} color - 文字颜色（可选）
+     * @param {string|null} font - 字体字符串（可选）
+     * @param {number|null} maxWidth - 最大宽度（可选，用于截断）
+     * @param {string|null} textAlign - 文字对齐方式（可选，默认 "left"）
      */
-    #drawHeaderText(ctx, text, x, y, color, font, maxWidth) {
+    #drawHeaderText(ctx, text, x, y, color, font, maxWidth, textAlign = "left") {
         ctx.font = font || "12px sans-serif";
-        ctx.textAlign = "left";
+        ctx.textAlign = textAlign;
         if (color) ctx.fillStyle = color;
 
         if (maxWidth && ctx.measureText(text).width > maxWidth) {

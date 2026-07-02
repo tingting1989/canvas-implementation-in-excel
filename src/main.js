@@ -74,7 +74,7 @@ const initApp = () => {
                 //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 // ],
                 // 列表头配置，用于替换默认的行号表头 A,B,C...
-                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                // colHeaders: [{label: "姓名", style: {textAlign: "center"}}, "Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 // 行表头宽度配置
                 rowHeaderWidth: 120,
 
@@ -82,16 +82,82 @@ const initApp = () => {
                 rowHeights: [30, 50, 90],
 
                 // 行表头配置，用于替换默认的行号表头 1,2,3...
-                rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
+                // rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
 
                 // 嵌套表头配置
                 nestedHeaders: [
                     [
-                        { label: "基本信息", colspan: 2 },
-                        { label: "工作信息", colspan: 4 },
+                        {
+                            label: "基本信息",
+                            colspan: 2,
+                            style: {
+                                backgroundColor: "#4472C4",
+                                color: "#FFFFFF",
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                                textAlign: "center"
+                            }
+                        },
+                        {
+                            label: "工作信息",
+                            colspan: 4,
+                            style: {
+                                backgroundColor: "#70AD47",
+                                color: "#FFFFFF",
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                                textAlign: "center"
+                            }
+                        },
                     ],
-                    ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+                    [
+                        "姓名",
+                        "年龄",
+                        {
+                            label: "城市",
+                            style: {
+                                backgroundColor: "#FFC000",
+                                fontWeight: "bold"
+                            }
+                        },
+                        {
+                            label: "部门",
+                            style: {
+                                fontStyle: "italic",
+                                color: "#333333"
+                            }
+                        },
+                        {
+                            label: "薪酬",
+                            colspan: 2,
+                            style: {
+                                backgroundColor: "#ED7D31",
+                                color: "#FFFFFF",
+                                textAlign: "center"
+                            }
+                        }
+                    ],
                     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                ],
+
+                // 列头配置（支持对象形式设置样式）
+                // colHeaders: [
+                //     { label: "姓名", style: { textAlign: "center", fontWeight: "bold" } },
+                //     { label: "年龄", style: { textAlign: "center" } },
+                //     { label: "城市", style: { textAlign: "center" } },
+                //     { label: "部门", style: { textAlign: "center" } },
+                //     { label: "薪酬", style: { textAlign: "center", color: "#FF0000" } },
+                //     { label: "入职日期", style: { textAlign: "center" } },
+                // ],
+
+                // 行表头配置（支持对象形式设置样式）
+                rowHeaders: [
+                    { label: "序号", style: { textAlign: "center", backgroundColor: "#E7E6E6" } },
+                    "年龄",
+                    "城市",
+                    "部门",
+                    "薪酬",
+                    "入职日期",
                 ],
 
                 // 单元格内容超出单元格宽度时是否显示省略号
@@ -154,16 +220,64 @@ const initApp = () => {
                     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
                     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 ],
-                colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
-                rowHeaders: ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"],
+                rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
+
+                // 嵌套表头配置（支持完整 style 属性）
                 nestedHeaders: [
                     [
-                        { label: "基本信息", colspan: 2 },
-                        { label: "工作信息", colspan: 4 },
+                        {
+                            label: "基本信息",
+                            colspan: 2,
+                            style: {
+                                backgroundColor: "#4472C4",
+                                color: "#FFFFFF",
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                                textAlign: "left"
+                            }
+                        },
+                        {
+                            label: "工作信息",
+                            colspan: 4,
+                            style: {
+                                backgroundColor: "#70AD47",
+                                color: "#FFFFFF",
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                                textAlign: "center"
+                            }
+                        },
                     ],
-                    ["姓名", "年龄", "城市", "部门", { label: "薪酬", colspan: 2 }],
+                    [
+                        "姓名",
+                        "年龄",
+                        {
+                            label: "城市",
+                            style: {
+                                backgroundColor: "#FFC000",
+                                fontWeight: "bold"
+                            }
+                        },
+                        {
+                            label: "部门",
+                            style: {
+                                fontStyle: "italic",
+                                color: "#333333"
+                            }
+                        },
+                        {
+                            label: "薪酬",
+                            colspan: 2,
+                            style: {
+                                backgroundColor: "#ED7D31",
+                                color: "#FFFFFF",
+                                textAlign: "center"
+                            }
+                        }
+                    ],
                     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 ],
                 textOverflowEllipsis: false,

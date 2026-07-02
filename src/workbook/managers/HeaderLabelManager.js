@@ -1,6 +1,6 @@
-import { CONFIG } from "../../constants/config";
-import { isFunction, isObject, isString } from "../../utils/utils.js";
-import { indexToCol } from "../../utils/cellRef.js";
+import { CONFIG } from "@/constants/config";
+import { isFunction, isObject, isString } from "@/utils/utils";
+import { indexToCol } from "@/utils/cellRef";
 
 /**
  * 表头标签管理器
@@ -72,9 +72,36 @@ export class HeaderLabelManager {
         return this.#resolve(this.#colHeaders, col, indexToCol);
     }
 
+    /** 获取列头样式 */
+    getColHeaderStyle(col) {
+        return this.#resolveStyle(this.#colHeaders, col);
+    }
+
     /** 获取行头标签 */
     getRowHeader(row) {
         return this.#resolve(this.#rowHeaders, row, (i) => String(i + 1));
+    }
+
+    /** 获取行头样式 */
+    getRowHeaderStyle(row) {
+        return this.#resolveStyle(this.#rowHeaders, row);
+    }
+
+    /**
+     * 解析行/列头的样式配置
+     * @param {true|string[]|Function|null} config
+     * @param {number} index
+     * @returns {object|null}
+     */
+    #resolveStyle(config, index) {
+        if (config === true || config == null) return null;
+        if (Array.isArray(config)) {
+            if (index >= config.length) return null;
+            const item = config[index];
+            if (isObject(item) && item.style) return item.style;
+            return null;
+        }
+        return null;
     }
 
     /**
@@ -86,7 +113,15 @@ export class HeaderLabelManager {
      */
     #resolve(config, index, defaultFn) {
         if (config === true || config == null) return defaultFn(index);
-        if (Array.isArray(config)) return index < config.length ? config[index] : defaultFn(index);
+        if (Array.isArray(config)) {
+            if (index >= config.length) return defaultFn(index);
+            const item = config[index];
+            // 支持对象形式 {label: "...", style: {...}}
+            if (isObject(item) && item.label !== undefined) return item.label;
+            // 支持字符串形式
+            if (isString(item)) return item;
+            return defaultFn(index);
+        }
         if (isFunction(config)) return config(index);
         return defaultFn(index);
     }
@@ -110,11 +145,19 @@ export class HeaderLabelManager {
      * 返回值可能是：
      *   - null：该层该列被上方 colspan 跨越（应绘制空单元格）
      *   - { label: string, colspan: number }：带跨列的表头
-     *   - { label: string, colspan: 1 }：普通单列表头
+     *   - { label: string, colspan: number, style?: object }：带自定义样式的表头
+     *
+     * 支持的 style 属性：
+     *   - backgroundColor: string (背景色)
+     *   - color: string (文字颜色)
+     *   - fontWeight: string (字体粗细)
+     *   - fontSize: string (字体大小)
+     *   - fontStyle: string (字体样式)
+     *   - textAlign: string (文本对齐)
      *
      * @param {number} rowIndex - 嵌套层索引（0=顶层）
      * @param {number} col - 数据列号
-     * @returns {{label: string, colspan: number}|null}
+     * @returns {{label: string, colspan: number, style?: object}|null}
      */
     getNestedColHeader(rowIndex, col) {
         const nh = this.#nestedHeaders;
@@ -128,9 +171,10 @@ export class HeaderLabelManager {
             const item = row[i];
             const label = isString(item) ? item : (item?.label ?? "");
             const colspan = item && isObject(item) && item.colspan ? item.colspan : 1;
+            const style = item && isObject(item) && item.style ? item.style : null;
 
             if (col >= consumed && col < consumed + colspan) {
-                return { label, colspan };
+                return { label, colspan, style };
             }
             consumed += colspan;
         }

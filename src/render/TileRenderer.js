@@ -475,8 +475,22 @@ export class TileRenderer {
 
         const displayValue = sheet.formatCellValue(r, c, cell.value);
 
+        const rc = sheet.rowColManager;
+
         let textX = Math.round(drawX + sheet.cellPadding);
-        if (textAlign === "center") {
+        let effectiveW = w;
+
+        if (merge && (textAlign === "center" || textAlign === "right")) {
+            const mergeStartX = rc.getColX(merge.topCol);
+            const mergeEndX = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol);
+            effectiveW = mergeEndX - mergeStartX;
+
+            if (textAlign === "center") {
+                textX = Math.round(mergeStartX + effectiveW / 2);
+            } else if (textAlign === "right") {
+                textX = Math.round(mergeEndX - sheet.cellPadding);
+            }
+        } else if (textAlign === "center") {
             textX = Math.round(drawX + w / 2);
         } else if (textAlign === "right") {
             textX = Math.round(drawX + w - sheet.cellPadding);
@@ -493,7 +507,7 @@ export class TileRenderer {
 
         // 文本超出时截断，确保左右两侧留有内边距
         // 使用二分查找定位截断点：O(log n) vs 逐字符 O(n)
-        const maxTextWidth = w - sheet.cellPadding * 2;
+        const maxTextWidth = effectiveW - sheet.cellPadding * 2;
         let renderedText = displayValue;
         if (maxTextWidth > 0) {
             const fullWidth = ctx.measureText(displayValue).width;

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NestedHeaders Style 功能测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4472C4;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .expected-result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #28a745;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 14px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+        .checklist {
+            list-style: none;
+            padding-left: 0;
+        }
+        .checklist li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .checklist li:before {
+            content: "☐ ";
+            color: #666;
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        .checklist li.passed:before {
+            content: "✅ ";
+            color: #28a745;
+        }
+        .checklist li.failed:before {
+            content: "❌ ";
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 NestedHeaders Style 功能测试指南</h1>
+
+        <!-- 测试 1：基础样式 -->
+        <div class="test-section">
+            <h2>📋 测试 1：基础背景色和文字色</h2>
+
+            <p><strong>配置代码：</strong></p>
+            <pre><code>nestedHeaders: [
+    [
+        {
+            label: "基本信息",
+            colspan: 2,
+            style: {
+                backgroundColor: "#4472C4",
+                color: "#FFFFFF"
+            }
+        },
+        {
+            label: "工作信息",
+            colspan: 4,
+            style: {
+                backgroundColor: "#70AD47",
+                color: "#FFFFFF"
+            }
+        },
+    ],
+    ["姓名", "年龄", "城市", "部门", "薪酬", "入职日期"]
+]</code></pre>
+
+            <p><strong>预期效果：</strong></p>
+            <div class="expected-result">
+                ✓ 第一层"基本信息"显示为<strong style="color:#4472C4">蓝色背景 + 白色文字</strong><br>
+                ✓ 第一层"工作信息"显示为<strong style="color:#70AD47">绿色背景 + 白色文字</strong><br>
+                ✓ 第二层使用默认样式（无特殊颜色）
+            </div>
+
+            <ul class="checklist">
+                <li>"基本信息"表头背景色为 #4472C4（深蓝）</li>
+                <li>"基本信息"表头文字为白色</li>
+                <li>"工作信息"表头背景色为 #70AD47（绿色）</li>
+                <li>"工作信息"表头文字为白色</li>
+                <li>第二层表头保持默认样式不变</li>
+            </ul>
+        </div>
+
+        <!-- 测试 2：字体样式 -->
+        <div class="test-section">
+            <h2>✏️ 测试 2：字体样式定制</h2>
+
+            <pre><code>{
+    label: "重要数据",
+    colspan: 3,
+    style: {
+        backgroundColor: "#ED7D31",
+        color: "#FFFFFF",
+        fontWeight: "bold",
+        fontSize: "14px",
+        fontStyle: "italic"
+    }
+}</code></pre>
+
+            <div class="expected-result">
+                ✓ 背景色：<span style="background:#ED7D31;color:white;padding:2px 8px;">橙色 (#ED7D31)</span><br>
+                ✓ 文字：<strong>加粗 (bold)</strong> + <em>斜体 (italic)</em> + <span style="font-size:14px;">14px 大小</span><br>
+                ✓ 文字颜色：白色
+            </div>
+
+            <ul class="checklist">
+                <li>字体明显比其他表头更大（14px vs 默认 12px）</li>
+                <li>文字呈倾斜状态（italic）</li>
+                <li>文字笔画更粗（bold）</li>
+                <li>所有样式同时生效，不会相互覆盖</li>
+            </ul>
+        </div>
+
+        <!-- 测试 3：文本对齐 -->
+        <div class="test-section">
+            <h2>↔️ 测试 3：文本对齐方式</h2>
+
+            <pre><code>[
+    { label: "左对齐", style: { textAlign: "left", backgroundColor: "#DEEBF7" } },
+    { label: "居中", style: { textAlign: "center", backgroundColor: "#E2EFDA" } },
+    { label: "右对齐", style: { textAlign: "right", backgroundColor: "#FFF2CC" } },
+]</code></pre>
+
+            <table>
+                <tr>
+                    <th style="background:#DEEBF7;text-align:left;width:33%">左对齐标题</th>
+                    <th style="background:#E2EFDA;text-align:center;width:33%">居中标题</th>
+                    <th style="background:#FFF2CC;text-align:right;width:34%">右对齐标题</th>
+                </tr>
+            </table>
+
+            <ul class="checklist">
+                <li>第一个表头文本靠左显示</li>
+                <li>第二个表头文本水平居中</li>
+                <li>第三个表头文本靠右显示</li>
+                <li>每个表头的背景色不同（便于区分）</li>
+            </ul>
+        </div>
+
+        <!-- 测试 4：多层级差异化 -->
+        <div class="test-section">
+            <h2>📊 测试 4：多层级差异化样式</h2>
+
+            <p><strong>场景：</strong>创建一个 3 层嵌套表头，每层使用不同的视觉强度</p>
+
+            <pre><code>nestedHeaders: [
+    // 第 1 层：强样式（大色块 + 白字 + 粗体）
+    [{ label: "分类A", colspan: 2, style: {
+        backgroundColor: "#5B9BD5", color: "#FFF",
+        fontWeight: "bold", fontSize: "15px", textAlign: "center"
+    }}],
+
+    // 第 2 层：中等样式（浅色背景 + 半粗体）
+    [{ label: "子类1", colspan: 1, style: {
+        backgroundColor: "#BDD7EE", fontWeight: "600"
+    }}, "子类2"],
+
+    // 第 3 层：无特殊样式
+    ["字段1", "字段2"]
+]</code></pre>
+
+            <div class="expected-result">
+                <strong>层次感预期：</strong><br>
+                ┌──────────────────┐<br>
+                │ &nbsp;&nbsp;&nbsp;&nbsp;分类A&nbsp;&nbsp;&nbsp;&nbsp;│ ← 深蓝底、白字、15px、粗体、居中<br>
+                ├────────┬─────────┤<br>
+                │ 子类1 &nbsp;│&nbsp; 子类2 &nbsp;│ ← 浅蓝底、半粗体<br>
+                ├────────┼─────────┤<br>
+                │ 字段1 &nbsp;│&nbsp; 字段2 &nbsp;│ ← 默认样式<br>
+                └────────┴─────────┘
+            </div>
+
+            <ul class="checklist">
+                <li>第一层视觉权重最高（最深/最大/最突出）</li>
+                <li>第二层视觉权重中等（浅色/正常大小）</li>
+                <li>第三层最简洁（与普通列表头一致）</li>
+                <li>整体呈现清晰的层次结构</li>
+            </ul>
+        </div>
+
+        <!-- 测试 5：向后兼容性 -->
+        <div class="test-section">
+            <h2>🔄 测试 5：向后兼容性</h2>
+
+            <p><strong>场景：</strong>使用旧版配置格式（不带 style 属性）</p>
+
+            <pre><code>// 旧版配置（v1.x）
+nestedHeaders: [
+    [{ label: "旧式标题", colspan: 2 }],
+    ["列A", "列B"]
+]
+
+// 新版配置（v2.x）
+nestedHeaders: [
+    [{
+        label: "新式标题",
+        colspan: 2,
+        style: { backgroundColor: "#4472C4", color: "#FFF" }
+    }],
+    ["列A", "列B"]
+]</code></pre>
+
+            <div class="expected-result">
+                ✓ 旧版配置仍然正常工作（不报错、不崩溃）<br>
+                ✓ 旧版配置的表头使用系统默认样式<br>
+                ✓ 新旧配置可以在同一项目中混用
+            </div>
+
+            <ul class="checklist">
+                <li>运行旧版配置代码时控制台无错误</li>
+                <li>旧版表头渲染正常（有默认背景和文字颜色）</li>
+                <li>在同一页面中混合使用新旧两种配置均正常</li>
+            </ul>
+        </div>
+
+        <!-- 测试 6：部分属性覆盖 -->
+        <div class="test-section">
+            <h2>🎯 测试 6：部分属性覆盖（继承默认值）</h2>
+
+            <pre><code>// 全局默认样式假设：
+// { color: "#333333", backgroundColor: "#F5F5F5" }
+
+{
+    label: "仅改颜色",
+    style: {
+        color: "#FF0000"  // 只设置颜色
+    }
+    // 预期：backgroundColor 继承默认值 #F5F5F5
+}
+
+{
+    label: "仅改背景",
+    style: {
+        backgroundColor: "#FFFF00"  // 只设置背景
+    }
+    // 预期：color 继承默认值 #333333
+}</code></pre>
+
+            <ul class="checklist">
+                <li>"仅改颜色"表头：红色文字 + 灰色默认背景</li>
+                <li>"仅改背景"表头：黄色背景 + 深灰色默认文字</li>
+                <li>未设置的属性自动继承全局默认值</li>
+                <li>不会因为缺少某个属性而报错或显示异常</li>
+            </ul>
+        </div>
+
+        <!-- 测试总结 -->
+        <div class="test-section">
+            <h2>✅ 测试完成检查清单</h2>
+
+            <p><strong>在执行完以上所有测试后，确认以下项目：</strong></p>
+
+            <ul class="checklist">
+                <li>所有测试用例的控制台无 JavaScript 错误</li>
+                <li>所有嵌套表头正确显示（位置、跨列无误）</li>
+                <li>样式属性全部生效（颜色、字体、对齐等）</li>
+                <li>滚动时样式保持稳定（不闪烁或错位）</li>
+                <li>冻结列区域的嵌套表头样式正确</li>
+                <li>调整浏览器窗口大小时布局自适应</li>
+                <li>在不同浏览器中表现一致（Chrome/Firefox/Safari/Edge）</li>
+                <li>性能无明显下降（渲染流畅度与之前相当）</li>
+            </ul>
+
+            <p style="margin-top:20px;padding:15px;background:#d4edda;border-left:4px solid #28a745;">
+                <strong>🎉 如果以上所有测试都通过，说明 NestedHeaders Style 功能已正确实现！</strong>
+            </p>
+        </div>
+
+        <!-- 快速参考 -->
+        <div class="test-section">
+            <h2>📖 快速参考卡片</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>属性名</th>
+                        <th>类型</th>
+                        <th>示例值</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>backgroundColor</code></td>
+                        <td>string</td>
+                        <td><code>"#4472C4"</code></td>
+                        <td>背景颜色</td>
+                    </tr>
+                    <tr>
+                        <td><code>color</code></td>
+                        <td>string</td>
+                        <td><code>"#FFFFFF"</code></td>
+                        <td>文字颜色</td>
+                    </tr>
+                    <tr>
+                        <td><code>fontWeight</code></td>
+                        <td>string</td>
+                        <td><code>"bold"</code></td>
+                        <td>字体粗细</td>
+                    </tr>
+                    <tr>
+                        <td><code>fontSize</code></td>
+                        <td>string</td>
+                        <td><code>"14px"</code></td>
+                        <td>字体大小</td>
+                    </tr>
+                    <tr>
+                        <td><code>fontStyle</code></td>
+                        <td>string</td>
+                        <td><code>"italic"</code></td>
+                        <td>字体样式</td>
+                    </tr>
+                    <tr>
+                        <td><code>textAlign</code></td>
+                        <td>string</td>
+                        <td><code>"center"</code></td>
+                        <td>文本对齐</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="text-align:center;margin:40px 0;color:#666;font-size:14px;">
+            <p>测试指南版本：1.0 | 更新日期：2026-07-02 | 适用版本：v2.0+</p>
+        </div>
+    </div>
+
+    <script>
+        // 可选：添加交互式测试脚本
+        console.log('NestedHeaders Style 测试页面已加载');
+        console.log('请按照上述清单逐项测试');
+    </script>
+</body>
+</html>

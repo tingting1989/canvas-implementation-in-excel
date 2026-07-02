@@ -614,9 +614,19 @@ export class Sheet {
         return this.#headerLabels.getColHeader(col);
     }
 
+    /** 获取列头样式 */
+    getColHeaderStyle(col) {
+        return this.#headerLabels.getColHeaderStyle(col);
+    }
+
     /** 获取行头标签 */
     getRowHeader(row) {
         return this.#headerLabels.getRowHeader(row);
+    }
+
+    /** 获取行头样式 */
+    getRowHeaderStyle(row) {
+        return this.#headerLabels.getRowHeaderStyle(row);
     }
 
     // ============================================================
