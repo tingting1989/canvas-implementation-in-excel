@@ -51,10 +51,10 @@ export class DateValidator extends BaseValidator {
 
             switch (rule.operator) {
                 case "before":
-                    isValid = dateValue < minDate;
+                    isValid = dateValue < maxDate || (maxDate === undefined && dateValue < minDate);
                     break;
                 case "after":
-                    isValid = dateValue > maxDate;
+                    isValid = dateValue > minDate;
                     break;
                 case "between":
                     isValid = dateValue >= minDate && dateValue <= maxDate;

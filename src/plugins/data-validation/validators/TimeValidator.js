@@ -51,10 +51,10 @@ export class TimeValidator extends BaseValidator {
 
             switch (rule.operator) {
                 case "before":
-                    isValid = timeValue < minTime;
+                    isValid = timeValue < (maxTime ?? minTime);
                     break;
                 case "after":
-                    isValid = timeValue > maxTime;
+                    isValid = timeValue > minTime;
                     break;
                 case "between":
                     isValid = timeValue >= minTime && timeValue <= maxTime;
@@ -81,7 +81,7 @@ export class TimeValidator extends BaseValidator {
     }
 
     /**
-     * 解析时间为分钟数（从 00:00 开始计算）
+     * 解析时间为分钟数（从 00:00 开始计算，支持秒数精度）
      * @private
      * @param {*} value - 输入值
      * @returns {number|null}
@@ -94,12 +94,13 @@ export class TimeValidator extends BaseValidator {
 
         const hours = parseInt(match[1]);
         const minutes = parseInt(match[2]);
+        const seconds = match[3] ? parseInt(match[3]) : 0;
 
-        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59 || seconds < 0 || seconds > 59) {
             return null;
         }
 
-        return hours * 60 + minutes;
+        return hours * 60 + minutes + seconds / 60;
     }
 
     /**

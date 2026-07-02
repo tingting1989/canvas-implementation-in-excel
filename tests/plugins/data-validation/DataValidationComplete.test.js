@@ -64,6 +64,15 @@ function createMockWorkbook() {
     return {
         formulaEngine: null,
         getPlugin: vi.fn(() => null),
+        eventHandler: {
+            hooks: {
+                addHook: vi.fn(),
+                removeHook: vi.fn(),
+                runHooks: vi.fn(),
+                runHooksUntil: vi.fn(),
+                clearAllHooks: vi.fn()
+            }
+        },
         hooks: {
             call: vi.fn(),
             addHook: vi.fn()
@@ -615,9 +624,10 @@ describe('DataValidation - 攻击性测试（边界情况与异常输入）', ()
     let engine;
     let cellStore;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         cellStore = createMockCellStore();
         engine = new ValidationEngine(cellStore);
+        await engine.init();
     });
 
     afterEach(() => {
@@ -1090,8 +1100,9 @@ describe('DataValidation - 安全性测试', () => {
 describe('DataValidation - 边缘场景测试', () => {
     let engine;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         engine = new ValidationEngine(createMockCellStore());
+        await engine.init();
     });
 
     afterEach(() => {

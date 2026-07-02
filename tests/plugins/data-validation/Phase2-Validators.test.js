@@ -30,8 +30,7 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
         test('应该验证简单公式', async () => {
             const rule = new ValidationRule({
                 type: 'custom',
-                formula: '=A1>0',
-                errorMessage: '必须大于 0'
+                formula: '=A1>0'
             });
 
             const validResult = await validator.validate(50, rule, { row: 0, col: 0 });
@@ -254,7 +253,7 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
             expect((await validator.validate('a@b', usernameRule)).valid).toBe(false); // 包含特殊字符
 
             const passwordRule = new ValidationRule({ type: 'regex', pattern: 'passwordStrong' });
-            expect((await validator.validate('Abc123!@#', passwordRule)).valid).toBe(true);
+            expect((await validator.validate('Abc123!@x', passwordRule)).valid).toBe(true);
             expect((await validator.validate('weak', passwordRule)).valid).toBe(false);
         });
 

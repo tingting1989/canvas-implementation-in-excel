@@ -71,6 +71,9 @@ export class ValidationRule {
     /** @type {Date} 更新时间 */
     updatedAt;
 
+    /** @type {string[]} 允许的验证类型 */
+    static VALID_TYPES = ["number", "text", "list", "custom", "date", "time", "regex", "unique"];
+
     /**
      * 构造验证规则
      * @param {Object} options - 规则配置选项
@@ -85,6 +88,22 @@ export class ValidationRule {
         const now = new Date();
         this.createdAt = this.createdAt || now;
         this.updatedAt = now;
+
+        this.#validate();
+    }
+
+    /**
+     * 验证规则配置的有效性
+     * @private
+     */
+    #validate() {
+        if (this.range !== undefined && (!this.range || typeof this.range !== "string" || this.range.trim() === "")) {
+            throw new Error("规则无效: range 必须为非空字符串");
+        }
+
+        if (this.type && !ValidationRule.VALID_TYPES.includes(this.type)) {
+            throw new Error(`规则无效: 不支持的验证类型 ${this.type}, 必须是 ${ValidationRule.VALID_TYPES.join(",")} 之一`);
+        }
     }
 
     /**

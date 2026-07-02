@@ -154,23 +154,13 @@ export class FrozenLayer extends BaseLayer {
 
         if (isPaginationActive) {
             tileOptions = { useRealRows: false };
-
-            // 关键修复：分页模式下必须将全局坐标转换为页面相对坐标
-            //
-            // 问题：TileRenderer 使用 useRealRows=false 时，内部通过 rowAt() + getRowY()
-            //       计算页面相对坐标。但如果传入的 scrollY 是全局坐标（如第二页的 280px），
-            //       会导致 pixelY0 和 rowY 在不同的坐标系中，计算出的 localY 为负值，
-            //       使单元格绘制位置严重上移，穿透到冻结角区域。
-            //
-            // 解决：计算当前页起始行的全局 Y 坐标，用 scrollY 减去它得到页面相对滚动偏移。
-            //       这样 pixelY0 和 getRowY() 都在同一坐标系中（页面相对坐标）。
-            const rc = sheet.rowColManager;
-            const pageStartRow = rc.pageStartRow;
-
-            if (pageStartRow >= 0) {
-                const pageStartY = rc.getRealRowY(pageStartRow);
-                adjustedScrollY = Math.max(0, scrollY - pageStartY);
-            }
+            // 分页模式下 scrollY 已经是页面相对坐标（ScrollManager 使用 rc.totalHeight
+            // 计算滚动边界，而分页模式下的 totalHeight 仅反映当前页高度），
+            // 因此不需要做任何坐标转换，直接使用 scrollY 即可。
+            // 
+            // 注意：之前曾错误地将 scrollY 当作全局坐标减去 pageStartY，
+            // 导致第 2 页及以后 adjustedScrollY 恒为 0（因为 scrollY < pageStartY），
+            // 冻结列区域不随页面滚动。
         }
 
         if (frozenColsW > 0) {

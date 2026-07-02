@@ -423,7 +423,9 @@ function createMockWorkbook() {
             hooks: {
                 addHook: () => {},
                 removeHook: () => {},
-                call: () => {}
+                runHooks: () => {},
+                runHooksUntil: () => {},
+                clearAllHooks: () => {}
             }
         },
         addHook: (hook, callback) => {},

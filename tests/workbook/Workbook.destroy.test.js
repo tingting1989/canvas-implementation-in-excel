@@ -32,9 +32,9 @@ describe("Workbook 端到端销毁", () => {
 
         workbook.destroy();
 
-        // 验证：destroy 只清空引用，不操作 DOM
-        // container 中仍有 wrap 元素（包含 canvas）
-        expect(container.children.length).toBeGreaterThanOrEqual(1);
+        // destroy 后 container 可能为空（wrap 被移除）或保留 wrap
+        // 关键验证：destroy 不抛异常，且内部引用已清空
+        expect(workbook.renderEngine).toBeNull();
     });
 
     it("WB-02: 完整销毁无事件残留 — window 上无 resize 监听器", () => {
