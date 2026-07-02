@@ -148,7 +148,7 @@ const initApp = () => {
             },
             {
                 name: "Sheet2",
-                readOnly: false,
+                // readOnly: false,
                 data: [
                     ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
                     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],

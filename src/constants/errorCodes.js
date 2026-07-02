@@ -1,4 +1,4 @@
-﻿export const ERROR_LEVEL = Object.freeze( {
+﻿export const ERROR_LEVEL = Object.freeze({
     DEBUG: 0,
     INFO: 1,
     WARN: 2,
