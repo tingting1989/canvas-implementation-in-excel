@@ -95,7 +95,7 @@ const initApp = () => {
                 ],
 
                 // 单元格内容超出单元格宽度时是否显示省略号
-                textOverflowEllipsis: false,
+                textOverflowEllipsis: true,
 
                 // 每个单元格的内边距（像素值）
                 cellPadding: 10,
