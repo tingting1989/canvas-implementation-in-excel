@@ -25,6 +25,8 @@ export class SheetTabManager extends Disposable {
     #onAdd = null;
     #onRemove = null;
     #onRename = null;
+    #onCopy = null;
+    #onHide = null;
 
     /**
      * @param {HTMLElement} wrap - 标签栏要插入到的容器元素
@@ -64,6 +66,14 @@ export class SheetTabManager extends Disposable {
         this.trackEvent(this.#element, SHEET_TAB_EVENTS.ADD, () => {
             if (this.#onAdd) this.#onAdd();
         });
+
+        this.trackEvent(this.#element, SHEET_TAB_EVENTS.COPY, (e) => {
+            if (this.#onCopy) this.#onCopy(e.detail.name);
+        });
+
+        this.trackEvent(this.#element, SHEET_TAB_EVENTS.HIDE, (e) => {
+            if (this.#onHide) this.#onHide(e.detail.name);
+        });
     }
 
     refresh() {
@@ -91,6 +101,14 @@ export class SheetTabManager extends Disposable {
         this.#onRename = fn;
     }
 
+    set onCopy(fn) {
+        this.#onCopy = fn;
+    }
+
+    set onHide(fn) {
+        this.#onHide = fn;
+    }
+
     /**
      * 设置当前对象关联的工作簿实例
      * @param {Workbook} wb - 要关联的工作簿实例
@@ -111,5 +129,7 @@ export class SheetTabManager extends Disposable {
         this.#onAdd = null;
         this.#onRemove = null;
         this.#onRename = null;
+        this.#onCopy = null;
+        this.#onHide = null;
     }
 }

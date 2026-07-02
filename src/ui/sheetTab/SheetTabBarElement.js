@@ -2,61 +2,16 @@ import { WebComponent } from "@/core/WebComponent";
 import { SHEET_TAB_EVENTS } from "./SheetTabEvents.js";
 import { EVENT_NAMES } from "@/constants/eventNames";
 
-export class SheetTabBarElement extends WebComponent {
-    static get observedAttributes() {
-        return [];
-    }
+const CONTEXT_MENU_ITEMS = [
+    { action: "rename", label: "重命名" },
+    { action: "delete", label: "删除" },
+    { action: "copy", label: "复制" },
+    { action: "hide", label: "隐藏" },
+];
 
-    #scrollOffset = 0;
-    #renaming = false;
-    #tabs = new Map();
-    #renameInput = null;
-    #renameHandleMousedown = null;
-    #renameHandleKeydown = null;
-    #renameHandleBlur = null;
-    #currentSheets = null;
-    #currentActiveName = null;
-
-    onConnect(disposable) {
-        const prevBtn = this.shadowRoot.querySelector(".nav-btn.prev");
-        const nextBtn = this.shadowRoot.querySelector(".nav-btn.next");
-        const addBtn = this.shadowRoot.querySelector(".add-btn");
-        const tabsContainer = this.shadowRoot.querySelector(".tabs");
-
-        disposable.trackEvent(prevBtn, EVENT_NAMES.CLICK, () => {
-            this.#scrollBy(-120);
-        });
-
-        disposable.trackEvent(nextBtn, EVENT_NAMES.CLICK, () => {
-            this.#scrollBy(120);
-        });
-
-        disposable.trackEvent(addBtn, EVENT_NAMES.CLICK, () => {
-            this.emit(SHEET_TAB_EVENTS.ADD);
-        });
-
-        disposable.trackEvent(tabsContainer, EVENT_NAMES.CLICK, (e) => {
-            if (this.#renaming) return;
-            const closeBtn = e.target.closest(".close-btn");
-            const tab = e.target.closest(".tab");
-            if (!tab) return;
-            const name = tab.dataset.name;
-            if (closeBtn) {
-                this.emit(SHEET_TAB_EVENTS.CLOSE, { name });
-            } else {
-                this.emit(SHEET_TAB_EVENTS.SWITCH, { name });
-            }
-        });
-
-        disposable.trackEvent(tabsContainer, EVENT_NAMES.DBLCLICK, (e) => {
-            if (this.#renaming) return;
-            const tab = e.target.closest(".tab");
-            if (!tab || e.target.closest(".close-btn")) return;
-            this.#startRename(tab);
-        });
-    }
-
-    #styleText = `
+const template = document.createElement("template");
+template.innerHTML = `
+    <style>
         :host {
             display: flex;
             align-items: stretch;
@@ -64,6 +19,7 @@ export class SheetTabBarElement extends WebComponent {
             background: #e7e7e7;
             user-select: none;
             font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+            position: relative;
         }
 
         .nav-group {
@@ -99,9 +55,18 @@ export class SheetTabBarElement extends WebComponent {
 
         .tabs-scroll {
             flex: 1;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
             height: 100%;
             position: relative;
+            display: flex;
+            align-items: stretch;
+            min-width: 0;
+            scrollbar-width: none;
+        }
+
+        .tabs-scroll::-webkit-scrollbar {
+            display: none;
         }
 
         .tabs {
@@ -109,42 +74,55 @@ export class SheetTabBarElement extends WebComponent {
             align-items: stretch;
             height: 100%;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .tab {
             display: inline-flex;
             align-items: center;
-            padding: 0 10px;
+            padding: 0 12px;
             height: 100%;
             font-size: 11px;
             color: #444;
             cursor: pointer;
-            background: #e7e7e7;
+            background: transparent;
             position: relative;
             flex-shrink: 0;
             user-select: none;
-            border-left: 1px solid transparent;
-            border-right: 1px solid transparent;
+        }
+
+        .tab + .tab::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 5px;
+            bottom: 5px;
+            width: 1px;
+            background: #c6c6c6;
         }
 
         .tab:hover {
-            background: #d8d8d8;
+            background: #e2f0da;
+            color: #217346;
         }
 
         .tab.active {
             background: #fff;
-            color: #000;
+            color: #217346;
             font-weight: 600;
-            border-left: 1px solid #b4b4b4;
-            border-right: 1px solid #b4b4b4;
         }
 
         .tab.active:hover {
             background: #fff;
+            color: #217346;
+        }
+
+        .tab.active + .tab::before,
+        .tab + .tab.active::before {
+            display: none;
         }
 
         .tab .label {
-            flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -152,42 +130,20 @@ export class SheetTabBarElement extends WebComponent {
             line-height: 1;
         }
 
-        .tab .close-btn {
-            display: none;
-            margin-left: 6px;
-            width: 16px;
-            height: 16px;
-            border-radius: 2px;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            color: #666;
-            cursor: pointer;
-        }
-
-        .tab.closable .close-btn,
-        .tab.active .close-btn,
-        .tab:hover .close-btn {
-            display: inline-flex;
-        }
-
-        .tab .close-btn:hover {
-            background: #c0c0c0;
-            color: #333;
-        }
-
         .rename-input {
             border: none;
             outline: none;
             background: transparent;
             font: inherit;
-            color: #000;
+            color: #217346;
             padding: 0;
-            width: 60px;
+            min-width: 40px;
             box-sizing: border-box;
         }
 
-        .add-btn {
+        .add-btn.in-scroll {
+            position: sticky;
+            right: 0;
             width: 28px;
             height: 100%;
             display: flex;
@@ -197,61 +153,156 @@ export class SheetTabBarElement extends WebComponent {
             color: #444;
             cursor: pointer;
             flex-shrink: 0;
+            background: #e7e7e7;
             border-left: 1px solid #c6c6c6;
         }
 
-        .add-btn:hover {
+        .add-btn.in-scroll:hover {
             background: #d8d8d8;
             color: #217346;
         }
-    `;
+
+        .context-menu {
+            position: fixed;
+            background: #fff;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            padding: 4px 0;
+            z-index: 10000;
+            min-width: 120px;
+            font-size: 12px;
+        }
+
+        .context-menu-item {
+            padding: 6px 16px;
+            cursor: pointer;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .context-menu-item:hover {
+            background: #e8f5e9;
+            color: #217346;
+        }
+
+        .context-menu-item.danger {
+            color: #c62828;
+        }
+
+        .context-menu-item.danger:hover {
+            background: #fbe9e7;
+            color: #c62828;
+        }
+
+        .context-menu-item.disabled {
+            color: #bbb;
+            cursor: default;
+        }
+
+        .context-menu-item.disabled:hover {
+            background: transparent;
+            color: #bbb;
+        }
+    </style>
+    <div class="nav-group">
+        <div class="nav-btn prev">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="8,2 4,6 8,10"></polyline>
+            </svg>
+        </div>
+        <div class="nav-btn next">
+            <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4,2 8,6 4,10"></polyline>
+            </svg>
+        </div>
+    </div>
+    <div class="tabs-scroll">
+        <div class="tabs"></div>
+        <div class="add-btn in-scroll">+</div>
+    </div>
+`;
+
+export class SheetTabBarElement extends WebComponent {
+    static get observedAttributes() {
+        return [];
+    }
+
+    #renaming = false;
+    #tabs = new Map();
+    #renameInput = null;
+    #renameHandleMousedown = null;
+    #renameHandleKeydown = null;
+    #renameHandleBlur = null;
+    #currentSheets = null;
+    #currentActiveName = null;
+    #contextMenuEl = null;
+    #contextTargetName = null;
+
+    onConnect(disposable) {
+        const prevBtn = this.shadowRoot.querySelector(".nav-btn.prev");
+        const nextBtn = this.shadowRoot.querySelector(".nav-btn.next");
+        const addBtnInScroll = this.shadowRoot.querySelector(".add-btn.in-scroll");
+        const tabsContainer = this.shadowRoot.querySelector(".tabs");
+
+        disposable.trackEvent(prevBtn, EVENT_NAMES.CLICK, () => {
+            this.#scrollBy(-120);
+        });
+
+        disposable.trackEvent(nextBtn, EVENT_NAMES.CLICK, () => {
+            this.#scrollBy(120);
+        });
+
+        disposable.trackEvent(addBtnInScroll, EVENT_NAMES.CLICK, () => {
+            this.emit(SHEET_TAB_EVENTS.ADD);
+        });
+
+        disposable.trackEvent(tabsContainer, EVENT_NAMES.CLICK, (e) => {
+            if (this.#renaming) return;
+            const tab = e.target.closest(".tab");
+            if (!tab) return;
+            this.emit(SHEET_TAB_EVENTS.SWITCH, { name: tab.dataset.name });
+        });
+
+        disposable.trackEvent(tabsContainer, EVENT_NAMES.DBLCLICK, (e) => {
+            if (this.#renaming) return;
+            const tab = e.target.closest(".tab");
+            if (!tab) return;
+            this.#startRename(tab);
+        });
+
+        disposable.trackEvent(tabsContainer, EVENT_NAMES.CONTEXTMENU, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const tab = e.target.closest(".tab");
+            if (!tab) return;
+            this.emit(SHEET_TAB_EVENTS.SWITCH, { name: tab.dataset.name });
+            this.#showContextMenu(tab, e.clientX, e.clientY);
+        });
+
+        disposable.trackEvent(document, EVENT_NAMES.CLICK, (e) => {
+            if (this.#contextMenuEl && !e.composedPath().includes(this.#contextMenuEl)) {
+                this.#hideContextMenu();
+            }
+        });
+
+        disposable.trackEvent(document, EVENT_NAMES.KEYDOWN, (e) => {
+            if (e.key === "Escape" && this.#contextMenuEl) {
+                this.#hideContextMenu();
+            }
+        });
+    }
 
     render() {
         if (!this.shadowRoot.querySelector(".tabs")) {
-            this.shadowRoot.innerHTML = `
-                <style>${this.#styleText}</style>
-                <div class="nav-group">
-                    <div class="nav-btn prev">
-                        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="8,2 4,6 8,10"></polyline>
-                        </svg>
-                    </div>
-                    <div class="nav-btn next">
-                        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="4,2 8,6 4,10"></polyline>
-                        </svg>
-                    </div>
-                </div>
-                <div class="tabs-scroll">
-                    <div class="tabs"></div>
-                </div>
-                <div class="add-btn">+</div>
-            `;
+            this.shadowRoot.appendChild(template.content.cloneNode(true));
         }
     }
 
     #scrollBy(delta) {
-        this.#scrollOffset += delta;
-        this.#clampScroll();
-        this.#applyScroll();
-    }
-
-    #clampScroll() {
-        const maxScroll = this.#getMaxScroll();
-        this.#scrollOffset = Math.max(0, Math.min(this.#scrollOffset, maxScroll));
-    }
-
-    #getMaxScroll() {
         const scrollWrap = this.shadowRoot?.querySelector(".tabs-scroll");
-        const tabsContainer = this.shadowRoot?.querySelector(".tabs");
-        if (!scrollWrap || !tabsContainer) return 0;
-        return Math.max(0, tabsContainer.scrollWidth - scrollWrap.clientWidth);
-    }
-
-    #applyScroll() {
-        const tabsContainer = this.shadowRoot?.querySelector(".tabs");
-        if (tabsContainer) {
-            tabsContainer.style.transform = `translateX(${-this.#scrollOffset}px)`;
+        if (scrollWrap) {
+            scrollWrap.scrollLeft += delta;
         }
     }
 
@@ -263,15 +314,13 @@ export class SheetTabBarElement extends WebComponent {
         const tabLeft = tab.offsetLeft;
         const tabWidth = tab.offsetWidth;
         const viewW = scrollWrap.clientWidth;
+        const scrollLeft = scrollWrap.scrollLeft;
 
-        if (tabLeft < this.#scrollOffset) {
-            this.#scrollOffset = tabLeft;
-        } else if (tabLeft + tabWidth > this.#scrollOffset + viewW) {
-            this.#scrollOffset = tabLeft + tabWidth - viewW;
+        if (tabLeft < scrollLeft) {
+            scrollWrap.scrollLeft = tabLeft;
+        } else if (tabLeft + tabWidth > scrollLeft + viewW) {
+            scrollWrap.scrollLeft = tabLeft + tabWidth - viewW;
         }
-
-        this.#clampScroll();
-        this.#applyScroll();
     }
 
     refresh(sheets, activeName) {
@@ -292,30 +341,120 @@ export class SheetTabBarElement extends WebComponent {
             tab.className = "tab";
             tab.dataset.name = name;
             if (name === activeName) tab.classList.add("active");
-            if (sheets.size > 1) tab.classList.add("closable");
 
             const label = document.createElement("span");
             label.className = "label";
             label.textContent = name;
             tab.appendChild(label);
 
-            const closeBtn = document.createElement("span");
-            closeBtn.className = "close-btn";
-            closeBtn.textContent = "×";
-            tab.appendChild(closeBtn);
-
             tabsContainer.appendChild(tab);
             this.#tabs.set(name, tab);
         }
 
-        this.#scrollOffset = 0;
-        this.#applyScroll();
+        const scrollWrap = this.shadowRoot.querySelector(".tabs-scroll");
+        if (scrollWrap) {
+            scrollWrap.scrollLeft = 0;
+        }
+    }
+
+    #showContextMenu(tab, clientX, clientY) {
+        this.#hideContextMenu();
+
+        this.#contextTargetName = tab.dataset.name;
+        const menu = document.createElement("div");
+        menu.className = "context-menu";
+
+        const sheetCount = this.#currentSheets ? this.#currentSheets.size : 1;
+
+        for (const item of CONTEXT_MENU_ITEMS) {
+            const menuItem = document.createElement("div");
+            menuItem.className = "context-menu-item";
+            menuItem.textContent = item.label;
+            menuItem.dataset.action = item.action;
+
+            if (item.action === "delete" && sheetCount <= 1) {
+                menuItem.classList.add("disabled");
+            } else if (item.action === "delete") {
+                menuItem.classList.add("danger");
+            }
+
+            if (!menuItem.classList.contains("disabled")) {
+                menuItem.addEventListener(EVENT_NAMES.CLICK, () => {
+                    this.#handleContextAction(item.action);
+                });
+            }
+
+            menu.appendChild(menuItem);
+        }
+
+        this.shadowRoot.appendChild(menu);
+        this.#contextMenuEl = menu;
+
+        const menuWidth = menu.offsetWidth;
+        const menuHeight = menu.offsetHeight;
+        const vpWidth = window.innerWidth;
+        const vpHeight = window.innerHeight;
+
+        let left = clientX;
+        let top = clientY;
+
+        if (left + menuWidth > vpWidth) {
+            left = vpWidth - menuWidth - 4;
+        }
+        if (left < 0) {
+            left = 4;
+        }
+        if (top + menuHeight > vpHeight) {
+            top = clientY - menuHeight;
+        }
+        if (top < 0) {
+            top = 4;
+        }
+
+        menu.style.left = left + "px";
+        menu.style.top = top + "px";
+    }
+
+    #hideContextMenu() {
+        if (this.#contextMenuEl) {
+            this.#contextMenuEl.remove();
+            this.#contextMenuEl = null;
+        }
+        this.#contextTargetName = null;
+    }
+
+    #handleContextAction(action) {
+        const name = this.#contextTargetName;
+        this.#hideContextMenu();
+
+        if (!name) return;
+
+        switch (action) {
+            case "delete":
+                this.emit(SHEET_TAB_EVENTS.CLOSE, { name });
+                break;
+            case "rename":
+                if (!this.#renaming) {
+                    const tab = this.#tabs.get(name);
+                    if (tab) this.#startRename(tab);
+                }
+                break;
+            case "copy":
+                this.emit(SHEET_TAB_EVENTS.COPY, { name });
+                break;
+            case "hide":
+                this.emit(SHEET_TAB_EVENTS.HIDE, { name });
+                break;
+        }
     }
 
     #startRename(tabElement) {
         const oldName = tabElement.dataset.name;
         this.#cleanupRename();
+        this.#hideContextMenu();
         this.#renaming = true;
+
+        const tabOriginalWidth = tabElement.offsetWidth;
 
         const input = document.createElement("input");
         input.className = "rename-input";
@@ -370,6 +509,19 @@ export class SheetTabBarElement extends WebComponent {
 
         input.focus();
         input.select();
+
+        this.#syncInputWidth(input, tabOriginalWidth);
+        input.addEventListener(EVENT_NAMES.INPUT, () => this.#syncInputWidth(input, tabOriginalWidth));
+    }
+
+    #syncInputWidth(input, minWidth) {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const computedStyle = getComputedStyle(input);
+        ctx.font = `${computedStyle.fontWeight} ${computedStyle.fontSize} ${computedStyle.fontFamily}`;
+        const textWidth = ctx.measureText(input.value || input.placeholder).width;
+        const newWidth = Math.max(minWidth, textWidth + 16);
+        input.style.width = newWidth + "px";
     }
 
     #cleanupRename() {
@@ -406,6 +558,7 @@ export class SheetTabBarElement extends WebComponent {
     onDisconnect() {
         this.#tabs.clear();
         this.#cleanupRename();
+        this.#hideContextMenu();
         this.#currentSheets = null;
         this.#currentActiveName = null;
     }

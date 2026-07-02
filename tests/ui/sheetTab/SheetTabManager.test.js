@@ -57,19 +57,17 @@ describe("SheetTabManager 功能", () => {
         stm.destroy();
     });
 
-    it("STM-04: 多个工作表时标签有 closable 类", () => {
+    it("STM-04: 标签不包含 close-btn", () => {
         const stm = new SheetTabManager(wrap, mockWorkbook);
 
         const bar = wrap.querySelector("sheet-tab-bar");
-        const tabs = bar.shadowRoot.querySelectorAll(".tab");
-        tabs.forEach((tab) => {
-            expect(tab.classList.contains("closable")).toBe(true);
-        });
+        const closeBtns = bar.shadowRoot.querySelectorAll(".close-btn");
+        expect(closeBtns.length).toBe(0);
 
         stm.destroy();
     });
 
-    it("STM-05: 只有一个工作表时标签没有 closable 类", () => {
+    it("STM-05: 标签不包含 closable 类", () => {
         mockWorkbook.sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         const stm = new SheetTabManager(wrap, mockWorkbook);
 

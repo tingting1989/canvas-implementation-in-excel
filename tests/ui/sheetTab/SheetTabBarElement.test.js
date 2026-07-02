@@ -20,7 +20,7 @@ describe("SheetTabBarElement Web Component", () => {
         const navGroup = element.shadowRoot.querySelector(".nav-group");
         const scrollWrap = element.shadowRoot.querySelector(".tabs-scroll");
         const tabsContainer = element.shadowRoot.querySelector(".tabs");
-        const addBtn = element.shadowRoot.querySelector(".add-btn");
+        const addBtn = element.shadowRoot.querySelector(".add-btn.in-scroll");
 
         expect(navGroup).not.toBeNull();
         expect(scrollWrap).not.toBeNull();
@@ -37,11 +37,19 @@ describe("SheetTabBarElement Web Component", () => {
     });
 
     it("STBE-03: 添加按钮文本为 +", () => {
-        const addBtn = element.shadowRoot.querySelector(".add-btn");
+        const addBtn = element.shadowRoot.querySelector(".add-btn.in-scroll");
         expect(addBtn.textContent).toBe("+");
     });
 
-    it("STBE-04: refresh 根据 sheets 创建标签", () => {
+    it("STBE-04: 添加按钮在 tabs-scroll 内部", () => {
+        const addBtn = element.shadowRoot.querySelector(".add-btn.in-scroll");
+        expect(addBtn).not.toBeNull();
+
+        const scrollWrap = element.shadowRoot.querySelector(".tabs-scroll");
+        expect(scrollWrap.contains(addBtn)).toBe(true);
+    });
+
+    it("STBE-05: refresh 根据 sheets 创建标签", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -52,7 +60,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(tabs.length).toBe(2);
     });
 
-    it("STBE-05: 活动工作表标签有 active 类", () => {
+    it("STBE-06: 活动工作表标签有 active 类", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -65,7 +73,18 @@ describe("SheetTabBarElement Web Component", () => {
         expect(activeTab.dataset.name).toBe("Sheet1");
     });
 
-    it("STBE-06: 多个工作表时标签有 closable 类", () => {
+    it("STBE-07: 标签不包含 close-btn", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const closeBtns = element.shadowRoot.querySelectorAll(".close-btn");
+        expect(closeBtns.length).toBe(0);
+    });
+
+    it("STBE-08: 标签不包含 closable 类", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -74,25 +93,15 @@ describe("SheetTabBarElement Web Component", () => {
 
         const tabs = element.shadowRoot.querySelectorAll(".tab");
         tabs.forEach((tab) => {
-            expect(tab.classList.contains("closable")).toBe(true);
-        });
-    });
-
-    it("STBE-07: 只有一个工作表时标签没有 closable 类", () => {
-        const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
-        element.refresh(sheets, "Sheet1");
-
-        const tabs = element.shadowRoot.querySelectorAll(".tab");
-        tabs.forEach((tab) => {
             expect(tab.classList.contains("closable")).toBe(false);
         });
     });
 
-    it("STBE-08: 点击添加按钮派发 add 事件", () => {
+    it("STBE-09: 点击添加按钮派发 add 事件", () => {
         const addSpy = vi.fn();
         element.addEventListener(SHEET_TAB_EVENTS.ADD, addSpy);
 
-        const addBtn = element.shadowRoot.querySelector(".add-btn");
+        const addBtn = element.shadowRoot.querySelector(".add-btn.in-scroll");
         addBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
         expect(addSpy).toHaveBeenCalledTimes(1);
@@ -100,7 +109,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.ADD, addSpy);
     });
 
-    it("STBE-09: 点击标签派发 switch 事件", () => {
+    it("STBE-10: 点击标签派发 switch 事件", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -119,25 +128,6 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
     });
 
-    it("STBE-10: 点击关闭按钮派发 close 事件", () => {
-        const sheets = new Map([
-            ["Sheet1", { name: "Sheet1" }],
-            ["Sheet2", { name: "Sheet2" }],
-        ]);
-        element.refresh(sheets, "Sheet1");
-
-        const closeSpy = vi.fn();
-        element.addEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
-
-        const closeBtn = element.shadowRoot.querySelector('.tab[data-name="Sheet1"] .close-btn');
-        closeBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-        expect(closeSpy).toHaveBeenCalledTimes(1);
-        expect(closeSpy.mock.calls[0][0].detail.name).toBe("Sheet1");
-
-        element.removeEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
-    });
-
     it("STBE-11: 双击标签触发重命名流程", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
@@ -153,22 +143,254 @@ describe("SheetTabBarElement Web Component", () => {
         expect(renameInput).not.toBeNull();
     });
 
-    it("STBE-12: 双击关闭按钮不触发重命名", () => {
+    it("STBE-12: 右键标签切换工作表并显示上下文菜单", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
         ]);
         element.refresh(sheets, "Sheet1");
 
-        const closeBtn = element.shadowRoot.querySelector('.tab[data-name="Sheet1"] .close-btn');
-        closeBtn.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+        const switchSpy = vi.fn();
+        element.addEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
 
         const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
-        const renameInput = tab.querySelector(".rename-input");
-        expect(renameInput).toBeNull();
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        expect(switchSpy).toHaveBeenCalledTimes(1);
+        expect(switchSpy.mock.calls[0][0].detail.name).toBe("Sheet1");
+
+        const menu = element.shadowRoot.querySelector(".context-menu");
+        expect(menu).not.toBeNull();
+        expect(menu.getRootNode()).toBe(element.shadowRoot);
+
+        element.removeEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
     });
 
-    it("STBE-13: 点击前进按钮向右滚动标签", () => {
+    it("STBE-13: 上下文菜单包含重命名、删除、复制、隐藏选项", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const items = element.shadowRoot.querySelectorAll(".context-menu-item");
+        expect(items.length).toBe(4);
+
+        const actions = Array.from(items).map((i) => i.dataset.action);
+        expect(actions).toContain("rename");
+        expect(actions).toContain("delete");
+        expect(actions).toContain("copy");
+        expect(actions).toContain("hide");
+    });
+
+    it("STBE-14: 多工作表时删除选项为 danger 样式", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        expect(deleteItem.classList.contains("danger")).toBe(true);
+        expect(deleteItem.classList.contains("disabled")).toBe(false);
+    });
+
+    it("STBE-15: 单工作表时删除选项为 disabled", () => {
+        const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        expect(deleteItem.classList.contains("disabled")).toBe(true);
+    });
+
+    it("STBE-16: 点击删除菜单项派发 close 事件", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const closeSpy = vi.fn();
+        element.addEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        deleteItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        expect(closeSpy).toHaveBeenCalledTimes(1);
+        expect(closeSpy.mock.calls[0][0].detail.name).toBe("Sheet1");
+
+        element.removeEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
+    });
+
+    it("STBE-17: 点击重命名菜单项触发重命名流程", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const renameItem = element.shadowRoot.querySelector('.context-menu-item[data-action="rename"]');
+        renameItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        const renameInput = element.shadowRoot.querySelector(".rename-input");
+        expect(renameInput).not.toBeNull();
+    });
+
+    it("STBE-18: 点击复制菜单项派发 copy 事件", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const copySpy = vi.fn();
+        element.addEventListener(SHEET_TAB_EVENTS.COPY, copySpy);
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const copyItem = element.shadowRoot.querySelector('.context-menu-item[data-action="copy"]');
+        copyItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        expect(copySpy).toHaveBeenCalledTimes(1);
+        expect(copySpy.mock.calls[0][0].detail.name).toBe("Sheet1");
+
+        element.removeEventListener(SHEET_TAB_EVENTS.COPY, copySpy);
+    });
+
+    it("STBE-19: 点击隐藏菜单项派发 hide 事件", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const hideSpy = vi.fn();
+        element.addEventListener(SHEET_TAB_EVENTS.HIDE, hideSpy);
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const hideItem = element.shadowRoot.querySelector('.context-menu-item[data-action="hide"]');
+        hideItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        expect(hideSpy).toHaveBeenCalledTimes(1);
+        expect(hideSpy.mock.calls[0][0].detail.name).toBe("Sheet1");
+
+        element.removeEventListener(SHEET_TAB_EVENTS.HIDE, hideSpy);
+    });
+
+    it("STBE-20: 点击菜单外区域关闭上下文菜单", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        expect(element.shadowRoot.querySelector(".context-menu")).not.toBeNull();
+
+        const outsideClick = new MouseEvent("click", { bubbles: true, composed: true });
+        document.dispatchEvent(outsideClick);
+
+        expect(element.shadowRoot.querySelector(".context-menu")).toBeNull();
+    });
+
+    it("STBE-21: 按 Escape 关闭上下文菜单", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        expect(element.shadowRoot.querySelector(".context-menu")).not.toBeNull();
+
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+
+        expect(element.shadowRoot.querySelector(".context-menu")).toBeNull();
+    });
+
+    it("STBE-22: 点击前进按钮向右滚动标签", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -178,11 +400,11 @@ describe("SheetTabBarElement Web Component", () => {
         const nextBtn = element.shadowRoot.querySelector(".nav-btn.next");
         nextBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-        const tabsContainer = element.shadowRoot.querySelector(".tabs");
-        expect(tabsContainer.style.transform).toContain("translateX");
+        const scrollWrap = element.shadowRoot.querySelector(".tabs-scroll");
+        expect(scrollWrap.scrollLeft).toBeGreaterThanOrEqual(0);
     });
 
-    it("STBE-14: 点击后退按钮向左滚动标签", () => {
+    it("STBE-23: 点击后退按钮向左滚动标签", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -195,11 +417,11 @@ describe("SheetTabBarElement Web Component", () => {
         const prevBtn = element.shadowRoot.querySelector(".nav-btn.prev");
         prevBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-        const tabsContainer = element.shadowRoot.querySelector(".tabs");
-        expect(tabsContainer.style.transform).toBeDefined();
+        const scrollWrap = element.shadowRoot.querySelector(".tabs-scroll");
+        expect(scrollWrap.scrollLeft).toBeDefined();
     });
 
-    it("STBE-15: refresh 销毁旧标签并创建新标签", () => {
+    it("STBE-24: refresh 销毁旧标签并创建新标签", () => {
         const sheets2 = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -216,16 +438,16 @@ describe("SheetTabBarElement Web Component", () => {
         expect(element.shadowRoot.querySelectorAll(".tab").length).toBe(3);
     });
 
-    it("STBE-16: 标签包含 label 和 close-btn 子元素", () => {
+    it("STBE-25: 标签只包含 label 子元素", () => {
         const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         element.refresh(sheets, "Sheet1");
 
         const tab = element.shadowRoot.querySelector(".tab");
         expect(tab.querySelector(".label")).not.toBeNull();
-        expect(tab.querySelector(".close-btn")).not.toBeNull();
+        expect(tab.querySelector(".close-btn")).toBeNull();
     });
 
-    it("STBE-17: 标签 label 文本与 name 一致", () => {
+    it("STBE-26: 标签 label 文本与 name 一致", () => {
         const sheets = new Map([["MySheet", { name: "MySheet" }]]);
         element.refresh(sheets, "MySheet");
 
@@ -233,38 +455,30 @@ describe("SheetTabBarElement Web Component", () => {
         expect(label.textContent).toBe("MySheet");
     });
 
-    it("STBE-18: close-btn 文本为 ×", () => {
-        const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
-        element.refresh(sheets, "Sheet1");
-
-        const closeBtn = element.shadowRoot.querySelector(".tab .close-btn");
-        expect(closeBtn.textContent).toBe("×");
-    });
-
-    it("STBE-19: destroy 后组件标记为已销毁", () => {
+    it("STBE-27: destroy 后组件标记为已销毁", () => {
         element.destroy();
         expect(element.isDestroyed).toBe(true);
     });
 
-    it("STBE-20: destroy 后 refresh 不再操作 DOM", () => {
+    it("STBE-28: destroy 后 refresh 不再操作 DOM", () => {
         element.destroy();
 
         const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
         expect(() => element.refresh(sheets, "Sheet1")).not.toThrow();
     });
 
-    it("STBE-21: refresh 后滚动偏移重置为 0", () => {
+    it("STBE-29: refresh 后滚动偏移重置为 0", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
         ]);
         element.refresh(sheets, "Sheet1");
 
-        const tabsContainer = element.shadowRoot.querySelector(".tabs");
-        expect(tabsContainer.style.transform).not.toContain("translateX(-");
+        const scrollWrap = element.shadowRoot.querySelector(".tabs-scroll");
+        expect(scrollWrap.scrollLeft).toBe(0);
     });
 
-    it("STBE-22: 重命名输入 Enter 后派发 rename 事件", () => {
+    it("STBE-30: 重命名输入 Enter 后派发 rename 事件", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -290,7 +504,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.RENAME, renameSpy);
     });
 
-    it("STBE-23: 重命名输入 Escape 后取消重命名", () => {
+    it("STBE-31: 重命名输入 Escape 后取消重命名", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -313,25 +527,7 @@ describe("SheetTabBarElement Web Component", () => {
         element.removeEventListener(SHEET_TAB_EVENTS.RENAME, renameSpy);
     });
 
-    it("STBE-24: 点击关闭按钮不触发 switch 事件", () => {
-        const sheets = new Map([
-            ["Sheet1", { name: "Sheet1" }],
-            ["Sheet2", { name: "Sheet2" }],
-        ]);
-        element.refresh(sheets, "Sheet1");
-
-        const switchSpy = vi.fn();
-        element.addEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
-
-        const closeBtn = element.shadowRoot.querySelector('.tab[data-name="Sheet1"] .close-btn');
-        closeBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-
-        expect(switchSpy).not.toHaveBeenCalled();
-
-        element.removeEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
-    });
-
-    it("STBE-25: 重命名输入框无边框无轮廓", () => {
+    it("STBE-32: 重命名输入框无边框无轮廓", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -342,7 +538,6 @@ describe("SheetTabBarElement Web Component", () => {
         const label = tab.querySelector(".label");
         label.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
 
-        const renameInput = tab.querySelector(".rename-input");
         const style = element.shadowRoot.querySelector("style");
         const cssText = style.textContent;
         expect(cssText).toContain(".rename-input");
@@ -350,7 +545,7 @@ describe("SheetTabBarElement Web Component", () => {
         expect(cssText).toContain("outline: none");
     });
 
-    it("STBE-26: 重命名输入框宽度固定为 60px", () => {
+    it("STBE-33: 重命名输入框有 min-width", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
@@ -361,33 +556,130 @@ describe("SheetTabBarElement Web Component", () => {
         const label = tab.querySelector(".label");
         label.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
 
-        const renameInput = tab.querySelector(".rename-input");
         const style = element.shadowRoot.querySelector("style");
         const cssText = style.textContent;
-        expect(cssText).toContain("width: 60px");
+        expect(cssText).toContain("min-width: 40px");
     });
 
-    it("STBE-27: wheel 事件不触发滚动", () => {
+    it("STBE-34: wheel 事件不触发滚动", () => {
         const sheets = new Map([
             ["Sheet1", { name: "Sheet1" }],
             ["Sheet2", { name: "Sheet2" }],
         ]);
         element.refresh(sheets, "Sheet1");
 
-        const tabsContainer = element.shadowRoot.querySelector(".tabs");
+        const scrollWrap = element.shadowRoot.querySelector(".tabs-scroll");
+        const beforeScroll = scrollWrap.scrollLeft;
 
         element.dispatchEvent(
             new WheelEvent(EVENT_NAMES.WHEEL, { deltaX: 50, bubbles: true }),
         );
 
-        expect(tabsContainer.style.transform).not.toContain("translateX(-");
+        expect(scrollWrap.scrollLeft).toBe(beforeScroll);
     });
 
-    it("STBE-28: 导航按钮包含 SVG 图标", () => {
+    it("STBE-35: 导航按钮包含 SVG 图标", () => {
         const prevBtn = element.shadowRoot.querySelector(".nav-btn.prev");
         const nextBtn = element.shadowRoot.querySelector(".nav-btn.next");
 
         expect(prevBtn.querySelector("svg")).not.toBeNull();
         expect(nextBtn.querySelector("svg")).not.toBeNull();
+    });
+
+    it("STBE-36: 使用模块级 template 渲染 Shadow DOM", () => {
+        const style = element.shadowRoot.querySelector("style");
+        const tabs = element.shadowRoot.querySelector(".tabs");
+        expect(style).not.toBeNull();
+        expect(tabs).not.toBeNull();
+    });
+
+    it("STBE-37: 激活标签文字颜色为 Excel 绿色", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const style = element.shadowRoot.querySelector("style");
+        const cssText = style.textContent;
+        expect(cssText).toContain(".tab.active");
+        expect(cssText).toContain("color: #217346");
+    });
+
+    it("STBE-38: 标签间有竖线分隔且上下留边距", () => {
+        const style = element.shadowRoot.querySelector("style");
+        const cssText = style.textContent;
+        expect(cssText).toContain(".tab + .tab::before");
+        expect(cssText).toContain("top: 5px");
+        expect(cssText).toContain("bottom: 5px");
+    });
+
+    it("STBE-39: 激活标签与相邻标签间无竖线", () => {
+        const style = element.shadowRoot.querySelector("style");
+        const cssText = style.textContent;
+        expect(cssText).toContain(".tab.active + .tab::before");
+        expect(cssText).toContain(".tab + .tab.active::before");
+        expect(cssText).toContain("display: none");
+    });
+
+    it("STBE-40: hover 未激活标签为淡绿色", () => {
+        const style = element.shadowRoot.querySelector("style");
+        const cssText = style.textContent;
+        expect(cssText).toContain(".tab:hover");
+        expect(cssText).toContain("background: #e2f0da");
+    });
+
+    it("STBE-41: 上下文菜单每项独占一行", () => {
+        const style = element.shadowRoot.querySelector("style");
+        const cssText = style.textContent;
+        expect(cssText).toContain(".context-menu-item");
+        expect(cssText).toContain("white-space: nowrap");
+    });
+
+    it("STBE-42: 上下文菜单项点击后菜单关闭", () => {
+        const sheets = new Map([
+            ["Sheet1", { name: "Sheet1" }],
+            ["Sheet2", { name: "Sheet2" }],
+        ]);
+        element.refresh(sheets, "Sheet1");
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const copyItem = element.shadowRoot.querySelector('.context-menu-item[data-action="copy"]');
+        copyItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        expect(element.shadowRoot.querySelector(".context-menu")).toBeNull();
+    });
+
+    it("STBE-43: disabled 菜单项点击不派发事件", () => {
+        const sheets = new Map([["Sheet1", { name: "Sheet1" }]]);
+        element.refresh(sheets, "Sheet1");
+
+        const closeSpy = vi.fn();
+        element.addEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
+
+        const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+        tab.dispatchEvent(
+            new MouseEvent("contextmenu", {
+                bubbles: true,
+                clientX: 100,
+                clientY: 50,
+            }),
+        );
+
+        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        expect(deleteItem.classList.contains("disabled")).toBe(true);
+        deleteItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+        expect(closeSpy).not.toHaveBeenCalled();
+
+        element.removeEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
     });
 });

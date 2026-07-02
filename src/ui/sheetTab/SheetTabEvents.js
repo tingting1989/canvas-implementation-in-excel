@@ -12,12 +12,18 @@ export const SHEET_TAB_EVENTS = {
     /** 切换工作表 — 点击标签触发，detail: { name } */
     SWITCH: "switch",
 
-    /** 关闭工作表 — 点击关闭按钮触发，detail: { name } */
+    /** 关闭工作表 — 右键菜单删除触发，detail: { name } */
     CLOSE: "close",
 
-    /** 重命名工作表 — 双击标签确认重命名时触发，detail: { oldName, newName } */
+    /** 重命名工作表 — 双击标签或右键菜单重命名确认时触发，detail: { oldName, newName } */
     RENAME: "rename",
 
     /** 新增工作表 — 点击添加按钮触发 */
     ADD: "add",
+
+    /** 复制工作表 — 右键菜单复制触发，detail: { name } */
+    COPY: "copy",
+
+    /** 隐藏工作表 — 右键菜单隐藏触发，detail: { name } */
+    HIDE: "hide",
 };
