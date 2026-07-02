@@ -99,6 +99,10 @@ export class ResizeStrategy extends EventStrategy {
 
         viewport.invalidateAll();
         this.handler.render();
+
+        if (this.handler.editor?.updateActiveEditorPosition) {
+            this.handler.editor.updateActiveEditorPosition();
+        }
     }
 
     /**

@@ -300,6 +300,36 @@ export class CellEditor extends DOMComponent {
         this.editor.focus();
     }
 
+    updatePosition() {
+        if (this.activeRow < 0 || !this.editor) return;
+        const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
+        const rect = this.viewport.getCellRect(this.activeRow, this.activeCol, merge);
+
+        const headerW = this.sheet.getHeaderWidth?.() ?? 0;
+        const headerH = this.sheet.getHeaderHeight?.() ?? 0;
+        const frozenColsW = this.sheet.frozenColsWidth || 0;
+        const frozenRowsH = this.sheet.frozenRowsHeight || 0;
+        const viewW = this.viewport?.viewW ?? Infinity;
+        const viewH = this.viewport?.viewH ?? Infinity;
+        const fixedCols = this.sheet.fixedColumnsStart || 0;
+        const fixedRows = this.sheet.fixedRowsTop || 0;
+
+        const minX = this.activeCol < fixedCols ? headerW : headerW + frozenColsW;
+        const minY = this.activeRow < fixedRows ? headerH : headerH + frozenRowsH;
+
+        const clampedX = Math.max(rect.x, minX);
+        const clampedY = Math.max(rect.y, minY);
+        const clampedRight = Math.min(rect.x + rect.w, viewW);
+        const clampedBottom = Math.min(rect.y + rect.h, viewH);
+        const clampedW = Math.max(0, clampedRight - clampedX);
+        const clampedH = Math.max(0, clampedBottom - clampedY);
+
+        this.editor.style.left = clampedX + "px";
+        this.editor.style.top = clampedY + "px";
+        this.editor.style.width = clampedW + "px";
+        this.editor.style.height = clampedH + "px";
+    }
+
     #onBlur() {
         if (this.#scrollHiding) return;
         if (this.composing) return;

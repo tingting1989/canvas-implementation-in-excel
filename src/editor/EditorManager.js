@@ -166,6 +166,16 @@ export class EditorManager {
         return null;
     }
 
+    /**
+     * 更新当前活动编辑器的位置和大小（用于行列尺寸变化时同步）
+     */
+    updateActiveEditorPosition() {
+        const activeEditor = this.getActiveEditor();
+        if (activeEditor && typeof activeEditor.updatePosition === "function") {
+            activeEditor.updatePosition();
+        }
+    }
+
     /** 销毁所有编辑器，释放资源 */
     destroy() {
         for (const editor of this.editors.values()) {
