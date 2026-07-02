@@ -359,22 +359,32 @@ export class BaseHidePlugin extends BasePlugin {
         const range = selection.getRange();
         const [focusRow, focusCol] = selection.getFocus();
 
-        // 根据维度提取对应的索引
+        // 根据维度提取对应的索引（selection 返回 pageRow）
         const focusIdx = this.#isRow ? focusRow : focusCol;
         const topIdx = this.#isRow ? range.topRow : range.topCol;
         const bottomIdx = this.#isRow ? range.bottomRow : range.bottomCol;
 
+        // 转为 realRow 以便与 rowColManager 交互
+        const realFocusIdx = this.#isRow ? sheet.toRealRow(focusIdx) : focusIdx;
+        const realTopIdx = this.#isRow ? sheet.toRealRow(topIdx) : topIdx;
+        const realBottomIdx = this.#isRow ? sheet.toRealRow(bottomIdx) : bottomIdx;
+
         // 三者均可见则无需调整
-        if (!this.#rcIsHidden(focusIdx) && !this.#rcIsHidden(topIdx) && !this.#rcIsHidden(bottomIdx)) {
+        if (!this.#rcIsHidden(realFocusIdx) && !this.#rcIsHidden(realTopIdx) && !this.#rcIsHidden(realBottomIdx)) {
             return;
         }
 
-        // 寻找最近可见项
-        const newIdx = this.#findNearestVisible(focusIdx);
-        if (newIdx < 0) return;
+        // 寻找最近可见项（返回 realRow）
+        const newRealIdx = this.#findNearestVisible(realFocusIdx);
+        if (newRealIdx < 0) return;
 
-        const newTop = this.#findNearestVisible(topIdx);
-        const newBottom = this.#findNearestVisible(bottomIdx);
+        const newRealTop = this.#findNearestVisible(realTopIdx);
+        const newRealBottom = this.#findNearestVisible(realBottomIdx);
+
+        // 转回 pageRow 再设置 selection
+        const newIdx = this.#isRow ? sheet.toPageRow(newRealIdx) : newRealIdx;
+        const newTop = this.#isRow ? sheet.toPageRow(newRealTop) : newRealTop;
+        const newBottom = this.#isRow ? sheet.toPageRow(newRealBottom) : newRealBottom;
 
         if (this.#isRow) {
             if (newTop >= 0 && newBottom >= 0) {

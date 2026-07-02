@@ -159,7 +159,8 @@ export class KeyboardStrategy extends EventStrategy {
         for (let r = range.topRow; r <= range.bottomRow; r++) {
             for (let c = range.topCol; c <= range.bottomCol; c++) {
                 if (!sheet.isDisabled(r, c)) {
-                    const oldCell = sheet.cellStore.get(r, c);
+                    const realR = sheet.toRealRow(r);
+                    const oldCell = sheet.cellStore.get(realR, c);
                     if (oldCell && oldCell.value !== "") {
                         changes.push({ row: r, col: c, oldValue: oldCell.value, newValue: "" });
                     }
@@ -173,7 +174,8 @@ export class KeyboardStrategy extends EventStrategy {
 
         sheet.beginBatch();
         for (const { row, col } of changes) {
-            const oldCell = sheet.cellStore.get(row, col);
+            const realR = sheet.toRealRow(row);
+            const oldCell = sheet.cellStore.get(realR, col);
             sheet.setCell(row, col, "", oldCell?.styleId || 0);
         }
         sheet.endBatch();

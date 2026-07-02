@@ -306,7 +306,7 @@ export class ContextMenuStrategy extends EventStrategy {
                     const range = sheet.selection.getRange();
                     const rows = [];
                     for (let row = range.topRow; row <= range.bottomRow; row++) {
-                        rows.push(row);
+                        rows.push(sheet.toRealRow(row));
                     }
                     hiddenRows.hideRows(rows);
                 },
@@ -320,7 +320,8 @@ export class ContextMenuStrategy extends EventStrategy {
                     const range = sheet.selection.getRange();
                     const rows = [];
                     for (let row = Math.max(0, range.topRow - 1); row <= range.bottomRow + 1; row++) {
-                        if (rc.isRowHidden(row)) rows.push(row);
+                        const realRow = sheet.toRealRow(row);
+                        if (rc.isRowHidden(realRow)) rows.push(realRow);
                     }
                     if (rows.length > 0) hiddenRows.showRows(rows);
                 },

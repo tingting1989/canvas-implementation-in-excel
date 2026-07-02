@@ -13,7 +13,7 @@ import {
     MergeCommand,
     UnmergeCommand,
     Cell,
-} from "../model/index.js";
+} from "@/model";
 import { RowColManager } from "../model/grid/RowColManager.js";
 import { RowColSync } from "../model/grid/RowColSync.js";
 import { CONFIG } from "../constants/config";
@@ -767,7 +767,9 @@ export class Sheet {
             return false;
         }
 
-        const cmd = new MergeCommand(this.mergeManager, topRow, topCol, bottomRow, bottomCol);
+        const realTopRow = this.toRealRow(topRow);
+        const realBottomRow = this.toRealRow(bottomRow);
+        const cmd = new MergeCommand(this.mergeManager, realTopRow, topCol, realBottomRow, bottomCol);
         cmd.redo();
         if (cmd.succeeded) {
             this.history.push(cmd);
@@ -784,7 +786,8 @@ export class Sheet {
      */
     unmergeCells(row, col) {
         if (!this.#ensureWritable()) return false;
-        const cmd = new UnmergeCommand(this.mergeManager, row, col);
+        const realRow = this.toRealRow(row);
+        const cmd = new UnmergeCommand(this.mergeManager, realRow, col);
         cmd.redo();
         if (cmd.oldMerge) {
             this.history.push(cmd);
@@ -865,12 +868,13 @@ export class Sheet {
     // 行列操作：插入 / 删除 / 移动
     // ============================================================
 
-    /** 在指定位置插入行 */
+    /** 在指定位置插入行（接受页面行号） */
     insertRow(atRow) {
         if (!this.#ensureWritable()) return;
-        if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
-        this.#dispatchToSubSystems(SUB.INSERT_ROW, atRow);
-        this.#rowSync.insert(atRow);
+        const realRow = this.toRealRow(atRow);
+        if (!this.#isValidIndex(realRow, CONFIG.MAX_ROWS)) return;
+        this.#dispatchToSubSystems(SUB.INSERT_ROW, realRow);
+        this.#rowSync.insert(realRow);
     }
 
     /** 在指定位置插入列 */
@@ -881,12 +885,13 @@ export class Sheet {
         this.#colSync.insert(atCol);
     }
 
-    /** 删除指定行 */
+    /** 删除指定行（接受页面行号） */
     deleteRow(atRow) {
         if (!this.#ensureWritable()) return;
-        if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
-        this.#dispatchToSubSystems(SUB.DELETE_ROW, atRow);
-        this.#rowSync.delete(atRow);
+        const realRow = this.toRealRow(atRow);
+        if (!this.#isValidIndex(realRow, CONFIG.MAX_ROWS)) return;
+        this.#dispatchToSubSystems(SUB.DELETE_ROW, realRow);
+        this.#rowSync.delete(realRow);
     }
 
     /** 删除指定列 */
@@ -907,13 +912,15 @@ export class Sheet {
         this.#invalidateAll();
     }
 
-    /** 移动行：将 fromRow 的数据移到 toRow 位置，中间行自动平移 */
+    /** 移动行：将 fromRow 的数据移到 toRow 位置，中间行自动平移（接受页面行号） */
     moveRow(fromRow, toRow) {
         if (!this.#ensureWritable()) return;
         if (fromRow === toRow || fromRow < 0 || toRow < 0) return;
-        if (fromRow >= CONFIG.MAX_ROWS || toRow >= CONFIG.MAX_ROWS) return;
-        this.#dispatchToSubSystems(SUB.MOVE_ROW, fromRow, toRow);
-        this.#rowSync.move(fromRow, toRow);
+        const realFrom = this.toRealRow(fromRow);
+        const realTo = this.toRealRow(toRow);
+        if (realFrom >= CONFIG.MAX_ROWS || realTo >= CONFIG.MAX_ROWS) return;
+        this.#dispatchToSubSystems(SUB.MOVE_ROW, realFrom, realTo);
+        this.#rowSync.move(realFrom, realTo);
         this.#invalidateAll();
     }
 

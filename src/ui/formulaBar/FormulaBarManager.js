@@ -82,16 +82,18 @@ export class FormulaBarManager extends Disposable {
 
         const range = sheet.selection.getRange();
 
+        // 选区返回页面相对行号；cellStore 索引需要实际行号
         const row = range.topRow;
         const col = range.topCol;
+        const realRow = sheet.toRealRow(row);
         this.#activeRow = row;
         this.#activeCol = col;
 
-        const ref = indexToCol(col) + (row + 1);
+        const ref = indexToCol(col) + (realRow + 1);
 
         this.#element.setAttribute("cell-ref", ref);
 
-        const cell = sheet.cellStore.get(row, col);
+        const cell = sheet.cellStore.get(realRow, col);
         let value = "";
         if (cell && cell.formula) {
             value = cell.formula;
@@ -109,10 +111,13 @@ export class FormulaBarManager extends Disposable {
 
         if (value === this.#originalValue) return;
 
+        // #activeRow 是页面相对行号，cellStore 索引需要实际行号
+        const realRow = sheet.toRealRow(this.#activeRow);
+
         if (value === "") {
             sheet.setCell(this.#activeRow, this.#activeCol, "");
         } else {
-            const styleId = sheet.cellStore.get(this.#activeRow, this.#activeCol)?.styleId || 0;
+            const styleId = sheet.cellStore.get(realRow, this.#activeCol)?.styleId || 0;
             sheet.setCell(this.#activeRow, this.#activeCol, value, styleId);
         }
 
