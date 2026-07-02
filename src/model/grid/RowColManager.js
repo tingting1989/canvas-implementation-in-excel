@@ -1,6 +1,7 @@
 ﻿import { ERROR_CODE, errorHandler } from "@/core/ErrorHandler.js";
 
 import { CONFIG } from "../../constants/config";
+import { PageContext } from "./PageContext.js";
 
 export class RowColManager {
     #rowHeights = [];
@@ -14,6 +15,9 @@ export class RowColManager {
 
     #pageStartRow = -1;
     #pageEndRow = -1;
+
+    /** 分页上下文缓存 */
+    #pageContext = null;
 
     /** 隐藏列集合（存储实际列号） */
     #hiddenCols = new Set();
@@ -400,6 +404,22 @@ export class RowColManager {
     }
     get pageEndRow() {
         return this.#pageEndRow;
+    }
+
+    /**
+     * 获取分页上下文（PageContext）
+     *
+     * PageContext 集中管理所有分页相关的行号转换和坐标计算，
+     * 提供自解释的命名方法（getPageRowY / getRealRowY / pageRowAt / realRowAt 等），
+     * 替代分散在多处的隐式双态 API。
+     *
+     * @returns {PageContext}
+     */
+    get pageContext() {
+        if (!this.#pageContext) {
+            this.#pageContext = new PageContext(this);
+        }
+        return this.#pageContext;
     }
 
     /**

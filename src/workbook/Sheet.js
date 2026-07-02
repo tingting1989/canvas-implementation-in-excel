@@ -284,19 +284,26 @@ export class Sheet {
     }
 
     // ============================================================
-    // 行号转换（分页支持）
+    // 行号转换（分页支持）— 委托 PageContext
     // ============================================================
 
-    /** 页面行号 → 实际行号 */
-    toRealRow(pageRow) {
-        const offset = this.rowColManager.pageStartRow;
-        return offset >= 0 ? offset + pageRow : pageRow;
+    /**
+     * 获取分页上下文（PageContext）
+     * 集中管理所有分页相关的行号转换和坐标计算
+     * @returns {import("../model/grid/PageContext.js").PageContext}
+     */
+    get pageContext() {
+        return this.rowColManager.pageContext;
     }
 
-    /** 实际行号 → 页面行号 */
+    /** 页面行号 → 实际行号（委托 PageContext） */
+    toRealRow(pageRow) {
+        return this.pageContext.toRealRow(pageRow);
+    }
+
+    /** 实际行号 → 页面行号（委托 PageContext） */
     toPageRow(realRow) {
-        const offset = this.rowColManager.pageStartRow;
-        return offset >= 0 ? realRow - offset : realRow;
+        return this.pageContext.toPageRow(realRow);
     }
 
     /** 可视列号 → 实际列号（当前宽度=0 隐藏列方案下无需转换） */
@@ -792,9 +799,9 @@ export class Sheet {
         const realRow = this.toRealRow(row);
         const merge = this.mergeManager.getMerge(realRow, col);
         if (!merge) return null;
-        const offset = this.rowColManager.pageStartRow;
-        if (offset < 0) return merge;
-        return { ...merge, topRow: merge.topRow - offset, bottomRow: merge.bottomRow - offset };
+        const pc = this.pageContext;
+        if (!pc.isActive) return merge;
+        return { ...merge, topRow: pc.toPageRow(merge.topRow), bottomRow: pc.toPageRow(merge.bottomRow) };
     }
 
     /** 判断是否为合并区域的左上角单元格 */

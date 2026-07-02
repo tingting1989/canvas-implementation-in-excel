@@ -9,6 +9,10 @@
  * - 数据坐标（dataX/dataY）：从单元格区域左上角算起的像素坐标，不含表头
  * - 视口坐标（viewX/viewY）：从 Canvas 左上角算起的像素坐标，含表头偏移
  *
+ * ## 分页支持
+ * 通过 PageContext 统一处理分页模式下的行号转换，消除 #adaptRowForPagination
+ * 中分散的转换逻辑。所有行坐标计算委托 PageContext 的方法完成。
+ *
  * ## 冻结区域处理
  * 冻结列/行始终固定显示，不随滚动移动。当 col < fixedCols 时，
  * 该列使用 scrollX=0 计算（即 effectiveSx=0）；非冻结列使用实际 scrollX。
@@ -33,6 +37,8 @@ export class ViewportTransform {
     constructor(sheet, scrollX, scrollY) {
         this.sheet = sheet;
         this.rc = sheet.rowColManager;
+        /** @type {import("../model/grid/PageContext.js").PageContext} */
+        this.pc = sheet.pageContext;
         this.scrollX = scrollX;
         this.scrollY = scrollY;
         this.headerW = sheet.getHeaderWidth();
@@ -99,51 +105,30 @@ export class ViewportTransform {
     /**
      * 行顶边缘 → 视口 Y 坐标
      * 自动处理冻结行（冻结行不随垂直滚动移动）
-     * 在分页模式下，自动将实际行号（全局坐标）转换为页面行号（相对坐标）
+     * 通过 PageContext 自动适配分页模式下的行号转换
      *
-     * @param {number} row - 行号（可能是实际行号或页面行号）
+     * @param {number} row - 实际行号（selection/frozen 等组件使用实际行号）
      * @returns {number} 视口 Y 坐标
      */
     rowToViewY(row) {
-        const effectiveRow = this.#adaptRowForPagination(row);
-        const effectiveSy = effectiveRow < this.fixedRows ? 0 : this.scrollY;
-        return this.headerH + this.rc.getRowY(effectiveRow) - effectiveSy;
+        const pageRow = this.pc.toPageRow(row);
+        const effectiveSy = this.#isFrozenRow(row) ? 0 : this.scrollY;
+        return this.headerH + this.pc.getPageRowY(pageRow) - effectiveSy;
     }
 
     /**
      * 行底边缘 → 视口 Y 坐标
-     * @param {number} row - 行号
+     * @param {number} row - 实际行号
      * @returns {number} 视口 Y 坐标（行底边缘）
      */
     rowBottomToViewY(row) {
-        return this.rowToViewY(row) + this.rc.getRowHeight(this.#adaptRowForPagination(row));
+        const pageRow = this.pc.toPageRow(row);
+        return this.rowToViewY(row) + this.pc.getPageRowHeight(pageRow);
     }
 
-    /**
-     * 分页模式下行号适配
-     *
-     * 将实际行号（全局坐标）转换为页面行号（相对当前页的坐标）。
-     *
-     * 为什么需要这个转换？
-     * - selection 等组件存储的是实际行号（如第2页的第52行）
-     * - 但 RowColManager.getRowY() 在分页模式下期望页面行号（如第2页的第2行）
-     * - 本方法自动检测并转换，确保坐标计算正确
-     *
-     * @param {number} row - 输入行号
-     * @returns {number} 适配后的行号
-     */
-    #adaptRowForPagination(row) {
-        const pageStartRow = this.rc.pageStartRow;
-
-        if (pageStartRow < 0) {
-            return row;
-        }
-
-        if (row >= pageStartRow) {
-            return row - pageStartRow;
-        }
-
-        return row;
+    /** 行是否在冻结区（基于实际行号判断） */
+    #isFrozenRow(row) {
+        return row < this.fixedRows;
     }
 
     /**
@@ -159,37 +144,39 @@ export class ViewportTransform {
 
     /**
      * 视口 Y 坐标 → 行号（命中检测）
+     * 返回的是页面行号（分页模式下为当前页内行号）
      * @param {number} viewY - 视口 Y 坐标（相对 Canvas 左上角）
-     * @returns {number} 行号
+     * @returns {number} 页面行号
      */
     viewYToRow(viewY) {
-        return this.rc.rowAt(this.viewYToDataY(viewY));
+        return this.pc.pageRowAt(this.viewYToDataY(viewY));
     }
 
     /**
-     * 行底边缘 → 数据 Y 坐标
-     * @param {number} row - 行号
+     * 行底边缘 → 数据 Y 坐标（页面相对）
+     * @param {number} row - 页面行号
      * @returns {number} 数据 Y 坐标（行底边缘）
      */
     rowBottomToDataY(row) {
-        return this.rc.getRowY(row) + this.rc.getRowHeight(row);
+        return this.pc.getPageRowY(row) + this.pc.getPageRowHeight(row);
     }
 
     // ─── 单元格矩形 ───────────────────────────────────────
 
     /**
      * 单元格 → 视口矩形 { x, y, w, h }
-     * 自动处理冻结区域，合并单元格需调用方传入 mergeInfo
-     * @param {number} row - 行号
+     * 自动处理冻结区域和分页行号转换，合并单元格需调用方传入 mergeInfo
+     * @param {number} row - 行号（实际行号，来自 selection 等组件）
      * @param {number} col - 列号
      * @returns {{ x: number, y: number, w: number, h: number }}
      */
     cellToViewRect(row, col) {
+        const pageRow = this.pc.toPageRow(row);
         return {
             x: this.colToViewX(col),
             y: this.rowToViewY(row),
-            w: this.rc.getColWidth(col),
-            h: this.rc.getRowHeight(row),
+            w: this.pc.getColWidth(col),
+            h: this.pc.getPageRowHeight(pageRow),
         };
     }
 
@@ -239,7 +226,7 @@ export class ViewportTransform {
     /**
      * 单元格是否在可视区域内
      * 用于编辑器随滚动隐藏/恢复等场景
-     * @param {number} row - 行号
+     * @param {number} row - 实际行号（来自 selection 等组件）
      * @param {number} col - 列号
      * @param {number} canvasW - Canvas 逻辑宽度（CSS 像素）
      * @param {number} canvasH - Canvas 逻辑高度（CSS 像素）
@@ -250,10 +237,10 @@ export class ViewportTransform {
         const dataViewW = canvasW - this.headerW - this.frozenColsW;
         const dataViewH = canvasH - this.headerH - this.frozenRowsH - tabH;
 
-        const cellX = this.rc.getColX(col);
-        const cellY = this.rc.getRowY(row);
-        const cellW = this.rc.getColWidth(col);
-        const cellH = this.rc.getRowHeight(row);
+        const cellX = this.pc.getColX(col);
+        const cellY = this.pc.getRealRowY(row); // 使用全局 Y 与 frozenRowsH 比较
+        const cellW = this.pc.getColWidth(col);
+        const cellH = this.pc.getRealRowHeight(row);
 
         let outOfView;
         if (this.isInFrozenCols(col)) {
@@ -265,7 +252,10 @@ export class ViewportTransform {
         if (this.isInFrozenRows(row)) {
             outOfView = outOfView || cellY + cellH <= 0 || cellY >= this.frozenRowsH;
         } else {
-            outOfView = outOfView || cellY + cellH - this.frozenRowsH <= this.scrollY || cellY - this.frozenRowsH >= this.scrollY + dataViewH;
+            // scrollY 在分页模式下是页面相对坐标，isCellVisible 的 row 是实际行号
+            // 对于冻结行之外的单元格，需要将 cellY 转为页面相对坐标比较
+            const pageCellY = this.pc.isActive ? this.pc.getPageRowY(this.pc.toPageRow(row)) : cellY;
+            outOfView = outOfView || pageCellY + cellH - this.frozenRowsH <= this.scrollY || pageCellY - this.frozenRowsH >= this.scrollY + dataViewH;
         }
 
         return !outOfView;

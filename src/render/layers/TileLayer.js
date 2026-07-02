@@ -106,6 +106,7 @@ export class TileLayer extends BaseLayer {
      * @param {number} [options.scrollX] - 水平滚动偏移（覆盖 viewport.scrollX）
      * @param {number} [options.scrollY] - 垂直滚动偏移（覆盖 viewport.scrollY）
      * @param {boolean} [options.useRealRows] - 是否使用真实行号（分页模式）
+     * @param {import("../../model/grid/PageContext.js").PageContext} [options.pageContext] - 分页上下文
      */
     render(ctx, sheet, viewport, options = {}) {
         if (!this.enabled) return;
@@ -115,6 +116,7 @@ export class TileLayer extends BaseLayer {
         const viewW = options.viewW;
         const viewH = options.viewH;
         const useRealRows = options.useRealRows;
+        const pc = options.pageContext ?? sheet.pageContext;
 
         const frozenColsW = sheet.frozenColsWidth ?? 0;
         const frozenRowsH = sheet.frozenRowsHeight ?? 0;
@@ -136,7 +138,8 @@ export class TileLayer extends BaseLayer {
             }
         }
 
-        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, useRealRows ? { useRealRows: true } : undefined);
+        const tileOpts = useRealRows ? { useRealRows: true, pageContext: pc } : { pageContext: pc };
+        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, tileOpts);
 
         if (clipped) {
             ctx.restore();

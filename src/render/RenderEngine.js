@@ -185,8 +185,13 @@ export class RenderEngine extends DOMComponent {
         const frozenRowsH = sheet.frozenRowsHeight;
         const frozenColsW = sheet.frozenColsWidth;
 
-        const isPaginationActive = rc.pageStartRow >= 0;
-        const effectiveFrozenRowsH = isPaginationActive ? 0 : frozenRowsH;
+        const pc = sheet.pageContext;
+        const isPaginationActive = pc.isActive;
+
+        // 分页模式下冻结行处理：
+        // - 第 1 页（pageStart == 0）：冻结行数据在当前页内，正常使用 frozenRowsH
+        // - 第 2 页及以后（pageStart > 0）：冻结行不在当前页，冻结行高度计为 0
+        const effectiveFrozenRowsH = (isPaginationActive && pc.pageStart > 0) ? 0 : frozenRowsH;
         this.scrollMgr.updateScrollBounds(
             rc.totalWidth,
             rc.totalHeight,
@@ -240,7 +245,7 @@ export class RenderEngine extends DOMComponent {
         const composeOptions = {
             scrollX: sx,
             scrollY: sy,
-            isPaginationActive,
+            pageContext: pc,
         };
 
         this.compositor.compose(ctx, sheet, vt, viewW, viewH, composeOptions);

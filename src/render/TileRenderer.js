@@ -83,6 +83,7 @@ export class TileRenderer {
      * @param {number} viewH
      * @param {object} [options]
      * @param {boolean} [options.useRealRows] - 分页模式下使用实际行号渲染（用于冻结行区域）
+     * @param {import("../model/grid/PageContext.js").PageContext} [options.pageContext] - 分页上下文
      */
     render(ctx, sheet, scrollX, scrollY, viewW, viewH, options) {
         const headerW = sheet.getHeaderWidth();
@@ -137,6 +138,7 @@ export class TileRenderer {
         const tileSize = CONFIG.TILE_SIZE;
         const tileCtx = tile.ctx;
         const useRealRows = options?.useRealRows === true;
+        const pc = options?.pageContext ?? sheet.pageContext;
 
         tileCtx.clearRect(0, 0, tileSize, tileSize);
         this.#lastFont = null; // 每个瓦片单独重置字体缓存
@@ -145,17 +147,24 @@ export class TileRenderer {
         const pixelX0 = tileCol * tileSize;
         const pixelY1 = pixelY0 + tileSize;
         const pixelX1 = pixelX0 + tileSize;
-        const sr = useRealRows ? rc.rawRowAt(pixelY0) : rc.rowAt(pixelY0);
+
+        // 使用 PageContext 显式选择坐标体系
+        const sr = useRealRows
+            ? pc.realRowAt(pixelY0)
+            : pc.pageRowAt(pixelY0);
         const sc = rc.colAt(pixelX0);
-        const er = Math.min((useRealRows ? rc.rawRowAt(pixelY1) : rc.rowAt(pixelY1)) + 1, rc.rowCount);
+        const er = Math.min(
+            (useRealRows ? pc.realRowAt(pixelY1) : pc.pageRowAt(pixelY1)) + 1,
+            useRealRows ? pc.raw.rowCount : pc.pageViewRowCount,
+        );
         const ec = Math.min(rc.colAt(pixelX1) + 1, rc.colCount);
 
         // 记录已绘制的合并区域左上角坐标，避免重复绘制
         const renderedMerges = new Set();
 
         for (let r = sr; r < er; r++) {
-            const rowY = useRealRows ? rc.getRealRowY(r) : rc.getRowY(r);
-            const rowH = useRealRows ? rc.getRealRowHeight(r) : rc.getRowHeight(r);
+            const rowY = useRealRows ? pc.getRealRowY(r) : pc.getPageRowY(r);
+            const rowH = useRealRows ? pc.getRealRowHeight(r) : pc.getPageRowHeight(r);
             if (rowH <= 0) continue;
 
             const localY = rowY - pixelY0;
@@ -668,15 +677,16 @@ export class TileRenderer {
      * 将指定单元格对应的瓦片标记为脏
      * 通过单元格的像素坐标计算其所属的瓦片行列号
      *
-     * @param {number} row - 单元格行号
+     * @param {number} row - 单元格页面行号
      * @param {number} col - 单元格列号
      * @param {RowColManager} rc - 行列管理器（提供像素坐标查询）
      */
     invalidateCell(row, col, rc) {
         if (!rc) return;
+        const pc = rc.pageContext;
         const tileSize = CONFIG.TILE_SIZE;
-        const tileRow = Math.floor(rc.getRowY(row) / tileSize);
-        const tileCol = Math.floor(rc.getColX(col) / tileSize);
+        const tileRow = Math.floor(pc.getPageRowY(row) / tileSize);
+        const tileCol = Math.floor(pc.getColX(col) / tileSize);
         this.tileCache.markDirty(tileRow, tileCol);
     }
 

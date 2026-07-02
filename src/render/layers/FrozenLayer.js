@@ -122,7 +122,7 @@ export class FrozenLayer extends BaseLayer {
      * @param {number} options.viewH - 视口高度
      * @param {number} [options.scrollX] - 水平滚动偏移（覆盖 viewport.scrollX）
      * @param {number} [options.scrollY] - 垂直滚动偏移（覆盖 viewport.scrollY）
-     * @param {boolean} [options.isPaginationActive] - 是否启用分页模式
+     * @param {import("../../model/grid/PageContext.js").PageContext} [options.pageContext] - 分页上下文
      */
     render(ctx, sheet, viewport, options = {}) {
         if (!this.enabled) return;
@@ -145,7 +145,8 @@ export class FrozenLayer extends BaseLayer {
         const viewH = options.viewH;
         const scrollX = options.scrollX ?? viewport.scrollX;
         const scrollY = options.scrollY ?? viewport.scrollY;
-        const isPaginationActive = options.isPaginationActive ?? false;
+        const pc = options.pageContext ?? sheet.pageContext;
+        const isPaginationActive = pc.isActive;
 
         // 分页模式下的渲染选项和滚动调整
         let tileOptions;
@@ -153,14 +154,10 @@ export class FrozenLayer extends BaseLayer {
         let adjustedScrollY = scrollY;
 
         if (isPaginationActive) {
-            tileOptions = { useRealRows: false };
+            tileOptions = { useRealRows: false, pageContext: pc };
             // 分页模式下 scrollY 已经是页面相对坐标（ScrollManager 使用 rc.totalHeight
             // 计算滚动边界，而分页模式下的 totalHeight 仅反映当前页高度），
             // 因此不需要做任何坐标转换，直接使用 scrollY 即可。
-            //
-            // 注意：之前曾错误地将 scrollY 当作全局坐标减去 pageStartY，
-            // 导致第 2 页及以后 adjustedScrollY 恒为 0（因为 scrollY < pageStartY），
-            // 冻结列区域不随页面滚动。
         }
 
         if (frozenColsW > 0) {

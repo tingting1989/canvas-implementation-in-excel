@@ -235,14 +235,14 @@ export class PaginationPlugin extends BasePlugin {
             return;
         }
 
-        const pageStartRow = sheet.rowColManager.pageStartRow;
-
-        if (pageStartRow < 0) {
+        const pc = sheet.pageContext;
+        if (!pc.isActive) {
             return;
         }
-        // 使用 pageStartRow 作为第一行的行号
-        // 这样无论是否有冻结行，选框都会在正确的位置显示
-        const targetRow = pageStartRow;
+
+        // 翻页后选区重置为当前页第一个数据单元格（页面相对行号 0）
+        // 保持与 MouseStrategy 点击处理的一致性（hitTest 返回页面相对行号）
+        const targetRow = 0;
         const targetCol = 0;
         sheet.selection.setActive(targetRow, targetCol);
     }
