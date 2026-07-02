@@ -287,6 +287,8 @@ export class AutoFillStrategy extends EventStrategy {
 
         if (dir === "down") {
             for (let r = target.topRow; r <= target.bottomRow; r++) {
+                if (sheet.isDisabled(r, col)) continue;
+
                 const srcIdx = (r - src.topRow) % srcLen;
                 const cycle = Math.floor((r - src.topRow) / srcLen);
                 const value = this.#computeValue(srcColValues, srcIdx, step, cycle, srcLen);
@@ -294,6 +296,8 @@ export class AutoFillStrategy extends EventStrategy {
             }
         } else {
             for (let r = target.bottomRow; r >= target.topRow; r--) {
+                if (sheet.isDisabled(r, col)) continue;
+
                 const distFromTop = src.topRow - 1 - r;
                 const srcIdx = (srcLen - 1 - (distFromTop % srcLen) - 1 + srcLen) % srcLen;
                 const cycle = Math.floor(distFromTop / srcLen) + 1;
@@ -309,6 +313,8 @@ export class AutoFillStrategy extends EventStrategy {
 
         if (dir === "right") {
             for (let c = target.topCol; c <= target.bottomCol; c++) {
+                if (sheet.isDisabled(row, c)) continue;
+
                 const srcIdx = (c - src.topCol) % srcLen;
                 const cycle = Math.floor((c - src.topCol) / srcLen);
                 const value = this.#computeValue(srcRowValues, srcIdx, step, cycle, srcLen);
@@ -316,6 +322,8 @@ export class AutoFillStrategy extends EventStrategy {
             }
         } else {
             for (let c = target.bottomCol; c >= target.topCol; c--) {
+                if (sheet.isDisabled(row, c)) continue;
+
                 const distFromLeft = src.topCol - 1 - c;
                 const srcIdx = (srcLen - 1 - (distFromLeft % srcLen) - 1 + srcLen) % srcLen;
                 const cycle = Math.floor(distFromLeft / srcLen) + 1;
