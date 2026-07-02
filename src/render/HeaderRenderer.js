@@ -179,7 +179,16 @@ export class HeaderRenderer {
                 const textFont = this.#buildNestedHeaderFont(headerFont, colStyle);
                 const textAlign = colStyle?.textAlign || "left";
                 const textX = this.#calculateTextX(x, w, textAlign);
-                this.#drawHeaderText(ctx, sheet.getColHeader(c), textX, clipY + rowH - 8, mergedStyle?.color, textFont, w - HEADER_COL_PADDING * 2, textAlign);
+                this.#drawHeaderText(
+                    ctx,
+                    sheet.getColHeader(c),
+                    textX,
+                    clipY + rowH - 8,
+                    mergedStyle?.color,
+                    textFont,
+                    w - HEADER_COL_PADDING * 2,
+                    textAlign,
+                );
 
                 for (const renderer of this.#columnHeaderRenderers) {
                     try {
@@ -300,13 +309,31 @@ export class HeaderRenderer {
                         const textAlign = style?.textAlign || "left";
                         textX = this.#calculateTextX(frozenColX, frozenColW, textAlign);
                         maxTextWidth = frozenColW - HEADER_COL_PADDING * 2;
-                        this.#drawHeaderText(ctx, label, textX, layerY + rowH - 8, mergedStyle?.color, this.#buildNestedHeaderFont(headerFont, style), maxTextWidth, textAlign);
+                        this.#drawHeaderText(
+                            ctx,
+                            label,
+                            textX,
+                            layerY + rowH - 8,
+                            mergedStyle?.color,
+                            this.#buildNestedHeaderFont(headerFont, style),
+                            maxTextWidth,
+                            textAlign,
+                        );
                     } else {
                         // 普通单元格
                         const textAlign = style?.textAlign || "left";
                         textX = this.#calculateTextX(x, totalW, textAlign);
                         maxTextWidth = totalW - HEADER_COL_PADDING * 2;
-                        this.#drawHeaderText(ctx, label, textX, layerY + rowH - 8, mergedStyle?.color, this.#buildNestedHeaderFont(headerFont, style), maxTextWidth, textAlign);
+                        this.#drawHeaderText(
+                            ctx,
+                            label,
+                            textX,
+                            layerY + rowH - 8,
+                            mergedStyle?.color,
+                            this.#buildNestedHeaderFont(headerFont, style),
+                            maxTextWidth,
+                            textAlign,
+                        );
                     }
                 }
 

@@ -95,8 +95,8 @@ const initApp = () => {
                                 color: "#FFFFFF",
                                 fontWeight: "bold",
                                 fontSize: "14px",
-                                textAlign: "center"
-                            }
+                                textAlign: "center",
+                            },
                         },
                         {
                             label: "工作信息",
@@ -106,8 +106,8 @@ const initApp = () => {
                                 color: "#FFFFFF",
                                 fontWeight: "bold",
                                 fontSize: "14px",
-                                textAlign: "center"
-                            }
+                                textAlign: "center",
+                            },
                         },
                     ],
                     [
@@ -117,15 +117,15 @@ const initApp = () => {
                             label: "城市",
                             style: {
                                 backgroundColor: "#FFC000",
-                                fontWeight: "bold"
-                            }
+                                fontWeight: "bold",
+                            },
                         },
                         {
                             label: "部门",
                             style: {
                                 fontStyle: "italic",
-                                color: "#333333"
-                            }
+                                color: "#333333",
+                            },
                         },
                         {
                             label: "薪酬",
@@ -133,9 +133,9 @@ const initApp = () => {
                             style: {
                                 backgroundColor: "#ED7D31",
                                 color: "#FFFFFF",
-                                textAlign: "center"
-                            }
-                        }
+                                textAlign: "center",
+                            },
+                        },
                     ],
                     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 ],
@@ -223,7 +223,7 @@ const initApp = () => {
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
-                rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
+                rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
 
                 // 嵌套表头配置（支持完整 style 属性）
                 nestedHeaders: [
@@ -236,8 +236,8 @@ const initApp = () => {
                                 color: "#FFFFFF",
                                 fontWeight: "bold",
                                 fontSize: "14px",
-                                textAlign: "left"
-                            }
+                                textAlign: "left",
+                            },
                         },
                         {
                             label: "工作信息",
@@ -247,8 +247,8 @@ const initApp = () => {
                                 color: "#FFFFFF",
                                 fontWeight: "bold",
                                 fontSize: "14px",
-                                textAlign: "center"
-                            }
+                                textAlign: "center",
+                            },
                         },
                     ],
                     [
@@ -258,15 +258,15 @@ const initApp = () => {
                             label: "城市",
                             style: {
                                 backgroundColor: "#FFC000",
-                                fontWeight: "bold"
-                            }
+                                fontWeight: "bold",
+                            },
                         },
                         {
                             label: "部门",
                             style: {
                                 fontStyle: "italic",
-                                color: "#333333"
-                            }
+                                color: "#333333",
+                            },
                         },
                         {
                             label: "薪酬",
@@ -274,9 +274,9 @@ const initApp = () => {
                             style: {
                                 backgroundColor: "#ED7D31",
                                 color: "#FFFFFF",
-                                textAlign: "center"
-                            }
-                        }
+                                textAlign: "center",
+                            },
+                        },
                     ],
                     ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 ],
