@@ -1,6 +1,6 @@
 {
     "name": "@canvas-sheet/core",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Canvas-based spreadsheet engine with Web Components UI",
     "main": "dist/canvas-sheet.umd.js",
     "module": "dist/canvas-sheet.esm.mjs",
@@ -32,7 +32,6 @@
         "pull:origin": "git pull origin",
         "pull:internal": "git pull internal",
         "remote:list": "git remote -v"
-
     },
     "publishConfig": {
         "registry": "http://10.124.26.35:4873/"
