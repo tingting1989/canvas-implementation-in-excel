@@ -565,9 +565,11 @@ export class Workbook {
         if (cancelled === false) return false;
 
         const sheet = this.sheets.get(oldName);
-        this.sheets.delete(oldName);
+        const entries = [...this.sheets];
+        const index = entries.findIndex(([key]) => key === oldName);
+        entries[index] = [newName, sheet];
         sheet.name = newName;
-        this.sheets.set(newName, sheet);
+        this.sheets = new Map(entries);
 
         this.runHooks(HOOKS.AFTER_SHEET_RENAME, oldName, newName);
         return true;
