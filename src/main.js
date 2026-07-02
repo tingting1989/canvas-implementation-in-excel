@@ -50,7 +50,7 @@ const initApp = () => {
             fontFamily: "Microsoft YaHei",
             color: "#000",
         },
-        readOnly:true,
+        readOnly: true,
         // 工作表高度和宽度（像素值）
         // height: 600,
         // 工作表高度和宽度（像素值）
@@ -539,7 +539,6 @@ const initApp = () => {
             // [HOOKS.DESTROY]: (...args) => {
             //     console.log("[HOOK] destroy 执行了", ...args);
             // },
-
             // ==================== 工作表相关钩子 ====================
             // ✅ 已执行
             // [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {

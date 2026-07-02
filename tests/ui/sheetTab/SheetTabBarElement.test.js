@@ -682,4 +682,112 @@ describe("SheetTabBarElement Web Component", () => {
 
         element.removeEventListener(SHEET_TAB_EVENTS.CLOSE, closeSpy);
     });
+
+    describe("readOnly 模式", () => {
+        it("STBE-34: readOnly=true 时隐藏新增按钮", () => {
+            const sheets = new Map([
+                ["Sheet1", { name: "Sheet1" }],
+            ]);
+            element.refresh(sheets, "Sheet1");
+
+            const addBtn = element.shadowRoot.querySelector(".add-btn.in-scroll");
+            expect(addBtn.style.display).not.toBe("none");
+
+            element.readOnly = true;
+            expect(addBtn.style.display).toBe("none");
+        });
+
+        it("STBE-35: readOnly=false 时显示新增按钮", () => {
+            const sheets = new Map([
+                ["Sheet1", { name: "Sheet1" }],
+            ]);
+            element.refresh(sheets, "Sheet1");
+
+            element.readOnly = true;
+            const addBtn = element.shadowRoot.querySelector(".add-btn.in-scroll");
+            expect(addBtn.style.display).toBe("none");
+
+            element.readOnly = false;
+            expect(addBtn.style.display).not.toBe("none");
+        });
+
+        it("STBE-36: readOnly=true 时右键不弹出菜单", () => {
+            const sheets = new Map([
+                ["Sheet1", { name: "Sheet1" }],
+                ["Sheet2", { name: "Sheet2" }],
+            ]);
+            element.refresh(sheets, "Sheet1");
+            element.readOnly = true;
+
+            const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+            tab.dispatchEvent(
+                new MouseEvent("contextmenu", {
+                    bubbles: true,
+                    clientX: 100,
+                    clientY: 50,
+                }),
+            );
+
+            const menu = element.shadowRoot.querySelector(".context-menu");
+            expect(menu).toBeNull();
+        });
+
+        it("STBE-37: readOnly=true 时双击不触发重命名", () => {
+            const sheets = new Map([
+                ["Sheet1", { name: "Sheet1" }],
+                ["Sheet2", { name: "Sheet2" }],
+            ]);
+            element.refresh(sheets, "Sheet1");
+            element.readOnly = true;
+
+            const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet1"]');
+            const label = tab.querySelector(".label");
+            label.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+            const renameInput = tab.querySelector(".rename-input");
+            expect(renameInput).toBeNull();
+        });
+
+        it("STBE-38: readOnly=true 时点击标签仍可切换工作表", () => {
+            const sheets = new Map([
+                ["Sheet1", { name: "Sheet1" }],
+                ["Sheet2", { name: "Sheet2" }],
+            ]);
+            element.refresh(sheets, "Sheet1");
+            element.readOnly = true;
+
+            const switchSpy = vi.fn();
+            element.addEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
+
+            const tab = element.shadowRoot.querySelector('.tab[data-name="Sheet2"]');
+            tab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+            expect(switchSpy).toHaveBeenCalledTimes(1);
+            expect(switchSpy.mock.calls[0][0].detail.name).toBe("Sheet2");
+
+            element.removeEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
+        });
+
+        it("STBE-39: readOnly 默认为 false", () => {
+            expect(element.readOnly).toBe(false);
+        });
+
+        it("STBE-40: readOnly 切换后 add-btn 可见性同步更新", () => {
+            const sheets = new Map([
+                ["Sheet1", { name: "Sheet1" }],
+            ]);
+            element.refresh(sheets, "Sheet1");
+
+            const addBtn = element.shadowRoot.querySelector(".add-btn.in-scroll");
+
+            element.readOnly = true;
+            expect(addBtn.style.display).toBe("none");
+
+            element.readOnly = false;
+            expect(addBtn.style.display).not.toBe("none");
+
+            element.readOnly = true;
+            expect(addBtn.style.display).toBe("none");
+        });
+    });
 });

@@ -35,7 +35,7 @@
  *     }
  * }
  */
-export const HIT_TYPE = {
+export const HIT_TYPE = Object.freeze({
     /**
      * 左上角全选按钮区域
      * 位于行标题和列标题的交叉处，点击可选中所有单元格
@@ -80,4 +80,4 @@ export const HIT_TYPE = {
      */
     ROW_RESIZE: "row-resize",
     CHART: "chart",
-};
+});

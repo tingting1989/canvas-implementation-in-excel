@@ -1,12 +1,12 @@
-﻿export const ERROR_LEVEL = {
+﻿export const ERROR_LEVEL = Object.freeze( {
     DEBUG: 0,
     INFO: 1,
     WARN: 2,
     ERROR: 3,
     FATAL: 4,
-};
+});
 
-export const ERROR_CODE = {
+export const ERROR_CODE = Object.freeze({
     // ── 插件 ──
     /** 插件未注册 */
     PLUGIN_NOT_REGISTERED: "PLUGIN_NOT_REGISTERED",
@@ -163,4 +163,4 @@ export const ERROR_CODE = {
 
     /** 调试信息 */
     DEBUG_LOG: "DEBUG_LOG",
-};
+});

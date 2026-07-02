@@ -79,6 +79,7 @@ export class SheetTabManager extends Disposable {
     refresh() {
         if (this.isDisposed || !this.#element || !this.#workbook) return;
         this.#element.refresh(this.#workbook.sheets, this.#workbook.activeSheet?.name);
+        this.#element.readOnly = this.#workbook.activeSheet?.readOnly || false;
     }
 
     scrollToTab(sheetName) {

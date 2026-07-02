@@ -238,6 +238,19 @@ export class SheetTabBarElement extends WebComponent {
     #currentActiveName = null;
     #contextMenuEl = null;
     #contextTargetName = null;
+    #readOnly = false;
+
+    get readOnly() {
+        return this.#readOnly;
+    }
+
+    set readOnly(v) {
+        this.#readOnly = !!v;
+        const addBtn = this.shadowRoot?.querySelector(".add-btn.in-scroll");
+        if (addBtn) {
+            addBtn.style.display = this.#readOnly ? "none" : "";
+        }
+    }
 
     onConnect(disposable) {
         const prevBtn = this.shadowRoot.querySelector(".nav-btn.prev");
@@ -265,7 +278,7 @@ export class SheetTabBarElement extends WebComponent {
         });
 
         disposable.trackEvent(tabsContainer, EVENT_NAMES.DBLCLICK, (e) => {
-            if (this.#renaming) return;
+            if (this.#renaming || this.#readOnly) return;
             const tab = e.target.closest(".tab");
             if (!tab) return;
             this.#startRename(tab);
@@ -275,7 +288,7 @@ export class SheetTabBarElement extends WebComponent {
             e.preventDefault();
             e.stopPropagation();
             const tab = e.target.closest(".tab");
-            if (!tab) return;
+            if (!tab || this.#readOnly) return;
             this.emit(SHEET_TAB_EVENTS.SWITCH, { name: tab.dataset.name });
             this.#showContextMenu(tab, e.clientX, e.clientY);
         });

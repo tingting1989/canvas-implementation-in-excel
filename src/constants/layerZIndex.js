@@ -14,7 +14,7 @@
  *
  * @module constants/layerZIndex
  */
-export const LAYER_Z_INDEX = {
+export const LAYER_Z_INDEX = Object.freeze({
     TILE: 10,
 
     SELECTION: 20,
@@ -26,4 +26,4 @@ export const LAYER_Z_INDEX = {
     INTERACTION: 40,
 
     HEADER: 50,
-};
+});

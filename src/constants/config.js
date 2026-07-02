@@ -16,7 +16,7 @@
  * - Sheet 标签栏：SHEET_TAB_HEIGHT
  * - 列宽/行高调整：RESIZE_HIT_AREA / MIN_COL_WIDTH / MIN_ROW_HEIGHT
  */
-export const CONFIG = {
+export const CONFIG = Object.freeze({
     /** 最大行数（系统上限） */
     MAX_ROWS: 10000000,
 
@@ -129,4 +129,4 @@ export const CONFIG = {
 
     /** Sheet 名称 */
     DEFAULT_SHEET_NAME: "Sheet",
-};
+});

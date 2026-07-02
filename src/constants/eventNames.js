@@ -14,7 +14,7 @@
  * import { EVENT_NAMES } from './constants/eventNames.js';
  * canvas.addEventListener(EVENT_NAMES.CLICK, handleClick);
  */
-export const EVENT_NAMES = {
+export const EVENT_NAMES = Object.freeze({
     /** 鼠标单击事件 - 用于单元格选择、按钮点击等 */
     CLICK: "click",
 
@@ -64,7 +64,7 @@ export const EVENT_NAMES = {
 
     /** 输入事件 - 用于实时更新输入内容 */
     INPUT: "input",
-};
+});
 
 /**
  * 事件委托键定义
@@ -90,7 +90,7 @@ export const EVENT_NAMES = {
  *     };
  * }
  */
-export const DELEGATE_KEYS = {
+export const DELEGATE_KEYS = Object.freeze({
     /** Canvas 鼠标按下 - 开始单元格选择或拖拽操作 */
     CANVAS_MOUSEDOWN: "canvas:mousedown",
 
@@ -117,4 +117,4 @@ export const DELEGATE_KEYS = {
 
     /** Document 键盘按下 - 全局键盘事件捕获，确保快捷键始终可用 */
     DOCUMENT_KEYDOWN: "document:keydown",
-};
+});
