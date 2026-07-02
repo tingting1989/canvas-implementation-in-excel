@@ -80,7 +80,10 @@ export class FormulaBarManager extends Disposable {
             return;
         }
 
-        const [row, col] = sheet.selection.getFocus();
+        const range = sheet.selection.getRange();
+
+        const row = range.topRow;
+        const col = range.topCol;
         this.#activeRow = row;
         this.#activeCol = col;
 
