@@ -6,12 +6,15 @@
 ### 1.版本设置
 
 ```shell
-npm version patch # 1.0.0 → 1.0.1
 
-npm version minor # 1.0.0 → 1.1.0
+# 1.0.0 → 1.0.1
+npm version patch
 
+ # 1.0.0 → 1.1.0
+npm version minor
 
-npm version major # 1.0.0 → 2.0.0
+ # 1.0.0 → 2.0.0
+npm version major
 ```
 
 
@@ -25,7 +28,7 @@ npm publish
 ### 3.删除私服中的npm 包
 
 ```shell
-npm unpublish zmxa-web-handsontable-6.2.2 --registry=http://10.124.26.35:4873/ --force
+npm unpublish @canvas-sheet/core --registry=http://10.124.26.35:4873/ --force
 ```
 
 

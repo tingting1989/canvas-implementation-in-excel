@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { SheetTabBarElement } from "@/ui/sheetTab/SheetTabBarElement.js";
-import { SHEET_TAB_EVENTS } from "@/ui/sheetTab/SheetTabEvents.js";
+import { SHEET_TAB_EVENTS } from "@/ui/sheetTab/sheetTabEvents.js";
 import { EVENT_NAMES } from "@/constants/eventNames.js";
 
 describe("SheetTabBarElement Web Component", () => {

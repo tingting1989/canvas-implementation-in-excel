@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { FormulaBarElement } from "@/ui/formulaBar/FormulaBarElement.js";
-import { FORMULA_BAR_EVENTS } from "@/ui/formulaBar/FormulaBarEvents.js";
+import { FORMULA_BAR_EVENTS } from "@/ui/formulaBar/formulaBarEvents.js";
 
 describe("FormulaBarElement Web Component", () => {
     let element;

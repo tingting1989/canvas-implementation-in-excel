@@ -1,5 +1,5 @@
 import { Disposable } from "../../core/Disposable.js";
-import { SHEET_TAB_EVENTS } from "./SheetTabEvents.js";
+import { SHEET_TAB_EVENTS } from "./sheetTabEvents.js";
 import "./SheetTabBarElement.js";
 
 /**

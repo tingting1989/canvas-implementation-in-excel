@@ -1,5 +1,5 @@
 import { WebComponent } from "@/core/WebComponent";
-import { FORMULA_BAR_EVENTS } from "./FormulaBarEvents.js";
+import { FORMULA_BAR_EVENTS } from "./formulaBarEvents.js";
 
 /**
  * FormulaBarElement — 公式栏 Web Component

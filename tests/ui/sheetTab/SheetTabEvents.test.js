@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SHEET_TAB_EVENTS } from "@/ui/sheetTab/SheetTabEvents.js";
+import { SHEET_TAB_EVENTS } from "@/ui/sheetTab/sheetTabEvents.js";
 
 describe("SheetTabEvents 常量", () => {
     it("STE-EV-01: SWITCH 常量为 'switch'", () => {

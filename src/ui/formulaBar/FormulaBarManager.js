@@ -1,5 +1,5 @@
 import { Disposable } from "../../core/Disposable.js";
-import { FORMULA_BAR_EVENTS } from "./FormulaBarEvents.js";
+import { FORMULA_BAR_EVENTS } from "./formulaBarEvents.js";
 import { indexToCol } from "../../utils/cellRef.js";
 import "./FormulaBarElement.js";
 

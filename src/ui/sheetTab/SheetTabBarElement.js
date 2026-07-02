@@ -1,5 +1,5 @@
 import { WebComponent } from "@/core/WebComponent";
-import { SHEET_TAB_EVENTS } from "./SheetTabEvents.js";
+import { SHEET_TAB_EVENTS } from "./sheetTabEvents.js";
 import { EVENT_NAMES } from "@/constants/eventNames";
 
 const CONTEXT_MENU_ITEMS = [
