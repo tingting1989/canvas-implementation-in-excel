@@ -157,7 +157,7 @@ export class FrozenLayer extends BaseLayer {
             // 分页模式下 scrollY 已经是页面相对坐标（ScrollManager 使用 rc.totalHeight
             // 计算滚动边界，而分页模式下的 totalHeight 仅反映当前页高度），
             // 因此不需要做任何坐标转换，直接使用 scrollY 即可。
-            // 
+            //
             // 注意：之前曾错误地将 scrollY 当作全局坐标减去 pageStartY，
             // 导致第 2 页及以后 adjustedScrollY 恒为 0（因为 scrollY < pageStartY），
             // 冻结列区域不随页面滚动。
