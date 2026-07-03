@@ -3,22 +3,22 @@
 // ============================================================
 window.__DEBUG_PAGINATION = true; // 设置为 false 可关闭调试日志
 
-import { Workbook } from "./workbook/Workbook.js";
-import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
-import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
-import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
-import { CopyPastePlugin } from "./plugins/CopyPastePlugin.js";
-import { ExportFilePlugin } from "./plugins/ExportFilePlugin.js";
-import { PaginationPlugin } from "./plugins/PaginationPlugin.js";
-import { HiddenColumnsPlugin } from "./plugins/HiddenColumnsPlugin.js";
-import { HiddenRowsPlugin } from "./plugins/HiddenRowsPlugin.js";
-import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
-import { FreezePlugin } from "./plugins/FreezePlugin.js";
-import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
-import { HOOKS } from "./constants/hookNames.js";
-import { isFunction, isNumber } from "./utils/utils.js";
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
-import { SortPlugin, DataValidationPlugin } from "@/plugins";
+import {Workbook} from "./workbook/Workbook.js";
+import {AutoFillPlugin} from "./plugins/AutoFillPlugin.js";
+import {ContextMenuPlugin} from "./plugins/ContextMenuPlugin.js";
+import {ColumnMovePlugin} from "./plugins/ColumnMovePlugin.js";
+import {CopyPastePlugin} from "./plugins/CopyPastePlugin.js";
+import {ExportFilePlugin} from "./plugins/ExportFilePlugin.js";
+import {PaginationPlugin} from "./plugins/PaginationPlugin.js";
+import {HiddenColumnsPlugin} from "./plugins/HiddenColumnsPlugin.js";
+import {HiddenRowsPlugin} from "./plugins/HiddenRowsPlugin.js";
+import {RowMovePlugin} from "./plugins/RowMovePlugin.js";
+import {FreezePlugin} from "./plugins/FreezePlugin.js";
+import {FormulaPlugin} from "./plugins/FormulaPlugin.js";
+import {HOOKS} from "./constants/hookNames.js";
+import {isFunction, isNumber} from "./utils/utils.js";
+import {errorHandler, ERROR_LEVEL, ERROR_CODE} from "./core/ErrorHandler.js";
+import {SortPlugin, DataValidationPlugin} from "@/plugins";
 
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -92,8 +92,8 @@ const initApp = () => {
                             label: "基本信息",
                             colspan: 2,
                             style: {
-                                backgroundColor: "#4472C4",
-                                color: "#FFFFFF",
+                                backgroundColor: "#FFFFFF",
+                                color: "#4472C4",
                                 fontWeight: "bold",
                                 fontSize: "14px",
                                 textAlign: "center",
@@ -112,7 +112,7 @@ const initApp = () => {
                         },
                     ],
                     [
-                        "姓名",
+                        {label: "姓名", style: {textAlign: "center", backgroundColor: "#FFFFFF",}},
                         "年龄",
                         {
                             label: "城市",
@@ -138,7 +138,10 @@ const initApp = () => {
                             },
                         },
                     ],
-                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                    [{
+                        label: "姓名",
+                        style: {textAlign: "center", backgroundColor: "#FFFFFF",}
+                    }, "Age", "City", "Dept", "Salary", "Hire Date"],
                 ],
 
                 // 列头配置（支持对象形式设置样式）
@@ -153,7 +156,7 @@ const initApp = () => {
 
                 // 行表头配置（支持对象形式设置样式）
                 rowHeaders: [
-                    { label: "序号", style: { textAlign: "center", backgroundColor: "#E7E6E6" } },
+                    {label: "序号", style: {textAlign: "center", backgroundColor: "#E7E6E6"}},
                     "年龄",
                     "城市",
                     "部门",
@@ -172,17 +175,17 @@ const initApp = () => {
                 // maxCols: 12,
                 conditionalStyles: [
                     {
-                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                        range: {topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25},
                         condition: (v) => isNumber(v) && v > 25,
-                        style: { backgroundColor: "#ffcccc" },
+                        style: {backgroundColor: "#ffcccc"},
                     },
                 ],
 
                 // 单元格样式配置
                 cell: [
                     // { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                    { row: 1, col: 3, disabled: true },
-                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
+                    {row: 1, col: 3, disabled: true},
+                    {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
                 ],
 
                 // 单元格样式配置函数
@@ -197,15 +200,15 @@ const initApp = () => {
 
                 // 列配置
                 columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text" },
-                    { type: "text" },
-                    { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date" },
+                    {type: "text", width: 120, style: {textAlign: "left"}},
+                    {type: "numeric", style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
+                    {type: "text"},
+                    {type: "text"},
+                    {type: "numeric", style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
+                    {type: "date"},
 
                     // 自定义渲染器
-                    { type: "progressBar", options: { showPercent: true } },
+                    {type: "progressBar", options: {showPercent: true}},
                 ],
 
                 // 配置列的宽度 number|number[],优先级比columns中的width 低
@@ -224,7 +227,7 @@ const initApp = () => {
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
-                rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
+                rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
 
                 // 嵌套表头配置（支持完整 style 属性）
                 nestedHeaders: [
@@ -285,31 +288,31 @@ const initApp = () => {
                 cellPadding: 10,
                 conditionalStyles: [
                     {
-                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                        range: {topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25},
                         condition: (v) => isNumber(v) && v > 25,
-                        style: { backgroundColor: "#ffcccc" },
+                        style: {backgroundColor: "#ffcccc"},
                     },
                 ],
                 cell: [
-                    { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                    { row: 1, col: 3, disabled: true },
-                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
+                    {row: 0, col: 0, style: {backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center"}},
+                    {row: 1, col: 3, disabled: true},
+                    {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
                 ],
                 cells: (row, col) => {
                     if (row === 0) {
-                        return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
+                        return {style: {fontWeight: "bold", backgroundColor: "#e8f4fd"}};
                     }
                     if (col === 0 && row > 0) {
-                        return { style: { textAlign: "right", fontWeight: "bold" } };
+                        return {style: {textAlign: "right", fontWeight: "bold"}};
                     }
                 },
                 columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text", width: 100 },
-                    { type: "text", width: 100 },
-                    { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date", width: 300 },
+                    {type: "text", width: 120, style: {textAlign: "left"}},
+                    {type: "numeric", width: 80, style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
+                    {type: "text", width: 100},
+                    {type: "text", width: 100},
+                    {type: "numeric", width: 100, style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
+                    {type: "date", width: 300},
                 ],
             },
         ],
@@ -339,7 +342,7 @@ const initApp = () => {
                         // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
                         contexts: ["cell", "rowHeader"],
                         action: (row, col, sheet) => {
-                            sheet.setRowStyle(row, { backgroundColor: "yellow" });
+                            sheet.setRowStyle(row, {backgroundColor: "yellow"});
                             wb.render();
                         },
                     },
@@ -348,7 +351,7 @@ const initApp = () => {
                         contexts: ["cell"],
                         action: (row, col, sheet) => {
                             const range = sheet.selection.getRange();
-                            const styleObj = { backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724" };
+                            const styleObj = {backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724"};
                             for (let r = range.topRow; r <= range.bottomRow; r++) {
                                 for (let c = range.topCol; c <= range.bottomCol; c++) {
                                     if (!sheet.isDisabled(r, c)) {
@@ -374,7 +377,7 @@ const initApp = () => {
                             wb.render();
                         },
                     },
-                    { type: "separator" },
+                    {type: "separator"},
                     {
                         label: "导出选中区域",
                         action: (row, col, sheet) => {
@@ -389,7 +392,7 @@ const initApp = () => {
                 // rowMove: { enabled: false },
             },
 
-            freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+            freeze: {fixedRowsTop: 1, fixedColumnsStart: 1},
 
             dataValidation: {
                 conflictStrategy: "short-circuit",

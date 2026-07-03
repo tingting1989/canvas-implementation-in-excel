@@ -57,6 +57,7 @@ export class HeaderRenderer {
      * @param {import("./ViewportTransform.js").ViewportTransform} vt - 视口坐标转换器
      * @param {number} viewW - 可视区域宽度
      * @param {number} viewH - 可视区域高度
+     * @param dragIndicator - 拖拽指示器
      */
     render(ctx, sheet, vt, viewW, viewH, dragIndicator = null) {
         this._dragIndicator = dragIndicator;
@@ -256,7 +257,7 @@ export class HeaderRenderer {
                 if (endCol < sc || startCol >= ec) continue;
 
                 const visStart = Math.max(startCol, sc);
-                const visEnd = Math.min(endCol, ec);
+                const visEnd = Math.min(endCol, ec - 1);
 
                 let visibleStartCol = visStart;
                 while (visibleStartCol <= visEnd && rc.getColWidth(visibleStartCol) <= 0) {
@@ -264,17 +265,26 @@ export class HeaderRenderer {
                 }
                 if (visibleStartCol > visEnd) continue;
 
-                const x = vt.colToViewX(visibleStartCol);
-                const rightX = vt.colRightToViewX(visEnd);
-                const totalW = rightX - x;
+                // 判断单元格是否跨越冻结/非冻结边界
+                const crossesFrozenBoundary = vt.fixedCols > 0 && startCol < vt.fixedCols && endCol >= vt.fixedCols;
+
+                let x, rightX, totalW;
+
+                if (crossesFrozenBoundary && sc === 0) {
+                    // 跨边界单元格在冻结区域：只绘制冻结列部分，宽度不受 scrollX 影响
+                    x = vt.colToViewX(startCol);
+                    rightX = vt.colRightToViewX(startCol);
+                    totalW = rightX - x;
+                } else {
+                    x = vt.colToViewX(visibleStartCol);
+                    rightX = vt.colRightToViewX(visEnd);
+                    totalW = rightX - x;
+                }
 
                 if (totalW <= 0) continue;
 
                 const isSource = this._dragIndicator?.isColumnSource(startCol) ?? false;
                 const mergedStyle = this.#mergeHeaderStyle(defaultStyle, style);
-
-                // 判断单元格是否跨越冻结/非冻结边界
-                const crossesFrozenBoundary = vt.fixedCols > 0 && startCol < vt.fixedCols && endCol >= vt.fixedCols;
 
                 this.#drawStyledHeaderCell(ctx, x, layerY, totalW, rowH, isSource, false, mergedStyle);
 
