@@ -2,4 +2,4 @@ export { Workbook } from "../workbook/Workbook.js";
 export * from "../model/index.js";
 export * from "../plugins/index.js";
 export * from "../constants/config";
-export * from "../core/ErrorHandler.js"
+export * from "../core/ErrorHandler.js";
