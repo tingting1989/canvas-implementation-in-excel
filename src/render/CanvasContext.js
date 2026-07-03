@@ -37,12 +37,15 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-unused-vars */
 
+import {errorHandler} from "@/core/ErrorHandler";
+
 export class CanvasContext {
     /**
      * 获取 Canvas 元素引用
      * @returns {HTMLCanvasElement|null}
      */
     get canvas() {
+        // errorHandler.throw(ERROR_CODE.PLUGIN_ABSTRACT_METHOD, "CanvasContext.canvas must be implemented")
         throw new Error("CanvasContext.canvas must be implemented");
     }
 
