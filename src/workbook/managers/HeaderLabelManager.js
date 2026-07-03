@@ -162,7 +162,6 @@ export class HeaderLabelManager {
     getNestedColHeader(rowIndex, col) {
         const nh = this.#nestedHeaders;
         if (!nh || rowIndex >= nh.length) return null;
-
         const row = nh[rowIndex];
         if (!Array.isArray(row)) return null;
 

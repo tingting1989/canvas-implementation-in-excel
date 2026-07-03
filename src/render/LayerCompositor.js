@@ -1,7 +1,7 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler";
 
 import { BaseLayer } from "./BaseLayer.js";
-import { CONFIG } from "../constants/config.js";
+import { CONFIG } from "@/constants/config";
 
 /**
  * 图层合成器 (LayerCompositor)

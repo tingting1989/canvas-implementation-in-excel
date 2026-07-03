@@ -1,17 +1,40 @@
 /**
- * 单元格渲染上下文（v1.1 - 支持双轨行列号体系）
+ * 单元格渲染上下文（v2.0 - 纯数据容器 + PageContext 集成）
  *
  * 封装 Canvas 渲染所需的所有信息，作为 render() 方法的参数传递。
  * 提供统一的接口，避免暴露内部复杂结构。
  *
- * ⭐ v1.1 核心改进：
- * - 双轨行列号体系：row/col（页面行号）+ realRow/realCol（实际行号）
- * - Sheet 引用：支持高级场景的跨单元格数据访问
- * - PageInfo 对象：封装分页和冻结状态信息
- * - 转换方法：提供行列号双向转换工具
+ * ## v2.0 核心改进（破坏性变更）
+ *
+ * - ❌ **移除**：toRealRow() / toPageRow() / toRealCol() / toPageCol() 转换方法
+ * - ✅ **新增**：pageContext 属性（PageContext 引用，权威转换源）
+ * - ✅ **保留**：pageInfo 属性（仅用于简单状态查询）
+ *
+ * ## 设计原则
+ *
+ * **单一职责**：CellRenderContext 是纯只读数据容器，不实现任何业务逻辑。
+ * 所有行号/坐标转换委托给 PageContext（Single Source of Truth）。
+ *
+ * ## 使用方式
+ *
+ * ```javascript
+ * render(context) {
+ *     const pc = context.pageContext;
+ *
+ *     if (pc) {
+ *         const realRow = pc.toRealRow(context.row);
+ *         const pageY = pc.getPageRowY(context.row);
+ *     }
+ *
+ *     if (context.pageInfo?.isInFrozenArea) {
+ *         // 简单状态检查...
+ *     }
+ * }
+ * ```
  *
  * @module types/CellRenderContext
  */
+import {CONFIG} from "@/constants/config";
 
 export class CellRenderContext {
     /**
@@ -26,16 +49,17 @@ export class CellRenderContext {
      * @param {*} params.value - 原始单元格值
      * @param {string} params.displayValue - 格式化后的显示文本
      * @param {object} params.style - 解析后的最终样式对象
-     * @param {object|null} params.sheet - Sheet 工作表实例（高级场景必需）⭐ 新增
+     * @param {object|null} params.sheet - Sheet 工作表实例（高级场景必需）
      * @param {number} params.row - 页面行号（显示行号，受冻结/筛选/分页影响）
      * @param {number} params.col - 页面列号（显示列号，受隐藏列影响）
-     * @param {number} [params.realRow] - 实际行号（真实数据行号）⭐ 新增
-     * @param {number} [params.realCol] - 实际列号（真实数据列号）⭐ 新增
+     * @param {number} [params.realRow] - 实际行号（真实数据行号）
+     * @param {number} [params.realCol] - 实际列号（真实数据列号）
      * @param {boolean} [params.isSelected=false] - 是否被选中
      * @param {boolean} [params.isDisabled=false] - 是否禁用
      * @param {boolean} [params.isMerged=false] - 是否为合并单元格
      * @param {object|null} [params.mergeInfo=null] - 合并区域信息
-     * @param {object|null} [params.pageInfo=null] - 分页/冻结信息 ⭐ 新增
+     * @param {object|null} [params.pageInfo=null] - 分页/冻结状态信息（仅用于简单查询）
+     * @param {import('../model/grid/PageContext.js').PageContext|null} [params.pageContext=null] - PageContext 实例（⭐ 行号转换的权威来源）
      */
     constructor({
         ctx,
@@ -56,6 +80,7 @@ export class CellRenderContext {
         isMerged = false,
         mergeInfo = null,
         pageInfo = null,
+        pageContext = null,  // ★ v2.0 新增：PageContext 引用
     }) {
         this._ctx = ctx;
         this._x = x;
@@ -80,8 +105,11 @@ export class CellRenderContext {
         this._isMerged = isMerged;
         this._mergeInfo = mergeInfo;
 
-        // ★★★ 分页/冻结信息 ★★★
+        // ★★★ 分页/冻结状态信息（仅用于简单查询）★★★
         this._pageInfo = pageInfo;
+
+        // ★★★ PageContext 引用（行号转换的权威来源）★★★
+        this._pageContext = pageContext;
     }
 
     // ========== 基础属性（只读） ==========
@@ -179,7 +207,10 @@ export class CellRenderContext {
     }
 
     /**
-     * 分页/冻结信息对象
+     * 分页/冻结信息对象（仅用于简单状态查询，不提供转换能力）
+     *
+     * ⚠️ 注意：此属性仅用于兼容性检查（如 isPaged、isInFrozenArea）。
+     * 所有行号/坐标转换必须通过 `pageContext` 属性完成。
      *
      * @returns {object|null}
      * @property {boolean} isPaged - 是否处于分页模式
@@ -193,75 +224,33 @@ export class CellRenderContext {
         return this._pageInfo;
     }
 
-    // ========== 转换方法 ==========
-
     /**
-     * 将页面行号转换为实际行号
+     * PageContext 引用（权威的行号转换源）⭐ 核心 API
      *
-     * 如果有Sheet引用，优先使用Sheet的转换方法；
-     * 否则使用简单的偏移量估算（可能不准确）。
+     * 提供 PageContext 完整的转换能力：
+     * - **行号转换**：toRealRow() / toPageRow()
+     * - **坐标转换**：getPageRowY() / getRealRowY() / pageRowAt() / realRowAt()
+     * - **列坐标**：getColX() / getColWidth() / colAt()
+     * - **状态查询**：isActive / pageStart / pageEnd
      *
-     * @param {number} pageRow - 页面行号
-     * @returns {number} 实际行号
+     * @returns {import('../model/grid/PageContext.js').PageContext|null}
+     *
+     * @example
+     * render(context) {
+     *     const pc = context.pageContext;  // 获取 PageContext
+     *
+     *     if (pc) {
+     *         const realRow = pc.toRealRow(context.row);       // 行号转换
+     *         const pageY = pc.getPageRowY(context.row);        // 坐标转换
+     *         const globalY = pc.getRealRowY(realRow);           // 全局坐标
+     *
+     *         console.log('分页模式:', pc.isActive);
+     *         console.log('当前页范围:', pc.pageStart, '-', pc.pageEnd);
+     *     }
+     * }
      */
-    toRealRow(pageRow) {
-        if (this._sheet && typeof this._sheet.toRealRow === "function") {
-            return this._sheet.toRealRow(pageRow);
-        }
-
-        if (this._pageInfo?.isPaged) {
-            const offset = (this._pageInfo.currentPage || 0) * (this._pageInfo.pageSize || 0);
-            const frozenOffset = this._pageInfo.frozenRowCount || 0;
-            return pageRow + offset + frozenOffset;
-        }
-
-        return pageRow;
-    }
-
-    /**
-     * 将实际行号转换为页面行号
-     *
-     * @param {number} realRow - 实际行号
-     * @returns {number} 页面行号
-     */
-    toPageRow(realRow) {
-        if (this._sheet && typeof this._sheet.toPageRow === "function") {
-            return this._sheet.toPageRow(realRow);
-        }
-
-        if (this._pageInfo?.isPaged) {
-            const offset = (this._pageInfo.currentPage || 0) * (this._pageInfo.pageSize || 0);
-            const frozenOffset = this._pageInfo.frozenRowCount || 0;
-            return realRow - offset - frozenOffset;
-        }
-
-        return realRow;
-    }
-
-    /**
-     * 将页面列号转换为实际列号
-     *
-     * @param {number} pageCol - 页面列号
-     * @returns {number} 实际列号
-     */
-    toRealCol(pageCol) {
-        if (this._sheet && typeof this._sheet.toRealCol === "function") {
-            return this._sheet.toRealCol(pageCol);
-        }
-        return pageCol;
-    }
-
-    /**
-     * 将实际列号转换为页面列号
-     *
-     * @param {number} realCol - 实际列号
-     * @returns {number} 页面列号
-     */
-    toPageCol(realCol) {
-        if (this._sheet && typeof this._sheet.toPageCol === "function") {
-            return this._sheet.toPageCol(realCol);
-        }
-        return realCol;
+    get pageContext() {
+        return this._pageContext;
     }
 
     // ========== 辅助方法 ==========
@@ -271,7 +260,7 @@ export class CellRenderContext {
      * @returns {number}
      */
     getPadding(sheet) {
-        return sheet?.cellPadding || 6;
+        return sheet?.cellPadding || CONFIG.CELL_PADDING;
     }
 
     /**

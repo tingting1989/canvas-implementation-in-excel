@@ -1,14 +1,13 @@
 import { Sheet } from "./Sheet.js";
-import { RenderEngine } from "../render/RenderEngine.js";
-import { EditorManager } from "../editor/EditorManager.js";
-import { EventHandler } from "../core/EventHandler.js";
-import { isFunction, isObject } from "../utils/utils.js";
-import { PluginManager } from "../plugins/PluginManager.js";
-import { stylePool } from "../model/styles";
-import { CONFIG } from "../constants/config";
+import { RenderEngine } from "@/render/RenderEngine";
+import { EditorManager } from "@/editor/EditorManager";
+import { EventHandler } from "@/core/EventHandler";
+import { isFunction, isObject } from "@/utils/utils";
+import { PluginManager } from "@/plugins";
+import { CONFIG } from "@/constants/config";
 import { SettingsApplier } from "./managers/SettingsApplier.js";
-import { SHEET_EVENTS } from "../constants/sheetEvents.js";
-import { HOOKS } from "../constants/hookNames.js";
+import { SHEET_EVENTS } from "@/constants/sheetEvents";
+import { HOOKS } from "@/constants/hookNames";
 
 /**
  * 工作簿
@@ -72,7 +71,6 @@ export class Workbook {
      * @param {Array<{row:number,col:number,style?:object,disabled?:boolean,readOnly?:boolean,value?:*}>} [options.cell]
      * @param {Function} [options.cells] - 动态单元格属性函数 (row, col) => { style?, disabled?, ... }
      * @param {Array<object|Function>} [options.columns] - 列配置数组
-     * @param {Array<{row:number,col:number,type:string,...}>} [options.cellTypes] - 单元格级别类型配置
      * @param {Function} [options.afterInit] - 初始化完成回调
      */
     constructor(containerId, options = {}) {
@@ -205,7 +203,7 @@ export class Workbook {
         this.#setupScrollCallback();
         this.#setupSheetTabBar();
 
-        // ✅ 通过 EventBus 发射工作簿初始化完成事件（指定 source 为 Workbook）
+        // 通过 EventBus 发射工作簿初始化完成事件（指定 source 为 Workbook）
         // EventHandler 会订阅此事件并触发 INIT hook
         this.activeSheet?.bus?.emit(SHEET_EVENTS.WORKBOOK_INIT, [this], { source: "Workbook" });
     }
@@ -417,6 +415,8 @@ export class Workbook {
     // ============================================================
 
     #applyInitOptions() {
+
+        console.log(123)
         const opts = this.#initOptions;
         if (!opts || Object.keys(opts).length === 0) return;
 

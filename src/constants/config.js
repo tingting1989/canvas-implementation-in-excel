@@ -23,10 +23,10 @@ export const CONFIG = Object.freeze({
     /** 最大列数（系统上限） */
     MAX_COLS: 70000,
 
-    /** 默认初始行数（未配置 maxRows 时使用） */
+    /** 默认初始行数（未配置 maxRows 时使用） startRows 覆盖该值 */
     DEFAULT_START_ROWS: 1000,
 
-    /** 默认初始列数（未配置 maxCols 时使用） */
+    /** 默认初始列数（未配置 maxCols 时使用） startCols 覆盖该值 */
     DEFAULT_START_COLS: 26,
 
     /** 默认列宽（px） */

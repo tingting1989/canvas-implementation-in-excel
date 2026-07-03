@@ -1,7 +1,7 @@
 ﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 
 import { stylePool } from "../../model/styles";
-import { isFunction, isNumber } from "../../utils/utils.js";
+import {isFunction, isNumber, isObject} from "../../utils/utils.js";
 import { CONFIG } from "@/constants/config";
 
 /**
@@ -22,31 +22,31 @@ export class SettingsApplier {
      * @param {object} params.settings
      */
     static apply({ sheet, renderEngine, settings }) {
-        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplier] Applying settings to sheet "${sheet.name}":`, {
-            maxRows: settings.maxRows,
-            maxCols: settings.maxCols,
-            rowHeights: settings.rowHeights?.length || "not set",
-            columns: settings.columns?.length || "not set",
-        });
+        // errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplier] Applying settings to sheet "${sheet.name}":`, {
+        //     maxRows: settings.maxRows,
+        //     maxCols: settings.maxCols,
+        //     rowHeights: settings.rowHeights?.length || "not set",
+        //     columns: settings.columns?.length || "not set",
+        // });
 
-        // 使用 maxRows/maxCols 作为固定行列数的上限配置
+        // 使用 maxRows/maxCols 作为固定行列数的上限配置，使用该配置，则新增的行数和列数之后的总数不会超过该配置，超过该配置则忽略
         if (settings.maxRows !== undefined || settings.maxCols !== undefined) {
             const rows = settings.maxRows || CONFIG.MAX_ROWS;
             const cols = settings.maxCols || CONFIG.MAX_COLS;
-            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ✅ Found maxRows/maxCols! Calling resetSize(${rows}, ${cols})`);
+            //errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ✅ Found maxRows/maxCols! Calling resetSize(${rows}, ${cols})`);
             sheet.rowColManager.resetSize(rows, cols);
         } else {
-            // 兼容旧的 startRows/startCols 配置
+            // 兼容旧的 startRows/startCols 配置,初始时设置默认的行数和列数，使用该配置，则可以添加行和列
             if (settings.startRows !== undefined || settings.startCols !== undefined) {
-                const rows = settings.startRows || 100;
-                const cols = settings.startCols || 26;
-                errorHandler.debug(
-                    ERROR_CODE.DEBUG_LOG,
-                    `[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`,
-                );
+                const rows = settings.startRows || CONFIG.DEFAULT_START_ROWS;
+                const cols = settings.startCols || CONFIG.DEFAULT_START_COLS;
+                // errorHandler.debug(
+                //     ERROR_CODE.DEBUG_LOG,
+                //     `[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`,
+                // );
                 sheet.rowColManager.resetSize(rows, cols);
             } else {
-                errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ℹ️ No maxRows/maxCols or startRows/startCols in settings`);
+                // errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ℹ️ No maxRows/maxCols or startRows/startCols in settings`);
             }
         }
 
