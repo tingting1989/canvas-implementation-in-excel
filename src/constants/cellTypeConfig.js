@@ -4,7 +4,6 @@
  * 进度条、迷你图、星级评分、颜色预览、布尔复选框
  */
 export const CELL_TYPE_CONFIG = Object.freeze({
-
     // ═══ 进度条 ═══
 
     /** 进度条背景轨道颜色 */

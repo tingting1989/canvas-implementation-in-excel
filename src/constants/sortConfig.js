@@ -2,7 +2,6 @@
  * 排序常量配置
  */
 export const SORT_CONFIG = Object.freeze({
-
     /** 排序指示器活跃色 */
     SORT_ACTIVE_COLOR: "#1890ff",
 

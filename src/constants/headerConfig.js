@@ -2,7 +2,6 @@
  * 行列头常量配置
  */
 export const HEADER_CONFIG = Object.freeze({
-
     /** 行列头默认背景色 */
     HEADER_BG: "#f0f0f0",
 

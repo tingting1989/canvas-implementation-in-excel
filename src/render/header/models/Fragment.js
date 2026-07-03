@@ -1,5 +1,6 @@
 import { CONFIG } from "@/constants/config";
 import { BorderMask } from "./BorderMask.js";
+import { PARTIAL_TYPE } from "./PartialType.js";
 
 /**
  * 可视片段
@@ -32,7 +33,7 @@ export class Fragment {
         this.maxTextWidth = opts.maxTextWidth ?? 0;
 
         this.isPartial = opts.isPartial ?? false;
-        this.partialType = opts.partialType ?? "full";
+        this.partialType = opts.partialType ?? PARTIAL_TYPE.FULL;
         this.isSource = opts.isSource ?? false;
         this.isHighlighted = opts.isHighlighted ?? false;
     }

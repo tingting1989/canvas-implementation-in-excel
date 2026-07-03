@@ -4,7 +4,6 @@
  * 滚动条、Sheet 标签栏、列宽/行高调整、DOM 标识、轴标识
  */
 export const UI_CONFIG = Object.freeze({
-
     // ═══ 滚动条 ═══
 
     /** 滚动条轨道宽度（px） */

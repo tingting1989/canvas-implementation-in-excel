@@ -4,7 +4,6 @@
  * 图表渲染 + 图表选择
  */
 export const CHART_CONFIG = Object.freeze({
-
     // ═══ 图表渲染 ═══
 
     /** 图表字体族 */

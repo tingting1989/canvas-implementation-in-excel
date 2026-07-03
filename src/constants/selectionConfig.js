@@ -2,7 +2,6 @@
  * 选区与交互、拖拽常量配置
  */
 export const SELECTION_CONFIG = Object.freeze({
-
     // ═══ 选区与交互 ═══
 
     /** 选区边框及手柄颜色 */

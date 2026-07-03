@@ -3,6 +3,7 @@ import { isObject, isString } from "@/utils/utils";
 import { LogicalCell } from "./models/LogicalCell.js";
 import { Fragment } from "./models/Fragment.js";
 import { BorderMask } from "./models/BorderMask.js";
+import { PARTIAL_TYPE } from "./models/PartialType.js";
 
 export class HeaderLayoutBuilder {
     /**
@@ -83,7 +84,7 @@ export class HeaderLayoutBuilder {
                     textY: layerY + rowH - 8,
                     maxTextWidth: w - cp * 2,
                     isPartial: false,
-                    partialType: "full",
+                    partialType: PARTIAL_TYPE.FULL,
                 }),
             );
         }
@@ -134,7 +135,7 @@ export class HeaderLayoutBuilder {
                         visEndCol: frozenEnd,
                         vt,
                         borderOverride: BorderMask.FROZEN_SIDE,
-                        partialType: "frozen",
+                        partialType: PARTIAL_TYPE.FROZEN,
                     });
                     if (frag) fragments.push(frag);
                 }
@@ -150,7 +151,7 @@ export class HeaderLayoutBuilder {
                         visEndCol: scrollEnd,
                         vt,
                         borderOverride: BorderMask.SCROLL_SIDE,
-                        partialType: "scroll",
+                        partialType: PARTIAL_TYPE.SCROLL,
                     });
                     if (frag) fragments.push(frag);
                 }
@@ -166,7 +167,7 @@ export class HeaderLayoutBuilder {
                 visEndCol: Math.min(cell.endCol, ec - 1),
                 vt,
                 borderOverride: cell.isMerged ? BorderMask.MERGED_DEFAULT : BorderMask.ALL,
-                partialType: "full",
+                partialType: PARTIAL_TYPE.FULL,
             }),
         ];
     }
@@ -193,11 +194,11 @@ export class HeaderLayoutBuilder {
         const font = this.#buildFont(headerFont, cell.style);
 
         let text, textX, maxTextWidth;
-        if (partialType === "frozen") {
+        if (partialType === PARTIAL_TYPE.FROZEN) {
             text = cell.label;
             textX = this.#calcTextX(x, totalW, textAlign, cp);
             maxTextWidth = totalW - cp * 2;
-        } else if (partialType === "scroll") {
+        } else if (partialType === PARTIAL_TYPE.SCROLL) {
             text = null;
             textX = 0;
             maxTextWidth = 0;
@@ -223,7 +224,7 @@ export class HeaderLayoutBuilder {
             textX,
             textY: layerY + rowH - 8,
             maxTextWidth,
-            isPartial: partialType !== "full",
+            isPartial: partialType !== PARTIAL_TYPE.FULL,
             partialType,
         });
     }
