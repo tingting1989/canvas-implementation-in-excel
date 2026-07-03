@@ -31,6 +31,7 @@ describe('DataValidationPlugin - 集成测试（真实 Workbook 环境）', () =
                 ]
             }]
         });
+         workbook.initRender();
 
         dv = workbook.getPlugin('dataValidation');
     });
@@ -246,6 +247,7 @@ describe('DataValidationPlugin - 真实业务场景测试', () => {
                 colHeaders: ['订单号', '产品名称', '数量', '单价', '日期']
             }]
         });
+        workbook.initRender();
     });
 
     afterEach(() => {

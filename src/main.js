@@ -4,21 +4,9 @@
 window.__DEBUG_PAGINATION = true; // 设置为 false 可关闭调试日志
 
 import { Workbook } from "./workbook/Workbook.js";
-import { AutoFillPlugin } from "./plugins/AutoFillPlugin.js";
-import { ContextMenuPlugin } from "./plugins/ContextMenuPlugin.js";
-import { ColumnMovePlugin } from "./plugins/ColumnMovePlugin.js";
-import { CopyPastePlugin } from "./plugins/CopyPastePlugin.js";
-import { ExportFilePlugin } from "./plugins/ExportFilePlugin.js";
-import { PaginationPlugin } from "./plugins/PaginationPlugin.js";
-import { HiddenColumnsPlugin } from "./plugins/HiddenColumnsPlugin.js";
-import { HiddenRowsPlugin } from "./plugins/HiddenRowsPlugin.js";
-import { RowMovePlugin } from "./plugins/RowMovePlugin.js";
-import { FreezePlugin } from "./plugins/FreezePlugin.js";
-import { FormulaPlugin } from "./plugins/FormulaPlugin.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./utils/utils.js";
 import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
-import { SortPlugin, DataValidationPlugin } from "@/plugins";
 
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -28,21 +16,6 @@ const initApp = () => {
         level: ERROR_LEVEL.DEBUG,
         devMode: true,
     });
-
-    Workbook.registerPlugin("autoFill", AutoFillPlugin);
-    Workbook.registerPlugin("contextMenu", ContextMenuPlugin);
-    Workbook.registerPlugin("columnMove", ColumnMovePlugin);
-    Workbook.registerPlugin("copyPaste", CopyPastePlugin);
-    Workbook.registerPlugin("exportFile", ExportFilePlugin);
-
-    Workbook.registerPlugin("pagination", PaginationPlugin);
-    Workbook.registerPlugin("hiddenColumns", HiddenColumnsPlugin);
-    Workbook.registerPlugin("hiddenRows", HiddenRowsPlugin);
-    Workbook.registerPlugin("rowMove", RowMovePlugin);
-    Workbook.registerPlugin("freeze", FreezePlugin);
-    Workbook.registerPlugin("formula", FormulaPlugin);
-    Workbook.registerPlugin("sort", SortPlugin);
-    Workbook.registerPlugin("dataValidation", DataValidationPlugin);
 
     const wb = new Workbook(document.getElementById("wrap"), {
         defaultStyle: {
