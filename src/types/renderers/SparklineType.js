@@ -8,6 +8,7 @@
 
 import { BaseColumnType } from "../BaseColumnType.js";
 import { CONFIG } from "../../constants/config.js";
+import { CHART_TYPE } from "../../constants/enums/ChartType.js";
 
 export class SparklineType extends BaseColumnType {
     get name() {
@@ -48,7 +49,7 @@ export class SparklineType extends BaseColumnType {
         const maxVal = Math.max(...data);
         const range = maxVal - minVal || 1;
 
-        if (chartType === "bar") {
+        if (chartType === CHART_TYPE.BAR) {
             this.#renderBarChart(ctx, data, chartX, chartY, chartW, chartH, minVal, range);
         } else {
             this.#renderLineChart(ctx, data, chartX, chartY, chartW, chartH, minVal, range);

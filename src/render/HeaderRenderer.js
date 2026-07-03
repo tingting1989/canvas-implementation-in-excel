@@ -2,6 +2,7 @@
 import { HeaderLayoutBuilder } from "./header/HeaderLayoutBuilder.js";
 import { HeaderPainter } from "./header/HeaderPainter.js";
 import { FrozenBoundaryInfo } from "./header/models/FrozenBoundaryInfo.js";
+import { FONT_STYLE } from "@/constants/enums/FontStyle.js";
 
 export class HeaderRenderer {
     constructor() {
@@ -341,8 +342,8 @@ export class HeaderRenderer {
     }
 
     #buildHeaderFont(defaultStyle) {
-        const fontStyle = defaultStyle?.fontStyle === "italic" ? "italic" : "";
-        const fontWeight = defaultStyle?.fontWeight === "bold" ? "bold" : "";
+        const fontStyle = defaultStyle?.fontStyle === FONT_STYLE.ITALIC ? FONT_STYLE.ITALIC : "";
+        const fontWeight = defaultStyle?.fontWeight === FONT_STYLE.BOLD ? FONT_STYLE.BOLD : "";
         const fontSize = defaultStyle?.fontSize || CONFIG.DEFAULT_FONT_SIZE;
         const fontFamily = defaultStyle?.fontFamily || CONFIG.DEFAULT_FONT_FAMILY;
         return [fontStyle, fontWeight, `${fontSize}px`, fontFamily].filter(Boolean).join(" ");

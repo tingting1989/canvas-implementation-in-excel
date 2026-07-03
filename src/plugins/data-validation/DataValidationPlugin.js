@@ -4,6 +4,7 @@ import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
+import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
 
 /**
  * 数据验证插件
@@ -166,7 +167,7 @@ export class DataValidationPlugin extends BasePlugin {
         if (!result.valid) {
             this.hooks?.runHooks(HOOKS.VALIDATION_FAILED, row, col, value, result);
 
-            if (result.errorStyle === "stop") {
+            if (result.errorStyle === ERROR_STYLE.STOP) {
                 console.log("[DV-DEBUG] 🛑 Returning false (BLOCK)");
                 return false;
             }

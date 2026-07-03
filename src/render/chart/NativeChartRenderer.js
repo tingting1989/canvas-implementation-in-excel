@@ -1,5 +1,6 @@
 ﻿import { IChartRenderer } from "./IChartRenderer.js";
 import { CONFIG } from "../../constants/config";
+import { CHART_TYPE } from "../../constants/enums/ChartType.js";
 
 export class NativeChartRenderer extends IChartRenderer {
     #renderers = {
@@ -19,10 +20,10 @@ export class NativeChartRenderer extends IChartRenderer {
         if (style.title) {
             this.#renderTitle(ctx, style.title, plotArea);
         }
-        if (chart.type !== "pie" && style.showGrid) {
+        if (chart.type !== CHART_TYPE.PIE && style.showGrid) {
             this.#renderGrid(ctx, data, plotArea);
         }
-        if (chart.type !== "pie") {
+        if (chart.type !== CHART_TYPE.PIE) {
             this.#renderAxes(ctx, data, plotArea);
         }
         renderFn(ctx, data, plotArea, style);

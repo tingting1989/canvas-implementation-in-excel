@@ -1,5 +1,6 @@
 ﻿import { EventStrategy } from "./EventStrategy.js";
 import { CONFIG } from "../../constants/config.js";
+import { CONTENT_TYPE } from "../../constants/enums/ContentType.js";
 
 export class ChartSelectionStrategy extends EventStrategy {
     priority = 120;
@@ -54,7 +55,7 @@ export class ChartSelectionStrategy extends EventStrategy {
         const vt = this.#getViewport();
         const hit = chartLayer.hitTest(px, py, sheet, vt);
 
-        if (!hit || hit.type !== "chart") {
+        if (!hit || hit.type !== CONTENT_TYPE.CHART) {
             if (this.#selectedChartId) {
                 this.#deselect();
                 return true;

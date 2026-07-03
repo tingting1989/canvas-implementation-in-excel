@@ -1,3 +1,5 @@
+import { VALIDATION_RULE_TYPE } from "../../constants/enums/ValidationRuleType.js";
+
 /**
  * 验证规则实体类
  *
@@ -163,24 +165,24 @@ export class ValidationRule {
             errors.push("缺少必需属性: type");
         }
 
-        const validTypes = ["number", "text", "list", "custom", "date", "time", "regex", "unique"];
+        const validTypes = Object.values(VALIDATION_RULE_TYPE);
         if (this.type && !validTypes.includes(this.type)) {
             errors.push(`无效的验证类型: ${this.type}，必须是 ${validTypes.join(",")} 之一`);
         }
 
-        if (this.type === "number" && !this.operator) {
+        if (this.type === VALIDATION_RULE_TYPE.NUMBER && !this.operator) {
             errors.push("数值验证需要指定 operator");
         }
 
-        if (this.type === "list" && !this.source) {
+        if (this.type === VALIDATION_RULE_TYPE.LIST && !this.source) {
             errors.push("列表验证需要指定 source");
         }
 
-        if (this.type === "custom" && !this.formula) {
+        if (this.type === VALIDATION_RULE_TYPE.CUSTOM && !this.formula) {
             errors.push("自定义公式验证需要指定 formula");
         }
 
-        if (this.type === "regex" && !this.pattern) {
+        if (this.type === VALIDATION_RULE_TYPE.REGEX && !this.pattern) {
             errors.push("正则表达式验证需要指定 pattern");
         }
 

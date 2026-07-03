@@ -1,5 +1,6 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { CONFIG } from "../../constants/config";
+import { UI_CONFIG } from "../../constants/uiConfig";
 import { HIT_TYPE } from "../../constants/hitType";
 import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
@@ -146,11 +147,11 @@ export class InteractionLayer extends BaseLayer {
         ctx.fillStyle = CONFIG.ERROR_HIGHLIGHT_FILL;
         ctx.font = `${CONFIG.DEFAULT_FONT_SIZE}px ${CONFIG.MONO_FONT_FAMILY}`;
 
-        let y = 20;
+        let y = UI_CONFIG.DEBUG_START_Y;
         ctx.fillText(`[Debug] Total Layers: ${layers.length}`, 10, y);
 
         for (const layer of layers) {
-            y += 16;
+            y += UI_CONFIG.DEBUG_LINE_HEIGHT;
             const info = layer.getDebugInfo();
             const status = layer.dirty ? "DIRTY" : "CLEAN";
             ctx.fillText(`  ${info.name} (z:${info.zIndex}) ${status} renders:${layer.renderCount}`, 10, y);

@@ -1,5 +1,6 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isNumber, isString } from "../utils/utils.js";
+import { SORT_ORDER } from "../constants/enums/SortOrder.js";
 
 /**
  * 日期列类型
@@ -141,7 +142,7 @@ export class DateColumnType extends BaseColumnType {
         const db = this.#toDate(b);
         const ta = da && !isNaN(da.getTime()) ? da.getTime() : -Infinity;
         const tb = db && !isNaN(db.getTime()) ? db.getTime() : -Infinity;
-        return order === "asc" ? ta - tb : tb - ta;
+        return order === SORT_ORDER.ASC ? ta - tb : tb - ta;
     }
 
     /**

@@ -1,3 +1,6 @@
+import { SORT_ORDER } from "../../constants/enums/SortOrder.js";
+import { SORT_ARROW_DIR } from "../../constants/enums/SortArrowDir.js";
+
 /**
  * 排序 UI 管理器（Sort UI Manager）
  *
@@ -112,9 +115,9 @@ export class SortUIManager {
             ctx.strokeStyle = CONFIG.SORT_ACTIVE_COLOR;
             ctx.lineWidth = CONFIG.SORT_ARROW_LINE_WIDTH;
 
-            if (state.order === "asc") {
+            if (state.order === SORT_ORDER.ASC) {
                 this.#drawUpArrow(ctx, arrowX, arrowY, arrowSize);
-            } else if (state.order === "desc") {
+            } else if (state.order === SORT_ORDER.DESC) {
                 this.#drawDownArrow(ctx, arrowX, arrowY, arrowSize);
             }
         } else {
@@ -248,12 +251,12 @@ export class SortUIManager {
         if (!this.#arrowCache.has(key)) {
             const path = new Path2D();
 
-            if (type === "up") {
+            if (type === SORT_ARROW_DIR.UP) {
                 path.moveTo(size / 2, 0);
                 path.lineTo(size, size);
                 path.lineTo(0, size);
                 path.closePath();
-            } else if (type === "down") {
+            } else if (type === SORT_ARROW_DIR.DOWN) {
                 path.moveTo(0, 0);
                 path.lineTo(size, 0);
                 path.lineTo(size / 2, size);

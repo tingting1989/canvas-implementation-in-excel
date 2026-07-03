@@ -1,6 +1,7 @@
 import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { SORT_ORDER } from "../../constants/enums/SortOrder.js";
 
 /**
  * 排序事件策略（Sort Strategy）- 标准化实现
@@ -160,15 +161,15 @@ export class SortStrategy extends EventStrategy {
         let newOrder;
 
         if (currentState.col === colIndex) {
-            if (currentState.order === "asc") {
-                newOrder = "desc";
-            } else if (currentState.order === "desc") {
-                newOrder = "asc"; // 循环回升序（非清除）
+            if (currentState.order === SORT_ORDER.ASC) {
+                newOrder = SORT_ORDER.DESC;
+            } else if (currentState.order === SORT_ORDER.DESC) {
+                newOrder = SORT_ORDER.ASC;
             } else {
-                newOrder = "asc";
+                newOrder = SORT_ORDER.ASC;
             }
         } else {
-            newOrder = "asc"; // 新列默认升序
+            newOrder = SORT_ORDER.ASC;
         }
 
         this.#plugin.sortRows(colIndex, { order: newOrder });

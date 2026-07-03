@@ -3,6 +3,7 @@ import { SHEET_EVENTS } from "@/constants/sheetEvents";
 import { EVENT_NAMES } from "@/constants/eventNames";
 import { isFunction } from "@/utils/utils";
 import { DOMComponent } from "@/core/DOMComponent";
+import { FONT_STYLE } from "@/constants/enums/FontStyle.js";
 import "../editor.css";
 
 /**
@@ -241,7 +242,7 @@ export class CellEditor extends DOMComponent {
 
     #syncFontStyle(row, col, cellH) {
         const style = this.sheet.resolveStyle(row, col);
-        const fontStyle = style.fontStyle === "italic" ? "italic" : "normal";
+        const fontStyle = style.fontStyle === FONT_STYLE.ITALIC ? FONT_STYLE.ITALIC : FONT_STYLE.NORMAL;
         const fontWeight = style.fontWeight || "normal";
         const fontSize = style.fontSize || 12;
         const fontFamily = style.fontFamily || "Segoe UI";

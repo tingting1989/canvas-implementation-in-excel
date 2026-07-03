@@ -4,6 +4,8 @@ import { ViewportTransform } from "./ViewportTransform.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { CONFIG } from "../constants/config";
 import { HIT_TYPE } from "../constants/hitType";
+import { CONTENT_TYPE } from "../constants/enums/ContentType.js";
+import { SELECTION_CONFIG } from "../constants/selectionConfig";
 import { LayerCompositor } from "./LayerCompositor.js";
 import { TileLayer } from "./layers/TileLayer.js";
 import { SelectionLayer } from "./layers/SelectionLayer.js";
@@ -319,7 +321,7 @@ export class RenderEngine extends DOMComponent {
 
         if (px > headerW && py > headerH) {
             const chartHit = this.chartLayer?.hitTest(px, py, sheet, vt);
-            if (chartHit && chartHit.type === "chart") {
+            if (chartHit && chartHit.type === CONTENT_TYPE.CHART) {
                 return { type: HIT_TYPE.CHART, ...chartHit };
             }
             const col = vt.viewXToCol(px);
@@ -379,7 +381,7 @@ export class RenderEngine extends DOMComponent {
         const x2 = vt.colRightToViewX(range.bottomCol);
         const y2 = vt.rowBottomToViewY(range.bottomRow);
 
-        const handleSize = 6;
+        const handleSize = SELECTION_CONFIG.FILL_HANDLE_HIT_SIZE;
         return px >= x2 - handleSize && px <= x2 && py >= y2 - handleSize && py <= y2;
     }
 

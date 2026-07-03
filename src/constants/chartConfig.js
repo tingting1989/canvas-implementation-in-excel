@@ -73,4 +73,10 @@ export const CHART_CONFIG = Object.freeze({
 
     /** 图表选择手柄填充色 */
     CHART_SELECTION_HANDLE_FILL: "#fff",
+
+    /** 图表最小宽度（px） */
+    CHART_MIN_WIDTH: 100,
+
+    /** 图表最小高度（px） */
+    CHART_MIN_HEIGHT: 80,
 });

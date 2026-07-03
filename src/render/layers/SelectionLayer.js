@@ -1,10 +1,8 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { OverlayRenderer } from "../OverlayRenderer.js";
 import { CONFIG } from "../../constants/config";
+import { SELECTION_CONFIG } from "../../constants/selectionConfig";
 import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
-
-const INDICATOR_WIDTH = 3;
-const INDICATOR_HALF = 1;
 
 export class SelectionLayer extends BaseLayer {
     #columnMoveState = null;
@@ -145,7 +143,7 @@ export class SelectionLayer extends BaseLayer {
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
             const indicatorX = this.#getColumnIndicatorX(vt, state);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
-            ctx.fillRect(indicatorX - INDICATOR_HALF, headerH, INDICATOR_WIDTH, viewH - headerH);
+            ctx.fillRect(indicatorX - SELECTION_CONFIG.INDICATOR_HALF, headerH, SELECTION_CONFIG.INDICATOR_WIDTH, viewH - headerH);
         }
 
         ctx.restore();
@@ -184,7 +182,7 @@ export class SelectionLayer extends BaseLayer {
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
             const indicatorY = this.#getRowIndicatorY(vt, state);
             ctx.fillStyle = CONFIG.SELECTION_COLOR;
-            ctx.fillRect(headerW, indicatorY - INDICATOR_HALF, viewW - headerW, INDICATOR_WIDTH);
+            ctx.fillRect(headerW, indicatorY - SELECTION_CONFIG.INDICATOR_HALF, viewW - headerW, SELECTION_CONFIG.INDICATOR_WIDTH);
         }
 
         ctx.restore();

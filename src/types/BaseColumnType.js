@@ -10,6 +10,8 @@
  *   2. 在 src/types/index.js 的 registry 中注册
  *   3. 通过 columnsConfig.type columns 或 cellTypes 指定类型名称
  */
+import { SORT_ORDER } from "../constants/enums/SortOrder.js";
+
 export class BaseColumnType {
     /**
      * @param {object} [options={}] - 类型配置选项，透传给子类
@@ -88,11 +90,11 @@ export class BaseColumnType {
      * @param {'asc'|'desc'} order
      * @returns {number}
      */
-    compare(a, b, order = "asc") {
+    compare(a, b, order = SORT_ORDER.ASC) {
         const sa = String(a ?? "");
         const sb = String(b ?? "");
         const result = sa.localeCompare(sb, undefined, { numeric: true });
-        return order === "desc" ? -result : result;
+        return order === SORT_ORDER.DESC ? -result : result;
     }
 
     /**

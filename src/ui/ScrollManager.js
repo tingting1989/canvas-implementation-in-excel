@@ -1,5 +1,6 @@
 import { EVENT_NAMES } from "../constants/eventNames.js";
 import { CONFIG } from "../constants/config";
+import { SCROLL_AXIS } from "../constants/enums/ScrollAxis.js";
 import { DOMComponent } from "../core/DOMComponent.js";
 import "./scrollbar.css";
 
@@ -53,7 +54,7 @@ export class ScrollManager extends DOMComponent {
         let startScroll = 0;
 
         const onDragMove = (e) => {
-            if (dragging === "h") {
+            if (dragging === SCROLL_AXIS.HORIZONTAL) {
                 const dx = e.clientX - startMouse;
                 const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
                 const trackW = (this.#viewW - CONFIG.SCROLLBAR_WIDTH) / 2;
@@ -62,7 +63,7 @@ export class ScrollManager extends DOMComponent {
                 const ratio = totalContent > 0 ? trackW / totalContent : 1;
                 const newX = Math.max(0, Math.min(this.#maxScrollX, startScroll + dx / ratio));
                 this.setScrollPosition(newX, this.#scrollY);
-            } else if (dragging === "v") {
+            } else if (dragging === SCROLL_AXIS.VERTICAL) {
                 const dy = e.clientY - startMouse;
                 const hh = this.#headerH ?? CONFIG.HEADER_HEIGHT;
                 const trackH = this.#viewH - hh - this.#frozenRowsH;
@@ -82,7 +83,7 @@ export class ScrollManager extends DOMComponent {
 
         this.trackEvent(this.#hThumb, EVENT_NAMES.MOUSEDOWN, (e) => {
             e.preventDefault();
-            dragging = "h";
+            dragging = SCROLL_AXIS.HORIZONTAL;
             startMouse = e.clientX;
             startScroll = this.#scrollX;
             document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
@@ -91,7 +92,7 @@ export class ScrollManager extends DOMComponent {
 
         this.trackEvent(this.#vThumb, EVENT_NAMES.MOUSEDOWN, (e) => {
             e.preventDefault();
-            dragging = "v";
+            dragging = SCROLL_AXIS.VERTICAL;
             startMouse = e.clientY;
             startScroll = this.#scrollY;
             document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);

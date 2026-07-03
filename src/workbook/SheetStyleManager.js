@@ -1,6 +1,7 @@
 import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
 import { Cell } from "../model/index.js";
 import { StyleChangeRecorder, StyleChangeCommand } from "../model/command/StyleChangeRecorder.js";
+import { STYLE_SCOPE } from "../constants/enums/StyleScope.js";
 
 /**
  * 工作表样式管理器
@@ -330,19 +331,19 @@ export class SheetStyleManager {
     }
 
     applyStyleId(type, key, styleId) {
-        if (type === "row") {
+        if (type === STYLE_SCOPE.ROW) {
             if (styleId === 0) {
                 this.#rowStyles.delete(key);
             } else {
                 this.#rowStyles.set(key, styleId);
             }
-        } else if (type === "col") {
+        } else if (type === STYLE_SCOPE.COL) {
             if (styleId === 0) {
                 this.#colStyles.delete(key);
             } else {
                 this.#colStyles.set(key, styleId);
             }
-        } else if (type === "cell") {
+        } else if (type === STYLE_SCOPE.CELL) {
             const [r, c] = key.split(",").map(Number);
             const cell = this.#sheet.cellStore.get(r, c);
             if (cell) {

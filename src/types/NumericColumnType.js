@@ -1,5 +1,6 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isNumber } from "../utils/utils.js";
+import { SORT_ORDER } from "../constants/enums/SortOrder.js";
 
 /**
  * 数字列类型
@@ -69,7 +70,7 @@ export class NumericColumnType extends BaseColumnType {
 
         const va = isNaN(na) ? -Infinity : na;
         const vb = isNaN(nb) ? -Infinity : nb;
-        return order === "asc" ? va - vb : vb - va;
+        return order === SORT_ORDER.ASC ? va - vb : vb - va;
     }
 
     #formatByPattern(num, pattern) {

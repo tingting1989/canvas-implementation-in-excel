@@ -1,6 +1,11 @@
 import { CONFIG } from "../constants/config";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { CellRenderContext } from "../types/CellRenderContext.js";
+import { FONT_STYLE } from "../constants/enums/FontStyle.js";
+import { BORDER_STYLE } from "../constants/enums/BorderStyle.js";
+import { TEXT_ALIGN } from "../constants/enums/TextAlign.js";
+import { VERTICAL_ALIGN } from "../constants/enums/VerticalAlign.js";
+import { CONTENT_TYPE } from "../constants/enums/ContentType.js";
 
 /**
  * 瓦片渲染器（TileRenderer）—— 负责将单元格数据绘制到瓦片上
@@ -331,9 +336,9 @@ export class TileRenderer {
     #drawBorderEdge(ctx, x1, y1, x2, y2, borderDef) {
         ctx.strokeStyle = borderDef.color || CONFIG.CELL_BORDER_COLOR;
         ctx.lineWidth = borderDef.width || 1;
-        if (borderDef.style === "dashed") {
+        if (borderDef.style === BORDER_STYLE.DASHED) {
             ctx.setLineDash(CONFIG.BORDER_DASH_SOLID);
-        } else if (borderDef.style === "dotted") {
+        } else if (borderDef.style === BORDER_STYLE.DOTTED) {
             ctx.setLineDash(CONFIG.BORDER_DASH_DOTTED);
         } else {
             ctx.setLineDash([]);
@@ -458,7 +463,7 @@ export class TileRenderer {
         if (cell?.value === undefined) return;
 
         const finalStyle = sheet.resolveStyle(r, c);
-        const fontStyle = finalStyle.fontStyle === "italic" ? "italic" : "";
+        const fontStyle = finalStyle.fontStyle === FONT_STYLE.ITALIC ? FONT_STYLE.ITALIC : "";
         const fontWeight = finalStyle.fontWeight || "normal";
         const fontSize = finalStyle.fontSize || 12;
         const fontFamily = finalStyle.fontFamily || "Segoe UI";
@@ -468,12 +473,12 @@ export class TileRenderer {
             this.#lastFont = fontString;
         }
 
-        const verticalAlign = finalStyle.verticalAlign || "middle";
-        const baselineMap = { top: "top", middle: "middle", bottom: "bottom" };
+        const verticalAlign = finalStyle.verticalAlign || VERTICAL_ALIGN.MIDDLE;
+        const baselineMap = { [VERTICAL_ALIGN.TOP]: "top", [VERTICAL_ALIGN.MIDDLE]: "middle", [VERTICAL_ALIGN.BOTTOM]: "bottom" };
         ctx.textBaseline = baselineMap[verticalAlign] || "middle";
         ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || CONFIG.CELL_TEXT_COLOR;
 
-        const textAlign = finalStyle.textAlign || "left";
+        const textAlign = finalStyle.textAlign || TEXT_ALIGN.LEFT;
         ctx.textAlign = textAlign;
 
         const displayValue = sheet.formatCellValue(r, c, cell.value);
@@ -483,26 +488,26 @@ export class TileRenderer {
         let textX = Math.round(drawX + sheet.cellPadding);
         let effectiveW = w;
 
-        if (merge && (textAlign === "center" || textAlign === "right")) {
+        if (merge && (textAlign === TEXT_ALIGN.CENTER || textAlign === TEXT_ALIGN.RIGHT)) {
             const mergeStartX = rc.getColX(merge.topCol);
             const mergeEndX = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol);
             effectiveW = mergeEndX - mergeStartX;
 
-            if (textAlign === "center") {
+            if (textAlign === TEXT_ALIGN.CENTER) {
                 textX = Math.round(mergeStartX + effectiveW / 2);
-            } else if (textAlign === "right") {
+            } else if (textAlign === TEXT_ALIGN.RIGHT) {
                 textX = Math.round(mergeEndX - sheet.cellPadding);
             }
-        } else if (textAlign === "center") {
+        } else if (textAlign === TEXT_ALIGN.CENTER) {
             textX = Math.round(drawX + w / 2);
-        } else if (textAlign === "right") {
+        } else if (textAlign === TEXT_ALIGN.RIGHT) {
             textX = Math.round(drawX + w - sheet.cellPadding);
         }
 
         let textY;
-        if (verticalAlign === "top") {
+        if (verticalAlign === VERTICAL_ALIGN.TOP) {
             textY = Math.round(drawY + fontSize / 2 + 2);
-        } else if (verticalAlign === "bottom") {
+        } else if (verticalAlign === VERTICAL_ALIGN.BOTTOM) {
             textY = Math.round(drawY + h - fontSize / 2 - 2);
         } else {
             textY = Math.round(drawY + h / 2);
@@ -546,12 +551,12 @@ export class TileRenderer {
          * 绘制下划线
          * textDecoration: underline 时在文字下方绘制一条线
          */
-        if (finalStyle.textDecoration === "underline") {
+        if (finalStyle.textDecoration === FONT_STYLE.UNDERLINE) {
             const textWidth = ctx.measureText(renderedText).width;
             let lineX = textX;
-            if (textAlign === "center") {
+            if (textAlign === TEXT_ALIGN.CENTER) {
                 lineX = textX - textWidth / 2;
-            } else if (textAlign === "right") {
+            } else if (textAlign === TEXT_ALIGN.RIGHT) {
                 lineX = textX - textWidth;
             }
             const lineY = textY + Math.round(fontSize * 0.6);
@@ -587,7 +592,7 @@ export class TileRenderer {
         const content = clipboard.getCellContent(sheet, realR, col);
         if (!content) return false;
 
-        if (content.type === "image") {
+        if (content.type === CONTENT_TYPE.IMAGE) {
             return this.#drawCellImage(ctx, content.objectUrl, drawX, drawY, w, h);
         }
 

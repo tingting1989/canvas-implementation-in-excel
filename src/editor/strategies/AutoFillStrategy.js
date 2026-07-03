@@ -1,6 +1,7 @@
 import { EventStrategy } from "./EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { isNumber } from "../../utils/utils.js";
+import { AUTO_FILL_DIR } from "../../constants/enums/AutoFillDir.js";
 
 /**
  * 自动填充策略（AutoFill）
@@ -250,7 +251,7 @@ export class AutoFillStrategy extends EventStrategy {
         const srcWidth = src.bottomCol - src.topCol + 1;
 
         sheet.beginBatch();
-        if (dir === "down" || dir === "up") {
+        if (dir === AUTO_FILL_DIR.DOWN || dir === AUTO_FILL_DIR.UP) {
             for (let c = 0; c < srcWidth; c++) {
                 const colValues = [];
                 for (let r = 0; r < srcHeight; r++) {
@@ -285,7 +286,7 @@ export class AutoFillStrategy extends EventStrategy {
         const col = src.topCol + colOffset;
         const srcLen = srcColValues.length;
 
-        if (dir === "down") {
+        if (dir === AUTO_FILL_DIR.DOWN) {
             for (let r = target.topRow; r <= target.bottomRow; r++) {
                 if (sheet.isDisabled(r, col)) continue;
 
@@ -311,7 +312,7 @@ export class AutoFillStrategy extends EventStrategy {
         const row = src.topRow + rowOffset;
         const srcLen = srcRowValues.length;
 
-        if (dir === "right") {
+        if (dir === AUTO_FILL_DIR.RIGHT) {
             for (let c = target.topCol; c <= target.bottomCol; c++) {
                 if (sheet.isDisabled(row, c)) continue;
 

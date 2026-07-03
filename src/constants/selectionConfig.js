@@ -13,6 +13,15 @@ export const SELECTION_CONFIG = Object.freeze({
     /** 填充手柄尺寸（px），选区右下角的拖拽手柄 */
     FILL_HANDLE_SIZE: 5,
 
+    /** 选区填充手柄命中检测尺寸（px） */
+    FILL_HANDLE_HIT_SIZE: 6,
+
+    /** 选区行列指示器线宽（px） */
+    INDICATOR_WIDTH: 3,
+
+    /** 选区行列指示器半宽（px） */
+    INDICATOR_HALF: 1,
+
     /** 边框虚线模式（dashed 样式） */
     BORDER_DASH_SOLID: [4, 2],
 

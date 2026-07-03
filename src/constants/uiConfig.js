@@ -43,4 +43,12 @@ export const UI_CONFIG = Object.freeze({
 
     /** 列轴标识 */
     AXIS_COL: "col",
+
+    // ═══ 调试信息 ═══
+
+    /** 调试信息起始 Y 坐标（px） */
+    DEBUG_START_Y: 20,
+
+    /** 调试信息行高（px） */
+    DEBUG_LINE_HEIGHT: 16,
 });

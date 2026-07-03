@@ -162,8 +162,8 @@ export class ChartPlugin extends BasePlugin {
     }
 
     #clampToFrozenBoundary(chart, sheet) {
-        const MIN_W = 100;
-        const MIN_H = 80;
+        const MIN_W = CONFIG.CHART_MIN_WIDTH;
+        const MIN_H = CONFIG.CHART_MIN_HEIGHT;
         chart.width = Math.max(MIN_W, chart.width);
         chart.height = Math.max(MIN_H, chart.height);
         const frozenColsW = sheet.frozenColsWidth || 0;

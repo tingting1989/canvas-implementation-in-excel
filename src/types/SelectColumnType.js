@@ -1,4 +1,5 @@
 import { BaseColumnType } from "./BaseColumnType.js";
+import { SORT_ORDER } from "../constants/enums/SortOrder.js";
 
 /**
  * 下拉选择列类型
@@ -91,7 +92,7 @@ export class SelectColumnType extends BaseColumnType {
             const ib = source.findIndex((item) => String(item) === sb);
             const va = ia >= 0 ? ia : Infinity;
             const vb = ib >= 0 ? ib : Infinity;
-            return order === "asc" ? va - vb : vb - va;
+            return order === SORT_ORDER.ASC ? va - vb : vb - va;
         }
 
         return sa.localeCompare(sb, undefined, { numeric: true });

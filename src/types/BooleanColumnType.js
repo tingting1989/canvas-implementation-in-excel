@@ -1,5 +1,6 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isBoolean, isNumber, isString } from "../utils/utils.js";
+import { SORT_ORDER } from "../constants/enums/SortOrder.js";
 
 /**
  * 布尔列类型
@@ -58,7 +59,7 @@ export class BooleanColumnType extends BaseColumnType {
         const bb = this.#toBoolean(b);
         const va = ba === true ? 1 : ba === false ? 0 : -1;
         const vb = bb === true ? 1 : bb === false ? 0 : -1;
-        return order === "asc" ? va - vb : vb - va;
+        return order === SORT_ORDER.ASC ? va - vb : vb - va;
     }
 
     /**

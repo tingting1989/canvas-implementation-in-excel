@@ -1,4 +1,5 @@
 import { SortState } from "./SortState.js";
+import { SORT_ORDER } from "../../constants/enums/SortOrder.js";
 
 /**
  * 排序引擎（Sort Engine）
@@ -273,7 +274,7 @@ export class SortEngine {
             if (cmp !== 0) {
                 // 🔑 关键修复：null 比较不参与降序反转
                 // #compareNormalized 已保证 null 始终排最后，不能被反转！
-                if (order === "desc" && !isNullComparison) {
+                if (order === SORT_ORDER.DESC && !isNullComparison) {
                     return -cmp; // 正常的降序反转
                 }
                 return cmp; // null 比较保持原方向（始终排最后）
