@@ -326,7 +326,9 @@ export class HeaderRenderer {
                     }
                 }
 
-                this.#drawSeparator(ctx, rightX, layerY, rightX, layerY + rowH);
+                if (!(crossesFrozenBoundary && sc < vt.fixedCols)) {
+                    this.#drawSeparator(ctx, rightX, layerY, rightX, layerY + rowH);
+                }
             }
 
             if (layerIdx < nestedCount - 1) {

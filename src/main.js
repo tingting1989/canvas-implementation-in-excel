@@ -139,7 +139,7 @@ const initApp = () => {
                         },
                     ],
                     [{
-                        label: "姓名",
+                        label: "name",
                         style: {textAlign: "center", backgroundColor: "#FFFFFF",}
                     }, "Age", "City", "Dept", "Salary", "Hire Date"],
                 ],
