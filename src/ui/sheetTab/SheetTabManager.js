@@ -45,9 +45,17 @@ export class SheetTabManager extends Disposable {
         this.#element.style.position = "absolute";
         this.#element.style.bottom = "0";
         this.#element.style.left = "0";
-        this.#element.style.width = "calc((100% - 14px) / 2)";
         this.#element.style.zIndex = "12";
         wrap.appendChild(this.#element);
+    }
+
+    /**
+     * 根据水平滚动条可见性更新标签栏布局
+     * @param {boolean} showHScrollbar - 水平滚动条是否可见
+     */
+    updateLayout(showHScrollbar) {
+        if (!this.#element) return;
+        this.#element.style.width = showHScrollbar ? "calc((100% - 14px) / 2)" : "100%";
     }
 
     #bindEvents() {

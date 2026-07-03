@@ -57,7 +57,7 @@ const initApp = () => {
 
                 // 行表头配置，用于替换默认的行号表头 1,2,3...
                 // rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
-
+                maxCols: 2,
                 // 嵌套表头配置
                 nestedHeaders: [
                     // [

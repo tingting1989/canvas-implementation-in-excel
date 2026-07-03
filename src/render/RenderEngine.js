@@ -262,6 +262,7 @@ export class RenderEngine extends DOMComponent {
         this.compositor.compose(ctx, sheet, vt, viewW, viewH, composeOptions);
 
         this.scrollMgr.updateScrollbars(this.#viewW, this.#viewH);
+        this.sheetTabBar.updateLayout(this.scrollMgr.hasHScrollbar);
 
         if (this.onAfterRender) {
             this.onAfterRender();

@@ -22,6 +22,9 @@ export class ScrollManager extends DOMComponent {
     #hThumb = null;
     #vThumb = null;
     #topCorner = null;
+    #hBar = null;
+    #vBar = null;
+    #corner = null;
 
     /** rAF 合并标志：scroll 回调是否已在本帧调度 */
     #pendingScrollCallback = false;
@@ -37,14 +40,14 @@ export class ScrollManager extends DOMComponent {
 
     #createScrollbarDOM() {
         this.#hThumb = this.createElement("div", { className: "cs-scrollbar-h-thumb" });
-        const hBar = this.createElement("div", { className: "cs-scrollbar-h" }, this.wrap);
-        hBar.appendChild(this.#hThumb);
+        this.#hBar = this.createElement("div", { className: "cs-scrollbar-h" }, this.wrap);
+        this.#hBar.appendChild(this.#hThumb);
 
         this.#vThumb = this.createElement("div", { className: "cs-scrollbar-v-thumb" });
-        const vBar = this.createElement("div", { className: "cs-scrollbar-v" }, this.wrap);
-        vBar.appendChild(this.#vThumb);
+        this.#vBar = this.createElement("div", { className: "cs-scrollbar-v" }, this.wrap);
+        this.#vBar.appendChild(this.#vThumb);
 
-        this.createElement("div", { className: "cs-scrollbar-corner" }, this.wrap);
+        this.#corner = this.createElement("div", { className: "cs-scrollbar-corner" }, this.wrap);
         this.#topCorner = this.createElement("div", { className: "cs-scrollbar-corner-top" }, this.wrap);
     }
 
@@ -114,6 +117,10 @@ export class ScrollManager extends DOMComponent {
 
     get maxScrollY() {
         return this.#maxScrollY;
+    }
+
+    get hasHScrollbar() {
+        return this.#maxScrollX > 0;
     }
 
     get onScrollCallback() {
@@ -204,8 +211,8 @@ export class ScrollManager extends DOMComponent {
         this.#frozenRowsH = frozenRowsH;
         this.#frozenColsW = frozenColsW;
 
-        this.#maxScrollX = Math.max(0, totalW - viewW + headerW);
-        this.#maxScrollY = Math.max(0, totalH - viewH + headerH);
+        this.#maxScrollX = Math.max(0, totalW - viewW + headerW + frozenColsW);
+        this.#maxScrollY = Math.max(0, totalH - viewH + headerH + frozenRowsH);
 
         this.#scrollX = Math.min(this.#scrollX, this.#maxScrollX);
         this.#scrollY = Math.min(this.#scrollY, this.#maxScrollY);
@@ -223,7 +230,15 @@ export class ScrollManager extends DOMComponent {
         const hh = this.#headerH ?? CONFIG.HEADER_HEIGHT;
         const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
 
-        if (this.#vThumb && this.#maxScrollY > 0) {
+        const showV = this.#maxScrollY > 0;
+        const showH = this.#maxScrollX > 0;
+
+        if (this.#vBar) this.#vBar.style.display = showV ? "" : "none";
+        if (this.#hBar) this.#hBar.style.display = showH ? "" : "none";
+        if (this.#corner) this.#corner.style.display = (showV && showH) ? "" : "none";
+        if (this.#topCorner) this.#topCorner.style.display = showV ? "" : "none";
+
+        if (this.#vThumb && showV) {
             const trackH = this.#viewH - hh;
             const dataViewH = this.#viewH - hh - this.#frozenRowsH;
             const totalH = this.#maxScrollY + dataViewH;
@@ -233,7 +248,7 @@ export class ScrollManager extends DOMComponent {
             this.#vThumb.style.top = ratio * (trackH - thumbH) + "px";
         }
 
-        if (this.#hThumb && this.#maxScrollX > 0) {
+        if (this.#hThumb && showH) {
             const trackW = (this.#viewW - CONFIG.SCROLLBAR_WIDTH) / 2;
             const dataViewW = this.#viewW - hw - this.#frozenColsW;
             const totalW = this.#maxScrollX + dataViewW;
