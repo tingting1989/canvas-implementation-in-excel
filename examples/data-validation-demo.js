@@ -16,7 +16,7 @@ async function example1_BasicSetup() {
     console.log('=== 示例 1: 基础初始化 ===\n');
 
     // 创建工作簿并启用数据验证插件
-    const workbook = new Workbook('grid', {
+    const workbook = new Workbook(document.getElementById('wrap'), {
         plugins: ['dataValidation'],
         pluginOptions: {
             dataValidation: {

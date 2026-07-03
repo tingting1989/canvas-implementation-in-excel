@@ -4,16 +4,13 @@ import { Workbook } from '@/workbook/Workbook.js';
 
 describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
     let container;
-    let canvasId;
 
     beforeEach(() => {
-        canvasId = 'test-canvas-' + Math.random().toString(36).substr(2, 9);
         container = document.createElement('div');
         container.style.width = '800px';
         container.style.height = '600px';
 
         const canvas = document.createElement('canvas');
-        canvas.id = canvasId;
         container.appendChild(canvas);
         document.body.appendChild(container);
     });
@@ -33,7 +30,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
             const afterChangeSpy = vi.fn();
 
             // 模拟 main.js 中的配置方式
-            const wb = new Workbook(canvasId, {
+            const wb = new Workbook(container, {
                 sheets: [{
                     name: 'TestSheet',
                     data: [['A1', 'B1'], ['A2', 'B2']],
@@ -63,7 +60,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
         it('addHook 方法在 initRender 前调用不应丢失', () => {
             const callback = vi.fn();
 
-            const wb = new Workbook(canvasId, {
+            const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
             });
 
@@ -88,7 +85,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
         let wb;
 
         beforeEach(() => {
-            wb = new Workbook(canvasId, {
+            wb = new Workbook(container, {
                 sheets: [{
                     name: 'TestSheet',
                     data: [
@@ -142,7 +139,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
         it('多个 before* hook 应该按顺序执行', () => {
             const order = [];
 
-            const wb = new Workbook(canvasId, {
+            const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
                 hooks: {
                     [HOOKS.BEFORE_CHANGE]: (() => {
@@ -166,7 +163,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
         it('hook 回调中的 this 上下文', () => {
             let context = null;
 
-            const wb = new Workbook(canvasId, {
+            const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
                 hooks: {
                     [HOOKS.INIT]: function() {
@@ -189,7 +186,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
             const callback1 = vi.fn();
             const callback2 = vi.fn();
 
-            const wb = new Workbook(canvasId, {
+            const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
             });
 
@@ -209,7 +206,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
         });
 
         it('clearHook 应该清除指定类型的所有 hooks', () => {
-            const wb = new Workbook(canvasId, {
+            const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
                 hooks: {
                     [HOOKS.ON_CELL_CLICK]: vi.fn(),
@@ -236,7 +233,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
         it('插件注册的 hooks 应该正常工作', () => {
             const pluginHookSpy = vi.fn();
 
-            const wb = new Workbook(canvasId, {
+            const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
                 plugins: ['freeze'],
                 freeze: { fixedRowsTop: 1 },
@@ -282,7 +279,7 @@ describe('Hooks 完整生命周期测试', () => {
     it('从创建到销毁的完整流程', () => {
         const lifecycleEvents = [];
 
-        const wb = new Workbook(canvasId, {
+        const wb = new Workbook(container, {
             sheets: [{ name: 'LifecycleTest' }],
             hooks: {
                 [HOOKS.INIT]: () => lifecycleEvents.push('init'),
@@ -338,7 +335,7 @@ describe('性能压力测试 - Hooks 系统', () => {
         const HOOK_COUNT = 500;
         const callbacks = [];
 
-        const wb = new Workbook(canvasId, {
+        const wb = new Workbook(container, {
             sheets: [{ name: 'PerfTest' }],
         });
 
@@ -370,7 +367,7 @@ describe('性能压力测试 - Hooks 系统', () => {
     });
 
     it('频繁添加和删除 hooks 的稳定性', () => {
-        const wb = new Workbook(canvasId, {
+        const wb = new Workbook(container, {
             sheets: [{ name: 'StressTest' }],
         });
 

@@ -27,8 +27,8 @@ import { HOOKS } from "@/constants/hookNames";
  * 对齐 Handsontable 的 new Handsontable(container, options) 模式
  */
 export class Workbook {
-    /** @type {string} */
-    #containerId;
+    /** @type {HTMLElement|string} */
+    #containerElement;
 
     /** @type {object} */
     #initOptions;
@@ -50,7 +50,7 @@ export class Workbook {
     // ============================================================
 
     /**
-     * @param {string} containerId - Canvas 元素 ID
+     * @param {HTMLElement|string} element - 容器元素或 Canvas 元素 ID
      * @param {object} [options={}] - 配置选项
      *
      * @param {Array<Array<*>>} [options.data] - 初始数据（二维数组）
@@ -73,7 +73,7 @@ export class Workbook {
      * @param {Array<object|Function>} [options.columns] - 列配置数组
      * @param {Function} [options.afterInit] - 初始化完成回调
      */
-    constructor(containerId, options = {}) {
+    constructor(element, options = {}) {
         /** @type {Map<string, Sheet>} */
         this.sheets = new Map();
 
@@ -107,7 +107,7 @@ export class Workbook {
          */
         this.#earlyHooks = new Map();
 
-        this.#containerId = containerId || CONFIG.CANVAS_ID;
+        this.#containerElement = element || CONFIG.CANVAS_ID;
         this.#initOptions = options;
 
         /** @type {import("../formula/FormulaEngine.js").FormulaEngine|null} 公式引擎（由 FormulaPlugin 注入） */
@@ -226,7 +226,7 @@ export class Workbook {
     }
 
     #createRenderEngine() {
-        this.renderEngine = new RenderEngine(this.#containerId);
+        this.renderEngine = new RenderEngine(this.#containerElement);
         const opts = this.#initOptions;
         if (opts?.width != null || opts?.height != null) {
             this.renderEngine.setCanvasSize(opts.width, opts.height);

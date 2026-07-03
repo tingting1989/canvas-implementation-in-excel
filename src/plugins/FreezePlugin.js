@@ -48,7 +48,7 @@ import { isNumber } from "../utils/utils.js";
  *
  * @example
  * // 通过配置初始化
- * const wb = new Workbook('grid', {
+ * const wb = new Workbook(document.getElementById('wrap'), {
  *     plugins: ['freeze'],
  *     pluginOptions: {
  *         freeze: { fixedRowsTop: 1, fixedColumnsStart: 2 }

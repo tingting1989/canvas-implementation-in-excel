@@ -36,7 +36,7 @@ import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
  *
  * @example
  * // 通过配置初始化
- * const workbook = new Workbook('grid', {
+ * const workbook = new Workbook(document.getElementById('wrap'), {
  *     plugins: ['dataValidation'],
  *     pluginOptions: {
  *         dataValidation: {

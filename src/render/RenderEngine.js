@@ -27,9 +27,18 @@ export class RenderEngine extends DOMComponent {
     #userWidth = null;
     #userHeight = null;
 
-    constructor(canvasId) {
+    constructor(element) {
         super();
-        this.canvas = document.getElementById(canvasId);
+        if (typeof element === "string") {
+            this.canvas = document.getElementById(element);
+        } else if (element.tagName === "CANVAS") {
+            this.canvas = element;
+        } else {
+            this.canvas = element.querySelector("canvas") || document.createElement("canvas");
+            if (!this.canvas.parentNode) {
+                element.appendChild(this.canvas);
+            }
+        }
         this.ctx = this.canvas.getContext("2d");
         this.outerWrap = this.canvas.parentElement;
 
@@ -421,6 +430,9 @@ export class RenderEngine extends DOMComponent {
     onDestroy() {
         if (this.#rafId != null) {
             cancelAnimationFrame(this.#rafId);
+        }
+        if (this.canvas && this.wrap && this.outerWrap) {
+            this.outerWrap.insertBefore(this.canvas, this.wrap);
         }
         this.compositor.destroyAll();
         this.store.destroy();

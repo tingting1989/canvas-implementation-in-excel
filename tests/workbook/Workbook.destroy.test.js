@@ -3,16 +3,13 @@ import { Workbook } from "@/workbook/Workbook.js";
 
 describe("Workbook 端到端销毁", () => {
     let container;
-    let canvasId;
 
     beforeEach(() => {
-        canvasId = "test-canvas-" + Math.random().toString(36).substr(2, 9);
         container = document.createElement("div");
         container.style.width = "800px";
         container.style.height = "600px";
 
         const canvas = document.createElement("canvas");
-        canvas.id = canvasId;
         container.appendChild(canvas);
         document.body.appendChild(container);
     });
@@ -24,7 +21,7 @@ describe("Workbook 端到端销毁", () => {
     });
 
     it("WB-01: 完整销毁无 DOM 残留 — outerWrap 内无子元素", () => {
-        const workbook = new Workbook(canvasId);
+        const workbook = new Workbook(container);
         workbook.initRender();
 
         // 验证初始状态：container 中有内容
@@ -39,7 +36,7 @@ describe("Workbook 端到端销毁", () => {
 
     it("WB-02: 完整销毁无事件残留 — window 上无 resize 监听器", () => {
         const removeSpy = vi.spyOn(window, "removeEventListener");
-        const workbook = new Workbook(canvasId);
+        const workbook = new Workbook(container);
         workbook.initRender();
         
         workbook.destroy();
@@ -50,7 +47,7 @@ describe("Workbook 端到端销毁", () => {
     });
 
     it("WB-03: 销毁幂等 — 连续调用两次不抛异常", () => {
-        const workbook = new Workbook(canvasId);
+        const workbook = new Workbook(container);
         workbook.initRender();
 
         expect(() => {
@@ -60,7 +57,7 @@ describe("Workbook 端到端销毁", () => {
     });
 
     it("WB-04: 销毁后引用清空 — renderEngine/editor/eventHandler/sheets 被清空", () => {
-        const workbook = new Workbook(canvasId);
+        const workbook = new Workbook(container);
         workbook.initRender();
         
         // 验证初始状态

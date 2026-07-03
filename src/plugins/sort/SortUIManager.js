@@ -1,5 +1,5 @@
-import {SORT_ORDER} from "../../constants/enums/SortOrder.js";
-import {SORT_ARROW_DIR} from "../../constants/enums/SortArrowDir.js";
+import { SORT_ORDER } from "../../constants/enums/SortOrder.js";
+import { SORT_ARROW_DIR } from "../../constants/enums/SortArrowDir.js";
 
 /**
  * 排序 UI 管理器（Sort UI Manager）
@@ -26,7 +26,7 @@ import {SORT_ARROW_DIR} from "../../constants/enums/SortArrowDir.js";
  * - 支持自定义颜色和尺寸配置
  * - 响应式布局（根据列宽自适应位置）
  */
-import {CONFIG} from "../../constants/config.js";
+import { CONFIG } from "../../constants/config.js";
 
 export class SortUIManager {
     static ARROW_SIZE = 8;

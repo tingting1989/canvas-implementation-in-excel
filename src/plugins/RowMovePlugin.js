@@ -11,7 +11,7 @@ import { RowMoveStrategy } from "../editor/strategies/RowMoveStrategy.js";
  *
  * 用法：
  * ```js
- * const wb = new Workbook('grid', {
+ * const wb = new Workbook(document.getElementById('wrap'), {
  *     plugins: ['rowMove'],
  *     pluginOptions: { rowMove: { enabled: true } }
  * });

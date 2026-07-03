@@ -44,7 +44,7 @@ const initApp = () => {
     Workbook.registerPlugin("sort", SortPlugin);
     Workbook.registerPlugin("dataValidation", DataValidationPlugin);
 
-    const wb = new Workbook("grid", {
+    const wb = new Workbook(document.getElementById("wrap"), {
         defaultStyle: {
             fontSize: 14,
             fontFamily: "Microsoft YaHei",
@@ -801,7 +801,7 @@ const initApp = () => {
                     "Hire Date",
                 ],
             ],
-        })
+        });
         // wb.destroy();
     }, 5000);
 

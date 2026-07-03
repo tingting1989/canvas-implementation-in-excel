@@ -31,7 +31,7 @@ import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
  * ## 使用示例
  * ```javascript
  * // 初始化
- * const wb = new Workbook('grid', {
+ * const wb = new Workbook(document.getElementById('wrap'), {
  *     plugins: ['sort']
  * });
  *

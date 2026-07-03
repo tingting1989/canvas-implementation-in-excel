@@ -1,13 +1,19 @@
-import { describe, test, expect, beforeEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { Workbook } from '../../src/workbook/Workbook.js';
 import { DataValidationPlugin } from '../../src/plugins/data-validation/DataValidationPlugin.js';
 
 describe('DataValidationPlugin - 集成测试（真实 Workbook 环境）', () => {
     let workbook;
     let dv;
+    let container;
 
     beforeEach(() => {
-        workbook = new Workbook('test-grid', {
+        container = document.createElement('div');
+        const canvas = document.createElement('canvas');
+        container.appendChild(canvas);
+        document.body.appendChild(container);
+
+        workbook = new Workbook(container, {
             plugins: ['dataValidation'],
             pluginOptions: {
                 dataValidation: {
@@ -35,6 +41,9 @@ describe('DataValidationPlugin - 集成测试（真实 Workbook 环境）', () =
         }
         if (workbook) {
             workbook.destroy?.();
+        }
+        if (container && document.body.contains(container)) {
+            document.body.removeChild(container);
         }
     });
 
@@ -217,9 +226,15 @@ describe('DataValidationPlugin - 集成测试（真实 Workbook 环境）', () =
 
 describe('DataValidationPlugin - 真实业务场景测试', () => {
     let workbook;
+    let container2;
 
     beforeEach(() => {
-        workbook = new Workbook('business-grid', {
+        container2 = document.createElement('div');
+        const canvas = document.createElement('canvas');
+        container2.appendChild(canvas);
+        document.body.appendChild(container2);
+
+        workbook = new Workbook(container2, {
             plugins: ['dataValidation'],
             sheets: [{
                 name: '订单管理',
@@ -235,6 +250,9 @@ describe('DataValidationPlugin - 真实业务场景测试', () => {
 
     afterEach(() => {
         workbook?.destroy?.();
+        if (container2 && document.body.contains(container2)) {
+            document.body.removeChild(container2);
+        }
     });
 
     test('电商订单数据完整性校验', async () => {
