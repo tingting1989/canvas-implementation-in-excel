@@ -219,7 +219,7 @@ export class RowColSync {
         }
     }
 
-    /** 移动列时平移嵌套表头的标签 */
+    /** 移动列时平移嵌套表头的标签和样式 */
     #shiftNestedHeaders(fromCol, toCol) {
         const nh = this.#sheet.nestedHeaders;
         if (!Array.isArray(nh) || nh.length === 0) return;
@@ -232,7 +232,10 @@ export class RowColSync {
                 const isObj = isObject(item);
                 const label = isObj ? (item.label ?? "") : String(item);
                 const colspan = isObj && isNumber(item.colspan) ? item.colspan : 1;
-                for (let i = 0; i < colspan; i++) flat.push(label);
+                const style = isObj ? item.style : null;
+                for (let i = 0; i < colspan; i++) {
+                    flat.push({ label, style });
+                }
             }
 
             if (fromCol < flat.length) {
@@ -243,13 +246,44 @@ export class RowColSync {
             const repacked = [];
             let i = 0;
             while (i < flat.length) {
-                const label = flat[i];
+                const { label, style } = flat[i];
                 let span = 1;
-                while (i + span < flat.length && flat[i + span] === label) span++;
-                repacked.push(span === 1 ? label : { label, colspan: span });
+                while (i + span < flat.length) {
+                    const next = flat[i + span];
+                    if (next.label === label && this.#stylesEqual(next.style, style)) {
+                        span++;
+                    } else {
+                        break;
+                    }
+                }
+                if (span === 1) {
+                    repacked.push(style ? { label, style } : label);
+                } else {
+                    repacked.push(style ? { label, colspan: span, style } : { label, colspan: span });
+                }
                 i += span;
             }
             nh[li] = repacked;
         }
+    }
+
+    // ─── 工具方法 ─────────────────────────────────────
+
+    /**
+     * 浅比较两个样式对象是否相等
+     * @param {object|null} a
+     * @param {object|null} b
+     * @returns {boolean}
+     */
+    #stylesEqual(a, b) {
+        if (a === b) return true;
+        if (!a || !b) return false;
+        const keysA = Object.keys(a);
+        const keysB = Object.keys(b);
+        if (keysA.length !== keysB.length) return false;
+        for (const key of keysA) {
+            if (a[key] !== b[key]) return false;
+        }
+        return true;
     }
 }

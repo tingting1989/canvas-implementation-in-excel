@@ -1,6 +1,6 @@
-﻿import {ERROR_CODE, errorHandler} from "@/core/ErrorHandler";
-import {CONFIG} from "@/constants/config";
-import {isObject, isString} from "@/utils/utils";
+﻿import { ERROR_CODE, errorHandler } from "@/core/ErrorHandler";
+import { CONFIG } from "@/constants/config";
+import { isObject, isString } from "@/utils/utils";
 
 /**
  * 表头渲染器（纯绘制）
@@ -167,16 +167,7 @@ export class HeaderRenderer {
                 const textAlign = colStyle?.textAlign || "left";
                 const cp = sheet.cellPadding;
                 const textX = this.#calculateTextX(x, w, textAlign, cp);
-                this.#drawHeaderText(
-                    ctx,
-                    sheet.getColHeader(c),
-                    textX,
-                    clipY + rowH - 8,
-                    mergedStyle?.color,
-                    textFont,
-                    w - cp * 2,
-                    textAlign,
-                );
+                this.#drawHeaderText(ctx, sheet.getColHeader(c), textX, clipY + rowH - 8, mergedStyle?.color, textFont, w - cp * 2, textAlign);
 
                 for (const renderer of this.#columnHeaderRenderers) {
                     try {
