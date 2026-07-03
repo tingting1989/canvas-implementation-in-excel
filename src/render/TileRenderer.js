@@ -404,7 +404,7 @@ export class TileRenderer {
         const displayValue = sheet.formatCellValue(pageRow, col, cell?.value);
         const style = sheet.resolveStyle(realR, col);
 
-        const pc = options?.pageContext ?? sheet.pageContext;  // ★ 获取 PageContext 实例
+        const pc = options?.pageContext ?? sheet.pageContext; // ★ 获取 PageContext 实例
         const rc = sheet.rowColManager;
 
         const pageInfo = {
@@ -435,7 +435,7 @@ export class TileRenderer {
             isMerged: !!merge,
             mergeInfo: merge,
             pageInfo,
-            pageContext: pc,  // ★ 注入 PageContext（v2.0 核心 API）
+            pageContext: pc, // ★ 注入 PageContext（v2.0 核心 API）
         });
     }
 

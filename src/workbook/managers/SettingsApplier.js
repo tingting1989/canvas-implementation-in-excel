@@ -1,7 +1,7 @@
 ﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 
 import { stylePool } from "../../model/styles";
-import {isFunction, isNumber, isObject} from "../../utils/utils.js";
+import { isFunction, isNumber, isObject } from "../../utils/utils.js";
 import { CONFIG } from "@/constants/config";
 
 /**

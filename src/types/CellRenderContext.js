@@ -34,7 +34,7 @@
  *
  * @module types/CellRenderContext
  */
-import {CONFIG} from "@/constants/config";
+import { CONFIG } from "@/constants/config";
 
 export class CellRenderContext {
     /**
@@ -80,7 +80,7 @@ export class CellRenderContext {
         isMerged = false,
         mergeInfo = null,
         pageInfo = null,
-        pageContext = null,  // ★ v2.0 新增：PageContext 引用
+        pageContext = null, // ★ v2.0 新增：PageContext 引用
     }) {
         this._ctx = ctx;
         this._x = x;

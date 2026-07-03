@@ -415,8 +415,7 @@ export class Workbook {
     // ============================================================
 
     #applyInitOptions() {
-
-        console.log(123)
+        console.log(123);
         const opts = this.#initOptions;
         if (!opts || Object.keys(opts).length === 0) return;
 
