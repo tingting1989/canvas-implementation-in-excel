@@ -3,10 +3,10 @@
 // ============================================================
 window.__DEBUG_PAGINATION = true; // 设置为 false 可关闭调试日志
 
-import { Workbook } from "./workbook/Workbook.js";
-import { HOOKS } from "./constants/hookNames.js";
-import { isFunction, isNumber } from "./utils/utils.js";
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
+import {Workbook} from "./workbook/Workbook.js";
+import {HOOKS} from "./constants/hookNames.js";
+import {isFunction, isNumber} from "./utils/utils.js";
+import {errorHandler, ERROR_LEVEL, ERROR_CODE} from "./core/ErrorHandler.js";
 
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
@@ -22,6 +22,7 @@ const initApp = () => {
             fontSize: 14,
             fontFamily: "Microsoft YaHei",
             color: "#000",
+            textAlign: "center",
         },
         // readOnly: true,
         // 工作表高度和宽度（像素值）
@@ -43,9 +44,80 @@ const initApp = () => {
 
                 // 嵌套表头配置
                 nestedHeaders: [
-                    [{ label: "原水调节池+废水污泥池运行日报表", colspan: 14 }],
-                    [{ label: "日期：yyyy-mm-dd" }, { label: "时间", colspan: 13 }],
-                    ["名称", "0:00", "2:00", "4:00", "6:00", "8:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00", "24:00"],
+                    [{
+                        label: "原水调节池+废水污泥池运行日报表",
+                        colspan: 14,
+                        style: {fontWeight: "bold", textAlign: "center"}
+                    }],
+                    [
+                        {label: "日期：yyyy-mm-dd", style: {fontWeight: "bold", textAlign: "center"}}, {
+                        label: "时间",
+                        colspan: 13,
+
+                        style: {fontWeight: "bold", textAlign: "center"}
+                    }],
+                    [
+
+                        {
+                            label: "名称",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "0:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+
+                        {
+                            label: "2:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+
+                        {
+                            label: "4:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "6:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "8:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "10:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "12:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "14:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "16:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "18:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "20:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "22:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            label: "24:00",
+                            style: {fontWeight: "bold", textAlign: "center"}
+                        },
+
+                    ],
                 ],
 
                 // 单元格内容超出单元格宽度时是否显示省略号
@@ -71,7 +143,7 @@ const initApp = () => {
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
-                rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
+                rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
 
                 // 嵌套表头配置（支持完整 style 属性）
                 nestedHeaders: [
@@ -138,31 +210,31 @@ const initApp = () => {
                 cellPadding: 10,
                 conditionalStyles: [
                     {
-                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                        range: {topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25},
                         condition: (v) => isNumber(v) && v > 25,
-                        style: { backgroundColor: "#ffcccc" },
+                        style: {backgroundColor: "#ffcccc"},
                     },
                 ],
                 cell: [
-                    { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                    { row: 1, col: 3, disabled: true },
-                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
+                    {row: 0, col: 0, style: {backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center"}},
+                    {row: 1, col: 3, disabled: true},
+                    {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
                 ],
                 cells: (row, col) => {
                     if (row === 0) {
-                        return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
+                        return {style: {fontWeight: "bold", backgroundColor: "#e8f4fd"}};
                     }
                     if (col === 0 && row > 0) {
-                        return { style: { textAlign: "right", fontWeight: "bold" } };
+                        return {style: {textAlign: "right", fontWeight: "bold"}};
                     }
                 },
                 columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text", width: 100 },
-                    { type: "text", width: 100 },
-                    { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date", width: 300 },
+                    {type: "text", width: 120, style: {textAlign: "left"}},
+                    {type: "numeric", width: 80, style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
+                    {type: "text", width: 100},
+                    {type: "text", width: 100},
+                    {type: "numeric", width: 100, style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
+                    {type: "date", width: 300},
                 ],
             },
         ],
@@ -192,7 +264,7 @@ const initApp = () => {
                         // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
                         contexts: ["cell", "rowHeader"],
                         action: (row, col, sheet) => {
-                            sheet.setRowStyle(row, { backgroundColor: "yellow" });
+                            sheet.setRowStyle(row, {backgroundColor: "yellow"});
                             wb.render();
                         },
                     },
@@ -201,7 +273,7 @@ const initApp = () => {
                         contexts: ["cell"],
                         action: (row, col, sheet) => {
                             const range = sheet.selection.getRange();
-                            const styleObj = { backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724" };
+                            const styleObj = {backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724"};
                             for (let r = range.topRow; r <= range.bottomRow; r++) {
                                 for (let c = range.topCol; c <= range.bottomCol; c++) {
                                     if (!sheet.isDisabled(r, c)) {
@@ -227,7 +299,7 @@ const initApp = () => {
                             wb.render();
                         },
                     },
-                    { type: "separator" },
+                    {type: "separator"},
                     {
                         label: "导出选中区域",
                         action: (row, col, sheet) => {
@@ -242,7 +314,7 @@ const initApp = () => {
                 // rowMove: { enabled: false },
             },
 
-            freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+            freeze: {fixedRowsTop: 1, fixedColumnsStart: 1},
 
             dataValidation: {
                 conflictStrategy: "short-circuit",
@@ -557,6 +629,20 @@ const initApp = () => {
 
     wb.initRender();
     wb.render();
+
+
+    setTimeout(() => {
+        wb.activeSheet.loadData([
+            ["姓名", "年龄", "城市"],
+            ["张三", 30, "北京"],
+            ["李四", 25, "上海"],
+        ]);
+               // wb.loadData(HOOKS.AFTER_CHANGE, () => {
+        //     if (isFunction(window.updateToolbarStyleState)) {
+        //         window.updateToolbarStyleState();
+        //     }
+        // });
+    }, 1000);
 
     // wb.addHook(HOOKS.AFTER_CHANGE, () => {
     //     if (isFunction(window.updateToolbarStyleState)) {

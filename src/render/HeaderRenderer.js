@@ -161,10 +161,10 @@ export class HeaderRenderer {
                 this.#enrichFragmentsWithState(fragments, range);
 
                 this.#painter.paintAll(ctx, fragments, {
-                    layerBottomY: layerY + rowH,
                     vt,
                     rc,
                     columnHeaderRenderers: this.#columnHeaderRenderers,
+                    isTopLayer: layerIdx === 0,
                 });
             }
         } else {
@@ -182,7 +182,6 @@ export class HeaderRenderer {
             this.#enrichFragmentsWithState(fragments, range);
 
             this.#painter.paintAll(ctx, fragments, {
-                layerBottomY: rowH,
                 vt,
                 rc,
                 columnHeaderRenderers: this.#columnHeaderRenderers,

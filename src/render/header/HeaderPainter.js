@@ -11,15 +11,16 @@ export class HeaderPainter {
      * @param {object} extras
      */
     paintAll(ctx, fragments, extras = {}) {
-        for (const frag of fragments) {
+        const isTopLayer = extras.isTopLayer !== false;
+
+        for (let i = 0; i < fragments.length; i++) {
+            const frag = fragments[i];
             if (!frag) continue;
             this.#paintBackground(ctx, frag);
             this.#paintText(ctx, frag);
-            this.#paintBorders(ctx, frag);
-        }
 
-        if (extras.layerBottomY != null) {
-            this.#paintLayerBottomBorder(ctx, fragments, extras.layerBottomY, extras.vt, extras.rc);
+            const suppressLeft = this.#shouldSuppressLeft(fragments, i);
+            this.#paintBorders(ctx, frag, suppressLeft, isTopLayer);
         }
 
         if (extras.columnHeaderRenderers) {
@@ -34,6 +35,37 @@ export class HeaderPainter {
                 }
             }
         }
+    }
+
+    /**
+     * 判断是否应抑制当前 Fragment 的 LEFT 边框
+     *
+     * 只有当「前一个在同一行的 Fragment 画了 RIGHT 边框」时才抑制，
+     * 这样可以避免相邻共享边被画两次。
+     *
+     * 特殊情况保护：
+     *   - MERGED_DEFAULT 不画 RIGHT，所以下一个 Fragment 的 LEFT 不会被错误抑制
+     *   - 跨冻结边界的 FROZEN_SIDE/SCROLL_SIDE 也不会互相干扰（y 不同）
+     *
+     * @param {import("./models/Fragment.js").Fragment[]} fragments
+     * @param {number} currentIndex
+     * @returns {boolean}
+     */
+    #shouldSuppressLeft(fragments, currentIndex) {
+        if (currentIndex <= 0) return false;
+
+        const prev = fragments[currentIndex - 1];
+        const curr = fragments[currentIndex];
+
+        if (!prev || !curr) return false;
+
+        const prevDrawsRight = !!(prev.borderMask & BorderMask.RIGHT);
+        if (!prevDrawsRight) return false;
+
+        const sameRow = Math.abs(prev.y - curr.y) < 1;
+        const adjacentX = Math.abs(prev.x + prev.w - curr.x) < 1;
+
+        return sameRow && adjacentX;
     }
 
     #paintBackground(ctx, frag) {
@@ -80,7 +112,7 @@ export class HeaderPainter {
         }
     }
 
-    #paintBorders(ctx, frag) {
+    #paintBorders(ctx, frag, suppressLeft, isTopLayer) {
         const { x, y, w, h, borderMask } = frag;
 
         ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
@@ -88,40 +120,23 @@ export class HeaderPainter {
 
         if (borderMask & BorderMask.RIGHT) this.#drawVLine(ctx, x + w, y, y + h);
         if (borderMask & BorderMask.BOTTOM) this.#drawHLine(ctx, x, y + h, x + w);
-        if (borderMask & BorderMask.LEFT) this.#drawVLine(ctx, x, y, y + h);
-        if (borderMask & BorderMask.TOP) this.#drawHLine(ctx, x, y, x + w);
-    }
-
-    #paintLayerBottomBorder(ctx, fragments, bottomY, vt, rc) {
-        if (fragments.length === 0) return;
-
-        let leftmostX = Infinity;
-        let rightmostX = -Infinity;
-
-        for (const frag of fragments) {
-            if (!frag) continue;
-            leftmostX = Math.min(leftmostX, frag.x);
-            rightmostX = Math.max(rightmostX, frag.x + frag.w);
-        }
-
-        if (rightmostX > leftmostX) {
-            this.#drawHLine(ctx, leftmostX, bottomY, rightmostX);
-        }
+        if (!suppressLeft && (borderMask & BorderMask.LEFT)) this.#drawVLine(ctx, x, y, y + h);
+        if (isTopLayer && (borderMask & BorderMask.TOP)) this.#drawHLine(ctx, x, y, x + w);
     }
 
     #drawVLine(ctx, x, y1, y2) {
         ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
         ctx.beginPath();
-        ctx.moveTo(x, y1);
-        ctx.lineTo(x, y2);
+        ctx.moveTo(x - 0.5, y1);
+        ctx.lineTo(x - 0.5, y2);
         ctx.stroke();
     }
 
     #drawHLine(ctx, x1, y, x2) {
         ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
         ctx.beginPath();
-        ctx.moveTo(x1, y);
-        ctx.lineTo(x2, y);
+        ctx.moveTo(x1, y - 0.5);
+        ctx.lineTo(x2, y - 0.5);
         ctx.stroke();
     }
 }
