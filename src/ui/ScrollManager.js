@@ -235,7 +235,7 @@ export class ScrollManager extends DOMComponent {
 
         if (this.#vBar) this.#vBar.style.display = showV ? "" : "none";
         if (this.#hBar) this.#hBar.style.display = showH ? "" : "none";
-        if (this.#corner) this.#corner.style.display = (showV && showH) ? "" : "none";
+        if (this.#corner) this.#corner.style.display = showV && showH ? "" : "none";
         if (this.#topCorner) this.#topCorner.style.display = showV ? "" : "none";
 
         if (this.#vThumb && showV) {
