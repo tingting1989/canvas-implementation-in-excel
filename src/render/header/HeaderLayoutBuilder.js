@@ -15,12 +15,20 @@ export class HeaderLayoutBuilder {
         const { layerData, layerIndex, layerY, rowH, sc, ec, frozenBoundary, vt, sheet, defaultStyle, headerFont } = opts;
 
         const logicalCells = this.#parseLayerCells(layerData, layerIndex);
-        const visibleCells = logicalCells.filter(c => c.endCol >= sc && c.startCol < ec);
+        const visibleCells = logicalCells.filter((c) => c.endCol >= sc && c.startCol < ec);
 
         const fragments = [];
         for (const cell of visibleCells) {
             const cellFragments = this.#cellToFragments(cell, {
-                layerY, rowH, sc, ec, frozenBoundary, vt, sheet, defaultStyle, headerFont,
+                layerY,
+                rowH,
+                sc,
+                ec,
+                frozenBoundary,
+                vt,
+                sheet,
+                defaultStyle,
+                headerFont,
             });
             for (const frag of cellFragments) {
                 if (frag) fragments.push(frag);
@@ -57,21 +65,27 @@ export class HeaderLayoutBuilder {
             const textAlign = colStyle?.textAlign || "left";
             const font = this.#buildFont(headerFont, colStyle);
 
-            fragments.push(new Fragment({
-                sourceCell: null,
-                visStartCol: c,
-                visEndCol: c,
-                x, y: layerY, w, h: rowH,
-                borderMask: BorderMask.ALL,
-                mergedStyle,
-                text: sheet.getColHeader(c),
-                font, textAlign,
-                textX: this.#calcTextX(x, w, textAlign, cp),
-                textY: layerY + rowH - 8,
-                maxTextWidth: w - cp * 2,
-                isPartial: false,
-                partialType: "full",
-            }));
+            fragments.push(
+                new Fragment({
+                    sourceCell: null,
+                    visStartCol: c,
+                    visEndCol: c,
+                    x,
+                    y: layerY,
+                    w,
+                    h: rowH,
+                    borderMask: BorderMask.ALL,
+                    mergedStyle,
+                    text: sheet.getColHeader(c),
+                    font,
+                    textAlign,
+                    textX: this.#calcTextX(x, w, textAlign, cp),
+                    textY: layerY + rowH - 8,
+                    maxTextWidth: w - cp * 2,
+                    isPartial: false,
+                    partialType: "full",
+                }),
+            );
         }
 
         return fragments;
@@ -87,14 +101,16 @@ export class HeaderLayoutBuilder {
             const colspan = item && isObject(item) && item.colspan ? item.colspan : 1;
             const style = item?.style || null;
 
-            cells.push(new LogicalCell({
-                layerIndex,
-                startCol: consumed,
-                endCol: consumed + colspan - 1,
-                colspan,
-                label,
-                style,
-            }));
+            cells.push(
+                new LogicalCell({
+                    layerIndex,
+                    startCol: consumed,
+                    endCol: consumed + colspan - 1,
+                    colspan,
+                    label,
+                    style,
+                }),
+            );
 
             consumed += colspan;
         }
@@ -143,14 +159,16 @@ export class HeaderLayoutBuilder {
             return fragments;
         }
 
-        return [this.#createFragment(cell, {
-            ...rest,
-            visStartCol: Math.max(cell.startCol, sc),
-            visEndCol: Math.min(cell.endCol, ec - 1),
-            vt,
-            borderOverride: cell.isMerged ? BorderMask.MERGED_DEFAULT : BorderMask.ALL,
-            partialType: "full",
-        })];
+        return [
+            this.#createFragment(cell, {
+                ...rest,
+                visStartCol: Math.max(cell.startCol, sc),
+                visEndCol: Math.min(cell.endCol, ec - 1),
+                vt,
+                borderOverride: cell.isMerged ? BorderMask.MERGED_DEFAULT : BorderMask.ALL,
+                partialType: "full",
+            }),
+        ];
     }
 
     #createFragment(cell, opts) {
@@ -174,7 +192,6 @@ export class HeaderLayoutBuilder {
         const textAlign = cell.style?.textAlign || "left";
         const font = this.#buildFont(headerFont, cell.style);
 
-
         let text, textX, maxTextWidth;
         if (partialType === "frozen") {
             text = cell.label;
@@ -194,11 +211,15 @@ export class HeaderLayoutBuilder {
             sourceCell: cell,
             visStartCol,
             visEndCol,
-            x, y: layerY, w: totalW, h: rowH,
+            x,
+            y: layerY,
+            w: totalW,
+            h: rowH,
             borderMask: borderOverride,
             mergedStyle,
             text,
-            font, textAlign,
+            font,
+            textAlign,
             textX,
             textY: layerY + rowH - 8,
             maxTextWidth,

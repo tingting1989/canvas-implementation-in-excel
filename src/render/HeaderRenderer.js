@@ -144,28 +144,46 @@ export class HeaderRenderer {
                 if (!Array.isArray(layerData)) continue;
 
                 const fragments = this.#layoutBuilder.buildLayerFragments({
-                    layerData, layerIndex: layerIdx, layerY, rowH, sc, ec,
-                    frozenBoundary, vt, sheet, defaultStyle, headerFont,
+                    layerData,
+                    layerIndex: layerIdx,
+                    layerY,
+                    rowH,
+                    sc,
+                    ec,
+                    frozenBoundary,
+                    vt,
+                    sheet,
+                    defaultStyle,
+                    headerFont,
                 });
 
                 this.#enrichFragmentsWithState(fragments, range);
 
                 this.#painter.paintAll(ctx, fragments, {
                     layerBottomY: layerY + rowH,
-                    vt, rc,
+                    vt,
+                    rc,
                     columnHeaderRenderers: this.#columnHeaderRenderers,
                 });
             }
         } else {
             const fragments = this.#layoutBuilder.buildSimpleLayerFragments({
-                sc, ec, layerY: 0, rowH, vt, sheet, defaultStyle, headerFont,
+                sc,
+                ec,
+                layerY: 0,
+                rowH,
+                vt,
+                sheet,
+                defaultStyle,
+                headerFont,
             });
 
             this.#enrichFragmentsWithState(fragments, range);
 
             this.#painter.paintAll(ctx, fragments, {
                 layerBottomY: rowH,
-                vt, rc,
+                vt,
+                rc,
                 columnHeaderRenderers: this.#columnHeaderRenderers,
             });
         }

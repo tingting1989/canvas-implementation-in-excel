@@ -267,7 +267,6 @@ const initApp = () => {
                         },
                     ],
                     [
-
                         {
                             label: "姓名",
                             style: {
