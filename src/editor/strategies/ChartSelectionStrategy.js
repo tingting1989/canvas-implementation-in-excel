@@ -185,7 +185,7 @@ export class ChartSelectionStrategy extends EventStrategy {
         ctx.save();
         ctx.strokeStyle = CONFIG.CHART_SELECTION_BORDER_COLOR;
         ctx.lineWidth = CONFIG.CHART_SELECTION_BORDER_WIDTH;
-        ctx.setLineDash([4, 3]);
+        ctx.setLineDash(CONFIG.UI_DASH_PATTERN);
         ctx.strokeRect(b.x, b.y, b.w, b.h);
         ctx.setLineDash([]);
         const handles = this.#getHandlePositions(b);

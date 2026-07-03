@@ -174,6 +174,7 @@ export class OverlayRenderer {
         const y2 = vt.rowBottomToViewY(range.bottomRow);
 
         ctx.fillStyle = CONFIG.SELECTION_COLOR;
-        ctx.fillRect(x2 - 5, y2 - 5, 5, 5);
+        const hs = CONFIG.FILL_HANDLE_SIZE;
+        ctx.fillRect(x2 - hs, y2 - hs, hs, hs);
     }
 }

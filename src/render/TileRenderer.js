@@ -332,9 +332,9 @@ export class TileRenderer {
         ctx.strokeStyle = borderDef.color || CONFIG.CELL_BORDER_COLOR;
         ctx.lineWidth = borderDef.width || 1;
         if (borderDef.style === "dashed") {
-            ctx.setLineDash([4, 2]);
+            ctx.setLineDash(CONFIG.BORDER_DASH_SOLID);
         } else if (borderDef.style === "dotted") {
-            ctx.setLineDash([1, 2]);
+            ctx.setLineDash(CONFIG.BORDER_DASH_DOTTED);
         } else {
             ctx.setLineDash([]);
         }

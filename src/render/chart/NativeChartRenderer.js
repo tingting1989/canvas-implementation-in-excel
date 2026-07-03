@@ -130,7 +130,7 @@ export class NativeChartRenderer extends IChartRenderer {
                 const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
                 ctx.fillStyle = style.colors[s % style.colors.length];
                 ctx.beginPath();
-                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.arc(x, y, CONFIG.CHART_LINE_DOT_RADIUS, 0, Math.PI * 2);
                 ctx.fill();
             }
             ctx.restore();

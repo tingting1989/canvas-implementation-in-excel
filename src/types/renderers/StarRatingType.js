@@ -29,7 +29,7 @@ export class StarRatingType extends BaseColumnType {
     validate(value) {
         if (value === "" || value == null) return true;
         const num = Number(value);
-        const max = this.options?.maxStars || 5;
+        const max = this.options?.maxStars || CONFIG.STAR_RATING_MAX_STARS;
         if (isNaN(num) || num < 0 || num > max) return `评分必须在 0-${max} 之间`;
         return true;
     }
@@ -41,10 +41,10 @@ export class StarRatingType extends BaseColumnType {
     render(context) {
         const { ctx, x, y, width, height, value } = context;
 
-        const rating = Math.min(this.options?.maxStars || 5, Math.max(0, Number(value) || 0));
-        const starSize = this.options?.starSize || Math.min(16, height * 0.6);
-        const gap = starSize * 0.2;
-        const startX = x + (width - (starSize * 5 + gap * 4)) / 2; // 居中
+        const rating = Math.min(this.options?.maxStars || CONFIG.STAR_RATING_MAX_STARS, Math.max(0, Number(value) || 0));
+        const starSize = this.options?.starSize || Math.min(CONFIG.STAR_RATING_STAR_SIZE, height * 0.6);
+        const gap = starSize * CONFIG.STAR_RATING_GAP_RATIO;
+        const startX = x + (width - (starSize * CONFIG.STAR_RATING_MAX_STARS + gap * (CONFIG.STAR_RATING_MAX_STARS - 1))) / 2;
         const centerY = y + height / 2;
 
         const filledColor = this.options?.color || CONFIG.STAR_RATING_FILLED_COLOR;
@@ -57,7 +57,7 @@ export class StarRatingType extends BaseColumnType {
 
             ctx.save();
             ctx.translate(starX + starSize / 2, centerY);
-            ctx.scale(starSize / 16, starSize / 16);
+            ctx.scale(starSize / CONFIG.STAR_RATING_STAR_SIZE, starSize / CONFIG.STAR_RATING_STAR_SIZE);
 
             this.#drawStarPath(ctx);
 

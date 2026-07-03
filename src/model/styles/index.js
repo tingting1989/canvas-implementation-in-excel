@@ -1,3 +1,5 @@
+import { CONFIG } from "../../constants/config.js";
+
 /**
  * 样式池（Flyweight 模式）
  *
@@ -112,15 +114,15 @@ export function validateStyleProperties(styleObj) {
 export const stylePool = new StylePool();
 
 export const DEFAULT_STYLE_ID = stylePool.getStyleId({
-    fontFamily: "Segoe UI",
-    fontSize: 12,
-    color: "#222",
+    fontFamily: CONFIG.DEFAULT_FONT,
+    fontSize: CONFIG.DEFAULT_FONT_SIZE,
+    color: CONFIG.CELL_TEXT_COLOR,
     backgroundColor: "transparent",
     textAlign: "left",
     verticalAlign: "middle",
 });
 
 export const DISABLED_STYLE_ID = stylePool.getStyleId({
-    color: "#888",
-    backgroundColor: "#f5f5f5",
+    color: CONFIG.DISABLED_COLOR,
+    backgroundColor: CONFIG.DISABLED_BG,
 });

@@ -119,7 +119,7 @@ export class SortUIManager {
             }
         } else {
             ctx.fillStyle = CONFIG.SORT_INACTIVE_COLOR;
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = CONFIG.SORT_INACTIVE_ALPHA;
             this.#drawUpDownArrow(ctx, arrowX, arrowY, arrowSize); // 双向箭头
         }
 

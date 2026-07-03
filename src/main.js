@@ -167,8 +167,8 @@ const initApp = () => {
 
                 // 行表头配置（支持对象形式设置样式）
                 rowHeaders: [
-                    { label: "序号", style: { textAlign: "center", backgroundColor: "#E7E6E6" } },
-                    "年龄",
+                    { label: "序号", style: { textAlign: "center", backgroundColor: "#fff" } },
+                    { label: "年龄", style: { textAlign: "center", backgroundColor: "#fff" } },
                     "城市",
                     "部门",
                     "薪酬",

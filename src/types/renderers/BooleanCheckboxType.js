@@ -42,11 +42,11 @@ export class BooleanCheckboxType extends BaseColumnType {
         const { ctx, x, y, width, height, value, isDisabled } = context;
 
         const isChecked = Boolean(value);
-        const sizeRatio = this.options?.size || 0.6;
+        const sizeRatio = this.options?.size || CONFIG.CHECKBOX_SIZE_RATIO;
         const boxSize = Math.min(width, height) * sizeRatio;
         const boxX = x + (width - boxSize) / 2;
         const boxY = y + (height - boxSize) / 2;
-        const radius = boxSize * 0.15;
+        const radius = boxSize * CONFIG.CHECKBOX_CORNER_RADIUS_RATIO;
 
         // 未选中：空心方框
         ctx.strokeStyle = this.options?.uncheckedColor || CONFIG.CHECKBOX_UNCHECKED_COLOR;
@@ -66,7 +66,7 @@ export class BooleanCheckboxType extends BaseColumnType {
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
 
-            const checkSize = boxSize * 0.5;
+            const checkSize = boxSize * CONFIG.CHECKBOX_CHECK_MARK_SIZE_RATIO;
             const cx = boxX + boxSize / 2;
             const cy = boxY + boxSize / 2;
 

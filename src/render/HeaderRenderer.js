@@ -290,7 +290,9 @@ export class HeaderRenderer {
             const textFont = this.#buildNestedHeaderFont(headerFont, rowStyle);
             this.#drawHeaderText(ctx, sheet.getRowHeader(r), headerW / 2, y + h - 8, mergedStyle?.color, textFont, null, "center");
 
+            this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
             this.#drawSeparator(ctx, headerW, y, headerW, y + h);
+            this.#drawSeparator(ctx, 0, y, 0, y + h);
         }
 
         ctx.restore();
@@ -366,6 +368,10 @@ export class HeaderRenderer {
             ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_BG;
             ctx.fillRect(x, y, w, h);
             ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
+        } else if (defaultStyle?.backgroundColor) {
+            ctx.fillStyle = defaultStyle.backgroundColor;
+            ctx.fillRect(x, y, w, h);
+            ctx.fillStyle = defaultStyle.color || CONFIG.HEADER_TEXT_COLOR;
         } else {
             ctx.fillStyle = defaultStyle?.color || CONFIG.HEADER_TEXT_COLOR;
         }

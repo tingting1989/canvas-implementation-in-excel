@@ -34,7 +34,7 @@ export class SparklineType extends BaseColumnType {
 
         const data = Array.isArray(value) ? value : [];
         const chartType = this.options?.type || "line";
-        const padding = 4;
+        const padding = CONFIG.SPARKLINE_PADDING;
 
         if (data.length === 0) return;
 
@@ -102,7 +102,7 @@ export class SparklineType extends BaseColumnType {
                 const px = x + i * stepX;
                 const py = y + h - ((val - minVal) / range) * h;
                 ctx.beginPath();
-                ctx.arc(px, py, 2, 0, Math.PI * 2);
+                ctx.arc(px, py, CONFIG.SPARKLINE_DOT_RADIUS, 0, Math.PI * 2);
                 ctx.fillStyle = lineColor;
                 ctx.fill();
             });
@@ -114,7 +114,7 @@ export class SparklineType extends BaseColumnType {
      */
     #renderBarChart(ctx, data, x, y, w, h, minVal, range) {
         const barColor = this.options?.barColor || CONFIG.SPARKLINE_BAR_COLOR;
-        const barGap = 1;
+        const barGap = CONFIG.SPARKLINE_BAR_GAP;
         const barW = (w - barGap * (data.length - 1)) / data.length;
 
         data.forEach((val, i) => {

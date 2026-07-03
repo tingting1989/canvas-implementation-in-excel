@@ -14,8 +14,8 @@ export class ProgressBarType extends BaseColumnType {
      * 默认配置选项
      */
     static defaultOptions = {
-        heightRatio: 0.6,
-        borderRadius: 4,
+        heightRatio: CONFIG.PROGRESS_BAR_HEIGHT_RATIO,
+        borderRadius: CONFIG.PROGRESS_BAR_BORDER_RADIUS,
         showPercent: true,
         colors: {
             low: CONFIG.PROGRESS_BAR_LOW_COLOR,
@@ -60,12 +60,12 @@ export class ProgressBarType extends BaseColumnType {
         const { ctx, x, y, width, height, value, style } = context;
 
         const percent = Math.min(100, Math.max(0, Number(value) || 0));
-        const padding = 6;
-        const barH = height * (this.options?.heightRatio || 0.6);
+        const padding = CONFIG.PROGRESS_BAR_PADDING;
+        const barH = height * (this.options?.heightRatio || CONFIG.PROGRESS_BAR_HEIGHT_RATIO);
         const barW = width - padding * 2;
         const barX = x + padding;
         const barY = y + (height - barH) / 2;
-        const radius = this.options?.borderRadius || 4;
+        const radius = this.options?.borderRadius || CONFIG.PROGRESS_BAR_BORDER_RADIUS;
 
         // 根据百分比选择颜色
         const colors = this.options?.colors || {};

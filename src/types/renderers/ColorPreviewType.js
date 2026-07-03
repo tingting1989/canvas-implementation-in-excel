@@ -39,11 +39,11 @@ export class ColorPreviewType extends BaseColumnType {
         const colorStr = String(value ?? "").trim();
         if (!colorStr) return;
 
-        const padding = 4;
+        const padding = CONFIG.COLOR_PREVIEW_PADDING;
         const size = Math.min(width - padding * 2, height - padding * 2);
         const colorX = x + (width - size) / 2;
         const colorY = y + (height - size) / 2;
-        const radius = this.options?.borderRadius || 4;
+        const radius = this.options?.borderRadius || CONFIG.COLOR_PREVIEW_BORDER_RADIUS;
 
         // 绘制颜色块
         ctx.fillStyle = this.#normalizeColor(colorStr);

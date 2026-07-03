@@ -91,7 +91,7 @@ export class InteractionLayer extends BaseLayer {
         ctx.save();
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
         ctx.lineWidth = CONFIG.SELECTION_LINE_WIDTH;
-        ctx.setLineDash([4, 3]);
+        ctx.setLineDash(CONFIG.UI_DASH_PATTERN);
 
         if (this.#resizeLine.type === HIT_TYPE.COL_RESIZE) {
             const x = this.#resizeLine.position;
