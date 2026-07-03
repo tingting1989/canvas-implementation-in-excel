@@ -36,169 +36,29 @@ const initApp = () => {
         // cellPadding: 30,
         sheets: [
             {
-                name: "Sheet1",
+                name: "原水调节池+废水污泥池运行日报表",
 
                 // 是否只读
-                // readOnly: false,
+                readOnly: false,
 
-                // 初始数据
-                // data: [
-                //     ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
-                //     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
-                //     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
-                // ],
-                // 列表头配置，用于替换默认的行号表头 A,B,C...
-                // colHeaders: [{label: "姓名", style: {textAlign: "center"}}, "Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                // 行表头宽度配置
-                rowHeaderWidth: 120,
-
-                // 行高配置
-                rowHeights: [30, 50, 90],
-
-                // 行表头配置，用于替换默认的行号表头 1,2,3...
-                // rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
-                maxCols: 2,
                 // 嵌套表头配置
                 nestedHeaders: [
-                    // [
-                    //     {
-                    //         label: "基本信息",
-                    //         colspan: 2,
-                    //         style: {
-                    //             backgroundColor: "#FFC000",
-                    //             color: "#4472C4",
-                    //             fontWeight: "bold",
-                    //             fontSize: "14px",
-                    //             textAlign: "center",
-                    //         },
-                    //     },
-                    //     {
-                    //         label: "工作信息",
-                    //         colspan: 4,
-                    //         style: {
-                    //             backgroundColor: "#70AD47",
-                    //             color: "#FFFFFF",
-                    //             fontWeight: "bold",
-                    //             fontSize: "14px",
-                    //             textAlign: "center",
-                    //         },
-                    //     },
-                    // ],
-                    // [
-                    //     { label: "姓名", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-                    //     { label: "年龄", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-                    //
-                    //     {
-                    //         label: "城市",
-                    //         style: {
-                    //             backgroundColor: "#FFC000",
-                    //             fontWeight: "bold",
-                    //         },
-                    //     },
-                    //     {
-                    //         label: "部门",
-                    //         style: {
-                    //             fontStyle: "italic",
-                    //             color: "#333333",
-                    //         },
-                    //     },
-                    //     {
-                    //         label: "薪酬",
-                    //         colspan: 2,
-                    //         style: {
-                    //             backgroundColor: "#ED7D31",
-                    //             color: "#FFFFFF",
-                    //             textAlign: "center",
-                    //         },
-                    //     },
-                    // ],
-                    // [
-                    //     {
-                    //         label: "name",
-                    //         style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-                    //     },
-                    //     {
-                    //         label: "Age",
-                    //         style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-                    //     },
-                    //     "City",
-                    //     "Dept",
-                    //     "Salary",
-                    //     "Hire Date",
-                    // ],
-                ],
-
-                // 列头配置（支持对象形式设置样式）
-                // colHeaders: [
-                //     { label: "姓名", style: { textAlign: "center", fontWeight: "bold" } },
-                //     { label: "年龄", style: { textAlign: "center" } },
-                //     { label: "城市", style: { textAlign: "center" } },
-                //     { label: "部门", style: { textAlign: "center" } },
-                //     { label: "薪酬", style: { textAlign: "center", color: "#FF0000" } },
-                //     { label: "入职日期", style: { textAlign: "center" } },
-                // ],
-
-                // 行表头配置（支持对象形式设置样式）
-                rowHeaders: [
-                    { label: "序号", style: { textAlign: "center", backgroundColor: "#fff" } },
-                    { label: "年龄", style: { textAlign: "center", backgroundColor: "#fff" } },
-                    "城市",
-                    "部门",
-                    "薪酬",
-                    "入职日期",
+                    [{ label: "原水调节池+废水污泥池运行日报表", colspan: 14 }],
+                    [{ label: "日期：yyyy-mm-dd" }, { label: "时间", colspan: 13 }],
+                    ["名称", "0:00", "2:00", "4:00", "6:00", "8:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00", "24:00"],
                 ],
 
                 // 单元格内容超出单元格宽度时是否显示省略号
-                textOverflowEllipsis: true,
+                textOverflowEllipsis: false,
 
                 // 每个单元格的内边距（像素值）
-                // cellPadding: 10,
+                cellPadding: 10,
 
                 // 固定行列数上限（使用 maxRows/maxCols）
                 // maxRows: 20,
-                // maxCols: 12,
-                conditionalStyles: [
-                    {
-                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
-                        condition: (v) => isNumber(v) && v > 25,
-                        style: { backgroundColor: "#ffcccc" },
-                    },
-                ],
+                maxCols: 14,
 
-                // 单元格样式配置
-                cell: [
-                    // { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                    { row: 1, col: 3, disabled: true },
-                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
-                ],
-
-                // 单元格样式配置函数
-                cells: (row, col) => {
-                    // if (row === 0) {
-                    //     return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
-                    // }
-                    // if (col === 0 && row > 0) {
-                    //     return { style: { textAlign: "right", fontWeight: "bold" } };
-                    // }
-                },
-
-                // 列配置
-                columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text" },
-                    { type: "text" },
-                    { type: "numeric", style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date" },
-
-                    // 自定义渲染器
-                    { type: "progressBar", options: { showPercent: true } },
-                ],
-
-                // 配置列的宽度 number|number[],优先级比columns中的width 低
-                colWidths: 200,
-
-                // colWidths: [120, 80, 100, 100, 100, 300],
+                colWidths: [600],
             },
             {
                 name: "Sheet2",
@@ -704,79 +564,79 @@ const initApp = () => {
     //     }
     // });
 
-    setTimeout(() => {
-        wb.updateSettings({
-            nestedHeaders: [
-                [
-                    {
-                        label: "基本信息",
-                        colspan: 2,
-                        style: {
-                            backgroundColor: "#FFC000",
-                            color: "#4472C4",
-                            fontWeight: "bold",
-                            fontSize: "14px",
-                            textAlign: "center",
-                        },
-                    },
-                    {
-                        label: "工作信息",
-                        colspan: 4,
-                        style: {
-                            backgroundColor: "#70AD47",
-                            color: "#FFFFFF",
-                            fontWeight: "bold",
-                            fontSize: "14px",
-                            textAlign: "center",
-                        },
-                    },
-                ],
-                [
-                    { label: "姓名", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-                    { label: "年龄", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-
-                    {
-                        label: "城市",
-                        style: {
-                            backgroundColor: "#FFC000",
-                            fontWeight: "bold",
-                        },
-                    },
-                    {
-                        label: "部门",
-                        style: {
-                            fontStyle: "italic",
-                            color: "#333333",
-                        },
-                    },
-                    {
-                        label: "薪酬",
-                        colspan: 2,
-                        style: {
-                            backgroundColor: "#ED7D31",
-                            color: "#FFFFFF",
-                            textAlign: "center",
-                        },
-                    },
-                ],
-                [
-                    {
-                        label: "name",
-                        style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-                    },
-                    {
-                        label: "Age",
-                        style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-                    },
-                    "City",
-                    "Dept",
-                    "Salary",
-                    "Hire Date",
-                ],
-            ],
-        });
-        // wb.destroy();
-    }, 5000);
+    // setTimeout(() => {
+    //     wb.updateSettings({
+    //         nestedHeaders: [
+    //             [
+    //                 {
+    //                     label: "基本信息",
+    //                     colspan: 2,
+    //                     style: {
+    //                         backgroundColor: "#FFC000",
+    //                         color: "#4472C4",
+    //                         fontWeight: "bold",
+    //                         fontSize: "14px",
+    //                         textAlign: "center",
+    //                     },
+    //                 },
+    //                 {
+    //                     label: "工作信息",
+    //                     colspan: 4,
+    //                     style: {
+    //                         backgroundColor: "#70AD47",
+    //                         color: "#FFFFFF",
+    //                         fontWeight: "bold",
+    //                         fontSize: "14px",
+    //                         textAlign: "center",
+    //                     },
+    //                 },
+    //             ],
+    //             [
+    //                 { label: "姓名", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
+    //                 { label: "年龄", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
+    //
+    //                 {
+    //                     label: "城市",
+    //                     style: {
+    //                         backgroundColor: "#FFC000",
+    //                         fontWeight: "bold",
+    //                     },
+    //                 },
+    //                 {
+    //                     label: "部门",
+    //                     style: {
+    //                         fontStyle: "italic",
+    //                         color: "#333333",
+    //                     },
+    //                 },
+    //                 {
+    //                     label: "薪酬",
+    //                     colspan: 2,
+    //                     style: {
+    //                         backgroundColor: "#ED7D31",
+    //                         color: "#FFFFFF",
+    //                         textAlign: "center",
+    //                     },
+    //                 },
+    //             ],
+    //             [
+    //                 {
+    //                     label: "name",
+    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
+    //                 },
+    //                 {
+    //                     label: "Age",
+    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
+    //                 },
+    //                 "City",
+    //                 "Dept",
+    //                 "Salary",
+    //                 "Hire Date",
+    //             ],
+    //         ],
+    //     });
+    //     // wb.destroy();
+    // }, 5000);
 
     // 注意：BEFORE_COLUMN_MOVE、AFTER_COLUMN_MOVE、AFTER_SORT 已在 hooks 配置中注册，
     // 无需重复通过 addHook 注册，否则会触发两次回调。

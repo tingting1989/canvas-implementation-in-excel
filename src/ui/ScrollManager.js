@@ -181,9 +181,14 @@ export class ScrollManager extends DOMComponent {
      *   dataViewW = viewW - headerW - frozenColsW
      *   dataViewH = viewH - headerH - frozenRowsH
      *
-     * 因此最大滚动偏移为：
-     *   maxScrollX = totalW - dataViewW = totalW - viewW + headerW + frozenColsW
-     *   maxScrollY = totalH - dataViewH = totalH - viewH + headerH + frozenRowsH
+     * 非冻结内容宽度为：
+     *   nonFrozenContentW = totalW - frozenColsW
+     *
+     * 最大滚动偏移 = 非冻结内容宽度 - 可滚动数据区宽度：
+     *   maxScrollX = nonFrozenContentW - dataViewW
+     *             = (totalW - frozenColsW) - (viewW - headerW - frozenColsW)
+     *             = totalW - viewW + headerW
+     *   maxScrollY = totalH - viewH + headerH
      *
      * @param {number} totalW - 内容总宽度
      * @param {number} totalH - 内容总高度
@@ -211,8 +216,8 @@ export class ScrollManager extends DOMComponent {
         this.#frozenRowsH = frozenRowsH;
         this.#frozenColsW = frozenColsW;
 
-        this.#maxScrollX = Math.max(0, totalW - viewW + headerW + frozenColsW);
-        this.#maxScrollY = Math.max(0, totalH - viewH + headerH + frozenRowsH);
+        this.#maxScrollX = Math.max(0, totalW - viewW + headerW);
+        this.#maxScrollY = Math.max(0, totalH - viewH + headerH);
 
         this.#scrollX = Math.min(this.#scrollX, this.#maxScrollX);
         this.#scrollY = Math.min(this.#scrollY, this.#maxScrollY);
