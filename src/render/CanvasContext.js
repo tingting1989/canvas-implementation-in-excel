@@ -37,7 +37,7 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-unused-vars */
 
-import {errorHandler} from "@/core/ErrorHandler";
+import { errorHandler } from "@/core/ErrorHandler";
 
 export class CanvasContext {
     /**

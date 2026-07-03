@@ -92,7 +92,7 @@ const initApp = () => {
                             label: "基本信息",
                             colspan: 2,
                             style: {
-                                backgroundColor: "#FFFFFF",
+                                backgroundColor: "#FFC000",
                                 color: "#4472C4",
                                 fontWeight: "bold",
                                 fontSize: "14px",
@@ -247,7 +247,7 @@ const initApp = () => {
                             label: "基本信息",
                             colspan: 2,
                             style: {
-                                backgroundColor: "#4472C4",
+                                backgroundColor: "#FFC000",
                                 color: "#FFFFFF",
                                 fontWeight: "bold",
                                 fontSize: "14px",
@@ -267,7 +267,14 @@ const initApp = () => {
                         },
                     ],
                     [
-                        "姓名",
+
+                        {
+                            label: "姓名",
+                            style: {
+                                backgroundColor: "#FFC000",
+                                fontWeight: "bold",
+                            },
+                        },
                         "年龄",
                         {
                             label: "城市",
