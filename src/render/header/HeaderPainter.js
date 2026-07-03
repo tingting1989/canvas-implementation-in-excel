@@ -83,8 +83,8 @@ export class HeaderPainter {
     #paintBorders(ctx, frag) {
         const { x, y, w, h, borderMask } = frag;
 
-        ctx.strokeStyle = CONFIG.GRID_COLOR;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
+        ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
 
         if (borderMask & BorderMask.RIGHT) this.#drawVLine(ctx, x + w, y, y + h);
         if (borderMask & BorderMask.BOTTOM) this.#drawHLine(ctx, x, y + h, x + w);
@@ -110,7 +110,7 @@ export class HeaderPainter {
     }
 
     #drawVLine(ctx, x, y1, y2) {
-        ctx.strokeStyle = CONFIG.GRID_COLOR;
+        ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
         ctx.beginPath();
         ctx.moveTo(x, y1);
         ctx.lineTo(x, y2);
@@ -118,7 +118,7 @@ export class HeaderPainter {
     }
 
     #drawHLine(ctx, x1, y, x2) {
-        ctx.strokeStyle = CONFIG.GRID_COLOR;
+        ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
         ctx.beginPath();
         ctx.moveTo(x1, y);
         ctx.lineTo(x2, y);

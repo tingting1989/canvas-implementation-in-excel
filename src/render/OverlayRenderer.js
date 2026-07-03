@@ -46,7 +46,7 @@ export class OverlayRenderer {
      */
     renderMerges(ctx, sheet, vt) {
         ctx.strokeStyle = CONFIG.GRID_COLOR;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
 
         const pc = sheet.pageContext;
         const pageStart = pc.pageStart;
@@ -107,7 +107,7 @@ export class OverlayRenderer {
      */
     #renderRangeHighlight(ctx, vt, range) {
         const rect = vt.mergeToViewRect(range);
-        ctx.fillStyle = "rgba(76, 139, 245, 0.08)";
+        ctx.fillStyle = CONFIG.RANGE_HIGHLIGHT_FILL;
         ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
 
@@ -119,7 +119,7 @@ export class OverlayRenderer {
      * 透明度比范围高亮更深，以便区分
      */
     #renderHeaderHighlight(ctx, vt, range) {
-        ctx.fillStyle = "rgba(76, 139, 245, 0.18)";
+        ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_FILL;
 
         const colX1 = vt.colToViewX(range.topCol);
         const colX2 = vt.colRightToViewX(range.bottomCol);
@@ -146,7 +146,7 @@ export class OverlayRenderer {
             rect = vt.cellToViewRect(row, col);
         }
 
-        ctx.fillStyle = "rgba(76, 139, 245, 0.12)";
+        ctx.fillStyle = CONFIG.ACTIVE_CELL_HIGHLIGHT_FILL;
         ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
 
@@ -158,9 +158,9 @@ export class OverlayRenderer {
     #renderRangeBorder(ctx, vt, range) {
         const rect = vt.mergeToViewRect(range);
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = CONFIG.SELECTION_LINE_WIDTH;
         ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-        ctx.lineWidth = 1;
+        ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
     }
 
     /**

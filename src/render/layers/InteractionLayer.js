@@ -63,8 +63,8 @@ export class InteractionLayer extends BaseLayer {
         const headerH = typeof sheet.getHeaderHeight === "function" ? sheet.getHeaderHeight() : 0;
 
         ctx.save();
-        ctx.strokeStyle = "#217346";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = CONFIG.SELECTION_COLOR;
+        ctx.lineWidth = CONFIG.SELECTION_LINE_WIDTH;
 
         if (frozenColsW > 0) {
             const x = headerW + frozenColsW;
@@ -90,7 +90,7 @@ export class InteractionLayer extends BaseLayer {
 
         ctx.save();
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = CONFIG.SELECTION_LINE_WIDTH;
         ctx.setLineDash([4, 3]);
 
         if (this.#resizeLine.type === HIT_TYPE.COL_RESIZE) {
@@ -131,10 +131,10 @@ export class InteractionLayer extends BaseLayer {
 
         ctx.save();
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = CONFIG.SELECTION_LINE_WIDTH;
         ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
 
-        ctx.fillStyle = "rgba(76, 139, 245, 0.06)";
+        ctx.fillStyle = CONFIG.INTERACTION_HOVER_FILL;
         ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
         ctx.restore();
     }
@@ -143,8 +143,8 @@ export class InteractionLayer extends BaseLayer {
         const layers = options.layers || [];
 
         ctx.save();
-        ctx.fillStyle = "rgba(255, 0, 0, 0.8)";
-        ctx.font = "12px monospace";
+        ctx.fillStyle = CONFIG.ERROR_HIGHLIGHT_FILL;
+        ctx.font = `${CONFIG.DEFAULT_FONT_SIZE}px ${CONFIG.MONO_FONT_FAMILY}`;
 
         let y = 20;
         ctx.fillText(`[Debug] Total Layers: ${layers.length}`, 10, y);

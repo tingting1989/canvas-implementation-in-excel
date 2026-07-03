@@ -246,8 +246,8 @@ export class HeaderLayoutBuilder {
         if (style.fontStyle) parts.push(style.fontStyle);
         if (style.fontWeight) parts.push(style.fontWeight);
         if (style.fontSize) parts.push(style.fontSize);
-        else parts.push(baseFont.match(/^[\d.]+px/)?.[0] || "12px");
-        parts.push(baseFont.match(/\s+(.+)$/)?.[1] || "sans-serif");
+        else parts.push(baseFont.match(/^[\d.]+px/)?.[0] || `${CONFIG.DEFAULT_FONT_SIZE}px`);
+        parts.push(baseFont.match(/\s+(.+)$/)?.[1] || CONFIG.DEFAULT_FONT_FAMILY);
 
         return parts.join(" ");
     }

@@ -1,4 +1,5 @@
 ﻿import { IChartRenderer } from "./IChartRenderer.js";
+import { CONFIG } from "../../constants/config";
 
 export class NativeChartRenderer extends IChartRenderer {
     #renderers = {
@@ -32,8 +33,8 @@ export class NativeChartRenderer extends IChartRenderer {
 
     #renderTitle(ctx, title, area) {
         ctx.save();
-        ctx.font = "bold 14px sans-serif";
-        ctx.fillStyle = "#333";
+        ctx.font = `bold 14px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.fillText(title, area.x + area.w / 2, area.y - 24);
@@ -42,8 +43,8 @@ export class NativeChartRenderer extends IChartRenderer {
 
     #renderGrid(ctx, data, area) {
         ctx.save();
-        ctx.strokeStyle = "#e0e0e0";
-        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = CONFIG.CHART_GRID_COLOR;
+        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
         const yTicks = NativeChartRenderer.#calcYTicks(data, 5);
         for (const val of yTicks) {
             const y = area.y + area.h - ((val - yTicks[0]) / (yTicks[yTicks.length - 1] - yTicks[0])) * area.h;
@@ -57,15 +58,15 @@ export class NativeChartRenderer extends IChartRenderer {
 
     #renderAxes(ctx, data, area) {
         ctx.save();
-        ctx.strokeStyle = "#666";
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = CONFIG.CHART_AXIS_COLOR;
+        ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH;
         ctx.beginPath();
         ctx.moveTo(area.x, area.y);
         ctx.lineTo(area.x, area.y + area.h);
         ctx.lineTo(area.x + area.w, area.y + area.h);
         ctx.stroke();
-        ctx.font = "11px sans-serif";
-        ctx.fillStyle = "#666";
+        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.fillStyle = CONFIG.CHART_AXIS_COLOR;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         const categories = data.data.map((row) => row[0]);
@@ -103,7 +104,7 @@ export class NativeChartRenderer extends IChartRenderer {
                 ctx.fillStyle = style.colors[s % style.colors.length];
                 ctx.fillRect(x, y, barWidth, barH);
                 ctx.strokeStyle = "rgba(0,0,0,0.15)";
-                ctx.lineWidth = 0.5;
+                ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
                 ctx.strokeRect(x, y, barWidth, barH);
                 ctx.restore();
             }
@@ -121,16 +122,8 @@ export class NativeChartRenderer extends IChartRenderer {
         for (let s = 0; s < seriesCount; s++) {
             ctx.save();
             ctx.strokeStyle = style.colors[s % style.colors.length];
-            ctx.lineWidth = 2;
+            ctx.lineWidth = CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
             ctx.beginPath();
-            for (let i = 0; i < catCount; i++) {
-                const val = Number(data.data[i][s + 1]) || 0;
-                const x = area.x + stepX * i + stepX / 2;
-                const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.stroke();
             for (let i = 0; i < catCount; i++) {
                 const val = Number(data.data[i][s + 1]) || 0;
                 const x = area.x + stepX * i + stepX / 2;
@@ -164,8 +157,8 @@ export class NativeChartRenderer extends IChartRenderer {
             ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
             ctx.closePath();
             ctx.fill();
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = CONFIG.CHART_TOOLTIP_BORDER;
+            ctx.lineWidth = CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
             ctx.stroke();
             const midAngle = startAngle + sliceAngle / 2;
             const pct = ((values[i] / total) * 100).toFixed(1) + "%";

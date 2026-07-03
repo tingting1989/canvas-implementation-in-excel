@@ -318,7 +318,7 @@ export class TileRenderer {
             ctx.restore();
         } else {
             ctx.strokeStyle = CONFIG.GRID_COLOR;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
             ctx.beginPath();
             ctx.moveTo(drawX + w - 0.5, drawY);
             ctx.lineTo(drawX + w - 0.5, drawY + h);
@@ -329,7 +329,7 @@ export class TileRenderer {
     }
 
     #drawBorderEdge(ctx, x1, y1, x2, y2, borderDef) {
-        ctx.strokeStyle = borderDef.color || "#000";
+            ctx.strokeStyle = borderDef.color || CONFIG.CELL_BORDER_COLOR;
         ctx.lineWidth = borderDef.width || 1;
         if (borderDef.style === "dashed") {
             ctx.setLineDash([4, 2]);
@@ -471,7 +471,7 @@ export class TileRenderer {
         const verticalAlign = finalStyle.verticalAlign || "middle";
         const baselineMap = { top: "top", middle: "middle", bottom: "bottom" };
         ctx.textBaseline = baselineMap[verticalAlign] || "middle";
-        ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || "#222";
+            ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || CONFIG.CELL_TEXT_COLOR;
 
         const textAlign = finalStyle.textAlign || "left";
         ctx.textAlign = textAlign;
@@ -559,7 +559,7 @@ export class TileRenderer {
             ctx.moveTo(lineX, lineY);
             ctx.lineTo(lineX + textWidth, lineY);
             ctx.strokeStyle = ctx.fillStyle;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
             ctx.stroke();
         }
     }

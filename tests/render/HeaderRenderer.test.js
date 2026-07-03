@@ -49,7 +49,10 @@ describe("HeaderRenderer", () => {
             },
             getDefaultStyle: vi.fn(() => ({})),
             getColHeader: vi.fn((c) => String.fromCharCode(65 + c)),
+            getColHeaderStyle: vi.fn(() => null),
             getRowHeader: vi.fn((r) => String(r + 1)),
+            getRowHeaderStyle: vi.fn(() => null),
+            cellPadding: 6,
             getNestedHeaderRowCount: vi.fn(() => 0),
             nestedHeaders: [],
             toRealRow: vi.fn((r) => r), // 添加缺失的方法

@@ -61,8 +61,6 @@ export const CONFIG = Object.freeze({
     /** 默认字体族 */
     DEFAULT_FONT: "Segoe UI",
 
-    /** 默认字号（px） */
-    DEFAULT_FONT_SIZE: 12,
 
     /** 选区边框及手柄颜色 */
     SELECTION_COLOR: "#217346",
@@ -133,4 +131,78 @@ export const CONFIG = Object.freeze({
     MOVE_SOURCE_FILL: "rgba(76, 139, 245, 0.3)",
     /** 普通表头文字颜色 */
     HEADER_TEXT_COLOR: "#555",
+
+    /** 表头边框颜色，需与 HEADER_BG 有足够对比度 */
+    HEADER_BORDER_COLOR: "#c8c8c8",
+
+    /** 单元格默认文字颜色 */
+    CELL_TEXT_COLOR: "#222",
+
+    /** 单元格默认边框颜色 */
+    CELL_BORDER_COLOR: "#000",
+
+    /** 选区高亮范围填充色（极低透明度） */
+    RANGE_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.08)",
+
+    /** 选区行列头高亮填充色（中等透明度） */
+    HEADER_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.18)",
+
+    /** 活动单元格高亮填充色 */
+    ACTIVE_CELL_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.12)",
+
+    /** 拖拽 ghost 填充色 */
+    GHOST_FILL: "rgba(76, 139, 245, 0.15)",
+
+    /** 拖拽源填充色（已在 MOVE_SOURCE_FILL 定义，此处为别名引用） */
+
+    /** Ghost 文字颜色 */
+    GHOST_TEXT_COLOR: "#fff",
+
+    /** 交互层 hover 填充色 */
+    INTERACTION_HOVER_FILL: "rgba(76, 139, 245, 0.06)",
+
+    /** 错误提示填充色 */
+    ERROR_HIGHLIGHT_FILL: "rgba(255, 0, 0, 0.8)",
+
+    /** 图表默认文字颜色 */
+    CHART_TEXT_COLOR: "#333",
+
+    /** 图表网格线颜色 */
+    CHART_GRID_COLOR: "#e0e0e0",
+
+    /** 图表轴线颜色 */
+    CHART_AXIS_COLOR: "#666",
+
+    /** 图表 tooltip 边框颜色 */
+    CHART_TOOLTIP_BORDER: "#fff",
+
+    /** 默认字体族 */
+    DEFAULT_FONT_FAMILY: "sans-serif",
+
+    /** 默认等宽字体族 */
+    MONO_FONT_FAMILY: "monospace",
+
+    /** 图表字体族 */
+    CHART_FONT_FAMILY: "sans-serif",
+
+    /** 默认字号（px） */
+    DEFAULT_FONT_SIZE: 12,
+
+    /** 图表字号（px） */
+    CHART_FONT_SIZE: 11,
+
+    /** 网格线宽度 */
+    GRID_LINE_WIDTH: 1,
+
+    /** 选区线宽度 */
+    SELECTION_LINE_WIDTH: 2,
+
+    /** 图表网格线宽度 */
+    CHART_GRID_LINE_WIDTH: 0.5,
+
+    /** 图表轴线宽度 */
+    CHART_AXIS_LINE_WIDTH: 1,
+
+    /** 图表 tooltip 边框宽度 */
+    CHART_TOOLTIP_BORDER_WIDTH: 2,
 });

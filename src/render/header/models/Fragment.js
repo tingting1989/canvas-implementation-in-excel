@@ -1,3 +1,4 @@
+import { CONFIG } from "@/constants/config";
 import { BorderMask } from "./BorderMask.js";
 
 /**
@@ -23,8 +24,8 @@ export class Fragment {
 
         this.borderMask = opts.borderMask ?? BorderMask.ALL;
         this.mergedStyle = opts.mergedStyle ?? null;
-        this.text = opts.text ?? "";
-        this.font = opts.font ?? "12px sans-serif";
+        this.text = opts.text !== undefined ? opts.text : "";
+        this.font = opts.font ?? `${CONFIG.DEFAULT_FONT_SIZE}px ${CONFIG.DEFAULT_FONT_FAMILY}`;
         this.textAlign = opts.textAlign ?? "left";
         this.textX = opts.textX ?? 0;
         this.textY = opts.textY ?? 0;

@@ -306,7 +306,7 @@ export class HeaderRenderer {
         ctx.fillStyle = allSelected ? CONFIG.HEADER_HIGHLIGHT_BG : CONFIG.HEADER_BG;
         ctx.fillRect(0, 0, headerW, headerH);
 
-        ctx.strokeStyle = CONFIG.GRID_COLOR;
+        ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
         ctx.strokeRect(0, 0, headerW, headerH);
     }
 
@@ -341,8 +341,8 @@ export class HeaderRenderer {
     #buildHeaderFont(defaultStyle) {
         const fontStyle = defaultStyle?.fontStyle === "italic" ? "italic" : "";
         const fontWeight = defaultStyle?.fontWeight === "bold" ? "bold" : "";
-        const fontSize = defaultStyle?.fontSize || 12;
-        const fontFamily = defaultStyle?.fontFamily || "sans-serif";
+        const fontSize = defaultStyle?.fontSize || CONFIG.DEFAULT_FONT_SIZE;
+        const fontFamily = defaultStyle?.fontFamily || CONFIG.DEFAULT_FONT_FAMILY;
         return [fontStyle, fontWeight, `${fontSize}px`, fontFamily].filter(Boolean).join(" ");
     }
 
@@ -352,8 +352,8 @@ export class HeaderRenderer {
         if (style.fontStyle) parts.push(style.fontStyle);
         if (style.fontWeight) parts.push(style.fontWeight);
         if (style.fontSize) parts.push(style.fontSize);
-        else parts.push(baseFont.match(/^[\d.]+px/)?.[0] || "12px");
-        parts.push(baseFont.match(/\s+(.+)$/)?.[1] || "sans-serif");
+        else parts.push(baseFont.match(/^[\d.]+px/)?.[0] || `${CONFIG.DEFAULT_FONT_SIZE}px`);
+        parts.push(baseFont.match(/\s+(.+)$/)?.[1] || CONFIG.DEFAULT_FONT_FAMILY);
         return parts.join(" ");
     }
 
@@ -372,7 +372,7 @@ export class HeaderRenderer {
     }
 
     #drawHeaderText(ctx, text, x, y, color, font, maxWidth, textAlign = "left") {
-        ctx.font = font || "12px sans-serif";
+        ctx.font = font || `${CONFIG.DEFAULT_FONT_SIZE}px ${CONFIG.DEFAULT_FONT_FAMILY}`;
         ctx.textAlign = textAlign;
         if (color) ctx.fillStyle = color;
 
@@ -389,7 +389,7 @@ export class HeaderRenderer {
     }
 
     #drawSeparator(ctx, x1, y1, x2, y2) {
-        ctx.strokeStyle = CONFIG.GRID_COLOR;
+        ctx.strokeStyle = CONFIG.HEADER_BORDER_COLOR;
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -398,7 +398,7 @@ export class HeaderRenderer {
 
     #drawSelectionLine(ctx, origin, origin2, length, horizontal) {
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = CONFIG.SELECTION_LINE_WIDTH;
         ctx.beginPath();
         if (horizontal) {
             ctx.moveTo(origin, origin2);
@@ -408,7 +408,7 @@ export class HeaderRenderer {
             ctx.lineTo(origin, origin2 + length);
         }
         ctx.stroke();
-        ctx.lineWidth = 1;
+        ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
     }
 
     #drawColSelectionLines(ctx, sheet, vt, y, viewW, range, frozenColsW, fixedCols) {

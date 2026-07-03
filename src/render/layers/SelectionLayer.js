@@ -3,9 +3,6 @@ import { OverlayRenderer } from "../OverlayRenderer.js";
 import { CONFIG } from "../../constants/config";
 import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
 
-const GHOST_FILL = "rgba(76, 139, 245, 0.15)";
-const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";
-const GHOST_TEXT_COLOR = "#fff";
 const INDICATOR_WIDTH = 3;
 const INDICATOR_HALF = 1;
 
@@ -128,15 +125,15 @@ export class SelectionLayer extends BaseLayer {
 
         ctx.save();
 
-        ctx.fillStyle = GHOST_FILL;
+        ctx.fillStyle = CONFIG.GHOST_FILL;
         ctx.fillRect(ghostLeft, headerH, state.colW, viewH - headerH);
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
         ctx.strokeRect(ghostLeft, headerH, state.colW, viewH - headerH);
 
-        ctx.fillStyle = MOVE_SOURCE_FILL;
+        ctx.fillStyle = CONFIG.MOVE_SOURCE_FILL;
         ctx.fillRect(ghostLeft, 0, state.colW, headerH);
-        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + sheet.cellPadding, headerH - 8, GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + sheet.cellPadding, headerH - 8, CONFIG.GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
             const indicatorX = this.#getColumnIndicatorX(vt, state);
@@ -167,15 +164,15 @@ export class SelectionLayer extends BaseLayer {
 
         ctx.save();
 
-        ctx.fillStyle = GHOST_FILL;
+        ctx.fillStyle = CONFIG.GHOST_FILL;
         ctx.fillRect(headerW, ghostTop, viewW - headerW, state.rowH);
         ctx.strokeStyle = CONFIG.SELECTION_COLOR;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
         ctx.strokeRect(headerW, ghostTop, viewW - headerW, state.rowH);
 
-        ctx.fillStyle = MOVE_SOURCE_FILL;
+        ctx.fillStyle = CONFIG.MOVE_SOURCE_FILL;
         ctx.fillRect(0, ghostTop, headerW, state.rowH);
-        this.#drawHeaderText(ctx, String(state.sourceRow + 1), sheet.cellPadding, ghostTop + state.rowH - 8, GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(ctx, String(state.sourceRow + 1), sheet.cellPadding, ghostTop + state.rowH - 8, CONFIG.GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
             const indicatorY = this.#getRowIndicatorY(vt, state);
