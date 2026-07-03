@@ -329,7 +329,7 @@ export class TileRenderer {
     }
 
     #drawBorderEdge(ctx, x1, y1, x2, y2, borderDef) {
-            ctx.strokeStyle = borderDef.color || CONFIG.CELL_BORDER_COLOR;
+        ctx.strokeStyle = borderDef.color || CONFIG.CELL_BORDER_COLOR;
         ctx.lineWidth = borderDef.width || 1;
         if (borderDef.style === "dashed") {
             ctx.setLineDash([4, 2]);
@@ -471,7 +471,7 @@ export class TileRenderer {
         const verticalAlign = finalStyle.verticalAlign || "middle";
         const baselineMap = { top: "top", middle: "middle", bottom: "bottom" };
         ctx.textBaseline = baselineMap[verticalAlign] || "middle";
-            ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || CONFIG.CELL_TEXT_COLOR;
+        ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || CONFIG.CELL_TEXT_COLOR;
 
         const textAlign = finalStyle.textAlign || "left";
         ctx.textAlign = textAlign;

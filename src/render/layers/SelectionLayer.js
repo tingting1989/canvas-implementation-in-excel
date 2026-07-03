@@ -133,7 +133,14 @@ export class SelectionLayer extends BaseLayer {
 
         ctx.fillStyle = CONFIG.MOVE_SOURCE_FILL;
         ctx.fillRect(ghostLeft, 0, state.colW, headerH);
-        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + sheet.cellPadding, headerH - 8, CONFIG.GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(
+            ctx,
+            sheet.getColHeader(state.sourceCol),
+            ghostLeft + sheet.cellPadding,
+            headerH - 8,
+            CONFIG.GHOST_TEXT_COLOR,
+            headerFont,
+        );
 
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
             const indicatorX = this.#getColumnIndicatorX(vt, state);

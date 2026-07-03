@@ -61,7 +61,6 @@ export const CONFIG = Object.freeze({
     /** 默认字体族 */
     DEFAULT_FONT: "Segoe UI",
 
-
     /** 选区边框及手柄颜色 */
     SELECTION_COLOR: "#217346",
 
