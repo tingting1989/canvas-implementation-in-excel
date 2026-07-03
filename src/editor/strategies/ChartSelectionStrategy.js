@@ -1,7 +1,5 @@
 ﻿import { EventStrategy } from "./EventStrategy.js";
-
-const HANDLE_SIZE = 6;
-const BORDER_COLOR = "#217346";
+import { CONFIG } from "../../constants/config.js";
 
 export class ChartSelectionStrategy extends EventStrategy {
     priority = 120;
@@ -157,7 +155,7 @@ export class ChartSelectionStrategy extends EventStrategy {
     #hitHandle(px, py, chart, vt) {
         const b = chart.getBounds(vt);
         const handles = this.#getHandlePositions(b);
-        const half = HANDLE_SIZE / 2;
+        const half = CONFIG.CHART_SELECTION_HANDLE_SIZE / 2;
         for (const [name, pos] of Object.entries(handles)) {
             if (px >= pos.x - half && px <= pos.x + half && py >= pos.y - half && py <= pos.y + half) {
                 return name;
@@ -185,19 +183,19 @@ export class ChartSelectionStrategy extends EventStrategy {
         if (!this.#selectedChartId || !chart || chart.id !== this.#selectedChartId) return;
         const b = chart.getBounds(vt);
         ctx.save();
-        ctx.strokeStyle = BORDER_COLOR;
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = CONFIG.CHART_SELECTION_BORDER_COLOR;
+        ctx.lineWidth = CONFIG.CHART_SELECTION_BORDER_WIDTH;
         ctx.setLineDash([4, 3]);
         ctx.strokeRect(b.x, b.y, b.w, b.h);
         ctx.setLineDash([]);
         const handles = this.#getHandlePositions(b);
-        const half = HANDLE_SIZE / 2;
+        const half = CONFIG.CHART_SELECTION_HANDLE_SIZE / 2;
         for (const pos of Object.values(handles)) {
-            ctx.fillStyle = "#fff";
-            ctx.strokeStyle = BORDER_COLOR;
-            ctx.lineWidth = 1.5;
-            ctx.fillRect(pos.x - half, pos.y - half, HANDLE_SIZE, HANDLE_SIZE);
-            ctx.strokeRect(pos.x - half, pos.y - half, HANDLE_SIZE, HANDLE_SIZE);
+            ctx.fillStyle = CONFIG.CHART_SELECTION_HANDLE_FILL;
+            ctx.strokeStyle = CONFIG.CHART_SELECTION_BORDER_COLOR;
+            ctx.lineWidth = CONFIG.CHART_SELECTION_HANDLE_LINE_WIDTH;
+            ctx.fillRect(pos.x - half, pos.y - half, CONFIG.CHART_SELECTION_HANDLE_SIZE, CONFIG.CHART_SELECTION_HANDLE_SIZE);
+            ctx.strokeRect(pos.x - half, pos.y - half, CONFIG.CHART_SELECTION_HANDLE_SIZE, CONFIG.CHART_SELECTION_HANDLE_SIZE);
         }
         ctx.restore();
     }

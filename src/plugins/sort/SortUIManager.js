@@ -23,6 +23,8 @@
  * - 支持自定义颜色和尺寸配置
  * - 响应式布局（根据列宽自适应位置）
  */
+import { CONFIG } from "../../constants/config.js";
+
 export class SortUIManager {
     /**
      * 所属插件实例
@@ -44,28 +46,6 @@ export class SortUIManager {
      * @private
      */
     #showAllArrows = false;
-
-    /**
-     * 箭头默认大小（像素）
-     * @type {number}
-     */
-    static ARROW_SIZE = 8;
-
-    /**
-     * 箭头内边距（像素）
-     * @type {number}
-     */
-    static ARROW_PADDING = 4;
-
-    /**
-     * 活跃状态颜色（蓝色系）
-     */
-    static ACTIVE_COLOR = "#1890ff";
-
-    /**
-     * 非活跃状态颜色（灰色）
-     */
-    static INACTIVE_COLOR = "#bfbfbf";
 
     constructor(plugin) {
         this.#plugin = plugin;
@@ -120,17 +100,17 @@ export class SortUIManager {
             return; // 未排序且不显示所有箭头
         }
 
-        const arrowSize = SortUIManager.ARROW_SIZE;
-        const padding = SortUIManager.ARROW_PADDING;
+        const arrowSize = CONFIG.SORT_ARROW_SIZE;
+        const padding = CONFIG.SORT_ARROW_PADDING;
         const arrowX = x + w - arrowSize - padding;
         const arrowY = y + (h - arrowSize) / 2;
 
         ctx.save();
 
         if (isActive) {
-            ctx.fillStyle = SortUIManager.ACTIVE_COLOR;
-            ctx.strokeStyle = SortUIManager.ACTIVE_COLOR;
-            ctx.lineWidth = 2; // 加粗
+            ctx.fillStyle = CONFIG.SORT_ACTIVE_COLOR;
+            ctx.strokeStyle = CONFIG.SORT_ACTIVE_COLOR;
+            ctx.lineWidth = CONFIG.SORT_ARROW_LINE_WIDTH;
 
             if (state.order === "asc") {
                 this.#drawUpArrow(ctx, arrowX, arrowY, arrowSize);
@@ -138,7 +118,7 @@ export class SortUIManager {
                 this.#drawDownArrow(ctx, arrowX, arrowY, arrowSize);
             }
         } else {
-            ctx.fillStyle = SortUIManager.INACTIVE_COLOR;
+            ctx.fillStyle = CONFIG.SORT_INACTIVE_COLOR;
             ctx.globalAlpha = 0.5;
             this.#drawUpDownArrow(ctx, arrowX, arrowY, arrowSize); // 双向箭头
         }
@@ -164,7 +144,7 @@ export class SortUIManager {
         }
 
         ctx.save();
-        ctx.fillStyle = "rgba(24, 144, 255, 0.08)";
+        ctx.fillStyle = CONFIG.SORT_COLUMN_HIGHLIGHT_FILL;
         ctx.fillRect(x, y, w, h);
         ctx.restore();
     }

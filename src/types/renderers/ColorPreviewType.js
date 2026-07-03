@@ -7,6 +7,7 @@
  */
 
 import { BaseColumnType } from "../BaseColumnType.js";
+import { CONFIG } from "../../constants/config.js";
 
 export class ColorPreviewType extends BaseColumnType {
     get name() {
@@ -51,8 +52,8 @@ export class ColorPreviewType extends BaseColumnType {
 
         // 边框
         if (this.options?.showBorder !== false) {
-            ctx.strokeStyle = "#ccc";
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = CONFIG.COLOR_PREVIEW_BORDER_COLOR;
+            ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
             context.drawRoundedRect(colorX, colorY, size, size, radius);
             ctx.stroke();
         }

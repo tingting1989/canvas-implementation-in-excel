@@ -7,6 +7,7 @@
  */
 
 import { BaseColumnType } from "../BaseColumnType.js";
+import { CONFIG } from "../../constants/config.js";
 
 export class ProgressBarType extends BaseColumnType {
     /**
@@ -17,9 +18,9 @@ export class ProgressBarType extends BaseColumnType {
         borderRadius: 4,
         showPercent: true,
         colors: {
-            low: "#f44336",
-            medium: "#ff9800",
-            high: "#4caf50",
+            low: CONFIG.PROGRESS_BAR_LOW_COLOR,
+            medium: CONFIG.PROGRESS_BAR_MEDIUM_COLOR,
+            high: CONFIG.PROGRESS_BAR_HIGH_COLOR,
         },
     };
 
@@ -69,12 +70,12 @@ export class ProgressBarType extends BaseColumnType {
         // 根据百分比选择颜色
         const colors = this.options?.colors || {};
         let fillColor;
-        if (percent < 30) fillColor = colors.low || "#f44336";
-        else if (percent < 70) fillColor = colors.medium || "#ff9800";
-        else fillColor = colors.high || "#4caf50";
+        if (percent < 30) fillColor = colors.low || CONFIG.PROGRESS_BAR_LOW_COLOR;
+        else if (percent < 70) fillColor = colors.medium || CONFIG.PROGRESS_BAR_MEDIUM_COLOR;
+        else fillColor = colors.high || CONFIG.PROGRESS_BAR_HIGH_COLOR;
 
         // 背景轨道
-        ctx.fillStyle = "#e0e0e0";
+        ctx.fillStyle = CONFIG.PROGRESS_BAR_TRACK_COLOR;
         context.drawRoundedRect(barX, barY, barW, barH, radius);
         ctx.fill();
 
@@ -98,8 +99,8 @@ export class ProgressBarType extends BaseColumnType {
 
         // 百分比文字
         if (this.options?.showPercent !== false) {
-            ctx.fillStyle = style.color || "#333";
-            ctx.font = `bold ${style.fontSize || 11}px ${style.fontFamily || "Segoe UI"}`;
+            ctx.fillStyle = style.color || CONFIG.CELL_TEXT_COLOR;
+            ctx.font = `bold ${style.fontSize || CONFIG.PROGRESS_BAR_FONT_SIZE}px ${style.fontFamily || CONFIG.DEFAULT_FONT}`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(`${Math.round(percent)}%`, context.getCenterX(), context.getCenterY());

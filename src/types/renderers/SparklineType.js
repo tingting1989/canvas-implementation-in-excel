@@ -7,6 +7,7 @@
  */
 
 import { BaseColumnType } from "../BaseColumnType.js";
+import { CONFIG } from "../../constants/config.js";
 
 export class SparklineType extends BaseColumnType {
     get name() {
@@ -58,8 +59,8 @@ export class SparklineType extends BaseColumnType {
      * 渲染折线图
      */
     #renderLineChart(ctx, data, x, y, w, h, minVal, range) {
-        const lineColor = this.options?.lineColor || "#2196f3";
-        const fillColor = this.options?.fillColor || "rgba(33,150,243,0.2)";
+        const lineColor = this.options?.lineColor || CONFIG.SPARKLINE_LINE_COLOR;
+        const fillColor = this.options?.fillColor || CONFIG.SPARKLINE_FILL_COLOR;
         const showDots = this.options?.showDots ?? false;
 
         const stepX = w / (data.length - 1 || 1);
@@ -92,7 +93,7 @@ export class SparklineType extends BaseColumnType {
 
         // 绘制线条
         ctx.strokeStyle = lineColor;
-        ctx.lineWidth = this.options?.lineWidth || 1.5;
+        ctx.lineWidth = this.options?.lineWidth || CONFIG.SPARKLINE_LINE_WIDTH;
         ctx.stroke();
 
         // 数据点
@@ -112,7 +113,7 @@ export class SparklineType extends BaseColumnType {
      * 渲染柱状图
      */
     #renderBarChart(ctx, data, x, y, w, h, minVal, range) {
-        const barColor = this.options?.barColor || "#4caf50";
+        const barColor = this.options?.barColor || CONFIG.SPARKLINE_BAR_COLOR;
         const barGap = 1;
         const barW = (w - barGap * (data.length - 1)) / data.length;
 

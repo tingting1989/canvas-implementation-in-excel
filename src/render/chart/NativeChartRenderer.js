@@ -103,7 +103,7 @@ export class NativeChartRenderer extends IChartRenderer {
                 ctx.save();
                 ctx.fillStyle = style.colors[s % style.colors.length];
                 ctx.fillRect(x, y, barWidth, barH);
-                ctx.strokeStyle = "rgba(0,0,0,0.15)";
+                ctx.strokeStyle = CONFIG.CHART_BAR_BORDER_COLOR;
                 ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
                 ctx.strokeRect(x, y, barWidth, barH);
                 ctx.restore();
@@ -162,10 +162,8 @@ export class NativeChartRenderer extends IChartRenderer {
             ctx.stroke();
             const midAngle = startAngle + sliceAngle / 2;
             const pct = ((values[i] / total) * 100).toFixed(1) + "%";
-            ctx.fillStyle = "#333";
-            ctx.font = "11px sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
+            ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
+            ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
             const labelR = r * 0.65;
             ctx.fillText(pct, cx + Math.cos(midAngle) * labelR, cy + Math.sin(midAngle) * labelR);
             ctx.restore();
@@ -186,7 +184,7 @@ export class NativeChartRenderer extends IChartRenderer {
             const color = style.colors[s % style.colors.length];
             ctx.fillStyle = color + "40";
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = CONFIG.CHART_AREA_LINE_WIDTH;
             ctx.beginPath();
             const baseline = area.y + area.h;
             ctx.moveTo(area.x + stepX / 2, baseline);
@@ -233,7 +231,7 @@ export class NativeChartRenderer extends IChartRenderer {
                 const x = area.x + ((xVal - xMin) / xRange) * area.w;
                 const y = area.y + area.h - ((yVal - yMin) / yRange) * area.h;
                 ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.arc(x, y, CONFIG.CHART_SCATTER_DOT_RADIUS, 0, Math.PI * 2);
                 ctx.fill();
             }
             ctx.restore();
@@ -243,15 +241,15 @@ export class NativeChartRenderer extends IChartRenderer {
     #renderLegend(ctx, data, area, style) {
         const seriesNames = data.headers.slice(1);
         ctx.save();
-        ctx.font = "11px sans-serif";
-        const itemWidth = 80;
+        ctx.font = `${CONFIG.CHART_LEGEND_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        const itemWidth = CONFIG.CHART_LEGEND_ITEM_WIDTH;
         const totalWidth = seriesNames.length * itemWidth;
         let startX = area.x + (area.w - totalWidth) / 2;
-        const y = area.y + area.h + 24;
+        const y = area.y + area.h + CONFIG.CHART_LEGEND_OFFSET_Y;
         for (let i = 0; i < seriesNames.length; i++) {
             ctx.fillStyle = style.colors[i % style.colors.length];
-            ctx.fillRect(startX, y - 5, 12, 12);
-            ctx.fillStyle = "#333";
+            ctx.fillRect(startX, y - 5, CONFIG.CHART_LEGEND_ITEM_SIZE, CONFIG.CHART_LEGEND_ITEM_SIZE);
+            ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
             ctx.fillText(String(seriesNames[i]), startX + 16, y + 1);

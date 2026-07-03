@@ -7,6 +7,7 @@
  */
 
 import { BaseColumnType } from "../BaseColumnType.js";
+import { CONFIG } from "../../constants/config.js";
 
 export class StarRatingType extends BaseColumnType {
     get name() {
@@ -46,8 +47,8 @@ export class StarRatingType extends BaseColumnType {
         const startX = x + (width - (starSize * 5 + gap * 4)) / 2; // 居中
         const centerY = y + height / 2;
 
-        const filledColor = this.options?.color || "#ffc107";
-        const emptyColor = this.options?.emptyColor || "#e0e0e0";
+        const filledColor = this.options?.color || CONFIG.STAR_RATING_FILLED_COLOR;
+        const emptyColor = this.options?.emptyColor || CONFIG.STAR_RATING_EMPTY_COLOR;
 
         for (let i = 0; i < 5; i++) {
             const starX = startX + i * (starSize + gap);
@@ -74,11 +75,11 @@ export class StarRatingType extends BaseColumnType {
                 ctx.restore();
 
                 ctx.strokeStyle = emptyColor;
-                ctx.lineWidth = 1;
+                ctx.lineWidth = CONFIG.STAR_RATING_LINE_WIDTH;
                 ctx.stroke();
             } else {
                 ctx.strokeStyle = emptyColor;
-                ctx.lineWidth = 1;
+                ctx.lineWidth = CONFIG.STAR_RATING_LINE_WIDTH;
                 ctx.stroke();
             }
 

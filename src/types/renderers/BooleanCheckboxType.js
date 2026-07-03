@@ -7,6 +7,7 @@
  */
 
 import { BaseColumnType } from "../BaseColumnType.js";
+import { CONFIG } from "../../constants/config.js";
 
 export class BooleanCheckboxType extends BaseColumnType {
     get name() {
@@ -48,20 +49,20 @@ export class BooleanCheckboxType extends BaseColumnType {
         const radius = boxSize * 0.15;
 
         // 未选中：空心方框
-        ctx.strokeStyle = this.options?.uncheckedColor || "#999";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = this.options?.uncheckedColor || CONFIG.CHECKBOX_UNCHECKED_COLOR;
+        ctx.lineWidth = CONFIG.CHECKBOX_BORDER_LINE_WIDTH;
         context.drawRoundedRect(boxX, boxY, boxSize, boxSize, radius);
         ctx.stroke();
 
         if (isChecked) {
             // 选中：填充背景 + 对勾
-            ctx.fillStyle = this.options?.checkedColor || "#4caf50";
+            ctx.fillStyle = this.options?.checkedColor || CONFIG.CHECKBOX_CHECKED_COLOR;
             context.drawRoundedRect(boxX, boxY, boxSize, boxSize, radius);
             ctx.fill();
 
             // 绘制对勾
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = CONFIG.CHECKBOX_CHECK_MARK_COLOR;
+            ctx.lineWidth = CONFIG.CHECKBOX_CHECK_MARK_LINE_WIDTH;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
 
@@ -78,8 +79,8 @@ export class BooleanCheckboxType extends BaseColumnType {
 
         // 禁用态：降低透明度
         if (isDisabled) {
-            ctx.globalAlpha = 0.4;
-            ctx.fillStyle = "#ccc";
+            ctx.globalAlpha = CONFIG.CHECKBOX_DISABLED_ALPHA;
+            ctx.fillStyle = CONFIG.CHECKBOX_DISABLED_FILL;
             context.drawRoundedRect(boxX, boxY, boxSize, boxSize, radius);
             ctx.fill();
             ctx.globalAlpha = 1;
