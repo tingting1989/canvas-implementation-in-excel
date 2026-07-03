@@ -64,9 +64,9 @@ describe("Fragment", () => {
             expect(frag.text).toBeNull();
         });
 
-        it("font 默认为 12px sans-serif", () => {
+        it("font 默认为 12px Segoe UI", () => {
             const frag = new Fragment({ visStartCol: 0, visEndCol: 0 });
-            expect(frag.font).toBe("12px sans-serif");
+            expect(frag.font).toBe("12px Segoe UI");
         });
 
         it("textAlign 默认为 left", () => {
