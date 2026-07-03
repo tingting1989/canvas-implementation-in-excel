@@ -8,8 +8,6 @@ const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";
 const GHOST_TEXT_COLOR = "#fff";
 const INDICATOR_WIDTH = 3;
 const INDICATOR_HALF = 1;
-const HEADER_COL_PADDING = 4;
-const HEADER_ROW_PADDING = 6;
 
 export class SelectionLayer extends BaseLayer {
     #columnMoveState = null;
@@ -138,7 +136,7 @@ export class SelectionLayer extends BaseLayer {
 
         ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(ghostLeft, 0, state.colW, headerH);
-        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + HEADER_COL_PADDING, headerH - 8, GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(ctx, sheet.getColHeader(state.sourceCol), ghostLeft + sheet.cellPadding, headerH - 8, GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetCol >= 0 && state.targetCol !== state.sourceCol) {
             const indicatorX = this.#getColumnIndicatorX(vt, state);
@@ -177,7 +175,7 @@ export class SelectionLayer extends BaseLayer {
 
         ctx.fillStyle = MOVE_SOURCE_FILL;
         ctx.fillRect(0, ghostTop, headerW, state.rowH);
-        this.#drawHeaderText(ctx, String(state.sourceRow + 1), HEADER_ROW_PADDING, ghostTop + state.rowH - 8, GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(ctx, String(state.sourceRow + 1), sheet.cellPadding, ghostTop + state.rowH - 8, GHOST_TEXT_COLOR, headerFont);
 
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {
             const indicatorY = this.#getRowIndicatorY(vt, state);

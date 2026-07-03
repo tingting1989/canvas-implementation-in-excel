@@ -129,4 +129,8 @@ export const CONFIG = Object.freeze({
 
     /** Sheet 名称 */
     DEFAULT_SHEET_NAME: "Sheet",
+    /** 拖拽源行头/列头的半透明高亮色 */
+    MOVE_SOURCE_FILL: "rgba(76, 139, 245, 0.3)",
+    /** 普通表头文字颜色 */
+    HEADER_TEXT_COLOR: "#555",
 });

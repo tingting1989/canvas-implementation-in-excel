@@ -1,19 +1,6 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
-
-import { CONFIG } from "../constants/config";
-import { isObject, isString } from "../utils/utils.js";
-
-/** 拖拽源行头/列头的半透明高亮色 */
-const MOVE_SOURCE_FILL = "rgba(76, 139, 245, 0.3)";
-
-/** 普通表头文字颜色 */
-const HEADER_TEXT_COLOR = "#555";
-
-/** 列头文字水平内边距（px） */
-const HEADER_COL_PADDING = 4;
-
-/** 行头文字水平内边距（px） */
-const HEADER_ROW_PADDING = 6;
+﻿import {ERROR_CODE, errorHandler} from "@/core/ErrorHandler";
+import {CONFIG} from "@/constants/config";
+import {isObject, isString} from "@/utils/utils";
 
 /**
  * 表头渲染器（纯绘制）
@@ -178,7 +165,8 @@ export class HeaderRenderer {
 
                 const textFont = this.#buildNestedHeaderFont(headerFont, colStyle);
                 const textAlign = colStyle?.textAlign || "left";
-                const textX = this.#calculateTextX(x, w, textAlign);
+                const cp = sheet.cellPadding;
+                const textX = this.#calculateTextX(x, w, textAlign, cp);
                 this.#drawHeaderText(
                     ctx,
                     sheet.getColHeader(c),
@@ -186,7 +174,7 @@ export class HeaderRenderer {
                     clipY + rowH - 8,
                     mergedStyle?.color,
                     textFont,
-                    w - HEADER_COL_PADDING * 2,
+                    w - cp * 2,
                     textAlign,
                 );
 
@@ -239,8 +227,7 @@ export class HeaderRenderer {
 
         const scrollX = vt.scrollX;
         const frozenColsW = vt.frozenColsW;
-        const dataViewW = clipW;
-        const dataEnd = frozenColsW + scrollX + dataViewW;
+        const dataEnd = frozenColsW + scrollX + clipW;
         return Math.min(rc.colAt(dataEnd) + 1, rc.colCount);
     }
 
@@ -257,6 +244,7 @@ export class HeaderRenderer {
      */
     #renderNestedColumnHeaders(ctx, sheet, vt, rc, sc, ec, rowH, headerFont, defaultStyle) {
         const nestedCount = sheet.getNestedHeaderRowCount();
+        const cp = sheet.cellPadding;
 
         for (let layerIdx = 0; layerIdx < nestedCount; layerIdx++) {
             const layerY = layerIdx * rowH;
@@ -307,8 +295,8 @@ export class HeaderRenderer {
                         const frozenColX = vt.colToViewX(startCol);
                         const frozenColW = rc.getColWidth(startCol);
                         const textAlign = style?.textAlign || "left";
-                        textX = this.#calculateTextX(frozenColX, frozenColW, textAlign);
-                        maxTextWidth = frozenColW - HEADER_COL_PADDING * 2;
+                        textX = this.#calculateTextX(frozenColX, frozenColW, textAlign, cp);
+                        maxTextWidth = frozenColW - cp * 2;
                         this.#drawHeaderText(
                             ctx,
                             label,
@@ -322,8 +310,8 @@ export class HeaderRenderer {
                     } else {
                         // 普通单元格
                         const textAlign = style?.textAlign || "left";
-                        textX = this.#calculateTextX(x, totalW, textAlign);
-                        maxTextWidth = totalW - HEADER_COL_PADDING * 2;
+                        textX = this.#calculateTextX(x, totalW, textAlign, cp);
+                        maxTextWidth = totalW - cp * 2;
                         this.#drawHeaderText(
                             ctx,
                             label,
@@ -393,15 +381,22 @@ export class HeaderRenderer {
      * @param {string} textAlign - 对齐方式（left/center/right）
      * @returns {number} 文本 X 坐标
      */
-    #calculateTextX(cellX, cellWidth, textAlign) {
+    /**
+     * 根据对齐方式计算表头文字 X 坐标
+     * @param {number} cellX - 单元格左边缘 X
+     * @param {number} cellWidth - 单元格宽度
+     * @param {string} textAlign - 对齐方式
+     * @param {number} padding - 内边距（默认 CONFIG.CELL_PADDING）
+     */
+    #calculateTextX(cellX, cellWidth, textAlign, padding = CONFIG.CELL_PADDING) {
         switch (textAlign) {
             case "center":
                 return cellX + cellWidth / 2;
             case "right":
-                return cellX + cellWidth - HEADER_COL_PADDING;
+                return cellX + cellWidth - padding;
             case "left":
             default:
-                return cellX + HEADER_COL_PADDING;
+                return cellX + padding;
         }
     }
 
@@ -422,7 +417,7 @@ export class HeaderRenderer {
         ctx.save();
 
         if (isSource) {
-            ctx.fillStyle = MOVE_SOURCE_FILL;
+            ctx.fillStyle = CONFIG.MOVE_SOURCE_FILL;
             ctx.fillRect(x, y, w, h);
             ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
         } else if (highlighted) {
@@ -434,7 +429,7 @@ export class HeaderRenderer {
                 ctx.fillStyle = style.backgroundColor;
                 ctx.fillRect(x, y, w, h);
             }
-            ctx.fillStyle = style?.color || HEADER_TEXT_COLOR;
+            ctx.fillStyle = style?.color || CONFIG.HEADER_TEXT_COLOR;
         }
 
         ctx.restore();
@@ -554,11 +549,19 @@ export class HeaderRenderer {
 
             const textFont = this.#buildNestedHeaderFont(headerFont, rowStyle);
             const textAlign = rowStyle?.textAlign || "left";
-            const textX = this.#calculateTextX(0, headerW, textAlign);
-            const textMaxW = headerW - HEADER_ROW_PADDING * 2;
+            const cp = sheet.cellPadding;
+            let textX;
+            if (textAlign === "center") {
+                textX = headerW / 2;
+            } else if (textAlign === "right") {
+                textX = headerW - cp;
+            } else {
+                textX = cp;
+            }
+            const textMaxW = headerW - cp * 2;
             ctx.save();
             ctx.beginPath();
-            ctx.rect(HEADER_ROW_PADDING, y, textMaxW, h);
+            ctx.rect(cp, y, textMaxW, h);
             ctx.clip();
             this.#drawHeaderText(ctx, sheet.getRowHeader(realRow), textX, y + h / 2 + 4, mergedStyle?.color, textFont, textMaxW, textAlign);
             ctx.restore();
@@ -593,7 +596,7 @@ export class HeaderRenderer {
      */
     #drawHeaderCell(ctx, x, y, w, h, isSource, highlighted, defaultStyle) {
         if (isSource) {
-            ctx.fillStyle = MOVE_SOURCE_FILL;
+            ctx.fillStyle = CONFIG.MOVE_SOURCE_FILL;
             ctx.fillRect(x, y, w, h);
             ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
         } else if (highlighted) {
@@ -601,7 +604,7 @@ export class HeaderRenderer {
             ctx.fillRect(x, y, w, h);
             ctx.fillStyle = CONFIG.HEADER_HIGHLIGHT_COLOR;
         } else {
-            ctx.fillStyle = defaultStyle?.color || HEADER_TEXT_COLOR;
+            ctx.fillStyle = defaultStyle?.color || CONFIG.HEADER_TEXT_COLOR;
         }
     }
 
