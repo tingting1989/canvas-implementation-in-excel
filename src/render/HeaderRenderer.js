@@ -331,9 +331,7 @@ export class HeaderRenderer {
                 }
             }
 
-            if (layerIdx < nestedCount - 1) {
-                this.#drawNestedLayerSeparator(ctx, vt, rc, sc, ec, layerY + rowH);
-            }
+            this.#drawNestedLayerSeparator(ctx, vt, rc, sc, ec, layerY + rowH);
         }
     }
 
@@ -446,7 +444,7 @@ export class HeaderRenderer {
         let leftmostVisible = Infinity;
         let rightmostVisible = -Infinity;
 
-        for (let c = sc; c <= ec; c++) {
+        for (let c = sc; c < ec; c++) {
             if (rc.getColWidth(c) > 0) {
                 leftmostVisible = Math.min(leftmostVisible, c);
                 rightmostVisible = Math.max(rightmostVisible, c);
