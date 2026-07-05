@@ -446,16 +446,10 @@ export class TileRenderer {
     }
 
     /**
-     * 绘制单元格文字
+     * 绘制单元格文字（编排方法）
      *
-     * 处理逻辑：
-     * 1. 空单元格（value === undefined）跳过绘制
-     * 2. 解析最终样式（字体、颜色、对齐方式）
-     * 3. 禁用单元格使用灰色文字
-     * 4. 通过 formatCellValue 格式化显示值
-     * 5. 根据 textAlign 计算文字 X 坐标
-     * 6. 文字垂直居中（drawY + h/2 + 4，+4 为基线微调）
-     * 7. 如果有下划线装饰，在文字下方绘制横线
+     * 将字体构建、样式应用、坐标计算、文本截断、下划线绘制等
+     * 子逻辑委托给各自的私有方法，保持主流程清晰可读。
      *
      * 合并单元格处理：
      * - 使用左上角坐标解析样式和格式化，确保跨列时格式一致
@@ -464,34 +458,82 @@ export class TileRenderer {
         if (cell?.value === undefined) return;
 
         const finalStyle = sheet.resolveStyle(r, c);
-        const fontStyle = finalStyle.fontStyle === FONT_STYLE.ITALIC ? FONT_STYLE.ITALIC : "";
-        const fontWeight = finalStyle.fontWeight || "normal";
         const fontSize = finalStyle.fontSize || 12;
-        const fontFamily = finalStyle.fontFamily || "Segoe UI";
+        const textAlign = finalStyle.textAlign || TEXT_ALIGN.LEFT;
+        const verticalAlign = finalStyle.verticalAlign || VERTICAL_ALIGN.MIDDLE;
+
+        this.#applyFont(ctx, finalStyle);
+
+        const displayValue = sheet.formatCellValue(r, c, cell.value);
+        const urlValue = isUrl(displayValue) ? displayValue : null;
+
+        this.#applyTextStyle(ctx, finalStyle, cell, urlValue);
+
+        const { textX, textY, effectiveW } = this.#calcTextPosition(
+            ctx, sheet, drawX, drawY, w, h, fontSize, textAlign, verticalAlign, merge,
+        );
+
+        const renderedText = this.#truncateText(ctx, displayValue, effectiveW, sheet.cellPadding, sheet.textOverflowEllipsis);
+
+        if (renderedText !== displayValue) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(drawX, drawY, w, h);
+            ctx.clip();
+            ctx.fillText(renderedText, textX, textY);
+            ctx.restore();
+        } else {
+            ctx.fillText(renderedText, textX, textY);
+        }
+
+        if (finalStyle.textDecoration === FONT_STYLE.UNDERLINE) {
+            this.#drawUnderline(ctx, renderedText, textX, textY, fontSize, textAlign, ctx.fillStyle, CONFIG.GRID_LINE_WIDTH, 0);
+        }
+
+        if (urlValue) {
+            this.#drawUnderline(ctx, renderedText, textX, textY, fontSize, textAlign, CONFIG.AUTO_LINK_COLOR, CONFIG.AUTO_LINK_UNDERLINE_WIDTH, CONFIG.AUTO_LINK_UNDERLINE_OFFSET);
+        }
+    }
+
+    /**
+     * 构建字体字符串并应用到 ctx，利用 #lastFont 缓存避免重复解析
+     */
+    #applyFont(ctx, style) {
+        const fontStyle = style.fontStyle === FONT_STYLE.ITALIC ? FONT_STYLE.ITALIC : "";
+        const fontWeight = style.fontWeight || "normal";
+        const fontSize = style.fontSize || 12;
+        const fontFamily = style.fontFamily || "Segoe UI";
         const fontString = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`.trim().replace(/\s+/g, " ");
         if (this.#lastFont !== fontString) {
             ctx.font = fontString;
             this.#lastFont = fontString;
         }
+    }
 
-        const verticalAlign = finalStyle.verticalAlign || VERTICAL_ALIGN.MIDDLE;
+    /**
+     * 应用文本样式：基线、颜色、对齐方式
+     * URL 文本使用蓝色，禁用单元格使用灰色
+     */
+    #applyTextStyle(ctx, style, cell, urlValue) {
+        const verticalAlign = style.verticalAlign || VERTICAL_ALIGN.MIDDLE;
         const baselineMap = { [VERTICAL_ALIGN.TOP]: "top", [VERTICAL_ALIGN.MIDDLE]: "middle", [VERTICAL_ALIGN.BOTTOM]: "bottom" };
         ctx.textBaseline = baselineMap[verticalAlign] || "middle";
-        ctx.fillStyle = cell.disabled ? CONFIG.DISABLED_COLOR : finalStyle.color || CONFIG.CELL_TEXT_COLOR;
+        ctx.fillStyle = urlValue
+            ? CONFIG.AUTO_LINK_COLOR
+            : cell.disabled
+                ? CONFIG.DISABLED_COLOR
+                : style.color || CONFIG.CELL_TEXT_COLOR;
+        ctx.textAlign = style.textAlign || TEXT_ALIGN.LEFT;
+    }
 
-        const textAlign = finalStyle.textAlign || TEXT_ALIGN.LEFT;
-        ctx.textAlign = textAlign;
-
-        const displayValue = sheet.formatCellValue(r, c, cell.value);
-
-        const urlValue = isUrl(displayValue) ? displayValue : null;
-
-        if (urlValue) {
-            ctx.fillStyle = CONFIG.AUTO_LINK_COLOR;
-        }
-
+    /**
+     * 计算文本绘制坐标（textX, textY）和有效宽度 effectiveW
+     *
+     * 合并单元格的居中/右对齐需要基于整个合并区域计算，
+     * 普通单元格则基于单个单元格边界计算。
+     */
+    #calcTextPosition(ctx, sheet, drawX, drawY, w, h, fontSize, textAlign, verticalAlign, merge) {
         const rc = sheet.rowColManager;
-
         let textX = Math.round(drawX + sheet.cellPadding);
         let effectiveW = w;
 
@@ -520,77 +562,58 @@ export class TileRenderer {
             textY = Math.round(drawY + h / 2);
         }
 
-        // 文本超出时截断，确保左右两侧留有内边距
-        // 使用二分查找定位截断点：O(log n) vs 逐字符 O(n)
-        const maxTextWidth = effectiveW - sheet.cellPadding * 2;
-        let renderedText = displayValue;
-        if (maxTextWidth > 0) {
-            const fullWidth = ctx.measureText(displayValue).width;
-            if (fullWidth > maxTextWidth) {
-                const suffix = sheet.textOverflowEllipsis ? "..." : "";
-                let lo = 0,
-                    hi = displayValue.length;
-                while (lo < hi) {
-                    const mid = Math.ceil((lo + hi) / 2);
-                    if (ctx.measureText(displayValue.slice(0, mid) + suffix).width > maxTextWidth) {
-                        hi = mid - 1;
-                    } else {
-                        lo = mid;
-                    }
-                }
-                renderedText = displayValue.slice(0, lo) + suffix;
+        return { textX, textY, effectiveW };
+    }
+
+    /**
+     * 文本截断：使用二分查找定位截断点，O(log n) vs 逐字符 O(n)
+     *
+     * 当文本宽度超过 maxTextWidth 时，截断并追加省略号（如启用）。
+     * 返回截断后的文本；未超出时原样返回。
+     */
+    #truncateText(ctx, text, effectiveW, cellPadding, textOverflowEllipsis) {
+        const maxTextWidth = effectiveW - cellPadding * 2;
+        if (maxTextWidth <= 0) return text;
+
+        const fullWidth = ctx.measureText(text).width;
+        if (fullWidth <= maxTextWidth) return text;
+
+        const suffix = textOverflowEllipsis ? "..." : "";
+        let lo = 0;
+        let hi = text.length;
+        while (lo < hi) {
+            const mid = Math.ceil((lo + hi) / 2);
+            if (ctx.measureText(text.slice(0, mid) + suffix).width > maxTextWidth) {
+                hi = mid - 1;
+            } else {
+                lo = mid;
             }
         }
+        return text.slice(0, lo) + suffix;
+    }
 
-        // 仅在文本溢出时裁剪，避免每个单元格的 save/clip/restore 开销
-        if (renderedText !== displayValue) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(drawX, drawY, w, h);
-            ctx.clip();
-            ctx.fillText(renderedText, textX, textY);
-            ctx.restore();
-        } else {
-            ctx.fillText(renderedText, textX, textY);
+    /**
+     * 绘制下划线
+     *
+     * 统一处理 textDecoration 下划线和 URL 自动链接下划线，
+     * 根据 textAlign 计算线条起始 X 坐标，通过 offsetY 参数
+     * 区分两种下划线的垂直偏移。
+     */
+    #drawUnderline(ctx, renderedText, textX, textY, fontSize, textAlign, color, lineWidth, offsetY) {
+        const textWidth = ctx.measureText(renderedText).width;
+        let lineX = textX;
+        if (textAlign === TEXT_ALIGN.CENTER) {
+            lineX = textX - textWidth / 2;
+        } else if (textAlign === TEXT_ALIGN.RIGHT) {
+            lineX = textX - textWidth;
         }
-
-        /**
-         * 绘制下划线
-         * textDecoration: underline 时在文字下方绘制一条线
-         */
-        if (finalStyle.textDecoration === FONT_STYLE.UNDERLINE) {
-            const textWidth = ctx.measureText(renderedText).width;
-            let lineX = textX;
-            if (textAlign === TEXT_ALIGN.CENTER) {
-                lineX = textX - textWidth / 2;
-            } else if (textAlign === TEXT_ALIGN.RIGHT) {
-                lineX = textX - textWidth;
-            }
-            const lineY = textY + Math.round(fontSize * 0.6);
-            ctx.beginPath();
-            ctx.moveTo(lineX, lineY);
-            ctx.lineTo(lineX + textWidth, lineY);
-            ctx.strokeStyle = ctx.fillStyle;
-            ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
-            ctx.stroke();
-        }
-
-        if (urlValue) {
-            const textWidth = ctx.measureText(renderedText).width;
-            let lineX = textX;
-            if (textAlign === TEXT_ALIGN.CENTER) {
-                lineX = textX - textWidth / 2;
-            } else if (textAlign === TEXT_ALIGN.RIGHT) {
-                lineX = textX - textWidth;
-            }
-            const lineY = textY + Math.round(fontSize * 0.6) + CONFIG.AUTO_LINK_UNDERLINE_OFFSET;
-            ctx.beginPath();
-            ctx.moveTo(lineX, lineY);
-            ctx.lineTo(lineX + textWidth, lineY);
-            ctx.strokeStyle = CONFIG.AUTO_LINK_COLOR;
-            ctx.lineWidth = CONFIG.AUTO_LINK_UNDERLINE_WIDTH;
-            ctx.stroke();
-        }
+        const lineY = textY + Math.round(fontSize * 0.6) + offsetY;
+        ctx.beginPath();
+        ctx.moveTo(lineX, lineY);
+        ctx.lineTo(lineX + textWidth, lineY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
     }
 
     /**
