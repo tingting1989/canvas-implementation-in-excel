@@ -37,6 +37,18 @@ export const ERROR_CODE = Object.freeze({
     /** 类型解析失败 */
     TYPE_PARSE_ERROR: "TYPE_PARSE_ERROR",
 
+    /** 类型名称无效（空或非字符串） */
+    TYPE_INVALID_NAME: "TYPE_INVALID_NAME",
+
+    /** 类型构造函数无效（非构造函数） */
+    TYPE_INVALID_CLASS: "TYPE_INVALID_CLASS",
+
+    /** 类型已存在，将被覆盖 */
+    TYPE_DUPLICATE: "TYPE_DUPLICATE",
+
+    /** 类型实例化失败 */
+    TYPE_INSTANTIATION_ERROR: "TYPE_INSTANTIATION_ERROR",
+
     // ── 剪贴板 ──
     /** 剪贴板读取失败 */
     CLIPBOARD_READ_ERROR: "CLIPBOARD_READ_ERROR",
@@ -67,22 +79,6 @@ export const ERROR_CODE = Object.freeze({
 
     /** 图层渲染异常 */
     LAYER_RENDER_ERROR: "LAYER_RENDER_ERROR",
-
-    // ── 渲染器注册表 ──
-    /** 渲染器名称无效（空或非字符串） */
-    INVALID_RENDERER_NAME: "INVALID_RENDERER_NAME",
-
-    /** 渲染器类无效（非构造函数） */
-    INVALID_RENDERER_CLASS: "INVALID_RENDERER_CLASS",
-
-    /** 渲染器已存在，将被覆盖 */
-    DUPLICATE_RENDERER: "DUPLICATE_RENDERER",
-
-    /** 渲染器未找到 */
-    RENDERER_NOT_FOUND: "RENDERER_NOT_FOUND",
-
-    /** 渲染器实例化失败 */
-    RENDERER_INSTANTIATION_ERROR: "RENDERER_INSTANTIATION_ERROR",
 
     // ── 公式 ──
     /** 函数名无效（空或非字符串） */

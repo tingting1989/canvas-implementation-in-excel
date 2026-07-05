@@ -89,18 +89,15 @@ export class SettingsApplier {
         if (Array.isArray(settings.conditionalStyles)) {
             SettingsApplier.#applyConditionalStyles(sheet, settings.conditionalStyles);
         }
+        if (Array.isArray(settings.columns)) {
+            sheet.applyColumnsConfig(settings.columns);
+        }
         if (Array.isArray(settings.cell)) {
             sheet.cellConfig = settings.cell;
             sheet.applyCellConfig();
         }
         if (isFunction(settings.cells)) {
             sheet.cellsFn = settings.cells;
-        }
-        if (Array.isArray(settings.columns)) {
-            sheet.applyColumnsConfig(settings.columns);
-        }
-        if (Array.isArray(settings.cellTypes)) {
-            SettingsApplier.#applyCellTypes(sheet, settings.cellTypes);
         }
         if (settings.width != null || settings.height != null) {
             renderEngine?.setCanvasSize(settings.width, settings.height);
@@ -167,15 +164,6 @@ export class SettingsApplier {
         for (const cs of conditionalStyles) {
             if (!cs.range || !cs.condition || !cs.style) continue;
             sheet.addConditionalRule(cs.range, cs.condition, stylePool.getStyleId(cs.style));
-        }
-    }
-
-    /** @param {import("../Sheet.js").Sheet} sheet */
-    static #applyCellTypes(sheet, cellTypes) {
-        for (const ct of cellTypes) {
-            if (ct.row == null || ct.col == null || !ct.type) continue;
-            const { row, col, type: name, ...rest } = ct;
-            sheet.cellTypes.set(`${row},${col}`, { name, options: rest });
         }
     }
 

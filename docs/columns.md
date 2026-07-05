@@ -21,7 +21,7 @@ const wb = new Workbook("grid", {
 
 | 属性 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `type` | `string` | `"text"` | 列类型，目前支持 `"text"` 和 `"numeric"` |
+| `type` | `string` | `"text"` | 列类型，见下方"列类型"章节 |
 | `width` | `number` | — | 列宽（px），优先级高于 `colWidths` |
 | `style` | `object` | — | 列级样式对象，如 `{ textAlign: "right", fontWeight: "bold" }` |
 | `numericFormat` | `object` | — | 数字格式化配置，仅 `type: "numeric"` 时生效 |
@@ -31,7 +31,7 @@ const wb = new Workbook("grid", {
 | `allowInvalid` | `boolean` | `false` | 是否允许无效输入（仅 `numeric` 类型） |
 | `disabled` | `boolean` | `false` | 是否禁用该列所有单元格 |
 | `readOnly` | `boolean` | `false` | 是否只读（等同于 `disabled`） |
-| `source` | `Array` | — | 下拉列表数据源（`type: "dropdown"` 时使用，预留） |
+| `source` | `Array` | — | 下拉列表数据源（`type: "select"` 时必填） |
 
 ## 列类型
 
@@ -58,6 +58,51 @@ const wb = new Workbook("grid", {
 - 编辑时仅允许输入数字、小数点、负号和科学计数法字符（`0-9`、`.`、`-`、`e`、`E`）
 - 粘贴时自动解析为数字，非数字内容会被过滤
 - 提交时自动验证，无效输入会被拒绝（除非 `allowInvalid: true`）
+
+### select
+
+下拉选择类型，使用 `SelectEditor` 编辑，支持从预定义列表中选择值。
+
+```js
+{ type: "select", width: 120, source: ["正常", "异常", "未知"] }
+```
+
+**行为特性：**
+
+- 必须提供 `source` 数组作为下拉选项数据源
+- `source` 支持字符串数组 `["A", "B"]` 和对象数组 `[{ value: "a", label: "选项A" }]` 两种格式
+- 编辑时弹出下拉选择框，仅允许选择预定义值
+- 设置 `strict: true` 时，拒绝不在 `source` 中的输入
+
+### date
+
+日期类型，使用 `DateEditor` 编辑。
+
+```js
+{ type: "date", width: 120, dateFormat: "YYYY-MM-DD" }
+```
+
+### boolean
+
+布尔类型，显示为复选框样式。
+
+```js
+{ type: "boolean", width: 80 }
+```
+
+### 内置渲染器类型
+
+以下类型提供特殊的可视化渲染，但不改变编辑行为：
+
+| 类型名 | 说明 | 配置示例 |
+|--------|------|----------|
+| `checkbox` | 布尔复选框渲染 | `{ type: "checkbox", width: 80 }` |
+| `progressBar` | 进度条渲染 | `{ type: "progressBar", width: 150, min: 0, max: 100 }` |
+| `starRating` | 星级评分渲染 | `{ type: "starRating", width: 120, labels: ["差", "良", "优"] }` |
+| `sparkline` | 迷你图渲染 | `{ type: "sparkline", width: 120 }` |
+| `colorPreview` | 颜色预览渲染 | `{ type: "colorPreview", width: 80 }` |
+
+> **自定义类型：** 通过 `registerTypeClass()` 注册自定义类型，详见"扩展新列类型"章节。
 
 ## 数字格式化模式
 
@@ -124,6 +169,52 @@ const wb = new Workbook("grid", {
 }
 ```
 
+## 类型优先级
+
+单元格的类型解析按以下优先级（高优先级覆盖低优先级）：
+
+```
+cell 配置中的 type（单元格级）  ← 最高优先级
+  ↓ 回退
+cells 函数返回的 type（动态单元格级）
+  ↓ 回退
+columns 配置中的 type（列级）
+  ↓ 回退
+默认 "text" 类型
+```
+
+**同一列中不同行可以使用不同类型：**
+
+```js
+const wb = new Workbook("grid", {
+    columns: [
+        { type: "text", width: 120 },      // 第 0 列默认 text
+        { type: "select", width: 120, source: ["正常", "异常"] },  // 第 1 列默认 select
+    ],
+    cell: [
+        { row: 0, col: 0, type: "select", source: ["姓名", "年龄"] },  // 第 0 行第 0 列覆盖为 select
+        { row: 1, col: 1, type: "text" },  // 第 1 行第 1 列覆盖为 text
+    ],
+});
+```
+
+**通过 `cells` 函数动态指定类型：**
+
+```js
+const wb = new Workbook("grid", {
+    columns: [
+        { type: "text", width: 120 },
+    ],
+    cells: (row, col) => {
+        if (col === 1 && row > 0) {
+            return { type: "select", source: ["正常", "异常"] };
+        }
+    },
+});
+```
+
+> **类型选项：** `cell` 和 `cells` 中的 `type` 可附带类型选项（如 `source`、`numericFormat`、`min`、`max` 等），这些选项会自动提取并传递给类型实例。
+
 ## 输入验证
 
 ### 内置验证（numeric 类型）
@@ -164,6 +255,8 @@ const wb = new Workbook("grid", {
 |--------|--------|------|
 | `text` | `TextEditor` | 标准文本输入，支持 IME |
 | `numeric` | `NumericEditor` | 仅允许数字输入，自动过滤非数字字符 |
+| `select` | `SelectEditor` | 下拉选择框，从 `source` 列表中选择 |
+| `date` | `DateEditor` | 日期选择器 |
 
 编辑器选择由 `EditorManager` 根据列类型自动路由：
 
@@ -265,14 +358,40 @@ wb.render();
 
 ## 扩展新列类型
 
-以 `date` 类型为例，扩展步骤：
+以 `trafficLight`（交通灯）类型为例，扩展步骤：
 
-1. **创建编辑器** — 继承 `CellEditor`，实现 `createEditor`/`show`/`hide`/`hideForScroll`/`restoreFromScroll`
+1. **创建类型类** — 继承 `BaseColumnType`，实现 `render()` 等方法
 
 ```js
-// src/editor/editors/DateEditor.js
-export class DateEditor extends CellEditor {
-  createEditor() { /* 创建日期选择器 DOM */ }
+// src/types/TrafficLightType.js
+import { BaseColumnType } from "./BaseColumnType.js";
+
+export class TrafficLightType extends BaseColumnType {
+    static TYPE_NAME = "trafficLight";
+
+    render(ctx, context) {
+        const { x, y, width, height, displayValue } = context;
+        // 自定义渲染逻辑：绘制交通灯图标 + 文字
+        // ...
+    }
+}
+```
+
+2. **注册类型** — 在应用入口调用 `registerTypeClass`
+
+```js
+import { registerTypeClass } from "./src/types/index.js";
+import { TrafficLightType } from "./src/types/TrafficLightType.js";
+
+registerTypeClass("trafficLight", TrafficLightType);
+```
+
+3. **创建编辑器**（可选） — 继承 `CellEditor`，实现 `createEditor`/`show`/`hide`/`hideForScroll`/`restoreFromScroll`
+
+```js
+// src/editor/editors/TrafficLightEditor.js
+export class TrafficLightEditor extends CellEditor {
+  createEditor() { /* 创建编辑器 DOM */ }
   show(row, col, cursorMode) { /* 显示并定位 */ }
   hide() { /* 隐藏 */ }
   hideForScroll() { /* 滚动隐藏 */ }
@@ -280,25 +399,27 @@ export class DateEditor extends CellEditor {
 }
 ```
 
-2. **注册编辑器** — 在 `EditorManager.#initEditors()` 中注册
+4. **注册编辑器** — 在 `EditorManager.#initEditors()` 中注册
 
 ```js
-const dateEditor = new DateEditor(this.renderEngine, this.#sheet);
-dateEditor.createEditor();
-this.editors.set("date", dateEditor);
+const tlEditor = new TrafficLightEditor(this.renderEngine, this.#sheet);
+tlEditor.createEditor();
+this.editors.set("trafficLight", tlEditor);
 ```
-
-3. **添加格式化** — 在 `Sheet.formatCellValue()` 的 `switch` 中添加 `case "date"`
-
-4. **添加验证** — 在 `Sheet.validateCellValue()` 中添加 `date` 类型的验证逻辑
 
 5. **使用配置**
 
 ```js
+// 列级使用
 {
-  type: "date",
+  type: "trafficLight",
   width: 120,
-  dateFormat: "YYYY-MM-DD",
   style: { textAlign: "center" }
 }
+
+// 单元格级使用（覆盖列级类型）
+cell: [
+  { row: 0, col: 2, type: "trafficLight" },
+  { row: 1, col: 2, type: "select", source: ["正常", "异常"] },
+]
 ```

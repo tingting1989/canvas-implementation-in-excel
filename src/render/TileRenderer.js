@@ -435,7 +435,7 @@ export class TileRenderer {
             col,
             realRow: realR,
             realCol: col,
-            isSelected: false,
+            isSelected: sheet.selection?.contains(realR, col) ?? false,
             isDisabled: cell?.disabled === true,
             isMerged: !!merge,
             mergeInfo: merge,

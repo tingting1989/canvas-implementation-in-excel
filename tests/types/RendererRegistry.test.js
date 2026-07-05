@@ -1,477 +1,518 @@
 /**
- * RendererRegistry 渲染器注册表完整测试套件
+ * TypeRegistry 类型注册表完整测试套件
  *
  * 包含：
  * 1. 基础功能测试（正常使用场景）
  * 2. 攻击性测试（边界条件、异常输入、性能压力）
  * 3. 注册/注销/查询功能测试
- * 4. 线程安全/并发测试
+ * 4. 单例模式测试
  * 5. 源码 Bug 检测
  *
- * @module tests/types/RendererRegistry.test
+ * @module tests/types/TypeRegistry.test
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import RendererRegistry from '../../src/types/RendererRegistry.js';
+import { TypeRegistry, registerTypeClass, getType, hasType, unregisterType, getRegisteredTypes, clearTypes, resetTypes, getRegistrySize, registerType } from '../../src/types/index.js';
 import { BaseColumnType } from '../../src/types/BaseColumnType.js';
 
-describe('RendererRegistry - 基础功能测试', () => {
+describe('TypeRegistry - 单例模式测试', () => {
+    it('多次 getInstance 返回同一实例', () => {
+        const a = TypeRegistry.getInstance();
+        const b = TypeRegistry.getInstance();
+        expect(a).toBe(b);
+    });
+
+    it('new TypeRegistry() 也返回同一实例', () => {
+        const a = TypeRegistry.getInstance();
+        const b = new TypeRegistry();
+        expect(a).toBe(b);
+    });
+
+    it('内置类型在初始化时自动注册', () => {
+        const registry = TypeRegistry.getInstance();
+        expect(registry.has('text')).toBe(true);
+        expect(registry.has('numeric')).toBe(true);
+        expect(registry.has('date')).toBe(true);
+        expect(registry.has('boolean')).toBe(true);
+        expect(registry.has('select')).toBe(true);
+    });
+
+    it('内置渲染器在初始化时自动注册', () => {
+        const registry = TypeRegistry.getInstance();
+        expect(registry.has('checkbox')).toBe(true);
+        expect(registry.has('progressBar')).toBe(true);
+        expect(registry.has('starRating')).toBe(true);
+        expect(registry.has('sparkline')).toBe(true);
+        expect(registry.has('colorPreview')).toBe(true);
+    });
+});
+
+describe('TypeRegistry - register() 方法', () => {
     beforeEach(() => {
-        RendererRegistry.clear();
+        clearTypes();
     });
 
-    describe('registerRenderer() 方法', () => {
-        it('成功注册渲染器', () => {
-            class TestRenderer extends BaseColumnType {
-                get name() { return 'test'; }
-            }
+    it('成功注册类型', () => {
+        class TestType extends BaseColumnType {
+            get name() { return 'test'; }
+        }
 
-            const result = RendererRegistry.registerRenderer('test', TestRenderer);
-            expect(result).toBe(true);
-        });
-
-        it('重复注册覆盖已有渲染器（返回 true）', () => {
-            class Renderer1 extends BaseColumnType {
-                get name() { return 'renderer'; }
-            }
-            class Renderer2 extends BaseColumnType {
-                get name() { return 'renderer'; }
-            }
-
-            expect(RendererRegistry.registerRenderer('renderer', Renderer1)).toBe(true);
-            expect(RendererRegistry.registerRenderer('renderer', Renderer2)).toBe(true);
-        });
-
-        it('无效名称返回 false', () => {
-            const invalidNames = [null, undefined, '', ' ', 123, {}, []];
-
-            invalidNames.forEach(name => {
-                const result = RendererRegistry.registerRenderer(name, BaseColumnType);
-                expect(result).toBe(false);
-            });
-        });
-
-        it('无效构造函数返回 false', () => {
-            const invalidConstructors = [
-                null,
-                undefined,
-                'string',
-                123,
-                {},
-                [],
-                () => {},  // 箭头函数没有 prototype，不能作为构造函数
-            ];
-
-            invalidConstructors.forEach(ctor => {
-                const result = RendererRegistry.registerRenderer('test', ctor);
-                expect(result).toBe(false);
-            });
-
-            // 注意: function(){} 是有效的构造函数（可以用 new 调用），所以会返回 true
-            // 这是 JavaScript 的正常行为
-            const validFunction = function() {};
-            expect(RendererRegistry.registerRenderer('valid-function', validFunction)).toBe(true);
-        });
+        const registry = TypeRegistry.getInstance();
+        const result = registry.register('test', TestType);
+        expect(result).toBe(true);
     });
 
-    describe('getRenderer() 方法', () => {
-        it('获取已注册的渲染器实例', () => {
-            class CustomRenderer extends BaseColumnType {
-                get name() { return 'custom'; }
-            }
+    it('重复注册覆盖已有类型（返回 true）', () => {
+        class Type1 extends BaseColumnType {
+            get name() { return 'renderer'; }
+        }
+        class Type2 extends BaseColumnType {
+            get name() { return 'renderer'; }
+        }
 
-            RendererRegistry.registerRenderer('custom', CustomRenderer);
-            const renderer = RendererRegistry.getRenderer('custom');
-
-            expect(renderer).toBeInstanceOf(CustomRenderer);
-        });
-
-        it('获取不存在的渲染器返回 null', () => {
-            const renderer = RendererRegistry.getRenderer('nonexistent');
-            expect(renderer).toBeNull();
-        });
-
-        it('传递 options 给渲染器实例', () => {
-            class ConfigurableRenderer extends BaseColumnType {
-                get name() { return 'configurable'; }
-                get config() { return this.options?.value || 'default'; }
-            }
-
-            RendererRegistry.registerRenderer('configurable', ConfigurableRenderer);
-            const renderer = RendererRegistry.getRenderer('configurable', { value: 'custom' });
-
-            expect(renderer.config).toBe('custom');
-        });
-
-        it('实例化失败返回 null', () => {
-            class FailingRenderer extends BaseColumnType {
-                get name() { return 'failing'; }
-                constructor(options) {
-                    super(options);
-                    throw new Error('Intentional failure');
-                }
-            }
-
-            RendererRegistry.registerRenderer('failing', FailingRenderer);
-            const renderer = RendererRegistry.getRenderer('failing');
-
-            expect(renderer).toBeNull();
-        });
+        const registry = TypeRegistry.getInstance();
+        expect(registry.register('renderer', Type1)).toBe(true);
+        expect(registry.register('renderer', Type2)).toBe(true);
     });
 
-    describe('hasRenderer() 方法', () => {
-        it('检查已存在的渲染器', () => {
-            class ExistingRenderer extends BaseColumnType {
-                get name() { return 'existing'; }
-            }
+    it('无效名称返回 false', () => {
+        const invalidNames = [null, undefined, '', ' ', 123, {}, []];
+        const registry = TypeRegistry.getInstance();
 
-            RendererRegistry.registerRenderer('existing', ExistingRenderer);
-            expect(RendererRegistry.hasRenderer('existing')).toBe(true);
-        });
-
-        it('检查不存在的渲染器', () => {
-            expect(RendererRegistry.hasRenderer('nonexistent')).toBe(false);
-        });
-    });
-
-    describe('unregisterRenderer() 方法', () => {
-        it('成功注销渲染器', () => {
-            class TempRenderer extends BaseColumnType {
-                get name() { return 'temp'; }
-            }
-
-            RendererRegistry.registerRenderer('temp', TempRenderer);
-            expect(RendererRegistry.hasRenderer('temp')).toBe(true);
-
-            const result = RendererRegistry.unregisterRenderer('temp');
-            expect(result).toBe(true);
-            expect(RendererRegistry.hasRenderer('temp')).toBe(false);
-        });
-
-        it('注销不存在的渲染器返回 false', () => {
-            const result = RendererRegistry.unregisterRenderer('nonexistent');
+        invalidNames.forEach(name => {
+            const result = registry.register(name, BaseColumnType);
             expect(result).toBe(false);
         });
     });
 
-    describe('listRenderers() 方法', () => {
-        it('列出所有已注册的渲染器名称', () => {
-            RendererRegistry.registerRenderer('r1', BaseColumnType);
-            RendererRegistry.registerRenderer('r2', BaseColumnType);
+    it('无效构造函数返回 false', () => {
+        const invalidConstructors = [
+            null,
+            undefined,
+            'string',
+            123,
+            {},
+            [],
+            () => {},
+        ];
+        const registry = TypeRegistry.getInstance();
 
-            const list = RendererRegistry.listRenderers();
-
-            expect(Array.isArray(list)).toBe(true);
-            expect(list.length).toBeGreaterThanOrEqual(2);
-            expect(list).toContain('r1');
-            expect(list).toContain('r2');
+        invalidConstructors.forEach(ctor => {
+            const result = registry.register('test', ctor);
+            expect(result).toBe(false);
         });
 
-        it('无注册渲染器时返回空数组', () => {
-            const list = RendererRegistry.listRenderers();
-            expect(list).toEqual([]);
-        });
+        const validFunction = function() {};
+        expect(registry.register('valid-function', validFunction)).toBe(true);
+    });
+
+    it('通过便捷函数 registerTypeClass 注册', () => {
+        class QuickType extends BaseColumnType {
+            get name() { return 'quick'; }
+        }
+
+        const result = registerTypeClass('quick', QuickType);
+        expect(result).toBe(true);
+        expect(hasType('quick')).toBe(true);
     });
 });
 
-describe('RendererRegistry - 攻击性测试', () => {
+describe('TypeRegistry - registerInstance() 方法', () => {
     beforeEach(() => {
-        RendererRegistry.clear();
+        clearTypes();
     });
 
-    describe('异常输入测试', () => {
-        it('特殊字符作为渲染器名称', () => {
-            const specialNames = [
-                'name-with-dashes',
-                'name.with.dots',
-                'name_with_underscores',
-                'nameWithCamelCase',
-                'NAME-UPPERCASE',
-                'name123',
-                '123name',
-                '@#$%',
-                '中文命名',
-                '🎉emoji',
-                'name with spaces',
-                '',
-                '\t\n',
-            ];
+    it('成功注册类型实例', () => {
+        class MyType extends BaseColumnType {
+            get name() { return 'myType'; }
+        }
 
-            specialNames.forEach(name => {
-                if (name && typeof name === 'string' && name.trim()) {
-                    try {
-                        RendererRegistry.registerRenderer(name, BaseColumnType);
-                        console.log(`✓ 成功注册: ${name}`);
-                    } catch (e) {
-                        console.log(`✗ 注册失败: ${name} - ${e.message}`);
-                    }
-                }
-            });
-        });
+        const registry = TypeRegistry.getInstance();
+        const result = registry.registerInstance(new MyType());
+        expect(result).toBe(true);
+        expect(registry.has('myType')).toBe(true);
+    });
 
-        it('恶意构造函数', () => {
-            const maliciousConstructors = [
-                class Malicious1 extends BaseColumnType {
-                    get name() { while(true); }
-                },
-                class Malicious2 extends BaseColumnType {
-                    constructor() {
-                        super();
-                        this.self = this;
-                    }
-                },
-                class Malicious3 extends BaseColumnType {
-                    get name() { return new Proxy({}, {}); }
-                },
-            ];
+    it('无效实例返回 false', () => {
+        const registry = TypeRegistry.getInstance();
+        expect(registry.registerInstance(null)).toBe(false);
+        expect(registry.registerInstance(undefined)).toBe(false);
+        expect(registry.registerInstance({})).toBe(false);
+    });
 
-            maliciousConstructors.forEach((ctor, i) => {
-                RendererRegistry.registerRenderer(`malicious_${i}`, ctor);
-                const start = performance.now();
-                const renderer = RendererRegistry.getRenderer(`malicious_${i}`);
-                const elapsed = performance.now() - start;
+    it('通过便捷函数 registerType 注册', () => {
+        class QuickInstance extends BaseColumnType {
+            get name() { return 'quickInstance'; }
+        }
 
-                if (elapsed > 1000) {
-                    console.error(`❌ 恶意构造函数 ${i} 导致超时`);
-                } else {
-                    console.log(`✓ 恶意构造函数 ${i} 处理耗时: ${elapsed.toFixed(2)}ms`);
-                }
-            });
-        });
+        const result = registerType(new QuickInstance());
+        expect(result).toBe(true);
+        expect(hasType('quickInstance')).toBe(true);
+    });
+});
 
-        it('大量并发注册', () => {
-            const promises = [];
-            for (let i = 0; i < 1000; i++) {
-                const idx = i;
-                promises.push(
-                    Promise.resolve().then(() => {
-                        class DynamicRenderer extends BaseColumnType {
-                            get name() { return `dynamic_${idx}`; }
-                        }
-                        return RendererRegistry.registerRenderer(`dynamic_${idx}`, DynamicRenderer);
-                    })
-                );
+describe('TypeRegistry - get() 方法', () => {
+    beforeEach(() => {
+        resetTypes();
+    });
+
+    it('获取已注册的类型实例', () => {
+        class CustomType extends BaseColumnType {
+            get name() { return 'custom'; }
+        }
+
+        const registry = TypeRegistry.getInstance();
+        registry.register('custom', CustomType);
+        const instance = registry.get('custom');
+
+        expect(instance).toBeInstanceOf(CustomType);
+    });
+
+    it('获取不存在的类型回退到 text', () => {
+        const registry = TypeRegistry.getInstance();
+        const instance = registry.get('nonexistent');
+        expect(instance).not.toBeNull();
+        expect(instance.name).toBe('text');
+    });
+
+    it('传递 options 创建新实例', () => {
+        class ConfigurableType extends BaseColumnType {
+            get name() { return 'configurable'; }
+            get config() { return this.options?.value || 'default'; }
+        }
+
+        const registry = TypeRegistry.getInstance();
+        registry.register('configurable', ConfigurableType);
+        const instance = registry.get('configurable', { value: 'custom' });
+
+        expect(instance.config).toBe('custom');
+    });
+
+    it('实例化失败返回 null', () => {
+        class FailingType extends BaseColumnType {
+            get name() { return 'failing'; }
+            constructor(options) {
+                super(options);
+                throw new Error('Intentional failure');
             }
+        }
 
-            // 注意：这测试的是基本功能，不是真正的并发安全性
-            expect(async () => {
-                await Promise.all(promises);
-            }).not.toThrow();
-        });
+        const registry = TypeRegistry.getInstance();
+        registry.register('failing', FailingType);
+        const instance = registry.get('failing');
+
+        expect(instance).toBeNull();
     });
 
-    describe('边界条件测试', () => {
-        it('极端长度的渲染器名称', () => {
-            const longName = 'a'.repeat(10000);
+    it('通过便捷函数 getType 获取', () => {
+        class QuickGetType extends BaseColumnType {
+            get name() { return 'quickGet'; }
+        }
 
-            const result = RendererRegistry.registerRenderer(longName, BaseColumnType);
-            console.log(`10,000 字符名称注册结果: ${result}`);
+        registerTypeClass('quickGet', QuickGetType);
+        const instance = getType('quickGet');
+        expect(instance).toBeInstanceOf(QuickGetType);
+    });
+});
 
+describe('TypeRegistry - has() / unregister() / list() / size', () => {
+    beforeEach(() => {
+        clearTypes();
+    });
+
+    it('has() 检查类型是否存在', () => {
+        const registry = TypeRegistry.getInstance();
+        class ExistingType extends BaseColumnType {
+            get name() { return 'existing'; }
+        }
+
+        registry.register('existing', ExistingType);
+        expect(registry.has('existing')).toBe(true);
+        expect(registry.has('nonexistent')).toBe(false);
+    });
+
+    it('unregister() 成功注销类型', () => {
+        const registry = TypeRegistry.getInstance();
+        class TempType extends BaseColumnType {
+            get name() { return 'temp'; }
+        }
+
+        registry.register('temp', TempType);
+        expect(registry.has('temp')).toBe(true);
+
+        const result = registry.unregister('temp');
+        expect(result).toBe(true);
+        expect(registry.has('temp')).toBe(false);
+    });
+
+    it('unregister() 注销不存在的类型返回 false', () => {
+        const registry = TypeRegistry.getInstance();
+        expect(registry.unregister('nonexistent')).toBe(false);
+    });
+
+    it('list() 列出所有已注册的类型名称', () => {
+        const registry = TypeRegistry.getInstance();
+        registry.register('r1', BaseColumnType);
+        registry.register('r2', BaseColumnType);
+
+        const list = registry.list();
+        expect(Array.isArray(list)).toBe(true);
+        expect(list).toContain('r1');
+        expect(list).toContain('r2');
+    });
+
+    it('size 返回已注册类型数量', () => {
+        const registry = TypeRegistry.getInstance();
+        const initialSize = registry.size;
+        registry.register('sizeTest', BaseColumnType);
+        expect(registry.size).toBe(initialSize + 1);
+    });
+
+    it('便捷函数 hasType / unregisterType / getRegisteredTypes / getRegistrySize', () => {
+        registerTypeClass('convTest', BaseColumnType);
+        expect(hasType('convTest')).toBe(true);
+        expect(getRegisteredTypes()).toContain('convTest');
+        expect(typeof getRegistrySize()).toBe('number');
+        expect(unregisterType('convTest')).toBe(true);
+        expect(hasType('convTest')).toBe(false);
+    });
+});
+
+describe('TypeRegistry - clear() / reset()', () => {
+    it('clear() 清空所有类型', () => {
+        const registry = TypeRegistry.getInstance();
+        registry.register('x', BaseColumnType);
+        registry.register('y', BaseColumnType);
+
+        registry.clear();
+        expect(registry.list()).toEqual([]);
+        expect(registry.size).toBe(0);
+    });
+
+    it('reset() 清空后重新注册内置类型', () => {
+        const registry = TypeRegistry.getInstance();
+        registry.clear();
+        expect(registry.has('text')).toBe(false);
+
+        registry.reset();
+        expect(registry.has('text')).toBe(true);
+        expect(registry.has('numeric')).toBe(true);
+        expect(registry.has('select')).toBe(true);
+        expect(registry.has('checkbox')).toBe(true);
+    });
+
+    it('便捷函数 clearTypes / resetTypes', () => {
+        resetTypes();
+        expect(hasType('text')).toBe(true);
+    });
+});
+
+describe('TypeRegistry - 攻击性测试', () => {
+    beforeEach(() => {
+        clearTypes();
+    });
+
+    it('特殊字符作为类型名称', () => {
+        const specialNames = [
+            'name-with-dashes',
+            'name.with.dots',
+            'name_with_underscores',
+            'nameWithCamelCase',
+            'NAME-UPPERCASE',
+            'name123',
+            '123name',
+            '@#$%',
+            '中文命名',
+            '🎉emoji',
+            'name with spaces',
+        ];
+        const registry = TypeRegistry.getInstance();
+
+        specialNames.forEach(name => {
+            const result = registry.register(name, BaseColumnType);
             if (result) {
-                expect(RendererRegistry.hasRenderer(longName)).toBe(true);
+                expect(registry.has(name)).toBe(true);
             }
-        });
-
-        it('Unicode 名称', () => {
-            const unicodeNames = ['日本語', '한글', '中文', '🎯', 'αβγδ'];
-
-            unicodeNames.forEach(name => {
-                const result = RendererRegistry.registerRenderer(name, BaseColumnType);
-                if (result) {
-                    expect(RendererRegistry.getRenderer(name)).not.toBeNull();
-                }
-            });
-        });
-
-        it('保留字和特殊标识符', () => {
-            const reservedNames = [
-                'constructor',
-                'prototype',
-                '__proto__',
-                'toString',
-                'valueOf',
-                'hasOwnProperty',
-            ];
-
-            reservedNames.forEach(name => {
-                const result = RendererRegistry.registerRenderer(name, BaseColumnType);
-                console.log(`保留字 "${name}" 注册: ${result}`);
-            });
         });
     });
 
-    describe('内存泄漏检测', () => {
-        it('频繁注册和注销不应该导致内存泄漏', () => {
-            for (let i = 0; i < 10000; i++) {
-                class TempRenderer extends BaseColumnType {
-                    get name() { return `temp_${i}`; }
-                }
-                RendererRegistry.registerRenderer(`temp_${i}`, TempRenderer);
-                RendererRegistry.unregisterRenderer(`temp_${i}`);
-            }
+    it('极端长度的类型名称', () => {
+        const longName = 'a'.repeat(10000);
+        const registry = TypeRegistry.getInstance();
 
-            const remaining = RendererRegistry.listRenderers();
-            expect(remaining.length).toBeLessThan(100);
+        const result = registry.register(longName, BaseColumnType);
+        if (result) {
+            expect(registry.has(longName)).toBe(true);
+        }
+    });
+
+    it('Unicode 名称', () => {
+        const unicodeNames = ['日本語', '한글', '中文', '🎯', 'αβγδ'];
+        const registry = TypeRegistry.getInstance();
+
+        unicodeNames.forEach(name => {
+            const result = registry.register(name, BaseColumnType);
+            if (result) {
+                expect(registry.get(name)).not.toBeNull();
+            }
         });
+    });
+
+    it('频繁注册和注销不应该导致内存泄漏', () => {
+        const registry = TypeRegistry.getInstance();
+        for (let i = 0; i < 10000; i++) {
+            class TempType extends BaseColumnType {
+                get name() { return `temp_${i}`; }
+            }
+            registry.register(`temp_${i}`, TempType);
+            registry.unregister(`temp_${i}`);
+        }
+
+        expect(registry.size).toBeLessThan(100);
     });
 });
 
-describe('RendererRegistry - 集成测试', () => {
+describe('TypeRegistry - 集成测试', () => {
     beforeEach(() => {
-        RendererRegistry.clear();
+        resetTypes();
     });
 
     it('完整的注册-查询-使用流程', () => {
-        class CompleteRenderer extends BaseColumnType {
+        class CompleteType extends BaseColumnType {
             get name() { return 'complete'; }
             format(value) { return `[${value}]`; }
         }
 
-        expect(RendererRegistry.registerRenderer('complete', CompleteRenderer)).toBe(true);
-        expect(RendererRegistry.hasRenderer('complete')).toBe(true);
+        const registry = TypeRegistry.getInstance();
+        expect(registry.register('complete', CompleteType)).toBe(true);
+        expect(registry.has('complete')).toBe(true);
 
-        const instance = RendererRegistry.getRenderer('complete', { option: 'test' });
-        expect(instance).toBeInstanceOf(CompleteRenderer);
+        const instance = registry.get('complete', { option: 'test' });
+        expect(instance).toBeInstanceOf(CompleteType);
         expect(instance.format('hello')).toBe('[hello]');
 
-        expect(RendererRegistry.unregisterRenderer('complete')).toBe(true);
-        expect(RendererRegistry.hasRenderer('complete')).toBe(false);
+        expect(registry.unregister('complete')).toBe(true);
+        expect(registry.has('complete')).toBe(false);
     });
 
-    it('多个渲染器的独立管理', () => {
-        class RendererA extends BaseColumnType {
+    it('多个类型的独立管理', () => {
+        class TypeA extends BaseColumnType {
             get name() { return 'A'; }
         }
-        class RendererB extends BaseColumnType {
+        class TypeB extends BaseColumnType {
             get name() { return 'B'; }
         }
 
-        RendererRegistry.registerRenderer('A', RendererA);
-        RendererRegistry.registerRenderer('B', RendererB);
+        const registry = TypeRegistry.getInstance();
+        registry.register('A', TypeA);
+        registry.register('B', TypeB);
 
-        const a = RendererRegistry.getRenderer('A');
-        const b = RendererRegistry.getRenderer('B');
+        const a = registry.get('A');
+        const b = registry.get('B');
 
-        expect(a).toBeInstanceOf(RendererA);
-        expect(b).toBeInstanceOf(RendererB);
+        expect(a).toBeInstanceOf(TypeA);
+        expect(b).toBeInstanceOf(TypeB);
         expect(a).not.toBe(b);
 
-        RendererRegistry.unregisterRenderer('A');
-        expect(RendererRegistry.hasRenderer('A')).toBe(false);
-        expect(RendererRegistry.hasRenderer('B')).toBe(true);
+        registry.unregister('A');
+        expect(registry.has('A')).toBe(false);
+        expect(registry.has('B')).toBe(true);
     });
 
-    it('clear() 清除所有渲染器', () => {
-        RendererRegistry.registerRenderer('x', BaseColumnType);
-        RendererRegistry.registerRenderer('y', BaseColumnType);
+    it('内置类型与自定义类型共存', () => {
+        const registry = TypeRegistry.getInstance();
+        expect(registry.has('text')).toBe(true);
 
-        expect(RendererRegistry.listRenderers().length).toBeGreaterThan(0);
+        class CustomType extends BaseColumnType {
+            get name() { return 'custom'; }
+        }
+        registry.register('custom', CustomType);
 
-        RendererRegistry.clear();
-        expect(RendererRegistry.listRenderers()).toEqual([]);
+        expect(registry.has('text')).toBe(true);
+        expect(registry.has('custom')).toBe(true);
+
+        const textInstance = registry.get('text');
+        const customInstance = registry.get('custom');
+        expect(textInstance.name).toBe('text');
+        expect(customInstance.name).toBe('custom');
     });
 });
 
-describe('RendererRegistry - Bug 检测', () => {
+describe('TypeRegistry - Bug 检测', () => {
     beforeEach(() => {
-        RendererRegistry.clear();
+        clearTypes();
     });
 
-    describe('源码问题识别', () => {
-        it('Bug #1: 静态方法中的 #renderers 私有字段共享问题', () => {
-            class TestRenderer extends BaseColumnType {
-                get name() { return 'test'; }
-            }
+    it('get() 无 options 时返回缓存的默认实例', () => {
+        class CachedType extends BaseColumnType {
+            get name() { return 'cached'; }
+        }
 
-            RendererRegistry.registerRenderer('test', TestRenderer);
+        const registry = TypeRegistry.getInstance();
+        registry.register('cached', CachedType);
 
-            const instance1 = RendererRegistry.getRenderer('test');
-            const instance2 = RendererRegistry.getRenderer('test');
+        const instance1 = registry.get('cached');
+        const instance2 = registry.get('cached');
 
-            console.log(`多次获取的实例是否相同: ${instance1 === instance2}`);
-            console.warn('⚠️  每次调用 getRenderer 都会创建新实例，可能导致不必要的开销');
-        });
-
-        it('Bug #2: 并发注册竞态条件', () => {
-            let successCount = 0;
-            const attempts = [];
-
-            for (let i = 0; i < 100; i++) {
-                attempts.push(
-                    Promise.resolve().then(() => {
-                        class RaceRenderer extends BaseColumnType {
-                            get name() { return 'race'; }
-                        }
-                        if (RendererRegistry.registerRenderer('race', RaceRenderer)) {
-                            successCount++;
-                        }
-                    })
-                );
-            }
-
-            console.log(`并发注册尝试次数: ${attempts.length}, 成功次数: ${successCount}`);
-        });
-
-        it('Bug #3: 构造函数抛出非 Error 对象', () => {
-            class WeirdError extends BaseColumnType {
-                get name() { return 'weird'; }
-                constructor() {
-                    super();
-                    throw 'string error';
-                }
-            }
-
-            RendererRegistry.registerRenderer('weird', WeirdError);
-            const result = RendererRegistry.getRenderer('weird');
-
-            expect(result).toBeNull();
-            console.log('ℹ️  提示: 构造函数抛出任何值都会导致返回 null');
-        });
-
-        it('Bug #4: name 属性为 getter 的动态性', () => {
-            let callCount = 0;
-            class DynamicName extends BaseColumnType {
-                get name() {
-                    callCount++;
-                    return `dynamic_${callCount}`;
-                }
-            }
-
-            RendererRegistry.registerRenderer('first_call', DynamicName);
-            const hasIt = RendererRegistry.hasRenderer('first_call');
-
-            console.log(`name getter 调用次数: ${callCount}`);
-            console.log(`首次注册名是否存在: ${hasIt}`);
-        });
+        expect(instance1).toBe(instance2);
     });
 
-    describe('边缘行为分析', () => {
-        it('循环引用的 options', () => {
-            class CircularOptions extends BaseColumnType {
-                get name() { return 'circular'; }
+    it('get() 有 options 时每次创建新实例', () => {
+        class NewInstanceType extends BaseColumnType {
+            get name() { return 'newInstance'; }
+        }
+
+        const registry = TypeRegistry.getInstance();
+        registry.register('newInstance', NewInstanceType);
+
+        const instance1 = registry.get('newInstance', { a: 1 });
+        const instance2 = registry.get('newInstance', { b: 2 });
+
+        expect(instance1).not.toBe(instance2);
+    });
+
+    it('构造函数抛出非 Error 对象时返回 null', () => {
+        class WeirdError extends BaseColumnType {
+            get name() { return 'weird'; }
+            constructor() {
+                super();
+                throw 'string error';
             }
+        }
 
-            const circularOpts = {};
-            circularOpts.self = circularOpts;
+        const registry = TypeRegistry.getInstance();
+        registry.register('weird', WeirdError);
+        const result = registry.get('weird');
 
-            RendererRegistry.registerRenderer('circular', CircularOptions);
-            const renderer = RendererRegistry.getRenderer('circular', circularOpts);
+        expect(result).toBeNull();
+    });
 
-            expect(renderer).toBeDefined();
-        });
+    it('循环引用的 options', () => {
+        class CircularType extends BaseColumnType {
+            get name() { return 'circular'; }
+        }
 
-        it('Symbol 作为名称', () => {
-            const sym = Symbol('test');
+        const registry = TypeRegistry.getInstance();
+        registry.register('circular', CircularType);
 
-            const result = RendererRegistry.registerRenderer(sym, BaseColumnType);
-            console.log(`Symbol 名称注册结果: ${result}`);
-        });
+        const circularOpts = {};
+        circularOpts.self = circularOpts;
 
-        it('Proxy 对象作为构造函数', () => {
-            const proxyCtor = new Proxy(BaseColumnType, {});
+        const renderer = registry.get('circular', circularOpts);
+        expect(renderer).toBeDefined();
+    });
 
-            const result = RendererRegistry.registerRenderer('proxy', proxyCtor);
-            console.log(`Proxy 构造函数注册结果: ${result}`);
-        });
+    it('Symbol 作为名称返回 false', () => {
+        const sym = Symbol('test');
+        const registry = TypeRegistry.getInstance();
+        const result = registry.register(sym, BaseColumnType);
+        expect(result).toBe(false);
+    });
+
+    it('Proxy 对象作为构造函数', () => {
+        const proxyCtor = new Proxy(BaseColumnType, {});
+        const registry = TypeRegistry.getInstance();
+        const result = registry.register('proxy', proxyCtor);
+        expect(result).toBe(true);
     });
 });

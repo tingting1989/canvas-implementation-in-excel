@@ -32,10 +32,25 @@ const wb = new Workbook("grid", {
 |------|------|------|------|
 | `row` | `number` | ✅ | 行号（从 0 开始） |
 | `col` | `number` | ✅ | 列号（从 0 开始） |
+| `type` | `string` | — | 单元格类型，覆盖列级 `columns[].type`，如 `"select"`、`"numeric"` |
 | `style` | `object` | — | 样式对象，如 `{ fontWeight: "bold", color: "#ff0000" }` |
 | `disabled` | `boolean` | — | 是否禁用（只读），与 `readOnly` 等价 |
 | `readOnly` | `boolean` | — | 是否只读，与 `disabled` 等价 |
 | `value` | `*` | — | 单元格初始值 |
+
+**`type` 附带的类型选项：** 当设置 `type` 时，以下属性会作为类型选项自动提取并传递给类型实例：
+
+| 选项属性 | 类型 | 适用类型 | 说明 |
+|----------|------|----------|------|
+| `source` | `Array` | `select` | 下拉选项数据源 |
+| `allowInvalid` | `boolean` | `numeric`、`select` | 是否允许无效输入 |
+| `strict` | `boolean` | `select` | 是否严格模式（拒绝非 source 值） |
+| `numericFormat` | `object` | `numeric` | 数字格式化配置 |
+| `min` | `number` | `numeric`、`progressBar` | 最小值 |
+| `max` | `number` | `numeric`、`progressBar` | 最大值 |
+| `maxLength` | `number` | `text` | 最大字符长度 |
+| `dateFormat` | `string` | `date` | 日期格式 |
+| `labels` | `Array` | `starRating` 等 | 标签数组 |
 
 ### 属性应用规则
 
@@ -77,6 +92,20 @@ const wb = new Workbook("grid", {
 // 单元格值为 "合计"，粗体显示，且不可编辑
 ```
 
+**5. `type` — 单元格级类型覆盖**
+
+通过 `type` 为单个单元格指定类型，覆盖列级 `columns[].type`，实现同一列中不同行使用不同类型：
+
+```js
+cell: [
+  { row: 0, col: 2, type: "trafficLight" },                          // 交通灯类型
+  { row: 1, col: 2, type: "select", source: ["正常", "异常"] },       // 下拉选择类型
+  { row: 2, col: 2, type: "numeric", numericFormat: { pattern: "0.00" } },  // 数字类型
+]
+```
+
+> **类型优先级：** `cell.type`（单元格级） > `cells().type`（动态） > `columns[].type`（列级） > `"text"`（默认）
+
 ### 注意事项
 
 - `cell` 是**一次性应用**的配置，仅在初始化或调用 `updateSettings()` 时执行
@@ -109,7 +138,7 @@ const wb = new Workbook("grid", {
 ### 函数签名
 
 ```ts
-(row: number, col: number) => { style?: object, disabled?: boolean, readOnly?: boolean } | undefined | null
+(row: number, col: number) => { style?: object, disabled?: boolean, readOnly?: boolean, type?: string } | undefined | null
 ```
 
 | 参数 | 类型 | 说明 |
@@ -121,7 +150,7 @@ const wb = new Workbook("grid", {
 
 | 返回值 | 说明 |
 |--------|------|
-| `{ style, disabled, readOnly }` | 应用对应属性到该单元格 |
+| `{ style, disabled, readOnly, type }` | 应用对应属性到该单元格 |
 | `undefined` / `null` | 不应用额外配置 |
 
 ### 返回值属性
@@ -131,6 +160,7 @@ const wb = new Workbook("grid", {
 | `style` | `object` | 样式对象，会合并到单元格最终样式中 |
 | `disabled` | `boolean` | 是否禁用（只读） |
 | `readOnly` | `boolean` | 是否只读（与 `disabled` 等价） |
+| `type` | `string` | 单元格类型，覆盖列级类型，可附带类型选项（如 `source`、`numericFormat` 等） |
 
 ### 特性
 
@@ -180,6 +210,7 @@ cells: (row, col) => {
 | 配置方式 | 声明式，逐条列出 | 计算式，按规则动态返回 |
 | 作用范围 | 仅影响指定的单元格 | 可影响任意单元格 |
 | 值设置 | 支持设置 `value` | 不支持设置 `value` |
+| 类型设置 | 支持设置 `type` + 类型选项 | 支持返回 `type` + 类型选项 |
 | 性能 | 初始化时 O(n)，之后无开销 | 每次渲染 O(rows × cols) |
 | 适合场景 | 少量特定单元格的固定配置 | 行/列级别的批量规则 |
 
@@ -204,6 +235,22 @@ cells 动态样式（cells() 返回的 style）  ← 最高优先级
 ```
 
 > **关键点：** `cells` 返回的 `style` 拥有最高优先级，会覆盖所有其他来源的样式。
+
+### 类型优先级
+
+单元格的类型解析按以下优先级（高优先级覆盖低优先级）：
+
+```
+cell.type（单元格级静态类型）  ← 最高优先级
+  ↓ 回退
+cells().type（动态单元格级类型）
+  ↓ 回退
+columns[].type（列级类型）
+  ↓ 回退
+默认 "text" 类型
+```
+
+> **关键点：** `cell` 和 `cells` 中的 `type` 可以覆盖列级类型，实现同一列中不同行使用不同类型。
 
 ### 禁用优先级
 
@@ -239,10 +286,28 @@ const wb = new Workbook("grid", {
     }
   },
 
-  // cell 静态配置：特定单元格禁用
+  // cell 静态配置：特定单元格禁用 + 类型覆盖
   cell: [
     { row: 2, col: 1, disabled: true },
     { row: 3, col: 2, style: { backgroundColor: "#fff3cd" } },
+    { row: 0, col: 2, type: "select", source: ["正常", "异常"] },  // 第 2 列第 0 行覆盖为 select
+  ],
+});
+```
+
+**同一列不同类型示例：**
+
+```js
+const wb = new Workbook("grid", {
+  columns: [
+    { type: "text", width: 120 },   // 第 0 列默认 text
+    { type: "text", width: 120 },   // 第 1 列默认 text
+    { type: "text", width: 120 },   // 第 2 列默认 text
+  ],
+  cell: [
+    { row: 0, col: 2, type: "trafficLight" },                    // 第 2 列第 0 行 → 交通灯
+    { row: 1, col: 2, type: "select", source: ["正常", "异常"] },  // 第 2 列第 1 行 → 下拉选择
+    { row: 2, col: 2, type: "numeric", numericFormat: { pattern: "0.00" } },  // 第 2 列第 2 行 → 数字
   ],
 });
 ```
@@ -476,3 +541,23 @@ wb.render();
 - `cell.disabled` 是一次性写入 `cellStore` 的，后续可通过 `enableCell()` 取消
 - `cells().disabled` 是动态计算的，每次渲染时重新判断，无法通过 `enableCell()` 取消（因为下次渲染时 `cells` 函数仍会返回 `disabled: true`）
 - 若需动态取消 `cells` 的禁用，需修改 `cells` 函数的返回值
+
+### Q: 同一列中不同行可以使用不同类型吗？
+
+**A:** 可以。通过 `cell` 配置中的 `type` 字段或 `cells` 函数返回的 `type` 字段，可以为单个单元格指定类型，覆盖列级 `columns[].type`。类型优先级：`cell.type` > `cells().type` > `columns[].type` > `"text"`。
+
+```js
+cell: [
+  { row: 0, col: 2, type: "trafficLight" },
+  { row: 1, col: 2, type: "select", source: ["正常", "异常"] },
+]
+```
+
+### Q: `cell` 配置中的 `type` 附带的选项（如 `source`）如何提取？
+
+**A:** `type` 附带的类型选项（`source`、`numericFormat`、`min`、`max`、`dateFormat`、`labels`、`allowInvalid`、`strict`、`maxLength`）会自动提取并传递给类型实例，无需额外配置。例如：
+
+```js
+{ row: 1, col: 2, type: "select", source: ["正常", "异常"], strict: true }
+// source 和 strict 会自动作为 select 类型的选项
+```

@@ -46,8 +46,13 @@ export class SelectEditor extends CellEditor {
 
         for (const item of this.#source) {
             const option = document.createElement("option");
-            option.value = String(item);
-            option.textContent = String(item);
+            if (item !== null && typeof item === "object") {
+                option.value = String(item.value ?? "");
+                option.textContent = String(item.label ?? item.value ?? "");
+            } else {
+                option.value = String(item);
+                option.textContent = String(item);
+            }
             this.editor.appendChild(option);
         }
     }

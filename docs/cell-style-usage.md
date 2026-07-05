@@ -61,6 +61,22 @@
 └─────────────────────────────────────────────┘
 ```
 
+### 类型优先级
+
+单元格的类型解析独立于样式优先级，按以下优先级（高优先级覆盖低优先级）：
+
+```
+cell.type（单元格级静态类型）  ← 最高优先级
+  ↓ 回退
+cells().type（动态单元格级类型）
+  ↓ 回退
+columns[].type（列级类型）
+  ↓ 回退
+默认 "text" 类型
+```
+
+> **关键点：** `cell` 和 `cells` 中的 `type` 可以覆盖列级类型，实现同一列中不同行使用不同类型。`type` 附带的选项（如 `source`、`numericFormat`、`min`、`max`、`dateFormat`、`labels`、`allowInvalid`、`strict`、`maxLength`）会自动提取并传递给类型实例。
+
 ### 默认样式
 
 未设置任何自定义样式时，单元格使用内置默认样式：
@@ -92,9 +108,9 @@ const wb = new Workbook("canvas-container", {
     rowStyles: {},              // 初始行样式 { "0": {...}, "1": {...} }
     colStyles: {},              // 初始列样式 { "0": {...}, "3": {...} }
     rangeStyles: [],            // 初始区域样式 [{ range: {...}, style: {...} }]
-    cell: [],                   // 单元格级配置（含 style）
-    cells: (row, col) => {},    // 动态单元格属性函数（含 style）
-    columns: [],                // 列配置数组（每项可含 style）
+    cell: [],                   // 单元格级配置（含 style、type）
+    cells: (row, col) => {},    // 动态单元格属性函数（含 style、type）
+    columns: [],                // 列配置数组（每项可含 style、type）
     conditionalStyles: [],      // 条件格式规则（含 style）
 
     // ====== 多 Sheet 配置 ======
@@ -243,9 +259,9 @@ const wb = new Workbook("app", {
 });
 ```
 
-### 4.5 cell — 单元格级配置（含 style）
+### 4.5 cell — 单元格级配置（含 style、type）
 
-每个元素可同时设置 value、style、disabled、readOnly：
+每个元素可同时设置 value、style、type、disabled、readOnly：
 
 ```js
 const wb = new Workbook("app", {
@@ -254,11 +270,14 @@ const wb = new Workbook("app", {
         { row: 1, col: 2, value: 100, style: { fontWeight: "bold", color: "red" } },
         { row: 2, col: 0, disabled: true },
         { row: 3, col: 1, readOnly: true, style: { backgroundColor: "#f5f5f5" } },
+        { row: 0, col: 2, type: "trafficLight" },
+        { row: 1, col: 2, type: "select", source: ["正常", "异常"] },
     ],
 });
 ```
 
 > `cell` 配置中的 `style` 会与已有样式**浅合并**（覆盖同名属性）。
+> `cell` 配置中的 `type` 会覆盖列级 `columns[].type`，实现同一列中不同行使用不同类型。`type` 附带的选项（如 `source`、`numericFormat`、`min`、`max` 等）会自动提取并传递给类型实例。
 
 **Sheet 级独立配置：** `cell` 支持在 `sheets[]` 中为每个 Sheet 单独设置，Sheet 级配置会**替换**顶层（不会合并两个数组）：
 
@@ -291,19 +310,21 @@ const wb = new Workbook("app", {
 
 ### 4.6 cells — 动态单元格属性函数
 
-通过函数动态返回每个单元格的样式，适用于大数据量或条件样式场景：
+通过函数动态返回每个单元格的样式和类型，适用于大数据量或条件样式场景：
 
 ```js
 const wb = new Workbook("app", {
     cells: (row, col) => {
         if (row === 0) return { style: { fontWeight: "bold", backgroundColor: "#eee" } };
         if (col === 2 && row > 0) return { style: { textAlign: "right" } };
+        if (col === 3 && row > 0) return { type: "select", source: ["正常", "异常"] };
         return {};
     },
 });
 ```
 
 > 返回的 `style` 在 resolveStyle 第 6 层参与合并。
+> 返回的 `type` 会覆盖列级类型，附带选项自动提取。
 
 **Sheet 级独立配置：**
 

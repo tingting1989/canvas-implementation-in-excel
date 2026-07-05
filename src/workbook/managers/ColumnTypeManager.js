@@ -1,4 +1,4 @@
-import { getColumnTypeFromConfig, resolveCellType, formatValue, parseValue, validateValue } from "../../types";
+import { getType, getColumnTypeFromConfig, resolveCellType, extractTypeOptions, formatValue, parseValue, validateValue } from "../../types";
 import { isFunction, isObject } from "../../utils/utils.js";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 
@@ -101,6 +101,13 @@ export class ColumnTypeManager {
      */
     getCellTypeInstance(r, c) {
         const realR = this.#sheet.toRealRow(r);
+
+        const cellProps = this.#sheet.resolveCellProperties(realR, c);
+        if (cellProps?.type) {
+            const { type: name, ...rest } = cellProps;
+            return getType(name, extractTypeOptions(rest));
+        }
+
         return resolveCellType(realR, c, this.#cellTypes, this.#columnsConfig);
     }
 

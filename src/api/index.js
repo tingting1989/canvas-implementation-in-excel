@@ -3,3 +3,5 @@ export * from "../model/index.js";
 export * from "../plugins/index.js";
 export * from "../constants/config";
 export * from "../core/ErrorHandler.js";
+export * from "../types/index.js";
+

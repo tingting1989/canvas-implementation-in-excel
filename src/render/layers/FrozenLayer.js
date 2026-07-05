@@ -82,7 +82,9 @@ export class FrozenLayer extends BaseLayer {
         this.watchForDirty("frozen");
         this.watchForDirty("frozenOffset");
         this.watchForDirty("scroll");
-        this.watchForDirty("selection");
+        this.watch("selection", () => {
+            this.tileRenderer.invalidateAll();
+        });
     }
 
     /**

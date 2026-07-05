@@ -13,7 +13,7 @@
 // ============================================================
 // 示例1：使用内置渲染器
 // ============================================================
-import { registerRenderer, getRenderer } from '../src/types/index.js';
+import { registerTypeClass, getType } from '../src/types/index.js';
 import {
     BooleanCheckboxType,
     ProgressBarType,
@@ -27,11 +27,11 @@ import { BaseColumnType } from '../src/types/BaseColumnType.js';
 console.log('=== 示例1：使用内置渲染器 ===\n');
 
 // 注册所有内置渲染器
-registerRenderer('checkbox', BooleanCheckboxType);
-registerRenderer('progress', ProgressBarType);
-registerRenderer('star', StarRatingType);
-registerRenderer('sparkline', SparklineType);
-registerRenderer('color', ColorPreviewType);
+registerTypeClass('checkbox', BooleanCheckboxType);
+registerTypeClass('progress', ProgressBarType);
+registerTypeClass('star', StarRatingType);
+registerTypeClass('sparkline', SparklineType);
+registerTypeClass('color', ColorPreviewType);
 
 console.log('✅ 已注册5个内置渲染器');
 console.log('   - checkbox (复选框)');
@@ -47,12 +47,12 @@ console.log('=== 示例2：创建自定义渲染器 ===\n');
 
 class TrafficLightType extends BaseColumnType {
     get name() {
- return 'trafficLight'; 
-}
+        return 'trafficLight';
+    }
 
     get editorType() {
- return 'select'; 
-}
+        return 'select';
+    }
 
     getEditorOptions() {
         return {
@@ -70,12 +70,13 @@ class TrafficLightType extends BaseColumnType {
     }
 
     render(context) {
-        const { ctx, x, y, width, height, value } = context;
+        const { ctx, x, y, width, height, value, displayValue, style } = context;
 
-        const size = Math.min(width, height) * 0.6;
-        const cx = context.getCenterX();
-        const cy = context.getCenterY();
-        const radius = size / 2;
+        const indicatorSize = Math.min(width, height) * 0.35;
+        const indicatorRadius = indicatorSize / 2;
+        const indicatorCy = context.getCenterY();
+        const gap = 6;
+        const padding = context.getPadding(context.sheet);
 
         const colors = {
             green: '#4caf50',
@@ -83,24 +84,51 @@ class TrafficLightType extends BaseColumnType {
             red: '#f44336'
         };
 
+        const fontSize = style?.fontSize || 14;
+        const fontFamily = style?.fontFamily || 'Microsoft YaHei';
+        const textColor = style?.color || '#000';
+        const textAlign = style?.textAlign || 'left';
+
+        ctx.font = `${fontSize}px ${fontFamily}`;
+        const textWidth = displayValue ? ctx.measureText(displayValue).width : 0;
+        const totalWidth = indicatorSize + gap + textWidth;
+
+        let startX;
+        if (textAlign === 'right') {
+            startX = x + width - totalWidth - padding;
+        } else if (textAlign === 'center') {
+            startX = x + (width - totalWidth) / 2;
+        } else {
+            startX = x + padding;
+        }
+
+        const indicatorCx = startX + indicatorRadius;
+        const textX = startX + indicatorSize + gap;
+
         ctx.fillStyle = colors[value] || '#ccc';
         ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.arc(indicatorCx, indicatorCy, indicatorRadius, 0, Math.PI * 2);
         ctx.fill();
 
-        // 发光效果（选中状态）
         if (context.isSelected) {
             ctx.strokeStyle = colors[value] || '#999';
             ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.arc(cx, cy, radius + 3, 0, Math.PI * 2);
+            ctx.arc(indicatorCx, indicatorCy, indicatorRadius + 3, 0, Math.PI * 2);
             ctx.stroke();
+        }
+
+        if (displayValue) {
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(displayValue, textX, indicatorCy);
         }
     }
 }
 
 // 注册自定义渲染器
-registerRenderer('trafficLight', TrafficLightType);
+registerTypeClass('trafficLight', TrafficLightType);
 console.log('✅ 已注册自定义渲染器: trafficLight (交通灯)\n');
 
 // ============================================================

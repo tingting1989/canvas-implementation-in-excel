@@ -87,6 +87,9 @@ export class TileLayer extends BaseLayer {
         this.watchForDirty("tile");
         this.watchForDirty("frozen");
         this.watchForDirty("frozenOffset");
+        this.watch("selection", () => {
+            this.tileRenderer.invalidateAll();
+        });
     }
 
     /**
