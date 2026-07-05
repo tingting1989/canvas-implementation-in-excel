@@ -3,6 +3,7 @@ import { NumericColumnType } from "./NumericColumnType.js";
 import { DateColumnType } from "./DateColumnType.js";
 import { BooleanColumnType } from "./BooleanColumnType.js";
 import { SelectColumnType } from "./SelectColumnType.js";
+import { TextareaColumnType } from "./TextareaColumnType.js";
 import { BUILTIN_RENDERERS } from "./renderers/index.js";
 import { isFunction } from "@/utils/utils";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler";
@@ -33,6 +34,7 @@ class TypeRegistry {
             date: DateColumnType,
             boolean: BooleanColumnType,
             select: SelectColumnType,
+            textarea: TextareaColumnType,
             ...BUILTIN_RENDERERS,
         };
 
@@ -142,9 +144,9 @@ class TypeRegistry {
 const registry = TypeRegistry.getInstance();
 
 function _extractTypeOptions(config) {
-    const { source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels } = config;
+    const { source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels, maxRows } = config;
     return Object.fromEntries(
-        Object.entries({ source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels }).filter(([, v]) => v !== undefined),
+        Object.entries({ source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels, maxRows }).filter(([, v]) => v !== undefined),
     );
 }
 

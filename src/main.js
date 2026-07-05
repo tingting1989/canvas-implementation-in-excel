@@ -4,6 +4,7 @@ import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./utils/utils.js";
 import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
 import { registerTypeClass } from "@/types";
+import { isUrl, openUrl } from "./utils/UrlDetector.js";
 
 class TrafficLightType extends BaseColumnType {
     get name() {
@@ -322,7 +323,7 @@ const initApp = () => {
                 columns: [
                     { type: "text", width: 120, style: { textAlign: "left" } },
                     { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
-                    // {type: "trafficLight", width: 200, style: {textAlign: "right"}, },
+                    {type: "textarea", width: 200,maxRows:4, style: {textAlign: "right"}, },
                 ],
 
                 cell: [
@@ -849,6 +850,32 @@ const initApp = () => {
     wb.addHook(HOOKS.AFTER_PAGE_CHANGE, syncPaginationUI);
     wb.addHook(HOOKS.AFTER_PAGE_SIZE_CHANGE, syncPaginationUI);
     wb.addHook(HOOKS.AFTER_SHEET_SWITCH, syncPaginationUI);
+
+    wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
+        if (!e.ctrlKey && !e.metaKey) return;
+        const sheet = wb.activeSheet;
+        const cell = sheet.cellStore.get(sheet.toRealRow(row), col);
+        if (cell?.value && isUrl(cell.value)) {
+            const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
+            if (canOpen === false) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            openUrl(cell.value);
+            wb.runHooks(HOOKS.AFTER_OPEN_URL, row, col, cell.value);
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+
+    wb.addHook(HOOKS.AFTER_CHANGE, (changes) => {
+        for (const { row, col, newValue } of changes) {
+            if (isUrl(newValue)) {
+                wb.runHooks(HOOKS.ON_URL_DETECTED, row, col, newValue);
+            }
+        }
+    });
 
     setTimeout(() => {
         wb.activeSheet.loadData([

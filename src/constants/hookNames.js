@@ -293,4 +293,18 @@ export const HOOKS = Object.freeze({
 
     /** 图表更新后 - 图表数据或样式已变更 */
     AFTER_CHART_UPDATE: "afterChartUpdate",
+
+    /*
+     * ==================== 自动超链接相关钩子 ====================
+     * 监控单元格中自动检测到的 URL 的交互行为
+     */
+
+    /** URL 检测到 - 单元格值被识别为 URL 时触发（渲染前） */
+    ON_URL_DETECTED: "onUrlDetected",
+
+    /** URL 点击 - 用户 Ctrl+Click 包含 URL 的单元格时触发，返回 false 可阻止打开 */
+    BEFORE_OPEN_URL: "beforeOpenUrl",
+
+    /** URL 已打开 - 链接已通过 window.open 打开 */
+    AFTER_OPEN_URL: "afterOpenUrl",
 });

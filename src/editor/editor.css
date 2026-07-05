@@ -31,3 +31,13 @@
     -moz-appearance: none;
     appearance: none;
 }
+
+/* 多行文本编辑器 */
+.cs-cell-editor--textarea {
+    text-align: left;
+    vertical-align: top;
+    line-height: 1.4;
+    padding-top: 2px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}

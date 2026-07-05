@@ -2,6 +2,7 @@ import { TextEditor } from "./editors/index.js";
 import { NumericEditor } from "./editors/NumericEditor.js";
 import { DateEditor } from "./editors/DateEditor.js";
 import { SelectEditor } from "./editors/SelectEditor.js";
+import { TextareaEditor } from "./editors/TextareaEditor.js";
 
 /**
  * 编辑器管理器（门面模式）
@@ -78,6 +79,11 @@ export class EditorManager {
         const selectEditor = new SelectEditor(this.renderEngine, this.#sheet);
         selectEditor.createEditor();
         this.editors.set("select", selectEditor);
+
+        // 多行文本编辑器
+        const textareaEditor = new TextareaEditor(this.renderEngine, this.#sheet);
+        textareaEditor.createEditor();
+        this.editors.set("textarea", textareaEditor);
     }
 
     /**

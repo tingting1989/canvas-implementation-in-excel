@@ -6,6 +6,7 @@ import { BORDER_STYLE } from "../constants/enums/BorderStyle.js";
 import { TEXT_ALIGN } from "../constants/enums/TextAlign.js";
 import { VERTICAL_ALIGN } from "../constants/enums/VerticalAlign.js";
 import { CONTENT_TYPE } from "../constants/enums/ContentType.js";
+import { isUrl } from "../utils/UrlDetector.js";
 
 /**
  * 瓦片渲染器（TileRenderer）—— 负责将单元格数据绘制到瓦片上
@@ -483,6 +484,12 @@ export class TileRenderer {
 
         const displayValue = sheet.formatCellValue(r, c, cell.value);
 
+        const urlValue = isUrl(displayValue) ? displayValue : null;
+
+        if (urlValue) {
+            ctx.fillStyle = CONFIG.AUTO_LINK_COLOR;
+        }
+
         const rc = sheet.rowColManager;
 
         let textX = Math.round(drawX + sheet.cellPadding);
@@ -565,6 +572,23 @@ export class TileRenderer {
             ctx.lineTo(lineX + textWidth, lineY);
             ctx.strokeStyle = ctx.fillStyle;
             ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
+            ctx.stroke();
+        }
+
+        if (urlValue) {
+            const textWidth = ctx.measureText(renderedText).width;
+            let lineX = textX;
+            if (textAlign === TEXT_ALIGN.CENTER) {
+                lineX = textX - textWidth / 2;
+            } else if (textAlign === TEXT_ALIGN.RIGHT) {
+                lineX = textX - textWidth;
+            }
+            const lineY = textY + Math.round(fontSize * 0.6) + CONFIG.AUTO_LINK_UNDERLINE_OFFSET;
+            ctx.beginPath();
+            ctx.moveTo(lineX, lineY);
+            ctx.lineTo(lineX + textWidth, lineY);
+            ctx.strokeStyle = CONFIG.AUTO_LINK_COLOR;
+            ctx.lineWidth = CONFIG.AUTO_LINK_UNDERLINE_WIDTH;
             ctx.stroke();
         }
     }

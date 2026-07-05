@@ -1,7 +1,7 @@
 /**
  * 单元格类型渲染常量配置
  *
- * 进度条、迷你图、星级评分、颜色预览、布尔复选框
+ * 进度条、迷你图、星级评分、颜色预览、布尔复选框、多行文本
  */
 export const CELL_TYPE_CONFIG = Object.freeze({
     // ═══ 进度条 ═══
@@ -115,4 +115,29 @@ export const CELL_TYPE_CONFIG = Object.freeze({
 
     /** 布尔复选框对勾尺寸比例 */
     CHECKBOX_CHECK_MARK_SIZE_RATIO: 0.5,
+
+    // ═══ 多行文本 ═══
+
+    /** 多行文本默认行高比（相对于字号） */
+    TEXTAREA_LINE_HEIGHT_RATIO: 1.4,
+
+    /** 多行文本省略号后缀 */
+    TEXTAREA_ELLIPSIS: "...",
+
+    // ═══ 自动超链接 ═══
+
+    /** 自动超链接文本颜色 */
+    AUTO_LINK_COLOR: "#0066cc",
+
+    /** 自动悬停时的链接颜色（供 UI 层使用） */
+    AUTO_LINK_HOVER_COLOR: "#004499",
+
+    /** 自动访问过的链接颜色（供 UI 层使用） */
+    AUTO_LINK_VISITED_COLOR: "#551a8b",
+
+    /** 链接下划线偏移量（px，相对于文字基线） */
+    AUTO_LINK_UNDERLINE_OFFSET: 2,
+
+    /** 链接下划线宽度（px） */
+    AUTO_LINK_UNDERLINE_WIDTH: 1,
 });

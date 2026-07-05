@@ -1,4 +1,5 @@
 import { CellEditor } from "./CellEditor.js";
+import { CONFIG } from "@/constants/config";
 
 export class SelectEditor extends CellEditor {
     #source = [];
@@ -22,6 +23,13 @@ export class SelectEditor extends CellEditor {
 
         this.#buildOptions();
         this.#selectValue(this.originalValue);
+
+        if (this.editor) {
+            const editorTop = parseInt(this.editor.style.top, 10) || 0;
+            const viewH = this.viewport?.viewH ?? Infinity;
+            const maxAllowed = Math.max(0, viewH - editorTop);
+            this.editor.style.maxHeight = maxAllowed + "px";
+        }
     }
 
     validateBeforeCommit(newValue) {
@@ -31,6 +39,9 @@ export class SelectEditor extends CellEditor {
     bindEditorEvents() {
         this.trackEvent(this.editor, "change", () => {
             this.editor.blur();
+        });
+        this.trackEvent(this.editor, "wheel", (e) => {
+            e.stopPropagation();
         });
     }
 
