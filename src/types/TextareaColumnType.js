@@ -1,5 +1,5 @@
-import {BaseColumnType} from "./BaseColumnType.js";
-import {CONFIG} from "@/constants/config";
+import { BaseColumnType } from "./BaseColumnType.js";
+import { CONFIG } from "@/constants/config";
 
 /**
  * 多行文本列类型（TextareaColumnType）
@@ -170,7 +170,7 @@ export class TextareaColumnType extends BaseColumnType {
      * @param {import('../workbook/Sheet.js').default} [context.sheet] 所属工作表引用
      */
     render(context) {
-         const { ctx, x, y, width, height, value, style, sheet } = context;
+        const { ctx, x, y, width, height, value, style, sheet } = context;
 
         if (value === undefined || value === null || value === "") return;
 
@@ -225,9 +225,7 @@ export class TextareaColumnType extends BaseColumnType {
         ctx.clip();
 
         for (let i = 0; i < visibleLines.length; i++) {
-            const lineText = showEllipsis && i === visibleLines.length - 1
-                ? visibleLines[i] + CONFIG.TEXTAREA_ELLIPSIS
-                : visibleLines[i];
+            const lineText = showEllipsis && i === visibleLines.length - 1 ? visibleLines[i] + CONFIG.TEXTAREA_ELLIPSIS : visibleLines[i];
 
             let textX;
             switch (ctx.textAlign) {

@@ -323,7 +323,7 @@ const initApp = () => {
                 columns: [
                     { type: "text", width: 120, style: { textAlign: "left" } },
                     { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
-                    {type: "textarea", width: 200,maxRows:4, style: {textAlign: "right"}, },
+                    { type: "textarea", width: 200, maxRows: 4, style: { textAlign: "right" } },
                 ],
 
                 cell: [
