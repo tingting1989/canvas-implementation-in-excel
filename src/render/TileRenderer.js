@@ -469,9 +469,7 @@ export class TileRenderer {
 
         this.#applyTextStyle(ctx, finalStyle, cell, urlValue);
 
-        const { textX, textY, effectiveW } = this.#calcTextPosition(
-            ctx, sheet, drawX, drawY, w, h, fontSize, textAlign, verticalAlign, merge,
-        );
+        const { textX, textY, effectiveW } = this.#calcTextPosition(ctx, sheet, drawX, drawY, w, h, fontSize, textAlign, verticalAlign, merge);
 
         const renderedText = this.#truncateText(ctx, displayValue, effectiveW, sheet.cellPadding, sheet.textOverflowEllipsis);
 
@@ -491,7 +489,17 @@ export class TileRenderer {
         }
 
         if (urlValue) {
-            this.#drawUnderline(ctx, renderedText, textX, textY, fontSize, textAlign, CONFIG.AUTO_LINK_COLOR, CONFIG.AUTO_LINK_UNDERLINE_WIDTH, CONFIG.AUTO_LINK_UNDERLINE_OFFSET);
+            this.#drawUnderline(
+                ctx,
+                renderedText,
+                textX,
+                textY,
+                fontSize,
+                textAlign,
+                CONFIG.AUTO_LINK_COLOR,
+                CONFIG.AUTO_LINK_UNDERLINE_WIDTH,
+                CONFIG.AUTO_LINK_UNDERLINE_OFFSET,
+            );
         }
     }
 
@@ -518,11 +526,7 @@ export class TileRenderer {
         const verticalAlign = style.verticalAlign || VERTICAL_ALIGN.MIDDLE;
         const baselineMap = { [VERTICAL_ALIGN.TOP]: "top", [VERTICAL_ALIGN.MIDDLE]: "middle", [VERTICAL_ALIGN.BOTTOM]: "bottom" };
         ctx.textBaseline = baselineMap[verticalAlign] || "middle";
-        ctx.fillStyle = urlValue
-            ? CONFIG.AUTO_LINK_COLOR
-            : cell.disabled
-                ? CONFIG.DISABLED_COLOR
-                : style.color || CONFIG.CELL_TEXT_COLOR;
+        ctx.fillStyle = urlValue ? CONFIG.AUTO_LINK_COLOR : cell.disabled ? CONFIG.DISABLED_COLOR : style.color || CONFIG.CELL_TEXT_COLOR;
         ctx.textAlign = style.textAlign || TEXT_ALIGN.LEFT;
     }
 

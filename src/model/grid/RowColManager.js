@@ -172,9 +172,10 @@ export class RowColManager {
     }
 
     setRowHeight(row, height) {
-        this.ensureSize(row + 1, 0);
-        if (this.#rowHeights[row] !== height) {
-            this.#rowHeights[row] = height;
+        const realRow = this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow ? this.#pageStartRow + row : row;
+        this.ensureSize(realRow + 1, 0);
+        if (this.#rowHeights[realRow] !== height) {
+            this.#rowHeights[realRow] = height;
             this.#rowPrefixDirty = true;
         }
     }
