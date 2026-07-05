@@ -120,8 +120,8 @@ export class HeaderPainter {
 
         if (borderMask & BorderMask.RIGHT) this.#drawVLine(ctx, x + w, y, y + h);
         if (borderMask & BorderMask.BOTTOM) this.#drawHLine(ctx, x, y + h, x + w);
-        if (!suppressLeft && (borderMask & BorderMask.LEFT)) this.#drawVLine(ctx, x, y, y + h);
-        if (isTopLayer && (borderMask & BorderMask.TOP)) this.#drawHLine(ctx, x, y, x + w);
+        if (!suppressLeft && borderMask & BorderMask.LEFT) this.#drawVLine(ctx, x, y, y + h);
+        if (isTopLayer && borderMask & BorderMask.TOP) this.#drawHLine(ctx, x, y, x + w);
     }
 
     #drawVLine(ctx, x, y1, y2) {

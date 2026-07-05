@@ -74,6 +74,7 @@ export class PaginationPlugin extends BasePlugin {
         this.#applyPageBounds();
 
         this.addHook(HOOKS.AFTER_CHANGE, () => this.#onDataChange());
+        this.addHook(HOOKS.AFTER_SHEET_SWITCH, () => this.#onSheetSwitch());
     }
 
     /** 分页是否激活 */
@@ -119,8 +120,10 @@ export class PaginationPlugin extends BasePlugin {
 
     /**
      * 重新计算总行数
-     * 取 allocatedRowCount（已分配行）与 maxDataRow+1（最大数据行）的较大值，
-     * 确保空表格也能显示已分配的行，加载大量数据后也能正确分页
+     *
+     * 关键：必须使用 totalRowCount（不受分页边界影响）而非 rowCount（受分页边界影响）。
+     * 因为分页边界设置后，rowCount 返回当前页的行数（如 50），
+     * 而 totalRowCount 始终返回实际总行数（如 200）。
      */
     #updateTotalRows() {
         const sheet = this.sheet;
@@ -129,24 +132,15 @@ export class PaginationPlugin extends BasePlugin {
             return;
         }
 
-        const actualRowCount = sheet.rowColManager.rowCount;
+        const realTotal = sheet.rowColManager.totalRowCount;
         const allocated = sheet.rowColManager.allocatedRowCount;
-        // getMaxRow() 现在已返回精确值（遍历实际单元格，而非 Chunk 范围估算）
         const maxDataRow = sheet.cellStore.getMaxRow();
         const explicitlySized = sheet.rowColManager.isExplicitlySized;
 
         if (explicitlySized) {
-            // 用户显式配置了行列数：严格使用配置值，不扩展
-            // 这样可以确保 maxRows/maxCols 配置始终生效
-            this.#totalRows = actualRowCount;
-            errorHandler.debug(
-                ERROR_CODE.DEBUG_LOG,
-                `[PaginationPlugin] #updateTotalRows: explicitlySized → using config=${actualRowCount} (data=${maxDataRow})`,
-            );
+            this.#totalRows = realTotal;
         } else {
-            // 未显式配置：使用传统逻辑（允许根据数据自动扩展）
             this.#totalRows = Math.max(allocated, maxDataRow >= 0 ? maxDataRow + 1 : 0);
-            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[PaginationPlugin] #updateTotalRows: not explicitlySized → total=${this.#totalRows}`);
         }
     }
 
@@ -163,6 +157,25 @@ export class PaginationPlugin extends BasePlugin {
             }
             this.#applyPageBounds();
         }
+    }
+
+    /**
+     * 工作表切换回调
+     * 切换到新 Sheet 时，重新计算总行数并应用分页边界
+     * 每个 Sheet 有独立的 RowColManager，分页边界需单独设置
+     */
+    #onSheetSwitch() {
+        if (!this.#active) return;
+        const sheet = this.sheet;
+        if (!sheet) return;
+
+        this.#updateTotalRows();
+
+        if (this.#currentPage > this.totalPages) {
+            this.#currentPage = this.totalPages;
+        }
+
+        this.#applyPageBounds();
     }
 
     /**

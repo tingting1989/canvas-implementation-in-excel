@@ -1,11 +1,5 @@
-// ============================================================
-// 🔧 调试开关（分页模式诊断）
-// ============================================================
-import {BaseColumnType} from "@/types/BaseColumnType";
-
-window.__DEBUG_PAGINATION = true; // 设置为 false 可关闭调试日志
-
-import {Workbook} from "./workbook/Workbook.js";
+import { BaseColumnType } from "@/types/BaseColumnType";
+import { Workbook } from "./workbook/Workbook.js";
 import {HOOKS} from "./constants/hookNames.js";
 import {isFunction, isNumber} from "./utils/utils.js";
 import {errorHandler, ERROR_LEVEL, ERROR_CODE} from "./core/ErrorHandler.js";
@@ -13,30 +7,30 @@ import {registerTypeClass} from "@/types";
 
 class TrafficLightType extends BaseColumnType {
     get name() {
-        return 'trafficLight';
+        return "trafficLight";
     }
 
     get editorType() {
-        return 'select';
+        return "select";
     }
 
     getEditorOptions() {
         return {
             source: [
-                { value: 'green', label: '🟢 正常' },
-                { value: 'yellow', label: '🟡 警告' },
-                { value: 'red', label: '🔴 危险' }
-            ]
+                {value: "green", label: "🟢 正常"},
+                {value: "yellow", label: "🟡 警告"},
+                {value: "red", label: "🔴 危险"},
+            ],
         };
     }
 
     format(value) {
-        const map = { green: '正常', yellow: '警告', red: '危险' };
+        const map = {green: "正常", yellow: "警告", red: "危险"};
         return map[value] || String(value);
     }
 
     render(context) {
-        const { ctx, x, y, width, height, value, displayValue, style } = context;
+        const {ctx, x, y, width, height, value, displayValue, style} = context;
 
         const indicatorSize = Math.min(width, height) * 0.35;
         const indicatorRadius = indicatorSize / 2;
@@ -45,24 +39,24 @@ class TrafficLightType extends BaseColumnType {
         const padding = context.getPadding(context.sheet);
 
         const colors = {
-            green: '#4caf50',
-            yellow: '#ff9800',
-            red: '#f44336'
+            green: "#4caf50",
+            yellow: "#ff9800",
+            red: "#f44336",
         };
 
         const fontSize = style?.fontSize || 14;
-        const fontFamily = style?.fontFamily || 'Microsoft YaHei';
-        const textColor = style?.color || '#000';
-        const textAlign = style?.textAlign || 'left';
+        const fontFamily = style?.fontFamily || "Microsoft YaHei";
+        const textColor = style?.color || "#000";
+        const textAlign = style?.textAlign || "left";
 
         ctx.font = `${fontSize}px ${fontFamily}`;
         const textWidth = displayValue ? ctx.measureText(displayValue).width : 0;
         const totalWidth = indicatorSize + gap + textWidth;
 
         let startX;
-        if (textAlign === 'right') {
+        if (textAlign === "right") {
             startX = x + width - totalWidth - padding;
-        } else if (textAlign === 'center') {
+        } else if (textAlign === "center") {
             startX = x + (width - totalWidth) / 2;
         } else {
             startX = x + padding;
@@ -71,13 +65,13 @@ class TrafficLightType extends BaseColumnType {
         const indicatorCx = startX + indicatorRadius;
         const textX = startX + indicatorSize + gap;
 
-        ctx.fillStyle = colors[value] || '#ccc';
+        ctx.fillStyle = colors[value] || "#ccc";
         ctx.beginPath();
         ctx.arc(indicatorCx, indicatorCy, indicatorRadius, 0, Math.PI * 2);
         ctx.fill();
 
         if (context.isSelected) {
-            ctx.strokeStyle = colors[value] || '#999';
+            ctx.strokeStyle = colors[value] || "#999";
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.arc(indicatorCx, indicatorCy, indicatorRadius + 3, 0, Math.PI * 2);
@@ -86,15 +80,15 @@ class TrafficLightType extends BaseColumnType {
 
         if (displayValue) {
             ctx.fillStyle = textColor;
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'middle';
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
             ctx.fillText(displayValue, textX, indicatorCy);
         }
     }
 }
 
 // 注册自定义渲染器
-registerTypeClass('trafficLight', TrafficLightType);
+registerTypeClass("trafficLight", TrafficLightType);
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 
@@ -123,87 +117,194 @@ const initApp = () => {
         // startCols: 10,
         // cellPadding: 30,
         sheets: [
+            // {
+            //     name: "Sheet1",
+            //     // readOnly: false,
+            //     data: [
+            //         // ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
+            //         // ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
+            //         // ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
+            //     ],
+            //     // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+            //     rowHeaderWidth: 120,
+            //     rowHeights: [30, 50, 90],
+            //     rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
+            //     maxRows: 200,
+            //     // 嵌套表头配置（支持完整 style 属性）
+            //     nestedHeaders: [
+            //         [
+            //             {
+            //                 label: "基本信息",
+            //                 colspan: 2,
+            //                 style: {
+            //                     backgroundColor: "#FFC000",
+            //                     color: "#FFFFFF",
+            //                     fontWeight: "bold",
+            //                     fontSize: "14px",
+            //                     textAlign: "left",
+            //                 },
+            //             },
+            //             {
+            //                 label: "工作信息",
+            //                 colspan: 4,
+            //                 style: {
+            //                     backgroundColor: "#70AD47",
+            //                     color: "#FFFFFF",
+            //                     fontWeight: "bold",
+            //                     fontSize: "14px",
+            //                     textAlign: "center",
+            //                 },
+            //             },
+            //         ],
+            //         [
+            //             {
+            //                 label: "姓名",
+            //                 style: {
+            //                     backgroundColor: "#FFC000",
+            //                     fontWeight: "bold",
+            //                 },
+            //             },
+            //             "年龄",
+            //             {
+            //                 label: "城市",
+            //                 style: {
+            //                     backgroundColor: "#FFC000",
+            //                     fontWeight: "bold",
+            //                 },
+            //             },
+            //             {
+            //                 label: "部门",
+            //                 style: {
+            //                     fontStyle: "italic",
+            //                     color: "#333333",
+            //                 },
+            //             },
+            //             {
+            //                 label: "薪酬",
+            //                 colspan: 2,
+            //                 style: {
+            //                     backgroundColor: "#ED7D31",
+            //                     color: "#FFFFFF",
+            //                     textAlign: "center",
+            //                 },
+            //             },
+            //         ],
+            //         ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+            //     ],
+            //     textOverflowEllipsis: false,
+            //     cellPadding: 10,
+            //     conditionalStyles: [
+            //         {
+            //             range: {topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25},
+            //             condition: (v) => isNumber(v) && v > 25,
+            //             style: {backgroundColor: "#ffcccc"},
+            //         },
+            //     ],
+            //     cell: [
+            //         {row: 0, col: 0, style: {backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center"}},
+            //         {row: 1, col: 3, disabled: true},
+            //         {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
+            //     ],
+            //     cells: (row, col) => {
+            //         if (row === 0) {
+            //             return {style: {fontWeight: "bold", backgroundColor: "#e8f4fd"}};
+            //         }
+            //         if (col === 0 && row > 0) {
+            //             return {style: {textAlign: "right", fontWeight: "bold"}};
+            //         }
+            //     },
+            //     columns: [
+            //         {type: "text", width: 120, style: {textAlign: "left"}},
+            //         {type: "numeric", width: 80, style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
+            //         {type: "text", width: 100},
+            //         {type: "text", width: 100},
+            //         {type: "numeric", width: 100, style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
+            //         {type: "date", width: 300},
+            //     ],
+            // },
             {
-                name: "原水调节池+废水污泥池运行日报表",
+                name: "Sheet1",
 
                 // 是否只读
                 readOnly: false,
 
                 // 嵌套表头配置
                 nestedHeaders: [
-                    [{
-                        label: "原水调节池+废水污泥池运行日报表",
-                        colspan: 14,
-                        style: {fontWeight: "bold", textAlign: "center"}
-                    }],
                     [
-                        {label: "日期：yyyy-mm-dd", style: {fontWeight: "bold", textAlign: "center"}}, {
-                        label: "时间",
-                        colspan: 13,
-
-                        style: {fontWeight: "bold", textAlign: "center"}
-                    }],
+                        {
+                            label: "原水调节池+废水污泥池运行日报表",
+                            colspan: 14,
+                            style: { fontWeight: "bold", textAlign: "center" },
+                        },
+                    ],
                     [
+                        { label: "日期：yyyy-mm-dd", style: { fontWeight: "bold", textAlign: "center" } },
+                        {
+                            label: "时间",
+                            colspan: 13,
 
+                            style: { fontWeight: "bold", textAlign: "center" },
+                        },
+                    ],
+                    [
                         {
                             label: "名称",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "0:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
 
                         {
                             label: "2:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
 
                         {
                             label: "4:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "6:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "8:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "10:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "12:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "14:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "16:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "18:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "20:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "22:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
                         {
                             label: "24:00",
-                            style: {fontWeight: "bold", textAlign: "center"}
+                            style: { fontWeight: "bold", textAlign: "center" },
                         },
-
                     ],
                 ],
 
@@ -215,18 +316,18 @@ const initApp = () => {
 
                 // 固定行列数上限（使用 maxRows/maxCols）
                 maxRows: 200,
-                maxCols: 14,
+                // maxCols: 14,
 
                 colWidths: [600],
                 columns: [
-                    {type: "text", width: 120, style: {textAlign: "left"}},
-                    {type: "select", width: 80, style: {textAlign: "right"}, source: ["正常", "异常"]},
+                    { type: "text", width: 120, style: { textAlign: "left" } },
+                    { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
                     // {type: "trafficLight", width: 200, style: {textAlign: "right"}, },
                 ],
 
                 cell: [
-                    { row: 0, col: 2, type: "trafficLight" },  // 第0行第2列 → trafficLight
-                    { row: 1, col: 2, type: "select", source: ["正常", "异常"] },  // → select
+                    { row: 0, col: 2, type: "trafficLight" }, // 第0行第2列 → trafficLight
+                    { row: 1, col: 2, type: "select", source: ["正常", "异常"] }, // → select
                 ],
             },
             {
@@ -716,7 +817,14 @@ const initApp = () => {
             // },
         },
         afterInit(wb) {
-            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "afterInit");
+            const pg = wb.getPlugin("pagination");
+            if (pg) {
+                const data = pg.getPaginationData();
+                const pgInfo = document.getElementById("pg-info");
+                if (pgInfo) {
+                    pgInfo.textContent = `第 ${data.currentPage} / ${data.totalPages} 页 (共 ${data.totalRows} 行)`;
+                }
+            }
             const s2 = wb.sheets.get("Sheet2");
             if (s2) {
                 s2.setCell(2, 0, "Switch to Sheet1 to paste");
@@ -727,13 +835,28 @@ const initApp = () => {
     wb.initRender();
     wb.render();
 
+    const syncPaginationUI = () => {
+        const pg = wb.getPlugin("pagination");
+        console.log('syncPaginationUI')
+        if (!pg) return;
+        const data = pg.getPaginationData();
+        const pgInfo = document.getElementById("pg-info");
+        if (pgInfo) {
+            pgInfo.textContent = `第 ${data.currentPage} / ${data.totalPages} 页 (共 ${data.totalRows} 行)`;
+        }
+    };
+
+    wb.addHook(HOOKS.AFTER_PAGE_CHANGE, syncPaginationUI);
+    wb.addHook(HOOKS.AFTER_PAGE_SIZE_CHANGE, syncPaginationUI);
+    wb.addHook(HOOKS.AFTER_SHEET_SWITCH, syncPaginationUI);
+
     setTimeout(() => {
-        // wb.activeSheet.loadData([
-        //     ["姓名", "年龄", "green"],
-        //     ["张三", 30, "yellow"],
-        //     ["李四", 25, "red"],
-        // ]);
-               // wb.loadData(HOOKS.AFTER_CHANGE, () => {
+        wb.activeSheet.loadData([
+            ["姓名", "年龄", "green"],
+            ["张三", 30, "yellow"],
+            ["李四", 25, "red"],
+        ]);
+        // wb.loadData(HOOKS.AFTER_CHANGE, () => {
         //     if (isFunction(window.updateToolbarStyleState)) {
         //         window.updateToolbarStyleState();
         //     }

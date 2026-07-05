@@ -66,12 +66,18 @@ export class RowColManager {
             return this.#pageEndRow - this.#pageStartRow;
         }
 
-        // 返回实际行数（考虑显式配置）
+        return Math.max(this.#usedRows, this.#rowHeights.length, 1);
+    }
+
+    /**
+     * 实际总行数（不受分页边界影响）
+     * 用于分页插件计算 totalRows，始终返回真实行数
+     */
+    get totalRowCount() {
         return Math.max(this.#usedRows, this.#rowHeights.length, 1);
     }
 
     get colCount() {
-        // 返回实际列数（考虑显式配置）
         return Math.max(this.#usedCols, this.#colWidths.length, 1);
     }
 

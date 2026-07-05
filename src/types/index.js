@@ -144,8 +144,7 @@ const registry = TypeRegistry.getInstance();
 function _extractTypeOptions(config) {
     const { source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels } = config;
     return Object.fromEntries(
-        Object.entries({ source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels })
-            .filter(([, v]) => v !== undefined)
+        Object.entries({ source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels }).filter(([, v]) => v !== undefined),
     );
 }
 
