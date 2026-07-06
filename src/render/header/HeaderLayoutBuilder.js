@@ -161,13 +161,20 @@ export class HeaderLayoutBuilder {
             return fragments;
         }
 
+        const visEndCol = Math.min(cell.endCol, ec - 1);
+        const baseBorderMask = cell.isMerged ? BorderMask.MERGED_DEFAULT : BorderMask.ALL;
+
+        const borderOverride = (visEndCol >= ec - 1 && cell.isMerged)
+            ? baseBorderMask | BorderMask.RIGHT
+            : baseBorderMask;
+
         return [
             this.#createFragment(cell, {
                 ...rest,
                 visStartCol: Math.max(cell.startCol, sc),
-                visEndCol: Math.min(cell.endCol, ec - 1),
+                visEndCol,
                 vt,
-                borderOverride: cell.isMerged ? BorderMask.MERGED_DEFAULT : BorderMask.ALL,
+                borderOverride,
                 partialType: PARTIAL_TYPE.FULL,
             }),
         ];
