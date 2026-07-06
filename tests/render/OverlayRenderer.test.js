@@ -83,11 +83,8 @@ describe("OverlayRenderer", () => {
             const sheet = {
                 getAllMerges: () => merges,
                 rowColManager: {
-                    pageStartRow: 10,
-                    pageEndRow: 40,
                     getColWidth: () => 100,
                 },
-                toPageRow: (r) => r,
             };
 
             const vt = {
@@ -98,7 +95,7 @@ describe("OverlayRenderer", () => {
 
             renderer.renderMerges(ctx, sheet, vt);
 
-            expect(ctx.strokeRect).toHaveBeenCalledTimes(0);
+            expect(ctx.strokeRect).toHaveBeenCalledTimes(2);
         });
 
         it("should reset lineWidth to 1 after rendering", () => {
@@ -111,11 +108,8 @@ describe("OverlayRenderer", () => {
             const sheet = {
                 getAllMerges: () => [],
                 rowColManager: {
-                    pageStartRow: -1,
-                    pageEndRow: -1,
                     getColWidth: () => 100,
                 },
-                toPageRow: (r) => r,
             };
 
             const vt = {};

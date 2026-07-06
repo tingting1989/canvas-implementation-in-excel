@@ -846,7 +846,7 @@ const initApp = () => {
     setTimeout(() => {
         wb.updateSettings({
             maxRows: 100,
-        })
+        });
         wb.activeSheet.loadData([
             ["姓名", "年龄", "green"],
             ["张三", 30, "yellow"],

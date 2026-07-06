@@ -179,8 +179,6 @@ export class RowColManager {
         return this.#rawGetRowY(row);
     }
 
-
-
     #rawGetRowY(row) {
         if (row <= 0) return 0;
         this.#ensureRowPrefix();
