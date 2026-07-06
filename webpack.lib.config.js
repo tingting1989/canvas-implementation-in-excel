@@ -45,7 +45,6 @@ module.exports = [
                 export: "default",
             },
             globalObject: "this",
-            clean: true,
         },
     },
 ];
