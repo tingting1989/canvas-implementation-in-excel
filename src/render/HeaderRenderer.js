@@ -176,7 +176,19 @@ export class HeaderRenderer {
         };
 
         if (nestedCount > 0) {
-            this.#renderNestedHeaders(ctx, sheet, { layerCount: nestedCount, rowH, sc, ec, vt, sheet, defaultStyle, headerFont, fixedCols, range, paintOptions });
+            this.#renderNestedHeaders(ctx, sheet, {
+                layerCount: nestedCount,
+                rowH,
+                sc,
+                ec,
+                vt,
+                sheet,
+                defaultStyle,
+                headerFont,
+                fixedCols,
+                range,
+                paintOptions,
+            });
         } else {
             this.#renderSimpleHeader(ctx, { sc, ec, rowH, vt, sheet, defaultStyle, headerFont, range, paintOptions });
         }
@@ -345,8 +357,20 @@ export class HeaderRenderer {
 
         // 逐行渲染
         for (let r = startRow; r < endRow; r++) {
-            this.#drawSingleRowHeader(ctx, sheet, { r, vt, rc, headerW, headerH, defaultStyle, headerFont, range, startRow, lastRowY, leftBorderDrawn });
-            
+            this.#drawSingleRowHeader(ctx, sheet, {
+                r,
+                vt,
+                rc,
+                headerW,
+                headerH,
+                defaultStyle,
+                headerFont,
+                range,
+                startRow,
+                lastRowY,
+                leftBorderDrawn,
+            });
+
             // 标记左侧边框已绘制（第一行之后）
             if (r === startRow) {
                 leftBorderDrawn = true;
@@ -557,11 +581,11 @@ export class HeaderRenderer {
         if (!style) return baseFont;
 
         const parts = [];
-        
+
         // 自定义样式属性
         if (style.fontStyle) parts.push(style.fontStyle);
         if (style.fontWeight) parts.push(style.fontWeight);
-        
+
         // 字体大小：优先使用自定义，否则从 baseFont 提取
         if (style.fontSize) {
             parts.push(style.fontSize);
@@ -569,7 +593,7 @@ export class HeaderRenderer {
             const sizeMatch = baseFont.match(/^[\d.]+px/);
             parts.push(sizeMatch ? sizeMatch[0] : `${CONFIG.DEFAULT_FONT_SIZE}px`);
         }
-        
+
         // 字体系列：从 baseFont 提取
         const familyMatch = baseFont.match(/\s+(.+)$/);
         parts.push(familyMatch ? familyMatch[1] : CONFIG.DEFAULT_FONT_FAMILY);
@@ -727,13 +751,7 @@ export class HeaderRenderer {
 
         if (endX <= startX || endX <= headerW) return;
 
-        this.#drawSelectionLine(
-            ctx,
-            Math.max(startX, headerW),
-            y,
-            Math.min(endX, headerW + frozenColsW) - Math.max(startX, headerW),
-            true,
-        );
+        this.#drawSelectionLine(ctx, Math.max(startX, headerW), y, Math.min(endX, headerW + frozenColsW) - Math.max(startX, headerW), true);
     }
 
     /**

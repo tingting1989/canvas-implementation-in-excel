@@ -164,9 +164,7 @@ export class HeaderLayoutBuilder {
         const visEndCol = Math.min(cell.endCol, ec - 1);
         const baseBorderMask = cell.isMerged ? BorderMask.MERGED_DEFAULT : BorderMask.ALL;
 
-        const borderOverride = (visEndCol >= ec - 1 && cell.isMerged)
-            ? baseBorderMask | BorderMask.RIGHT
-            : baseBorderMask;
+        const borderOverride = visEndCol >= ec - 1 && cell.isMerged ? baseBorderMask | BorderMask.RIGHT : baseBorderMask;
 
         return [
             this.#createFragment(cell, {

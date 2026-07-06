@@ -235,76 +235,76 @@ const initApp = () => {
                         {
                             label: "原水调节池+废水污泥池运行日报表",
                             colspan: 14,
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                     ],
                     [
-                        { label: "日期：yyyy-mm-dd", style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  } },
+                        { label: "日期：yyyy-mm-dd", style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" } },
                         {
                             label: "时间",
                             colspan: 13,
 
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                     ],
                     [
                         {
                             label: "名称",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "0:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
 
                         {
                             label: "2:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
 
                         {
                             label: "4:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "6:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "8:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "10:00",
-                            style: { fontWeight: "bold", textAlign: "center" ,backgroundColor: "#fff" },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "12:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "14:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "16:00",
-                            style: { fontWeight: "bold", textAlign: "center",backgroundColor: "#fff"  },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "18:00",
-                            style: { fontWeight: "bold", textAlign: "center" ,backgroundColor: "#fff" },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "20:00",
-                            style: { fontWeight: "bold", textAlign: "center" ,backgroundColor: "#fff" },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "22:00",
-                            style: { fontWeight: "bold", textAlign: "center" ,backgroundColor: "#fff" },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                         {
                             label: "24:00",
-                            style: { fontWeight: "bold", textAlign: "center" ,backgroundColor: "#fff" },
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
                         },
                     ],
                 ],
@@ -321,7 +321,7 @@ const initApp = () => {
 
                 colWidths: [600],
                 columns: [
-                    { type: "text", width: 120, style: { textAlign: "left"} },
+                    { type: "text", width: 120, style: { textAlign: "left" } },
                     { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
                     { type: "textarea", width: 200, maxRows: 4, style: { textAlign: "right" } },
                 ],
