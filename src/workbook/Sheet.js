@@ -1,7 +1,7 @@
-﻿import {stylePool, DEFAULT_STYLE_ID} from "../model/styles";
-import {errorHandler, ERROR_CODE} from "../core/ErrorHandler.js";
-import {SHEET_EVENTS} from "../constants/sheetEvents.js";
-import {EventBus} from "../core/EventBus.js";
+﻿import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { EventBus } from "../core/EventBus.js";
 
 import {
     ChunkedCellStore,
@@ -14,17 +14,17 @@ import {
     UnmergeCommand,
     Cell,
 } from "@/model";
-import {RowColManager} from "../model/grid/RowColManager.js";
-import {RowColSync} from "../model/grid/RowColSync.js";
-import {CellDataAccessor} from "../model/grid/CellDataAccessor.js";
-import {CONFIG} from "../constants/config";
-import {SheetStyleManager} from "./SheetStyleManager.js";
-import {ColumnTypeManager} from "./managers/ColumnTypeManager.js";
-import {HeaderLabelManager} from "./managers/HeaderLabelManager.js";
-import {ConditionalFormatManager} from "./managers/ConditionalFormatManager.js";
-import {BatchOperationManager} from "./managers/BatchOperationManager.js";
-import {ChartManager} from "../model/chart/ChartManager.js";
-import {extractTypeOptions} from "../types/index.js";
+import { RowColManager } from "../model/grid/RowColManager.js";
+import { RowColSync } from "../model/grid/RowColSync.js";
+import { CellDataAccessor } from "../model/grid/CellDataAccessor.js";
+import { CONFIG } from "../constants/config";
+import { SheetStyleManager } from "./SheetStyleManager.js";
+import { ColumnTypeManager } from "./managers/ColumnTypeManager.js";
+import { HeaderLabelManager } from "./managers/HeaderLabelManager.js";
+import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js";
+import { BatchOperationManager } from "./managers/BatchOperationManager.js";
+import { ChartManager } from "../model/chart/ChartManager.js";
+import { extractTypeOptions } from "../types/index.js";
 
 /** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
 const SUB = {
@@ -115,7 +115,7 @@ export class Sheet {
     constructor(name) {
         this.name = name;
 
-        this.#bus = new EventBus("Sheet", name, {strict: true});
+        this.#bus = new EventBus("Sheet", name, { strict: true });
 
         /** 是否可见 */
         this.visible = true;
@@ -337,7 +337,7 @@ export class Sheet {
 
     #invalidateCell(r, c) {
         this.#styleManager.invalidateCache();
-        this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, {r, c});
+        this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, { r, c });
     }
 
     /**
@@ -380,7 +380,7 @@ export class Sheet {
 
         if (typeof value === "string" && value.startsWith("=")) {
             formula = value;
-            const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, {r, c, formula: value});
+            const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r, c, formula: value });
             cellValue = results !== undefined ? results : value;
         } else if (old?.formula) {
             this.#bus.emit(SHEET_EVENTS.FORMULA_REMOVE, { r, c });
@@ -393,7 +393,7 @@ export class Sheet {
         this.#invalidateCell(r, c);
 
         if (!formula) {
-            this.#bus.emit(SHEET_EVENTS.CELL_CHANGED, {r, c});
+            this.#bus.emit(SHEET_EVENTS.CELL_CHANGED, { r, c });
         }
     }
 
@@ -679,7 +679,7 @@ export class Sheet {
                 if (row[c] !== undefined && row[c] !== null && row[c] !== "") {
                     const val = row[c];
                     if (typeof val === "string" && val.startsWith("=")) {
-                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, {r, c, formula: val});
+                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r, c, formula: val });
                         const result = results !== undefined ? results : val;
                         this.cellStore.set(r, c, new Cell(result, 0, false, val));
                     } else {
@@ -712,17 +712,17 @@ export class Sheet {
     applyCellConfig() {
         for (const item of this.cellConfig) {
             if (item.row == null || item.col == null) continue;
-            const {row: r, col: c, value, style, disabled, readOnly, type, ...typeOptions} = item;
+            const { row: r, col: c, value, style, disabled, readOnly, type, ...typeOptions } = item;
             this.rowColManager.ensureSize(r + 1, c + 1);
 
             if (type) {
-                this.#typeManager.cellTypes.set(`${r},${c}`, {name: type, options: extractTypeOptions(typeOptions)});
+                this.#typeManager.cellTypes.set(`${r},${c}`, { name: type, options: extractTypeOptions(typeOptions) });
             }
 
             const cell = this.cellStore.get(r, c);
             const existingStyleId = cell?.styleId || 0;
             const existingStyle = existingStyleId ? stylePool.getStyle(existingStyleId) : {};
-            const mergedStyle = style ? {...existingStyle, ...style} : existingStyle;
+            const mergedStyle = style ? { ...existingStyle, ...style } : existingStyle;
             const newStyleId = stylePool.getStyleId(mergedStyle);
 
             const isDisabled = disabled ?? readOnly ?? cell?.disabled ?? false;
@@ -751,7 +751,7 @@ export class Sheet {
         try {
             return this.cellsFn(r, c);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CELL_INVALID_DATA, `cellsFn execution failed at (${r},${c})`, {originalError: error});
+            errorHandler.handle(ERROR_CODE.CELL_INVALID_DATA, `cellsFn execution failed at (${r},${c})`, { originalError: error });
             return null;
         }
     }

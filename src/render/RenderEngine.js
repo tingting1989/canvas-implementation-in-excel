@@ -196,16 +196,7 @@ export class RenderEngine extends DOMComponent {
         const frozenRowsH = sheet.frozenRowsHeight;
         const frozenColsW = sheet.frozenColsWidth;
 
-        this.scrollMgr.updateScrollBounds(
-            rc.totalWidth,
-            rc.totalHeight,
-            this.#viewW,
-            this.#viewH,
-            headerH,
-            headerW,
-            frozenRowsH,
-            frozenColsW,
-        );
+        this.scrollMgr.updateScrollBounds(rc.totalWidth, rc.totalHeight, this.#viewW, this.#viewH, headerH, headerW, frozenRowsH, frozenColsW);
 
         this.wrap.style.setProperty("--header-height", `${headerH}px`);
         this.wrap.style.setProperty("--header-width", `${headerW}px`);

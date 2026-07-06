@@ -986,7 +986,6 @@ const initApp = () => {
                 explicitlySized: rc.isExplicitlySized,
             };
         },
-
     };
 
     // 示例：5秒后自动调整为 30行 x 15列（可删除此段代码）
