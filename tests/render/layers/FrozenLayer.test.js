@@ -81,7 +81,7 @@ describe("FrozenLayer", () => {
     describe("State Management", () => {
         it("should mark cell dirty via markCellDirty", () => {
             const invalidateSpy = vi.spyOn(layer.tileRenderer, "invalidateCell");
-            const rc = { getRowY: vi.fn(() => 0), getColX: vi.fn(() => 0) };
+            const rc = { getRowY: vi.fn(() => 0), getRowHeight: vi.fn(() => 25), getColX: vi.fn(() => 0), getColWidth: vi.fn(() => 80) };
 
             layer.markCellDirty(3, 5, rc);
 
@@ -103,7 +103,7 @@ describe("FrozenLayer", () => {
 
         it("should handle multiple markCellDirty calls", () => {
             const invalidateSpy = vi.spyOn(layer.tileRenderer, "invalidateCell");
-            const rc = { getRowY: vi.fn(() => 0), getColX: vi.fn(() => 0) };
+            const rc = { getRowY: vi.fn(() => 0), getRowHeight: vi.fn(() => 25), getColX: vi.fn(() => 0), getColWidth: vi.fn(() => 80) };
 
             layer.markCellDirty(0, 0, rc);
             layer.markCellDirty(10, 20, rc);
