@@ -15,7 +15,6 @@ function createMockSheet(cells = {}) {
         name: "Sheet1",
         cellStore: store,
         selection,
-        toRealRow: (r) => r,
         getCellTypeInstance: () => ({ name: "text" }),
         render: vi.fn(),
         getColumnConfig: () => null,
