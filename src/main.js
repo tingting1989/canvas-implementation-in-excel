@@ -100,9 +100,7 @@ const initApp = () => {
     });
 
     const wb = new Workbook(document.getElementById("wrap"), {
-        defaultStyle: {
-
-        },
+        defaultStyle: {},
         // readOnly: true,
         // 工作表高度和宽度（像素值）
         // height: 600,
