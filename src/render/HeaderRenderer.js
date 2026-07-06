@@ -288,11 +288,27 @@ export class HeaderRenderer {
             this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, mergedStyle);
 
             const textFont = this.#buildNestedHeaderFont(headerFont, rowStyle);
-            this.#drawHeaderText(ctx, sheet.getRowHeader(r), headerW / 2, calcCenteredTextY(y, h, textFont), mergedStyle?.color, textFont, null, "center");
+            this.#drawHeaderText(
+                ctx,
+                sheet.getRowHeader(r),
+                headerW / 2,
+                calcCenteredTextY(y, h, textFont),
+                mergedStyle?.color,
+                textFont,
+                null,
+                "center",
+            );
 
-            this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
+            // 绘制右侧边框（分隔行头和数据区域）
             this.#drawSeparator(ctx, headerW, y, headerW, y + h);
-            this.#drawSeparator(ctx, 0, y, 0, y + h);
+
+            // 绘制底部分隔线（行与行之间的分割线）
+            this.#drawRowSeparator(ctx, 0, y + h, headerW);
+
+            // 只在第一行绘制左侧边框（整个行头区域的左边界）
+            if (r === startRow) {
+                this.#drawSeparator(ctx, 0, y, 0, vt.rowToViewY(endRow - 1) + rc.getRowHeight(endRow - 1));
+            }
         }
 
         ctx.restore();
@@ -400,6 +416,35 @@ export class HeaderRenderer {
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.stroke();
+    }
+
+    /**
+     * 绘制行间分隔线（水平分割线）
+     *
+     * 使用与数据区域网格线一致的颜色（CONFIG.GRID_COLOR），
+     * 确保视觉统一性。
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {number} x - 起始 X 坐标
+     * @param {number} y - Y 坐标（行底部位置）
+     * @param {number} width - 分隔线宽度
+     */
+    #drawRowSeparator(ctx, x, y, width) {
+        const originalLineWidth = ctx.lineWidth;
+        const originalStrokeStyle = ctx.strokeStyle;
+
+        // 使用与数据区域一致的网格线样式
+        ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
+        ctx.strokeStyle = CONFIG.GRID_COLOR;
+
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + width, y);
+        ctx.stroke();
+
+        // 恢复原始样式
+        ctx.lineWidth = originalLineWidth;
+        ctx.strokeStyle = originalStrokeStyle;
     }
 
     #drawSelectionLine(ctx, origin, origin2, length, horizontal) {

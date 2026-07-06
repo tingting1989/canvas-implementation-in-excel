@@ -29,7 +29,7 @@ import { CONFIG } from "@/constants/config";
 export function extractFontSize(font, fallback) {
     fallback = fallback ?? (CONFIG.DEFAULT_FONT_SIZE || 14);
     if (!font) return fallback;
-    
+
     const match = font.match(/(\d+(?:\.\d+)?)\s*px/i);
     return match ? parseFloat(match[1]) : fallback;
 }
@@ -69,13 +69,11 @@ export function extractFontSize(font, fallback) {
  * // 返回: 100 + 15 + 4.2 = 119.2
  */
 export function calcCenteredTextY(areaY, areaHeight, fontOrSize) {
-    const fontSize = typeof fontOrSize === 'number' 
-        ? fontOrSize 
-        : extractFontSize(fontOrSize);
-        
+    const fontSize = typeof fontOrSize === "number" ? fontOrSize : extractFontSize(fontOrSize);
+
     const centerY = areaY + areaHeight / 2;
-    const baselineOffset = fontSize * 0.35;  // 经验值，使视觉居中
-    
+    const baselineOffset = fontSize * 0.35; // 经验值，使视觉居中
+
     return centerY + baselineOffset;
 }
 
@@ -112,6 +110,6 @@ export function calcCenteredTextX(areaX, areaWidth) {
 export function getAreaCenter(x, y, width, height) {
     return {
         centerX: x + width / 2,
-        centerY: y + height / 2
+        centerY: y + height / 2,
     };
 }
