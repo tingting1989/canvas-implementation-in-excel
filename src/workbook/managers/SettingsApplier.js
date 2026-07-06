@@ -59,6 +59,9 @@ export class SettingsApplier {
         if (settings.rowHeaderWidth !== undefined) {
             sheet.rowHeaderWidth = settings.rowHeaderWidth;
         }
+        if (settings.headerHeight !== undefined) {
+            sheet.headerHeight = settings.headerHeight;
+        }
         if (Array.isArray(settings.nestedHeaders)) {
             sheet.nestedHeaders = settings.nestedHeaders;
         }

@@ -75,7 +75,7 @@ describe("Sheet - EventBus Integration", () => {
     });
 
     describe("INVALIDATE_CELL event", () => {
-        it("should emit INVALIDATE_CELL with r, c, pageRow on setCell", () => {
+        it("should emit INVALIDATE_CELL with r, c on setCell", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.INVALIDATE_CELL, handler);
             sheet.setCell(0, 0, "value");
@@ -83,7 +83,6 @@ describe("Sheet - EventBus Integration", () => {
             const envelope = handler.mock.calls[0][0];
             expect(envelope.payload).toHaveProperty("r", 0);
             expect(envelope.payload).toHaveProperty("c", 0);
-            expect(envelope.payload).toHaveProperty("pageRow", 0);
         });
 
         it("should emit INVALIDATE_CELL on disableCell", () => {
@@ -223,19 +222,19 @@ describe("Sheet - EventBus Integration", () => {
         });
     });
 
-    describe("ROW_COL_RESIZE event", () => {
-        it("should emit ROW_COL_RESIZE on setRowCount", () => {
+    describe("ROW_COL_RESIZE event (deprecated)", () => {
+        it("should NOT emit ROW_COL_RESIZE on setRowCount (event removed in refactoring)", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.ROW_COL_RESIZE, handler);
             sheet.setRowCount(50);
-            expect(handler).toHaveBeenCalledOnce();
+            expect(handler).not.toHaveBeenCalled();
         });
 
-        it("should emit ROW_COL_RESIZE on setGridSize", () => {
+        it("should NOT emit ROW_COL_RESIZE on setGridSize (event removed in refactoring)", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.ROW_COL_RESIZE, handler);
             sheet.setGridSize(50, 10);
-            expect(handler).toHaveBeenCalledOnce();
+            expect(handler).not.toHaveBeenCalled();
         });
     });
 
@@ -518,7 +517,7 @@ describe("Sheet - EventBus Aggressive Tests", () => {
             const handler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.ROW_COL_RESIZE, handler);
             sheet.setRowCount(1);
-            expect(handler).toHaveBeenCalledOnce();
+            expect(handler).not.toHaveBeenCalled(); // Event no longer emitted
         });
 
         it("should not emit ROW_COL_RESIZE for invalid setRowCount", () => {

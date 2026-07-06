@@ -383,7 +383,7 @@ export class ClipboardManager {
         this.#cellContent.set(key, { type: "image", blob, objectUrl });
 
         // 确保单元格存在（值为空，仅占位）
-        if (!sheet.cellStore.get(realR, c)) {
+        if (!sheet.cellStore.get(r, c)) {
             sheet.setCell(r, c, "");
         }
 

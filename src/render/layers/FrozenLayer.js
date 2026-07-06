@@ -24,7 +24,6 @@
  * - 使用独立的 TileCache 与 TileLayer 隔离，避免缓存冲突
  * - 通过 _cachedFrozenColsW / _cachedFrozenRowsH 缓存冻结状态，
  *   仅在冻结范围变化时触发全量重绘
- * - 支持分页模式 (useRealRows) 的行号转换
  *
  * @module render/layers/FrozenLayer
  */

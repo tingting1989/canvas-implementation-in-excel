@@ -794,19 +794,4 @@ describe("FrozenLayer", () => {
             expect(info.enabled).toBe(true);
         });
     });
-
-    describe("Pagination Mode Support", () => {
-        let ctx;
-
-        beforeEach(() => {
-            ctx = {
-                save: vi.fn(),
-                restore: vi.fn(),
-                beginPath: vi.fn(),
-                rect: vi.fn(),
-                clip: vi.fn(),
-            };
-        });
-
-    });
 });

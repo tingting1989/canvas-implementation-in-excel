@@ -14,6 +14,7 @@ function createMockSheet(cells = {}) {
     return {
         name: "Sheet1",
         cellStore: store,
+         cellDataAccessor: store,
         selection,
         getCellTypeInstance: () => ({ name: "text" }),
         render: vi.fn(),

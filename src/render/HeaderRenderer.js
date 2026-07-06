@@ -66,7 +66,7 @@ export class HeaderRenderer {
     #renderColumnHeaders(ctx, sheet, vt, viewW, range) {
         const rc = sheet.rowColManager;
         const headerW = vt.headerW;
-        const rowH = CONFIG.HEADER_HEIGHT;
+        const rowH = sheet.headerHeight || CONFIG.HEADER_HEIGHT;
         const defaultStyle = sheet.getDefaultStyle();
         const headerFont = this.#buildHeaderFont(defaultStyle);
 

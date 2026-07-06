@@ -640,6 +640,14 @@ export class Sheet {
         return this.#headerLabels.getHeaderHeight();
     }
 
+    /** 获取/设置列头行高度（px） */
+    get headerHeight() {
+        return this.#headerLabels.headerHeight;
+    }
+    set headerHeight(v) {
+        this.#headerLabels.headerHeight = v;
+    }
+
     /**
      * 获取行头列宽度（像素）
      * @returns {number}

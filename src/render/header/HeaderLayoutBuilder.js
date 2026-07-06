@@ -81,7 +81,7 @@ export class HeaderLayoutBuilder {
                     font,
                     textAlign,
                     textX: this.#calcTextX(x, w, textAlign, cp),
-                    textY: layerY + rowH - 8,
+                    textY: this.#calcCenteredTextY(layerY, rowH, headerFont),
                     maxTextWidth: w - cp * 2,
                     isPartial: false,
                     partialType: PARTIAL_TYPE.FULL,
@@ -222,7 +222,7 @@ export class HeaderLayoutBuilder {
             font,
             textAlign,
             textX,
-            textY: layerY + rowH - 8,
+            textY: this.#calcCenteredTextY(layerY, rowH, headerFont),
             maxTextWidth,
             isPartial: partialType !== PARTIAL_TYPE.FULL,
             partialType,
@@ -263,5 +263,37 @@ export class HeaderLayoutBuilder {
             default:
                 return cellX + padding;
         }
+    }
+
+    /**
+     * 计算垂直居中的文字基线 Y 坐标
+     *
+     * Canvas fillText 的 y 参数是文字基线位置，不是文字中心。
+     * 要实现视觉垂直居中，需要：
+     * - 将文字放在行的垂直中心
+     * - 调整基线偏移（通常字体高度的 ~1/3 用于上升部）
+     *
+     * @param {number} layerY - 层的起始 Y 坐标
+     * @param {number} rowH - 行高度（px）
+     * @param {string} font - CSS font 字符串（如 "14px Microsoft YaHei"）
+     * @returns {number} 垂直居中的 textY 坐标
+     */
+    #calcCenteredTextY(layerY, rowH, font) {
+        const fontSize = this.#extractFontSize(font);
+        const centerY = layerY + rowH / 2;
+        const baselineOffset = fontSize * 0.35;  // 基线偏移量（经验值，使视觉居中）
+        return centerY + baselineOffset;
+    }
+
+    /**
+     * 从 CSS font 字符串中提取字体大小（px）
+     *
+     * @param {string} font - 如 "bold 14px Microsoft YaHei"
+     * @returns {number} 字体大小（px），默认 14
+     */
+    #extractFontSize(font) {
+        if (!font) return CONFIG.DEFAULT_FONT_SIZE || 14;
+        const match = font.match(/(\d+(?:\.\d+)?)\s*px/i);
+        return match ? parseFloat(match[1]) : (CONFIG.DEFAULT_FONT_SIZE || 14);
     }
 }

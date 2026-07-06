@@ -29,6 +29,9 @@ export class HeaderLabelManager {
     /** 行头列宽度（px） */
     #rowHeaderWidth = CONFIG.HEADER_WIDTH;
 
+    /** 列头行高度（px），默认 CONFIG.HEADER_HEIGHT (28px) */
+    #headerHeight = CONFIG.HEADER_HEIGHT;
+
     /**
      * @param {import("../Sheet.js").Sheet} sheet - 所属工作表
      */
@@ -61,6 +64,15 @@ export class HeaderLabelManager {
     }
     set rowHeaderWidth(v) {
         this.#rowHeaderWidth = v;
+    }
+
+    get headerHeight() {
+        return this.#headerHeight;
+    }
+    set headerHeight(v) {
+        if (v > 0) {
+            this.#headerHeight = v;
+        }
     }
 
     // ============================================================
@@ -187,12 +199,13 @@ export class HeaderLabelManager {
 
     /**
      * 获取表头总高度（像素）
-     * 嵌套表头时 = HEADER_HEIGHT × 嵌套层数，否则 = HEADER_HEIGHT
+     * 嵌套表头时 = headerHeight × 嵌套层数，否则 = headerHeight
+     * 支持通过配置自定义高度
      * @returns {number}
      */
     getHeaderHeight() {
         const rows = this.getNestedHeaderRowCount() || CONFIG.NESTED_HEADER_ROWS;
-        return rows * CONFIG.HEADER_HEIGHT;
+        return rows * this.#headerHeight;
     }
 
     /**

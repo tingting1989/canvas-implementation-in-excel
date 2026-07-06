@@ -228,7 +228,7 @@ const initApp = () => {
 
                 // 是否只读
                 readOnly: false,
-
+                headerHeight: 48,
                 // 嵌套表头配置
                 nestedHeaders: [
                     [
@@ -512,7 +512,7 @@ const initApp = () => {
                 // rowMove: { enabled: false },
             },
 
-            freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+            // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
 
             dataValidation: {
                 conflictStrategy: "short-circuit",
