@@ -22,6 +22,7 @@
  * @module types/CellRenderContext
  */
 import { CONFIG } from "@/constants/config";
+import { calcCenteredTextY, getAreaCenter } from "@/utils/canvasUtils";
 
 export class CellRenderContext {
     /**
@@ -166,11 +167,47 @@ export class CellRenderContext {
     }
 
     /**
-     * 获取文本垂直居中位置
-     * @returns {number}
+     * 获取文本垂直居中位置（几何中心）
+     *
+     * 适用于：
+     * - 配合 ctx.textBaseline = "middle" 使用
+     * - 绘制图形、图标等非文字元素
+     *
+     * @returns {number} 几何中心 Y 坐标
      */
     getCenterY() {
         return Math.round(this._y + this._height / 2);
+    }
+
+    /**
+     * 获取 Canvas fillText 的垂直居中基线 Y 坐标
+     *
+     * 与 getCenterY() 不同，此方法考虑了字体基线偏移，
+     * 直接用于 ctx.fillText(text, x, y) 的 y 参数。
+     *
+     * 适用场景：
+     * - 单元格文字渲染
+     * - 表头文字渲染
+     * - 任何需要 fillText 垂直居中的场景
+     *
+     * @param {string|number} [fontOrSize] - CSS font 字符串 或 字体大小（px）
+     *                                      默认使用样式的 fontSize
+     * @returns {number} 带基线偏移的 textY 坐标
+     *
+     * @example
+     * // 在自定义渲染器中使用
+     * render(context) {
+     *     const { ctx, displayValue } = context;
+     *     ctx.textAlign = "center";
+     *     // 不需要设置 textBaseline，getBaselineY() 已处理偏移
+     *     ctx.fillText(displayValue, context.getCenterX(), context.getBaselineY());
+     * }
+     */
+    getBaselineY(fontOrSize) {
+        if (fontOrSize === undefined) {
+            fontOrSize = this._style?.fontSize || CONFIG.DEFAULT_FONT_SIZE || 14;
+        }
+        return calcCenteredTextY(this._y, this._height, fontOrSize);
     }
 
     /**

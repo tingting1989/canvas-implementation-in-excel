@@ -1,4 +1,5 @@
 ﻿import { CONFIG } from "@/constants/config";
+import { calcCenteredTextY } from "@/utils/canvasUtils";
 import { HeaderLayoutBuilder } from "./header/HeaderLayoutBuilder.js";
 import { HeaderPainter } from "./header/HeaderPainter.js";
 import { FrozenBoundaryInfo } from "./header/models/FrozenBoundaryInfo.js";
@@ -287,7 +288,7 @@ export class HeaderRenderer {
             this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, mergedStyle);
 
             const textFont = this.#buildNestedHeaderFont(headerFont, rowStyle);
-            this.#drawHeaderText(ctx, sheet.getRowHeader(r), headerW / 2, y + h - 8, mergedStyle?.color, textFont, null, "center");
+            this.#drawHeaderText(ctx, sheet.getRowHeader(r), headerW / 2, calcCenteredTextY(y, h, textFont), mergedStyle?.color, textFont, null, "center");
 
             this.#drawSeparator(ctx, 0, y + h, headerW, y + h);
             this.#drawSeparator(ctx, headerW, y, headerW, y + h);
