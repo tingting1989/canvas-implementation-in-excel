@@ -135,7 +135,7 @@ describe("TileLayer", () => {
 
     it("should mark cell dirty via markCellDirty", () => {
         const invalidateSpy = vi.spyOn(layer.tileRenderer, "invalidateCell");
-        const rc = { getRowY: vi.fn(() => 0), getColX: vi.fn(() => 0) };
+        const rc = { getRowY: vi.fn(() => 0), getRowHeight: vi.fn(() => 25), getColX: vi.fn(() => 0), getColWidth: vi.fn(() => 80) };
         layer.markCellDirty(5, 3, rc);
         expect(invalidateSpy).toHaveBeenCalledWith(5, 3, rc);
         expect(layer.dirty).toBe(true);
@@ -185,7 +185,7 @@ describe("TileLayer", () => {
 
     it("should handle markCellDirty with different cells", () => {
         const invalidateSpy = vi.spyOn(layer.tileRenderer, "invalidateCell");
-        const rc = { getRowY: vi.fn(() => 0), getColX: vi.fn(() => 0) };
+        const rc = { getRowY: vi.fn(() => 0), getRowHeight: vi.fn(() => 25), getColX: vi.fn(() => 0), getColWidth: vi.fn(() => 80) };
 
         layer.markCellDirty(0, 0, rc);
         layer.markCellDirty(100, 50, rc);
@@ -201,7 +201,7 @@ describe("TileLayer", () => {
         layer.clearDirty();
         expect(layer.dirty).toBe(false);
 
-        const rc = { getRowY: vi.fn(() => 0), getColX: vi.fn(() => 0) };
+        const rc = { getRowY: vi.fn(() => 0), getRowHeight: vi.fn(() => 25), getColX: vi.fn(() => 0), getColWidth: vi.fn(() => 80) };
         layer.markCellDirty(5, 3, rc);
         expect(layer.dirty).toBe(true);
         invalidateSpy.mockRestore();
@@ -214,7 +214,7 @@ describe("TileLayer", () => {
         const viewport = { scrollX: 10, scrollY: 20 };
 
         layer.render(ctx, sheet, viewport);
-        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 10, 20, undefined, undefined, undefined);
+        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 10, 20, undefined, undefined);
         renderSpy.mockRestore();
     });
 
