@@ -54,13 +54,13 @@ export const CORE_CONFIG = Object.freeze({
     // ═══ 字体 ═══
 
     /** 默认字体族（通用回退） */
-    DEFAULT_FONT_FAMILY: "Segoe UI",
+    DEFAULT_FONT_FAMILY: "Microsoft YaHei",
 
     /** 默认等宽字体族 */
     MONO_FONT_FAMILY: "monospace",
 
     /** 默认字号（px） */
-    DEFAULT_FONT_SIZE: 12,
+    DEFAULT_FONT_SIZE: 14,
 
     // ═══ 单元格 ═══
 
@@ -71,7 +71,7 @@ export const CORE_CONFIG = Object.freeze({
     TEXT_OVERFLOW_ELLIPSIS: true,
 
     /** 单元格默认文字颜色 */
-    CELL_TEXT_COLOR: "#222",
+    CELL_TEXT_COLOR: "#000",
 
     /** 单元格默认边框颜色 */
     CELL_BORDER_COLOR: "#000",

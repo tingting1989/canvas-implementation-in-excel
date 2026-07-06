@@ -10,7 +10,7 @@ export const UI_CONFIG = Object.freeze({
     SCROLLBAR_WIDTH: 14,
 
     /** 滚动条滑块最小尺寸（px），防止内容过多时滑块过小无法点击 */
-    SCROLLBAR_MIN_SIZE: 30,
+    SCROLLBAR_MIN_SIZE: 28,
 
     // ═══ Sheet 标签栏 ═══
 

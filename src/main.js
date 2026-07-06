@@ -101,10 +101,7 @@ const initApp = () => {
 
     const wb = new Workbook(document.getElementById("wrap"), {
         defaultStyle: {
-            fontSize: 14,
-            fontFamily: "Microsoft YaHei",
-            color: "#000",
-            textAlign: "center",
+
         },
         // readOnly: true,
         // 工作表高度和宽度（像素值）

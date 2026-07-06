@@ -107,7 +107,7 @@ export class Workbook {
          */
         this.#earlyHooks = new Map();
 
-        this.#containerElement = element || CONFIG.CANVAS_ID;
+        this.#containerElement = element;
         this.#initOptions = options;
 
         /** @type {import("../formula/FormulaEngine.js").FormulaEngine|null} 公式引擎（由 FormulaPlugin 注入） */
