@@ -104,7 +104,7 @@ describe("TileLayer", () => {
         const options = { viewW: 800, viewH: 600 };
 
         layer.render(ctx, sheet, viewport, options);
-        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 0, 0, 800, 600, undefined);
+        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 0, 0, 800, 600);
         expect(layer.renderCount).toBe(1);
         renderSpy.mockRestore();
     });
@@ -117,7 +117,7 @@ describe("TileLayer", () => {
         const options = { viewW: 800, viewH: 600, scrollX: 100, scrollY: 200 };
 
         layer.render(ctx, sheet, viewport, options);
-        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 100, 200, 800, 600, undefined);
+        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 100, 200, 800, 600);
         renderSpy.mockRestore();
     });
 
@@ -129,7 +129,7 @@ describe("TileLayer", () => {
         const options = { viewW: 800, viewH: 600 };
 
         layer.render(ctx, sheet, viewport, options);
-        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 50, 75, 800, 600, undefined);
+        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 50, 75, 800, 600);
         renderSpy.mockRestore();
     });
 
