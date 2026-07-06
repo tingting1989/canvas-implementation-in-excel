@@ -100,15 +100,13 @@ export class ColumnTypeManager {
      * @returns {import("../../types/BaseColumnType.js").BaseColumnType} 单元格类型实例
      */
     getCellTypeInstance(r, c) {
-        const realR = this.#sheet.toRealRow(r);
-
-        const cellProps = this.#sheet.resolveCellProperties(realR, c);
+        const cellProps = this.#sheet.resolveCellProperties(r, c);
         if (cellProps?.type) {
             const { type: name, ...rest } = cellProps;
             return getType(name, extractTypeOptions(rest));
         }
 
-        return resolveCellType(realR, c, this.#cellTypes, this.#columnsConfig);
+        return resolveCellType(r, c, this.#cellTypes, this.#columnsConfig);
     }
 
     /**

@@ -85,11 +85,10 @@ export class FormulaBarManager extends Disposable {
         // 选区返回页面相对行号；cellStore 索引需要实际行号
         const row = range.topRow;
         const col = range.topCol;
-        const realRow = sheet.toRealRow(row);
         this.#activeRow = row;
         this.#activeCol = col;
 
-        const ref = indexToCol(col) + (realRow + 1);
+        const ref = indexToCol(col) + (row + 1);
 
         this.#element.setAttribute("cell-ref", ref);
 

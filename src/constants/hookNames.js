@@ -186,17 +186,6 @@ export const HOOKS = Object.freeze({
     AFTER_ROW_MOVE: "afterRowMove",
 
     /*
-     * ==================== 分页相关钩子 ====================
-     * 追踪分页状态变化
-     */
-
-    /** 页码改变后 - 用户导航到不同页面 */
-    AFTER_PAGE_CHANGE: "afterPageChange",
-
-    /** 每页记录数改变后 - 用户调整了页面大小设置 */
-    AFTER_PAGE_SIZE_CHANGE: "afterPageSizeChange",
-
-    /*
      * ==================== 隐藏列相关钩子 ====================
      * 控制列的显示与隐藏
      */

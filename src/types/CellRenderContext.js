@@ -1,34 +1,21 @@
 /**
- * 单元格渲染上下文（v2.0 - 纯数据容器 + PageContext 集成）
+ * 单元格渲染上下文（v3.0 - 纯数据容器）
  *
  * 封装 Canvas 渲染所需的所有信息，作为 render() 方法的参数传递。
  * 提供统一的接口，避免暴露内部复杂结构。
  *
- * ## v2.0 核心改进（破坏性变更）
- *
- * - ❌ **移除**：toRealRow() / toPageRow() / toRealCol() / toPageCol() 转换方法
- * - ✅ **新增**：pageContext 属性（PageContext 引用，权威转换源）
- * - ✅ **保留**：pageInfo 属性（仅用于简单状态查询）
- *
  * ## 设计原则
  *
  * **单一职责**：CellRenderContext 是纯只读数据容器，不实现任何业务逻辑。
- * 所有行号/坐标转换委托给 PageContext（Single Source of Truth）。
+ * 行号直接使用实际行号，无需转换。
  *
  * ## 使用方式
  *
  * ```javascript
  * render(context) {
- *     const pc = context.pageContext;
- *
- *     if (pc) {
- *         const realRow = pc.toRealRow(context.row);
- *         const pageY = pc.getPageRowY(context.row);
- *     }
- *
- *     if (context.pageInfo?.isInFrozenArea) {
- *         // 简单状态检查...
- *     }
+ *     const row = context.row;
+ *     const col = context.col;
+ *     // 直接使用行号访问数据...
  * }
  * ```
  *
@@ -50,16 +37,12 @@ export class CellRenderContext {
      * @param {string} params.displayValue - 格式化后的显示文本
      * @param {object} params.style - 解析后的最终样式对象
      * @param {object|null} params.sheet - Sheet 工作表实例（高级场景必需）
-     * @param {number} params.row - 页面行号（显示行号，受冻结/筛选/分页影响）
-     * @param {number} params.col - 页面列号（显示列号，受隐藏列影响）
-     * @param {number} [params.realRow] - 实际行号（真实数据行号）
-     * @param {number} [params.realCol] - 实际列号（真实数据列号）
+     * @param {number} params.row - 行号
+     * @param {number} params.col - 列号
      * @param {boolean} [params.isSelected=false] - 是否被选中
      * @param {boolean} [params.isDisabled=false] - 是否禁用
      * @param {boolean} [params.isMerged=false] - 是否为合并单元格
      * @param {object|null} [params.mergeInfo=null] - 合并区域信息
-     * @param {object|null} [params.pageInfo=null] - 分页/冻结状态信息（仅用于简单查询）
-     * @param {import('../model/grid/PageContext.js').PageContext|null} [params.pageContext=null] - PageContext 实例（⭐ 行号转换的权威来源）
      */
     constructor({
         ctx,
@@ -73,14 +56,10 @@ export class CellRenderContext {
         sheet = null,
         row,
         col,
-        realRow = null,
-        realCol = null,
         isSelected = false,
         isDisabled = false,
         isMerged = false,
         mergeInfo = null,
-        pageInfo = null,
-        pageContext = null, // ★ v2.0 新增：PageContext 引用
     }) {
         this._ctx = ctx;
         this._x = x;
@@ -91,25 +70,15 @@ export class CellRenderContext {
         this._displayValue = displayValue;
         this._style = style;
 
-        // ★★★ Sheet 引用（高级场景必需）★★★
         this._sheet = sheet;
 
-        // ★★★ 双轨行列号体系 ★★★
         this._row = row;
         this._col = col;
-        this._realRow = realRow !== null ? realRow : row; // 默认回退到页面行号
-        this._realCol = realCol !== null ? realCol : col; // 默认回退到页面列号
 
         this._isSelected = isSelected;
         this._isDisabled = isDisabled;
         this._isMerged = isMerged;
         this._mergeInfo = mergeInfo;
-
-        // ★★★ 分页/冻结状态信息（仅用于简单查询）★★★
-        this._pageInfo = pageInfo;
-
-        // ★★★ PageContext 引用（行号转换的权威来源）★★★
-        this._pageContext = pageContext;
     }
 
     // ========== 基础属性（只读） ==========
@@ -150,42 +119,14 @@ export class CellRenderContext {
         return this._sheet;
     }
 
-    // ========== 行列号体系（双轨制） ==========
+    // ========== 行列号 ==========
 
-    /**
-     * 页面行号（显示行号，受冻结/筛选/分页影响）
-     * 用于视觉定位和UI布局
-     */
     get row() {
         return this._row;
     }
 
-    /**
-     * 页面列号（显示列号，受隐藏列影响）
-     * 用于视觉定位和UI布局
-     */
     get col() {
         return this._col;
-    }
-
-    /**
-     * 实际行号（真实数据行号，不受显示状态影响）
-     * 用于数据访问、公式计算、跨系统通信
-     *
-     * ⭐ 推荐在所有数据操作中使用此属性
-     */
-    get realRow() {
-        return this._realRow;
-    }
-
-    /**
-     * 实际列号（真实数据列号，不受显示状态影响）
-     * 用于数据访问、公式计算、跨系统通信
-     *
-     * ⭐ 推荐在所有数据操作中使用此属性
-     */
-    get realCol() {
-        return this._realCol;
     }
 
     // ========== 状态属性 ==========
@@ -204,53 +145,6 @@ export class CellRenderContext {
 
     get mergeInfo() {
         return this._mergeInfo;
-    }
-
-    /**
-     * 分页/冻结信息对象（仅用于简单状态查询，不提供转换能力）
-     *
-     * ⚠️ 注意：此属性仅用于兼容性检查（如 isPaged、isInFrozenArea）。
-     * 所有行号/坐标转换必须通过 `pageContext` 属性完成。
-     *
-     * @returns {object|null}
-     * @property {boolean} isPaged - 是否处于分页模式
-     * @property {number} currentPage - 当前页码（从0开始）
-     * @property {number} pageSize - 每页行数
-     * @property {number} frozenRowCount - 冻结行数
-     * @property {number} frozenColCount - 冻结列数
-     * @property {boolean} isInFrozenArea - 当前单元格是否在冻结区域内
-     */
-    get pageInfo() {
-        return this._pageInfo;
-    }
-
-    /**
-     * PageContext 引用（权威的行号转换源）⭐ 核心 API
-     *
-     * 提供 PageContext 完整的转换能力：
-     * - **行号转换**：toRealRow() / toPageRow()
-     * - **坐标转换**：getPageRowY() / getRealRowY() / pageRowAt() / realRowAt()
-     * - **列坐标**：getColX() / getColWidth() / colAt()
-     * - **状态查询**：isActive / pageStart / pageEnd
-     *
-     * @returns {import('../model/grid/PageContext.js').PageContext|null}
-     *
-     * @example
-     * render(context) {
-     *     const pc = context.pageContext;  // 获取 PageContext
-     *
-     *     if (pc) {
-     *         const realRow = pc.toRealRow(context.row);       // 行号转换
-     *         const pageY = pc.getPageRowY(context.row);        // 坐标转换
-     *         const globalY = pc.getRealRowY(realRow);           // 全局坐标
-     *
-     *         console.log('分页模式:', pc.isActive);
-     *         console.log('当前页范围:', pc.pageStart, '-', pc.pageEnd);
-     *     }
-     * }
-     */
-    get pageContext() {
-        return this._pageContext;
     }
 
     // ========== 辅助方法 ==========
@@ -301,22 +195,5 @@ export class CellRenderContext {
         ctx.lineTo(x, y + radius);
         ctx.quadraticCurveTo(x, y, x + radius, y);
         ctx.closePath();
-    }
-
-    /**
-     * 检查当前单元格是否在冻结区域内
-     * @returns {boolean}
-     */
-    isInFrozenArea() {
-        if (!this._pageInfo) return false;
-        return this._pageInfo.isInFrozenArea || false;
-    }
-
-    /**
-     * 检查当前是否处于分页模式
-     * @returns {boolean}
-     */
-    isPagedMode() {
-        return this._pageInfo?.isPaged || false;
     }
 }

@@ -87,11 +87,8 @@ export class TileRenderer {
      * @param {number} scrollY
      * @param {number} viewW
      * @param {number} viewH
-     * @param {object} [options]
-     * @param {boolean} [options.useRealRows] - 分页模式下使用实际行号渲染（用于冻结行区域）
-     * @param {import("../model/grid/PageContext.js").PageContext} [options.pageContext] - 分页上下文
      */
-    render(ctx, sheet, scrollX, scrollY, viewW, viewH, options) {
+    render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
         const headerW = sheet.getHeaderWidth();
         const headerH = sheet.getHeaderHeight();
         const cellViewW = viewW - headerW;
@@ -109,7 +106,7 @@ export class TileRenderer {
             for (let tc = startTileCol; tc <= endTileCol; tc++) {
                 const tile = this.tileCache.getOrCreate(tr, tc);
                 if (tile.dirty) {
-                    this.#paintTile(tile, sheet, tr, tc, options);
+                    this.#paintTile(tile, sheet, tr, tc);
                     tile.dirty = false;
                 }
                 const drawX = headerW + tc * tileSize - scrollX;
@@ -139,12 +136,10 @@ export class TileRenderer {
      * @param {number} tileRow - 瓦片行号
      * @param {number} tileCol - 瓦片列号
      */
-    #paintTile(tile, sheet, tileRow, tileCol, options) {
+    #paintTile(tile, sheet, tileRow, tileCol) {
         const rc = sheet.rowColManager;
         const tileSize = CONFIG.TILE_SIZE;
         const tileCtx = tile.ctx;
-        const useRealRows = options?.useRealRows === true;
-        const pc = options?.pageContext ?? sheet.pageContext;
 
         tileCtx.clearRect(0, 0, tileSize, tileSize);
         this.#lastFont = null; // 每个瓦片单独重置字体缓存
@@ -154,32 +149,29 @@ export class TileRenderer {
         const pixelY1 = pixelY0 + tileSize;
         const pixelX1 = pixelX0 + tileSize;
 
-        // 使用 PageContext 显式选择坐标体系
-        const sr = useRealRows ? pc.realRowAt(pixelY0) : pc.pageRowAt(pixelY0);
+        const sr = rc.rowAt(pixelY0);
         const sc = rc.colAt(pixelX0);
-        const er = Math.min((useRealRows ? pc.realRowAt(pixelY1) : pc.pageRowAt(pixelY1)) + 1, useRealRows ? pc.raw.rowCount : pc.pageViewRowCount);
+        const er = Math.min(rc.rowAt(pixelY1) + 1, rc.rowCount);
         const ec = Math.min(rc.colAt(pixelX1) + 1, rc.colCount);
 
         // 记录已绘制的合并区域左上角坐标，避免重复绘制
         const renderedMerges = new Set();
 
         for (let r = sr; r < er; r++) {
-            const rowY = useRealRows ? pc.getRealRowY(r) : pc.getPageRowY(r);
-            const rowH = useRealRows ? pc.getRealRowHeight(r) : pc.getPageRowHeight(r);
+            const rowY = rc.getRowY(r);
+            const rowH = rc.getRowHeight(r);
             if (rowH <= 0) continue;
 
             const localY = rowY - pixelY0;
 
             if (localY + rowH <= 0 || localY >= tileSize) continue;
 
-            const realR = useRealRows ? r : sheet.toRealRow(r);
-
             for (let c = sc; c < ec; c++) {
                 const colW = rc.getColWidth(c);
                 if (colW <= 0) continue;
 
                 const merge = sheet.getMerge(r, c);
-                const isMerged = sheet.isMergedCell(realR, c);
+                const isMerged = sheet.isMergedCell(r, c);
 
                 if (isMerged) {
                     if (merge) {
@@ -197,7 +189,7 @@ export class TileRenderer {
 
                 if (localX + colW <= 0 || localX >= tileSize) continue;
 
-                const cell = sheet.cellStore.get(realR, c);
+                const cell = sheet.cellStore.get(r, c);
                 let w = colW;
                 let h = rowH;
                 let drawX = localX;
@@ -211,11 +203,11 @@ export class TileRenderer {
                     renderedMerges.add(`${merge.topRow},${merge.topCol}`);
                 }
 
-                this.#drawCellBackground(tileCtx, sheet, realR, c, cell, drawX, drawY, w, h, merge);
+                this.#drawCellBackground(tileCtx, sheet, r, c, cell, drawX, drawY, w, h, merge);
 
-                const hasContent = this.#drawCellContent(tileCtx, sheet, realR, c, drawX, drawY, w, h);
+                const hasContent = this.#drawCellContent(tileCtx, sheet, r, c, drawX, drawY, w, h);
                 if (!hasContent) {
-                    this.#drawCellBorder(tileCtx, sheet, realR, c, merge, drawX, drawY, w, h);
+                    this.#drawCellBorder(tileCtx, sheet, r, c, merge, drawX, drawY, w, h);
 
                     if (merge && (drawX < 0 || drawY < 0 || drawX + w > tileSize || drawY + h > tileSize)) {
                         tileCtx.save();
@@ -227,10 +219,10 @@ export class TileRenderer {
                             Math.min(tileSize, drawY + h) - Math.max(0, drawY),
                         );
                         tileCtx.clip();
-                        this.#drawCellContentOrText(tileCtx, sheet, r, c, realR, cell, drawX, drawY, w, h, merge, options);
+                        this.#drawCellContentOrText(tileCtx, sheet, r, c, cell, drawX, drawY, w, h, merge);
                         tileCtx.restore();
                     } else {
-                        this.#drawCellContentOrText(tileCtx, sheet, r, c, realR, cell, drawX, drawY, w, h, merge, options);
+                        this.#drawCellContentOrText(tileCtx, sheet, r, c, cell, drawX, drawY, w, h, merge);
                     }
                 }
             }
@@ -243,7 +235,6 @@ export class TileRenderer {
      */
     #drawMergeRegion(ctx, sheet, merge, rc, pixelX0, pixelY0, tileSize) {
         const { topRow, topCol, bottomRow, bottomCol } = merge;
-        const realTopR = sheet.toRealRow(topRow);
 
         // 计算合并区域与当前瓦片的交集
         const mergeLeft = rc.getColX(topCol);
@@ -259,12 +250,12 @@ export class TileRenderer {
 
         if (drawW <= 0 || drawH <= 0) return;
 
-        const cell = sheet.cellStore.get(realTopR, topCol);
-        this.#drawCellBackground(ctx, sheet, realTopR, topCol, cell, drawX, drawY, drawW, drawH, merge);
+        const cell = sheet.cellStore.get(topRow, topCol);
+        this.#drawCellBackground(ctx, sheet, topRow, topCol, cell, drawX, drawY, drawW, drawH, merge);
 
-        const hasContent = this.#drawCellContent(ctx, sheet, realTopR, topCol, drawX, drawY, drawW, drawH);
+        const hasContent = this.#drawCellContent(ctx, sheet, topRow, topCol, drawX, drawY, drawW, drawH);
         if (!hasContent) {
-            this.#drawCellBorder(ctx, sheet, realTopR, topCol, merge, drawX, drawY, drawW, drawH);
+            this.#drawCellBorder(ctx, sheet, topRow, topCol, merge, drawX, drawY, drawW, drawH);
 
             const fullDrawX = mergeLeft - pixelX0;
             const fullDrawY = mergeTop - pixelY0;
@@ -275,7 +266,7 @@ export class TileRenderer {
             ctx.beginPath();
             ctx.rect(drawX, drawY, drawW, drawH);
             ctx.clip();
-            this.#drawCellContentOrText(ctx, sheet, topRow, topCol, realTopR, cell, fullDrawX, fullDrawY, fullW, fullH, merge);
+            this.#drawCellContentOrText(ctx, sheet, topRow, topCol, cell, fullDrawX, fullDrawY, fullW, fullH, merge);
             ctx.restore();
         }
     }
@@ -368,35 +359,32 @@ export class TileRenderer {
      *
      * @param {CanvasRenderingContext2D} ctx
      * @param {Sheet} sheet
-     * @param {number} pageRow - 页面行号
+     * @param {number} r - 行号
      * @param {number} col - 列号
-     * @param {number} realR - 实际行号
      * @param {Cell|null} cell
      * @param {number} drawX
      * @param {number} drawY
      * @param {number} w
      * @param {number} h
      * @param {object|null} merge
-     * @param {object} [options]
      */
-    #drawCellContentOrText(ctx, sheet, pageRow, col, realR, cell, drawX, drawY, w, h, merge, options) {
-        const cellType = sheet.getCellTypeInstance(pageRow, col);
+    #drawCellContentOrText(ctx, sheet, r, col, cell, drawX, drawY, w, h, merge) {
+        const cellType = sheet.getCellTypeInstance(r, col);
         if (cellType.hasCustomRenderer) {
-            const context = this.#createRenderContext(ctx, sheet, pageRow, col, realR, cell, drawX, drawY, w, h, merge, options);
+            const context = this.#createRenderContext(ctx, sheet, r, col, cell, drawX, drawY, w, h, merge);
             cellType.render(context);
         } else {
-            this.#drawCellText(ctx, sheet, realR, col, cell, drawX, drawY, w, h, merge);
+            this.#drawCellText(ctx, sheet, r, col, cell, drawX, drawY, w, h, merge);
         }
     }
 
     /**
-     * 创建单元格渲染上下文（支持双轨行列号体系）
+     * 创建单元格渲染上下文
      *
      * @param {CanvasRenderingContext2D} ctx
      * @param {Sheet} sheet
-     * @param {number} pageRow - 页面行号
+     * @param {number} row - 行号
      * @param {number} col - 列号
-     * @param {number} realR - 实际行号
      * @param {Cell|null} cell
      * @param {number} drawX
      * @param {number} drawY
@@ -406,21 +394,9 @@ export class TileRenderer {
      * @param {object} [options]
      * @returns {CellRenderContext}
      */
-    #createRenderContext(ctx, sheet, pageRow, col, realR, cell, drawX, drawY, w, h, merge, options) {
-        const displayValue = sheet.formatCellValue(pageRow, col, cell?.value);
-        const style = sheet.resolveStyle(realR, col);
-
-        const pc = options?.pageContext ?? sheet.pageContext; // ★ 获取 PageContext 实例
-        const rc = sheet.rowColManager;
-
-        const pageInfo = {
-            isPaged: typeof sheet.isPagedMode === "function" && sheet.isPagedMode(),
-            currentPage: typeof sheet.getCurrentPage === "function" ? (sheet.getCurrentPage() ?? 0) : 0,
-            pageSize: typeof rc.getPageSize === "function" ? (rc.getPageSize() ?? 0) : 0,
-            frozenRowCount: sheet.fixedRowsTop || 0,
-            frozenColCount: sheet.fixedColumnsStart || 0,
-            isInFrozenArea: pageRow < (sheet.fixedRowsTop || 0) || col < (sheet.fixedColumnsStart || 0),
-        };
+    #createRenderContext(ctx, sheet, row, col, cell, drawX, drawY, w, h, merge) {
+        const displayValue = sheet.formatCellValue(row, col, cell?.value);
+        const style = sheet.resolveStyle(row, col);
 
         return new CellRenderContext({
             ctx,
@@ -432,16 +408,12 @@ export class TileRenderer {
             displayValue,
             style,
             sheet,
-            row: pageRow,
+            row,
             col,
-            realRow: realR,
-            realCol: col,
-            isSelected: sheet.selection?.contains(realR, col) ?? false,
+            isSelected: sheet.selection?.contains(row, col) ?? false,
             isDisabled: cell?.disabled === true,
             isMerged: !!merge,
             mergeInfo: merge,
-            pageInfo,
-            pageContext: pc, // ★ 注入 PageContext（v2.0 核心 API）
         });
     }
 
@@ -628,7 +600,7 @@ export class TileRenderer {
      *
      * @param {CanvasRenderingContext2D} ctx
      * @param {Sheet} sheet
-     * @param {number} realR - 实际行号
+     * @param {number} row - 行号
      * @param {number} col - 列号
      * @param {number} drawX
      * @param {number} drawY
@@ -636,11 +608,11 @@ export class TileRenderer {
      * @param {number} h
      * @returns {boolean} 是否绘制了富内容（用于决定是否跳过文本/边框绘制）
      */
-    #drawCellContent(ctx, sheet, realR, col, drawX, drawY, w, h) {
+    #drawCellContent(ctx, sheet, row, col, drawX, drawY, w, h) {
         const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "TileRenderer" });
         if (!clipboard) return false;
 
-        const content = clipboard.getCellContent(sheet, realR, col);
+        const content = clipboard.getCellContent(sheet, row, col);
         if (!content) return false;
 
         if (content.type === CONTENT_TYPE.IMAGE) {
@@ -756,14 +728,12 @@ export class TileRenderer {
      */
     invalidateCell(row, col, rc) {
         if (!rc) return;
-        const pc = rc.pageContext;
-        if (!pc) return;
 
         const tileSize = CONFIG.TILE_SIZE;
-        const rowY = pc.getPageRowY(row);
-        const rowH = pc.getPageRowHeight(row);
-        const colX = pc.getColX(col);
-        const colW = pc.getColWidth(col);
+        const rowY = rc.getRowY(row);
+        const rowH = rc.getRowHeight(row);
+        const colX = rc.getColX(col);
+        const colW = rc.getColWidth(col);
 
         if (rowH <= 0 || colW <= 0) return;
 

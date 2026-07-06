@@ -365,26 +365,21 @@ export class BaseHidePlugin extends BasePlugin {
         const bottomIdx = this.#isRow ? range.bottomRow : range.bottomCol;
 
         // 转为 realRow 以便与 rowColManager 交互
-        const realFocusIdx = this.#isRow ? sheet.toRealRow(focusIdx) : focusIdx;
-        const realTopIdx = this.#isRow ? sheet.toRealRow(topIdx) : topIdx;
-        const realBottomIdx = this.#isRow ? sheet.toRealRow(bottomIdx) : bottomIdx;
+        const focusIdxReal = this.#isRow ? focusIdx : focusIdx;
+        const topIdxReal = this.#isRow ? topIdx : topIdx;
+        const bottomIdxReal = this.#isRow ? bottomIdx : bottomIdx;
 
         // 三者均可见则无需调整
-        if (!this.#rcIsHidden(realFocusIdx) && !this.#rcIsHidden(realTopIdx) && !this.#rcIsHidden(realBottomIdx)) {
+        if (!this.#rcIsHidden(focusIdxReal) && !this.#rcIsHidden(topIdxReal) && !this.#rcIsHidden(bottomIdxReal)) {
             return;
         }
 
-        // 寻找最近可见项（返回 realRow）
-        const newRealIdx = this.#findNearestVisible(realFocusIdx);
-        if (newRealIdx < 0) return;
+        // 寻找最近可见项
+        const newIdx = this.#findNearestVisible(focusIdxReal);
+        if (newIdx < 0) return;
 
-        const newRealTop = this.#findNearestVisible(realTopIdx);
-        const newRealBottom = this.#findNearestVisible(realBottomIdx);
-
-        // 转回 pageRow 再设置 selection
-        const newIdx = this.#isRow ? sheet.toPageRow(newRealIdx) : newRealIdx;
-        const newTop = this.#isRow ? sheet.toPageRow(newRealTop) : newRealTop;
-        const newBottom = this.#isRow ? sheet.toPageRow(newRealBottom) : newRealBottom;
+        const newTop = this.#findNearestVisible(topIdxReal);
+        const newBottom = this.#findNearestVisible(bottomIdxReal);
 
         if (this.#isRow) {
             if (newTop >= 0 && newBottom >= 0) {

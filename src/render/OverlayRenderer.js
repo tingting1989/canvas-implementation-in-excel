@@ -48,25 +48,13 @@ export class OverlayRenderer {
         ctx.strokeStyle = CONFIG.GRID_COLOR;
         ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
 
-        const pc = sheet.pageContext;
-        const pageStart = pc.pageStart;
-        const pageEnd = pc.pageEnd;
-
         for (const merge of sheet.getAllMerges()) {
             const { topRow, topCol, bottomRow, bottomCol } = merge;
             const rc = sheet.rowColManager;
 
-            // 使用 PageContext 判断分页过滤
-            if (pc.isActive) {
-                if (bottomRow < pageStart || topRow >= pageEnd) continue;
-            }
-
             if (rc.getColWidth(topCol) <= 0 && rc.getColWidth(bottomCol) <= 0) continue;
 
-            const pageTopRow = pc.toPageRow(topRow);
-            const pageBottomRow = pc.toPageRow(bottomRow);
-
-            const rect = vt.mergeToViewRect({ topRow: pageTopRow, topCol, bottomRow: pageBottomRow, bottomCol });
+            const rect = vt.mergeToViewRect({ topRow, topCol, bottomRow, bottomCol });
             ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
         }
     }

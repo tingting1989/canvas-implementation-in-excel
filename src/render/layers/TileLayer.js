@@ -98,8 +98,6 @@ export class TileLayer extends BaseLayer {
      * 将渲染完全委托给 TileRenderer，
      * 由其内部的瓦片系统完成高效的数据绘制。
      *
-     * 支持分页模式 (useRealRows)，在该模式下会进行行号的页内/真实转换。
-     *
      * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
      * @param {import("../../workbook/Sheet.js").Sheet} sheet - 工作表实例
      * @param {import("../ViewportTransform.js").ViewportTransform} viewport - 视口坐标转换器
@@ -108,8 +106,6 @@ export class TileLayer extends BaseLayer {
      * @param {number} options.viewH - 视口高度
      * @param {number} [options.scrollX] - 水平滚动偏移（覆盖 viewport.scrollX）
      * @param {number} [options.scrollY] - 垂直滚动偏移（覆盖 viewport.scrollY）
-     * @param {boolean} [options.useRealRows] - 是否使用真实行号（分页模式）
-     * @param {import("../../model/grid/PageContext.js").PageContext} [options.pageContext] - 分页上下文
      */
     render(ctx, sheet, viewport, options = {}) {
         if (!this.enabled) return;
@@ -118,8 +114,6 @@ export class TileLayer extends BaseLayer {
         const scrollY = options.scrollY ?? viewport.scrollY;
         const viewW = options.viewW;
         const viewH = options.viewH;
-        const useRealRows = options.useRealRows;
-        const pc = options.pageContext ?? sheet.pageContext;
 
         const frozenColsW = sheet.frozenColsWidth ?? 0;
         const frozenRowsH = sheet.frozenRowsHeight ?? 0;
@@ -141,8 +135,7 @@ export class TileLayer extends BaseLayer {
             }
         }
 
-        const tileOpts = useRealRows ? { useRealRows: true, pageContext: pc } : { pageContext: pc };
-        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, tileOpts);
+        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH);
 
         if (clipped) {
             ctx.restore();

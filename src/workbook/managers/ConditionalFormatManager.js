@@ -44,9 +44,8 @@ export class ConditionalFormatManager {
      * @returns {number|null} 匹配的样式 ID，或 null
      */
     match(r, c, cell) {
-        const realR = this.#sheet.toRealRow(r);
         for (const rule of this.#rules) {
-            if (rule.match(realR, c, cell)) return rule.styleId;
+            if (rule.match(r, c, cell)) return rule.styleId;
         }
         return null;
     }
@@ -67,10 +66,9 @@ export class ConditionalFormatManager {
      * @returns {number|null} 样式 ID，或 null
      */
     getBinding(r, c) {
-        const realR = this.#sheet.toRealRow(r);
         const fn = this.#bindings.get(c);
         if (!fn) return null;
-        const cell = this.#sheet.cellStore.get(realR, c);
+        const cell = this.#sheet.cellStore.get(r, c);
         return fn(cell?.value);
     }
 

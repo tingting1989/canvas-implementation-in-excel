@@ -281,8 +281,7 @@ export class HeaderRenderer {
 
             const isSource = this._dragIndicator?.isRowSource(r) ?? false;
             const highlighted = r >= range.topRow && r <= range.bottomRow;
-            const realRow = sheet.toRealRow(r);
-            const rowStyle = sheet.getRowHeaderStyle(realRow);
+            const rowStyle = sheet.getRowHeaderStyle(r);
             const mergedStyle = this.#mergeHeaderStyle(defaultStyle, rowStyle);
 
             this.#drawHeaderCell(ctx, 0, y, headerW, h, isSource, highlighted, mergedStyle);

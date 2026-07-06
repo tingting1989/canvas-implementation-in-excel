@@ -443,7 +443,6 @@ const initApp = () => {
             "columnMove",
             "copyPaste",
 
-            "pagination",
             "exportFile",
             "hiddenColumns",
             "hiddenRows",
@@ -818,14 +817,6 @@ const initApp = () => {
             // },
         },
         afterInit(wb) {
-            const pg = wb.getPlugin("pagination");
-            if (pg) {
-                const data = pg.getPaginationData();
-                const pgInfo = document.getElementById("pg-info");
-                if (pgInfo) {
-                    pgInfo.textContent = `第 ${data.currentPage} / ${data.totalPages} 页 (共 ${data.totalRows} 行)`;
-                }
-            }
             const s2 = wb.sheets.get("Sheet2");
             if (s2) {
                 s2.setCell(2, 0, "Switch to Sheet1 to paste");
@@ -836,25 +827,10 @@ const initApp = () => {
     wb.initRender();
     wb.render();
 
-    const syncPaginationUI = () => {
-        const pg = wb.getPlugin("pagination");
-        console.log("syncPaginationUI");
-        if (!pg) return;
-        const data = pg.getPaginationData();
-        const pgInfo = document.getElementById("pg-info");
-        if (pgInfo) {
-            pgInfo.textContent = `第 ${data.currentPage} / ${data.totalPages} 页 (共 ${data.totalRows} 行)`;
-        }
-    };
-
-    wb.addHook(HOOKS.AFTER_PAGE_CHANGE, syncPaginationUI);
-    wb.addHook(HOOKS.AFTER_PAGE_SIZE_CHANGE, syncPaginationUI);
-    wb.addHook(HOOKS.AFTER_SHEET_SWITCH, syncPaginationUI);
-
     wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
         if (!e.ctrlKey && !e.metaKey) return;
         const sheet = wb.activeSheet;
-        const cell = sheet.cellStore.get(sheet.toRealRow(row), col);
+        const cell = sheet.cellStore.get(row, col);
         if (cell?.value && isUrl(cell.value)) {
             const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
             if (canOpen === false) {
@@ -1011,39 +987,6 @@ const initApp = () => {
             };
         },
 
-        /** 切换到"大数据模式"（启用分页） */
-        enableLargeDataMode: (rows = 1000, pageSize = 50) => {
-            const sheet = wb.getActiveSheet();
-            const pg = wb.getPlugin("pagination");
-
-            // 启用分页插件
-            wb.enablePlugin("pagination");
-
-            // 设置大数据量
-            sheet.setGridSize(rows, sheet.rowColManager.colCount);
-
-            // 调整每页行数
-            if (pg && pg.active) {
-                pg.setPageSize(pageSize);
-            }
-
-            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 大数据模式已启用: ${rows}行, 每页${pageSize}行, 共${Math.ceil(rows / pageSize)}页`);
-        },
-
-        /** 切换到"小表格模式"（可选禁用分页） */
-        enableSmallTableMode: (rows = 30, disablePagination = true) => {
-            const sheet = wb.getActiveSheet();
-
-            // 设置小表格
-            sheet.setGridSize(rows, sheet.rowColManager.colCount);
-
-            // 可选：禁用分页
-            if (disablePagination) {
-                wb.disablePlugin("pagination");
-            }
-
-            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 小表格模式已启用: ${rows}行, 分页${disablePagination ? "已禁用" : "仍启用"}`);
-        },
     };
 
     // 示例：5秒后自动调整为 30行 x 15列（可删除此段代码）

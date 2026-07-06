@@ -130,10 +130,8 @@ export class SheetStyleManager {
      * @param {Object} styleObj - 要合并的样式属性
      */
     setCellStyle(r, c, styleObj) {
-        const realR = this.#sheet.toRealRow(r);
-
-        this.#sheet.rowColManager.ensureSize(realR + 1, c + 1);
-        const cell = this.#sheet.cellStore.get(realR, c);
+        this.#sheet.rowColManager.ensureSize(r + 1, c + 1);
+        const cell = this.#sheet.cellStore.get(r, c);
         const currentStyleId = cell?.styleId || 0;
 
         const currentStyle = currentStyleId ? stylePool.getStyle(currentStyleId) : {};
@@ -142,8 +140,8 @@ export class SheetStyleManager {
         const newStyleId = stylePool.getStyleId(mergedStyle);
         const value = cell?.value ?? "";
 
-        this.#recorder.record("cell", `${realR},${c}`, currentStyleId, newStyleId);
-        this.#sheet.cellStore.set(realR, c, new Cell(value, newStyleId, cell?.disabled || false));
+        this.#recorder.record("cell", `${r},${c}`, currentStyleId, newStyleId);
+        this.#sheet.cellStore.set(r, c, new Cell(value, newStyleId, cell?.disabled || false));
         this.invalidateCache();
     }
 
@@ -157,10 +155,9 @@ export class SheetStyleManager {
      * @param {number} c - 列号
      */
     clearCellStyle(r, c) {
-        const realR = this.#sheet.toRealRow(r);
-        const cell = this.#sheet.cellStore.get(realR, c);
+        const cell = this.#sheet.cellStore.get(r, c);
         if (!cell || cell.styleId === 0) return;
-        this.#sheet.cellStore.set(realR, c, new Cell(cell.value, 0, cell.disabled));
+        this.#sheet.cellStore.set(r, c, new Cell(cell.value, 0, cell.disabled));
         this.invalidateCache();
     }
 
@@ -201,13 +198,12 @@ export class SheetStyleManager {
 
         if (topCol === 0 && bottomCol >= rowColManager.colCount - 1) {
             for (let r = topRow; r <= bottomRow; r++) {
-                const realR = this.#sheet.toRealRow(r);
-                const existingId = this.#rowStyles.get(realR);
+                const existingId = this.#rowStyles.get(r);
                 const existing = existingId ? stylePool.getStyle(existingId) : {};
                 const merged = { ...existing, ...styleObj };
                 const newId = stylePool.getStyleId(merged);
-                this.#recorder.record("row", realR, existingId || 0, newId);
-                this.#rowStyles.set(realR, newId);
+                this.#recorder.record("row", r, existingId || 0, newId);
+                this.#rowStyles.set(r, newId);
             }
             this.invalidateCache();
             return;
@@ -239,8 +235,7 @@ export class SheetStyleManager {
     clearRangeStyle(range) {
         const { topRow, topCol, bottomRow, bottomCol } = range;
         for (let r = topRow; r <= bottomRow; r++) {
-            const realR = this.#sheet.toRealRow(r);
-            this.#rowStyles.delete(realR);
+            this.#rowStyles.delete(r);
             for (let c = topCol; c <= bottomCol; c++) {
                 this.clearCellStyle(r, c);
             }
@@ -264,8 +259,7 @@ export class SheetStyleManager {
      * @returns {Object} 合并后的最终样式对象
      */
     resolveStyle(r, c) {
-        const realR = this.#sheet.toRealRow(r);
-        const key = `${realR},${c}`;
+        const key = `${r},${c}`;
 
         // 缓存命中检查：版本号一致时尝试从缓存读取
         if (this.#styleCacheFrameVersion === this.#styleCacheVersion) {
@@ -280,8 +274,8 @@ export class SheetStyleManager {
         // 第 1 层：默认样式（基础）
         const base = stylePool.getStyle(this.#defaultStyleId);
         const colStyleId = this.#colStyles.get(c);
-        const rowStyleId = this.#rowStyles.get(realR);
-        const cell = this.#sheet.cellStore.get(realR, c);
+        const rowStyleId = this.#rowStyles.get(r);
+        const cell = this.#sheet.cellStore.get(r, c);
         const cellStyleId = cell?.styleId;
 
         // 快速路径：无任何自定义样式时，直接返回默认样式

@@ -371,8 +371,7 @@ export class ClipboardManager {
      * @param {Blob} blob - 图片 Blob 数据
      */
     setCellImage(sheet, r, c, blob) {
-        const realR = sheet.toRealRow(r);
-        const key = this.#cellKey(sheet, realR, c);
+        const key = this.#cellKey(sheet, r, c);
 
         // 撤销旧图片的 Object URL
         const old = this.#cellContent.get(key);

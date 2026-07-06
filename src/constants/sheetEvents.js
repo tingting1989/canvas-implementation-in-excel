@@ -91,9 +91,6 @@ export const SHEET_EVENTS = Object.freeze({
     /** 行列尺寸调整 - 用户拖拽改变了行高或列宽 */
     ROW_COL_RESIZE: "sheet:row-col-resize",
 
-    /** 分页刷新 - 当前页码或每页记录数发生变化 */
-    PAGINATION_REFRESH: "sheet:pagination-refresh",
-
     /** 获取剪贴板数据 - 请求系统剪贴板内容的同步接口 */
     GET_CLIPBOARD: "sheet:get-clipboard",
 
@@ -246,10 +243,6 @@ export const EVENT_FLOW_REGISTRY = Object.freeze({
         emitters: ["Sheet"],
         listeners: ["Workbook"],
     },
-    [SHEET_EVENTS.PAGINATION_REFRESH]: {
-        emitters: ["Sheet"],
-        listeners: ["Workbook"],
-    },
     [SHEET_EVENTS.GET_CLIPBOARD]: {
         emitters: ["TileRenderer", "ContextMenuStrategy"],
         listeners: ["Workbook"],
@@ -261,7 +254,7 @@ export const EVENT_FLOW_REGISTRY = Object.freeze({
 
     [SHEET_EVENTS.SHEET_SWITCHED]: {
         emitters: ["Workbook"],
-        listeners: ["SortPlugin", "FreezePlugin", "PaginationPlugin"],
+        listeners: ["SortPlugin", "FreezePlugin"],
     },
 
     /*

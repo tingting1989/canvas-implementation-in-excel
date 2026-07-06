@@ -288,9 +288,8 @@ export class ContextMenuStrategy extends EventStrategy {
                     for (let row = range.topRow; row <= range.bottomRow; row++) {
                         for (let col = range.topCol; col <= range.bottomCol; col++) {
                             if (!sheet.isDisabled(row, col)) {
-                                const realR = sheet.toRealRow(row);
                                 const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "ContextMenuStrategy" });
-                                clipboard?.removeCellContent(sheet, realR, col);
+                                clipboard?.removeCellContent(sheet, row, col);
                                 sheet.setCell(row, col, "", 0);
                             }
                         }
@@ -306,7 +305,7 @@ export class ContextMenuStrategy extends EventStrategy {
                     const range = sheet.selection.getRange();
                     const rows = [];
                     for (let row = range.topRow; row <= range.bottomRow; row++) {
-                        rows.push(sheet.toRealRow(row));
+                        rows.push(row);
                     }
                     hiddenRows.hideRows(rows);
                 },
@@ -320,8 +319,7 @@ export class ContextMenuStrategy extends EventStrategy {
                     const range = sheet.selection.getRange();
                     const rows = [];
                     for (let row = Math.max(0, range.topRow - 1); row <= range.bottomRow + 1; row++) {
-                        const realRow = sheet.toRealRow(row);
-                        if (rc.isRowHidden(realRow)) rows.push(realRow);
+                        if (rc.isRowHidden(row)) rows.push(row);
                     }
                     if (rows.length > 0) hiddenRows.showRows(rows);
                 },

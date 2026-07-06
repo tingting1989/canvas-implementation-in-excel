@@ -100,8 +100,7 @@ export class CellEditor extends DOMComponent {
     }
 
     readCellValue(row, col) {
-        const realRow = this.sheet.toRealRow(row);
-        const cell = this.sheet.cellStore.get(realRow, col);
+        const cell = this.sheet.cellStore.get(row, col);
         return cell?.value ?? "";
     }
 
@@ -366,8 +365,7 @@ export class CellEditor extends DOMComponent {
                 targetCol = merge.topCol;
             }
 
-            const realRow = this.sheet.toRealRow(targetRow);
-            const oldCell = this.sheet.cellStore.get(realRow, targetCol);
+            const oldCell = this.sheet.cellStore.get(targetRow, targetCol);
             if (this.areValuesEqual(oldCell?.value, newValue)) {
                 this.hide();
                 this.#render();
@@ -420,15 +418,13 @@ export class CellEditor extends DOMComponent {
 
                     const mergeR = merge.topRow;
                     const mergeC = merge.topCol;
-                    const realMergeR = this.sheet.toRealRow(mergeR);
-                    const oldCell = this.sheet.cellStore.get(realMergeR, mergeC);
+                    const oldCell = this.sheet.cellStore.get(mergeR, mergeC);
                     const oldValue = oldCell?.value ?? "";
                     if (oldValue !== parsedValue) {
                         changes.push({ row: mergeR, col: mergeC, oldValue, newValue: parsedValue });
                     }
                 } else {
-                    const realR = this.sheet.toRealRow(r);
-                    const oldCell = this.sheet.cellStore.get(realR, c);
+                    const oldCell = this.sheet.cellStore.get(r, c);
                     const oldValue = oldCell?.value ?? "";
                     if (oldValue !== parsedValue) {
                         changes.push({ row: r, col: c, oldValue, newValue: parsedValue });
@@ -445,8 +441,7 @@ export class CellEditor extends DOMComponent {
             this.sheet.beginBatch();
         }
         for (const { row, col, newValue } of changes) {
-            const realR = this.sheet.toRealRow(row);
-            const oldCell = this.sheet.cellStore.get(realR, col);
+            const oldCell = this.sheet.cellStore.get(row, col);
             this.sheet.setCell(row, col, newValue, oldCell?.styleId || 0);
         }
         if (this.useBatchInBatchFill()) {

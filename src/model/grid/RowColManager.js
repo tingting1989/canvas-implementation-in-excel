@@ -1,7 +1,6 @@
 ﻿import { ERROR_CODE, errorHandler } from "@/core/ErrorHandler.js";
 
 import { CONFIG } from "../../constants/config";
-import { PageContext } from "./PageContext.js";
 
 export class RowColManager {
     #rowHeights = [];
@@ -12,12 +11,6 @@ export class RowColManager {
     #colPrefixDirty = true;
     #allocatedHeight = 0;
     #allocatedWidth = 0;
-
-    #pageStartRow = -1;
-    #pageEndRow = -1;
-
-    /** 分页上下文缓存 */
-    #pageContext = null;
 
     /** 隐藏列集合（存储实际列号） */
     #hiddenCols = new Set();
@@ -41,11 +34,6 @@ export class RowColManager {
     #explicitlySized = false;
 
     get totalHeight() {
-        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
-            const startY = this.#rawGetRowY(this.#pageStartRow);
-            const endY = this.#rawGetRowY(this.#pageEndRow);
-            return endY - startY;
-        }
         this.#ensureRowPrefix();
 
         // 使用实际行数计算总高度
@@ -62,18 +50,6 @@ export class RowColManager {
     }
 
     get rowCount() {
-        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
-            return this.#pageEndRow - this.#pageStartRow;
-        }
-
-        return Math.max(this.#usedRows, this.#rowHeights.length, 1);
-    }
-
-    /**
-     * 实际总行数（不受分页边界影响）
-     * 用于分页插件计算 totalRows，始终返回真实行数
-     */
-    get totalRowCount() {
         return Math.max(this.#usedRows, this.#rowHeights.length, 1);
     }
 
@@ -172,10 +148,9 @@ export class RowColManager {
     }
 
     setRowHeight(row, height) {
-        const realRow = this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow ? this.#pageStartRow + row : row;
-        this.ensureSize(realRow + 1, 0);
-        if (this.#rowHeights[realRow] !== height) {
-            this.#rowHeights[realRow] = height;
+        this.ensureSize(row + 1, 0);
+        if (this.#rowHeights[row] !== height) {
+            this.#rowHeights[row] = height;
             this.#rowPrefixDirty = true;
         }
     }
@@ -189,12 +164,6 @@ export class RowColManager {
     }
 
     getRowHeight(row) {
-        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
-            const realRow = this.#pageStartRow + row;
-            if (realRow >= 0 && realRow < this.#rowHeights.length) return this.#rowHeights[realRow];
-            if (this.#hiddenRows.has(realRow)) return 0;
-            return CONFIG.DEFAULT_ROW_HEIGHT;
-        }
         if (row >= 0 && row < this.#rowHeights.length) return this.#rowHeights[row];
         if (this.#hiddenRows.has(row)) return 0;
         return CONFIG.DEFAULT_ROW_HEIGHT;
@@ -218,11 +187,6 @@ export class RowColManager {
     }
 
     getRowY(row) {
-        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
-            const realRow = this.#pageStartRow + row;
-            const pageStartY = this.#rawGetRowY(this.#pageStartRow);
-            return this.#rawGetRowY(realRow) - pageStartY;
-        }
         return this.#rawGetRowY(row);
     }
 
@@ -256,12 +220,6 @@ export class RowColManager {
 
     rowAt(y) {
         if (y < 0) return 0;
-        if (this.#pageStartRow >= 0 && this.#pageEndRow > this.#pageStartRow) {
-            const pageStartY = this.#rawGetRowY(this.#pageStartRow);
-            const realRow = this.rawRowAt(y + pageStartY);
-            const maxPageRow = this.#pageEndRow - this.#pageStartRow - 1;
-            return Math.max(0, Math.min(realRow - this.#pageStartRow, maxPageRow));
-        }
         return this.rawRowAt(y);
     }
 
@@ -392,41 +350,6 @@ export class RowColManager {
         const bottomCol = Math.min(this.colCount, this.colAt(viewX + viewW) + 1);
         const bottomRow = Math.min(this.rowCount, this.rowAt(viewY + viewH) + 1);
         return { topRow, topCol, bottomRow, bottomCol };
-    }
-
-    setPaginationBounds(startRow, endRow) {
-        this.#pageStartRow = startRow;
-        this.#pageEndRow = endRow;
-        this.#rowPrefixDirty = true;
-    }
-
-    clearPaginationBounds() {
-        this.#pageStartRow = -1;
-        this.#pageEndRow = -1;
-        this.#rowPrefixDirty = true;
-    }
-
-    get pageStartRow() {
-        return this.#pageStartRow;
-    }
-    get pageEndRow() {
-        return this.#pageEndRow;
-    }
-
-    /**
-     * 获取分页上下文（PageContext）
-     *
-     * PageContext 集中管理所有分页相关的行号转换和坐标计算，
-     * 提供自解释的命名方法（getPageRowY / getRealRowY / pageRowAt / realRowAt 等），
-     * 替代分散在多处的隐式双态 API。
-     *
-     * @returns {PageContext}
-     */
-    get pageContext() {
-        if (!this.#pageContext) {
-            this.#pageContext = new PageContext(this);
-        }
-        return this.#pageContext;
     }
 
     /**

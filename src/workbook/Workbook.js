@@ -319,18 +319,6 @@ export class Workbook {
         // BEFORE_CHANGE / AFTER_CHANGE 的 Hooks 桥接由 EventHandler.#subscribeEditorEvents 统一处理，
         // 此处不再重复订阅，避免钩子被触发两次。
 
-        bus.on(SHEET_EVENTS.PAGINATION_REFRESH, () => {
-            const pg = this.getPlugin("pagination");
-            if (pg?.active) pg.refresh();
-        });
-
-        bus.on(SHEET_EVENTS.ROW_COL_RESIZE, () => {
-            const pg = this.getPlugin("pagination");
-            if (!pg || !pg.active) return;
-            sheet.rowColManager.clearPaginationBounds();
-            pg.refresh();
-        });
-
         bus.on(SHEET_EVENTS.GET_CLIPBOARD, () => {
             return this.clipboard;
         });

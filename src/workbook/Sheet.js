@@ -1,7 +1,7 @@
-﻿import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
-import { SHEET_EVENTS } from "../constants/sheetEvents.js";
-import { EventBus } from "../core/EventBus.js";
+﻿import {stylePool, DEFAULT_STYLE_ID} from "../model/styles";
+import {errorHandler, ERROR_CODE} from "../core/ErrorHandler.js";
+import {SHEET_EVENTS} from "../constants/sheetEvents.js";
+import {EventBus} from "../core/EventBus.js";
 
 import {
     ChunkedCellStore,
@@ -14,17 +14,17 @@ import {
     UnmergeCommand,
     Cell,
 } from "@/model";
-import { RowColManager } from "../model/grid/RowColManager.js";
-import { RowColSync } from "../model/grid/RowColSync.js";
-import { CellDataAccessor } from "../model/grid/CellDataAccessor.js";
-import { CONFIG } from "../constants/config";
-import { SheetStyleManager } from "./SheetStyleManager.js";
-import { ColumnTypeManager } from "./managers/ColumnTypeManager.js";
-import { HeaderLabelManager } from "./managers/HeaderLabelManager.js";
-import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js";
-import { BatchOperationManager } from "./managers/BatchOperationManager.js";
-import { ChartManager } from "../model/chart/ChartManager.js";
-import { extractTypeOptions } from "../types/index.js";
+import {RowColManager} from "../model/grid/RowColManager.js";
+import {RowColSync} from "../model/grid/RowColSync.js";
+import {CellDataAccessor} from "../model/grid/CellDataAccessor.js";
+import {CONFIG} from "../constants/config";
+import {SheetStyleManager} from "./SheetStyleManager.js";
+import {ColumnTypeManager} from "./managers/ColumnTypeManager.js";
+import {HeaderLabelManager} from "./managers/HeaderLabelManager.js";
+import {ConditionalFormatManager} from "./managers/ConditionalFormatManager.js";
+import {BatchOperationManager} from "./managers/BatchOperationManager.js";
+import {ChartManager} from "../model/chart/ChartManager.js";
+import {extractTypeOptions} from "../types/index.js";
 
 /** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
 const SUB = {
@@ -115,7 +115,7 @@ export class Sheet {
     constructor(name) {
         this.name = name;
 
-        this.#bus = new EventBus("Sheet", name, { strict: true });
+        this.#bus = new EventBus("Sheet", name, {strict: true});
 
         /** 是否可见 */
         this.visible = true;
@@ -181,6 +181,7 @@ export class Sheet {
     get rowStyles() {
         return this.#styleManager.rowStyles;
     }
+
     get colStyles() {
         return this.#styleManager.colStyles;
     }
@@ -189,6 +190,7 @@ export class Sheet {
     get columnsConfig() {
         return this.#typeManager.columnsConfig;
     }
+
     get cellTypes() {
         return this.#typeManager.cellTypes;
     }
@@ -197,24 +199,31 @@ export class Sheet {
     get colHeaders() {
         return this.#headerLabels.colHeaders;
     }
+
     set colHeaders(v) {
         this.#headerLabels.colHeaders = v;
     }
+
     get rowHeaders() {
         return this.#headerLabels.rowHeaders;
     }
+
     set rowHeaders(v) {
         this.#headerLabels.rowHeaders = v;
     }
+
     get nestedHeaders() {
         return this.#headerLabels.nestedHeaders;
     }
+
     set nestedHeaders(v) {
         this.#headerLabels.nestedHeaders = v;
     }
+
     get rowHeaderWidth() {
         return this.#headerLabels.rowHeaderWidth;
     }
+
     set rowHeaderWidth(v) {
         this.#headerLabels.rowHeaderWidth = v;
     }
@@ -289,23 +298,12 @@ export class Sheet {
     }
 
     // ============================================================
-    // 行号转换（分页支持）— 委托 PageContext
+    // 单元格数据访问代理
     // ============================================================
 
     /**
-     * 获取分页上下文（PageContext）
-     * 集中管理所有分页相关的行号转换和坐标计算
-     * @returns {import("../model/grid/PageContext.js").PageContext}
-     */
-    get pageContext() {
-        return this.rowColManager.pageContext;
-    }
-
-    /**
      * 获取单元格数据访问代理（CellDataAccessor）
-     * 统一管理分页模式下的数据读写，自动处理行号转换。
-     * 所有 Strategy/Plugin 层代码应优先使用此属性访问 cellStore，
-     * 避免遗漏 toRealRow() 转换导致的 bug。
+     * 统一管理单元格数据读写，提供与 CellStore 一致的 API。
      *
      * @returns {import("../model/grid/CellDataAccessor.js").CellDataAccessor}
      */
@@ -314,16 +312,6 @@ export class Sheet {
             this.#cellDataAccessor = new CellDataAccessor(this);
         }
         return this.#cellDataAccessor;
-    }
-
-    /** 页面行号 → 实际行号（委托 PageContext） */
-    toRealRow(pageRow) {
-        return this.pageContext.toRealRow(pageRow);
-    }
-
-    /** 实际行号 → 页面行号（委托 PageContext） */
-    toPageRow(realRow) {
-        return this.pageContext.toPageRow(realRow);
     }
 
     /** 可视列号 → 实际列号（当前宽度=0 隐藏列方案下无需转换） */
@@ -349,8 +337,7 @@ export class Sheet {
 
     #invalidateCell(r, c) {
         this.#styleManager.invalidateCache();
-        const pageRow = this.toPageRow(r);
-        this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, { r, c, pageRow });
+        this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, {r, c});
     }
 
     /**
@@ -384,30 +371,29 @@ export class Sheet {
      */
     setCell(r, c, value, styleId = 0, disabled = false) {
         if (!this.#ensureWritable()) return;
-        const realR = this.toRealRow(r);
-        this.rowColManager.ensureSize(realR + 1, c + 1);
+        this.rowColManager.ensureSize(r + 1, c + 1);
 
         let formula = null;
         let cellValue = value;
 
-        const old = this.cellStore.get(realR, c);
+        const old = this.cellStore.get(r, c);
 
         if (typeof value === "string" && value.startsWith("=")) {
             formula = value;
-            const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r: realR, c, formula: value });
+            const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, {r, c, formula: value});
             cellValue = results !== undefined ? results : value;
         } else if (old?.formula) {
-            this.#bus.emit(SHEET_EVENTS.FORMULA_REMOVE, { r: realR, c });
+            this.#bus.emit(SHEET_EVENTS.FORMULA_REMOVE, { r, c });
         }
 
         const cell = new Cell(cellValue, styleId, disabled, formula);
-        const cmd = new SetCellCommand(this.cellStore, realR, c, old, cell);
+        const cmd = new SetCellCommand(this.cellStore, r, c, old, cell);
         this.#batchOp.pushCommand(cmd, this.history);
-        this.cellStore.set(realR, c, cell);
-        this.#invalidateCell(realR, c);
+        this.cellStore.set(r, c, cell);
+        this.#invalidateCell(r, c);
 
         if (!formula) {
-            this.#bus.emit(SHEET_EVENTS.CELL_CHANGED, { r: realR, c });
+            this.#bus.emit(SHEET_EVENTS.CELL_CHANGED, {r, c});
         }
     }
 
@@ -418,19 +404,18 @@ export class Sheet {
      */
     disableCell(r, c) {
         if (!this.#ensureWritable()) return;
-        const realR = this.toRealRow(r);
-        this.rowColManager.ensureSize(realR + 1, c + 1);
-        let cell = this.cellStore.get(realR, c);
+        this.rowColManager.ensureSize(r + 1, c + 1);
+        let cell = this.cellStore.get(r, c);
         const oldState = cell?.disabled || false;
         if (!cell) {
             cell = new Cell("", 0, true);
         } else {
             cell.disabled = true;
         }
-        const cmd = new ToggleDisableCommand(this.cellStore, realR, c, oldState);
+        const cmd = new ToggleDisableCommand(this.cellStore, r, c, oldState);
         this.#batchOp.pushCommand(cmd, this.history);
-        this.cellStore.set(realR, c, cell);
-        this.#invalidateCell(realR, c);
+        this.cellStore.set(r, c, cell);
+        this.#invalidateCell(r, c);
     }
 
     /**
@@ -440,14 +425,13 @@ export class Sheet {
      */
     enableCell(r, c) {
         if (!this.#ensureWritable()) return;
-        const realR = this.toRealRow(r);
-        const cell = this.cellStore.get(realR, c);
+        const cell = this.cellStore.get(r, c);
         if (!cell) return;
         const oldState = cell.disabled;
         cell.disabled = false;
-        const cmd = new ToggleDisableCommand(this.cellStore, realR, c, oldState);
+        const cmd = new ToggleDisableCommand(this.cellStore, r, c, oldState);
         this.#batchOp.pushCommand(cmd, this.history);
-        this.#invalidateCell(realR, c);
+        this.#invalidateCell(r, c);
     }
 
     /**
@@ -457,12 +441,11 @@ export class Sheet {
      * @returns {boolean}
      */
     isDisabled(r, c) {
-        const realR = this.toRealRow(r);
         const colConfig = this.columnsConfig.get(c);
         if (colConfig?.disabled === true || colConfig?.readOnly === true) return true;
         const cellProps = this.resolveCellProperties(r, c);
         if (cellProps?.disabled === true || cellProps?.readOnly === true) return true;
-        return this.cellStore.get(realR, c)?.disabled === true;
+        return this.cellStore.get(r, c)?.disabled === true;
     }
 
     // ============================================================
@@ -475,9 +458,8 @@ export class Sheet {
             throw new TypeError("setRowStyle expects a style object, received: " + typeof styleObj);
         }
         this.#styleManager.resetRecorder();
-        const realRow = this.toRealRow(row);
         const styleId = stylePool.getStyleId(styleObj);
-        this.#styleManager.setRowStyle(realRow, styleId);
+        this.#styleManager.setRowStyle(row, styleId);
         const cmd = this.#styleManager.buildStyleCommand();
         if (cmd) this.#batchOp.pushCommand(cmd, this.history);
         this.#invalidateAll();
@@ -524,8 +506,7 @@ export class Sheet {
 
     clearRowStyle(row) {
         if (!this.#ensureWritable()) return;
-        const realRow = this.toRealRow(row);
-        this.#styleManager.clearRowStyle(realRow);
+        this.#styleManager.clearRowStyle(row);
         this.#invalidateAll();
     }
 
@@ -698,7 +679,7 @@ export class Sheet {
                 if (row[c] !== undefined && row[c] !== null && row[c] !== "") {
                     const val = row[c];
                     if (typeof val === "string" && val.startsWith("=")) {
-                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r, c, formula: val });
+                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, {r, c, formula: val});
                         const result = results !== undefined ? results : val;
                         this.cellStore.set(r, c, new Cell(result, 0, false, val));
                     } else {
@@ -709,12 +690,6 @@ export class Sheet {
         }
 
         this.#invalidateAll();
-        this.#refreshPagination();
-    }
-
-    /** 刷新分页插件（数据加载后可能需要重新分页） */
-    #refreshPagination() {
-        this.#bus.emit(SHEET_EVENTS.PAGINATION_REFRESH);
     }
 
     // ============================================================
@@ -737,17 +712,17 @@ export class Sheet {
     applyCellConfig() {
         for (const item of this.cellConfig) {
             if (item.row == null || item.col == null) continue;
-            const { row: r, col: c, value, style, disabled, readOnly, type, ...typeOptions } = item;
+            const {row: r, col: c, value, style, disabled, readOnly, type, ...typeOptions} = item;
             this.rowColManager.ensureSize(r + 1, c + 1);
 
             if (type) {
-                this.#typeManager.cellTypes.set(`${r},${c}`, { name: type, options: extractTypeOptions(typeOptions) });
+                this.#typeManager.cellTypes.set(`${r},${c}`, {name: type, options: extractTypeOptions(typeOptions)});
             }
 
             const cell = this.cellStore.get(r, c);
             const existingStyleId = cell?.styleId || 0;
             const existingStyle = existingStyleId ? stylePool.getStyle(existingStyleId) : {};
-            const mergedStyle = style ? { ...existingStyle, ...style } : existingStyle;
+            const mergedStyle = style ? {...existingStyle, ...style} : existingStyle;
             const newStyleId = stylePool.getStyleId(mergedStyle);
 
             const isDisabled = disabled ?? readOnly ?? cell?.disabled ?? false;
@@ -776,7 +751,7 @@ export class Sheet {
         try {
             return this.cellsFn(r, c);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CELL_INVALID_DATA, `cellsFn execution failed at (${r},${c})`, { originalError: error });
+            errorHandler.handle(ERROR_CODE.CELL_INVALID_DATA, `cellsFn execution failed at (${r},${c})`, {originalError: error});
             return null;
         }
     }
@@ -801,9 +776,7 @@ export class Sheet {
             return false;
         }
 
-        const realTopRow = this.toRealRow(topRow);
-        const realBottomRow = this.toRealRow(bottomRow);
-        const cmd = new MergeCommand(this.mergeManager, realTopRow, topCol, realBottomRow, bottomCol);
+        const cmd = new MergeCommand(this.mergeManager, topRow, topCol, bottomRow, bottomCol);
         cmd.redo();
         if (cmd.succeeded) {
             this.history.push(cmd);
@@ -820,8 +793,7 @@ export class Sheet {
      */
     unmergeCells(row, col) {
         if (!this.#ensureWritable()) return false;
-        const realRow = this.toRealRow(row);
-        const cmd = new UnmergeCommand(this.mergeManager, realRow, col);
+        const cmd = new UnmergeCommand(this.mergeManager, row, col);
         cmd.redo();
         if (cmd.oldMerge) {
             this.history.push(cmd);
@@ -831,24 +803,19 @@ export class Sheet {
         return false;
     }
 
-    /** 获取合并单元格信息（返回页面行号） */
+    /** 获取合并单元格信息 */
     getMerge(row, col) {
-        const realRow = this.toRealRow(row);
-        const merge = this.mergeManager.getMerge(realRow, col);
-        if (!merge) return null;
-        const pc = this.pageContext;
-        if (!pc.isActive) return merge;
-        return { ...merge, topRow: pc.toPageRow(merge.topRow), bottomRow: pc.toPageRow(merge.bottomRow) };
+        return this.mergeManager.getMerge(row, col);
     }
 
     /** 判断是否为合并区域的左上角单元格 */
     isMergeTopLeft(row, col) {
-        return this.mergeManager.isTopLeft(this.toRealRow(row), col);
+        return this.mergeManager.isTopLeft(row, col);
     }
 
     /** 判断是否属于某个合并区域（非左上角） */
     isMergedCell(row, col) {
-        return this.mergeManager.isMerged(this.toRealRow(row), col);
+        return this.mergeManager.isMerged(row, col);
     }
 
     /** 获取所有合并单元格信息 */
@@ -902,13 +869,12 @@ export class Sheet {
     // 行列操作：插入 / 删除 / 移动
     // ============================================================
 
-    /** 在指定位置插入行（接受页面行号） */
+    /** 在指定位置插入行 */
     insertRow(atRow) {
         if (!this.#ensureWritable()) return;
-        const realRow = this.toRealRow(atRow);
-        if (!this.#isValidIndex(realRow, CONFIG.MAX_ROWS)) return;
-        this.#dispatchToSubSystems(SUB.INSERT_ROW, realRow);
-        this.#rowSync.insert(realRow);
+        if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
+        this.#dispatchToSubSystems(SUB.INSERT_ROW, atRow);
+        this.#rowSync.insert(atRow);
     }
 
     /** 在指定位置插入列 */
@@ -919,13 +885,12 @@ export class Sheet {
         this.#colSync.insert(atCol);
     }
 
-    /** 删除指定行（接受页面行号） */
+    /** 删除指定行 */
     deleteRow(atRow) {
         if (!this.#ensureWritable()) return;
-        const realRow = this.toRealRow(atRow);
-        if (!this.#isValidIndex(realRow, CONFIG.MAX_ROWS)) return;
-        this.#dispatchToSubSystems(SUB.DELETE_ROW, realRow);
-        this.#rowSync.delete(realRow);
+        if (!this.#isValidIndex(atRow, CONFIG.MAX_ROWS)) return;
+        this.#dispatchToSubSystems(SUB.DELETE_ROW, atRow);
+        this.#rowSync.delete(atRow);
     }
 
     /** 删除指定列 */
@@ -946,15 +911,13 @@ export class Sheet {
         this.#invalidateAll();
     }
 
-    /** 移动行：将 fromRow 的数据移到 toRow 位置，中间行自动平移（接受页面行号） */
+    /** 移动行：将 fromRow 的数据移到 toRow 位置，中间行自动平移 */
     moveRow(fromRow, toRow) {
         if (!this.#ensureWritable()) return;
         if (fromRow === toRow || fromRow < 0 || toRow < 0) return;
-        const realFrom = this.toRealRow(fromRow);
-        const realTo = this.toRealRow(toRow);
-        if (realFrom >= CONFIG.MAX_ROWS || realTo >= CONFIG.MAX_ROWS) return;
-        this.#dispatchToSubSystems(SUB.MOVE_ROW, realFrom, realTo);
-        this.#rowSync.move(realFrom, realTo);
+        if (fromRow >= CONFIG.MAX_ROWS || toRow >= CONFIG.MAX_ROWS) return;
+        this.#dispatchToSubSystems(SUB.MOVE_ROW, fromRow, toRow);
+        this.#rowSync.move(fromRow, toRow);
         this.#invalidateAll();
     }
 
@@ -1017,7 +980,6 @@ export class Sheet {
         const currentCols = this.rowColManager.colCount;
         errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[Sheet] setRowCount: ${this.rowColManager.rowCount} → ${rows}`);
         this.rowColManager.resetSize(rows, currentCols);
-        this.#syncPaginationAfterResize();
         this.#invalidateAll();
         this.render();
         this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { changes: [] });
@@ -1055,22 +1017,9 @@ export class Sheet {
             `[Sheet] setGridSize: ${this.rowColManager.rowCount}x${this.rowColManager.colCount} → ${rows}x${cols}`,
         );
         this.rowColManager.resetSize(rows, cols);
-        this.#syncPaginationAfterResize();
         this.#invalidateAll();
         this.render();
         this.#bus.emit(SHEET_EVENTS.AFTER_CHANGE, { changes: [] });
-    }
-
-    /**
-     * 行列数调整后同步分页插件
-     * 确保 PaginationPlugin 的总行数和分页边界与新的网格大小一致
-     *
-     * 关键步骤：
-     * 1. 清除旧的分页边界（避免 rowCount getter 返回旧值）
-     * 2. 刷新分页插件（基于新的配置值重新计算）
-     */
-    #syncPaginationAfterResize() {
-        this.#bus.emit(SHEET_EVENTS.ROW_COL_RESIZE);
     }
 
     // ============================================================

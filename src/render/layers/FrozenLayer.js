@@ -124,7 +124,6 @@ export class FrozenLayer extends BaseLayer {
      * @param {number} options.viewH - 视口高度
      * @param {number} [options.scrollX] - 水平滚动偏移（覆盖 viewport.scrollX）
      * @param {number} [options.scrollY] - 垂直滚动偏移（覆盖 viewport.scrollY）
-     * @param {import("../../model/grid/PageContext.js").PageContext} [options.pageContext] - 分页上下文
      */
     render(ctx, sheet, viewport, options = {}) {
         if (!this.enabled) return;
@@ -147,20 +146,6 @@ export class FrozenLayer extends BaseLayer {
         const viewH = options.viewH;
         const scrollX = options.scrollX ?? viewport.scrollX;
         const scrollY = options.scrollY ?? viewport.scrollY;
-        const pc = options.pageContext ?? sheet.pageContext;
-        const isPaginationActive = pc.isActive;
-
-        // 分页模式下的渲染选项和滚动调整
-        let tileOptions;
-        let adjustedScrollX = scrollX;
-        let adjustedScrollY = scrollY;
-
-        if (isPaginationActive) {
-            tileOptions = { useRealRows: false, pageContext: pc };
-            // 分页模式下 scrollY 已经是页面相对坐标（ScrollManager 使用 rc.totalHeight
-            // 计算滚动边界，而分页模式下的 totalHeight 仅反映当前页高度），
-            // 因此不需要做任何坐标转换，直接使用 scrollY 即可。
-        }
 
         if (frozenColsW > 0) {
             this.#renderClippedRegion(
@@ -171,11 +156,10 @@ export class FrozenLayer extends BaseLayer {
                 frozenColsW,
                 viewH - headerH - frozenRowsH,
                 0,
-                adjustedScrollY,
+                scrollY,
                 frozenColsW + headerW,
                 viewH,
                 viewport,
-                tileOptions,
             );
         }
 
@@ -187,12 +171,11 @@ export class FrozenLayer extends BaseLayer {
                 headerH,
                 viewW - headerW - frozenColsW,
                 frozenRowsH,
-                adjustedScrollX,
+                scrollX,
                 0,
                 viewW,
                 frozenRowsH + headerH,
                 viewport,
-                tileOptions,
             );
         }
 
@@ -209,7 +192,6 @@ export class FrozenLayer extends BaseLayer {
                 frozenColsW + headerW,
                 frozenRowsH + headerH,
                 viewport,
-                tileOptions,
             );
         }
 
@@ -238,13 +220,13 @@ export class FrozenLayer extends BaseLayer {
      * @param {import("../ViewportTransform.js").ViewportTransform} viewport - 视口坐标转换器
      * @param {object} tileOptions - 瓦片渲染选项
      */
-    #renderClippedRegion(ctx, sheet, clipX, clipY, clipW, clipH, scrollX, scrollY, viewW, viewH, viewport, tileOptions) {
+    #renderClippedRegion(ctx, sheet, clipX, clipY, clipW, clipH, scrollX, scrollY, viewW, viewH, viewport) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(clipX, clipY, clipW, clipH);
         ctx.clip();
 
-        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH, tileOptions);
+        this.tileRenderer.render(ctx, sheet, scrollX, scrollY, viewW, viewH);
         this.overlayRenderer.renderMerges(ctx, sheet, viewport);
 
         if (this.#isSelectionInClipArea(sheet, viewport, clipX, clipY, clipW, clipH)) {
