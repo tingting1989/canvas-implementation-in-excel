@@ -173,7 +173,6 @@ export const SHEET_EVENTS = Object.freeze({
  * - **ContextMenuStrategy**: 右键菜单策略处理器
  * - **SortPlugin**: 排序功能插件
  * - **FreezePlugin**: 冻结窗格插件
- * - **PaginationPlugin**: 分页功能插件
  *
  * 数据结构：
  * @type {Record<string, { emitters: string[], listeners: string[] }>}

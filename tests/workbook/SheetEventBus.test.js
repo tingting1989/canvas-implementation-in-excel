@@ -223,15 +223,6 @@ describe("Sheet - EventBus Integration", () => {
         });
     });
 
-    describe("PAGINATION_REFRESH event", () => {
-        it("should emit PAGINATION_REFRESH on loadData", () => {
-            const handler = vi.fn();
-            sheet.bus.on(SHEET_EVENTS.PAGINATION_REFRESH, handler);
-            sheet.loadData([["a"]]);
-            expect(handler).toHaveBeenCalledOnce();
-        });
-    });
-
     describe("ROW_COL_RESIZE event", () => {
         it("should emit ROW_COL_RESIZE on setRowCount", () => {
             const handler = vi.fn();
@@ -481,14 +472,11 @@ describe("Sheet - EventBus Aggressive Tests", () => {
     });
 
     describe("loadData event sequence", () => {
-        it("should emit FORMULA_SET for formula cells and PAGINATION_REFRESH at end", () => {
+        it("should emit FORMULA_SET for formula cells in loadData", () => {
             const formulaHandler = vi.fn();
-            const paginationHandler = vi.fn();
             sheet.bus.on(SHEET_EVENTS.FORMULA_SET, formulaHandler);
-            sheet.bus.on(SHEET_EVENTS.PAGINATION_REFRESH, paginationHandler);
             sheet.loadData([["=A1", "hello"], ["=B2", "world"]]);
             expect(formulaHandler).toHaveBeenCalledTimes(2);
-            expect(paginationHandler).toHaveBeenCalledOnce();
         });
     });
 

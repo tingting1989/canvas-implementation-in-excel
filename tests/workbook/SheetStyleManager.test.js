@@ -11,7 +11,6 @@ function createMockSheet() {
     return {
         cellStore: store,
         rowColManager: rc,
-        toRealRow: (r) => r,
         isDisabled: () => false,
         cellsFn: null,
         columnsConfig: new Map(),

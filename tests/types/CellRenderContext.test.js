@@ -69,37 +69,20 @@ describe('CellRenderContext - 基础功能测试', () => {
             expect(context.isDisabled).toBe(false);
             expect(context.isMerged).toBe(false);
             expect(context.mergeInfo).toBeNull();
-            expect(context.pageInfo).toBeNull();
         });
     });
 
-    describe('双轨行列号体系', () => {
-        it('提供 realRow 时使用 realRow', () => {
+    describe('行列号属性', () => {
+        it('正确设置和读取行号列号', () => {
             const context = new CellRenderContext({
                 ctx: mockCtx,
                 x: 0, y: 0, width: 80, height: 30,
                 value: '', displayValue: '', style: {},
                 row: 5, col: 3,
-                realRow: 105,
-                realCol: 103,
             });
 
             expect(context.row).toBe(5);
             expect(context.col).toBe(3);
-            expect(context.realRow).toBe(105);
-            expect(context.realCol).toBe(103);
-        });
-
-        it('未提供 realRow 时回退到 row/col', () => {
-            const context = new CellRenderContext({
-                ctx: mockCtx,
-                x: 0, y: 0, width: 80, height: 30,
-                value: '', displayValue: '', style: {},
-                row: 5, col: 3,
-            });
-
-            expect(context.realRow).toBe(5);
-            expect(context.realCol).toBe(3);
         });
     });
 
@@ -268,12 +251,10 @@ describe('CellRenderContext - 攻击性测试', () => {
                 value: '', displayValue: '', style: {},
                 row: Number.MAX_SAFE_INTEGER,
                 col: Number.MAX_SAFE_INTEGER,
-                realRow: Number.MAX_SAFE_INTEGER,
-                realCol: Number.MAX_SAFE_INTEGER,
             });
 
             expect(context.row).toBe(Number.MAX_SAFE_INTEGER);
-            expect(context.realRow).toBe(Number.MAX_SAFE_INTEGER);
+            expect(context.col).toBe(Number.MAX_SAFE_INTEGER);
         });
 
         it('负数行号列号', () => {
@@ -287,8 +268,6 @@ describe('CellRenderContext - 攻击性测试', () => {
 
             expect(context.row).toBe(-5);
             expect(context.col).toBe(-3);
-            expect(context.realRow).toBe(-5);
-            expect(context.realCol).toBe(-3);
         });
     });
 
@@ -347,12 +326,10 @@ describe('CellRenderContext - 集成测试', () => {
             value: 42, displayValue: '42',
             style: { textAlign: 'center', color: 'blue', fontSize: 14 },
             row: 5, col: 3,
-            realRow: 105, realCol: 103,
             isSelected: true,
             isDisabled: false,
             isMerged: false,
             mergeInfo: null,
-            pageInfo: { currentPage: 2, frozenRows: 3 },
         });
 
         expect(typeof context.ctx).toBe('object');
@@ -365,8 +342,6 @@ describe('CellRenderContext - 集成测试', () => {
         expect(typeof context.style).toBe('object');
         expect(typeof context.row).toBe('number');
         expect(typeof context.col).toBe('number');
-        expect(typeof context.realRow).toBe('number');
-        expect(typeof context.realCol).toBe('number');
         expect(typeof context.isSelected).toBe('boolean');
         expect(typeof context.isDisabled).toBe('boolean');
         expect(typeof context.isMerged).toBe('boolean');
@@ -398,29 +373,6 @@ describe('CellRenderContext - 集成测试', () => {
         expect(context.mergeInfo.endRow).toBe(7);
     });
 
-    it('分页冻结信息完整性', () => {
-        const pageInfo = {
-            currentPage: 2,
-            pageSize: 50,
-            totalPages: 10,
-            frozenRows: 3,
-            frozenCols: 2,
-            isFirstPage: false,
-            isLastPage: false,
-        };
-
-        const context = new CellRenderContext({
-            ctx: mockCtx,
-            x: 0, y: 0, width: 80, height: 30,
-            value: '', displayValue: '', style: {},
-            row: 53, col: 3,
-            pageInfo,
-        });
-
-        expect(context.pageInfo).toBe(pageInfo);
-        expect(context.pageInfo.currentPage).toBe(2);
-        expect(context.pageInfo.frozenRows).toBe(3);
-    });
 });
 
 describe('CellRenderContext - Bug 检测', () => {
@@ -467,24 +419,16 @@ describe('CellRenderContext - Bug 检测', () => {
             }
         });
 
-        it('Bug #3: realRow/realCol 为 null vs 未传递的区别', () => {
-            const withNull = new CellRenderContext({
-                ctx: mockCtx,
-                x: 0, y: 0, width: 80, height: 30,
-                value: '', displayValue: '', style: {},
-                row: 5, col: 3,
-                realRow: null,
-                realCol: null,
-            });
-
-            const withoutReal = new CellRenderContext({
+        it('Bug #3: 行列号正确设置', () => {
+            const context = new CellRenderContext({
                 ctx: mockCtx,
                 x: 0, y: 0, width: 80, height: 30,
                 value: '', displayValue: '', style: {},
                 row: 5, col: 3,
             });
 
-            console.log(`realRow=null: ${withNull.realRow}, 未传 realRow: ${withoutReal.realRow}`);
+            expect(context.row).toBe(5);
+            expect(context.col).toBe(3);
         });
 
         it('Bug #4: drawRoundedRect 对负 radius 的处理', () => {

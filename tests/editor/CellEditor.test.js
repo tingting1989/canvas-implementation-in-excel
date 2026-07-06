@@ -29,8 +29,7 @@ function createMockSheet(opts = {}) {
         validateCellValue: vi.fn(() => true),
         setCell: vi.fn(),
         selection: { setActive: vi.fn(), setRange: vi.fn() },
-        rowColManager: { rowCount: opts.rowCount ?? 100, realColCount: opts.colCount ?? 26 },
-        toRealRow: vi.fn((r) => r),
+        rowColManager: { rowCount: opts.rowCount ?? 100, colCount: opts.colCount ?? 26 },
         getCellTypeInstance: vi.fn(() => null),
         _batchFillRange: null,
         beginBatch: vi.fn(),
@@ -164,13 +163,13 @@ describe("CellEditor - Template Method Defaults", () => {
 });
 
 describe("CellEditor - Subclass Differentiation", () => {
-    it("TextEditor should use toRealRow for reading cell value", () => {
+    it("TextEditor should read cell value correctly", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
         const editor = new TextEditor(engine, sheet);
 
         editor.readCellValue(5, 3);
-        expect(sheet.toRealRow).toHaveBeenCalledWith(5);
+        expect(sheet.cellStore.get).toHaveBeenCalledWith(5, 3);
     });
 
     it("TextEditor should use batch in batchFill", () => {

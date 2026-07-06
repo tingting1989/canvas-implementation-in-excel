@@ -22,11 +22,8 @@ describe("OverlayRenderer", () => {
             const sheet = {
                 getAllMerges: () => [merge1, merge2],
                 rowColManager: {
-                    pageStartRow: -1,
-                    pageEndRow: -1,
                     getColWidth: () => 100,
                 },
-                toPageRow: (r) => r,
             };
 
             const vt = {
@@ -58,11 +55,8 @@ describe("OverlayRenderer", () => {
             const sheet = {
                 getAllMerges: () => merges,
                 rowColManager: {
-                    pageStartRow: -1,
-                    pageEndRow: -1,
                     getColWidth: () => 0,
                 },
-                toPageRow: (r) => r,
             };
 
             const vt = {
@@ -74,7 +68,7 @@ describe("OverlayRenderer", () => {
             expect(ctx.strokeRect).not.toHaveBeenCalled();
         });
 
-        it("should skip merges outside page range in pagination mode", () => {
+        it("should skip merges with zero width or height", () => {
             const ctx = {
                 strokeStyle: "",
                 lineWidth: 0,
@@ -239,11 +233,8 @@ describe("OverlayRenderer", () => {
             const sheet = {
                 getAllMerges: () => [],
                 rowColManager: {
-                    pageStartRow: -1,
-                    pageEndRow: -1,
                     getColWidth: () => 100,
                 },
-                toPageRow: (r) => r,
             };
 
             const vt = {};

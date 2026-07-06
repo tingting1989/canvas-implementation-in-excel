@@ -169,17 +169,6 @@ export class RowColManager {
         return CONFIG.DEFAULT_ROW_HEIGHT;
     }
 
-    /**
-     * 获取实际行号的行高（不经过页面偏移转换）
-     * @param {number} realRow - 实际行号
-     * @returns {number}
-     */
-    getRealRowHeight(realRow) {
-        if (realRow >= 0 && realRow < this.#rowHeights.length) return this.#rowHeights[realRow];
-        if (this.#hiddenRows.has(realRow)) return 0;
-        return CONFIG.DEFAULT_ROW_HEIGHT;
-    }
-
     getColWidth(col) {
         if (col >= 0 && col < this.#colWidths.length) return this.#colWidths[col];
         if (this.#hiddenCols.has(col)) return 0;
@@ -190,15 +179,7 @@ export class RowColManager {
         return this.#rawGetRowY(row);
     }
 
-    /**
-     * 获取实际行号的全局 Y 坐标（不经过页面偏移转换）
-     * 用于冻结行像素高度计算等需要真实坐标的场景
-     * @param {number} realRow - 实际行号
-     * @returns {number}
-     */
-    getRealRowY(realRow) {
-        return this.#rawGetRowY(realRow);
-    }
+
 
     #rawGetRowY(row) {
         if (row <= 0) return 0;

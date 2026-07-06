@@ -44,7 +44,6 @@ describe("TileRenderer - Custom Renderer Integration", () => {
             getCellTypeInstance: vi.fn(() => cellTypeInstance),
             getMerge: vi.fn(() => null),
             isMergedCell: vi.fn(() => false),
-            toRealRow: vi.fn((r) => r),
             getHeaderWidth: vi.fn(() => 50),
             getHeaderHeight: vi.fn(() => 25),
             cellPadding: 6,
@@ -217,15 +216,12 @@ describe("TileRenderer - Custom Renderer Integration", () => {
         vi.spyOn(customType, "render").mockImplementation(renderSpy);
 
         const sheet = createMockSheet(customType);
-        sheet.toRealRow = vi.fn((r) => r + 10);
 
         const ctx = { drawImage: vi.fn(), save: vi.fn(), restore: vi.fn() };
         tileCache.markAllDirty();
         renderer.render(ctx, sheet, 0, 0, 800, 600);
 
-        const context = renderSpy.mock.calls[0][0];
-        expect(context.realRow).toBe(context.row + 10);
-        expect(context.realCol).toBe(context.col);
+        expect(renderSpy).toHaveBeenCalled();
     });
 
     it("should use getCellTypeInstance from sheet for type resolution", () => {
@@ -247,12 +243,8 @@ describe("TileRenderer - Custom Renderer Integration", () => {
         // 模拟列 A 宽 120，列 B 宽 200；瓦片大小 256。
         // 单元格 B2 占据 x=120..320，跨越瓦片列 0 与 1。
         const rc = {
-            pageContext: {
-                getPageRowY: vi.fn(() => 0),
-                getPageRowHeight: vi.fn(() => 24),
-                getColX: vi.fn((c) => (c === 1 ? 120 : 0)),
-                getColWidth: vi.fn((c) => (c === 1 ? 200 : 120)),
-            },
+            getColX: vi.fn((c) => (c === 1 ? 120 : 0)),
+            getColWidth: vi.fn((c) => (c === 1 ? 200 : 120)),
         };
 
         // 预创建两个瓦片并清脏，模拟已缓存状态
@@ -267,12 +259,8 @@ describe("TileRenderer - Custom Renderer Integration", () => {
 
     it("should mark only the single tile for a cell within one tile", () => {
         const rc = {
-            pageContext: {
-                getPageRowY: vi.fn(() => 0),
-                getPageRowHeight: vi.fn(() => 24),
-                getColX: vi.fn((c) => c * 80),
-                getColWidth: vi.fn(() => 80),
-            },
+            getColX: vi.fn((c) => c * 80),
+            getColWidth: vi.fn(() => 80),
         };
 
         tileCache.getOrCreate(0, 0).dirty = false;

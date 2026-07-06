@@ -539,45 +539,6 @@ describe("RowColManager - Pagination", () => {
         rcm.clearPaginationBounds();
         expect(rcm.rowCount).toBe(100);
     });
-
-    it("getRowY with pagination should offset from pageStartRow", () => {
-        const rcm = new RowColManager();
-        rcm.ensureSize(100, 10);
-        rcm.setPaginationBounds(10, 30);
-        expect(rcm.getRowY(0)).toBe(0);
-    });
-
-    it("rowAt with pagination should map to page-relative row", () => {
-        const rcm = new RowColManager();
-        rcm.ensureSize(100, 10);
-        rcm.setPaginationBounds(10, 30);
-        expect(rcm.rowAt(0)).toBe(0);
-    });
-
-    it("totalHeight with pagination should compute page height", () => {
-        const rcm = new RowColManager();
-        rcm.ensureSize(100, 10);
-        rcm.setPaginationBounds(10, 30);
-        expect(rcm.totalHeight).toBeGreaterThan(0);
-    });
-});
-
-describe("RowColManager - getRealRowHeight / getRealRowY", () => {
-    it("getRealRowHeight should bypass pagination offset", () => {
-        const rcm = new RowColManager();
-        rcm.ensureSize(100, 10);
-        rcm.setRowHeight(15, 50);
-        rcm.setPaginationBounds(10, 30);
-        expect(rcm.getRealRowHeight(15)).toBe(50);
-    });
-
-    it("getRealRowY should return global coordinate", () => {
-        const rcm = new RowColManager();
-        rcm.ensureSize(100, 10);
-        rcm.setRowHeight(0, 30);
-        rcm.setRowHeight(1, 40);
-        expect(rcm.getRealRowY(1)).toBe(30);
-    });
 });
 
 describe("RowColManager - Edge Cases", () => {

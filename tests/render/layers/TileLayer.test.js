@@ -133,21 +133,6 @@ describe("TileLayer", () => {
         renderSpy.mockRestore();
     });
 
-    it("should pass useRealRows option to tileRenderer", () => {
-        const renderSpy = vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
-        const ctx = {};
-        const sheet = {};
-        const viewport = { scrollX: 0, scrollY: 0 };
-        const options = { viewW: 800, viewH: 600, useRealRows: true };
-
-        layer.render(ctx, sheet, viewport, options);
-        expect(renderSpy).toHaveBeenCalledWith(
-            ctx, sheet, 0, 0, 800, 600,
-            { useRealRows: true },
-        );
-        renderSpy.mockRestore();
-    });
-
     it("should mark cell dirty via markCellDirty", () => {
         const invalidateSpy = vi.spyOn(layer.tileRenderer, "invalidateCell");
         const rc = { getRowY: vi.fn(() => 0), getColX: vi.fn(() => 0) };
@@ -220,18 +205,6 @@ describe("TileLayer", () => {
         layer.markCellDirty(5, 3, rc);
         expect(layer.dirty).toBe(true);
         invalidateSpy.mockRestore();
-    });
-
-    it("should pass undefined tileOptions when useRealRows is false", () => {
-        const renderSpy = vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
-        const ctx = {};
-        const sheet = {};
-        const viewport = { scrollX: 0, scrollY: 0 };
-        const options = { viewW: 800, viewH: 600, useRealRows: false };
-
-        layer.render(ctx, sheet, viewport, options);
-        expect(renderSpy).toHaveBeenCalledWith(ctx, sheet, 0, 0, 800, 600, undefined);
-        renderSpy.mockRestore();
     });
 
     it("should handle render with empty options", () => {

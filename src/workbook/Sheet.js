@@ -48,9 +48,8 @@ const SUB = {
  * - 条件格式、行/列样式、数据绑定
  *
  * 坐标体系：
- * - 页面行号（pageRow）：分页模式下用户看到的行号，从 0 开始
- * - 实际行号（realRow）：数据在 cellStore 中的真实行号
- * - 列号：分页只影响行，列号无需转换
+ * - 行号（row）：单元格在数据模型中的实际行号，从 0 开始
+ * - 列号（col）：单元格在数据模型中的实际列号，从 0 开始
  *
  * 数据变更通过 bus 事件通知外部（如 Workbook→RenderEngine）重绘
  */
@@ -272,9 +271,9 @@ export class Sheet {
         if (this.#cachedFrozenRowsHeight >= 0) return this.#cachedFrozenRowsHeight;
         const rc = this.rowColManager;
 
-        // 使用实际行号计算（绕过页面偏移），因为冻结行始终是数据的真实行 0..fixedRowsTop-1
-        const realRow = this.#fixedRowsTop - 1;
-        this.#cachedFrozenRowsHeight = rc.getRealRowY(realRow) + rc.getRealRowHeight(realRow);
+        // 使用实际行号计算，因为冻结行始终是数据的真实行 0..fixedRowsTop-1
+        const lastFrozenRow = this.#fixedRowsTop - 1;
+        this.#cachedFrozenRowsHeight = rc.getRowY(lastFrozenRow) + rc.getRowHeight(lastFrozenRow);
         return this.#cachedFrozenRowsHeight;
     }
 
@@ -363,7 +362,7 @@ export class Sheet {
 
     /**
      * 设置单元格值
-     * @param {number} r - 行号（页面行号）
+     * @param {number} r - 行号
      * @param {number} c - 列号
      * @param {*} value - 单元格值
      * @param {number} [styleId=0] - 样式 ID
@@ -654,8 +653,9 @@ export class Sheet {
     // ============================================================
 
     /**
-     * 加载二维数组数据，自动扩展行列尺寸，跳过空值单元格
-     * @param {Array<Array<*>>} data
+     * 加载二维数组数据，完全替换目标区域的所有单元格
+     * 行为：直接覆盖目标区域（包括空值），利用 set() 的天然覆盖特性
+     * @param {Array<Array<*>>} data - 二维数组数据
      */
     loadData(data) {
         if (!this.#ensureWritable()) return;
@@ -675,16 +675,14 @@ export class Sheet {
         for (let r = 0; r < rows; r++) {
             const row = data[r];
             if (!Array.isArray(row)) continue;
-            for (let c = 0; c < row.length; c++) {
-                if (row[c] !== undefined && row[c] !== null && row[c] !== "") {
-                    const val = row[c];
-                    if (typeof val === "string" && val.startsWith("=")) {
-                        const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r, c, formula: val });
-                        const result = results !== undefined ? results : val;
-                        this.cellStore.set(r, c, new Cell(result, 0, false, val));
-                    } else {
-                        this.cellStore.set(r, c, new Cell(val, 0));
-                    }
+            for (let c = 0; c < maxCols; c++) {
+                const val = c < row.length ? row[c] : "";
+                if (typeof val === "string" && val.startsWith("=")) {
+                    const results = this.#bus.emit(SHEET_EVENTS.FORMULA_SET, { r, c, formula: val });
+                    const result = results !== undefined ? results : val;
+                    this.cellStore.set(r, c, new Cell(result, 0, false, val));
+                } else {
+                    this.cellStore.set(r, c, new Cell(val, 0));
                 }
             }
         }

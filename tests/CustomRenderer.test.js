@@ -93,23 +93,8 @@ function createMockCanvasContext() {
 // 创建模拟 Sheet 对象
 function createMockSheet(options = {}) {
     const frozenRows = options.frozenRows || 0;
-    const currentPage = options.currentPage || 0;
-    const pageSize = options.pageSize || 50;
-
-    // 智能转换方法：支持分页+冻结的组合场景
-    const defaultToRealRow = (pageRow) => {
-        return pageRow + (currentPage * pageSize) + frozenRows;
-    };
-
-    const defaultToPageRow = (realRow) => {
-        return realRow - (currentPage * pageSize) - frozenRows;
-    };
 
     return {
-        toRealRow: options.toRealRow || defaultToRealRow,
-        toPageRow: options.toPageRow || defaultToPageRow,
-        toRealCol: options.toRealCol || ((col) => col),
-        toPageCol: options.toPageCol || ((col) => col),
         cellStore: {
             get(row, col) {
                 if (options.cellData && options.cellData[`${row},${col}`]) {
@@ -118,8 +103,6 @@ function createMockSheet(options = {}) {
                 return null;
             }
         },
-        isPagedMode: () => options.isPaged || false,
-        getCurrentPage: () => currentPage,
         cellPadding: options.cellPadding || 6,
         ...options.customMethods
     };
@@ -146,8 +129,6 @@ describe('CellRenderContext - 基础功能', () => {
             style: { color: '#333' },
             row: 5,
             col: 3,
-            realRow: 7,
-            realCol: 3,
             isSelected: true,
             isDisabled: false,
             isMerged: false,
@@ -166,11 +147,9 @@ describe('CellRenderContext - 基础功能', () => {
         expect(context.style.color).toBe('#333');
     });
 
-    test('双轨行列号体系 - 页面行号和实际行号分离', () => {
-        expect(context.row).toBe(5);       // 页面行号
-        expect(context.col).toBe(3);       // 页面列号
-        expect(context.realRow).toBe(7);   // 实际行号（不同）
-        expect(context.realCol).toBe(3);   // 实际列号
+    test('行列号正确读取', () => {
+        expect(context.row).toBe(5);       // 行号
+        expect(context.col).toBe(3);       // 列号
     });
 
     test('状态属性正确', () => {
@@ -180,19 +159,16 @@ describe('CellRenderContext - 基础功能', () => {
         expect(context.mergeInfo).toBeNull();
     });
 
-    test('默认值回退机制 - realRow/realCol 未提供时使用 row/col', () => {
+    test('行列号正确设置', () => {
         const ctx2 = new CellRenderContext({
             ctx: mockCtx,
             x: 0, y: 0, width: 50, height: 20,
             value: null, displayValue: '', style: {},
             row: 3, col: 2,
-            // 不提供 realRow 和 realCol
         });
 
         expect(ctx2.row).toBe(3);
-        expect(ctx2.realRow).toBe(3);      // 回退到 row
         expect(ctx2.col).toBe(2);
-        expect(ctx2.realCol).toBe(2);      // 回退到 col
     });
 
     test('getCenterX/getCenterY 计算正确', () => {
@@ -223,92 +199,6 @@ describe('CellRenderContext - 基础功能', () => {
         expect(ctxWithSheet.sheet).toBe(sheet);
     });
 
-    test('PageInfo 正确传递', () => {
-        const pageInfo = {
-            isPaged: true,
-            frozenRowCount: 2,
-            frozenColCount: 1,
-            isInFrozenArea: false
-        };
-
-        const ctxWithPageInfo = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 50, height: 20,
-            value: null, displayValue: '', style: {},
-            row: 0, col: 0,
-            pageInfo: pageInfo
-        });
-
-        expect(ctxWithPageInfo.pageInfo).toEqual(pageInfo);
-        expect(ctxWithPageInfo.isInFrozenArea()).toBe(false);
-        expect(ctxWithPageInfo.isPagedMode()).toBe(true);
-    });
-});
-
-// ============================================================
-// 第二部分：行列号转换方法测试
-// ============================================================
-describe('CellRenderContext - 行列号转换方法', () => {
-
-    let mockCtx;
-    let context;
-
-    beforeEach(() => {
-        mockCtx = createMockCanvasContext();
-    });
-
-    test('无 Sheet 无 PageInfo 时转换返回原值', () => {
-        context = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 50, height: 20,
-            value: null, displayValue: '', style: {},
-            row: 0, col: 0,
-        });
-
-        expect(context.toRealRow(5)).toBe(5);
-        expect(context.toPageRow(10)).toBe(10);
-        expect(context.toRealCol(3)).toBe(3);
-        expect(context.toPageCol(8)).toBe(8);
-    });
-
-    test('有 PageInfo 但无 Sheet 时转换返回原值（恒等映射）', () => {
-        context = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 50, height: 20,
-            value: null, displayValue: '', style: {},
-            row: 0, col: 0,
-            pageInfo: {
-                isPaged: true,
-                frozenRowCount: 2,
-                frozenColCount: 0,
-                isInFrozenArea: false
-            }
-        });
-
-        // 无 Sheet 引用时，toRealRow/toPageRow 为恒等映射
-        // 行号转换逻辑已统一收敛到 Sheet.toRealRow/Sheet.toPageRow
-        expect(context.toRealRow(0)).toBe(0);
-        expect(context.toRealRow(10)).toBe(10);
-        expect(context.toPageRow(0)).toBe(0);
-        expect(context.toPageRow(10)).toBe(10);
-    });
-
-    test('委托给 Sheet 的转换方法', () => {
-        const customSheet = createMockSheet({
-            frozenRows: 5,
-            toRealRow: (pageRow) => pageRow * 2,  // 自定义逻辑
-            toPageRow: (realRow) => realRow / 2
-        });
-
-        context = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 50, height: 20,
-            value: null, displayValue: '', style: {},
-            row: 0, col: 0,
-            sheet: customSheet,
-            pageInfo: { isPaged: true }
-        });
-
-        // 委托给 Sheet 的转换方法
-        expect(context.toRealRow(5)).toBe(10);     // 5 * 2
-        expect(context.toPageRow(20)).toBe(10);    // 20 / 2
-    });
 });
 
 // ============================================================
@@ -741,21 +631,17 @@ describe('攻击性测试 - 异常输入与边界条件', () => {
             displayValue: undefined,
             style: undefined,
             row: 0, col: 0,
-            realRow: undefined,  // 测试回退机制
-            realCol: undefined,
             isSelected: undefined,
             isMerged: undefined,
             mergeInfo: undefined,
-            pageInfo: undefined,
             sheet: undefined,
         });
 
         expect(context.value).toBeUndefined();
         expect(context.displayValue).toBeUndefined();
         expect(context.style).toBeUndefined();
-        expect(context.realRow).toBe(0);  // 回退到 row
+        expect(context.row).toBe(0);
         expect(context.isSelected).toBe(false);  // 默认值
-        expect(context.isInFrozenArea()).toBe(false);  // pageInfo 为 undefined
     });
 
     test('循环引用对象作为 value', () => {
@@ -905,7 +791,6 @@ describe('攻击性测试 - 异常输入与边界条件', () => {
                 value: i, displayValue: String(i),
                 style: { color: '#333' },
                 row: i, col: i % 10,
-                realRow: i + 100,
             });
         }
 
@@ -923,22 +808,22 @@ describe('攻击性测试 - 异常输入与边界条件', () => {
             value: null, displayValue: '', style: {},
             row: 0, col: 0,
             sheet: sheet,
-            pageInfo: { isPaged: true, frozenRowCount: 2 }
         });
 
         const iterations = 100000;
         const startTime = performance.now();
 
         for (let i = 0; i < iterations; i++) {
-            context.toRealRow(i % 1000);
-            context.toPageRow(i + 500);
+            // 测试属性访问性能（新的简化 API）
+            const _row = context.row;
+            const _col = context.col;
         }
 
         const elapsed = performance.now() - startTime;
 
-        // 100000 次转换应该在 200ms 内完成
-        expect(elapsed).toBeLessThan(200);
-        console.log(`[Performance] ${iterations} conversions in ${elapsed.toFixed(2)}ms`);
+        // 100000 次属性访问应该在 100ms 内完成
+        expect(elapsed).toBeLessThan(100);
+        console.log(`[Performance] ${iterations} property accesses in ${elapsed.toFixed(2)}ms`);
     });
 
     test('内存泄漏检测 - 大量创建销毁', () => {
@@ -953,7 +838,6 @@ describe('攻击性测试 - 异常输入与边界条件', () => {
                 style: { a: 1, b: 2, c: 3 },
                 row: i, col: i,
                 sheet: createMockSheet(),
-                pageInfo: { isPaged: true }
             });
             // 不保留引用，允许 GC
         }
@@ -971,143 +855,6 @@ describe('攻击性测试 - 异常输入与边界条件', () => {
 });
 
 // ============================================================
-// 第六部分：冻结/分页模式专项测试
-// ============================================================
-describe('冻结/分页模式专项测试', () => {
-
-    let mockCtx;
-
-    beforeEach(() => {
-        mockCtx = createMockCanvasContext();
-    });
-
-    test('冻结2行的行号映射', () => {
-        const sheet = createMockSheet({ frozenRows: 2 });
-
-        const frozenContext = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 80, height: 25,
-            value: 'Header', displayValue: 'Header', style: {},
-            row: 0, col: 0,  // 冻结区域第一行
-            realRow: 0,
-            sheet: sheet,
-            pageInfo: {
-                isPaged: false,
-                frozenRowCount: 2,
-                frozenColCount: 0,
-                isInFrozenArea: true
-            }
-        });
-
-        expect(frozenContext.isInFrozenArea()).toBe(true);
-        expect(frozenContext.row).toBe(0);
-        expect(frozenContext.realRow).toBe(0);
-
-        const scrollContext = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 80, height: 25,
-            value: 'Data', displayValue: 'Data', style: {},
-            row: 0, col: 0,  // 滚动区域第一行（实际是第3行）
-            realRow: 2,
-            sheet: sheet,
-            pageInfo: {
-                isPaged: false,
-                frozenRowCount: 2,
-                frozenColCount: 0,
-                isInFrozenArea: false
-            }
-        });
-
-        expect(scrollContext.isInFrozenArea()).toBe(false);
-        expect(scrollContext.row).toBe(0);
-        expect(scrollContext.realRow).toBe(2);  // 实际第3行（索引从0开始）
-    });
-
-    test('分页模式第2页的行号计算', () => {
-        const sheet = createMockSheet({
-            isPaged: true,
-            currentPage: 1,
-            pageSize: 50,
-            frozenRows: 0
-        });
-
-        const pagedContext = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 80, height: 25,
-            value: 'Item', displayValue: 'Item', style: {},
-            row: 10, col: 0,  // 第2页的第11行
-            realRow: 60,     // 实际第61行
-            sheet: sheet,
-            pageInfo: {
-                isPaged: true,
-                frozenRowCount: 0,
-                frozenColCount: 0,
-                isInFrozenArea: false
-            }
-        });
-
-        expect(pagedContext.isPagedMode()).toBe(true);
-        expect(pagedContext.row).toBe(10);
-        expect(pagedContext.realRow).toBe(60);
-
-        // 转换测试
-        expect(pagedContext.toRealRow(0)).toBe(50);   // 第2页第1行 → 实际第51行
-        expect(pagedContext.toPageRow(60)).toBe(10);   // 实际第61行 → 第2页第11行
-    });
-
-    test('冻结+分页组合场景（最复杂情况）', () => {
-        const sheet = createMockSheet({
-            isPaged: true,
-            currentPage: 2,
-            pageSize: 50,
-            frozenRows: 3
-        });
-
-        const complexContext = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 80, height: 25,
-            value: 'Complex', displayValue: 'Complex', style: {},
-            row: 5, col: 2,
-            realRow: 158,  // 2*50 + 3 + 5 = 158
-            realCol: 2,
-            sheet: sheet,
-            pageInfo: {
-                isPaged: true,
-                frozenRowCount: 3,
-                frozenColCount: 1,
-                isInFrozenArea: false
-            }
-        });
-
-        expect(complexContext.isPagedMode()).toBe(true);
-        expect(complexContext.isInFrozenArea()).toBe(false);
-
-        // 使用 Sheet 的自定义转换方法
-        expect(complexContext.toRealRow(0)).toBe(103);  // 2*50 + 3 + 0 = 103
-        expect(complexContext.toPageRow(103)).toBe(0);   // 103 - 2*50 - 3 = 0
-        expect(complexContext.toRealRow(5)).toBe(108);   // 2*50 + 3 + 5 = 108
-        expect(complexContext.toPageRow(108)).toBe(5);   // 108 - 2*50 - 3 = 5
-    });
-
-    test('渲染器在冻结区域的行为', () => {
-        const renderer = new ProgressBarType();
-
-        const frozenCellContext = new CellRenderContext({
-            ctx: mockCtx, x: 0, y: 0, width: 100, height: 25,
-            value: 75, displayValue: '75%', style: {},
-            row: 0, col: 0,
-            realRow: 0,
-            sheet: createMockSheet(),
-            pageInfo: {
-                isPaged: false,
-                frozenRowCount: 2,
-                frozenColCount: 0,
-                isInFrozenArea: true
-            }
-        });
-
-        expect(() => renderer.render(frozenCellContext)).not.toThrow();
-        expect(mockCtx.calls.length).toBeGreaterThan(0);
-    });
-});
-
-// ============================================================
 // 第七部分：与图表引擎一致性验证
 // ============================================================
 describe('与图表引擎一致性验证', () => {
@@ -1118,52 +865,44 @@ describe('与图表引擎一致性验证', () => {
         mockCtx = createMockCanvasContext();
     });
 
-    test('实际行号用于数据访问', () => {
+    test('行号用于数据访问', () => {
         const sheet = createMockSheet({
             cellData: {
-                '5,3': { value: 'Actual Data at Row 5' },
-                '10,3': { value: 'Actual Data at Row 10' }
+                '5,3': { value: 'Data at Row 5' },
+                '10,3': { value: 'Data at Row 10' }
             }
         });
 
         const context = new CellRenderContext({
             ctx: mockCtx, x: 0, y: 0, width: 80, height: 25,
             value: null, displayValue: '', style: {},
-            row: 3, col: 3,  // 页面行号（可能因冻结而偏移）
-            realRow: 5,       // 实际行号（用于数据访问）
-            realCol: 3,
+            row: 5, col: 3,
             sheet: sheet
         });
 
-        // ✅ 使用实际行号访问数据（正确做法）
-        const data = context.sheet.cellStore.get(context.realRow, context.realCol);
-        expect(data?.value).toBe('Actual Data at Row 5');
-
-        // ❌ 如果误用页面行号会获取错误数据
-        const wrongData = context.sheet.cellStore.get(context.row, context.col);
-        expect(wrongData).toBeNull();  // 行3没有数据
+        // 使用行号访问数据
+        const data = context.sheet.cellStore.get(context.row, context.col);
+        expect(data?.value).toBe('Data at Row 5');
     });
 
-    test('数据范围定义使用实际行号', () => {
+    test('数据范围定义使用行号', () => {
         const context = new CellRenderContext({
             ctx: mockCtx, x: 0, y: 0, width: 80, height: 25,
             value: '[CHART]', displayValue: '[CHART]', style: {},
-            row: 0, col: 0,
-            realRow: 5,
-            realCol: 2,
+            row: 5, col: 2,
             sheet: createMockSheet()
         });
 
         // 模拟自定义渲染器创建图表配置
         const chartConfig = {
             type: 'bar',
-            anchorRow: context.realRow,      // 使用实际行号 ✅
-            anchorCol: context.realCol,      // 使用实际列号 ✅
+            anchorRow: context.row,
+            anchorCol: context.col,
             dataRange: {
-                startRow: context.realRow,   // 实际行号 ✅
-                endRow: context.realRow + 10,
-                startCol: context.realCol,
-                endCol: context.realCol + 3
+                startRow: context.row,
+                endRow: context.row + 10,
+                startCol: context.col,
+                endCol: context.col + 3
             }
         };
 
@@ -1172,35 +911,24 @@ describe('与图表引擎一致性验证', () => {
         expect(chartConfig.dataRange.endRow).toBe(15);
     });
 
-    test('双轨体系在冻结场景下保持一致', () => {
-        // 模拟冻结2行的情况
+    test('行号在不同场景下正确', () => {
         const scenarios = [
-            { row: 0, realRow: 0, desc: '冻结区域第1行' },
-            { row: 1, realRow: 1, desc: '冻结区域第2行' },
-            { row: 0, realRow: 2, desc: '滚动区域第1行（实际第3行）' },
-            { row: 1, realRow: 3, desc: '滚动区域第2行（实际第4行）' },
-            { row: 5, realRow: 7, desc: '滚动区域第6行（实际第8行）' },
+            { row: 0, col: 0, desc: '第1行' },
+            { row: 1, col: 0, desc: '第2行' },
+            { row: 5, col: 3, desc: '第6行第4列' },
+            { row: 100, col: 10, desc: '第101行第11列' },
         ];
 
         for (const scenario of scenarios) {
             const ctx = new CellRenderContext({
                 ctx: mockCtx, x: 0, y: 0, width: 80, height: 25,
                 value: scenario.desc, displayValue: scenario.desc, style: {},
-                row: scenario.row, col: 0,
-                realRow: scenario.realRow,
-                realCol: 0,
-                sheet: createMockSheet(),
-                pageInfo: {
-                    isPaged: false,
-                    frozenRowCount: 2,
-                    frozenColCount: 0,
-                    isInFrozenArea: scenario.row < 2
-                }
+                row: scenario.row, col: scenario.col,
+                sheet: createMockSheet()
             });
 
-            expect(ctx.row).toBe(scenario.row, `页面行号错误: ${scenario.desc}`);
-            expect(ctx.realRow).toBe(scenario.realRow, `实际行号错误: ${scenario.desc}`);
-            expect(ctx.isInFrozenArea()).toBe(scenario.row < 2, `冻结判断错误: ${scenario.desc}`);
+            expect(ctx.row).toBe(scenario.row, `行号错误: ${scenario.desc}`);
+            expect(ctx.col).toBe(scenario.col, `列号错误: ${scenario.desc}`);
         }
     });
 });
@@ -1220,7 +948,6 @@ describe('并发安全性测试', () => {
                     value: i, displayValue: String(i),
                     style: {},
                     row: i, col: i,
-                    realRow: i * 2,
                 });
             });
         });
@@ -1230,7 +957,7 @@ describe('并发安全性测试', () => {
         expect(contexts.length).toBe(100);
         contexts.forEach((ctx, i) => {
             expect(ctx.value).toBe(i);
-            expect(ctx.realRow).toBe(i * 2);
+            expect(ctx.row).toBe(i);
         });
     });
 
@@ -1248,7 +975,6 @@ describe('并发安全性测试', () => {
                 x: 0, y: 0, width: 50, height: 20,
                 value: null, displayValue: '', style: {},
                 row: 0, col: 0,
-                realRow: 0, realCol: 0,
                 sheet: sharedSheet  // 共享同一个 Sheet
             });
         });

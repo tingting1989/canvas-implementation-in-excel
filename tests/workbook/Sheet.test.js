@@ -143,25 +143,6 @@ describe("Sheet - Freeze", () => {
     });
 });
 
-describe("Sheet - Row Number Conversion", () => {
-    it("should convert page row to real row", () => {
-        const sheet = new Sheet("Test");
-        expect(sheet.toRealRow(0)).toBe(0);
-        expect(sheet.toRealRow(5)).toBe(5);
-    });
-
-    it("should convert real row to page row", () => {
-        const sheet = new Sheet("Test");
-        expect(sheet.toPageRow(0)).toBe(0);
-        expect(sheet.toPageRow(5)).toBe(5);
-    });
-
-    it("should convert column numbers (identity for visible/real)", () => {
-        const sheet = new Sheet("Test");
-        expect(sheet.toRealCol(3)).toBe(3);
-        expect(sheet.toVisibleCol(3)).toBe(3);
-    });
-});
 
 describe("Sheet - bus events (replaces onChange)", () => {
     it("should emit INVALIDATE_CELL event on setCell", () => {

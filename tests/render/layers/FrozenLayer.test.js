@@ -808,38 +808,5 @@ describe("FrozenLayer", () => {
             };
         });
 
-        it("should pass useRealRows option to tile renderer when pagination is active", () => {
-            const tileRenderSpy = vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
-            vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
-            vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
-
-            const sheet = createMockSheet({ frozenColsWidth: 120, frozenRowsH: 60 });
-            const viewport = createViewport();
-
-            layer.render(ctx, sheet, viewport, { viewW: 800, viewH: 600, isPaginationActive: true });
-
-            expect(tileRenderSpy).toHaveBeenCalled();
-            const options = tileRenderSpy.mock.calls[0][6];
-            expect(options.useRealRows).toBe(true);
-
-            tileRenderSpy.mockRestore();
-        });
-
-        it("should not pass useRealRows option when pagination is not active", () => {
-            const tileRenderSpy = vi.spyOn(layer.tileRenderer, "render").mockImplementation(() => {});
-            vi.spyOn(layer.overlayRenderer, "renderMerges").mockImplementation(() => {});
-            vi.spyOn(layer.overlayRenderer, "renderSelection").mockImplementation(() => {});
-
-            const sheet = createMockSheet({ frozenColsWidth: 120, frozenRowsH: 60 });
-            const viewport = createViewport();
-
-            layer.render(ctx, sheet, viewport, { viewW: 800, viewH: 600, isPaginationActive: false });
-
-            expect(tileRenderSpy).toHaveBeenCalled();
-            const options = tileRenderSpy.mock.calls[0][6];
-            expect(options).toBeUndefined();
-
-            tileRenderSpy.mockRestore();
-        });
     });
 });

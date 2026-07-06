@@ -55,8 +55,6 @@ describe("HeaderRenderer", () => {
             cellPadding: 6,
             getNestedHeaderRowCount: vi.fn(() => 0),
             nestedHeaders: [],
-            toRealRow: vi.fn((r) => r), // 添加缺失的方法
-            toPageRow: vi.fn((r) => r),
             getHeaderWidth: vi.fn(() => 40),
             getHeaderHeight: vi.fn(() => 30),
             frozenColsWidth: 0,

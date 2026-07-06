@@ -316,7 +316,7 @@ const initApp = () => {
                 cellPadding: 10,
 
                 // 固定行列数上限（使用 maxRows/maxCols）
-                maxRows: 200,
+                maxRows: 50,
                 // maxCols: 14,
 
                 colWidths: [600],
@@ -712,16 +712,6 @@ const initApp = () => {
             //     console.log("[HOOK] afterRowMove 执行了", ...args);
             // },
             //
-            // // ==================== 分页相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.AFTER_PAGE_CHANGE]: (...args) => {
-            //     console.log("[HOOK] afterPageChange 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_PAGE_SIZE_CHANGE]: (...args) => {
-            //     console.log("[HOOK] afterPageSizeChange 执行了", ...args);
-            // },
-            //
             // // ==================== 隐藏列相关钩子 ====================
             // // ✅ 已执行
             // [HOOKS.AFTER_HIDE_COLUMN]: (...args) => {
@@ -854,6 +844,9 @@ const initApp = () => {
     });
 
     setTimeout(() => {
+        wb.updateSettings({
+            maxRows: 100,
+        })
         wb.activeSheet.loadData([
             ["姓名", "年龄", "green"],
             ["张三", 30, "yellow"],
