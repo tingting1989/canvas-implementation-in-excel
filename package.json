@@ -1,13 +1,27 @@
 {
     "name": "@canvas-sheet/core",
     "version": "1.0.12",
-    "description": "Canvas-based spreadsheet engine with Web Components UI",
+    "description": "High-performance Canvas-based spreadsheet engine for the web. Supports 100K+ rows, Excel-compatible formulas, plugins, and Web Components UI.",
     "main": "dist/canvas-sheet.umd.js",
     "module": "dist/canvas-sheet.esm.mjs",
     "files": [
-        "dist",
-        "README.md"
+        "dist/",
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md"
     ],
+    "exports": {
+        ".": {
+            "import": "./dist/canvas-sheet.esm.mjs",
+            "require": "./dist/canvas-sheet.umd.js"
+        },
+        "./package.json": "./package.json"
+    },
+    "sideEffects": false,
+    "engines": {
+        "node": ">=16.0.0",
+        "npm": ">=8.0.0"
+    },
     "scripts": {
         "dev": "webpack serve --mode development",
         "build": "webpack --mode production",
@@ -23,9 +37,12 @@
         "test:watch": "vitest",
         "test:ui": "vitest --ui",
         "test:coverage": "vitest run --coverage",
-        "prepublishOnly": "npm run build:lib",
-        "publish:lib": "npm publish --registry http://10.124.26.35:4873/",
-        "unpublish": "npm unpublish @canvas-sheet/core --registry http://10.124.26.35:4873/ --force",
+        "prepublishOnly": "npm run test && npm run build:lib",
+        "version": "npm run build:lib && git add -A dist",
+        "postversion": "git push && git push --tags",
+        "publish:npm": "npm publish --access public",
+        "publish:dry-run": "npm publish --dry-run --access public",
+        "publish:beta": "npm publish --tag beta --access public",
         "push": "git push origin",
         "push:all": "git push origin && git push internal",
         "push:origin": "git push origin",
@@ -35,17 +52,64 @@
         "pull:internal": "git pull internal",
         "remote:list": "git remote -v"
     },
-    "publishConfig": {
-        "registry": "http://10.124.26.35:4873/"
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tingting1989/canvas-implementation-in-excel.git",
+        "directory": "/"
+    },
+    "homepage": "https://github.com/tingting1989/canvas-implementation-in-excel#readme",
+    "bugs": {
+        "url": "https://github.com/tingting1989/canvas-implementation-in-excel/issues",
+        "email": "1158973435@qq.com"
     },
     "keywords": [
-        "canvas",
+        "canvas-spreadsheet",
         "spreadsheet",
         "excel",
-        "web-components"
+        "canvas",
+        "web-components",
+        "data-grid",
+        "table",
+        "grid",
+        "virtual-scrolling",
+        "performance",
+        "formula-engine",
+        "cell-renderer",
+        "plugin-system",
+        "web-component",
+        "custom-element",
+        "javascript-library",
+        "es6-module",
+        "apache-2.0",
+        "open-source",
+        "data-visualization",
+        "chart",
+        "data-validation",
+        "conditional-formatting",
+        "merge-cells",
+        "freeze-pane",
+        "sort",
+        "filter",
+        "copy-paste",
+        "auto-fill",
+        "keyboard-shortcuts",
+        "touch-friendly",
+        "responsive",
+        "lightweight",
+        "high-performance",
+        "gpu-acceleration"
     ],
-    "author": "jiangsuiting <1158973435@qq.com>",
+    "author": {
+        "name": "jiangsuiting",
+        "email": "1158973435@qq.com",
+        "url": "https://github.com/jiangsuiting"
+    },
+    "contributors": [],
     "license": "Apache-2.0",
+    "funding": {
+        "type": "individual",
+        "url": "https://github.com/sponsors/jiangsuiting"
+    },
     "lint-staged": {
         "*.{js,mjs}": [
             "eslint --fix",
