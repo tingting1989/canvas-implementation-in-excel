@@ -1,4 +1,22 @@
 ﻿/**
+ * @license Apache-2.0
+ *
+ * Copyright (c) 2024 jiangsuiting
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
  * 公式函数注册表（Formula Function Registry）
  *
  * @module FormulaFunctions
@@ -382,11 +400,7 @@ class FunctionRegistry {
         const upperName = name.toUpperCase();
 
         if (this._functions.has(upperName)) {
-            errorHandler.warn(
-                ERROR_CODE.FORMULA_FUNCTION_OVERRIDE,
-                `函数 ${upperName} 已存在，将被覆盖`,
-                { functionName: upperName },
-            );
+            errorHandler.warn(ERROR_CODE.FORMULA_FUNCTION_OVERRIDE, `函数 ${upperName} 已存在，将被覆盖`, { functionName: upperName });
         }
 
         /**
@@ -513,11 +527,7 @@ class FunctionRegistry {
             const entry = this._functions.get(upperName);
 
             if (entry.category === FUNCTION_CATEGORY.BUILTIN) {
-                errorHandler.warn(
-                    ERROR_CODE.FORMULA_FUNCTION_OVERRIDE,
-                    `尝试注销内置函数 ${upperName}`,
-                    { functionName: upperName },
-                );
+                errorHandler.warn(ERROR_CODE.FORMULA_FUNCTION_OVERRIDE, `尝试注销内置函数 ${upperName}`, { functionName: upperName });
             }
 
             return this._functions.delete(upperName);
@@ -573,18 +583,18 @@ class FunctionRegistry {
      * @returns {Object|undefined} 函数元数据对象，未找到时返回 undefined
      * @returns {string} returns.name - 函数名称（大写）
      * @returns {string} returns.category - 函数类别（FUNCTION_CATEGORY.BUILTIN 或 FUNCTION_CATEGORY.CUSTOM）
- * @returns {string} returns.module - 所属模块
- * @returns {string} returns.registeredAt - ISO 8601 时间戳
- * @returns {boolean} returns.isBuiltin - 是否为内置函数
- *
- * @example
- * ```js
- * const info = registry.getInfo('SUM');
- * console.log(info);
- * // {
- * //   name: 'SUM',
- * //   category: FUNCTION_CATEGORY.BUILTIN,
- * //   module: 'Math',
+     * @returns {string} returns.module - 所属模块
+     * @returns {string} returns.registeredAt - ISO 8601 时间戳
+     * @returns {boolean} returns.isBuiltin - 是否为内置函数
+     *
+     * @example
+     * ```js
+     * const info = registry.getInfo('SUM');
+     * console.log(info);
+     * // {
+     * //   name: 'SUM',
+     * //   category: FUNCTION_CATEGORY.BUILTIN,
+     * //   module: 'Math',
      * //   registeredAt: '2024-01-15T08:30:00.000Z',
      * //   isBuiltin: true
      * // }
@@ -632,7 +642,7 @@ class FunctionRegistry {
      * const stats = registry.getStats();
      * console.log(`📊 函数注册表统计:`);
      * console.log(`   总计: ${stats.total} 个函数`);
- * console.log(`   内置: ${stats.builtin} 个`);
+     * console.log(`   内置: ${stats.builtin} 个`);
      * console.log(`   自定义: ${stats.custom} 个`);
      * console.log(`   模块: ${stats.modules.join(', ')}`);
      *
@@ -747,46 +757,60 @@ class FunctionRegistry {
  *
  * ## 🎯 推荐使用方式
  *
+ * ### 方式一：从公共 API 导入（推荐用于外部使用者）
+ * ```js
+ * import { functionRegistry } from '@canvas-sheet/core';
+ *
+ * functionRegistry.register('MYFUNC', (args) => args[0] * 2);
+ * const result = functionRegistry.get('MYFUNC')([21]);  // 42
+ * ```
+ *
+ * ### 方式二：从模块内部导入（推荐用于内部开发者）
  * ```js
  * import { registry } from '@/formula/functions/index.js';
  *
- * // 1️⃣ 注册自定义函数
  * registry.register('MYFUNCTION', (args, ctx) => {
  *     return args[0] * 2;  // 简单的乘法示例
  * });
  *
- * // 2️⃣ 调用函数（通常由公式引擎内部调用）
+ * // 调用函数（通常由公式引擎内部调用）
  * const result = registry.get('MYFUNCTION')([21]);  // 42
  *
- * // 3️⃣ 查询信息
+ * // 查询信息
  * console.log(registry.has('MYFUNCTION'));  // true
  * console.log(registry.list());              // ['SUM', ..., 'MYFUNCTION']
  * console.log(registry.getStats());          // { total: 17, builtin: 16, custom: 1 }
  * ```
  *
+ * ### ⚠️ 重要提示：命名差异说明
+ *
+ * - **内部变量名**：`registry` (模块私有，用于代码实现)
+ * - **公共导出名**：`functionRegistry` (遵循 camelCase 规范，表示这是一个实例而非类)
+ * - **不要尝试**：`new functionRegistry()` 或 `new FunctionRegistry()` (❌ 它是实例，不是类！)
+ *
  * ## 📌 快速参考卡
  *
  * | 方法 | 用途 | 示例 |
  * |------|------|------|
- * | `register()` | 注册新函数 | `registry.register('FN', impl)` |
- * | `unregister()` | 注销函数 | `registry.unregister('FN')` |
- * | `get()` | 获取函数 | `registry.get('SUM')([1,2,3])` |
- * | `has()` | 检查存在性 | `registry.has('SUM')` |
- * | `list()` | 列出所有函数 | `registry.list()` |
- * | `getInfo()` | 函数详情 | `registry.getInfo('SUM')` |
- * | `getStats()` | 统计信息 | `registry.getStats()` |
- * | `clear()` | 清空全部 | `registry.clear()` (⚠️ 危险) |
- * | `reset()` | 重置为默认 | `registry.reset()` |
+ * | `register()` | 注册新函数 | `functionRegistry.register('FN', impl)` |
+ * | `unregister()` | 注销函数 | `functionRegistry.unregister('FN')` |
+ * | `get()` | 获取函数 | `functionRegistry.get('SUM')([1,2,3])` |
+ * | `has()` | 检查存在性 | `functionRegistry.has('SUM')` |
+ * | `list()` | 列出所有函数 | `functionRegistry.list()` |
+ * | `getInfo()` | 函数详情 | `functionRegistry.getInfo('SUM')` |
+ * | `getStats()` | 统计信息 | `functionRegistry.getStats()` |
+ * | `clear()` | 清空全部 | `functionRegistry.clear()` (⚠️ 危险) |
+ * | `reset()` | 重置为默认 | `functionRegistry.reset()` |
  *
  * @type {FunctionRegistry}
  * @global
  * @example
  * ```js
- * // 完整使用流程示例
- * import { registry } from './functions/index.js';
+ * // 完整使用流程示例（公共 API 方式）
+ * import { functionRegistry, FUNCTION_CATEGORY } from '@canvas-sheet/core';
  *
  * // 步骤 1: 检查函数是否已存在
- * if (!registry.has('TAX_CALC')) {
+ * if (!functionRegistry.has('TAX_CALC')) {
  *     // 步骤 2: 注册自定义税务计算函数
  *     registry.register('TAX_CALC', (args, ctx) => {
  *         const amount = args[0];

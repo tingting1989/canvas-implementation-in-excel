@@ -44,8 +44,8 @@
         "excel",
         "web-components"
     ],
-    "author": "jiangsuiting",
-    "license": "UNLICENSED",
+    "author": "jiangsuiting <1158973435@qq.com>",
+    "license": "Apache-2.0",
     "lint-staged": {
         "*.{js,mjs}": [
             "eslint --fix",

@@ -4,7 +4,7 @@ import { DateColumnType } from "./DateColumnType.js";
 import { BooleanColumnType } from "./BooleanColumnType.js";
 import { SelectColumnType } from "./SelectColumnType.js";
 import { TextareaColumnType } from "./TextareaColumnType.js";
-import { BUILTIN_RENDERERS } from "./renderers/index.js";
+import { BUILTIN_RENDERER_TYPE_REGISTRY } from "./renderers/index.js";
 import { isFunction } from "@/utils/utils";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler";
 
@@ -35,7 +35,7 @@ class TypeRegistry {
             boolean: BooleanColumnType,
             select: SelectColumnType,
             textarea: TextareaColumnType,
-            ...BUILTIN_RENDERERS,
+            ...BUILTIN_RENDERER_TYPE_REGISTRY,
         };
 
         for (const [name, Constructor] of Object.entries(builtins)) {
