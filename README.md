@@ -10,7 +10,7 @@
 <p align="center">
   <strong>高性能 Canvas 渲染的 Web 电子表格引擎</strong><br/>
   基于 Canvas API + Web Components 的现代化表格解决方案<br/>
-  支持 100万+ 行数据流畅渲染、公式计算、数据验证、图表可视化
+  支持 10万+ 行数据流畅渲染、公式计算、数据验证、图表可视化
 </p>
 
 ---

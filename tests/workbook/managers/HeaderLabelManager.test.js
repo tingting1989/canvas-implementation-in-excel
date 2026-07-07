@@ -105,7 +105,7 @@ describe("HeaderLabelManager - Nested Headers", () => {
         const hlm = new HeaderLabelManager(createMockSheet());
         hlm.nestedHeaders = [[{ label: "Group", colspan: 2 }, "C"]];
         const info = hlm.getNestedColHeader(0, 0);
-        expect(info).toEqual({ label: "Group", colspan: 2 });
+        expect(info).toEqual({ label: "Group", colspan: 2, style: null });
     });
 
     it("should return null for out-of-range layer", () => {
