@@ -3,7 +3,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 
 const shared = {
     mode: "production",
-    devtool: "source-map",
+    devtool: false,
     entry: "./src/api/index.js",
     resolve: {
         alias: {
