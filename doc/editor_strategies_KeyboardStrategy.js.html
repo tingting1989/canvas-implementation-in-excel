@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: editor/strategies/KeyboardStrategy.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: editor/strategies/KeyboardStrategy.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { EventStrategy } from "./EventStrategy.js";
+import { HOOKS } from "../../constants/hookNames.js";
+import { CONFIG } from "../../constants/config";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+
+/**
+ * 键盘交互策略
+ * 优先级 0（默认），低于 CopyPasteStrategy(10)，确保 Ctrl+C/V/X 优先被 CopyPastePlugin 拦截
+ *
+ * 处理以下键盘操作：
+ * - 方向键导航（支持 Shift 扩展选区）
+ * - Enter/F2 进入编辑
+ * - Tab 切换单元格
+ * - Delete/Backspace 批量清空选区内容
+ * - Ctrl+A 全选
+ * - Ctrl+Z/Y 撤销/重做
+ * - Ctrl+B/I/U 格式化加粗/斜体/下划线（批量格式化）
+ * - 直接输入字符进入批量赋值模式
+ *
+ * 注意：Ctrl+C/V/X（复制/粘贴/剪切）已移至 CopyPasteStrategy，由 CopyPastePlugin 管理。
+ */
+export class KeyboardStrategy extends EventStrategy {
+    constructor(handler) {
+        super(handler);
+    }
+
+    init() {}
+
+    destroy() {}
+
+    getEventHandlers() {
+        return {
+            [DELEGATE_KEYS.DOCUMENT_KEYDOWN]: (e) => this.#handleKeyDown(e),
+        };
+    }
+
+    /**
+     * 键盘事件总入口
+     * 根据当前编辑状态分发到不同的处理方法
+     */
+    #handleKeyDown(e) {
+        if (!this.enabled) return;
+
+        const { sheet, editor } = this.handler;
+        if (!sheet || !editor) return;
+
+        const activeEditor = editor.getActiveEditor();
+        if (activeEditor &amp;&amp; activeEditor.editor &amp;&amp; activeEditor.editor.style.display === "block") {
+            this.#handleEditingKey(e);
+            return;
+        }
+
+        this.#handleNavigationKey(e);
+    }
+
+    /** 编辑状态下的按键处理（预留扩展） */
+    #handleEditingKey(e) {}
+
+    /**
+     * 非编辑状态下的按键处理
+     * 处理导航、删除、格式化、批量赋值等操作
+     */
+    #handleNavigationKey(e) {
+        const { sheet, editor } = this.handler;
+        const [r, c] = sheet.selection.getActive();
+
+        // Ctrl/Meta 快捷键检测（独立于 switch，避免拦截非 Ctrl 时的字母输入）
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case "z":
+                    e.preventDefault();
+                    sheet.undo();
+                    this.handler.render();
+                    return;
+                case "y":
+                    e.preventDefault();
+                    sheet.redo();
+                    this.handler.render();
+                    return;
+                case "a":
+                    e.preventDefault();
+                    const rcAll = sheet.rowColManager;
+                    sheet.selection.selectAll(rcAll.rowCount - 1, rcAll.realColCount - 1);
+                    this.handler.render();
+                    return;
+                case "b":
+                    e.preventDefault();
+                    this.#handleToggleBold();
+                    return;
+                case "i":
+                    e.preventDefault();
+                    this.#handleToggleItalic();
+                    return;
+                case "u":
+                    e.preventDefault();
+                    this.#handleToggleUnderline();
+                    return;
+            }
+        }
+
+        switch (e.key) {
+            case "ArrowDown":
+                e.preventDefault();
+                this.#handleArrowDown(r, c, e.shiftKey);
+                break;
+            case "ArrowUp":
+                e.preventDefault();
+                this.#handleArrowUp(r, c, e.shiftKey);
+                break;
+            case "ArrowRight":
+                e.preventDefault();
+                this.#handleArrowRight(r, c, e.shiftKey);
+                break;
+            case "ArrowLeft":
+                e.preventDefault();
+                this.#handleArrowLeft(r, c, e.shiftKey);
+                break;
+            case "Enter":
+            case "F2":
+                if (sheet.readOnly) break;
+                e.preventDefault();
+                editor.show(r, c, "end");
+                break;
+            case "Tab":
+                e.preventDefault();
+                this.#handleTab(r, c, e.shiftKey);
+                break;
+            case "Delete":
+            case "Backspace":
+                e.preventDefault();
+                this.#handleDelete();
+                break;
+            default:
+                /**
+                 * 直接输入可打印字符 → 进入批量赋值模式
+                 * 选中区域后直接输入，所有选中单元格填充相同值
+                 * 这是 Excel 的标准行为：
+                 * - 选中 A1:C3 → 输入 "hello" → A1:C3 全部变为 "hello"
+                 * - 输入后光标自动进入编辑状态，位于活动单元格
+                 */
+                if (!sheet.readOnly &amp;&amp; e.key.length === 1 &amp;&amp; !e.ctrlKey &amp;&amp; !e.metaKey &amp;&amp; !e.altKey) {
+                    e.preventDefault();
+                    this.#handleDirectInput(e);
+                }
+                break;
+        }
+    }
+
+    /**
+     * 批量删除（Delete / Backspace）
+     * 清空选区内所有非禁用单元格的内容
+     * 触发 beforeChange 和 afterChange 钩子
+     */
+    #handleDelete() {
+        const { sheet } = this.handler;
+        const accessor = sheet.cellDataAccessor;
+        const range = sheet.selection.getRange();
+
+        const changes = [];
+        for (let r = range.topRow; r &lt;= range.bottomRow; r++) {
+            for (let c = range.topCol; c &lt;= range.bottomCol; c++) {
+                if (!sheet.isDisabled(r, c)) {
+                    const oldCell = accessor.get(r, c);
+                    if (oldCell &amp;&amp; oldCell.value !== "") {
+                        changes.push({ row: r, col: c, oldValue: oldCell.value, newValue: "" });
+                    }
+                }
+            }
+        }
+
+        if (changes.length === 0) return;
+
+        this.handler.runHooks(HOOKS.BEFORE_CHANGE, changes);
+
+        sheet.beginBatch();
+        for (const { row, col } of changes) {
+            const oldCell = accessor.get(row, col);
+            sheet.setCell(row, col, "", oldCell?.styleId || 0);
+        }
+        sheet.endBatch();
+
+        this.handler.runHooks(HOOKS.AFTER_CHANGE, changes);
+        this.handler.render();
+    }
+
+    /**
+     * 直接输入字符 → 批量赋值模式
+     * 选中区域后直接输入可打印字符：
+     * 1. 先清空选区所有单元格
+     * 2. 将输入的字符作为初始值进入编辑状态
+     * 3. 编辑完成（blur/Enter）时，将值写入活动单元格
+     *    （Ctrl+Enter 时写入整个选区）
+     *
+     * 行为与 Excel 一致：
+     * - 选中 A1:C3 → 输入 "hello" → 仅 A1 变为 "hello"（活动单元格）
+     * - 选中 A1:C3 → 输入 "hello" → Ctrl+Enter → A1:C3 全部变为 "hello"
+     */
+    #handleDirectInput(e) {
+        const { sheet, editor } = this.handler;
+
+        const [ar, ac] = sheet.selection.getActive();
+        editor.show(ar, ac);
+
+        const activeEditor = editor.getActiveEditor();
+        const inputEl = activeEditor?.editor;
+        if (inputEl) {
+            inputEl.value = e.key;
+
+            // 原生 date/number/month 等类型输入框不支持 setSelectionRange
+            if (inputEl.type === "text" || inputEl.type === "search" || inputEl.type === "url" || inputEl.type === "password") {
+                inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length);
+            }
+        }
+    }
+
+    /**
+     * 标记批量赋值模式
+     * 在 sheet 上存储批量填充信息，
+     * TextEditor blur 时读取并执行批量填充
+     *
+     * @param {import("../../workbook/Sheet.js").Sheet} sheet
+     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range
+     */
+    #markBatchFill(sheet, range) {
+        sheet._batchFillRange = {
+            topRow: range.topRow,
+            topCol: range.topCol,
+            bottomRow: range.bottomRow,
+            bottomCol: range.bottomCol,
+        };
+    }
+
+    /**
+     * 切换加粗（Ctrl+B）
+     * 对选区内所有单元格切换 fontWeight: bold / normal
+     */
+    #handleToggleBold() {
+        const { sheet } = this.handler;
+        const range = sheet.selection.getRange();
+        this.#toggleStyleProperty(range, "fontWeight", "bold", "normal");
+        this.handler.render();
+    }
+
+    /**
+     * 切换斜体（Ctrl+I）
+     * 对选区内所有单元格切换 fontStyle: italic / normal
+     */
+    #handleToggleItalic() {
+        const { sheet } = this.handler;
+        const range = sheet.selection.getRange();
+        this.#toggleStyleProperty(range, "fontStyle", "italic", "normal");
+        this.handler.render();
+    }
+
+    /**
+     * 切换下划线（Ctrl+U）
+     * 对选区内所有单元格切换 textDecoration: underline / none
+     */
+    #handleToggleUnderline() {
+        const { sheet } = this.handler;
+        const range = sheet.selection.getRange();
+        this.#toggleStyleProperty(range, "textDecoration", "underline", "none");
+        this.handler.render();
+    }
+
+    /**
+     * 通用样式属性切换
+     * 以锚点单元格的当前样式判断切换方向，对整个选区统一应用
+     * 避免遍历所有单元格检查，提升大范围选区性能
+     *
+     * @param {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }} range - 选区范围
+     * @param {string} prop - 样式属性名（如 "fontWeight"）
+     * @param {string} activeValue - 激活值（如 "bold"）
+     * @param {string} inactiveValue - 未激活值（如 "normal"）
+     */
+    #toggleStyleProperty(range, prop, activeValue, inactiveValue) {
+        const { sheet } = this.handler;
+
+        const [ar, ac] = sheet.selection.getActive();
+        const anchorStyle = sheet.resolveStyle(ar, ac);
+        const newValue = anchorStyle[prop] === activeValue ? inactiveValue : activeValue;
+
+        sheet.setRangeStyle(range, { [prop]: newValue });
+
+        this.handler.runHooks(HOOKS.AFTER_CHANGE, []);
+    }
+
+    #handleArrowDown(row, col, shiftKey) {
+        const { sheet } = this.handler;
+        const rc = sheet.rowColManager;
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let nextRow = Math.min(rc.rowCount - 1, currentRow + 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge &amp;&amp; currentRow + 1 &lt;= merge.bottomRow) {
+            nextRow = merge.bottomRow + 1;
+        }
+        nextRow = Math.min(CONFIG.MAX_ROWS - 1, nextRow);
+        const target = this.#getTopLeft(nextRow, currentCol);
+
+        if (shiftKey) {
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, currentCol);
+        } else {
+            this.#selectCellOrMerge(sheet, target.row, currentCol);
+        }
+        this.handler.viewport.scrollToCell(target.row, currentCol);
+        this.handler.render();
+    }
+
+    #handleArrowUp(row, col, shiftKey) {
+        const { sheet } = this.handler;
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let prevRow = Math.max(0, currentRow - 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge &amp;&amp; currentRow - 1 >= merge.topRow) {
+            prevRow = merge.topRow - 1;
+        }
+        const target = this.#getTopLeft(prevRow, currentCol);
+
+        if (shiftKey) {
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, currentCol);
+        } else {
+            this.#selectCellOrMerge(sheet, target.row, currentCol);
+        }
+        this.handler.viewport.scrollToCell(target.row, currentCol);
+        this.handler.render();
+    }
+
+    #handleArrowRight(row, col, shiftKey) {
+        const { sheet } = this.handler;
+        const rc = sheet.rowColManager;
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let nextCol = Math.min(rc.colCount - 1, currentCol + 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge &amp;&amp; currentCol + 1 &lt;= merge.bottomCol) {
+            nextCol = merge.bottomCol + 1;
+        }
+        nextCol = Math.min(CONFIG.MAX_COLS - 1, nextCol);
+
+        while (sheet.rowColManager.isColumnHidden(nextCol) &amp;&amp; nextCol &lt; CONFIG.MAX_COLS - 1) {
+            nextCol++;
+        }
+
+        const target = this.#getTopLeft(currentRow, nextCol);
+
+        if (shiftKey) {
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], currentRow, target.col);
+        } else {
+            this.#selectCellOrMerge(sheet, currentRow, target.col);
+        }
+        this.handler.viewport.scrollToCell(currentRow, target.col);
+        this.handler.render();
+    }
+
+    #handleArrowLeft(row, col, shiftKey) {
+        const { sheet } = this.handler;
+
+        let currentRow, currentCol;
+        if (shiftKey) {
+            [currentRow, currentCol] = sheet.selection.getFocus();
+        } else {
+            [currentRow, currentCol] = [row, col];
+        }
+
+        let prevCol = Math.max(0, currentCol - 1);
+        const merge = sheet.getMerge(currentRow, currentCol);
+        if (merge &amp;&amp; currentCol - 1 >= merge.topCol) {
+            prevCol = merge.topCol - 1;
+        }
+
+        while (sheet.rowColManager.isColumnHidden(prevCol) &amp;&amp; prevCol > 0) {
+            prevCol--;
+        }
+
+        const target = this.#getTopLeft(currentRow, prevCol);
+
+        if (shiftKey) {
+            sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], currentRow, target.col);
+        } else {
+            this.#selectCellOrMerge(sheet, currentRow, target.col);
+        }
+        this.handler.viewport.scrollToCell(currentRow, target.col);
+        this.handler.render();
+    }
+
+    #handleTab(row, col, shiftPressed) {
+        const { sheet } = this.handler;
+        const rc = sheet.rowColManager;
+        let nextCol = shiftPressed ? Math.max(0, col - 1) : Math.min(rc.colCount - 1, col + 1);
+
+        while (sheet.rowColManager.isColumnHidden(nextCol)) {
+            if (shiftPressed) {
+                if (nextCol &lt;= 0) break;
+                nextCol--;
+            } else {
+                if (nextCol >= rc.colCount - 1) break;
+                nextCol++;
+            }
+        }
+
+        const target = this.#getTopLeft(row, nextCol);
+        this.#selectCellOrMerge(sheet, row, target.col);
+        this.handler.viewport.scrollToCell(row, target.col);
+        this.handler.render();
+    }
+
+    #selectCellOrMerge(sheet, row, col) {
+        const merge = sheet.getMerge(row, col);
+        if (merge) {
+            sheet.selection.setRange(merge.topRow, merge.topCol, merge.bottomRow, merge.bottomCol);
+        } else {
+            sheet.selection.setActive(row, col);
+        }
+    }
+
+    /**
+     * 获取合并单元格的左上角位置
+     * 如果 (row, col) 在合并区域内，返回合并区域的左上角
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {{ row: number, col: number }}
+     */
+    #getTopLeft(row, col) {
+        const merge = this.handler.sheet?.getMerge(row, col);
+        if (merge) {
+            return { row: merge.topRow, col: merge.topCol };
+        }
+        return { row, col };
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

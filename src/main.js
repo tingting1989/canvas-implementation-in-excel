@@ -101,6 +101,7 @@ const initApp = () => {
 
     const wb = new Workbook(document.getElementById("wrap"), {
         defaultStyle: {},
+
         // readOnly: true,
         // 工作表高度和宽度（像素值）
         // height: 600,
@@ -224,6 +225,7 @@ const initApp = () => {
                 // 是否只读
                 readOnly: false,
                 headerHeight: 48,
+
                 // 嵌套表头配置
                 nestedHeaders: [
                     [
@@ -328,12 +330,14 @@ const initApp = () => {
             },
             {
                 name: "Sheet2",
+
                 // readOnly: false,
                 data: [
                     ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
                     ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
                     ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
                 ],
+
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
@@ -847,6 +851,7 @@ const initApp = () => {
             ["张三", 30, "yellow"],
             ["李四", 25, "red"],
         ]);
+
         // wb.loadData(HOOKS.AFTER_CHANGE, () => {
         //     if (isFunction(window.updateToolbarStyleState)) {
         //         window.updateToolbarStyleState();

@@ -239,6 +239,7 @@ export class RowColManager {
         while (col < CONFIG.MAX_COLS && this.#hiddenCols.has(col)) {
             col++;
         }
+
         // colAt 返回全局坐标对应的实际列号，不应受限于当前数据范围
         return Math.min(col, CONFIG.MAX_COLS);
     }

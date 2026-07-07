@@ -128,8 +128,10 @@ export class HeaderLabelManager {
         if (Array.isArray(config)) {
             if (index >= config.length) return defaultFn(index);
             const item = config[index];
+
             // 支持对象形式 {label: "...", style: {...}}
             if (isObject(item) && item.label !== undefined) return item.label;
+
             // 支持字符串形式
             if (isString(item)) return item;
             return defaultFn(index);

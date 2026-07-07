@@ -1,4 +1,4 @@
-import { FUNCTIONS, getRegisteredFunctions } from "./functions/index.js";
+import { registry } from "./functions/index.js";
 import { isNumber, isString } from "../utils/utils.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
@@ -150,12 +150,12 @@ export class FormulaEvaluator {
 
     #evalFunction(node, sheet) {
         const fnName = node.name ? node.name.toUpperCase() : node.name;
-        const fn = typeof FUNCTIONS.get === "function" ? FUNCTIONS.get(fnName) : FUNCTIONS[fnName];
+        const fn = registry.get(fnName);
 
         if (!fn) {
             errorHandler.debug(ERROR_CODE.FORMULA_FUNCTION_NOT_FOUND, `函数 ${node.name} 未注册`, {
                 functionName: node.name,
-                availableFunctions: typeof getRegisteredFunctions === "function" ? getRegisteredFunctions().slice(0, 10) : "N/A",
+                availableFunctions: registry.list().slice(0, 10),
                 sheetName: sheet?.name,
             });
             return "#NAME?";

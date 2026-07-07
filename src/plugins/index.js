@@ -1,4 +1,5 @@
-﻿export { BasePlugin } from "./BasePlugin.js";
+﻿import "./registry.js";
+export { BasePlugin } from "./BasePlugin.js";
 export { BaseHidePlugin } from "./BaseHidePlugin.js";
 export { BaseMovePlugin } from "./BaseMovePlugin.js";
 export { PluginManager } from "./PluginManager.js";
@@ -17,4 +18,3 @@ export { DataValidationPlugin } from "./data-validation/DataValidationPlugin.js"
 export { ChartPlugin } from "./ChartPlugin.js";
 
 export { registerBuiltinPlugins } from "./registry.js";
-import "./registry.js";

@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: editor/ClipboardManager.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: editor/ClipboardManager.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * 剪贴板管理器
+ *
+ * 负责复制/粘贴的核心逻辑，不依赖插件系统，保持纯数据操作。
+ * 由 CopyPastePlugin 持有和调用，也可独立使用。
+ *
+ * 剪贴板策略：
+ * - 复制：内部存储（含样式ID + 列类型）+ 系统剪贴板（TSV 纯文本）
+ * - 粘贴：通过浏览器原生 paste 事件同步读取剪贴板（支持文本 + 图片）
+ * - 类型检查：粘贴时验证源列类型与目标列类型一致，不一致则阻止粘贴
+ *
+ * 图片粘贴：
+ * - 从 ClipboardEvent.clipboardData 中提取 image/png、image/jpeg 等 MIME 类型
+ * - 图片 Blob 转换为 Object URL，存入内部 #cellContent Map（不侵入 Cell 模型）
+ * - 由 TileRenderer 通过 getCellContent() 查询并渲染
+ */
+
+import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+
+/**
+ * 富内容管理：
+ * - 图片、图表等富内容通过 #cellContent Map 独立管理，key 为 "sheetName,realR,col"
+ * - Cell 类保持纯粹，不需要感知具体内容类型
+ * - 未来新增内容类型（图表、附件等）只需扩展此模块，不修改 Cell
+ */
+export class ClipboardManager {
+    /** @type {{ sourceSheetName:string, topRow:number, topCol:number, rows:number, cols:number, cells:Array, columnTypes:Array&lt;string> }|null} */
+    #data = null;
+
+    /**
+     * 单元格富内容缓存：key = "sheetName,realR,col", value = { type, blob, objectUrl }
+     * 与 Cell 模型解耦，由外部模块独立管理
+     * @type {Map&lt;string, {type:string, blob:Blob, objectUrl:string}>}
+     */
+    #cellContent = new Map();
+
+    /**
+     * 复制当前选区到剪贴板
+     * 同时写入内部存储（保留样式）和系统剪贴板（TSV 纯文本）
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     */
+    copy(sheet) {
+        const range = sheet.selection.getRange();
+        const accessor = sheet.cellDataAccessor;
+        const cells = [];
+
+        // 记录每个复制列的类型名称，用于粘贴时的类型一致性检查
+        const columnTypes = [];
+        for (let c = range.topCol; c &lt;= range.bottomCol; c++) {
+            const cellType = sheet.getCellTypeInstance(range.topRow, c);
+            columnTypes.push(cellType ? cellType.name : "text");
+        }
+        for (let r = range.topRow; r &lt;= range.bottomRow; r++) {
+            const row = [];
+            for (let c = range.topCol; c &lt;= range.bottomCol; c++) {
+                const cell = accessor.get(r, c);
+                row.push(cell ? { value: cell.value, styleId: cell.styleId || 0 } : null);
+            }
+            cells.push(row);
+        }
+        this.#data = {
+            sourceSheetName: sheet.name,
+            topRow: range.topRow,
+            topCol: range.topCol,
+            rows: range.bottomRow - range.topRow + 1,
+            cols: range.bottomCol - range.topCol + 1,
+            cells,
+            columnTypes,
+        };
+
+        this.#writeSystemClipboard(sheet, range, cells);
+    }
+
+    /**
+     * 从浏览器原生 paste 事件同步粘贴（推荐方式）
+     *
+     * 利用 ClipboardEvent.clipboardData 同步读取剪贴板内容，
+     * 支持文本（text/plain、text/html）和图片（image/png、image/jpeg 等）。
+     * 无需 navigator.clipboard 权限弹窗。
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {ClipboardEvent} clipboardEvent - 浏览器原生 paste 事件
+     * @returns {boolean} 是否成功处理了粘贴
+     */
+    pasteFromEvent(sheet, clipboardEvent) {
+        const items = clipboardEvent.clipboardData?.items;
+        if (!items || items.length === 0) {
+            // fallback 到内部数据
+            if (this.#data) {
+                this.pasteInternal(sheet);
+                return true;
+            }
+            return false;
+        }
+
+        let hasImage = false;
+        let textContent = null;
+
+        // 遍历剪贴板 items，优先处理图片，其次文本
+        for (let i = 0; i &lt; items.length; i++) {
+            const item = items[i];
+            if (item.type.startsWith("image/")) {
+                const blob = item.getAsFile();
+                if (blob) {
+                    hasImage = true;
+                    this.#pasteImage(sheet, blob);
+                }
+            } else if (item.type === "text/plain" &amp;&amp; textContent === null) {
+                textContent = item;
+            }
+        }
+
+        // 如果有图片，粘贴图片（不再处理文本）
+        if (hasImage) {
+            sheet.render();
+            return true;
+        }
+
+        // 处理文本粘贴
+        if (textContent) {
+            textContent.getAsString((text) => {
+                this.pasteText(sheet, text);
+            });
+            return true;
+        }
+
+        // 既无文本也无图片，fallback 到内部数据
+        if (this.#data) {
+            this.pasteInternal(sheet);
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 粘贴剪贴板内容到当前活动单元格位置（异步方式，兼容旧 API）
+     * 优先读取系统剪贴板，fallback 到内部数据
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @deprecated 推荐使用 pasteFromEvent() 替代，以避免权限弹窗
+     */
+    paste(sheet) {
+        this.#readSystemClipboard(sheet);
+    }
+
+    /**
+     * 清空内部剪贴板数据（不影响已粘贴到单元格的图片）
+     */
+    clear() {
+        this.#data = null;
+    }
+
+    /**
+     * 检查粘贴时源列类型与目标列类型是否一致
+     * 仅当目标列明确配置了不同类型时才阻止粘贴；
+     * 目标列无类型配置（默认 text）时允许任意类型粘贴。
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet - 目标工作表
+     * @param {number} targetRow - 目标起始行
+     * @param {number} targetCol - 目标起始列
+     * @param {number} [srcCols] - 源数据列数（仅 #pasteInternal 使用，#pasteText 从文本推断）
+     * @returns {{ mismatches: Array&lt;{srcCol:number, targetCol:number, srcType:string, targetType:string}> }|null}
+     */
+    #checkTypeMismatch(sheet, targetRow, targetCol, srcCols) {
+        if (!this.#data) return null;
+        const cols = srcCols != null ? srcCols : this.#data.cols;
+        const columnTypes = this.#data.columnTypes;
+        const mismatches = [];
+
+        for (let c = 0; c &lt; cols; c++) {
+            const srcType = columnTypes[c] || "text";
+            const tc = targetCol + c;
+
+            // 检查目标列是否有显式类型配置
+            const colConfig = sheet.getColumnConfig(tc);
+            const hasExplicitColType = colConfig?.type != null;
+            const hasCellType = sheet.cellTypes?.has(`${targetRow},${tc}`);
+
+            // 仅当目标列/单元格有显式类型配置且与源类型不同时才拒绝
+            if (hasExplicitColType || hasCellType) {
+                const targetCellType = sheet.getCellTypeInstance(targetRow, tc);
+                const targetType = targetCellType ? targetCellType.name : "text";
+                if (srcType !== targetType) {
+                    mismatches.push({ srcCol: this.#data.topCol + c, targetCol: tc, srcType, targetType });
+                }
+            }
+        }
+
+        return mismatches.length > 0 ? { mismatches } : null;
+    }
+
+    /**
+     * 获取内部剪贴板数据（供 CopyPastePlugin 在 beforePaste 钩子中使用）
+     * @returns {object|null}
+     */
+    getClipboardData() {
+        return this.#data;
+    }
+
+    #writeSystemClipboard(sheet, range, cells) {
+        // 使用 sheet.formatCellValue() 格式化显示值，避免 Date 等对象被 String() 转为冗长字符串
+        const text = cells
+            .map((row, ri) =>
+                row
+                    .map((cell, ci) => {
+                        if (!cell) return "";
+                        const r = range.topRow + ri;
+                        const c = range.topCol + ci;
+                        return sheet.formatCellValue(r, c, cell.value);
+                    })
+                    .join("\t"),
+            )
+            .join("\n");
+
+        if (navigator.clipboard &amp;&amp; navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).catch((err) => {
+                errorHandler.warn(ERROR_CODE.CLIPBOARD_WRITE_ERROR, "System clipboard write failed, using fallback", { originalError: err });
+                this.#fallbackWriteText(text);
+            });
+        } else {
+            this.#fallbackWriteText(text);
+        }
+    }
+
+    #fallbackWriteText(text) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand("copy");
+        } catch (error) {
+            errorHandler.warn(ERROR_CODE.CLIPBOARD_WRITE_ERROR, "Fallback clipboard write failed", { originalError: error });
+        }
+        document.body.removeChild(ta);
+    }
+
+    #readSystemClipboard(sheet) {
+        if (navigator.clipboard &amp;&amp; navigator.clipboard.readText) {
+            navigator.clipboard
+                .readText()
+                .then((text) => {
+                    if (text) {
+                        this.pasteText(sheet, text);
+                    } else if (this.#data) {
+                        this.pasteInternal(sheet);
+                    }
+                })
+                .catch((err) => {
+                    errorHandler.warn(ERROR_CODE.CLIPBOARD_READ_ERROR, "System clipboard read failed, using internal data", { originalError: err });
+                    if (this.#data) {
+                        this.pasteInternal(sheet);
+                    }
+                });
+        } else if (this.#data) {
+            this.pasteInternal(sheet);
+        }
+    }
+
+    /**
+     * 粘贴文本到当前活动单元格（公开方法，供 CopyPasteStrategy 调用）
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {string} text - TSV 格式文本
+     */
+    pasteText(sheet, text) {
+        const [targetRow, targetCol] = sheet.selection.getActive();
+        const rows = text.split("\n");
+
+        // 计算源列数（取最长行的列数）
+        let srcCols = 0;
+        for (let r = 0; r &lt; rows.length; r++) {
+            if (rows[r] === "" &amp;&amp; r === rows.length - 1) continue;
+            const colCount = rows[r].split("\t").length;
+            if (colCount > srcCols) srcCols = colCount;
+        }
+
+        // 检查类型一致性：源列类型与目标列类型不一致时阻止粘贴
+        const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol, srcCols);
+        if (mismatch) {
+            const details = mismatch.mismatches.map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`).join("; ");
+            errorHandler.warn(ERROR_CODE.CLIPBOARD_TYPE_MISMATCH, `类型不一致，阻止粘贴: ${details}`);
+            return;
+        }
+
+        sheet.beginBatch();
+        for (let r = 0; r &lt; rows.length; r++) {
+            if (rows[r] === "" &amp;&amp; r === rows.length - 1) continue;
+            const cols = rows[r].split("\t");
+            for (let c = 0; c &lt; cols.length; c++) {
+                const tr = targetRow + r;
+                const tc = targetCol + c;
+                if (!sheet.isDisabled(tr, tc)) {
+                    // 使用类型系统解析粘贴的值，确保日期等类型正确存储
+                    const parsedValue = sheet.parseCellValue(tr, tc, cols[c]);
+                    sheet.setCell(tr, tc, parsedValue);
+                }
+            }
+        }
+        sheet.endBatch();
+
+        // 标记所有瓦片为脏，确保粘贴内容被完整重绘
+        sheet.invalidateAll();
+        sheet.render();
+    }
+
+    /**
+     * 粘贴内部剪贴板数据（公开方法，供 CopyPasteStrategy 调用）
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     */
+    pasteInternal(sheet) {
+        if (!this.#data) return;
+        const [targetRow, targetCol] = sheet.selection.getActive();
+
+        // 检查类型一致性：源列类型与目标列类型不一致时阻止粘贴
+        const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol);
+        if (mismatch) {
+            const details = mismatch.mismatches.map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`).join("; ");
+            errorHandler.warn(ERROR_CODE.CLIPBOARD_TYPE_MISMATCH, `类型不一致，阻止粘贴: ${details}`);
+            return;
+        }
+
+        sheet.beginBatch();
+        for (let r = 0; r &lt; this.#data.rows; r++) {
+            for (let c = 0; c &lt; this.#data.cols; c++) {
+                const cellData = this.#data.cells[r]?.[c];
+                if (!cellData) continue;
+                const tr = targetRow + r;
+                const tc = targetCol + c;
+                if (sheet.isDisabled(tr, tc)) continue;
+
+                // 先用源列格式化为显示字符串，再用目标列的类型系统解析
+                const srcR = this.#data.topRow + r;
+                const srcC = this.#data.topCol + c;
+                const displayText = sheet.formatCellValue(srcR, srcC, cellData.value);
+                const parsedValue = sheet.parseCellValue(tr, tc, displayText);
+                sheet.setCell(tr, tc, parsedValue, cellData.styleId);
+            }
+        }
+        sheet.endBatch();
+
+        // 标记所有瓦片为脏，确保粘贴内容被完整重绘
+        sheet.invalidateAll();
+        sheet.render();
+    }
+
+    // ============================================================
+    // 富内容管理（图片、图表等，与 Cell 模型解耦）
+    // ============================================================
+
+    /**
+     * 生成单元格富内容的唯一 key
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {number} realR - 实际行号
+     * @param {number} col - 列号
+     * @returns {string}
+     */
+    #cellKey(sheet, realR, col) {
+        return `${sheet.name},${realR},${col}`;
+    }
+
+    /**
+     * 为指定单元格设置图片内容
+     * 将 Blob 转为 Object URL，存入 #cellContent Map。
+     * 图片信息不写入 Cell 模型，由渲染层通过 getCellContent() 查询。
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {number} r - 行号（页面行号）
+     * @param {number} c - 列号
+     * @param {Blob} blob - 图片 Blob 数据
+     */
+    setCellImage(sheet, r, c, blob) {
+        const key = this.#cellKey(sheet, r, c);
+
+        // 撤销旧图片的 Object URL
+        const old = this.#cellContent.get(key);
+        if (old) {
+            URL.revokeObjectURL(old.objectUrl);
+        }
+
+        const objectUrl = URL.createObjectURL(blob);
+        this.#cellContent.set(key, { type: "image", blob, objectUrl });
+
+        // 确保单元格存在（值为空，仅占位）
+        if (!sheet.cellStore.get(r, c)) {
+            sheet.setCell(r, c, "");
+        }
+
+        sheet.invalidateAll();
+    }
+
+    /**
+     * 获取指定单元格的富内容信息
+     * 渲染层通过此方法查询单元格是否有图片等内容需要渲染。
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {number} realR - 实际行号
+     * @param {number} col - 列号
+     * @returns {{type:string, objectUrl:string}|null} 富内容信息，无则返回 null
+     */
+    getCellContent(sheet, realR, col) {
+        const key = this.#cellKey(sheet, realR, col);
+        const content = this.#cellContent.get(key);
+        if (!content) return null;
+        return { type: content.type, objectUrl: content.objectUrl };
+    }
+
+    /**
+     * 清除指定单元格的富内容
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {number} realR - 实际行号
+     * @param {number} col - 列号
+     */
+    removeCellContent(sheet, realR, col) {
+        const key = this.#cellKey(sheet, realR, col);
+        const content = this.#cellContent.get(key);
+        if (content) {
+            URL.revokeObjectURL(content.objectUrl);
+            this.#cellContent.delete(key);
+        }
+    }
+
+    // ============================================================
+    // 图片粘贴（内部）
+    // ============================================================
+
+    /**
+     * 粘贴图片到当前活动单元格
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {Blob} blob - 图片 Blob 数据
+     */
+    #pasteImage(sheet, blob) {
+        const [targetRow, targetCol] = sheet.selection.getActive();
+        if (sheet.isDisabled(targetRow, targetCol)) return;
+
+        this.setCellImage(sheet, targetRow, targetCol, blob);
+    }
+
+    // ============================================================
+    // 文件选择插入图片（右键菜单 / 工具栏）
+    // ============================================================
+
+    /**
+     * 通过文件选择器插入图片到当前活动单元格
+     * 创建一个隐藏的 &lt;input type="file"> 触发文件选择，选中后调用 setCellImage
+     *
+     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param {object} [options]
+     * @param {number} [options.row] - 目标行号（不传则使用当前选区活动单元格）
+     * @param {number} [options.col] - 目标列号
+     * @param {Function} [options.onComplete] - 完成回调 (success: boolean) => void
+     */
+    insertImageFromFile(sheet, options = {}) {
+        const targetRow = options.row ?? sheet.selection.getActive()[0];
+        const targetCol = options.col ?? sheet.selection.getActive()[1];
+
+        if (sheet.isDisabled(targetRow, targetCol)) {
+            options.onComplete?.(false);
+            return;
+        }
+
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "image/png,image/jpeg,image/gif,image/webp,image/bmp,image/svg+xml";
+        input.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
+
+        input.addEventListener("change", () => {
+            const file = input.files?.[0];
+            if (file) {
+                this.setCellImage(sheet, targetRow, targetCol, file);
+                options.onComplete?.(true);
+            } else {
+                options.onComplete?.(false);
+            }
+            input.remove();
+        });
+
+        // 取消选择时清理
+        input.addEventListener("cancel", () => {
+            options.onComplete?.(false);
+            input.remove();
+        });
+
+        document.body.appendChild(input);
+        input.click();
+    }
+
+    /**
+     * 销毁剪贴板管理器，释放所有资源
+     */
+    destroy() {
+        this.#data = null;
+        for (const [, content] of this.#cellContent) {
+            URL.revokeObjectURL(content.objectUrl);
+        }
+        this.#cellContent.clear();
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

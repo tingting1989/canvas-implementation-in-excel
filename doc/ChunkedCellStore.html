@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: ChunkedCellStore</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: ChunkedCellStore</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>ChunkedCellStore<span class="signature">()</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>分块单元格存储（Chunked Cell Store）</p>
+<p>设计意图：</p>
+<ul>
+<li>将千万级单元格按二维网格切分为固定大小的数据块（Chunk），每个 Chunk 覆盖
+CHUNK_ROW_SIZE × CHUNK_COL_SIZE 个逻辑单元格位置（默认 1024 × 256 = 262,144）。</li>
+<li>使用 Map&lt;chunkKey, Chunk&gt; 管理所有 Chunk，通过逻辑坐标 (row, col) 快速定位。</li>
+<li>支持 CRUD 和行列插入/删除/移动操作。</li>
+</ul>
+<p>坐标系：</p>
+<ul>
+<li>所有方法使用全局逻辑坐标 (row, col)，内部自动通过 #chunkKey() 映射到对应 Chunk。</li>
+<li>Chunk 按需创建（lazy allocation），只有写入数据时才实例化 Chunk。</li>
+</ul>
+<p>行列操作优化策略：</p>
+<ul>
+<li>insertRow/insertCol：仅遍历 rowStart/colStart &gt;= 插入位置的 Chunk（而非所有 Chunk）。</li>
+<li>deleteRow/deleteCol：两步操作——先删除目标行/列上的 Cell，再将后续 Cell 移动。</li>
+<li>moveRow/moveCol：先收集源行/列的 Cell，再逐行/列移动中间数据，最后写入目标位置。</li>
+</ul>
+<p>性能特征（典型场景：100 万 Cell，100 个 Chunk）：</p>
+<ul>
+<li>基本 CRUD（get/set/delete）：O(1)，两次哈希查找（chunkKey + cell key）。</li>
+<li>insertRow（atRow 在数据中间）：遍历约 50 个 Chunk 的约 50 万 Cell，减少 50%。</li>
+<li>deleteRow（atRow 在数据中间）：遍历约 50 个 Chunk + 跨行 Chunk 的 Cell，减少约 50%。</li>
+<li>已知限制：受影响 Chunk 内部仍遍历全部 Cell（而非仅遍历需要移动的行），
+进一步优化方向见 Chunk.iterate() 的文档。</li>
+</ul>
+<p>容量上限：</p>
+<ul>
+<li>最大行数：MAX_ROWS = 10,000,000（一千万行）</li>
+<li>最大列数：MAX_COLS = 70,000（七万列）</li>
+<li>最多 Chunk 数：约 ceil(MAX_ROWS/1024) × ceil(MAX_COLS/256) ≈ 9,766 × 274 ≈ 267 万个</li>
+<li>Map 本身支持数百万 key，实际 Chunk 数取决于数据分布密度</li>
+</ul></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="ChunkedCellStore"><span class="type-signature"></span>new ChunkedCellStore<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line35">line 35</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="ChunkedCellStore.html">ChunkedCellStore</a></dt>
+            <dd></dd>
+        </dl>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="batchMoveRows"><span class="type-signature"></span>batchMoveRows<span class="signature">(mapping, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>批量移动行（Batch Move Rows）— 高效的多行重排</p>
+<p>⚠️ 旧实现问题（已废弃）：</p>
+<pre class="prettyprint source lang-javascript"><code>// ❌ 错误的链式移动（会导致数据覆盖！）
+for (const [from, to] of mapping) {
+    this.moveRow(from, to);  // 每次都读取/写入，数据会被覆盖！
+}
+</code></pre>
+<p>✅ 新实现：基于快照的链条安全移动算法</p>
+<p>核心原理：</p>
+<ol>
+<li>将映射表分解为独立的「移动链条」</li>
+<li>对每个链条：
+a. 先提取所有源行的完整快照（避免后续覆盖）
+b. 再按目标位置回填快照数据</li>
+<li>链条间互不影响，可并行处理</li>
+</ol>
+<p>示例（mapping: {0→2, 1→0, 2→1}）：</p>
+<ul>
+<li>分解为单条链条：[0 → 2 → 1 → 0]</li>
+<li>快照提取：[row0_data, row2_data, row1_data]</li>
+<li>回填位置：row2=row0_data, row1=row2_data, row0=row1_data</li>
+</ul>
+<p>性能特征：</p>
+<ul>
+<li>时间复杂度：O(n × m)，n=移动行数，m=平均每行列数</li>
+<li>空间复杂度：O(k × m)，k=最长链条长度</li>
+<li>IO次数：2次（1次提取 + 1次回填），非 n 次 moveRow</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>mapping</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Map:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>.&lt;number:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>, number:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>行映射表 (originalRow → targetRow)</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    {}
+                
+                </td>
+            
+
+            <td class="description last"><p>选项</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fixedRows</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    0
+                
+                </td>
+            
+
+            <td class="description last"><p>冻结行数</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>hiddenRows</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>.&lt;number:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>></span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    []
+                
+                </td>
+            
+
+            <td class="description last"><p>隐藏行数组</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line509">line 509</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>实际移动的行数</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="chunks"><span class="type-signature">(generator) </span>chunks<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="Chunk.html">Chunk</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>遍历所有块（生成器方法）</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line674">line 674</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Yields:</h5>
+
+        
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="Chunk.html">Chunk</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="delete"><span class="type-signature"></span>delete<span class="signature">(row, col)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>删除指定位置的单元格</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>row</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>行号</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>col</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>列号</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line128">line 128</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="deleteCol"><span class="type-signature"></span>deleteCol<span class="signature">(atCol)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>删除列：两步操作，与 deleteRow 对称——</p>
+<ol>
+<li>删除 atCol 上的所有 Cell。</li>
+<li>将 atCol 右侧的 Cell 全部左移一列。</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>atCol</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>要删除的列号</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line270">line 270</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="deleteRow"><span class="type-signature"></span>deleteRow<span class="signature">(atRow)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>删除行：两步操作——</p>
+<ol>
+<li>删除 atRow 上的所有 Cell（仅遍历包含 atRow 的 Chunk）。</li>
+<li>将 atRow 下方的 Cell 全部上移一行（仅遍历 rowStart &gt; atRow 的 Chunk）。</li>
+</ol>
+<p>第一步的 Chunk 筛选使用区间判定（而非精确匹配），因为一个 Chunk 覆盖 1024 行。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>atRow</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>要删除的行号</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line229">line 229</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="get"><span class="type-signature"></span>get<span class="signature">(row, col)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>获取指定位置的单元格</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>row</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>行号</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>col</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>列号</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line103">line 103</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getMaxCol"><span class="type-signature"></span>getMaxCol<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>获取当前数据区域的最大列号</p>
+<p>与 getMaxRow 对称，返回非空 Chunk 中 colStart + CHUNK_COL_SIZE - 1 的最大值。
+无数据时返回 -1。</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line720">line 720</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>最大列号，-1 表示无数据</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="getMaxRow"><span class="type-signature"></span>getMaxRow<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>获取当前数据区域的最大行号（带缓存优化）</p>
+<p>使用缓存机制优化性能：</p>
+<ul>
+<li>缓存有效时：O(1) 直接返回（99%的场景）</li>
+<li>缓存失效时：O(k) 遍历所有 cell 重新计算（仅在删除操作后可能触发）</li>
+</ul>
+<p>无数据时返回 -1。</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line691">line 691</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>最大行号，-1 表示无数据</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="insertCol"><span class="type-signature"></span>insertCol<span class="signature">(atCol)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>插入列：在 atCol 位置插入一列，atCol 及右侧的 Cell 全部右移一列。</p>
+<p>实现策略与 insertRow 对称：筛选 colStart &gt;= atCol 的 Chunk，从右往左逐 Cell 移动。</p>
+<p>注意：newCol 本身不存储数据，插入后 atCol 位置为空列。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>atCol</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>插入位置的列号（新列将占据此位置）</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line192">line 192</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="insertRow"><span class="type-signature"></span>insertRow<span class="signature">(atRow)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>插入行：在 atRow 位置插入一行，atRow 及以下的 Cell 全部下移一行。</p>
+<p>实现策略：</p>
+<ol>
+<li>收集所有 Chunk，筛选 rowStart &gt;= atRow 的受影响 Chunk。</li>
+<li>从下往上处理（避免数据覆盖），遍历每个受影响 Chunk 的全部 Cell。</li>
+<li>清空 Chunk 后，将每个 Cell 写入 row+1 位置（通过 this.set() 自动路由到正确的 Chunk）。</li>
+</ol>
+<p>性能：</p>
+<ul>
+<li>仅遍历 rowStart &gt;= atRow 的 Chunk（而非所有 Chunk）。</li>
+<li>典型场景（100 Chunk，atRow 在中间）：遍历约 50 个 Chunk，减少 50% 遍历量。</li>
+<li>已知限制：Chunk 内遍历全部 Cell 而非仅 row &gt;= atRow 的 Cell。</li>
+</ul>
+<p>注意：newRow 本身不存储数据，插入后 atRow 位置为空行。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>atRow</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>插入位置的行号（新行将占据此位置）</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line159">line 159</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="moveCol"><span class="type-signature"></span>moveCol<span class="signature">(fromCol, toCol)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>移动列：将 fromCol 整列移动到 toCol 位置，中间列顺移。</p>
+<p>三步操作：</p>
+<ol>
+<li>收集 fromCol 上的所有 Cell，从原位置删除。</li>
+<li>移动中间列（fromCol+1 到 toCol 逐列左移，或 fromCol-1 到 toCol 逐列右移）。</li>
+<li>将收集的 Cell 写入 toCol 位置。</li>
+</ol>
+<p>中间列移动通过 #shiftColLeft / #shiftColRight 实现，每次只处理包含目标列的 Chunk。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fromCol</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>源列号</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>toCol</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>目标列号</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line321">line 321</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="moveRow"><span class="type-signature"></span>moveRow<span class="signature">(fromRow, toRow)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>移动行：将 fromRow 整行移动到 toRow 位置，中间行顺移。</p>
+<p>实现策略与 moveCol 对称，通过 #shiftRowUp / #shiftRowDown 移动中间行。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>fromRow</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>源行号</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>toRow</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>目标行号</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line361">line 361</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="set"><span class="type-signature"></span>set<span class="signature">(row, col, cell)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>设置指定位置的单元格</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>row</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>行号</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>col</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>列号</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>cell</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="model_store_ChunkedCellStore.js.html">model/store/ChunkedCellStore.js</a>, <a href="model_store_ChunkedCellStore.js.html#line114">line 114</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

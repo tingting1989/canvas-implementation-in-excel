@@ -59,6 +59,7 @@ export const EVENT_NAMES = Object.freeze({
 
     /** 输入法组合结束事件 - 用于确认IME输入结果 */
     COMPOSITIONEND: "compositionend",
+
     /** 输入法组合更新事件 - 用于处理中文输入等IME输入 */
     COMPOSITIONUPDATE: "compositionupdate",
 

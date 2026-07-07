@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: render/TileRenderer.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: render/TileRenderer.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { CONFIG } from "../constants/config";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { CellRenderContext } from "../types/CellRenderContext.js";
+import { FONT_STYLE } from "../constants/enums/FontStyle.js";
+import { BORDER_STYLE } from "../constants/enums/BorderStyle.js";
+import { TEXT_ALIGN } from "../constants/enums/TextAlign.js";
+import { VERTICAL_ALIGN } from "../constants/enums/VerticalAlign.js";
+import { CONTENT_TYPE } from "../constants/enums/ContentType.js";
+import { isUrl } from "../utils/UrlDetector.js";
+
+/**
+ * 瓦片渲染器（TileRenderer）—— 负责将单元格数据绘制到瓦片上
+ *
+ * 核心职责：
+ * 1. 计算可视区域需要哪些瓦片
+ * 2. 只重绘脏（dirty）瓦片，复用未脏瓦片的缓存
+ * 3. 将瓦片内容绘制到主 Canvas 上
+ * 4. 管理脏标记（单个单元格/全部）
+ *
+ * 渲染流程：
+ * 1. render() 根据滚动位置计算可视区域覆盖的瓦片范围
+ * 2. 遍历每个瓦片，如果是脏的则调用 #paintTile 重新绘制
+ * 3. #paintTile 遍历瓦片内的所有单元格，依次绘制背景、边框、文字
+ * 4. 将瓦片的离屏 Canvas 通过 drawImage 绘制到主 Canvas
+ *
+ * 绘制层次（从底到顶）：
+ * 1. 斑马纹背景（奇偶行交替色）
+ * 2. 单元格自定义背景色
+ * 3. 条件样式背景色
+ * 4. 数据绑定样式背景色
+ * 5. 禁用单元格灰色背景
+ * 6. 网格线（边框）
+ * 7. 单元格文字
+ * 8. 下划线装饰
+ *
+ * 合并单元格处理：
+ * - 合并区域只绘制一次（在左上角单元格位置绘制整个合并区域）
+ * - 被合并的单元格（非左上角）通过 isMergedCell 跳过绘制
+ * - 合并区域的宽高跨越多个原始单元格
+ *
+ * 性能优化：
+ * - 跳过不可见行/列
+ * - 跳过宽度为 0 的列（隐藏列）
+ * - 跳过被合并的单元格
+ * - 只重绘脏瓦片
+ */
+export class TileRenderer {
+    /**
+     * 字体字符串缓存：仅在 ctx.font 值与上一次不同时才赋值，
+     * 避免连续相同字体单元格的重复 font parsing 开销
+     * @type {string|null}
+     */
+    #lastFont = null;
+
+    /**
+     * 创建瓦片渲染器
+     *
+     * @param {TileCache} tileCache - 瓦片缓存实例
+     */
+    constructor(tileCache) {
+        /** @type {TileCache} 瓦片缓存，用于获取/创建瓦片 */
+        this.tileCache = tileCache;
+
+        /**
+         * 图片异步加载完成时的回调
+         * 由 RenderEngine 设置，用于在图片就绪后触发重绘
+         * @type {Function|null}
+         */
+        this.onContentReady = null;
+    }
+
+    /**
+     * 渲染可视区域
+     * 根据滚动位置计算需要显示的瓦片，重绘脏瓦片，绘制到主 Canvas
+     *
+     * @param {CanvasRenderingContext2D} ctx - 主 Canvas 的 2D 上下文
+     * @param {Sheet} sheet - 当前工作表
+     * @param {number} scrollX - 水平滚动偏移（像素）
+     * @param {number} scrollY - 垂直滚动偏移（像素）
+     * @param {number} viewW - 可视区域宽度（含行头）
+     * @param {number} viewH - 可视区域高度（含列头）
+     */
+    /**
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} scrollX
+     * @param {number} scrollY
+     * @param {number} viewW
+     * @param {number} viewH
+     */
+    render(ctx, sheet, scrollX, scrollY, viewW, viewH) {
+        const headerW = sheet.getHeaderWidth();
+        const headerH = sheet.getHeaderHeight();
+        const cellViewW = viewW - headerW;
+        const cellViewH = viewH - headerH;
+
+        if (cellViewW &lt;= 0 || cellViewH &lt;= 0) return;
+
+        const tileSize = CONFIG.TILE_SIZE;
+        const startTileCol = Math.floor(scrollX / tileSize);
+        const startTileRow = Math.floor(scrollY / tileSize);
+        const endTileCol = Math.ceil((scrollX + cellViewW) / tileSize);
+        const endTileRow = Math.ceil((scrollY + cellViewH) / tileSize);
+
+        for (let tr = startTileRow; tr &lt;= endTileRow; tr++) {
+            for (let tc = startTileCol; tc &lt;= endTileCol; tc++) {
+                const tile = this.tileCache.getOrCreate(tr, tc);
+                if (tile.dirty) {
+                    this.#paintTile(tile, sheet, tr, tc);
+                    tile.dirty = false;
+                }
+                const drawX = headerW + tc * tileSize - scrollX;
+                const drawY = headerH + tr * tileSize - scrollY;
+
+                // drawImage 的源区域参数 (sx,sy,sw,sh) 使用的是源 Canvas 的**物理像素坐标**
+                // 不受源 Canvas ctx.scale() 影响
+                // 瓦片 canvas 物理尺寸 = TILE_SIZE * DPR，内容绘制在完整的物理区域内
+                // 主 ctx 已 setTransform(DPR,DPR)，目标坐标用逻辑像素即可
+                const srcSize = CONFIG.TILE_SIZE * CONFIG.DPR;
+                ctx.drawImage(tile.canvas, 0, 0, srcSize, srcSize, drawX, drawY, CONFIG.TILE_SIZE, CONFIG.TILE_SIZE);
+            }
+        }
+    }
+
+    /**
+     * 绘制单个瓦片
+     * 遍历瓦片覆盖的所有单元格，依次绘制背景、边框、文字
+     *
+     * 坐标转换：
+     * - pixelY0/pixelX0: 瓦片左上角在表格全局像素坐标系中的位置
+     * - localY/localX: 单元格在瓦片局部坐标系中的位置
+     * - localY = rowY - pixelY0（全局像素 -> 瓦片局部像素）
+     *
+     * @param {Tile} tile - 目标瓦片
+     * @param {Sheet} sheet - 当前工作表
+     * @param {number} tileRow - 瓦片行号
+     * @param {number} tileCol - 瓦片列号
+     */
+    #paintTile(tile, sheet, tileRow, tileCol) {
+        const rc = sheet.rowColManager;
+        const tileSize = CONFIG.TILE_SIZE;
+        const tileCtx = tile.ctx;
+
+        tileCtx.clearRect(0, 0, tileSize, tileSize);
+        this.#lastFont = null; // 每个瓦片单独重置字体缓存
+
+        const pixelY0 = tileRow * tileSize;
+        const pixelX0 = tileCol * tileSize;
+        const pixelY1 = pixelY0 + tileSize;
+        const pixelX1 = pixelX0 + tileSize;
+
+        const sr = rc.rowAt(pixelY0);
+        const sc = rc.colAt(pixelX0);
+        const er = Math.min(rc.rowAt(pixelY1) + 1, rc.rowCount);
+        const ec = Math.min(rc.colAt(pixelX1) + 1, rc.colCount);
+
+        // 记录已绘制的合并区域左上角坐标，避免重复绘制
+        const renderedMerges = new Set();
+
+        for (let r = sr; r &lt; er; r++) {
+            const rowY = rc.getRowY(r);
+            const rowH = rc.getRowHeight(r);
+            if (rowH &lt;= 0) continue;
+
+            const localY = rowY - pixelY0;
+
+            if (localY + rowH &lt;= 0 || localY >= tileSize) continue;
+
+            for (let c = sc; c &lt; ec; c++) {
+                const colW = rc.getColWidth(c);
+                if (colW &lt;= 0) continue;
+
+                const merge = sheet.getMerge(r, c);
+                const isMerged = sheet.isMergedCell(r, c);
+
+                if (isMerged) {
+                    if (merge) {
+                        const mergeKey = `${merge.topRow},${merge.topCol}`;
+                        if (!renderedMerges.has(mergeKey)) {
+                            this.#drawMergeRegion(tileCtx, sheet, merge, rc, pixelX0, pixelY0, tileSize);
+                            renderedMerges.add(mergeKey);
+                        }
+                    }
+                    continue;
+                }
+
+                const colX = rc.getColX(c);
+                const localX = colX - pixelX0;
+
+                if (localX + colW &lt;= 0 || localX >= tileSize) continue;
+
+                const cell = sheet.cellStore.get(r, c);
+                let w = colW;
+                let h = rowH;
+                let drawX = localX;
+                let drawY = localY;
+
+                if (merge) {
+                    w = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol) - rc.getColX(merge.topCol);
+                    h = rc.getRowY(merge.bottomRow) + rc.getRowHeight(merge.bottomRow) - rc.getRowY(merge.topRow);
+                    drawX = rc.getColX(merge.topCol) - pixelX0;
+                    drawY = rc.getRowY(merge.topRow) - pixelY0;
+                    renderedMerges.add(`${merge.topRow},${merge.topCol}`);
+                }
+
+                this.#drawCellBackground(tileCtx, sheet, r, c, cell, drawX, drawY, w, h, merge);
+
+                const hasContent = this.#drawCellContent(tileCtx, sheet, r, c, drawX, drawY, w, h);
+                if (!hasContent) {
+                    this.#drawCellBorder(tileCtx, sheet, r, c, merge, drawX, drawY, w, h);
+
+                    if (merge &amp;&amp; (drawX &lt; 0 || drawY &lt; 0 || drawX + w > tileSize || drawY + h > tileSize)) {
+                        tileCtx.save();
+                        tileCtx.beginPath();
+                        tileCtx.rect(
+                            Math.max(0, drawX),
+                            Math.max(0, drawY),
+                            Math.min(tileSize, drawX + w) - Math.max(0, drawX),
+                            Math.min(tileSize, drawY + h) - Math.max(0, drawY),
+                        );
+                        tileCtx.clip();
+                        this.#drawCellContentOrText(tileCtx, sheet, r, c, cell, drawX, drawY, w, h, merge);
+                        tileCtx.restore();
+                    } else {
+                        this.#drawCellContentOrText(tileCtx, sheet, r, c, cell, drawX, drawY, w, h, merge);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 绘制合并区域（用于合并左上角在当前瓦片之外的补全绘制）
+     * 使用合并区域的左上角坐标解析样式和值，确保格式一致
+     */
+    #drawMergeRegion(ctx, sheet, merge, rc, pixelX0, pixelY0, tileSize) {
+        const { topRow, topCol, bottomRow, bottomCol } = merge;
+
+        // 计算合并区域与当前瓦片的交集
+        const mergeLeft = rc.getColX(topCol);
+        const mergeTop = rc.getRowY(topRow);
+        const mergeRight = rc.getColX(bottomCol) + rc.getColWidth(bottomCol);
+        const mergeBottom = rc.getRowY(bottomRow) + rc.getRowHeight(bottomRow);
+
+        // 瓦片内可见部分
+        const drawX = Math.max(0, mergeLeft - pixelX0);
+        const drawY = Math.max(0, mergeTop - pixelY0);
+        const drawW = Math.min(tileSize, mergeRight - pixelX0) - drawX;
+        const drawH = Math.min(tileSize, mergeBottom - pixelY0) - drawY;
+
+        if (drawW &lt;= 0 || drawH &lt;= 0) return;
+
+        const cell = sheet.cellStore.get(topRow, topCol);
+        this.#drawCellBackground(ctx, sheet, topRow, topCol, cell, drawX, drawY, drawW, drawH, merge);
+
+        const hasContent = this.#drawCellContent(ctx, sheet, topRow, topCol, drawX, drawY, drawW, drawH);
+        if (!hasContent) {
+            this.#drawCellBorder(ctx, sheet, topRow, topCol, merge, drawX, drawY, drawW, drawH);
+
+            const fullDrawX = mergeLeft - pixelX0;
+            const fullDrawY = mergeTop - pixelY0;
+            const fullW = mergeRight - mergeLeft;
+            const fullH = mergeBottom - mergeTop;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(drawX, drawY, drawW, drawH);
+            ctx.clip();
+            this.#drawCellContentOrText(ctx, sheet, topRow, topCol, cell, fullDrawX, fullDrawY, fullW, fullH, merge);
+            ctx.restore();
+        }
+    }
+
+    /**
+     * 绘制单元格背景
+     * 按优先级从低到高计算最终背景色，只执行一次 fillRect
+     *
+     * 优先级（从低到高）：
+     * 1. 斑马纹（奇偶行交替色）
+     * 2. resolveStyle 返回的完整样式（已含条件格式、数据绑定背景色）
+     * 3. 禁用单元格灰色背景（最高优先级）
+     *
+     * 合并单元格处理：
+     * - 合并区域使用统一的左上角样式，确保跨列时无视觉分割
+     */
+    #drawCellBackground(ctx, sheet, r, c, cell, drawX, drawY, w, h, merge) {
+        // 按优先级从低到高逐层覆盖，最终只绘制一次
+        const resolvedStyle = sheet.resolveStyle(r, c);
+        let bgColor = resolvedStyle.backgroundColor || (r % 2 === 0 ? CONFIG.ZEBRA_LIGHT : CONFIG.ZEBRA_DARK);
+
+        if (cell?.disabled) {
+            bgColor = CONFIG.DISABLED_BG;
+        }
+
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(drawX, drawY, w, h);
+    }
+
+    /**
+     * 绘制单元格边框（网格线）
+     * 只绘制右边框和下边框，避免重复绘制
+     * 合并单元格不绘制内部网格线
+     * 使用 0.5 像素偏移确保 1px 线条清晰（Canvas 像素对齐技巧）
+     */
+    #drawCellBorder(ctx, sheet, r, c, merge, drawX, drawY, w, h) {
+        if (merge) return;
+        const style = sheet.resolveStyle(r, c);
+        if (style.border) {
+            const { top, right, bottom, left } = this.#normalizeBorder(style.border);
+            ctx.save();
+            if (top) this.#drawBorderEdge(ctx, drawX, drawY, drawX + w, drawY, top);
+            if (right) this.#drawBorderEdge(ctx, drawX + w, drawY, drawX + w, drawY + h, right);
+            if (bottom) this.#drawBorderEdge(ctx, drawX, drawY + h, drawX + w, drawY + h, bottom);
+            if (left) this.#drawBorderEdge(ctx, drawX, drawY, drawX, drawY + h, left);
+            ctx.restore();
+        } else {
+            ctx.strokeStyle = CONFIG.GRID_COLOR;
+            ctx.lineWidth = CONFIG.GRID_LINE_WIDTH;
+            ctx.beginPath();
+            ctx.moveTo(drawX + w - 0.5, drawY);
+            ctx.lineTo(drawX + w - 0.5, drawY + h);
+            ctx.moveTo(drawX, drawY + h - 0.5);
+            ctx.lineTo(drawX + w, drawY + h - 0.5);
+            ctx.stroke();
+        }
+    }
+
+    #drawBorderEdge(ctx, x1, y1, x2, y2, borderDef) {
+        ctx.strokeStyle = borderDef.color || CONFIG.CELL_BORDER_COLOR;
+        ctx.lineWidth = borderDef.width || 1;
+        if (borderDef.style === BORDER_STYLE.DASHED) {
+            ctx.setLineDash(CONFIG.BORDER_DASH_SOLID);
+        } else if (borderDef.style === BORDER_STYLE.DOTTED) {
+            ctx.setLineDash(CONFIG.BORDER_DASH_DOTTED);
+        } else {
+            ctx.setLineDash([]);
+        }
+        ctx.beginPath();
+        ctx.moveTo(x1 + 0.5, y1 + 0.5);
+        ctx.lineTo(x2 + 0.5, y2 + 0.5);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    #normalizeBorder(border) {
+        if (!border) return {};
+        if (border.top || border.right || border.bottom || border.left) {
+            return border;
+        }
+        return { top: border, right: border, bottom: border, left: border };
+    }
+
+    /**
+     * 绘制单元格内容：自定义渲染器或默认文本
+     *
+     * 检查单元格类型是否有自定义渲染器（hasCustomRenderer）：
+     * - 有：构建 CellRenderContext 并调用 cellType.render(context)
+     * - 无：回退到默认 #drawCellText()
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} r - 行号
+     * @param {number} col - 列号
+     * @param {Cell|null} cell
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @param {object|null} merge
+     */
+    #drawCellContentOrText(ctx, sheet, r, col, cell, drawX, drawY, w, h, merge) {
+        const cellType = sheet.getCellTypeInstance(r, col);
+        if (cellType.hasCustomRenderer) {
+            const context = this.#createRenderContext(ctx, sheet, r, col, cell, drawX, drawY, w, h, merge);
+            cellType.render(context);
+        } else {
+            this.#drawCellText(ctx, sheet, r, col, cell, drawX, drawY, w, h, merge);
+        }
+    }
+
+    /**
+     * 创建单元格渲染上下文
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {Cell|null} cell
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @param {object|null} merge
+     * @param {object} [options]
+     * @returns {CellRenderContext}
+     */
+    #createRenderContext(ctx, sheet, row, col, cell, drawX, drawY, w, h, merge) {
+        const displayValue = sheet.formatCellValue(row, col, cell?.value);
+        const style = sheet.resolveStyle(row, col);
+
+        return new CellRenderContext({
+            ctx,
+            x: drawX,
+            y: drawY,
+            width: w,
+            height: h,
+            value: cell?.value,
+            displayValue,
+            style,
+            sheet,
+            row,
+            col,
+            isSelected: sheet.selection?.contains(row, col) ?? false,
+            isDisabled: cell?.disabled === true,
+            isMerged: !!merge,
+            mergeInfo: merge,
+        });
+    }
+
+    /**
+     * 绘制单元格文字（编排方法）
+     *
+     * 将字体构建、样式应用、坐标计算、文本截断、下划线绘制等
+     * 子逻辑委托给各自的私有方法，保持主流程清晰可读。
+     *
+     * 合并单元格处理：
+     * - 使用左上角坐标解析样式和格式化，确保跨列时格式一致
+     */
+    #drawCellText(ctx, sheet, r, c, cell, drawX, drawY, w, h, merge) {
+        if (cell?.value === undefined) return;
+
+        const finalStyle = sheet.resolveStyle(r, c);
+        const fontSize = finalStyle.fontSize || 12;
+        const textAlign = finalStyle.textAlign || TEXT_ALIGN.LEFT;
+        const verticalAlign = finalStyle.verticalAlign || VERTICAL_ALIGN.MIDDLE;
+
+        this.#applyFont(ctx, finalStyle);
+
+        const displayValue = sheet.formatCellValue(r, c, cell.value);
+        const urlValue = isUrl(displayValue) ? displayValue : null;
+
+        this.#applyTextStyle(ctx, finalStyle, cell, urlValue);
+
+        const { textX, textY, effectiveW } = this.#calcTextPosition(ctx, sheet, drawX, drawY, w, h, fontSize, textAlign, verticalAlign, merge);
+
+        const renderedText = this.#truncateText(ctx, displayValue, effectiveW, sheet.cellPadding, sheet.textOverflowEllipsis);
+
+        if (renderedText !== displayValue) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(drawX, drawY, w, h);
+            ctx.clip();
+            ctx.fillText(renderedText, textX, textY);
+            ctx.restore();
+        } else {
+            ctx.fillText(renderedText, textX, textY);
+        }
+
+        if (finalStyle.textDecoration === FONT_STYLE.UNDERLINE) {
+            this.#drawUnderline(ctx, renderedText, textX, textY, fontSize, textAlign, ctx.fillStyle, CONFIG.GRID_LINE_WIDTH, 0);
+        }
+
+        if (urlValue) {
+            this.#drawUnderline(
+                ctx,
+                renderedText,
+                textX,
+                textY,
+                fontSize,
+                textAlign,
+                CONFIG.AUTO_LINK_COLOR,
+                CONFIG.AUTO_LINK_UNDERLINE_WIDTH,
+                CONFIG.AUTO_LINK_UNDERLINE_OFFSET,
+            );
+        }
+    }
+
+    /**
+     * 构建字体字符串并应用到 ctx，利用 #lastFont 缓存避免重复解析
+     */
+    #applyFont(ctx, style) {
+        const fontStyle = style.fontStyle === FONT_STYLE.ITALIC ? FONT_STYLE.ITALIC : "";
+        const fontWeight = style.fontWeight || "normal";
+        const fontSize = style.fontSize || 12;
+        const fontFamily = style.fontFamily || "Segoe UI";
+        const fontString = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`.trim().replace(/\s+/g, " ");
+        if (this.#lastFont !== fontString) {
+            ctx.font = fontString;
+            this.#lastFont = fontString;
+        }
+    }
+
+    /**
+     * 应用文本样式：基线、颜色、对齐方式
+     * URL 文本使用蓝色，禁用单元格使用灰色
+     */
+    #applyTextStyle(ctx, style, cell, urlValue) {
+        const verticalAlign = style.verticalAlign || VERTICAL_ALIGN.MIDDLE;
+        const baselineMap = { [VERTICAL_ALIGN.TOP]: "top", [VERTICAL_ALIGN.MIDDLE]: "middle", [VERTICAL_ALIGN.BOTTOM]: "bottom" };
+        ctx.textBaseline = baselineMap[verticalAlign] || "middle";
+        ctx.fillStyle = urlValue ? CONFIG.AUTO_LINK_COLOR : cell.disabled ? CONFIG.DISABLED_COLOR : style.color || CONFIG.CELL_TEXT_COLOR;
+        ctx.textAlign = style.textAlign || TEXT_ALIGN.LEFT;
+    }
+
+    /**
+     * 计算文本绘制坐标（textX, textY）和有效宽度 effectiveW
+     *
+     * 合并单元格的居中/右对齐需要基于整个合并区域计算，
+     * 普通单元格则基于单个单元格边界计算。
+     */
+    #calcTextPosition(ctx, sheet, drawX, drawY, w, h, fontSize, textAlign, verticalAlign, merge) {
+        const rc = sheet.rowColManager;
+        let textX = Math.round(drawX + sheet.cellPadding);
+        let effectiveW = w;
+
+        if (merge &amp;&amp; (textAlign === TEXT_ALIGN.CENTER || textAlign === TEXT_ALIGN.RIGHT)) {
+            const mergeStartX = rc.getColX(merge.topCol);
+            const mergeEndX = rc.getColX(merge.bottomCol) + rc.getColWidth(merge.bottomCol);
+            effectiveW = mergeEndX - mergeStartX;
+
+            if (textAlign === TEXT_ALIGN.CENTER) {
+                textX = Math.round(mergeStartX + effectiveW / 2);
+            } else if (textAlign === TEXT_ALIGN.RIGHT) {
+                textX = Math.round(mergeEndX - sheet.cellPadding);
+            }
+        } else if (textAlign === TEXT_ALIGN.CENTER) {
+            textX = Math.round(drawX + w / 2);
+        } else if (textAlign === TEXT_ALIGN.RIGHT) {
+            textX = Math.round(drawX + w - sheet.cellPadding);
+        }
+
+        let textY;
+        if (verticalAlign === VERTICAL_ALIGN.TOP) {
+            textY = Math.round(drawY + fontSize / 2 + 2);
+        } else if (verticalAlign === VERTICAL_ALIGN.BOTTOM) {
+            textY = Math.round(drawY + h - fontSize / 2 - 2);
+        } else {
+            textY = Math.round(drawY + h / 2);
+        }
+
+        return { textX, textY, effectiveW };
+    }
+
+    /**
+     * 文本截断：使用二分查找定位截断点，O(log n) vs 逐字符 O(n)
+     *
+     * 当文本宽度超过 maxTextWidth 时，截断并追加省略号（如启用）。
+     * 返回截断后的文本；未超出时原样返回。
+     */
+    #truncateText(ctx, text, effectiveW, cellPadding, textOverflowEllipsis) {
+        const maxTextWidth = effectiveW - cellPadding * 2;
+        if (maxTextWidth &lt;= 0) return text;
+
+        const fullWidth = ctx.measureText(text).width;
+        if (fullWidth &lt;= maxTextWidth) return text;
+
+        const suffix = textOverflowEllipsis ? "..." : "";
+        let lo = 0;
+        let hi = text.length;
+        while (lo &lt; hi) {
+            const mid = Math.ceil((lo + hi) / 2);
+            if (ctx.measureText(text.slice(0, mid) + suffix).width > maxTextWidth) {
+                hi = mid - 1;
+            } else {
+                lo = mid;
+            }
+        }
+        return text.slice(0, lo) + suffix;
+    }
+
+    /**
+     * 绘制下划线
+     *
+     * 统一处理 textDecoration 下划线和 URL 自动链接下划线，
+     * 根据 textAlign 计算线条起始 X 坐标，通过 offsetY 参数
+     * 区分两种下划线的垂直偏移。
+     */
+    #drawUnderline(ctx, renderedText, textX, textY, fontSize, textAlign, color, lineWidth, offsetY) {
+        const textWidth = ctx.measureText(renderedText).width;
+        let lineX = textX;
+        if (textAlign === TEXT_ALIGN.CENTER) {
+            lineX = textX - textWidth / 2;
+        } else if (textAlign === TEXT_ALIGN.RIGHT) {
+            lineX = textX - textWidth;
+        }
+        const lineY = textY + Math.round(fontSize * 0.6) + offsetY;
+        ctx.beginPath();
+        ctx.moveTo(lineX, lineY);
+        ctx.lineTo(lineX + textWidth, lineY);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+    }
+
+    /**
+     * 绘制单元格富内容（图片等）
+     *
+     * 通过 ClipboardManager.getCellContent() 查询单元格是否有富内容，
+     * 与 Cell 模型完全解耦。当前仅支持图片，未来可扩展图表、附件等。
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {Sheet} sheet
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @returns {boolean} 是否绘制了富内容（用于决定是否跳过文本/边框绘制）
+     */
+    #drawCellContent(ctx, sheet, row, col, drawX, drawY, w, h) {
+        const clipboard = sheet.bus.emit(SHEET_EVENTS.GET_CLIPBOARD, undefined, { source: "TileRenderer" });
+        if (!clipboard) return false;
+
+        const content = clipboard.getCellContent(sheet, row, col);
+        if (!content) return false;
+
+        if (content.type === CONTENT_TYPE.IMAGE) {
+            return this.#drawCellImage(ctx, content.objectUrl, drawX, drawY, w, h);
+        }
+
+        // 未来可扩展其他类型：chart, attachment, video 等
+        return false;
+    }
+
+    /**
+     * 绘制图片到单元格区域（保持宽高比，居中显示）
+     *
+     * @param {CanvasRenderingContext2D} ctx
+     * @param {string} imageUrl - Object URL
+     * @param {number} drawX
+     * @param {number} drawY
+     * @param {number} w
+     * @param {number} h
+     * @returns {boolean} 是否成功绘制
+     */
+    #drawCellImage(ctx, imageUrl, drawX, drawY, w, h) {
+        const img = this.#getOrLoadImage(imageUrl);
+        if (!img || !img.complete) {
+            // 图片尚未加载完成，本次渲染跳过，等待下次脏标记重绘
+            return true; // 有内容但未就绪，阻止文本/边框绘制
+        }
+
+        // 保持宽高比，在单元格内居中绘制
+        const cellRatio = w / h;
+        const imgRatio = img.naturalWidth / img.naturalHeight;
+        let drawW, drawH, offsetX, offsetY;
+
+        if (imgRatio > cellRatio) {
+            drawW = w;
+            drawH = w / imgRatio;
+            offsetX = 0;
+            offsetY = (h - drawH) / 2;
+        } else {
+            drawH = h;
+            drawW = h * imgRatio;
+            offsetX = (w - drawW) / 2;
+            offsetY = 0;
+        }
+
+        ctx.drawImage(img, drawX + offsetX, drawY + offsetY, drawW, drawH);
+        return true;
+    }
+
+    /**
+     * 图片元素缓存，避免重复创建 Image 对象
+     * @type {Map&lt;string, HTMLImageElement>}
+     */
+    #imageElementCache = new Map();
+
+    /**
+     * 获取或加载图片元素
+     *
+     * 首次加载时创建 Image 对象并注册 onload 回调，
+     * 图片加载完成后自动标记所有瓦片为脏并通过 onContentReady 触发重绘。
+     *
+     * 注意：Object URL 加载通常很快（本地 Blob），但仍是异步的。
+     * 如果图片在设置 onload 前已完成加载（极少数情况），通过检查 complete 兜底。
+     *
+     * @param {string} url - Object URL
+     * @returns {HTMLImageElement|null}
+     */
+    #getOrLoadImage(url) {
+        if (this.#imageElementCache.has(url)) {
+            return this.#imageElementCache.get(url);
+        }
+        const img = new Image();
+
+        // 先设置 onload，再设置 src（确保不会漏掉事件）
+        img.onload = () => {
+            this.tileCache.markAllDirty();
+            if (this.onContentReady) {
+                this.onContentReady();
+            }
+        };
+        img.onerror = () => {
+            // 加载失败时从缓存中移除，避免无限缓存失败的 URL
+            this.#imageElementCache.delete(url);
+        };
+
+        img.src = url;
+        this.#imageElementCache.set(url, img);
+
+        // 极少数情况：图片在设置 onload 之前就已完成加载
+        // 此时 complete 为 true，手动触发重绘
+        if (img.complete) {
+            this.tileCache.markAllDirty();
+            if (this.onContentReady) {
+                this.onContentReady();
+            }
+        }
+
+        return img;
+    }
+
+    /**
+     * 将指定单元格覆盖的所有瓦片标记为脏
+     *
+     * 单元格的宽度/高度可能跨越多个瓦片（例如列宽 200px、列起点 120px，
+     * 会同时落在瓦片 0 与瓦片 1 中）。旧实现只根据左上角坐标标记一个瓦片，
+     * 导致宽单元格被部分重绘，出现“内容被瓦片边界截断”的现象。
+     *
+     * 修正后计算单元格矩形覆盖的瓦片行列范围，并逐个标记为脏。
+     *
+     * @param {number} row - 单元格页面行号
+     * @param {number} col - 单元格列号
+     * @param {RowColManager} rc - 行列管理器（提供像素坐标查询）
+     */
+    invalidateCell(row, col, rc) {
+        if (!rc) return;
+
+        const tileSize = CONFIG.TILE_SIZE;
+        const rowY = rc.getRowY(row);
+        const rowH = rc.getRowHeight(row);
+        const colX = rc.getColX(col);
+        const colW = rc.getColWidth(col);
+
+        if (rowH &lt;= 0 || colW &lt;= 0) return;
+
+        const startTileRow = Math.floor(rowY / tileSize);
+        const endTileRow = Math.floor((rowY + rowH) / tileSize);
+        const startTileCol = Math.floor(colX / tileSize);
+        const endTileCol = Math.floor((colX + colW) / tileSize);
+
+        for (let tr = startTileRow; tr &lt;= endTileRow; tr++) {
+            for (let tc = startTileCol; tc &lt;= endTileCol; tc++) {
+                this.tileCache.markDirty(tr, tc);
+            }
+        }
+    }
+
+    /**
+     * 将所有瓦片标记为脏（用于全量重绘场景）
+     */
+    invalidateAll() {
+        this.tileCache.markAllDirty();
+    }
+
+    /**
+     * 销毁渲染器，清空瓦片缓存和图片元素缓存
+     */
+    destroy() {
+        this.tileCache.clear();
+        this.#imageElementCache.clear();
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

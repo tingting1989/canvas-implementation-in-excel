@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: core/EventHandler.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: core/EventHandler.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
+import { Hooks } from "./Hooks.js";
+import { HOOKS } from "../constants/hookNames.js";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
+import { RenderEngineCanvasContext } from "../render/RenderEngineCanvasContext.js";
+
+/**
+ * 事件处理器
+ * 统一管理所有交互策略以及钩子系统（Hooks）
+ *
+ * 事件委托机制：
+ * - 每个 target+eventType 只绑定一个 DOM 监听器
+ * - 策略通过 getEventHandlers() 声明需要监听的事件
+ * - 策略通过 priority 属性声明优先级（数值越大越先处理）
+ * - EventHandler 按优先级排序分发，处理器返回 false 可阻止后续策略接收
+ *
+ * 可选功能（右键菜单、自动填充）通过插件系统加载：
+ * - AutoFillPlugin → 注册 autoFill 策略
+ * - ContextMenuPlugin → 注册 contextMenu 策略
+ */
+export class EventHandler {
+    /** 事件委托映射表 target:eventType → [{name, handler, priority}] */
+    #delegateMap = new Map();
+
+    /** 已绑定的 DOM 监听器 target:eventType → boundListener */
+    #boundListeners = new Map();
+
+    /** Hook 回调的 this 上下文（通常为 Workbook 实例） */
+    #hookContext = null;
+
+    /**
+     * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
+     * @param {import("../render/RenderEngine.js").RenderEngine} renderEngine - 渲染引擎
+     * @param {import("../editor/EditorManager.js").EditorManager} editor - 编辑器管理器
+     * @param {import("../editor/ClipboardManager.js").ClipboardManager} [clipboard] - 剪贴板管理器（可选，由 CopyPastePlugin 注入）
+     */
+    constructor(sheet, renderEngine, editor, clipboard) {
+        this.sheet = sheet;
+        this.renderEngine = renderEngine;
+        this.editor = editor;
+        this.clipboard = clipboard || null;
+        this.canvas = renderEngine.canvas;
+        this.wrap = renderEngine.canvas.parentElement;
+
+        this.viewport = new RenderEngineViewportService(renderEngine);
+        this.canvasContext = new RenderEngineCanvasContext(renderEngine);
+
+        this.hooks = sheet.hooks || new Hooks();
+        if (!sheet.hooks) {
+            this.hooks.init();
+        }
+
+        this.strategies = new Map();
+
+        this.#initStrategies();
+
+        // ✅ 订阅 EventBus 事件，桥接到 Hooks 系统
+        this.#subscribeEditorEvents();
+    }
+
+    /**
+     * 订阅编辑器生命周期事件并转换为 Hooks 调用
+     *
+     * 这是 EventBus 与 Hooks 之间的桥梁层：
+     * - CellEditor/MouseStrategy/Workbook 通过 EventBus 发射事件
+     * - EventHandler 订阅这些事件并触发对应的 hooks
+     *
+     * 好处：
+     * 1. CellEditor 不需要知道 EventHandler 的存在（完全解耦）
+     * 2. 可以灵活地决定哪些事件转换为 hooks，哪些不转换
+     * 3. 易于测试和扩展
+     */
+    #subscribeEditorEvents() {
+        const bus = this.sheet.bus;
+        if (!bus) return;
+
+        // ==================== 编辑器生命周期事件 ====================
+        // 注意：EventBus.emit() 会将参数包装成 envelope 对象传给监听器
+        // envelope = { source, sheetId, timestamp, type, payload }
+        // 所以需要从 envelope.payload 中提取实际参数
+
+        // 即将开始编辑 → BEFORE_BEGIN_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_BEFORE_BEGIN, (envelope) => {
+            const [row, col] = envelope.payload;
+            return this.runHooksUntil(HOOKS.BEFORE_BEGIN_EDITING, row, col);
+        });
+
+        // 已开始编辑 → AFTER_BEGIN_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_AFTER_BEGIN, (envelope) => {
+            const [row, col] = envelope.payload;
+            this.runHooks(HOOKS.AFTER_BEGIN_EDITING, row, col);
+        });
+
+        // 即将提交编辑 → BEFORE_FINISH_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_BEFORE_FINISH, (envelope) => {
+            const [row, col] = envelope.payload;
+            return this.runHooksUntil(HOOKS.BEFORE_FINISH_EDITING, row, col);
+        });
+
+        // 已完成编辑 → AFTER_FINISH_EDITING hook
+        bus.on(SHEET_EVENTS.EDITOR_AFTER_FINISH, (envelope) => {
+            const [row, col, oldValue, newValue] = envelope.payload;
+            this.runHooks(HOOKS.AFTER_FINISH_EDITING, row, col, oldValue, newValue);
+        });
+
+        // ==================== 数据变更事件 ====================
+
+        // 值变更前 → BEFORE_CHANGE hook + BEFORE_SET_VALUE_AT（逐单元格验证）
+        bus.on(SHEET_EVENTS.BEFORE_CHANGE, (envelope) => {
+            const [changes] = envelope.payload;
+
+            console.log("[EH-DEBUG] BEFORE_CHANGE triggered, changes =", JSON.stringify(changes));
+
+            for (const change of changes) {
+                const { row, col, newValue } = change;
+                console.log(`[EH-DEBUG] Checking BEFORE_SET_VALUE_AT for (${row},${col}) value=${newValue}`);
+                const canSet = this.runHooksUntil(HOOKS.BEFORE_SET_VALUE_AT, row, col, newValue);
+                console.log(`[EH-DEBUG] BEFORE_SET_VALUE_AT result =`, canSet, `(type=${typeof canSet})`);
+                if (canSet === false) {
+                    console.log("[EH-DEBUG] 🛑 BLOCKED by BEFORE_SET_VALUE_AT");
+                    return false;
+                }
+            }
+
+            return this.runHooksUntil(HOOKS.BEFORE_CHANGE, changes);
+        });
+
+        // 值变更后 → AFTER_CHANGE hook
+        bus.on(SHEET_EVENTS.AFTER_CHANGE, (envelope) => {
+            const [changes] = envelope.payload;
+            this.runHooks(HOOKS.AFTER_CHANGE, changes);
+        });
+
+        // ==================== 鼠标交互事件 ====================
+
+        // 鼠标进入单元格 → ON_CELL_MOUSE_OVER hook
+        bus.on(SHEET_EVENTS.CELL_MOUSE_OVER, (envelope) => {
+            const [row, col, event] = envelope.payload;
+            this.runHooks(HOOKS.ON_CELL_MOUSE_OVER, row, col, event);
+        });
+
+        // 鼠标离开单元格 → ON_CELL_MOUSE_OUT hook
+        bus.on(SHEET_EVENTS.CELL_MOUSE_OUT, (envelope) => {
+            const [row, col, event] = envelope.payload;
+            this.runHooks(HOOKS.ON_CELL_MOUSE_OUT, row, col, event);
+        });
+
+        // ==================== Workbook 生命周期事件 ====================
+
+        // 工作簿初始化完成 → INIT hook
+        bus.on(SHEET_EVENTS.WORKBOOK_INIT, (envelope) => {
+            const [workbook] = envelope.payload;
+            this.runHooks(HOOKS.INIT, workbook);
+        });
+
+        // 工作簿即将销毁 → DESTROY hook
+        bus.on(SHEET_EVENTS.WORKBOOK_DESTROY, (envelope) => {
+            const [workbook] = envelope.payload;
+            this.runHooks(HOOKS.DESTROY, workbook);
+        });
+    }
+
+    /**
+     * 初始化核心交互策略
+     * 注册顺序不影响优先级，优先级由策略的 priority 属性决定
+     *
+     * 可选策略（autoFill、contextMenu）由对应插件通过 addStrategy 注册
+     */
+    #initStrategies() {
+        this.addStrategy("resize", new ResizeStrategy(this));
+        this.addStrategy("mouse", new MouseStrategy(this));
+        this.addStrategy("keyboard", new KeyboardStrategy(this));
+    }
+
+    /**
+     * 注册一个策略并初始化
+     * 自动收集策略声明的事件处理器，按优先级插入统一委托
+     *
+     * @param {string} name - 策略名称
+     * @param {import("../editor/strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
+     */
+    addStrategy(name, strategy) {
+        this.strategies.set(name, strategy);
+        strategy.init();
+        this.#registerStrategyHandlers(name, strategy);
+    }
+
+    /**
+     * 获取已注册的策略
+     *
+     * @param {string} name - 策略名称
+     * @returns {import("../editor/strategies/EventStrategy.js").EventStrategy | null}
+     */
+    getStrategy(name) {
+        return this.strategies.get(name) || null;
+    }
+
+    /**
+     * 移除并销毁策略
+     * 自动清理该策略注册的事件处理器
+     *
+     * @param {string} name - 策略名称
+     */
+    removeStrategy(name) {
+        const strategy = this.strategies.get(name);
+        if (strategy) {
+            this.#unregisterStrategyHandlers(name);
+            strategy.destroy();
+            this.strategies.delete(name);
+        }
+    }
+
+    /** 启用指定策略 */
+    enableStrategy(name) {
+        const strategy = this.strategies.get(name);
+        if (strategy) {
+            strategy.enable();
+        }
+    }
+
+    /** 禁用指定策略 */
+    disableStrategy(name) {
+        const strategy = this.strategies.get(name);
+        if (strategy) {
+            strategy.disable();
+        }
+    }
+
+    /** 触发重新渲染 */
+    render() {
+        if (this.sheet &amp;&amp; this.renderEngine) {
+            this.renderEngine.render(this.sheet);
+        }
+    }
+
+    /** 注册钩子回调 */
+    addHook(hookName, callback) {
+        this.hooks.addHook(hookName, callback);
+    }
+
+    /** 注册一次性钩子回调（触发一次后自动移除） */
+    addHookOnce(hookName, callback) {
+        this.hooks.addHookOnce(hookName, callback);
+    }
+
+    /** 移除指定钩子回调 */
+    removeHook(hookName, callback) {
+        this.hooks.removeHook(hookName, callback);
+    }
+
+    /** 清空指定钩子的所有回调 */
+    clearHook(hookName) {
+        this.hooks.clearHook(hookName);
+    }
+
+    /** 清空所有钩子 */
+    clearAllHooks() {
+        this.hooks.clearAllHooks();
+    }
+
+    /**
+     * 设置 Hook 回调的 this 上下文
+     * @param {*} context - 通常为 Workbook 实例
+     */
+    setHookContext(context) {
+        this.#hookContext = context;
+    }
+
+    /** 执行指定钩子的所有回调 */
+    runHooks(hookName, ...args) {
+        return this.hooks.runHooksWithCallback(hookName, (callback) => callback.call(this.#hookContext, ...args));
+    }
+
+    /** 执行钩子直到有回调返回非 undefined 值 */
+    runHooksUntil(hookName, ...args) {
+        return this.hooks.runHooksUntilWithCallback(hookName, (callback) => callback.call(this.#hookContext, ...args));
+    }
+
+    /** 获取所有已注册的钩子名称 */
+    getHookNames() {
+        return this.hooks.getHookNames();
+    }
+
+    /** 检查指定钩子是否有回调 */
+    hasHook(hookName) {
+        return this.hooks.hasHook(hookName);
+    }
+
+    /**
+     * 注册策略的事件处理器到统一委托
+     * 收集策略声明的所有事件，按 target:eventType 分组
+     * 同一组内按优先级降序排列（priority 越大越先处理）
+     *
+     * @param {string} name - 策略名称
+     * @param {import("../editor/strategies/EventStrategy.js").EventStrategy} strategy - 策略实例
+     */
+    #registerStrategyHandlers(name, strategy) {
+        const handlers = strategy.getEventHandlers();
+        const priority = strategy.priority || 0;
+
+        for (const [key, handler] of Object.entries(handlers)) {
+            if (!this.#delegateMap.has(key)) {
+                this.#delegateMap.set(key, []);
+
+                const [targetName, eventType] = key.split(":");
+                const target = this.#resolveTarget(targetName);
+                if (!target) continue;
+
+                const boundListener = (e) => {
+                    const entries = this.#delegateMap.get(key);
+                    if (!entries) return;
+
+                    // 先拷贝快照，防止迭代过程中 entries 被修改（如某个 handler 触发了 removeStrategy）
+                    const snapshot = [...entries];
+                    for (const { name: strategyName, handler: h } of snapshot) {
+                        // 检查策略是否仍然存在且处于启用状态
+                        const strategy = this.strategies.get(strategyName);
+                        if (!strategy || !strategy.enabled) continue;
+                        const result = h(e);
+                        if (result === false) break;
+                    }
+                };
+
+                this.#boundListeners.set(key, boundListener);
+                target.addEventListener(eventType, boundListener);
+            }
+
+            const entries = this.#delegateMap.get(key);
+            const entry = { name, handler, priority };
+
+            let insertIdx = entries.length;
+            for (let i = 0; i &lt; entries.length; i++) {
+                if (priority > entries[i].priority) {
+                    insertIdx = i;
+                    break;
+                }
+            }
+            entries.splice(insertIdx, 0, entry);
+        }
+    }
+
+    /**
+     * 从统一委托中移除策略的事件处理器
+     * 如果某个 target:eventType 下已无处理器，自动解绑 DOM 监听
+     *
+     * @param {string} name - 策略名称
+     */
+    #unregisterStrategyHandlers(name) {
+        const strategy = this.strategies.get(name);
+        if (!strategy) return;
+
+        const handlers = strategy.getEventHandlers();
+        for (const [key] of Object.entries(handlers)) {
+            const entries = this.#delegateMap.get(key);
+            if (!entries) continue;
+
+            const idx = entries.findIndex((e) => e.name === name);
+            if (idx !== -1) entries.splice(idx, 1);
+
+            if (entries.length === 0) {
+                const [targetName, eventType] = key.split(":");
+                const target = this.#resolveTarget(targetName);
+                const boundListener = this.#boundListeners.get(key);
+                if (target &amp;&amp; boundListener) {
+                    target.removeEventListener(eventType, boundListener);
+                }
+                this.#delegateMap.delete(key);
+                this.#boundListeners.delete(key);
+            }
+        }
+    }
+
+    /**
+     * 根据名称解析事件目标
+     *
+     * @param {string} name - 目标名称（canvas / document / window / wrap）
+     * @returns {EventTarget|null}
+     */
+    #resolveTarget(name) {
+        switch (name) {
+            case "canvas":
+                return this.canvas;
+            case "document":
+                return document;
+            case "window":
+                return window;
+            case "wrap":
+                return this.wrap;
+            default:
+                return null;
+        }
+    }
+
+    /** 销毁事件处理器，释放所有资源 */
+    destroy() {
+        for (const [key, boundListener] of this.#boundListeners) {
+            const [targetName, eventType] = key.split(":");
+            const target = this.#resolveTarget(targetName);
+            if (target) {
+                target.removeEventListener(eventType, boundListener);
+            }
+        }
+        this.#delegateMap.clear();
+        this.#boundListeners.clear();
+
+        for (const [, strategy] of this.strategies) {
+            strategy.destroy();
+        }
+        this.strategies.clear();
+        this.hooks.clearAllHooks();
+        this.sheet = null;
+        this.renderEngine = null;
+        this.editor = null;
+        this.canvas = null;
+        this.wrap = null;
+    }
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

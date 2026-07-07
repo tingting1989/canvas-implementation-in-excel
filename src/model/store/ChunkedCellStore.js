@@ -113,6 +113,7 @@ export class ChunkedCellStore {
      */
     set(row, col, cell) {
         this.#getChunk(row, col).set(row, col, cell);
+
         // ✅ O(1) 更新缓存：如果新行号更大，直接更新
         if (row > this.#cachedMaxRow) {
             this.#cachedMaxRow = row;
@@ -128,6 +129,7 @@ export class ChunkedCellStore {
     delete(row, col) {
         const chunk = this.#getChunk(row, col);
         chunk.delete(row, col);
+
         // ⚠️ 删除操作可能影响最大行号，标记缓存待验证
         // 只有当删除的行号 >= 当前缓存值时才需要重算
         if (row >= this.#cachedMaxRow && chunk.cells.size === 0) {
@@ -671,7 +673,7 @@ export class ChunkedCellStore {
      *
      * @yields {Chunk}
      */
-    *chunks() {
+    * chunks() {
         for (const chunk of this.#chunks.values()) {
             yield chunk;
         }

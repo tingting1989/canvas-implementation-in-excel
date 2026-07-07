@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: main.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: main.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { BaseColumnType } from "@/types/BaseColumnType";
+import { Workbook } from "./workbook/Workbook.js";
+import { HOOKS } from "./constants/hookNames.js";
+import { isFunction, isNumber } from "./utils/utils.js";
+import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
+import { registerTypeClass } from "@/types";
+import { isUrl, openUrl } from "./utils/UrlDetector.js";
+
+class TrafficLightType extends BaseColumnType {
+    get name() {
+        return "trafficLight";
+    }
+
+    get editorType() {
+        return "select";
+    }
+
+    getEditorOptions() {
+        return {
+            source: [
+                { value: "green", label: "🟢 正常" },
+                { value: "yellow", label: "🟡 警告" },
+                { value: "red", label: "🔴 危险" },
+            ],
+        };
+    }
+
+    format(value) {
+        const map = { green: "正常", yellow: "警告", red: "危险" };
+        return map[value] || String(value);
+    }
+
+    render(context) {
+        const { ctx, x, y, width, height, value, displayValue, style } = context;
+
+        const indicatorSize = Math.min(width, height) * 0.35;
+        const indicatorRadius = indicatorSize / 2;
+        const indicatorCy = context.getCenterY();
+        const gap = 6;
+        const padding = context.getPadding(context.sheet);
+
+        const colors = {
+            green: "#4caf50",
+            yellow: "#ff9800",
+            red: "#f44336",
+        };
+
+        const fontSize = style?.fontSize || 14;
+        const fontFamily = style?.fontFamily || "Microsoft YaHei";
+        const textColor = style?.color || "#000";
+        const textAlign = style?.textAlign || "left";
+
+        ctx.font = `${fontSize}px ${fontFamily}`;
+        const textWidth = displayValue ? ctx.measureText(displayValue).width : 0;
+        const totalWidth = indicatorSize + gap + textWidth;
+
+        let startX;
+        if (textAlign === "right") {
+            startX = x + width - totalWidth - padding;
+        } else if (textAlign === "center") {
+            startX = x + (width - totalWidth) / 2;
+        } else {
+            startX = x + padding;
+        }
+
+        const indicatorCx = startX + indicatorRadius;
+        const textX = startX + indicatorSize + gap;
+
+        ctx.fillStyle = colors[value] || "#ccc";
+        ctx.beginPath();
+        ctx.arc(indicatorCx, indicatorCy, indicatorRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (context.isSelected) {
+            ctx.strokeStyle = colors[value] || "#999";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(indicatorCx, indicatorCy, indicatorRadius + 3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        if (displayValue) {
+            ctx.fillStyle = textColor;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText(displayValue, textX, indicatorCy);
+        }
+    }
+}
+
+// 注册自定义渲染器
+registerTypeClass("trafficLight", TrafficLightType);
+const initApp = () => {
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
+
+    // 配置统一错误处理：开发模式输出所有级别日志
+    errorHandler.configure({
+        level: ERROR_LEVEL.DEBUG,
+        devMode: true,
+    });
+
+    const wb = new Workbook(document.getElementById("wrap"), {
+        defaultStyle: {},
+        // readOnly: true,
+        // 工作表高度和宽度（像素值）
+        // height: 600,
+        // 工作表高度和宽度（像素值）
+        // width: 800,
+
+        // 初始行数
+        // startRows: 10,
+        // 初始列数
+        // startCols: 10,
+        // cellPadding: 30,
+        sheets: [
+            // {
+            //     name: "Sheet1",
+            //     // readOnly: false,
+            //     data: [
+            //         // ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
+            //         // ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
+            //         // ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
+            //     ],
+            //     // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+            //     rowHeaderWidth: 120,
+            //     rowHeights: [30, 50, 90],
+            //     rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
+            //     maxRows: 200,
+            //     // 嵌套表头配置（支持完整 style 属性）
+            //     nestedHeaders: [
+            //         [
+            //             {
+            //                 label: "基本信息",
+            //                 colspan: 2,
+            //                 style: {
+            //                     backgroundColor: "#FFC000",
+            //                     color: "#FFFFFF",
+            //                     fontWeight: "bold",
+            //                     fontSize: "14px",
+            //                     textAlign: "left",
+            //                 },
+            //             },
+            //             {
+            //                 label: "工作信息",
+            //                 colspan: 4,
+            //                 style: {
+            //                     backgroundColor: "#70AD47",
+            //                     color: "#FFFFFF",
+            //                     fontWeight: "bold",
+            //                     fontSize: "14px",
+            //                     textAlign: "center",
+            //                 },
+            //             },
+            //         ],
+            //         [
+            //             {
+            //                 label: "姓名",
+            //                 style: {
+            //                     backgroundColor: "#FFC000",
+            //                     fontWeight: "bold",
+            //                 },
+            //             },
+            //             "年龄",
+            //             {
+            //                 label: "城市",
+            //                 style: {
+            //                     backgroundColor: "#FFC000",
+            //                     fontWeight: "bold",
+            //                 },
+            //             },
+            //             {
+            //                 label: "部门",
+            //                 style: {
+            //                     fontStyle: "italic",
+            //                     color: "#333333",
+            //                 },
+            //             },
+            //             {
+            //                 label: "薪酬",
+            //                 colspan: 2,
+            //                 style: {
+            //                     backgroundColor: "#ED7D31",
+            //                     color: "#FFFFFF",
+            //                     textAlign: "center",
+            //                 },
+            //             },
+            //         ],
+            //         ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+            //     ],
+            //     textOverflowEllipsis: false,
+            //     cellPadding: 10,
+            //     conditionalStyles: [
+            //         {
+            //             range: {topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25},
+            //             condition: (v) => isNumber(v) &amp;&amp; v > 25,
+            //             style: {backgroundColor: "#ffcccc"},
+            //         },
+            //     ],
+            //     cell: [
+            //         {row: 0, col: 0, style: {backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center"}},
+            //         {row: 1, col: 3, disabled: true},
+            //         {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
+            //     ],
+            //     cells: (row, col) => {
+            //         if (row === 0) {
+            //             return {style: {fontWeight: "bold", backgroundColor: "#e8f4fd"}};
+            //         }
+            //         if (col === 0 &amp;&amp; row > 0) {
+            //             return {style: {textAlign: "right", fontWeight: "bold"}};
+            //         }
+            //     },
+            //     columns: [
+            //         {type: "text", width: 120, style: {textAlign: "left"}},
+            //         {type: "numeric", width: 80, style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
+            //         {type: "text", width: 100},
+            //         {type: "text", width: 100},
+            //         {type: "numeric", width: 100, style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
+            //         {type: "date", width: 300},
+            //     ],
+            // },
+            {
+                name: "Sheet1",
+
+                // 是否只读
+                readOnly: false,
+                headerHeight: 48,
+                // 嵌套表头配置
+                nestedHeaders: [
+                    [
+                        {
+                            label: "原水调节池+废水污泥池运行日报表",
+                            colspan: 14,
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                    ],
+                    [
+                        { label: "日期：yyyy-mm-dd", style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" } },
+                        {
+                            label: "时间",
+                            colspan: 13,
+
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                    ],
+                    [
+                        {
+                            label: "名称",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "0:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+
+                        {
+                            label: "2:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+
+                        {
+                            label: "4:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "6:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "8:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "10:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "12:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "14:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "16:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "18:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "20:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "22:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                        {
+                            label: "24:00",
+                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
+                        },
+                    ],
+                ],
+
+                // 单元格内容超出单元格宽度时是否显示省略号
+                textOverflowEllipsis: false,
+
+                // 每个单元格的内边距（像素值）
+                cellPadding: 10,
+
+                // 固定行列数上限（使用 maxRows/maxCols）
+                maxRows: 50,
+                maxCols: 14,
+
+                colWidths: [600],
+                columns: [
+                    { type: "text", width: 120, style: { textAlign: "left" } },
+                    { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
+                    { type: "textarea", width: 200, maxRows: 4, style: { textAlign: "right" } },
+                ],
+
+                cell: [
+                    { row: 0, col: 2, type: "trafficLight" }, // 第0行第2列 → trafficLight
+                    { row: 1, col: 2, type: "select", source: ["正常", "异常"] }, // → select
+                ],
+            },
+            {
+                name: "Sheet2",
+                // readOnly: false,
+                data: [
+                    ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
+                    ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
+                    ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
+                ],
+                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                rowHeaderWidth: 120,
+                rowHeights: [30, 50, 90],
+                rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
+
+                // 嵌套表头配置（支持完整 style 属性）
+                nestedHeaders: [
+                    [
+                        {
+                            label: "基本信息",
+                            colspan: 2,
+                            style: {
+                                backgroundColor: "#FFC000",
+                                color: "#FFFFFF",
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                                textAlign: "left",
+                            },
+                        },
+                        {
+                            label: "工作信息",
+                            colspan: 4,
+                            style: {
+                                backgroundColor: "#70AD47",
+                                color: "#FFFFFF",
+                                fontWeight: "bold",
+                                fontSize: "14px",
+                                textAlign: "center",
+                            },
+                        },
+                    ],
+                    [
+                        {
+                            label: "姓名",
+                            style: {
+                                backgroundColor: "#FFC000",
+                                fontWeight: "bold",
+                            },
+                        },
+                        "年龄",
+                        {
+                            label: "城市",
+                            style: {
+                                backgroundColor: "#FFC000",
+                                fontWeight: "bold",
+                            },
+                        },
+                        {
+                            label: "部门",
+                            style: {
+                                fontStyle: "italic",
+                                color: "#333333",
+                            },
+                        },
+                        {
+                            label: "薪酬",
+                            colspan: 2,
+                            style: {
+                                backgroundColor: "#ED7D31",
+                                color: "#FFFFFF",
+                                textAlign: "center",
+                            },
+                        },
+                    ],
+                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
+                ],
+                textOverflowEllipsis: false,
+                cellPadding: 10,
+                conditionalStyles: [
+                    {
+                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                        condition: (v) => isNumber(v) &amp;&amp; v > 25,
+                        style: { backgroundColor: "#ffcccc" },
+                    },
+                ],
+                cell: [
+                    { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
+                    { row: 1, col: 3, disabled: true },
+                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
+                ],
+                cells: (row, col) => {
+                    if (row === 0) {
+                        return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
+                    }
+                    if (col === 0 &amp;&amp; row > 0) {
+                        return { style: { textAlign: "right", fontWeight: "bold" } };
+                    }
+                },
+                columns: [
+                    { type: "text", width: 120, style: { textAlign: "left" } },
+                    { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
+                    { type: "text", width: 100 },
+                    { type: "text", width: 100 },
+                    { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
+                    { type: "date", width: 300 },
+                ],
+            },
+        ],
+        plugins: [
+            "autoFill",
+            "contextMenu",
+            "columnMove",
+            "copyPaste",
+
+            "exportFile",
+            "hiddenColumns",
+            "hiddenRows",
+            "rowMove",
+            "freeze",
+            "formula",
+            "sort",
+            "dataValidation",
+        ],
+        pluginOptions: {
+            contextMenu: {
+                enabled: true,
+                customItems: [
+                    {
+                        label: "高亮选中行",
+
+                        // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
+                        contexts: ["cell", "rowHeader"],
+                        action: (row, col, sheet) => {
+                            sheet.setRowStyle(row, { backgroundColor: "yellow" });
+                            wb.render();
+                        },
+                    },
+                    {
+                        label: "设置单元格样式",
+                        contexts: ["cell"],
+                        action: (row, col, sheet) => {
+                            const range = sheet.selection.getRange();
+                            const styleObj = { backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724" };
+                            for (let r = range.topRow; r &lt;= range.bottomRow; r++) {
+                                for (let c = range.topCol; c &lt;= range.bottomCol; c++) {
+                                    if (!sheet.isDisabled(r, c)) {
+                                        sheet.setCellStyle(r, c, styleObj);
+                                    }
+                                }
+                            }
+                            wb.render();
+                        },
+                    },
+                    {
+                        label: "取消单元格样式",
+                        contexts: ["cell", "rowHeader", "colHeader"],
+                        action: (row, col, sheet) => {
+                            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Clear cell style");
+                            const range = sheet.selection.getRange();
+                            for (let r = range.topRow; r &lt;= range.bottomRow; r++) {
+                                sheet.clearRowStyle(r);
+                                for (let c = range.topCol; c &lt;= range.bottomCol; c++) {
+                                    sheet.clearCellStyle(r, c);
+                                }
+                            }
+                            wb.render();
+                        },
+                    },
+                    { type: "separator" },
+                    {
+                        label: "导出选中区域",
+                        action: (row, col, sheet) => {
+                            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Export from", row, col);
+                            alert("导出功能（示例）");
+                        },
+                    },
+                ],
+
+                // disabledItems: ["mergeCells", "unmergeCells"],
+
+                // rowMove: { enabled: false },
+            },
+
+            // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+
+            dataValidation: {
+                conflictStrategy: "short-circuit",
+                rules: [
+                    // {
+                    //     range: "B:B",
+                    //     type: "number",
+                    //     operator: "between",
+                    //     value: [0, 100],
+                    //     errorMessage: "必须输入正数",
+                    //     errorStyle: "stop",
+                    // },
+                    //
+                    // {
+                    //     range: "A:A",
+                    //     type: "text",
+                    //     operator: "greaterThan",
+                    //     value: 5,
+                    //     errorMessage: "必须输入正数",
+                    //     errorStyle: "stop",
+                    // },
+                    //
+                    // {
+                    //     range: "C:C",
+                    //     type: "time",
+                    //     operator: "between",
+                    //     value: ["09:00", "18:00"],
+                    //     errorMessage: "必须输入正数",
+                    //     errorStyle: "stop",
+                    // },
+                    // {
+                    //     range: "D:D",
+                    //     type: "unique",
+                    // },
+                    // {
+                    //     range: "G:G",
+                    //     type: "date",
+                    //     operator: "between",
+                    //     value: ["01/01/2020", "12/31/2020"],
+                    //     errorMessage: "必须输入正数",
+                    //     errorStyle: "stop",
+                    // },
+                ],
+            },
+        },
+        hooks: {
+            // ==================== 编辑相关钩子 ====================
+            // ✅ 已执行
+            // [HOOKS.BEFORE_BEGIN_EDITING]: (...args) => {
+            //     console.log("[HOOK] beforeBeginEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_BEGIN_EDITING]: (...args) => {
+            //     console.log("[HOOK] afterBeginEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_FINISH_EDITING]: (...args) => {
+            //     console.log("[HOOK] beforeFinishEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_FINISH_EDITING]: (...args) => {
+            //     console.log("[HOOK] afterFinishEditing 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_CHANGE]: (...args) => {
+            //     console.log("[HOOK] beforeChange 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_CHANGE]: (...args) => {
+            //     console.log("[HOOK] afterChange 执行了", ...args);
+            // },
+            //
+            // // ==================== 选择相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SELECTION]: (...args) => {
+            //     console.log("[HOOK] beforeSelection 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SELECTION]: (...args) => {
+            //     console.log("[HOOK] afterSelection 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SELECTION_END]: (...args) => {
+            //     console.log("[HOOK] beforeSelectionEnd 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SELECTION_END]: (...args) => {
+            //     console.log("[HOOK] afterSelectionEnd 执行了", ...args);
+            // },
+            //
+            // // ==================== 单元格交互钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_MOUSE_DOWN]: (...args) => {
+            //     console.log("[HOOK] onCellMouseDown 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_MOUSE_OVER]: (...args) => {
+            //     console.log("[HOOK] onCellMouseOver 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_MOUSE_OUT]: (...args) => {
+            //     console.log("[HOOK] onCellMouseOut 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_CLICK]: (...args) => {
+            //     console.log("[HOOK] onCellClick 执行了", ...args);
+            //     if (isFunction(updateToolbarStyleState)) {
+            //         updateToolbarStyleState();
+            //     }
+            // },
+            // // ✅ 已执行
+            // [HOOKS.ON_CELL_DBL_CLICK]: (...args) => {
+            //     console.log("[HOOK] onCellDblClick 执行了", ...args);
+            // },
+            //
+            // // ==================== 键盘相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_KEY_DOWN]: (...args) => {
+            //     console.log("[HOOK] beforeKeyDown 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_KEY_DOWN]: (...args) => {
+            //     console.log("[HOOK] afterKeyDown 执行了", ...args);
+            // },
+            //
+            // // ==================== 滚动相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SCROLL_HORIZONTALLY]: (...args) => {
+            //     console.log("[HOOK] afterScrollHorizontally 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SCROLL_VERTICALLY]: (...args) => {
+            //     console.log("[HOOK] afterScrollVertically 执行了", ...args);
+            // },
+            //
+            // // ==================== 合并单元格相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_MERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] beforeMergeCells 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_MERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] afterMergeCells 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_UNMERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] beforeUnmergeCells 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_UNMERGE_CELLS]: (...args) => {
+            //     console.log("[HOOK] afterUnmergeCells 执行了", ...args);
+            // },
+            //
+            // // ==================== 剪贴板相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_COPY]: (...args) => {
+            //     console.log("[HOOK] beforeCopy 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_COPY]: (...args) => {
+            //     console.log("[HOOK] afterCopy 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_CUT]: (...args) => {
+            //     console.log("[HOOK] beforeCut 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_CUT]: (...args) => {
+            //     console.log("[HOOK] afterCut 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_PASTE]: (...args) => {
+            //     console.log("[HOOK] beforePaste 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_PASTE]: (...args) => {
+            //     console.log("[HOOK] afterPaste 执行了", ...args);
+            // },
+            //
+            // // ==================== 列移动相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_COLUMN_MOVE]: (...args) => {
+            //     console.log("[HOOK] beforeColumnMove 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_COLUMN_MOVE]: (...args) => {
+            //     console.log("[HOOK] afterColumnMove 执行了", ...args);
+            // },
+            //
+            // // ==================== 行移动相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_ROW_MOVE]: (...args) => {
+            //     console.log("[HOOK] beforeRowMove 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_ROW_MOVE]: (...args) => {
+            //     console.log("[HOOK] afterRowMove 执行了", ...args);
+            // },
+            //
+            // // ==================== 隐藏列相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_HIDE_COLUMN]: (...args) => {
+            //     console.log("[HOOK] afterHideColumn 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHOW_COLUMN]: (...args) => {
+            //     console.log("[HOOK] afterShowColumn 执行了", ...args);
+            // },
+            //
+            // // ==================== 隐藏行相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_HIDE_ROW]: (...args) => {
+            //     console.log("[HOOK] afterHideRow 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHOW_ROW]: (...args) => {
+            //     console.log("[HOOK] afterShowRow 执行了", ...args);
+            // },
+            //
+            // // ==================== 冻结行列相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_FREEZE]: (...args) => {
+            //     console.log("[HOOK] afterFreeze 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_UNFREEZE]: (...args) => {
+            //     console.log("[HOOK] afterUnfreeze 执行了", ...args);
+            // },
+            //
+            // // ==================== 工作表切换相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
+            //     console.log("[HOOK] afterSheetSwitch 执行了", ...args);
+            // },
+            //
+            // // ==================== 排序相关钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SORT]: (...args) => {
+            //     console.log("[HOOK] afterSort 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SORT_RESTORE]: (...args) => {
+            //     console.log("[HOOK] afterSortRestore 执行了", ...args);
+            // },
+            //
+            // // ==================== 生命周期钩子 ====================
+            // // ✅ 已执行
+            // [HOOKS.INIT]: (...args) => {
+            //     console.log("[HOOK] init 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.DESTROY]: (...args) => {
+            //     console.log("[HOOK] destroy 执行了", ...args);
+            // },
+            // ==================== 工作表相关钩子 ====================
+            // ✅ 已执行
+            // [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
+            //     console.log("[HOOK] beforeSheetRename 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
+            //     console.log("[HOOK] afterSheetRename 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SHEET_ADD]: (...args) => {
+            //     console.log("[HOOK] beforeSheetAdd 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_ADD]: (...args) => {
+            //     console.log("[HOOK] afterSheetAdd 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SHEET_REMOVE]: (...args) => {
+            //     console.log("[HOOK] beforeSheetRemove 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_REMOVE]: (...args) => {
+            //     console.log("[HOOK] afterSheetRemove 执行了", ...args);
+            // },
+            // // ✅ 已执行
+            // [HOOKS.BEFORE_SHEET_SWITCH]: (...args) => {
+            //     console.log("[HOOK] beforeSheetSwitch 执行了", ...args);
+            //     return true;
+            // },
+            // // ✅ 已执行
+            // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
+            //     console.log("[HOOK] afterSheetSwitch 执行了", ...args);
+            //     return true;
+            // },
+        },
+        afterInit(wb) {
+            const s2 = wb.sheets.get("Sheet2");
+            if (s2) {
+                s2.setCell(2, 0, "Switch to Sheet1 to paste");
+            }
+        },
+    });
+
+    wb.initRender();
+    wb.render();
+
+    wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
+        if (!e.ctrlKey &amp;&amp; !e.metaKey) return;
+        const sheet = wb.activeSheet;
+        const cell = sheet.cellStore.get(row, col);
+        if (cell?.value &amp;&amp; isUrl(cell.value)) {
+            const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
+            if (canOpen === false) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            openUrl(cell.value);
+            wb.runHooks(HOOKS.AFTER_OPEN_URL, row, col, cell.value);
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+
+    wb.addHook(HOOKS.AFTER_CHANGE, (changes) => {
+        for (const { row, col, newValue } of changes) {
+            if (isUrl(newValue)) {
+                wb.runHooks(HOOKS.ON_URL_DETECTED, row, col, newValue);
+            }
+        }
+    });
+
+    setTimeout(() => {
+        // wb.updateSettings({
+        //     maxRows: 100,
+        // });
+        wb.activeSheet.loadData([
+            ["姓名", "年龄", "green"],
+            ["张三", 30, "yellow"],
+            ["李四", 25, "red"],
+        ]);
+        // wb.loadData(HOOKS.AFTER_CHANGE, () => {
+        //     if (isFunction(window.updateToolbarStyleState)) {
+        //         window.updateToolbarStyleState();
+        //     }
+        // });
+    }, 1000);
+
+    // wb.addHook(HOOKS.AFTER_CHANGE, () => {
+    //     if (isFunction(window.updateToolbarStyleState)) {
+    //         window.updateToolbarStyleState();
+    //     }
+    // });
+
+    // setTimeout(() => {
+    //     wb.updateSettings({
+    //         nestedHeaders: [
+    //             [
+    //                 {
+    //                     label: "基本信息",
+    //                     colspan: 2,
+    //                     style: {
+    //                         backgroundColor: "#FFC000",
+    //                         color: "#4472C4",
+    //                         fontWeight: "bold",
+    //                         fontSize: "14px",
+    //                         textAlign: "center",
+    //                     },
+    //                 },
+    //                 {
+    //                     label: "工作信息",
+    //                     colspan: 4,
+    //                     style: {
+    //                         backgroundColor: "#70AD47",
+    //                         color: "#FFFFFF",
+    //                         fontWeight: "bold",
+    //                         fontSize: "14px",
+    //                         textAlign: "center",
+    //                     },
+    //                 },
+    //             ],
+    //             [
+    //                 { label: "姓名", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
+    //                 { label: "年龄", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
+    //
+    //                 {
+    //                     label: "城市",
+    //                     style: {
+    //                         backgroundColor: "#FFC000",
+    //                         fontWeight: "bold",
+    //                     },
+    //                 },
+    //                 {
+    //                     label: "部门",
+    //                     style: {
+    //                         fontStyle: "italic",
+    //                         color: "#333333",
+    //                     },
+    //                 },
+    //                 {
+    //                     label: "薪酬",
+    //                     colspan: 2,
+    //                     style: {
+    //                         backgroundColor: "#ED7D31",
+    //                         color: "#FFFFFF",
+    //                         textAlign: "center",
+    //                     },
+    //                 },
+    //             ],
+    //             [
+    //                 {
+    //                     label: "name",
+    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
+    //                 },
+    //                 {
+    //                     label: "Age",
+    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
+    //                 },
+    //                 "City",
+    //                 "Dept",
+    //                 "Salary",
+    //                 "Hire Date",
+    //             ],
+    //         ],
+    //     });
+    //     // wb.destroy();
+    // }, 5000);
+
+    // 注意：BEFORE_COLUMN_MOVE、AFTER_COLUMN_MOVE、AFTER_SORT 已在 hooks 配置中注册，
+    // 无需重复通过 addHook 注册，否则会触发两次回调。
+
+    window.wb = wb;
+
+    // ============================================================
+    // 动态调整行列数示例（可在浏览器控制台调用）
+    // ============================================================
+    window.resizeGrid = {
+        /** 设置行数 */
+        setRows: (rows) => {
+            const sheet = wb.getActiveSheet();
+            sheet.setRowCount(rows);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 行数已调整为: ${rows}`);
+        },
+
+        /** 设置列数 */
+        setCols: (cols) => {
+            const sheet = wb.getActiveSheet();
+            sheet.setColCount(cols);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 列数已调整为: ${cols}`);
+        },
+
+        /** 同时设置行数和列数 */
+        setSize: (rows, cols) => {
+            const sheet = wb.getActiveSheet();
+            sheet.setGridSize(rows, cols);
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 网格大小已调整为: ${rows}行 x ${cols}列`);
+        },
+
+        /** 获取当前网格大小 */
+        getSize: () => {
+            const sheet = wb.getActiveSheet();
+            const rc = sheet.rowColManager;
+            return {
+                rows: rc.rowCount,
+                cols: rc.colCount,
+                explicitlySized: rc.isExplicitlySized,
+            };
+        },
+    };
+
+    // 示例：5秒后自动调整为 30行 x 15列（可删除此段代码）
+    // setTimeout(() => {
+    //     window.resizeGrid.setSize(30, 15);
+    // }, 5000);
+
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, wb.getActiveSheet().name);
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Loaded plugins:", wb.pluginManager.getLoadedNames());
+    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "App started! Tile Rendering + Plugin System ready.");
+};
+
+document.addEventListener("DOMContentLoaded", initApp);
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

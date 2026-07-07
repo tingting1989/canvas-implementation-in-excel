@@ -33,13 +33,15 @@ export class SettingsApplier {
         if (settings.maxRows !== undefined || settings.maxCols !== undefined) {
             const rows = settings.maxRows || CONFIG.MAX_ROWS;
             const cols = settings.maxCols || CONFIG.MAX_COLS;
-            //errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ✅ Found maxRows/maxCols! Calling resetSize(${rows}, ${cols})`);
+
+            // errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[SettingsApplying] ✅ Found maxRows/maxCols! Calling resetSize(${rows}, ${cols})`);
             sheet.rowColManager.resetSize(rows, cols);
         } else {
             // 兼容旧的 startRows/startCols 配置,初始时设置默认的行数和列数，使用该配置，则可以添加行和列
             if (settings.startRows !== undefined || settings.startCols !== undefined) {
                 const rows = settings.startRows || CONFIG.DEFAULT_START_ROWS;
                 const cols = settings.startCols || CONFIG.DEFAULT_START_COLS;
+
                 // errorHandler.debug(
                 //     ERROR_CODE.DEBUG_LOG,
                 //     `[SettingsApplying] ⚠️ Using legacy startRows/startCols! Calling resetSize(${rows}, ${cols})`,

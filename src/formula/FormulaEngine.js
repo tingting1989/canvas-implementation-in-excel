@@ -2,7 +2,7 @@ import { parseFormula } from "./FormulaParser.js";
 import { indexToCol } from "../utils/cellRef.js";
 import { FormulaEvaluator } from "./FormulaEvaluator.js";
 import { isString } from "../utils/utils.js";
-import { FUNCTIONS, registerFunction, unregisterFunction, hasFunction, getRegisteredFunctions } from "./functions/index.js";
+import { registry } from "./functions/index.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
@@ -286,8 +286,8 @@ export class FormulaEngine {
      * });
      * ```
      */
-    registerFunction(name, fn) {
-        registerFunction(name, fn);
+    static registerFunction(name, fn) {
+        registry.register(name, fn, { category: "custom" });
     }
 
     /**
@@ -298,11 +298,11 @@ export class FormulaEngine {
      *
      * @example
      * ```js
-     * engine.unregisterFunction('DOUBLE');
+     * FormulaEngine.unregisterFunction('DOUBLE');
      * ```
      */
-    unregisterFunction(name) {
-        return unregisterFunction(name);
+    static unregisterFunction(name) {
+        return registry.unregister(name);
     }
 
     /**
@@ -311,8 +311,8 @@ export class FormulaEngine {
      * @param {string} name - 函数名
      * @returns {boolean}
      */
-    hasFunction(name) {
-        return hasFunction(name);
+    static hasFunction(name) {
+        return registry.has(name);
     }
 
     /**
@@ -322,12 +322,12 @@ export class FormulaEngine {
      *
      * @example
      * ```js
-     * console.log(engine.getRegisteredFunctions());
+     * console.log(FormulaEngine.getRegisteredFunctions());
      * // ["SUM", "AVERAGE", "IF", "MY_CUSTOM_FUNC", ...]
      * ```
      */
-    getRegisteredFunctions() {
-        return getRegisteredFunctions();
+    static getRegisteredFunctions() {
+        return registry.list();
     }
 
     /**
