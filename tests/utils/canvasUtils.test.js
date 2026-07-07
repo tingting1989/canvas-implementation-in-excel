@@ -32,9 +32,9 @@ describe('Canvas 工具函数', () => {
         });
 
         it('应该在无法解析时返回默认值', () => {
-            expect(extractFontSize("")).toBe(12);  // CONFIG.DEFAULT_FONT_SIZE
-            expect(extractFontSize(null)).toBe(12);
-            expect(extractFontSize("invalid-font")).toBe(12);
+            expect(extractFontSize("")).toBe(14);  // CONFIG.DEFAULT_FONT_SIZE
+            expect(extractFontSize(null)).toBe(14);
+            expect(extractFontSize("invalid-font")).toBe(14);
         });
     });
 });

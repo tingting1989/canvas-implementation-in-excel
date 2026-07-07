@@ -237,8 +237,8 @@ describe('TextareaColumnType - 渲染方法测试', () => {
 
             const fontCalls = mockCtx.calls.filter(c => c.prop === 'font');
             expect(fontCalls.length).toBeGreaterThan(0);
-            expect(fontCalls[0].value).toContain('12px');
-            expect(fontCalls[0].value).toContain('Segoe UI');
+            expect(fontCalls[0].value).toContain('14px');
+            expect(fontCalls[0].value).toContain('Microsoft YaHei');
         });
 
         it('使用 style 中的字体配置', () => {

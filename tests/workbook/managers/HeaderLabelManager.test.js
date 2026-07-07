@@ -124,7 +124,7 @@ describe("HeaderLabelManager - Nested Headers", () => {
         const hlm = new HeaderLabelManager(createMockSheet());
         hlm.nestedHeaders = [["A", "B", "C"]];
         const info = hlm.getNestedColHeader(0, 1);
-        expect(info).toEqual({ label: "B", colspan: 1 });
+        expect(info).toEqual({ label: "B", colspan: 1, style: null });
     });
 
     it("should find column within a colspan range", () => {
@@ -133,9 +133,9 @@ describe("HeaderLabelManager - Nested Headers", () => {
         const info0 = hlm.getNestedColHeader(0, 0);
         const info1 = hlm.getNestedColHeader(0, 1);
         const info2 = hlm.getNestedColHeader(0, 2);
-        expect(info0).toEqual({ label: "Wide", colspan: 3 });
-        expect(info1).toEqual({ label: "Wide", colspan: 3 });
-        expect(info2).toEqual({ label: "Wide", colspan: 3 });
+        expect(info0).toEqual({ label: "Wide", colspan: 3, style: null });
+        expect(info1).toEqual({ label: "Wide", colspan: 3, style: null });
+        expect(info2).toEqual({ label: "Wide", colspan: 3, style: null });
     });
 });
 

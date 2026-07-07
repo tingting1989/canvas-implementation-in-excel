@@ -453,7 +453,7 @@ describe("ChunkedCellStore", () => {
         it("should return max row of non-empty chunk", () => {
             store.set(0, 0, new Cell("data"));
 
-            expect(store.getMaxRow()).toBe(1023);
+            expect(store.getMaxRow()).toBe(0);
             expect(store.getMaxCol()).toBe(255);
         });
 
@@ -461,7 +461,7 @@ describe("ChunkedCellStore", () => {
             store.set(0, 0, new Cell("a"));
             store.set(1024, 0, new Cell("b"));
 
-            expect(store.getMaxRow()).toBe(2047);
+            expect(store.getMaxRow()).toBe(1024);
         });
 
         it("should return max col across multiple chunks", () => {

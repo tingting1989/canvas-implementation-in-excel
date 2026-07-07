@@ -812,70 +812,107 @@ workbook.setCellValue(0, 1, '=TAX(A0)');  // 计算: 130
 
 ```javascript
 const wb = new Workbook(container);
-
-// 监听单元格变化
-wb.on('cell:change', ({ row, col, oldValue, newValue }) => {
-    console.log(`[${row},${col}]: ${oldValue} → ${newValue}`);
+wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    const sheet = wb.activeSheet;
+    const cell = sheet.cellStore.get(row, col);
+    if (cell?.value && isUrl(cell.value)) {
+        const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
+        if (canOpen === false) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+        openUrl(cell.value);
+        wb.runHooks(HOOKS.AFTER_OPEN_URL, row, col, cell.value);
+        e.preventDefault();
+        e.stopPropagation();
+    }
 });
 
-// 监听选择变化
-wb.on('selection:change', (range) => {
-    console.log('当前选择:', range);
-});
-
-// 监听公式计算错误
-wb.on('formula:error', ({ cell, error }) => {
-    alert(`公式错误 @${cell}: ${error.message}`);
-});
 ```
 
 #### 4️⃣ 条件格式
 
 ```javascript
 // 设置条件格式规则
-workbook.setConditionalFormat({
-    range: { startRow: 0, endRow: 100, startCol: 0, endCol: 5 },
-    rules: [
-        {
-            condition: 'greaterThan',
-            value: 90,
-            style: { backgroundColor: '#4caf50', color: '#fff' },
-        },
-        {
-            condition: 'between',
-            values: [60, 89],
-            style: { backgroundColor: '#ff9800' },
-        },
-        {
-            condition: 'lessThan',
-            value: 60,
-            style: { backgroundColor: '#f44336', color: '#fff' },
-        }
-    ]
-});
+new Workbook(container, {
+    sheets:{
+        conditionalStyles: [
+            {
+                range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                condition: (v) => isNumber(v) && v > 25,
+                style: { backgroundColor: "#ffcccc" },
+            },
+        ],
+    }
+})
 ```
 
 #### 5️⃣ 数据验证
 
 ```javascript
-// 必填 + 唯一性验证
-workbook.setColumnDefinition(0, {
-    type: 'text',
-    header: 'ID',
-    validators: [
-        { type: 'required', message: '此字段为必填项' },
-        { type: 'unique', message: 'ID 不能重复' }
-    ]
-});
+new Workbook(container, {
+    plugins: [
+        "autoFill",
+        "contextMenu",
+        "columnMove",
+        "copyPaste",
+        "exportFile",
+        "hiddenColumns",
+        "hiddenRows",
+        "rowMove",
+        "freeze",
+        "formula",
+        "sort",
+        "dataValidation",
+    ],
+    pluginOptions: {
+        dataValidation: {
+            conflictStrategy: "short-circuit",
+            rules: [
+                {
+                    range: "B:B",
+                    type: "number",
+                    operator: "between",
+                    value: [0, 100],
+                    errorMessage: "必须输入正数",
+                    errorStyle: "stop",
+                },
 
-// 数值范围验证
-workbook.setColumnDefinition(1, {
-    type: 'numeric',
-    header: '年龄',
-    validators: [
-        { type: 'range', min: 18, max: 65, message: '年龄必须在 18-65 之间' }
-    ]
-});
+                {
+                    range: "A:A",
+                    type: "text",
+                    operator: "greaterThan",
+                    value: 5,
+                    errorMessage: "必须输入正数",
+                    errorStyle: "stop",
+                },
+
+                {
+                    range: "C:C",
+                    type: "time",
+                    operator: "between",
+                    value: ["09:00", "18:00"],
+                    errorMessage: "必须输入正数",
+                    errorStyle: "stop",
+                },
+                {
+                    range: "D:D",
+                    type: "unique",
+                },
+                {
+                    range: "G:G",
+                    type: "date",
+                    operator: "between",
+                    value: ["01/01/2020", "12/31/2020"],
+                    errorMessage: "必须输入正数",
+                    errorStyle: "stop",
+                },
+            ],
+        },
+    },
+})
 ```
 
 </details>

@@ -525,14 +525,14 @@ describe("RowColManager - getVisibleRange", () => {
 });
 
 describe("RowColManager - Pagination", () => {
-    it("setPaginationBounds should affect rowCount", () => {
+    it.skip("setPaginationBounds should affect rowCount (功能已移除)", () => {
         const rcm = new RowColManager();
         rcm.ensureSize(100, 10);
         rcm.setPaginationBounds(10, 30);
         expect(rcm.rowCount).toBe(20);
     });
 
-    it("clearPaginationBounds should restore normal rowCount", () => {
+    it.skip("clearPaginationBounds should restore normal rowCount (功能已移除)", () => {
         const rcm = new RowColManager();
         rcm.ensureSize(100, 10);
         rcm.setPaginationBounds(10, 30);

@@ -64,9 +64,9 @@ describe("Fragment", () => {
             expect(frag.text).toBeNull();
         });
 
-        it("font 默认为 12px Segoe UI", () => {
+        it("font 默认为 14px Microsoft YaHei", () => {
             const frag = new Fragment({ visStartCol: 0, visEndCol: 0 });
-            expect(frag.font).toBe("12px Segoe UI");
+            expect(frag.font).toBe("14px Microsoft YaHei");
         });
 
         it("textAlign 默认为 left", () => {

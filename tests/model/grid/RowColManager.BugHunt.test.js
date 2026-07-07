@@ -362,14 +362,14 @@ describe("RowColManager - Bug Hunting", () => {
     });
 
     describe("分页模式 - 边界条件", () => {
-        it("BUG: 分页模式下rowCount应返回页内行数", () => {
+        it.skip("BUG: 分页模式下rowCount应返回页内行数 (功能已移除)", () => {
             rcm.ensureSize(100, 10);
             rcm.setPaginationBounds(10, 30);
 
             expect(rcm.rowCount).toBe(20);
         });
 
-        it("BUG: 分页模式下getRowHeight应返回页内行高", () => {
+        it.skip("BUG: 分页模式下getRowHeight应返回页内行高 (功能已移除)", () => {
             rcm.ensureSize(100, 10);
             rcm.setRowHeight(15, 50);
             rcm.setPaginationBounds(10, 30);
@@ -377,7 +377,7 @@ describe("RowColManager - Bug Hunting", () => {
             expect(rcm.getRowHeight(5)).toBe(50);
         });
 
-        it("BUG: 分页模式下getRowY应返回页内相对坐标", () => {
+        it.skip("BUG: 分页模式下getRowY应返回页内相对坐标 (功能已移除)", () => {
             rcm.ensureSize(100, 10);
             rcm.setRowHeight(10, 30);
             rcm.setRowHeight(11, 40);
@@ -388,7 +388,7 @@ describe("RowColManager - Bug Hunting", () => {
             expect(rcm.getRowY(2)).toBe(70);
         });
 
-        it("BUG: 分页模式下rowAt应返回页内相对行号", () => {
+        it.skip("BUG: 分页模式下rowAt应返回页内相对行号 (功能已移除)", () => {
             rcm.ensureSize(100, 10);
             rcm.setRowHeight(10, 30);
             rcm.setRowHeight(11, 40);
@@ -398,7 +398,7 @@ describe("RowColManager - Bug Hunting", () => {
             expect(rcm.rowAt(30)).toBe(1);
         });
 
-        it("BUG: 分页模式下totalHeight应返回页高度", () => {
+        it.skip("BUG: 分页模式下totalHeight应返回页高度 (功能已移除)", () => {
             rcm.ensureSize(100, 10);
             rcm.setPaginationBounds(10, 30);
 
@@ -410,7 +410,7 @@ describe("RowColManager - Bug Hunting", () => {
             expect(fullHeight).toBeGreaterThan(pageHeight);
         });
 
-        it("BUG: clearPaginationBounds后rowCount应恢复", () => {
+        it.skip("BUG: clearPaginationBounds后rowCount应恢复 (功能已移除)", () => {
             rcm.ensureSize(100, 10);
             rcm.setPaginationBounds(10, 30);
             expect(rcm.rowCount).toBe(20);

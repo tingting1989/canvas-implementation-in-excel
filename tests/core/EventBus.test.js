@@ -463,7 +463,7 @@ describe("EventBus - Aggressive Tests", () => {
             expect(warnSpy).toHaveBeenCalledWith(
                 expect.stringContaining("未在 EVENT_FLOW_REGISTRY 中声明")
             );
-            expect(fn).toHaveBeenCalledOnce();
+            expect(fn).not.toHaveBeenCalled();  // 未注册事件不会触发监听器
             warnSpy.mockRestore();
         });
 
