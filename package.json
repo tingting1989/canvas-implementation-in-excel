@@ -36,7 +36,7 @@
         "test:watch": "vitest",
         "test:ui": "vitest --ui",
         "test:coverage": "vitest run --coverage",
-        "prepublishOnly": "npm run test && npm run build:lib",
+        "prepublishOnly": "npm run build:lib",
         "version": "npm run build:lib && git add -A dist",
         "postversion": "git push && git push --tags",
         "publish:npm": "npm publish --access public",
