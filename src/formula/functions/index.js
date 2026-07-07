@@ -100,6 +100,28 @@
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 
 // ════════════════════════════════════════════
+// 导入内置函数模块
+// ════════════════════════════════════════════
+
+/** 数学函数模块：SUM, AVERAGE, MAX, MIN, ROUND, ABS 等 */
+import { mathFunctions } from "./math.js";
+
+/** 统计函数模块：COUNT, COUNTA, STDEV, VAR 等 */
+import { statisticalFunctions } from "./statistical.js";
+
+/** 逻辑函数模块：IF, AND, OR, NOT 等 */
+import { logicalFunctions } from "./logical.js";
+
+/** 文本函数模块：CONCATENATE, LEFT, RIGHT, MID, LEN 等 */
+import { textFunctions } from "./text.js";
+
+/** 条件函数模块：IFERROR, IFNA 等 */
+import { conditionalFunctions } from "./conditional.js";
+
+/** 查找函数模块：VLOOKUP, HLOOKUP, MATCH, INDEX 等 */
+import { lookupFunctions } from "./lookup.js";
+
+// ════════════════════════════════════════════
 // 常量定义
 // ════════════════════════════════════════════
 
@@ -152,28 +174,6 @@ const FUNCTION_CATEGORY = Object.freeze({
 
 // 导出常量供外部使用
 export { FUNCTION_CATEGORY };
-
-// ════════════════════════════════════════════
-// 导入内置函数模块
-// ════════════════════════════════════════════
-
-/** 数学函数模块：SUM, AVERAGE, MAX, MIN, ROUND, ABS 等 */
-import { mathFunctions } from "./math.js";
-
-/** 统计函数模块：COUNT, COUNTA, STDEV, VAR 等 */
-import { statisticalFunctions } from "./statistical.js";
-
-/** 逻辑函数模块：IF, AND, OR, NOT 等 */
-import { logicalFunctions } from "./logical.js";
-
-/** 文本函数模块：CONCATENATE, LEFT, RIGHT, MID, LEN 等 */
-import { textFunctions } from "./text.js";
-
-/** 条件函数模块：IFERROR, IFNA 等 */
-import { conditionalFunctions } from "./conditional.js";
-
-/** 查找函数模块：VLOOKUP, HLOOKUP, MATCH, INDEX 等 */
-import { lookupFunctions } from "./lookup.js";
 
 // ════════════════════════════════════════════
 // 内部数据结构
@@ -398,7 +398,7 @@ class FunctionRegistry {
          * @param {...*} args - 传递给原始函数的参数
          * @returns {*} 函数计算结果或 "#ERROR!" 错误标识符
          */
-        const wrappedFn = function (...args) {
+        const wrappedFn = function wrappedFn(...args) {
             try {
                 return fn.apply(this, args);
             } catch (error) {
@@ -653,9 +653,9 @@ class FunctionRegistry {
 
         for (const [, entry] of this._functions) {
             if (entry.category === FUNCTION_CATEGORY.BUILTIN) {
-                builtinCount++;
+                builtinCount += 1;
             } else {
-                customCount++;
+                customCount += 1;
             }
         }
 

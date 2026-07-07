@@ -183,7 +183,7 @@ export class CellDataAccessor {
      * @param {number} bottomCol - 右下角列号
      * @yields {{row:number, col:number, cell: import("../store/Cell.js").Cell|null}}
      */
-    * [Symbol.iterator](topRow, topCol, bottomRow, bottomCol) {
+    *[Symbol.iterator](topRow, topCol, bottomRow, bottomCol) {
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
                 yield { row: r, col: c, cell: this.get(r, c) };

@@ -11,7 +11,7 @@ import { FreezePlugin } from "./FreezePlugin.js";
 import { FormulaPlugin } from "./FormulaPlugin.js";
 import { SortPlugin } from "./SortPlugin.js";
 import { DataValidationPlugin } from "@/plugins/data-validation";
-import {ChartPlugin} from "@/plugins/ChartPlugin";
+import { ChartPlugin } from "@/plugins/ChartPlugin";
 
 const builtinPlugins = [
     ["autoFill", AutoFillPlugin],
@@ -26,7 +26,7 @@ const builtinPlugins = [
     ["formula", FormulaPlugin],
     ["sort", SortPlugin],
     ["dataValidation", DataValidationPlugin],
-    ["chart", ChartPlugin]
+    ["chart", ChartPlugin],
 ];
 
 export function registerBuiltinPlugins() {

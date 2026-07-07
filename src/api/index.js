@@ -7,7 +7,7 @@ export * from "../types/index.js";
 
 export { FormulaEngine } from "../formula/FormulaEngine.js";
 export { FormulaEvaluator } from "../formula/FormulaEvaluator.js";
-export { registry as FunctionRegistry, FUNCTION_CATEGORY } from "../formula/functions/index.js";
+export { registry as registryFunction, FUNCTION_CATEGORY } from "../formula/functions/index.js";
 
 export * from "../constants/enums/AutoFillDir.js";
 export * from "../constants/enums/BorderStyle.js";
