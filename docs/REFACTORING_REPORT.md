@@ -301,7 +301,7 @@ const cell = accessor.get(r, c);  // 内部：1次 toRealRow + 1次 get
 
 ## 👥 贡献者
 
-- 重构设计：AI Assistant
+- 重构设计：jiangsuiting
 - 代码审查：待团队 Review
 - 测试验证：待执行
 

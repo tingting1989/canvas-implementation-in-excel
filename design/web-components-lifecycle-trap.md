@@ -650,5 +650,5 @@ tab.remove(); // 触发 disconnectedCallback → 不销毁
 
 **文档版本**: v2.0  
 **创建日期**: 2026-07-01  
-**作者**: AI Assistant  
+**作者**: jiangsuiting 
 **状态**: 已修正陷阱

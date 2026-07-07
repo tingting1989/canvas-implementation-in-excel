@@ -1,4 +1,4 @@
-/**
+﻿/**
  * TypeRegistry 类型注册表完整测试套件
  *
  * 包含：
@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TypeRegistry, registerTypeClass, getType, hasType, unregisterType, getRegisteredTypes, clearTypes, resetTypes, getRegistrySize, registerType } from '../../src/types/index.js';
+import { TypeRegistry, registerColumnTypeClass, getColumnTypeInstance, hasColumnType, unregisterColumnType, listRegisteredColumnTypes, clearAllColumnTypes, resetToBuiltinTypes, getRegisteredTypeCount, registerColumnTypeInstance } from '../../src/types/index.js';
 import { BaseColumnType } from '../../src/types/BaseColumnType.js';
 
 describe('TypeRegistry - 单例模式测试', () => {
@@ -49,7 +49,7 @@ describe('TypeRegistry - 单例模式测试', () => {
 
 describe('TypeRegistry - register() 方法', () => {
     beforeEach(() => {
-        clearTypes();
+        clearAllColumnTypes();
     });
 
     it('成功注册类型', () => {
@@ -106,20 +106,20 @@ describe('TypeRegistry - register() 方法', () => {
         expect(registry.register('valid-function', validFunction)).toBe(true);
     });
 
-    it('通过便捷函数 registerTypeClass 注册', () => {
+    it('通过便捷函数 registerColumnTypeClass 注册', () => {
         class QuickType extends BaseColumnType {
             get name() { return 'quick'; }
         }
 
-        const result = registerTypeClass('quick', QuickType);
+        const result = registerColumnTypeClass('quick', QuickType);
         expect(result).toBe(true);
-        expect(hasType('quick')).toBe(true);
+        expect(hasColumnType('quick')).toBe(true);
     });
 });
 
 describe('TypeRegistry - registerInstance() 方法', () => {
     beforeEach(() => {
-        clearTypes();
+        clearAllColumnTypes();
     });
 
     it('成功注册类型实例', () => {
@@ -140,20 +140,20 @@ describe('TypeRegistry - registerInstance() 方法', () => {
         expect(registry.registerInstance({})).toBe(false);
     });
 
-    it('通过便捷函数 registerType 注册', () => {
+    it('通过便捷函数 registerColumnTypeInstance 注册', () => {
         class QuickInstance extends BaseColumnType {
             get name() { return 'quickInstance'; }
         }
 
-        const result = registerType(new QuickInstance());
+        const result = registerColumnTypeInstance(new QuickInstance());
         expect(result).toBe(true);
-        expect(hasType('quickInstance')).toBe(true);
+        expect(hasColumnType('quickInstance')).toBe(true);
     });
 });
 
 describe('TypeRegistry - get() 方法', () => {
     beforeEach(() => {
-        resetTypes();
+        resetToBuiltinTypes();
     });
 
     it('获取已注册的类型实例', () => {
@@ -204,20 +204,20 @@ describe('TypeRegistry - get() 方法', () => {
         expect(instance).toBeNull();
     });
 
-    it('通过便捷函数 getType 获取', () => {
+    it('通过便捷函数 getColumnTypeInstance 获取', () => {
         class QuickGetType extends BaseColumnType {
             get name() { return 'quickGet'; }
         }
 
-        registerTypeClass('quickGet', QuickGetType);
-        const instance = getType('quickGet');
+        registerColumnTypeClass('quickGet', QuickGetType);
+        const instance = getColumnTypeInstance('quickGet');
         expect(instance).toBeInstanceOf(QuickGetType);
     });
 });
 
 describe('TypeRegistry - has() / unregister() / list() / size', () => {
     beforeEach(() => {
-        clearTypes();
+        clearAllColumnTypes();
     });
 
     it('has() 检查类型是否存在', () => {
@@ -268,13 +268,13 @@ describe('TypeRegistry - has() / unregister() / list() / size', () => {
         expect(registry.size).toBe(initialSize + 1);
     });
 
-    it('便捷函数 hasType / unregisterType / getRegisteredTypes / getRegistrySize', () => {
-        registerTypeClass('convTest', BaseColumnType);
-        expect(hasType('convTest')).toBe(true);
-        expect(getRegisteredTypes()).toContain('convTest');
-        expect(typeof getRegistrySize()).toBe('number');
-        expect(unregisterType('convTest')).toBe(true);
-        expect(hasType('convTest')).toBe(false);
+    it('便捷函数 hasColumnType / unregisterColumnType / listRegisteredColumnTypes / getRegisteredTypeCount', () => {
+        registerColumnTypeClass('convTest', BaseColumnType);
+        expect(hasColumnType('convTest')).toBe(true);
+        expect(listRegisteredColumnTypes()).toContain('convTest');
+        expect(typeof getRegisteredTypeCount()).toBe('number');
+        expect(unregisterColumnType('convTest')).toBe(true);
+        expect(hasColumnType('convTest')).toBe(false);
     });
 });
 
@@ -301,15 +301,15 @@ describe('TypeRegistry - clear() / reset()', () => {
         expect(registry.has('checkbox')).toBe(true);
     });
 
-    it('便捷函数 clearTypes / resetTypes', () => {
-        resetTypes();
-        expect(hasType('text')).toBe(true);
+    it('便捷函数 clearAllColumnTypes / resetToBuiltinTypes', () => {
+        resetToBuiltinTypes();
+        expect(hasColumnType('text')).toBe(true);
     });
 });
 
 describe('TypeRegistry - 攻击性测试', () => {
     beforeEach(() => {
-        clearTypes();
+        clearAllColumnTypes();
     });
 
     it('特殊字符作为类型名称', () => {
@@ -374,7 +374,7 @@ describe('TypeRegistry - 攻击性测试', () => {
 
 describe('TypeRegistry - 集成测试', () => {
     beforeEach(() => {
-        resetTypes();
+        resetToBuiltinTypes();
     });
 
     it('完整的注册-查询-使用流程', () => {
@@ -440,7 +440,7 @@ describe('TypeRegistry - 集成测试', () => {
 
 describe('TypeRegistry - Bug 检测', () => {
     beforeEach(() => {
-        clearTypes();
+        clearAllColumnTypes();
     });
 
     it('get() 无 options 时返回缓存的默认实例', () => {

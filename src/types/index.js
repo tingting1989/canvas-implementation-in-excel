@@ -427,11 +427,7 @@ class TypeRegistry {
             });
         }
 
-        errorHandler.debug(
-            ERROR_CODE.DEBUG_LOG,
-            `[TypeRegistry] ✅ 已加载 ${this.#registry.size} 个内置类型`,
-            Array.from(this.#registry.keys())
-        );
+        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[TypeRegistry] ✅ 已加载 ${this.#registry.size} 个内置类型`, Array.from(this.#registry.keys()));
     }
 
     /**
@@ -482,21 +478,14 @@ class TypeRegistry {
         }
 
         if (this.#registry.has(typeName)) {
-            errorHandler.warn(
-                ERROR_CODE.TYPE_DUPLICATE,
-                `类型 "${typeName}" 已注册，将被覆盖（overwrite）`
-            );
+            errorHandler.warn(ERROR_CODE.TYPE_DUPLICATE, `类型 "${typeName}" 已注册，将被覆盖（overwrite）`);
         }
 
         let defaultInstance = null;
         try {
             defaultInstance = new TypeClass(options);
         } catch (error) {
-            errorHandler.warn(
-                ERROR_CODE.TYPE_INSTANTIATION_ERROR,
-                `无法为类型 "${typeName}" 创建默认实例`,
-                { originalError: error }
-            );
+            errorHandler.warn(ERROR_CODE.TYPE_INSTANTIATION_ERROR, `无法为类型 "${typeName}" 创建默认实例`, { originalError: error });
         }
 
         this.#registry.set(typeName, {
@@ -587,10 +576,7 @@ class TypeRegistry {
         const typeEntry = this.#registry.get(typeName);
 
         if (!typeEntry) {
-            errorHandler.warn(
-                ERROR_CODE.TYPE_NOT_REGISTERED,
-                `类型 "${typeName}" 未注册，将使用文本类型作为后备（fallback）`
-            );
+            errorHandler.warn(ERROR_CODE.TYPE_NOT_REGISTERED, `类型 "${typeName}" 未注册，将使用文本类型作为后备（fallback）`);
 
             const fallbackEntry = this.#registry.get("text");
             return fallbackEntry ? fallbackEntry.instance : null;
@@ -602,11 +588,7 @@ class TypeRegistry {
             try {
                 typeEntry.instance = new typeEntry.constructor();
             } catch (error) {
-                errorHandler.handle(
-                    ERROR_CODE.TYPE_INSTANTIATION_ERROR,
-                    `无法实例化类型 "${typeName}"`,
-                    { originalError: error }
-                );
+                errorHandler.handle(ERROR_CODE.TYPE_INSTANTIATION_ERROR, `无法实例化类型 "${typeName}"`, { originalError: error });
                 return null;
             }
             return typeEntry.instance;
@@ -615,11 +597,7 @@ class TypeRegistry {
         try {
             return new typeEntry.constructor(options);
         } catch (error) {
-            errorHandler.handle(
-                ERROR_CODE.TYPE_INSTANTIATION_ERROR,
-                `无法使用配置实例化类型 "${typeName}"`,
-                { originalError: error }
-            );
+            errorHandler.handle(ERROR_CODE.TYPE_INSTANTIATION_ERROR, `无法使用配置实例化类型 "${typeName}"`, { originalError: error });
             return null;
         }
     }
@@ -692,68 +670,65 @@ class TypeRegistry {
 
     /**
      * 清空所有类型（Clear All Types）
- *
- * 危险操作！会移除包括内置类型在内的所有注册项。
- * 通常仅在测试或重置场景中使用。
- *
- * @example
- * ```js
- * // ⚠️ 谨慎使用
- * registry.clear();
- * console.log(registry.size);  // 0
- * // 所有类型都不可用了（包括 text、numeric 等）
- * ```
- */
-clear() {
-    const previousSize = this.#registry.size;
-    this.#registry.clear();
+     *
+     * 危险操作！会移除包括内置类型在内的所有注册项。
+     * 通常仅在测试或重置场景中使用。
+     *
+     * @example
+     * ```js
+     * // ⚠️ 谨慎使用
+     * registry.clear();
+     * console.log(registry.size);  // 0
+     * // 所有类型都不可用了（包括 text、numeric 等）
+     * ```
+     */
+    clear() {
+        const previousSize = this.#registry.size;
+        this.#registry.clear();
 
-    if (previousSize > 0) {
-        errorHandler.debug(
-            ERROR_CODE.DEBUG_LOG,
-            `[TypeRegistry] 🗑️ 已清空 ${previousSize} 个类型`
-        );
+        if (previousSize > 0) {
+            errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[TypeRegistry] 🗑️ 已清空 ${previousSize} 个类型`);
+        }
     }
-}
 
-/**
- * 重置为初始状态（Reset to Initial State）
- *
- * 清空后重新加载所有内置类型，恢复到刚创建时的状态。
- * 适用于测试环境清理或运行时重置。
- *
- * @example
- * ```js
- * // 先注册了一些自定义类型...
- * registry.register('custom1', CustomType1);
- * registry.register('custom2', CustomType2);
- *
- * console.log(registry.size);  // 13 (11 内置 + 2 自定义)
- *
- * // 重置（清除所有自定义类型，恢复内置类型）
- * registry.reset();
- * console.log(registry.size);  // 11 (只有内置类型)
- * ```
- */
-reset() {
-    this.#registry.clear();
-    this.#initializeBuiltinTypes();
-}
+    /**
+     * 重置为初始状态（Reset to Initial State）
+     *
+     * 清空后重新加载所有内置类型，恢复到刚创建时的状态。
+     * 适用于测试环境清理或运行时重置。
+     *
+     * @example
+     * ```js
+     * // 先注册了一些自定义类型...
+     * registry.register('custom1', CustomType1);
+     * registry.register('custom2', CustomType2);
+     *
+     * console.log(registry.size);  // 13 (11 内置 + 2 自定义)
+     *
+     * // 重置（清除所有自定义类型，恢复内置类型）
+     * registry.reset();
+     * console.log(registry.size);  // 11 (只有内置类型)
+     * ```
+     */
+    reset() {
+        this.#registry.clear();
+        this.#initializeBuiltinTypes();
+    }
 
-/**
- * 获取已注册类型的总数（Get Total Count of Registered Types）
- *
- * @returns {number} 当前注册表中的类型数量
- *
- * @example
- * ```js
- * console.log(`系统提供 ${registry.size} 种数据类型`);
- * // 输出: "系统提供 11 种数据类型"
- * ```
- */
-get size() {
-    return this.#registry.size;
-}
+    /**
+     * 获取已注册类型的总数（Get Total Count of Registered Types）
+     *
+     * @returns {number} 当前注册表中的类型数量
+     *
+     * @example
+     * ```js
+     * console.log(`系统提供 ${registry.size} 种数据类型`);
+     * // 输出: "系统提供 11 种数据类型"
+     * ```
+     */
+    get size() {
+        return this.#registry.size;
+    }
 }
 
 // ════════════════════════════════════════════
@@ -1120,18 +1095,7 @@ export function getRegisteredTypeCount() {
  * @internal 此函数主要供内部使用，普通用户通常不需要直接调用
  */
 export function extractColumnTypeOptions(columnConfig) {
-    const {
-        source,
-        allowInvalid,
-        strict,
-        numericFormat,
-        min,
-        max,
-        maxLength,
-        dateFormat,
-        labels,
-        maxRows
-    } = columnConfig;
+    const { source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels, maxRows } = columnConfig;
 
     return Object.fromEntries(
         Object.entries({
@@ -1144,8 +1108,8 @@ export function extractColumnTypeOptions(columnConfig) {
             maxLength,
             dateFormat,
             labels,
-            maxRows
-        }).filter(([, value]) => value !== undefined)
+            maxRows,
+        }).filter(([, value]) => value !== undefined),
     );
 }
 
@@ -1415,11 +1379,7 @@ export function validateCellValue(cellType, value, colConfig) {
         try {
             return colConfig.validator(value);
         } catch (error) {
-            errorHandler.handle(
-                ERROR_CODE.TYPE_PARSE_ERROR,
-                "自定义验证器执行失败",
-                { originalError: error }
-            );
+            errorHandler.handle(ERROR_CODE.TYPE_PARSE_ERROR, "自定义验证器执行失败", { originalError: error });
             return false;
         }
     }

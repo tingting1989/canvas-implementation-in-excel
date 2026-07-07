@@ -297,7 +297,7 @@ console.log('  5. 高级跨单元格依赖渲染');
 console.log('');
 console.log('📖 下一步:');
 console.log('  - 查看 tests/CustomRenderer.test.js 了解完整测试');
-console.log('  - 阅读 designDocument/custom-renderer-api.md 设计文档');
+console.log('  - 阅读 design/custom-renderer-api.md 设计文档');
 console.log('  - 运行 npm test 执行测试套件');
 console.log('');
 console.log('💡 提示:');

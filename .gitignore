@@ -30,3 +30,4 @@ junit.xml
 docs/.vitepress/cache
 
 .codebuddy
+coverage

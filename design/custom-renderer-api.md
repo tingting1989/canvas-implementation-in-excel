@@ -2317,7 +2317,7 @@ describe('Custom Renderer - 架构一致性测试', () => {
 
 **文档版本**: v1.1.0 （重大更新：增加冻结/分页/图表引擎协作支持）
 **最后更新**: 2026-06-27
-**作者**: AI Assistant
+**作者**: jiangsuiting
 **审核状态**: ✅ 已通过架构一致性审查
 **关联文档**: [ChartEngine.md](./ChartEngine.md) （行列号约定对齐）
 **变更记录**:

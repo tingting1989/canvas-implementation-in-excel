@@ -1934,5 +1934,5 @@ workbook.use(MyPlugin);
 
 **文档版本:** v1.0.0
 **最后更新:** 2026-06-23
-**作者:** AI Assistant
+**作者:** jiangsuiting
 **审核状态:** 待团队评审

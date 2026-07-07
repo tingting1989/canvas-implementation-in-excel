@@ -2,7 +2,7 @@
 
 **版本**: v1.0  
 **日期**: 2025-01-XX  
-**作者**: AI Assistant  
+**作者**: jiangsuiting 
 **状态**: ✅ 已完成设计，待实施
 
 ---
@@ -1816,7 +1816,7 @@ export class ExportFilePlugin extends BasePlugin {
 /**
  * ChartDataExtractor - 图表数据提取 Worker
  * 
- * 详细实现见：designDocument/ChartEngine.md 第4.2节
+ * 详细实现见：design/ChartEngine.md 第4.2节
  * 
  * 核心功能：
  * - 三层数据提取策略（同步/异步分帧/Worker）
@@ -2904,7 +2904,7 @@ assert(stats.avgDuration > 0);
 
 #### **长期愿景（2年+）**
 
-- [ ] **AI 加速**
+- [ ] **jiangsuiting 加速**
   - TensorFlow.js in Worker
   - 智能数据分析（趋势预测、异常检测）
 
@@ -3007,7 +3007,7 @@ assert(stats.avgDuration > 0);
 
 | 版本 | 日期 | 作者 | 变更说明 |
 |------|------|------|----------|
-| v1.0 | 2025-01-XX | AI Assistant | 初始版本，完整技术方案 |
+| v1.0 | 2025-01-XX | jiangsuiting| 初始版本，完整技术方案 |
 
 ---
 

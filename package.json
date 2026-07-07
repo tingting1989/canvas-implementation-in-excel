@@ -59,6 +59,7 @@
         "@babel/core": "^8.0.1",
         "@babel/preset-env": "^8.0.2",
         "@eslint/js": "^10.0.1",
+        "@vitest/coverage-v8": "^4.1.9",
         "@vitest/ui": "^4.1.9",
         "@vue/eslint-config-prettier": "^10.2.0",
         "babel-loader": "^10.1.1",

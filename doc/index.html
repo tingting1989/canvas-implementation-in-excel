@@ -43,260 +43,2439 @@
 
 
     <section>
-        <article><h1>Canvas Sheet</h1>
-<h2>发布</h2>
-<h3>1.版本设置</h3>
-<pre class="prettyprint source lang-shell"><code>
-# 1.0.0 → 1.0.1
-npm version patch
+        <article><h1>📊 Canvas Spreadsheet Engine</h1>
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.12-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License" />
+  <img src="https://img.shields.io/badge/JavaScript-ES6%2B-yellow.svg" alt="Language" />
+  <a href="#技术栈"><img src="https://img.shields.io/badge/Web_Components-Custom_Elements-orange.svg" alt="Web Components" /></a>
+</p>
+<p align="center">
+  <strong>高性能 Canvas 渲染的 Web 电子表格引擎</strong><br/>
+  基于 Canvas API + Web Components 的现代化表格解决方案<br/>
+  支持 100万+ 行数据流畅渲染、公式计算、数据验证、图表可视化
+</p>
+<hr>
+<h2>📖 目录</h2>
+<ul>
+<li><a href="#%E6%A0%B8%E5%BF%83%E7%89%B9%E6%80%A7">✨ 核心特性</a></li>
+<li><a href="#%E5%BF%AB%E9%80%9F%E5%BC%80%E5%A7%8B">🚀 快速开始</a></li>
+<li><a href="#%E6%8A%80%E6%9C%AF%E6%9E%B6%E6%9E%84">🏗️ 技术架构</a></li>
+<li><a href="#%E5%AE%89%E8%A3%85%E4%B8%8E%E4%BD%BF%E7%94%A8">📦 安装与使用</a></li>
+<li><a href="#api-%E5%8F%82%E8%80%83">💻 API 参考</a></li>
+<li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%8E%E6%89%A9%E5%B1%95">🎨 自定义与扩展</a></li>
+<li><a href="#%E5%B7%B2%E5%AE%8C%E6%88%90%E5%8A%9F%E8%83%BD">📋 已完成功能</a></li>
+<li><a href="#%E5%BE%85%E5%BC%80%E5%8F%91%E5%8A%9F%E8%83%BD">🔮 待开发功能</a></li>
+<li><a href="#%E8%B4%A1%E7%8C%AE%E6%8C%87%E5%8D%97">🤝 贡献指南</a></li>
+<li><a href="#%E8%AE%B8%E5%8F%AF%E8%AF%81">📄 许可证</a></li>
+</ul>
+<hr>
+<h2>✨ 核心特性</h2>
+<h3>🎯 <strong>极致性能</strong></h3>
+<ul>
+<li>✅ <strong>Canvas 硬件加速渲染</strong> - 摆脱 DOM 性能瓶颈</li>
+<li>✅ <strong>瓦片化渲染架构</strong> (Tile Rendering) - 只绘制可视区域</li>
+<li>✅ <strong>智能缓存机制</strong> - TileCache + ChartCache 双层缓存</li>
+<li>✅ <strong>支持 100,000+ 行</strong>数据流畅滚动（实测性能优秀）</li>
+</ul>
+<h3>🧮 <strong>强大的公式系统</strong></h3>
+<ul>
+<li>✅ <strong>Excel 兼容语法</strong> - <code>=SUM(A1:A100)</code>, <code>=VLOOKUP(...)</code></li>
+<li>✅ <strong>50+ 内置函数</strong> - 数学、统计、逻辑、文本、查找、条件函数</li>
+<li>✅ <strong>自定义函数注册</strong> - <code>registerFunction('MYFUNC', impl)</code></li>
+<li>✅ <strong>循环引用检测</strong> - 防止无限递归</li>
+<li>✅ <strong>惰性求值</strong> - 按需计算，避免不必要的开销</li>
+</ul>
+<h3>🎨 <strong>丰富的数据类型</strong></h3>
+<ul>
+<li>✅ <strong>6 种基础类型</strong>: text, numeric, date, boolean, select, textarea</li>
+<li>✅ <strong>5 种可视化渲染器</strong>: checkbox, progressBar, starRating, sparkline, colorPreview</li>
+<li>✅ <strong>可扩展的类型系统</strong> - 继承 BaseColumnType 创建自定义类型</li>
+</ul>
+<h3>🔌 <strong>插件化架构</strong></h3>
+<ul>
+<li>✅ <strong>20+ 内置插件</strong> - 冻结窗格、排序、筛选、自动填充、数据验证...</li>
+<li>✅ <strong>事件驱动</strong> - EventBus + Hooks 双向通信机制</li>
+<li>✅ <strong>策略模式</strong> - 键盘、鼠标、复制粘贴等行为可定制</li>
+</ul>
+<h3>🛡️ <strong>企业级特性</strong></h3>
+<ul>
+<li>✅ <strong>数据验证规则</strong> - 必填、唯一性、正则表达式、范围限制</li>
+<li>✅ <strong>条件格式</strong> - 基于规则的动态样式应用</li>
+<li>✅ <strong>撤销/重做栈</strong> - Command Pattern 实现的完整历史记录</li>
+<li>✅ <strong>合并单元格</strong> - 支持跨行跨列合并</li>
+<li>✅ <strong>多工作表管理</strong> - SheetTab 切换与管理</li>
+<li>✅ <strong>导出功能</strong> - CSV/Excel 格式导出</li>
+</ul>
+<hr>
+<h2>🚀 快速开始</h2>
+<h3>📦 NPM 安装</h3>
+<pre class="prettyprint source lang-bash"><code>npm install @canvas-sheet/core
+</code></pre>
+<h3>💻 最简示例</h3>
+<pre class="prettyprint source lang-html"><code>&lt;!DOCTYPE html>
+&lt;html>
+&lt;head>
+    &lt;meta charset=&quot;UTF-8&quot;>
+    &lt;title>Canvas Spreadsheet Demo&lt;/title>
+    &lt;style>
+        #spreadsheet-container {
+            width: 800px;
+            height: 600px;
+            border: 1px solid #ddd;
+        }
+    &lt;/style>
+&lt;/head>
+&lt;body>
+    &lt;canvas id=&quot;spreadsheet-container&quot;>&lt;/canvas>
 
- # 1.0.0 → 1.1.0
-npm version minor
+    &lt;!-- 方式1: UMD 全局变量 -->
+    &lt;script src=&quot;./dist/canvas-sheet.umd.js&quot;>&lt;/script>
+    &lt;script>
+        const container = document.getElementById('spreadsheet-container');
+        
+        // 创建工作簿实例
+        const workbook = new CanvasSheet.Workbook(container, {
+            startRows: 100,
+            startCols: 26,
+            defaultStyle: {
+                fontSize: 14,
+                fontFamily: 'Microsoft YaHei'
+            }
+        });
 
- # 1.0.0 → 2.0.0
-npm version major
-</code></pre>
-<h3>2.执行发布</h3>
-<pre class="prettyprint source lang-shell"><code>npm publish
-</code></pre>
-<h3>3.删除私服中的npm 包</h3>
-<pre class="prettyprint source lang-shell"><code>npm unpublish @canvas-sheet/core --registry=http://10.124.26.35:4873/ --force
-</code></pre>
-<h2>检查发布包体积</h2>
-<pre class="prettyprint source lang-shell"><code>npm pack
-</code></pre>
-<h2>项目中使用</h2>
-<pre class="prettyprint source lang-shell"><code>npm install @canvas-sheet/core
-</code></pre>
-<h2>npm 镜像源</h2>
-<h3>镜像源管理</h3>
-<p>通过 nrm 包来管理</p>
-<h4>安装</h4>
-<pre class="prettyprint source lang-shell"><code>npm install -g nrm
-</code></pre>
-<h4>查看可用镜像源</h4>
-<pre class="prettyprint source lang-shell"><code>nrm ls
-</code></pre>
-<h4>输出示例：</h4>
-<pre><code>npm ---------- https://registry.npmjs.org/
+        // 设置单元格值
+        workbook.setCellValue(0, 0, 'Hello Canvas!');
+        workbook.setCellValue(1, 0, 42);
+        workbook.setCellValue(2, 0, '=A1 & &quot; | Count: &quot; & A2');
 
-yarn --------- https://registry.yarnpkg.com/
+        console.log(workbook.getCellValue(2, 0)); 
+        // 输出: &quot;Hello Canvas! | Count: 42&quot;
+    &lt;/script>
+&lt;/body>
+&lt;/html>
+</code></pre>
+<h3>🎯 ES Module 方式（推荐）</h3>
+<pre class="prettyprint source lang-javascript"><code>import { Workbook } from '@canvas-sheet/core';
 
-tencent ------ https://mirrors.cloud.tencent.com/npm/
+// 初始化工作簿
+const container = document.getElementById('spreadsheet-container');
+const wb = new Workbook(container, {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    
+    // 初始行列数
+    startRows: 1000,
+    startCols: 50,
+    
+    // 默认样式
+    defaultStyle: {
+        fontSize: 13,
+        fontFamily: 'Arial',
+        textAlign: 'left'
+    }
+});
 
-cnpm --------- https://r.cnpmjs.org/
+// 批量填充数据
+for (let row = 0; row &lt; 1000; row++) {
+    for (let col = 0; col &lt; 10; col++) {
+        wb.setCellValue(row, col, Math.random() * 100);
+    }
+}
 
-taobao ------- https://registry.npmmirror.com/
+// 使用公式
+wb.setCellValue(0, 11, '=SUM(A1:J1000)');  // 自动求和
+</code></pre>
+<hr>
+<h2>🏗️ 技术架构</h2>
+<h3>📐 整体架构图</h3>
+<pre class="prettyprint source"><code>┌─────────────────────────────────────────────────────────────────┐
+│                        用户界面层 (UI Layer)                      │
+│  ┌──────────────┐ ┌──────────────┐ ┌────────────────────────┐   │
+│  │ FormulaBar   │ │ SheetTabBar  │ │ ContextMenu           │   │
+│  │ (公式栏)      │ │ (标签栏)     │ │ (右键菜单)             │   │
+│  └──────────────┘ └──────────────┘ └────────────────────────┘   │
+├─────────────────────────────────────────────────────────────────┤
+│                        工作簿层 (Workbook Layer)                  │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │                    Workbook (工作簿)                       │   │
+│  │  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌──────────────┐  │   │
+│  │  │ Sheet 1 │ │ Sheet 2 │ │ Sheet 3 │ │ ...          │  │   │
+│  │  └─────────┘ └─────────┘ └─────────┘ └──────────────┘  │   │
+│  └─────────────────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────────────────┤
+│                        引擎层 (Engine Layer)                     │
+│  ┌────────────────┐  ┌────────────────┐  ┌──────────────────┐  │
+│  │ RenderEngine   │  │ FormulaEngine  │  │ ValidationEngine │  │
+│  │ (渲染引擎)      │  │ (公式引擎)     │  │ (验证引擎)       │  │
+│  ├────────────────┤  ├────────────────┤  ├──────────────────┤  │
+│  │ • TileRenderer │  │ • Parser       │  │ • Rule Manager   │  │
+│  │ • LayerComp.   │  │ • Evaluator    │  │ • Validators     │  │
+│  │ • ViewportSvc  │  │ • FunctionReg. │  │ • Batch Coord.   │  │
+│  └────────────────┘  └────────────────┘  └──────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│                        数据层 (Data Layer)                       │
+│  ┌────────────────┐  ┌────────────────┐  ┌──────────────────┐  │
+│  │ ChunkedCellStore│  │ TypeRegistry   │  │ StylePool        │  │
+│  │ (分块存储)      │  │ (类型注册表)    │  │ (样式池)         │  │
+│  ├────────────────┤  ├────────────────┤  ├──────────────────┤  │
+│  │ • Chunk (分块)  │  │ • ColumnTypes  │  │ • Cell Styles    │  │
+│  │ • Cell (单元格) │  │ • Renderers    │  │ • RowCol Styles  │  │
+│  └────────────────┘  └────────────────┘  └──────────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│                        基础设施层 (Infrastructure)                │
+│  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐  │
+│  │ EventBus   │ │ Hooks      │ │ ErrorHandler│ │ Disposable │  │
+│  │ (事件总线)  │ │ (钩子系统)  │ │ (错误处理)  │ │ (资源管理) │  │
+│  └────────────┘ └────────────┘ └────────────┘ └────────────┘  │
+├─────────────────────────────────────────────────────────────────┤
+│                        插件系统 (Plugin System)                  │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐  │
+│  │ AutoFill  │ │ Sort     │ │ Freeze   │ │ DataValidation   │  │
+│  │ (自动填充) │ │ (排序)   │ │ (冻结)   │ │ (数据验证)       │  │
+│  ├──────────┤ ├──────────┤ ├──────────┤ ├──────────────────┤  │
+│  │ CopyPaste │ │ Export   │ │ Chart    │ │ HiddenRows/Cols  │  │
+│  │ (复制粘贴) │ │ (导出)   │ │ (图表)   │ │ (隐藏行/列)      │  │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3>🎨 渲染管线</h3>
+<pre class="prettyprint source"><code>用户操作 (Scroll/Resize/Edit)
+    ↓
+[ViewportService] 计算可见区域
+    ↓
+[TileRenderer] 确定需要绘制的瓦片
+    ↓
+[TileCache] 检查缓存命中
+    ↓ (未命中)
+[LayerCompositor] 图层合成:
+    ├── BackgroundLayer (背景网格)
+    ├── FrozenLayer (冻结区域)
+    ├── HeaderLayer (行列标题)
+    ├── TileLayer (数据瓦片)
+    ├── SelectionLayer (选区高亮)
+    ├── InteractionLayer (交互反馈)
+    ├── ChartLayer (图表覆盖)
+    └── OverlayLayer (悬浮元素)
+    ↓
+[CanvasContext] GPU 加速绘制
+    ↓
+屏幕输出 (60 FPS)
+</code></pre>
+<hr>
+<h2>📦 安装与使用</h2>
+<h3>📋 前置要求</h3>
+<ul>
+<li><strong>Node.js</strong>: &gt;= 16.x</li>
+<li><strong>现代浏览器</strong>: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+</li>
+<li><strong>构建工具</strong>: Webpack 5+ (已配置)</li>
+</ul>
+<h3>🛠️ 开发环境搭建</h3>
+<pre class="prettyprint source lang-bash"><code># 克隆项目
+git clone https://github.com/your-repo/canvas-implementation-in-excel.git
+cd canvas-implementation-in-excel
 
-npmMirror ---- https://skimdb.npmjs.com/registry/
+# 安装依赖
+npm install
+
+# 启动开发服务器 (热更新)
+npm run dev
+# 访问 http://localhost:9000
+
+# 生产构建
+npm run build:lib
+# 输出: dist/canvas-sheet.esm.mjs (ES Module)
+#       dist/canvas-sheet.umd.js  (UMD)
+
+# 运行测试
+npm test              # 单次运行
+npm run test:watch    # 监听模式
+npm run test:coverage # 覆盖率报告
+
+# 代码检查
+npm run lint          # ESLint
+npm run format        # Prettier
+
+# 生成文档
+npm run docs          # JSDoc → HTML
 </code></pre>
-<h3>测试镜像源速度</h3>
-<pre class="prettyprint source lang-shell"><code>nrm test
+<h3>📖 在项目中引入</h3>
+<h4>方式 1: CDN 直接引用 (UMD)</h4>
+<pre class="prettyprint source lang-html"><code>&lt;script src=&quot;https://cdn.example.com/canvas-sheet.umd.js&quot;>&lt;/script>
+&lt;script>
+    const { Workbook } = CanvasSheet;
+    const wb = new Workbook(document.getElementById('app'));
+&lt;/script>
 </code></pre>
-<h3>切换镜像源</h3>
-<pre class="prettyprint source lang-shell"><code>nrm use tencent
+<h4>方式 2: ES Module (推荐)</h4>
+<pre class="prettyprint source lang-javascript"><code>// main.js
+import { Workbook } from '@canvas-sheet/core';
+
+const wb = new Workbook(document.getElementById('container'), options);
 </code></pre>
-<h3>添加自定义镜像源</h3>
-<pre class="prettyprint source lang-shell"><code>nrm add zmxa http://10.124.26.35:4873/
+<hr>
+<h2>💻 API 参考</h2>
+<h3>📘 Workbook 类 - 工作簿核心</h3>
+<pre class="prettyprint source lang-javascript"><code>class Workbook {
+    constructor(
+        HTMLElement,
+         WorkbookOptions
+    );
+
+    // ========== 单元格操作 ==========
+    setCellValue(row: number, col: number, value: any): void;
+    getCellValue(row: number, col: number): any;
+    getCellDisplayValue(row: number, col: number): string;
+    
+    // ========== 选择操作 ==========
+    selectCell(row: number, col: number): void;
+    selectRange(startRow: number, startCol: number, endRow: number, endCol: number): void;
+    getSelectedRange(): Range | null;
+    
+    // ========== 列定义 ==========
+    setColumnDefinition(colIndex: number, definition: ColumnDefinition): void;
+    getColumnDefinition(colIndex: number): ColumnDefinition | undefined;
+    
+    // ========== 工作表管理 ==========
+    addSheet(name?: string): Sheet;
+    removeSheet(sheetId: string): boolean;
+    setActiveSheet(sheetId: string): void;
+    
+    // ========== 事件监听 ==========
+    on(event: string, handler: Function): void;
+    off(event: string, handler: Function): void;
+    
+    // ========== 导出 ==========
+    exportToCSV(options): string;
+    exportToExcel(option): Blob;
+}
 </code></pre>
-<h3>删除镜像源</h3>
-<pre class="prettyprint source lang-shell"><code>nrm del my-registry
+<h3>📗 配置选项 (WorkbookOptions)</h3>
+<pre class="prettyprint source lang-typescript"><code>interface WorkbookOptions {
+    // 尺寸设置
+    width?: number;              // 容器宽度 (px)
+    height?: number;             // 容器高度 (px)
+    startRows?: number;          // 初始行数 (默认: 100)
+    startCols?: number;          // 初始列数 (默认: 26)
+    
+    // 默认样式
+    defaultStyle?: CellStyle;    // 单元格默认样式
+    
+    // 功能开关
+    readOnly?: boolean;          // 只读模式
+    enableFormulas?: boolean;    // 启用公式 (默认: true)
+    enablePlugins?: PluginConfig; // 插件配置
+    
+    // 性能调优
+    tileWidth?: number;          // 瓦片宽度 (默认: 200)
+    tileHeight?: number;         // 瓦片高度 (默认: 200)
+    maxCacheSize?: number;       // 最大缓存数量 (默认: 100)
+}
 </code></pre>
-<h3>查看镜像源</h3>
-<pre class="prettyprint source lang-shell"><code>npm config get registry
+<h3>📙 示例代码库</h3>
+<details>
+<summary><b>🔧 高级用法示例</b></summary>
+<h4>1️⃣ 自定义列类型</h4>
+<pre class="prettyprint source lang-javascript"><code>import { BaseColumnType,Workbook,registerColumnTypeClass } from '@canvas-sheet/core';
+
+
+class TrafficLightType extends BaseColumnType {
+    get name() {
+        return &quot;trafficLight&quot;;
+    }
+
+    get editorType() {
+        return &quot;select&quot;;
+    }
+
+    getEditorOptions() {
+        return {
+            source: [
+                { value: &quot;green&quot;, label: &quot;🟢 正常&quot; },
+                { value: &quot;yellow&quot;, label: &quot;🟡 警告&quot; },
+                { value: &quot;red&quot;, label: &quot;🔴 危险&quot; },
+            ],
+        };
+    }
+
+    format(value) {
+        const map = { green: &quot;正常&quot;, yellow: &quot;警告&quot;, red: &quot;危险&quot; };
+        return map[value] || String(value);
+    }
+
+    render(context) {
+        const { ctx, x, y, width, height, value, displayValue, style } = context;
+
+        const indicatorSize = Math.min(width, height) * 0.35;
+        const indicatorRadius = indicatorSize / 2;
+        const indicatorCy = context.getCenterY();
+        const gap = 6;
+        const padding = context.getPadding(context.sheet);
+
+        const colors = {
+            green: &quot;#4caf50&quot;,
+            yellow: &quot;#ff9800&quot;,
+            red: &quot;#f44336&quot;,
+        };
+
+        const fontSize = style?.fontSize || 14;
+        const fontFamily = style?.fontFamily || &quot;Microsoft YaHei&quot;;
+        const textColor = style?.color || &quot;#000&quot;;
+        const textAlign = style?.textAlign || &quot;left&quot;;
+
+        ctx.font = `${fontSize}px ${fontFamily}`;
+        const textWidth = displayValue ? ctx.measureText(displayValue).width : 0;
+        const totalWidth = indicatorSize + gap + textWidth;
+
+        let startX;
+        if (textAlign === &quot;right&quot;) {
+            startX = x + width - totalWidth - padding;
+        } else if (textAlign === &quot;center&quot;) {
+            startX = x + (width - totalWidth) / 2;
+        } else {
+            startX = x + padding;
+        }
+
+        const indicatorCx = startX + indicatorRadius;
+        const textX = startX + indicatorSize + gap;
+
+        ctx.fillStyle = colors[value] || &quot;#ccc&quot;;
+        ctx.beginPath();
+        ctx.arc(indicatorCx, indicatorCy, indicatorRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (context.isSelected) {
+            ctx.strokeStyle = colors[value] || &quot;#999&quot;;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(indicatorCx, indicatorCy, indicatorRadius + 3, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        if (displayValue) {
+            ctx.fillStyle = textColor;
+            ctx.textAlign = &quot;left&quot;;
+            ctx.textBaseline = &quot;middle&quot;;
+            ctx.fillText(displayValue, textX, indicatorCy);
+        }
+    }
+}
+// 注册自定义类型
+registerColumnTypeClass(&quot;trafficLight&quot;, TrafficLightType);
+
+const wb = new Workbook('canvas', {
+    defaultStyle: {},
+
+    // readOnly: true,
+    // 工作表高度和宽度（像素值）
+    // height: 600,
+    // 工作表高度和宽度（像素值）
+    // width: 800,
+
+    // 初始行数
+    // startRows: 10,
+    // 初始列数
+    // startCols: 10,
+    // cellPadding: 30,
+    sheets: [
+       
+        {
+            name: &quot;Sheet1&quot;,
+            // 是否只读
+            readOnly: false,
+            headerHeight: 48,
+            // 嵌套表头配置
+            nestedHeaders: [
+                [
+                    {
+                        label: &quot;原水调节池+废水污泥池运行日报表&quot;,
+                        colspan: 14,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                ],
+                [
+                    { label: &quot;日期：yyyy-mm-dd&quot;, style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; } },
+                    {
+                        label: &quot;时间&quot;,
+                        colspan: 13,
+
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                ],
+                [
+                    {
+                        label: &quot;名称&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;0:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+
+                    {
+                        label: &quot;2:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+
+                    {
+                        label: &quot;4:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;6:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;8:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;10:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;12:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;14:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;16:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;18:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;20:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;22:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                    {
+                        label: &quot;24:00&quot;,
+                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
+                    },
+                ],
+            ],
+
+            // 单元格内容超出单元格宽度时是否显示省略号
+            textOverflowEllipsis: false,
+
+            // 每个单元格的内边距（像素值）
+            cellPadding: 10,
+
+            // 固定行列数上限（使用 maxRows/maxCols）
+            maxRows: 50,
+            maxCols: 14,
+
+            colWidths: [600],
+            columns: [
+                { type: &quot;text&quot;, width: 120, style: { textAlign: &quot;left&quot; } },
+                { type: &quot;select&quot;, width: 80, style: { textAlign: &quot;right&quot; }, source: [&quot;正常&quot;, &quot;异常&quot;] },
+                { type: &quot;textarea&quot;, width: 200, maxRows: 4, style: { textAlign: &quot;right&quot; } },
+            ],
+
+            cell: [
+                { row: 0, col: 2, type: &quot;trafficLight&quot; }, // 第0行第2列 → trafficLight
+                { row: 1, col: 2, type: &quot;select&quot;, source: [&quot;正常&quot;, &quot;异常&quot;] }, // → select
+            ],
+        },
+        {
+            name: &quot;Sheet2&quot;,
+
+            // readOnly: false,
+            data: [
+                [&quot;Zhang San&quot;, 25, &quot;Beijing&quot;, &quot;Tech&quot;, 15000, &quot;2020-03-15&quot;],
+                [&quot;Li Si&quot;, 30, &quot;Shanghai&quot;, &quot;Marketing&quot;, 18000, &quot;2019-07-01&quot;],
+                [&quot;Wang Wu&quot;, 28, &quot;Guangzhou&quot;, &quot;Tech&quot;, 16000, &quot;2021-01-10&quot;],
+            ],
+
+            // colHeaders: [&quot;Name&quot;, &quot;Age&quot;, &quot;City&quot;, &quot;Dept&quot;, &quot;Salary&quot;, &quot;Hire Date&quot;],
+            rowHeaderWidth: 120,
+            rowHeights: [30, 50, 90],
+            rowHeaders: [{ label: &quot;序号&quot;, style: { textAlign: &quot;center&quot; } }, &quot;年龄&quot;, &quot;城市&quot;, &quot;部门&quot;, &quot;薪酬&quot;, &quot;入职日期&quot;],
+
+            // 嵌套表头配置（支持完整 style 属性）
+            nestedHeaders: [
+                [
+                    {
+                        label: &quot;基本信息&quot;,
+                        colspan: 2,
+                        style: {
+                            backgroundColor: &quot;#FFC000&quot;,
+                            color: &quot;#FFFFFF&quot;,
+                            fontWeight: &quot;bold&quot;,
+                            fontSize: &quot;14px&quot;,
+                            textAlign: &quot;left&quot;,
+                        },
+                    },
+                    {
+                        label: &quot;工作信息&quot;,
+                        colspan: 4,
+                        style: {
+                            backgroundColor: &quot;#70AD47&quot;,
+                            color: &quot;#FFFFFF&quot;,
+                            fontWeight: &quot;bold&quot;,
+                            fontSize: &quot;14px&quot;,
+                            textAlign: &quot;center&quot;,
+                        },
+                    },
+                ],
+                [
+                    {
+                        label: &quot;姓名&quot;,
+                        style: {
+                            backgroundColor: &quot;#FFC000&quot;,
+                            fontWeight: &quot;bold&quot;,
+                        },
+                    },
+                    &quot;年龄&quot;,
+                    {
+                        label: &quot;城市&quot;,
+                        style: {
+                            backgroundColor: &quot;#FFC000&quot;,
+                            fontWeight: &quot;bold&quot;,
+                        },
+                    },
+                    {
+                        label: &quot;部门&quot;,
+                        style: {
+                            fontStyle: &quot;italic&quot;,
+                            color: &quot;#333333&quot;,
+                        },
+                    },
+                    {
+                        label: &quot;薪酬&quot;,
+                        colspan: 2,
+                        style: {
+                            backgroundColor: &quot;#ED7D31&quot;,
+                            color: &quot;#FFFFFF&quot;,
+                            textAlign: &quot;center&quot;,
+                        },
+                    },
+                ],
+                [&quot;Name&quot;, &quot;Age&quot;, &quot;City&quot;, &quot;Dept&quot;, &quot;Salary&quot;, &quot;Hire Date&quot;],
+            ],
+            textOverflowEllipsis: false,
+            cellPadding: 10,
+            conditionalStyles: [
+                {
+                    range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                    condition: (v) => isNumber(v) && v > 25,
+                    style: { backgroundColor: &quot;#ffcccc&quot; },
+                },
+            ],
+            cell: [
+                { row: 0, col: 0, style: { backgroundColor: &quot;#e8f4fd&quot;, fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot; } },
+                { row: 1, col: 3, disabled: true },
+                { row: 2, col: 4, readOnly: true, style: { backgroundColor: &quot;#fff3cd&quot; } },
+            ],
+            cells: (row, col) => {
+                if (row === 0) {
+                    return { style: { fontWeight: &quot;bold&quot;, backgroundColor: &quot;#e8f4fd&quot; } };
+                }
+                if (col === 0 && row > 0) {
+                    return { style: { textAlign: &quot;right&quot;, fontWeight: &quot;bold&quot; } };
+                }
+            },
+            columns: [
+                { type: &quot;text&quot;, width: 120, style: { textAlign: &quot;left&quot; } },
+                { type: &quot;numeric&quot;, width: 80, style: { textAlign: &quot;right&quot; }, numericFormat: { pattern: &quot;0&quot; } },
+                { type: &quot;text&quot;, width: 100 },
+                { type: &quot;text&quot;, width: 100 },
+                { type: &quot;numeric&quot;, width: 100, style: { textAlign: &quot;right&quot; }, numericFormat: { pattern: &quot;$0,0.00&quot; } },
+                { type: &quot;date&quot;, width: 300 },
+            ],
+        },
+    ],
+    plugins: [
+        &quot;autoFill&quot;,
+        &quot;contextMenu&quot;,
+        &quot;columnMove&quot;,
+        &quot;copyPaste&quot;,
+
+        &quot;exportFile&quot;,
+        &quot;hiddenColumns&quot;,
+        &quot;hiddenRows&quot;,
+        &quot;rowMove&quot;,
+        &quot;freeze&quot;,
+        &quot;formula&quot;,
+        &quot;sort&quot;,
+        &quot;dataValidation&quot;,
+    ],
+    pluginOptions: {
+        contextMenu: {
+            enabled: true,
+            customItems: [
+                {
+                    label: &quot;高亮选中行&quot;,
+
+                    // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 [&quot;cell&quot;]
+                    contexts: [&quot;cell&quot;, &quot;rowHeader&quot;],
+                    action: (row, col, sheet) => {
+                        sheet.setRowStyle(row, { backgroundColor: &quot;yellow&quot; });
+                        wb.render();
+                    },
+                },
+                {
+                    label: &quot;设置单元格样式&quot;,
+                    contexts: [&quot;cell&quot;],
+                    action: (row, col, sheet) => {
+                        const range = sheet.selection.getRange();
+                        const styleObj = { backgroundColor: &quot;#d4edda&quot;, fontWeight: &quot;bold&quot;, color: &quot;#155724&quot; };
+                        for (let r = range.topRow; r &lt;= range.bottomRow; r++) {
+                            for (let c = range.topCol; c &lt;= range.bottomCol; c++) {
+                                if (!sheet.isDisabled(r, c)) {
+                                    sheet.setCellStyle(r, c, styleObj);
+                                }
+                            }
+                        }
+                        wb.render();
+                    },
+                },
+                {
+                    label: &quot;取消单元格样式&quot;,
+                    contexts: [&quot;cell&quot;, &quot;rowHeader&quot;, &quot;colHeader&quot;],
+                    action: (row, col, sheet) => {
+                        errorHandler.debug(ERROR_CODE.DEBUG_LOG, &quot;Clear cell style&quot;);
+                        const range = sheet.selection.getRange();
+                        for (let r = range.topRow; r &lt;= range.bottomRow; r++) {
+                            sheet.clearRowStyle(r);
+                            for (let c = range.topCol; c &lt;= range.bottomCol; c++) {
+                                sheet.clearCellStyle(r, c);
+                            }
+                        }
+                        wb.render();
+                    },
+                },
+                { type: &quot;separator&quot; },
+                {
+                    label: &quot;导出选中区域&quot;,
+                    action: (row, col, sheet) => {
+                        errorHandler.debug(ERROR_CODE.DEBUG_LOG, &quot;Export from&quot;, row, col);
+                        alert(&quot;导出功能（示例）&quot;);
+                    },
+                },
+            ],
+
+            // disabledItems: [&quot;mergeCells&quot;, &quot;unmergeCells&quot;],
+
+            // rowMove: { enabled: false },
+        },
+
+        // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
+
+        dataValidation: {
+            conflictStrategy: &quot;short-circuit&quot;,
+            rules: [
+                // {
+                //     range: &quot;B:B&quot;,
+                //     type: &quot;number&quot;,
+                //     operator: &quot;between&quot;,
+                //     value: [0, 100],
+                //     errorMessage: &quot;必须输入正数&quot;,
+                //     errorStyle: &quot;stop&quot;,
+                // },
+                //
+                // {
+                //     range: &quot;A:A&quot;,
+                //     type: &quot;text&quot;,
+                //     operator: &quot;greaterThan&quot;,
+                //     value: 5,
+                //     errorMessage: &quot;必须输入正数&quot;,
+                //     errorStyle: &quot;stop&quot;,
+                // },
+                //
+                // {
+                //     range: &quot;C:C&quot;,
+                //     type: &quot;time&quot;,
+                //     operator: &quot;between&quot;,
+                //     value: [&quot;09:00&quot;, &quot;18:00&quot;],
+                //     errorMessage: &quot;必须输入正数&quot;,
+                //     errorStyle: &quot;stop&quot;,
+                // },
+                // {
+                //     range: &quot;D:D&quot;,
+                //     type: &quot;unique&quot;,
+                // },
+                // {
+                //     range: &quot;G:G&quot;,
+                //     type: &quot;date&quot;,
+                //     operator: &quot;between&quot;,
+                //     value: [&quot;01/01/2020&quot;, &quot;12/31/2020&quot;],
+                //     errorMessage: &quot;必须输入正数&quot;,
+                //     errorStyle: &quot;stop&quot;,
+                // },
+            ],
+        },
+    },
+    hooks: {
+        // ==================== 编辑相关钩子 ====================
+        // ✅ 已执行
+        // [HOOKS.BEFORE_BEGIN_EDITING]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeBeginEditing 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_BEGIN_EDITING]: (...args) => {
+        //     console.log(&quot;[HOOK] afterBeginEditing 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_FINISH_EDITING]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeFinishEditing 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_FINISH_EDITING]: (...args) => {
+        //     console.log(&quot;[HOOK] afterFinishEditing 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_CHANGE]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeChange 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_CHANGE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterChange 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 选择相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_SELECTION]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeSelection 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SELECTION]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSelection 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_SELECTION_END]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeSelectionEnd 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SELECTION_END]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSelectionEnd 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 单元格交互钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.ON_CELL_MOUSE_DOWN]: (...args) => {
+        //     console.log(&quot;[HOOK] onCellMouseDown 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.ON_CELL_MOUSE_OVER]: (...args) => {
+        //     console.log(&quot;[HOOK] onCellMouseOver 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.ON_CELL_MOUSE_OUT]: (...args) => {
+        //     console.log(&quot;[HOOK] onCellMouseOut 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.ON_CELL_CLICK]: (...args) => {
+        //     console.log(&quot;[HOOK] onCellClick 执行了&quot;, ...args);
+        //     if (isFunction(updateToolbarStyleState)) {
+        //         updateToolbarStyleState();
+        //     }
+        // },
+        // // ✅ 已执行
+        // [HOOKS.ON_CELL_DBL_CLICK]: (...args) => {
+        //     console.log(&quot;[HOOK] onCellDblClick 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 键盘相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_KEY_DOWN]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeKeyDown 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_KEY_DOWN]: (...args) => {
+        //     console.log(&quot;[HOOK] afterKeyDown 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 滚动相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SCROLL_HORIZONTALLY]: (...args) => {
+        //     console.log(&quot;[HOOK] afterScrollHorizontally 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SCROLL_VERTICALLY]: (...args) => {
+        //     console.log(&quot;[HOOK] afterScrollVertically 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 合并单元格相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_MERGE_CELLS]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeMergeCells 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_MERGE_CELLS]: (...args) => {
+        //     console.log(&quot;[HOOK] afterMergeCells 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_UNMERGE_CELLS]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeUnmergeCells 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_UNMERGE_CELLS]: (...args) => {
+        //     console.log(&quot;[HOOK] afterUnmergeCells 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 剪贴板相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_COPY]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeCopy 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_COPY]: (...args) => {
+        //     console.log(&quot;[HOOK] afterCopy 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_CUT]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeCut 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_CUT]: (...args) => {
+        //     console.log(&quot;[HOOK] afterCut 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_PASTE]: (...args) => {
+        //     console.log(&quot;[HOOK] beforePaste 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_PASTE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterPaste 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 列移动相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_COLUMN_MOVE]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeColumnMove 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_COLUMN_MOVE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterColumnMove 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 行移动相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_ROW_MOVE]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeRowMove 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_ROW_MOVE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterRowMove 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 隐藏列相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.AFTER_HIDE_COLUMN]: (...args) => {
+        //     console.log(&quot;[HOOK] afterHideColumn 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SHOW_COLUMN]: (...args) => {
+        //     console.log(&quot;[HOOK] afterShowColumn 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 隐藏行相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.AFTER_HIDE_ROW]: (...args) => {
+        //     console.log(&quot;[HOOK] afterHideRow 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SHOW_ROW]: (...args) => {
+        //     console.log(&quot;[HOOK] afterShowRow 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 冻结行列相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.AFTER_FREEZE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterFreeze 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_UNFREEZE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterUnfreeze 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 工作表切换相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSheetSwitch 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 排序相关钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SORT]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSort 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SORT_RESTORE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSortRestore 执行了&quot;, ...args);
+        // },
+        //
+        // // ==================== 生命周期钩子 ====================
+        // // ✅ 已执行
+        // [HOOKS.INIT]: (...args) => {
+        //     console.log(&quot;[HOOK] init 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.DESTROY]: (...args) => {
+        //     console.log(&quot;[HOOK] destroy 执行了&quot;, ...args);
+        // },
+        // ==================== 工作表相关钩子 ====================
+        // ✅ 已执行
+        // [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeSheetRename 执行了&quot;, ...args);
+        //     return true;
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSheetRename 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_SHEET_ADD]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeSheetAdd 执行了&quot;, ...args);
+        //     return true;
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SHEET_ADD]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSheetAdd 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_SHEET_REMOVE]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeSheetRemove 执行了&quot;, ...args);
+        //     return true;
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SHEET_REMOVE]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSheetRemove 执行了&quot;, ...args);
+        // },
+        // // ✅ 已执行
+        // [HOOKS.BEFORE_SHEET_SWITCH]: (...args) => {
+        //     console.log(&quot;[HOOK] beforeSheetSwitch 执行了&quot;, ...args);
+        //     return true;
+        // },
+        // // ✅ 已执行
+        // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
+        //     console.log(&quot;[HOOK] afterSheetSwitch 执行了&quot;, ...args);
+        //     return true;
+        // },
+    },
+    afterInit(wb) {
+        const s2 = wb.sheets.get(&quot;Sheet2&quot;);
+        if (s2) {
+            s2.setCell(2, 0, &quot;Switch to Sheet1 to paste&quot;);
+        }
+    },
+});
+
 </code></pre>
-<h3>切换到淘宝镜像</h3>
-<pre class="prettyprint source lang-shell"><code>npm config set registry https://registry.npmmirror.com/ 
+<h4>2️⃣ 自定义公式函数</h4>
+<pre class="prettyprint source lang-javascript"><code>import { registerFunction, FUNCTION_CATEGORY } from '@canvas-sheet/core';
+
+// 注册税率计算函数
+registerFunction('TAX', (args, context) => {
+    const amount = args[0];  // 金额
+    const rate = args[1] || 0.13;  // 税率 (默认13%)
+    return amount * rate;
+}, { category: FUNCTION_CATEGORY.CUSTOM });
+
+// 使用
+workbook.setCellValue(0, 0, 1000);  // 金额
+workbook.setCellValue(0, 1, '=TAX(A0)');  // 计算: 130
 </code></pre>
-<h3>切换回官方源</h3>
-<pre class="prettyprint source lang-shell"><code>npm config set registry https://registry.npmjs.org/
+<h4>3️⃣ 事件驱动编程</h4>
+<pre class="prettyprint source lang-javascript"><code>const wb = new Workbook(container);
+
+// 监听单元格变化
+wb.on('cell:change', ({ row, col, oldValue, newValue }) => {
+    console.log(`[${row},${col}]: ${oldValue} → ${newValue}`);
+});
+
+// 监听选择变化
+wb.on('selection:change', (range) => {
+    console.log('当前选择:', range);
+});
+
+// 监听公式计算错误
+wb.on('formula:error', ({ cell, error }) => {
+    alert(`公式错误 @${cell}: ${error.message}`);
+});
 </code></pre>
-<h3>切换私有镜像源</h3>
-<pre class="prettyprint source lang-shell"><code>npm config set registry http://10.124.26.35:4873/
+<h4>4️⃣ 条件格式</h4>
+<pre class="prettyprint source lang-javascript"><code>// 设置条件格式规则
+workbook.setConditionalFormat({
+    range: { startRow: 0, endRow: 100, startCol: 0, endCol: 5 },
+    rules: [
+        {
+            condition: 'greaterThan',
+            value: 90,
+            style: { backgroundColor: '#4caf50', color: '#fff' },
+        },
+        {
+            condition: 'between',
+            values: [60, 89],
+            style: { backgroundColor: '#ff9800' },
+        },
+        {
+            condition: 'lessThan',
+            value: 60,
+            style: { backgroundColor: '#f44336', color: '#fff' },
+        }
+    ]
+});
 </code></pre>
-<p>node 版本为 22.21.0</p>
-<p>基于 Canvas 的在线表格编辑器（Handsontable/Excel 级架构）</p>
-<h2>工程结构</h2>
-<pre class="prettyprint source"><code>src/
-├── api/                    # 公共 API（新增）
-│   └── index.js            # 统一对外导出
-├── core/
-│   ├── constants.js        # 常量配置
-│   └── utils.js            # 工具函数（新增）
-├── editor/
-│   ├── InputEditor.js      # 编辑器管理器
-│   ├── EventHandler.js     # 事件处理器
-│   ├── ClipboardManager.js # 剪贴板管理
-│   ├── editors/            # 编辑器类型
-│   │   ├── CellEditor.js
-│   │   ├── TextEditor.js
-│   │   └── index.js
-│   └── strategies/         # 事件策略
-│       ├── EventStrategy.js
-│       ├── MouseStrategy.js
-│       ├── KeyboardStrategy.js
-│       ├── ScrollStrategy.js
-│       └── index.js
-├── model/
-│   ├── Cell.js
-│   ├── Chunk.js
-│   ├── ChunkedCellStore.js
-│   ├── Command.js
-│   ├── SetCellCommand.js
-│   ├── ToggleDisableCommand.js
-│   ├── HistoryStack.js
-│   ├── MergeManager.js
-│   ├── SelectionManager.js
-│   ├── ConditionalRule.js
-│   └── index.js
-├── render/
-│   ├── RenderEngine.js
-│   └── RenderUtils.js      # 渲染工具（新增）
-├── types/                  # 类型定义（新增）
-│   └── index.js
-├── workbook/
-│   ├── Workbook.js
-│   └── Sheet.js
-└── main.js
+<h4>5️⃣ 数据验证</h4>
+<pre class="prettyprint source lang-javascript"><code>// 必填 + 唯一性验证
+workbook.setColumnDefinition(0, {
+    type: 'text',
+    header: 'ID',
+    validators: [
+        { type: 'required', message: '此字段为必填项' },
+        { type: 'unique', message: 'ID 不能重复' }
+    ]
+});
+
+// 数值范围验证
+workbook.setColumnDefinition(1, {
+    type: 'numeric',
+    header: '年龄',
+    validators: [
+        { type: 'range', min: 18, max: 65, message: '年龄必须在 18-65 之间' }
+    ]
+});
 </code></pre>
-<h2>功能清单</h2>
+</details>
+<hr>
+<h2>🪝 Hooks 生命周期钩子系统</h2>
+<p>Canvas Spreadsheet 提供了完整的 <strong>Hooks（钩子）系统</strong>，允许开发者在关键节点注入自定义逻辑。</p>
+<h3>📋 Hooks 总览表</h3>
 <table>
 <thead>
 <tr>
-<th>功能</th>
-<th>状态</th>
+<th>分类</th>
+<th>Hook 名称</th>
+<th>常量引用</th>
+<th>触发时机</th>
+<th>可阻止操作</th>
+<th>参数说明</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>虚拟滚动（双向）</td>
-<td>✅</td>
+<td><strong>📝 编辑相关</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr>
-<td>Chunk 二维分块稀疏存储</td>
-<td>✅</td>
+<td>编辑开始前</td>
+<td><code>beforeBeginEditing</code></td>
+<td><code>HOOKS.BEFORE_BEGIN_EDITING</code></td>
+<td>用户触发编辑但编辑器未打开时</td>
+<td>✅ 返回 false 可阻止</td>
+<td><code>(row, col)</code></td>
 </tr>
 <tr>
-<td>浮动 Input 编辑器（Excel 体验）</td>
-<td>✅</td>
+<td>编辑开始后</td>
+<td><code>afterBeginEditing</code></td>
+<td><code>HOOKS.AFTER_BEGIN_EDITING</code></td>
+<td>编辑器已打开并准备好接收输入</td>
+<td>❌</td>
+<td><code>(row, col)</code></td>
 </tr>
 <tr>
-<td>双击 / Enter / F2 编辑</td>
-<td>✅</td>
+<td>编辑结束前</td>
+<td><code>beforeFinishEditing</code></td>
+<td><code>HOOKS.BEFORE_FINISH_EDITING</code></td>
+<td>用户提交编辑内容时</td>
+<td>✅ 返回 false 可阻止</td>
+<td><code>(row, col, newValue, oldValue)</code></td>
 </tr>
 <tr>
-<td>方向键 / Tab 导航</td>
-<td>✅</td>
+<td>编辑结束后</td>
+<td><code>afterFinishEditing</code></td>
+<td><code>HOOKS.AFTER_FINISH_EDITING</code></td>
+<td>新值已写入数据模型</td>
+<td>❌</td>
+<td><code>(row, col, newValue, oldValue)</code></td>
 </tr>
 <tr>
-<td>行号 / 列头</td>
-<td>✅</td>
+<td>数据变更前</td>
+<td><code>beforeChange</code></td>
+<td><code>HOOKS.BEFORE_CHANGE</code></td>
+<td>任何修改单元格值的操作之前</td>
+<td>✅ 最后的机会阻止变更</td>
+<td><code>[{row, col, oldValue, newValue}]</code></td>
 </tr>
 <tr>
-<td>合并单元格（基础）</td>
-<td>✅</td>
+<td>数据变更后</td>
+<td><code>afterChange</code></td>
+<td><code>HOOKS.AFTER_CHANGE</code></td>
+<td>单元格值已更新到存储层</td>
+<td>❌</td>
+<td><code>changes: Array&lt;{row, col, oldValue, newValue}&gt;</code></td>
 </tr>
 <tr>
-<td>复制 / 粘贴（Sheet 间）</td>
-<td>✅</td>
+<td>设置单元格值前</td>
+<td><code>beforeSetValueAt</code></td>
+<td><code>HOOKS.BEFORE_SET_VALUE_AT</code></td>
+<td>单个单元格写入前触发</td>
+<td>✅ 用于数据验证拦截</td>
+<td><code>(row, col, value)</code></td>
 </tr>
 <tr>
-<td>Undo / Redo (Command 模式)</td>
-<td>✅</td>
+<td>设置单元格值后</td>
+<td><code>afterSetValueAt</code></td>
+<td><code>HOOKS.AFTER_SET_VALUE_AT</code></td>
+<td>单个单元格写入后触发</td>
+<td>❌</td>
+<td><code>(row, col, value)</code></td>
 </tr>
 <tr>
-<td>禁用单元格</td>
-<td>✅</td>
+<td><strong>🎯 选择相关</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr>
-<td>行 / 列样式</td>
+<td>选择开始前</td>
+<td><code>beforeSelection</code></td>
+<td><code>HOOKS.BEFORE_SELECTION</code></td>
+<td>用户开始新的选择操作</td>
 <td>✅</td>
+<td><code>(startRow, startCol, endRow, endCol)</code></td>
 </tr>
 <tr>
-<td>条件格式（rule-based）</td>
-<td>✅</td>
+<td>选择完成后</td>
+<td><code>afterSelection</code></td>
+<td><code>HOOKS.AFTER_SELECTION</code></td>
+<td>选择区域已确定并高亮显示</td>
+<td>❌</td>
+<td><code>(startRow, startCol, endRow, endCol)</code></td>
 </tr>
 <tr>
-<td>数据绑定样式</td>
+<td>选择结束前（拖拽）</td>
+<td><code>beforeSelectionEnd</code></td>
+<td><code>HOOKS.BEFORE_SELECTION_END</code></td>
+<td>拖拽即将释放</td>
 <td>✅</td>
+<td><code>(range)</code></td>
 </tr>
 <tr>
-<td>StylePool Flyweight</td>
-<td>✅</td>
+<td>选择结束后</td>
+<td><code>afterSelectionEnd</code></td>
+<td><code>HOOKS.AFTER_SELECTION_END</code></td>
+<td>拖拽选择操作已完成</td>
+<td>❌</td>
+<td><code>(range)</code></td>
 </tr>
 <tr>
-<td>多 Sheet（Workbook）</td>
+<td><strong>🖱️ 单元格交互</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>鼠标按下</td>
+<td><code>onCellMouseDown</code></td>
+<td><code>HOOKS.ON_CELL_MOUSE_DOWN</code></td>
+<td>在单元格区域内按下鼠标按钮</td>
+<td>❌</td>
+<td><code>(row, col, event)</code></td>
+</tr>
+<tr>
+<td>鼠标移入</td>
+<td><code>onCellMouseOver</code></td>
+<td><code>HOOKS.ON_CELL_MOUSE_OVER</code></td>
+<td>鼠标指针进入单元格边界</td>
+<td>❌</td>
+<td><code>(row, col, event)</code></td>
+</tr>
+<tr>
+<td>鼠标移出</td>
+<td><code>onCellMouseOut</code></td>
+<td><code>HOOKS.ON_CELL_MOUSE_OUT</code></td>
+<td>鼠标指针离开单元格边界</td>
+<td>❌</td>
+<td><code>(row, col, event)</code></td>
+</tr>
+<tr>
+<td>单元格点击</td>
+<td><code>onCellClick</code></td>
+<td><code>HOOKS.ON_CELL_CLICK</code></td>
+<td>完整的 click 事件</td>
+<td>❌</td>
+<td><code>(row, col, event)</code></td>
+</tr>
+<tr>
+<td>单元格双击</td>
+<td><code>onCellDblClick</code></td>
+<td><code>HOOKS.ON_CELL_DBL_CLICK</code></td>
+<td>快速连续两次点击（通常用于编辑）</td>
+<td>❌</td>
+<td><code>(row, col, event)</code></td>
+</tr>
+<tr>
+<td><strong>⌨️ 键盘相关</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>键盘按下前</td>
+<td><code>beforeKeyDown</code></td>
+<td><code>HOOKS.BEFORE_KEY_DOWN</code></td>
+<td>按键被处理之前</td>
+<td>✅ 可拦截按键</td>
+<td><code>(event)</code></td>
+</tr>
+<tr>
+<td>键盘按下后</td>
+<td><code>afterKeyDown</code></td>
+<td><code>HOOKS.AFTER_KEY_DOWN</code></td>
+<td>按键已被处理并产生效果</td>
+<td>❌</td>
+<td><code>(event)</code></td>
+</tr>
+<tr>
+<td><strong>📜 滚动相关</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>水平滚动后</td>
+<td><code>afterScrollHorizontally</code></td>
+<td><code>HOOKS.AFTER_SCROLL_HORIZONTALLY</code></td>
+<td>视口水平位置已改变</td>
+<td>❌</td>
+<td><code>(newScrollLeft)</code></td>
+</tr>
+<tr>
+<td>垂直滚动后</td>
+<td><code>afterScrollVertically</code></td>
+<td><code>HOOKS.AFTER_SCROLL_VERTICALLY</code></td>
+<td>视口垂直位置已改变</td>
+<td>❌</td>
+<td><code>(newScrollTop)</code></td>
+</tr>
+<tr>
+<td><strong>🔗 合并单元格</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>合并前</td>
+<td><code>beforeMergeCells</code></td>
+<td><code>HOOKS.BEFORE_MERGE_CELLS</code></td>
+<td>即将执行合并操作</td>
 <td>✅</td>
+<td><code>(topRow, topCol, bottomRow, bottomCol)</code></td>
+</tr>
+<tr>
+<td>合并后</td>
+<td><code>afterMergeCells</code></td>
+<td><code>HOOKS.AFTER_MERGE_CELLS</code></td>
+<td>单元格已成功合并为一个区域</td>
+<td>❌</td>
+<td><code>(mergeRange)</code></td>
+</tr>
+<tr>
+<td>取消合并前</td>
+<td><code>beforeUnmergeCells</code></td>
+<td><code>HOOKS.BEFORE_UNMERGE_CELLS</code></td>
+<td>即将拆分合并单元格</td>
+<td>✅</td>
+<td><code>(topRow, topCol)</code></td>
+</tr>
+<tr>
+<td>取消合并后</td>
+<td><code>afterUnmergeCells</code></td>
+<td><code>HOOKS.AFTER_UNMERGE_CELLS</code></td>
+<td>合并单元格已恢复为独立单元格</td>
+<td>❌</td>
+<td><code>(row, col)</code></td>
+</tr>
+<tr>
+<td><strong>📋 剪贴板</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>复制前</td>
+<td><code>beforeCopy</code></td>
+<td><code>HOOKS.BEFORE_COPY</code></td>
+<td>数据即将复制到剪贴板</td>
+<td>✅</td>
+<td><code>(range)</code></td>
+</tr>
+<tr>
+<td>复制后</td>
+<td><code>afterCopy</code></td>
+<td><code>HOOKS.AFTER_COPY</code></td>
+<td>数据已复制到剪贴板</td>
+<td>❌</td>
+<td><code>(data, range)</code></td>
+</tr>
+<tr>
+<td>剪切前</td>
+<td><code>beforeCut</code></td>
+<td><code>HOOKS.BEFORE_CUT</code></td>
+<td>数据即将剪切到剪贴板并从原位置移除</td>
+<td>✅</td>
+<td><code>(range)</code></td>
+</tr>
+<tr>
+<td>剪切后</td>
+<td><code>afterCut</code></td>
+<td><code>HOOKS.AFTER_CUT</code></td>
+<td>数据已从原位置移除</td>
+<td>❌</td>
+<td><code>(data, range)</code></td>
+</tr>
+<tr>
+<td>粘贴前</td>
+<td><code>beforePaste</code></td>
+<td><code>HOOKS.BEFORE_PASTE</code></td>
+<td>剪贴板数据即将粘贴到目标位置</td>
+<td>✅</td>
+<td><code>(targetPosition, data)</code></td>
+</tr>
+<tr>
+<td>粘贴后</td>
+<td><code>afterPaste</code></td>
+<td><code>HOOKS.AFTER_PASTE</code></td>
+<td>剪贴板数据已插入到目标位置</td>
+<td>❌</td>
+<td><code>(changes)</code></td>
+</tr>
+<tr>
+<td><strong>↔️ 列/行移动</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>列移动前</td>
+<td><code>beforeColumnMove</code></td>
+<td><code>HOOKS.BEFORE_COLUMN_MOVE</code></td>
+<td>即将通过拖拽改变列顺序</td>
+<td>✅</td>
+<td><code>(sourceCol, targetCol)</code></td>
+</tr>
+<tr>
+<td>列移动后</td>
+<td><code>afterColumnMove</code></td>
+<td><code>HOOKS.AFTER_COLUMN_MOVE</code></td>
+<td>列顺序已调整完成</td>
+<td>❌</td>
+<td><code>(sourceCol, targetCol)</code></td>
+</tr>
+<tr>
+<td>行移动前</td>
+<td><code>beforeRowMove</code></td>
+<td><code>HOOKS.BEFORE_ROW_MOVE</code></td>
+<td>即将通过拖拽改变行顺序</td>
+<td>✅</td>
+<td><code>(sourceRow, targetRow)</code></td>
+</tr>
+<tr>
+<td>行移动后</td>
+<td><code>afterRowMove</code></td>
+<td><code>HOOKS.AFTER_ROW_MOVE</code></td>
+<td>行顺序已调整完成</td>
+<td>❌</td>
+<td><code>(sourceRow, targetRow)</code></td>
+</tr>
+<tr>
+<td><strong>👁️ 隐藏显示</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>列隐藏后</td>
+<td><code>afterHideColumn</code></td>
+<td><code>HOOKS.AFTER_HIDE_COLUMN</code></td>
+<td>指定列已从视图中隐藏</td>
+<td>❌</td>
+<td><code>(colIndex)</code></td>
+</tr>
+<tr>
+<td>列显示后</td>
+<td><code>afterShowColumn</code></td>
+<td><code>HOOKS.AFTER_SHOW_COLUMN</code></td>
+<td>隐藏的列已重新可见</td>
+<td>❌</td>
+<td><code>(colIndex)</code></td>
+</tr>
+<tr>
+<td>行隐藏后</td>
+<td><code>afterHideRow</code></td>
+<td><code>HOOKS.AFTER_HIDE_ROW</code></td>
+<td>指定行已从视图中隐藏</td>
+<td>❌</td>
+<td><code>(rowIndex)</code></td>
+</tr>
+<tr>
+<td>行显示后</td>
+<td><code>afterShowRow</code></td>
+<td><code>HOOKS.AFTER_SHOW_ROW</code></td>
+<td>隐藏的行已重新可见</td>
+<td>❌</td>
+<td><code>(rowIndex)</code></td>
+</tr>
+<tr>
+<td><strong>❄️ 冻结窗格</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>冻结后</td>
+<td><code>afterFreeze</code></td>
+<td><code>HOOKS.AFTER_FREEZE</code></td>
+<td>冻结窗格已生效</td>
+<td>❌</td>
+<td><code>(fixedRowsTop, fixedColumnsStart)</code></td>
+</tr>
+<tr>
+<td>解冻后</td>
+<td><code>afterUnfreeze</code></td>
+<td><code>HOOKS.AFTER_UNFREEZE</code></td>
+<td>冻结窗格已取消</td>
+<td>❌</td>
+<td>-</td>
+</tr>
+<tr>
+<td><strong>📑 工作表管理</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>工作表新增前</td>
+<td><code>beforeSheetAdd</code></td>
+<td><code>HOOKS.BEFORE_SHEET_ADD</code></td>
+<td>即将创建新工作表</td>
+<td>✅</td>
+<td><code>(sheetName)</code></td>
+</tr>
+<tr>
+<td>工作表新增后</td>
+<td><code>afterSheetAdd</code></td>
+<td><code>HOOKS.AFTER_SHEET_ADD</code></td>
+<td>新工作表已成功创建</td>
+<td>❌</td>
+<td><code>(sheetName, sheetInstance)</code></td>
+</tr>
+<tr>
+<td>工作表删除前</td>
+<td><code>beforeSheetRemove</code></td>
+<td><code>HOOKS.BEFORE_SHEET_REMOVE</code></td>
+<td>即将删除工作表</td>
+<td>✅</td>
+<td><code>(sheetName)</code></td>
+</tr>
+<tr>
+<td>工作表删除后</td>
+<td><code>afterSheetRemove</code></td>
+<td><code>HOOKS.AFTER_SHEET_REMOVE</code></td>
+<td>工作表已从工作簿中移除</td>
+<td>❌</td>
+<td><code>(sheetName, removedSheet)</code></td>
+</tr>
+<tr>
+<td>工作表重命名前</td>
+<td><code>beforeSheetRename</code></td>
+<td><code>HOOKS.BEFORE_SHEET_RENAME</code></td>
+<td>即将重命名工作表</td>
+<td>✅</td>
+<td><code>(oldName, newName)</code></td>
+</tr>
+<tr>
+<td>工作表重命名后</td>
+<td><code>afterSheetRename</code></td>
+<td><code>HOOKS.AFTER_SHEET_RENAME</code></td>
+<td>工作表名称已更改</td>
+<td>❌</td>
+<td><code>(oldName, newName)</code></td>
+</tr>
+<tr>
+<td>工作表切换前</td>
+<td><code>beforeSheetSwitch</code></td>
+<td><code>HOOKS.BEFORE_SHEET_SWITCH</code></td>
+<td>即将切换到指定工作表</td>
+<td>✅</td>
+<td><code>(currentSheet, targetSheet)</code></td>
+</tr>
+<tr>
+<td>工作表切换后</td>
+<td><code>afterSheetSwitch</code></td>
+<td><code>HOOKS.AFTER_SHEET_SWITCH</code></td>
+<td>当前活动工作表已改变</td>
+<td>❌</td>
+<td><code>(previousSheet, currentSheet)</code></td>
+</tr>
+<tr>
+<td><strong>📊 排序</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>排序后</td>
+<td><code>afterSort</code></td>
+<td><code>HOOKS.AFTER_SORT</code></td>
+<td>数据已按指定规则重新排列</td>
+<td>❌</td>
+<td><code>(colIndex, options, result)</code></td>
+</tr>
+<tr>
+<td>排序恢复后</td>
+<td><code>afterSortRestore</code></td>
+<td><code>HOOKS.AFTER_SORT_RESTORE</code></td>
+<td>已撤销排序操作，恢复原始顺序</td>
+<td>❌</td>
+<td><code>(swappedRows)</code></td>
+</tr>
+<tr>
+<td><strong>🎨 图表</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>图表添加后</td>
+<td><code>afterChartAdd</code></td>
+<td><code>HOOKS.AFTER_CHART_ADD</code></td>
+<td>新图表已创建并添加到工作表</td>
+<td>❌</td>
+<td><code>(chartConfig, chartInstance)</code></td>
+</tr>
+<tr>
+<td>图表删除后</td>
+<td><code>afterChartRemove</code></td>
+<td><code>HOOKS.AFTER_CHART_REMOVE</code></td>
+<td>图表已从工作表中移除</td>
+<td>❌</td>
+<td><code>(chartId)</code></td>
+</tr>
+<tr>
+<td>图表更新后</td>
+<td><code>afterChartUpdate</code></td>
+<td><code>HOOKS.AFTER_CHART_UPDATE</code></td>
+<td>图表数据或样式已变更</td>
+<td>❌</td>
+<td><code>(chartId, newConfig)</code></td>
+</tr>
+<tr>
+<td><strong>🔗 URL 超链接</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>URL 检测到</td>
+<td><code>onUrlDetected</code></td>
+<td><code>HOOKS.ON_URL_DETECTED</code></td>
+<td>单元格值被识别为 URL 时</td>
+<td>❌</td>
+<td><code>(row, col, urlValue)</code></td>
+</tr>
+<tr>
+<td>URL 点击前</td>
+<td><code>beforeOpenUrl</code></td>
+<td><code>HOOKS.BEFORE_OPEN_URL</code></td>
+<td>用户 Ctrl+Click 包含 URL 的单元格时</td>
+<td>✅ 可阻止打开</td>
+<td><code>(row, col, urlValue, event)</code></td>
+</tr>
+<tr>
+<td>URL 已打开</td>
+<td><code>afterOpenUrl</code></td>
+<td><code>HOOKS.AFTER_OPEN_URL</code></td>
+<td>链接已通过 window.open 打开</td>
+<td>❌</td>
+<td><code>(row, col, urlValue)</code></td>
+</tr>
+<tr>
+<td><strong>🔄 生命周期</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>初始化完成</td>
+<td><code>init</code></td>
+<td><code>HOOKS.INIT</code></td>
+<td>Workbook/Sheet 构造完成并准备就绪</td>
+<td>❌</td>
+<td><code>(workbook/sheet)</code></td>
+</tr>
+<tr>
+<td>销毁前</td>
+<td><code>destroy</code></td>
+<td><code>HOOKS.DESTROY</code></td>
+<td>对象即将被清理和释放资源</td>
+<td>❌</td>
+<td><code>(instance)</code></td>
 </tr>
 </tbody>
 </table>
-<h2>快捷键</h2>
+<h3>💡 Hooks 使用示例</h3>
+<details>
+<summary><b>🔧 实战案例集</b></summary>
+<h4><strong>1️⃣ 数据验证拦截</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>import { HOOKS } from '@canvas-sheet/core';
+
+const wb = new Workbook(container);
+
+// 阻止非法数据输入
+wb.addHook(HOOKS.BEFORE_CHANGE, (changes) => {
+    for (const change of changes) {
+        const { row, col, newValue } = change;
+        
+        // 第 1 列只允许正数
+        if (col === 1 && typeof newValue === 'number' && newValue &lt; 0) {
+            alert('第 1 列不允许负数！');
+            return false;  // 阻止整个变更
+        }
+        
+        // 第 2 列邮箱格式验证
+        if (col === 2 && typeof newValue === 'string') {
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newValue)) {
+                alert('请输入有效的邮箱地址！');
+                return false;  // 阻止变更
+            }
+        }
+    }
+    
+    return true;  // 允许变更
+});
+</code></pre>
+<h4><strong>2️⃣ 操作日志记录</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 记录所有数据变更（不可撤销）
+wb.addHook(HOOKS.AFTER_CHANGE, (changes) => {
+    const timestamp = new Date().toISOString();
+    
+    changes.forEach(({ row, col, oldValue, newValue }) => {
+        console.log(`[${timestamp}] 变更: [${row},${col}]: &quot;${oldValue}&quot; → &quot;${newValue}&quot;`);
+        
+        // 发送到远程日志服务器
+        sendToLogServer({
+            action: 'cell_change',
+            position: { row, col },
+            oldValue,
+            newValue,
+            timestamp,
+            user: currentUser.id
+        });
+    });
+});
+
+// 记录工作表切换
+wb.addHook(HOOKS.AFTER_SHEET_SWITCH, (previousSheet, currentSheet) => {
+    analytics.track('sheet_switch', {
+        from: previousSheet.name,
+        to: currentSheet.name,
+        userId: currentUser.id
+    });
+});
+</code></pre>
+<h4><strong>3️⃣ 自定义快捷键行为</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 拦截特定按键
+wb.addHook(HOOKS.BEFORE_KEY_DOWN, (event) => {
+    // Ctrl+S 保存（默认无行为）
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        saveWorkbook();
+        return true;  // 表示已处理
+    }
+    
+    // Ctrl+Z 在特定条件下禁用撤销
+    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+        if (isReadOnlyMode()) {
+            event.preventDefault();
+            showToast('只读模式不允许撤销');
+            return true;
+        }
+    }
+    
+    return undefined;  // 继续默认处理
+});
+</code></pre>
+<h4><strong>4️⃣ 单元格交互增强</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 双击打开详情弹窗
+wb.addHook(HOOKS.ON_CELL_DBL_CLICK, (row, col, event) => {
+    if (col === 0) {  // 第一列为 ID 列
+        const cellValue = wb.getCellValue(row, col);
+        openDetailModal(cellValue);
+        event.preventDefault();  // 阻止默认编辑行为
+    }
+});
+
+// 鼠标悬停显示提示
+let tooltipTimeout;
+wb.addHook(HOOKS.ON_CELL_MOUSE_OVER, (row, col, event) => {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = setTimeout(() => {
+        showTooltip(event.clientX, event.clientY, {
+            content: `行: ${row + 1}, 列: ${col + 1}`,
+            value: wb.getCellValue(row, col)
+        });
+    }, 500);  // 延迟 500ms 显示
+});
+
+wb.addHook(HOOKS.ON_CELL_MOUSE_OUT, () => {
+    clearTimeout(tooltipTimeout);
+    hideTooltip();
+});
+</code></pre>
+<h4><strong>5️⃣ 复制粘贴数据处理</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 粘贴前转换数据格式
+wb.addHook(HOOKS.BEFORE_PASTE, (targetPosition, clipboardData) => {
+    // 将外部复制的文本自动转换为数字
+    const processedData = clipboardData.map(row =>
+        row.map(cell => {
+            if (typeof cell === 'string' && /^[\d,.]+$/.test(cell)) {
+                return parseFloat(cell.replace(/,/g, ''));
+            }
+            return cell;
+        })
+    );
+    
+    return processedData;  // 返回修改后的数据
+});
+
+// 复制时添加额外信息
+wb.addHook(HOOKS.AFTER_COPY, (data, range) => {
+    console.log(`复制了 ${data.length} 行 × ${data[0]?.length || 0} 列数据`);
+    
+    // 自动同步到剪贴板的元数据
+    navigator.clipboard.writeText(JSON.stringify({
+        source: 'canvas-spreadsheet',
+        range,
+        timestamp: Date.now(),
+        data
+    }));
+});
+</code></pre>
+<h4><strong>6️⃣ 排序和冻结监控</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 排序后更新图表数据源
+wb.addHook(HOOKS.AFTER_SORT, (colIndex, options, result) => {
+    console.log(`按第 ${colIndex + 1} 列${options.ascending ? '升序' : '降序'}排序完成`);
+    
+    // 刷新关联的图表
+    refreshLinkedCharts();
+    
+    // 显示排序提示
+    showToast(`排序完成：影响 ${result.swappedCount} 行`);
+});
+
+// 冻结状态变化监听
+wb.addHook(HOOKS.AFTER_FREEZE, (fixedRows, fixedCols) => {
+    console.log(`冻结窗格已设置：固定 ${fixedRows} 行，${fixedCols} 列`);
+    
+    updateFreezeIndicator(fixedRows, fixedCols);
+});
+
+wb.addHook(HOOKS.AFTER_UNFREEZE, () => {
+    console.log('冻结窗格已取消');
+    hideFreezeIndicator();
+});
+</code></pre>
+<h4><strong>7️⃣ URL 超链接安全控制</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 拦截危险 URL 打开
+wb.addHook(HOOKS.BEFORE_OPEN_URL, (row, col, urlValue, event) => {
+    // 白名单检查
+    const allowedDomains = ['example.com', 'company-internal.com'];
+    try {
+        const url = new URL(urlValue);
+        if (!allowedDomains.some(domain => url.hostname.endsWith(domain))) {
+            event.preventDefault();
+            
+            // 显示确认对话框
+            const confirmed = confirm(
+                `您即将访问外部链接：\n\n${urlValue}\n\n是否继续？`
+            );
+            
+            if (confirmed) {
+                window.open(urlValue, '_blank', 'noopener,noreferrer');
+            }
+            
+            return false;  // 阻止默认行为
+        }
+    } catch (e) {
+        console.warn('无效 URL:', urlValue);
+        return false;
+    }
+    
+    return true;  // 允许打开
+});
+
+// 记录所有检测到的 URL
+wb.addHook(HOOKS.ON_URL_DETECTED, (row, col, urlValue) => {
+    console.log(`[${row}, ${col}] 检测到 URL: ${urlValue}`);
+    
+    // 标记包含链接的单元格样式
+    wb.setCellStyle(row, col, {
+        color: '#0066cc',
+        textDecoration: 'underline'
+    });
+});
+</code></pre>
+</details>
+<h3>⚙️ Hooks 高级用法</h3>
+<h4><strong>一次性钩子（addHookOnce）</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 只在首次初始化时执行一次
+wb.addHookOnce(HOOKS.INIT, (workbook) => {
+    console.log('这是首次初始化！');
+    loadUserPreferences(workbook);
+    setupAutoSave(workbook);
+});
+
+// 只在第一次编辑时显示引导提示
+wb.addHookOnce(HOOKS.AFTER_BEGIN_EDITING, (row, col) => {
+    showTutorialTooltip('您可以在此处输入数据...');
+});
+</code></pre>
+<h4><strong>条件性钩子注册/注销</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>function enableAuditLog() {
+    // 注册审计日志钩子
+    const logHandler = (changes) => {
+        auditLogger.log('DATA_CHANGE', changes);
+    };
+    
+    wb.addHook(HOOKS.AFTER_CHANGE, logHandler);
+    
+    // 存储引用以便后续移除
+    wb._auditHandler = logHandler;
+}
+
+function disableAuditLog() {
+    if (wb._auditHandler) {
+        wb.removeHook(HOOKS.AFTER_CHANGE, wb._auditHandler);
+        delete wb._auditHandler;
+    }
+}
+
+// 根据用户权限动态启用/禁用
+if (user.hasPermission('audit')) {
+    enableAuditLog();
+}
+</code></pre>
+<h4><strong>批量清理钩子</strong></h4>
+<pre class="prettyprint source lang-javascript"><code>// 清理某个钩子的所有监听器
+wb.clearHook(HOOKS.ON_CELL_CLICK);
+
+// 清理所有钩子（慎用！通常在销毁组件时使用）
+wb.clearAllHooks();
+
+// 检查是否有特定钩子
+if (wb.hasHook(HOOKS.BEFORE_CHANGE)) {
+    console.log('存在 beforeChange 钩子');
+}
+</code></pre>
+<h3>🔐 Hooks 最佳实践</h3>
 <table>
 <thead>
 <tr>
-<th>快捷键</th>
-<th>功能</th>
+<th>场景</th>
+<th>推荐使用</th>
+<th>不推荐使用</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>方向键</td>
-<td>移动选区</td>
+<td><strong>数据验证</strong></td>
+<td><code>BEFORE_CHANGE</code>, <code>BEFORE_SET_VALUE_AT</code></td>
+<td><code>AFTER_CHANGE</code>（太晚）</td>
 </tr>
 <tr>
-<td>Enter</td>
-<td>编辑 / 确认</td>
+<td><strong>UI 反馈</strong></td>
+<td><code>AFTER_*</code> 系列（确保操作成功）</td>
+<td><code>BEFORE_*</code>（可能被取消）</td>
 </tr>
 <tr>
-<td>F2</td>
-<td>编辑</td>
+<td><strong>日志记录</strong></td>
+<td><code>AFTER_CHANGE</code>, <code>AFTER_SORT</code> 等</td>
+<td><code>BEFORE_*</code>（可能未实际发生）</td>
 </tr>
 <tr>
-<td>Tab / Shift+Tab</td>
-<td>横向跳转</td>
+<td><strong>权限控制</strong></td>
+<td><code>BEFORE_*</code> 系列（可阻止）</td>
+<td><code>ON_*</code>（仅通知）</td>
 </tr>
 <tr>
-<td>Ctrl+Z</td>
-<td>撤销</td>
+<td><strong>性能敏感</strong></td>
+<td>减少回调内的计算量</td>
+<td>同步执行耗时操作</td>
 </tr>
 <tr>
-<td>Ctrl+Y</td>
-<td>重做</td>
-</tr>
-<tr>
-<td>双击</td>
-<td>编辑</td>
-</tr>
-<tr>
-<td>单击</td>
-<td>选中</td>
+<td><strong>错误处理</strong></td>
+<td>使用 try-catch 包裹回调逻辑</td>
+<td>让错误传播导致崩溃</td>
 </tr>
 </tbody>
 </table>
-<h2>运行</h2>
-<pre class="prettyprint source lang-bash"><code>npm install
-npx webpack
-# 在浏览器中打开 index.html
+<blockquote>
+<p><strong>💡 性能提示</strong>: Hooks 回调应尽量轻量化（&lt; 1ms），避免阻塞主线程。对于复杂逻辑，建议使用 <code>requestIdleCallback</code> 或 <code>setTimeout(fn, 0)</code> 异步处理。</p>
+</blockquote>
+<hr>
+<h2>🎨 自定义与扩展</h2>
+<h3>🔌 插件开发指南</h3>
+<pre class="prettyprint source lang-javascript"><code>import { BasePlugin, HOOKS } from '@canvas-sheet/core';
+
+class MyCustomPlugin extends BasePlugin {
+    constructor() {
+        super('my-custom-plugin');
+    }
+
+    /**
+     * 插件初始化钩子
+     */
+    init(workbook) {
+        this.workbook = workbook;
+        
+        // 注册生命周期钩子
+        this.registerHook(HOOKS.WORKBOOK.AFTER_CREATE, this.onAfterCreate.bind(this));
+        this.registerHook(HOOKS.CELL.BEFORE_CHANGE, this.onBeforeChange.bind(this));
+        
+        // 注册快捷键
+        this.registerShortcut('ctrl+shift+s', () => this.handleSave());
+        
+        console.log('[MyPlugin] ✓ 初始化完成');
+    }
+
+    onAfterCreate(workbook) {
+        // 工作簿创建后的逻辑
+        this.addToolbarButton();
+    }
+
+    onBeforeChange({ row, col, oldValue, newValue }, cancel) {
+        // 可以阻止修改
+        if (this.isProtected(row, col)) {
+            cancel();
+            this.showWarning('该单元格受保护');
+        }
+    }
+
+    handleSave() {
+        const data = this.workbook.exportToCSV();
+        localStorage.setItem('spreadsheet-data', data);
+        this.showToast('保存成功！');
+    }
+
+    destroy() {
+        // 清理资源
+        this.unregisterAllHooks();
+        this.unregisterAllShortcuts();
+    }
+}
+
+// 注册插件
+import { PluginManager } from '@canvas-sheet/core';
+PluginManager.register(MyCustomPlugin);
 </code></pre>
-<h2>项目插件系统</h2>
-<p>项目参考了 Handsontable 的插件设计，提供了一套完整的插件体系，包含三层架构：</p>
-<pre class="prettyprint source lang-text"><code>
+<h3>🎭 自定义渲染器</h3>
+<pre class="prettyprint source lang-javascript"><code>import { BaseColumnType } from '@canvas-sheet/core';
 
-┌─────────────────────────────────────────────────────┐
-│                    Workbook (顶层)                    │
-│  registerPlugin / loadPlugin / getPlugin / unload    │
-├─────────────────────────────────────────────────────┤
-│                 PluginManager (管理器)                │
-│  全局注册表 + 实例管理 + 生命周期                      │
-├─────────────────────────────────────────────────────┤
-│                  BasePlugin (基类)                    │
-│  addHook / addStrategy / addDOMEvent + 自动清理      │
-├─────────────────────────────────────────────────────┤
-│              EventStrategy (策略层)                   │
-│  getEventHandlers + priority + enable/disable        │
-└─────────────────────────────────────────────────────┘
+class TrafficLightType extends BaseColumnType {
+    get name() { return 'trafficLight'; }
+    get editorType() { return 'select'; }
 
-</code></pre></article>
+    getEditorOptions() {
+        return {
+            source: [
+                { value: 'green', label: '🟢 正常' },
+                { value: 'yellow', label: '🟡 警告' },
+                { value: 'red', label: '🔴 危险' },
+            ]
+        };
+    }
+
+    render(context) {
+        const { ctx, x, y, width, height, value } = context;
+        
+        const colors = {
+            green: '#4caf50',
+            yellow: '#ff9800',
+            red: '#f44336'
+        };
+        
+        const radius = Math.min(width, height) / 3;
+        const centerX = x + width / 2;
+        const centerY = y + height / 2;
+
+        ctx.fillStyle = colors[value] || '#ccc';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (context.isSelected) {
+            ctx.strokeStyle = colors[value] || '#999';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    }
+}
+
+registerColumnTypeClass('trafficLight', TrafficLightType);
+</code></pre>
+<hr>
+<h2>📋 已完成功能</h2>
+<h3>✅ <strong>核心引擎 (100%)</strong></h3>
+<ul>
+<li>[x] Canvas 2D 渲染引擎</li>
+<li>[x] 瓦片化渲染架构 (Tile Rendering)</li>
+<li>[x] 智能视口裁剪 (Viewport Clipping)</li>
+<li>[x] 双缓冲绘图 (Double Buffering)</li>
+<li>[x] 硬件加速 (GPU Acceleration)</li>
+</ul>
+<h3>✅ <strong>数据模型 (95%)</strong></h3>
+<ul>
+<li>[x] 分块存储系统 (ChunkedCellStore)</li>
+<li>[x] 单元格对象池 (Cell Pool)</li>
+<li>[x] 行列管理器 (RowColManager)</li>
+<li>[x] 合并单元格 (Merge Cells)</li>
+<li>[x] 隐藏行/列 (Hidden Rows/Cols)</li>
+<li>[ ] 数据版本控制 (Data Versioning) - <em>进行中</em></li>
+</ul>
+<h3>✅ <strong>公式系统 (90%)</strong></h3>
+<ul>
+<li>[x] 公式解析器 (FormulaParser)</li>
+<li>[x] 公式求值器 (FormulaEvaluator)</li>
+<li>[x] 50+ 内置函数</li>
+<li>[x] 循环引用检测</li>
+<li>[x] 惰性求值 (Lazy Evaluation)</li>
+<li>[x] 自定义函数注册</li>
+<li>[ ] 数组公式 (Array Formulas) - <em>计划中</em></li>
+</ul>
+<h3>✅ <strong>类型系统 (95%)</strong></h3>
+<ul>
+<li>[x] 6 种基础类型 (text/numeric/date/boolean/select/textarea)</li>
+<li>[x] 5 种渲染器类型 (checkbox/progressBar/starRating/sparkline/colorPreview)</li>
+<li>[x] 可扩展的类型注册表</li>
+<li>[x] 格式化/解析/验证管道</li>
+<li>[ ] 地理位置类型 (GeoLocation) - <em>计划中</em></li>
+</ul>
+<h3>✅ <strong>插件生态 (85%)</strong></h3>
+<ul>
+<li>[x] 冻结窗格插件 (FreezePlugin)</li>
+<li>[x] 排序插件 (SortPlugin) - 升序/降序/多列排序</li>
+<li>[x] 自动填充插件 (AutoFillPattern)</li>
+<li>[x] 复制粘贴插件 (CopyPastePlugin)</li>
+<li>[x] 数据验证插件 (DataValidationPlugin)</li>
+<li>[x] 右键菜单插件 (ContextMenuPlugin)</li>
+<li>[x] 导出文件插件 (ExportFilePlugin)</li>
+<li>[x] 公式插件 (FormulaPlugin)</li>
+<li>[x] 图表插件 (ChartPlugin) - 基础图表</li>
+<li>[x] 行/列移动插件 (MovePlugins)</li>
+<li>[x] 隐藏行/列插件 (HiddenPlugins)</li>
+<li>[ ] 筛选插件 (FilterPlugin) - <em>开发中</em></li>
+<li>[ ] 评论/批注插件 (CommentPlugin) - <em>计划中</em></li>
+</ul>
+<h3>✅ <strong>UI 组件 (90%)</strong></h3>
+<ul>
+<li>[x] 公式栏 (FormulaBar)</li>
+<li>[x] 工作表标签栏 (SheetTabBar)</li>
+<li>[x] 右键上下文菜单 (ContextMenu)</li>
+<li>[x] 滚动条 (Scrollbar) - 自定义样式</li>
+<li>[x] 单元格编辑器 (Text/Numeric/Date/Select/Textarea)</li>
+<li>[x] 选区高亮 (Selection Highlight)</li>
+<li>[ ] 迷你地图 (Minimap) - <em>计划中</em></li>
+<li>[ ] 缩放控件 (Zoom Control) - <em>计划中</em></li>
+</ul>
+<h3>✅ <strong>事件与钩子 (100%)</strong></h3>
+<ul>
+<li>[x] 事件总线 (EventBus)</li>
+<li>[x] 生命周期钩子 (Lifecycle Hooks)</li>
+<li>[x] 30+ 内置事件</li>
+<li>[x] 20+ 钩子点</li>
+</ul>
+<h3>✅ <strong>开发者工具 (80%)</strong></h3>
+<ul>
+<li>[x] ESLint + Prettier 代码规范</li>
+<li>[x] Vitest 测试框架 (单元/集成/E2E)</li>
+<li>[x] JSDoc 自动文档生成</li>
+<li>[x] Husky Git Hooks</li>
+<li>[x] Webpack 5 构建优化</li>
+<li>[x] ESM + UMD 双模块输出</li>
+<li>[ ] Playground 在线演示 - <em>计划中</em></li>
+</ul>
+<hr>
+<h2>🔮 待开发功能</h2>
+<h3>🎯 <strong>短期目标 (v1.1.0 - Q2 2026)</strong></h3>
+<h4>🔍 <strong>筛选功能增强</strong></h4>
+<ul>
+<li>[ ] 列筛选器 (Column Filter)
+<ul>
+<li>[ ] 文本搜索过滤</li>
+<li>[ ] 数值范围过滤</li>
+<li>[ ] 日期区间过滤</li>
+<li>[ ] 多选列表过滤</li>
+<li>[ ] 自定义筛选条件</li>
+</ul>
+</li>
+</ul>
+<h4>📊 <strong>图表系统升级</strong></h4>
+<ul>
+<li>[ ] 更多图表类型
+<ul>
+<li>[ ] 折线图 (Line Chart)</li>
+<li>[ ] 饼图 (Pie Chart)</li>
+<li>[ ] 面积图 (Area Chart)</li>
+<li>[ ] 雷达图 (Radar Chart)</li>
+</ul>
+</li>
+<li>[ ] 图表交互
+<ul>
+<li>[ ] Tooltip 悬浮提示</li>
+<li>[ ] 点击钻取 (Drill-down)</li>
+<li>[ ] 动态数据绑定</li>
+</ul>
+</li>
+</ul>
+<h4>🎨 <strong>样式系统增强</strong></h4>
+<ul>
+<li>[ ] 渐变背景 (Gradient Backgrounds)</li>
+<li>[ ] 图片插入 (Image Insertion)</li>
+<li>[ ] 富文本支持 (Rich Text)</li>
+<li>[ ] 条件格式规则扩展
+<ul>
+<li>[ ] 数据条 (Data Bars)</li>
+<li>[ ] 色阶 (Color Scales)</li>
+<li>[ ] 图标集 (Icon Sets)</li>
+</ul>
+</li>
+</ul>
+<h3>🚀 <strong>中期目标 (v2.0.0 - Q4 2026)</strong></h3>
+<h4>👥 <strong>实时协作</strong></h4>
+<ul>
+<li>[ ] WebSocket 同步引擎</li>
+<li>[ ] 操作转换 (OT) 算法</li>
+<li>[ ] 冲突解决机制</li>
+<li>[ ] 光标同步显示</li>
+<li>[ ] 用户权限管理</li>
+<li>[ ] 版本历史回放</li>
+</ul>
+<h4>📱 <strong>移动端优化</strong></h4>
+<ul>
+<li>[ ] 手势操作优化
+<ul>
+<li>[ ] 双指缩放 (Pinch-to-zoom)</li>
+<li>[ ] 滑动选择 (Swipe Selection)</li>
+<li>[ ] 长按菜单 (Long Press Menu)</li>
+</ul>
+</li>
+<li>[ ] 响应式布局</li>
+<li>[ ] 离线缓存 (Offline Support)</li>
+<li>[ ] PWA 支持</li>
+</ul>
+<h4>🔌 <strong>插件市场</strong></h4>
+<ul>
+<li>[ ] 插件在线安装</li>
+<li>[ ] 插件依赖管理</li>
+<li>[ ] 沙箱隔离执行</li>
+<li>[ ] 插件评分系统</li>
+<li>[ ] API 版本兼容性检查</li>
+</ul>
+<h3>🌟 <strong>长期愿景 (v3.0.0+ - 2027+)</strong></h3>
+<h4>🤖 <strong>AI 集成</strong></h4>
+<ul>
+<li>[ ] 智能数据补全</li>
+<li>[ ] 自然语言查询 (&quot;显示销售额前10的产品&quot;)</li>
+<li>[ ] 异常检测与告警</li>
+<li>[ ] 自动化报表生成</li>
+<li>[ ] 预测分析集成</li>
+</ul>
+<h4>🌐 <strong>WebAssembly 加速</strong></h4>
+<ul>
+<li>[ ] 核心计算引擎移植到 WASM</li>
+<li>[ ] 公式计算性能提升 10x+</li>
+<li>[ ] 大规模排序/聚合加速</li>
+<li>[ ] 内存占用降低 50%</li>
+</ul>
+<h4>☁️ <strong>云端原生</strong></h4>
+<ul>
+<li>[ ] Server-side Rendering (SSR)</li>
+<li>[ ] 边缘计算节点部署</li>
+<li>[ ] 全球 CDN 加速分发</li>
+<li>[ ] 多租户隔离架构</li>
+</ul>
+<hr>
+<h2>🤝 贡献指南</h2>
+<p>我们欢迎所有形式的贡献！无论是 Bug 报告、功能请求还是代码提交。</p>
+<h3>🐛 报告问题</h3>
+<ol>
+<li>在 <a href="../../issues">Issues</a> 中搜索现有问题</li>
+<li>如果没有找到，点击 <strong>New Issue</strong></li>
+<li>使用模板填写详细信息：
+<ul>
+<li>复现步骤</li>
+<li>期望行为 vs 实际行为</li>
+<li>截图/GIF (如果涉及 UI)</li>
+<li>环境信息 (浏览器/OS/版本)</li>
+</ul>
+</li>
+</ol>
+<h3>💻 提交代码</h3>
+<h4>Fork &amp; Clone</h4>
+<pre class="prettyprint source lang-bash"><code>git clone https://github.com/YOUR_USERNAME/canvas-implementation-in-excel.git
+cd canvas-implementation-in-excel
+git checkout -b feature/your-feature-name
+</code></pre>
+<h4>开发流程</h4>
+<pre class="prettyprint source lang-bash"><code># 安装依赖
+npm install
+
+# 创建分支 (遵循规范)
+git checkout -b feat/add-pie-chart
+# git checkout -b fix/crash-on-scroll
+# git checkout -b docs/update-readme
+
+# 编写代码 (遵循代码规范)
+npm run dev  # 开发调试
+npm run lint # 代码检查
+
+# 运行测试 (确保通过)
+npm test
+
+# 提交变更 (使用 Conventional Commits)
+git commit -m &quot;feat(chart): add pie chart renderer&quot;
+# fix(scroll): resolve memory leak on rapid scrolling
+# docs(readme): update installation guide
+# test(validation): add edge case tests
+
+# 推送并创建 PR
+git push origin feat/add-pie-chart
+# 然后在 GitHub 上创建 Pull Request
+</code></pre>
+<h4>代码规范</h4>
+<ul>
+<li>✅ <strong>ESLint</strong>: <code>npm run lint</code> 必须通过</li>
+<li>✅ <strong>Prettier</strong>: <code>npm run format</code> 自动格式化</li>
+<li>✅ <strong>Commit Message</strong>: 遵循 <a href="https://www.conventionalcommits.org/">Conventional Commits</a></li>
+<li>✅ <strong>Test Coverage</strong>: 新增代码覆盖率 &gt; 80%</li>
+<li>✅ <strong>JSDoc</strong>: 公共 API 必须有完整注释</li>
+</ul>
+<h4>Pull Request 模板</h4>
+<pre class="prettyprint source lang-markdown"><code>## 📝 变更描述
+简要说明本次修改的内容和原因
+
+## 🔗 关联 Issue
+Fixes #123
+
+## 📸 截图/GIF (如果是 UI 变更)
+[在此处添加截图]
+
+## ✅ 测试清单
+- [ ] 单元测试已添加/更新
+- [ ] 所有测试通过 (`npm test`)
+- [ ] ESLint 检查通过 (`npm run lint`)
+- [ ] 文档已更新 (如有必要)
+
+## 💬 其他说明
+[可选的其他补充信息]
+</code></pre>
+<hr>
+<h2>📄 许可证</h2>
+<p>本项目采用 <strong>Apache License 2.0</strong> 开源协议。</p>
+<pre class="prettyprint source"><code>Copyright 2026 jiangsuiting &lt;1158973435@qq.com>
+
+Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+</code></pre>
+<h3>📜 权利与义务</h3>
+<p><strong>您可以自由地：</strong></p>
+<ul>
+<li>✅ 商业使用</li>
+<li>✅ 修改源码</li>
+<li>✅ 分发副本</li>
+<li>✅ 再授权</li>
+<li>✅ 私人使用</li>
+</ul>
+<p><strong>您必须遵守：</strong></p>
+<ul>
+<li>⚠️ 保留版权声明和许可证文本</li>
+<li>⚠️ 修改的文件必须标注变更</li>
+<li>⚠️ 如果包含 NOTICE 文件，需保留归属声明</li>
+</ul>
+<p><strong>您不能：</strong></p>
+<ul>
+<li>❌ 追究作者关于软件缺陷的责任</li>
+<li>❌ 使用作者的商标或商号进行背书</li>
+</ul>
+<hr>
+<h2>🙏 致谢</h2>
+<p>感谢以下开源项目和社区：</p>
+<ul>
+<li><strong>Handsontable</strong> - 为电子表格领域树立的标准</li>
+<li><strong>HyperFormula</strong> - 优秀的公式引擎参考实现</li>
+<li><strong>Canvas API</strong> - 让高性能 Web 图形成为可能</li>
+<li><strong>Web Components</strong> - 组件化的未来标准</li>
+<li><strong>Vitest</strong> - 快速可靠的测试框架</li>
+<li><strong>Webpack</strong> - 强大的模块打包工具</li>
+</ul>
+<p>特别感谢所有贡献者、Issue 报告者和用户的反馈！</p>
+<hr>
+<h2>📞 联系我们</h2>
+<ul>
+<li><strong>作者</strong>: jiangsuiting</li>
+<li><strong>邮箱</strong>: 1158973435@qq.com</li>
+<li><strong>Issues</strong>: <a href="../../issues">GitHub Issues</a></li>
+<li><strong>讨论区</strong>: <a href="../../discussions">GitHub Discussions</a></li>
+</ul>
+<hr>
+<div align="center">
+<p><strong>如果这个项目对您有帮助，请给一个 ⭐ Star 支持一下！</strong></p>
+<p>Made with ❤️ by <a href="mailto:1158973435@qq.com">jiangsuiting</a></p>
+</div></article>
     </section>
 
 
@@ -307,13 +2486,13 @@ npx webpack
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-FormulaFunctions.html">FormulaFunctions</a></li><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_index.html">types/index</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-FormulaFunctions-FunctionRegistry.html">FunctionRegistry</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li><li><a href="module-types_index-BooleanColumnType.html">BooleanColumnType</a></li><li><a href="module-types_index-BooleanColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-DateColumnType.html">DateColumnType</a></li><li><a href="module-types_index-DateColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-NumericColumnType.html">NumericColumnType</a></li><li><a href="module-types_index-NumericColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-SelectColumnType.html">SelectColumnType</a></li><li><a href="module-types_index-SelectColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TextColumnType.html">TextColumnType</a></li><li><a href="module-types_index-TextColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TextareaColumnType.html">TextareaColumnType</a></li><li><a href="module-types_index-TextareaColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TypeRegistry.html">TypeRegistry</a></li><li><a href="module-types_renderers_index-BooleanCheckboxType.html">BooleanCheckboxType</a></li><li><a href="module-types_renderers_index-BooleanCheckboxType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-ColorPreviewType.html">ColorPreviewType</a></li><li><a href="module-types_renderers_index-ColorPreviewType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-ProgressBarType.html">ProgressBarType</a></li><li><a href="module-types_renderers_index-ProgressBarType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-SparklineType.html">SparklineType</a></li><li><a href="module-types_renderers_index-SparklineType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-StarRatingType.html">StarRatingType</a></li><li><a href="module-types_renderers_index-StarRatingType_BaseColumnType.html">BaseColumnType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 17:04:05 GMT+0800 (中国标准时间)
 </footer>
 
 <script> prettyPrint(); </script>

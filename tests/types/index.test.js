@@ -1,10 +1,10 @@
-/**
+﻿/**
  * types/index 类型注册表完整测试套件
  *
  * 包含：
  * 1. 基础功能测试（正常使用场景）
  * 2. 攻击性测试（边界条件、异常输入、性能压力）
- * 3. getType/registerType/getColumnTypeFromConfig 测试
+ * 3. getColumnTypeInstance/registerColumnTypeInstance/resolveColumnTypeFromConfig 测试
  * 4. 集成测试
  * 5. 源码 Bug 检测
  *
@@ -13,74 +13,74 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
-    getType,
-    registerType,
-    getRegisteredTypes,
-    getColumnTypeFromConfig,
+    getColumnTypeInstance,
+    registerColumnTypeInstance,
+    listRegisteredColumnTypes,
+    resolveColumnTypeFromConfig,
 } from '../../src/types/index.js';
 import { BaseColumnType } from '../../src/types/BaseColumnType.js';
 import { TextColumnType } from '../../src/types/TextColumnType.js';
 
 describe('types/index - 基础功能测试', () => {
-    describe('getType() 方法', () => {
+    describe('getColumnTypeInstance() 方法', () => {
         it('获取内置 text 类型', () => {
-            const type = getType('text');
+            const type = getColumnTypeInstance('text');
             expect(type).toBeInstanceOf(BaseColumnType);
             expect(type.name).toBe('text');
         });
 
         it('获取内置 numeric 类型', () => {
-            const type = getType('numeric');
+            const type = getColumnTypeInstance('numeric');
             expect(type).toBeDefined();
             expect(type.name).toBe('numeric');
         });
 
         it('获取内置 date 类型', () => {
-            const type = getType('date');
+            const type = getColumnTypeInstance('date');
             expect(type).toBeDefined();
             expect(type.name).toBe('date');
         });
 
         it('获取内置 boolean 类型', () => {
-            const type = getType('boolean');
+            const type = getColumnTypeInstance('boolean');
             expect(type).toBeDefined();
             expect(type.name).toBe('boolean');
         });
 
         it('获取内置 select 类型', () => {
-            const type = getType('select');
+            const type = getColumnTypeInstance('select');
             expect(type).toBeDefined();
             expect(type.name).toBe('select');
         });
 
         it('不存在的类型回退到 text', () => {
-            const type = getType('nonexistent');
+            const type = getColumnTypeInstance('nonexistent');
             expect(type).toBeDefined();
             expect(type.name).toBe('text');
         });
 
         it('传入 options 创建新实例', () => {
-            const type = getType('text', { maxLength: 100 });
+            const type = getColumnTypeInstance('text', { maxLength: 100 });
             expect(type).toBeInstanceOf(TextColumnType);
             expect(type.options.maxLength).toBe(100);
         });
 
         it('不传 options 返回单例', () => {
-            const type1 = getType('text');
-            const type2 = getType('text');
+            const type1 = getColumnTypeInstance('text');
+            const type2 = getColumnTypeInstance('text');
 
             expect(type1).toBe(type2);
         });
     });
 
-    describe('registerType() 方法', () => {
+    describe('registerColumnTypeInstance() 方法', () => {
         it('注册自定义类型', () => {
             class CustomType extends BaseColumnType {
                 get name() { return 'custom'; }
             }
 
-            registerType(new CustomType());
-            const type = getType('custom');
+            registerColumnTypeInstance(new CustomType());
+            const type = getColumnTypeInstance('custom');
 
             expect(type).toBeInstanceOf(CustomType);
             expect(type.name).toBe('custom');
@@ -97,7 +97,7 @@ describe('types/index - 基础功能测试', () => {
             ];
 
             invalidInstances.forEach(instance => {
-                expect(() => registerType(instance)).not.toThrow();
+                expect(() => registerColumnTypeInstance(instance)).not.toThrow();
             });
         });
 
@@ -107,16 +107,16 @@ describe('types/index - 基础功能测试', () => {
                 format(value) { return `NEW:${value}`; }
             }
 
-            registerType(new NewTextType());
-            const type = getType('text');
+            registerColumnTypeInstance(new NewTextType());
+            const type = getColumnTypeInstance('text');
 
             expect(type.format('test')).toBe('NEW:test');
         });
     });
 
-    describe('getRegisteredTypes() 方法', () => {
+    describe('listRegisteredColumnTypes() 方法', () => {
         it('返回所有注册的类型名称', () => {
-            const types = getRegisteredTypes();
+            const types = listRegisteredColumnTypes();
 
             expect(Array.isArray(types)).toBe(true);
             expect(types.length).toBeGreaterThanOrEqual(5);  // 至少有 5 个内置类型
@@ -128,14 +128,14 @@ describe('types/index - 基础功能测试', () => {
         });
     });
 
-    describe('getColumnTypeFromConfig() 方法', () => {
+    describe('resolveColumnTypeFromConfig() 方法', () => {
         it('从配置创建类型实例', () => {
             const config = {
                 type: 'text',
                 maxLength: 50,
             };
 
-            const type = getColumnTypeFromConfig(config);
+            const type = resolveColumnTypeFromConfig(config);
 
             expect(type.name).toBe('text');
             expect(type.options.maxLength).toBe(50);
@@ -145,14 +145,14 @@ describe('types/index - 基础功能测试', () => {
 
         it('无 type 配置返回 text 类型', () => {
             const config = {};
-            const type = getColumnTypeFromConfig(config);
+            const type = resolveColumnTypeFromConfig(config);
 
             expect(type.name).toBe('text');
         });
 
         it('null/undefined 配置返回 text 类型', () => {
-            expect(getColumnTypeFromConfig(null).name).toBe('text');
-            expect(getColumnTypeFromConfig(undefined).name).toBe('text');
+            expect(resolveColumnTypeFromConfig(null).name).toBe('text');
+            expect(resolveColumnTypeFromConfig(undefined).name).toBe('text');
         });
 
         it('提取所有相关配置选项', () => {
@@ -164,7 +164,7 @@ describe('types/index - 基础功能测试', () => {
                 numericFormat: { pattern: '0,0.00' },
             };
 
-            const type = getColumnTypeFromConfig(config);
+            const type = resolveColumnTypeFromConfig(config);
 
             expect(type.options.min).toBe(0);
             expect(type.options.max).toBe(100);
@@ -195,8 +195,8 @@ describe('types/index - 攻击性测试', () => {
             ];
 
             specialNames.forEach(name => {
-                expect(() => getType(name)).not.toThrow();
-                const type = getType(name);
+                expect(() => getColumnTypeInstance(name)).not.toThrow();
+                const type = getColumnTypeInstance(name);
                 expect(type).toBeDefined();
             });
         });
@@ -216,7 +216,7 @@ describe('types/index - 攻击性测试', () => {
             ];
 
             extremeOptions.forEach(options => {
-                expect(() => getType('text', options)).not.toThrow();
+                expect(() => getColumnTypeInstance('text', options)).not.toThrow();
             });
         });
 
@@ -226,18 +226,18 @@ describe('types/index - 攻击性测试', () => {
                 format(value) { throw new Error('Malicious'); }
             }
 
-            registerType(new MaliciousType());
+            registerColumnTypeInstance(new MaliciousType());
 
             let errorOccurred = false;
             try {
-                const type = getType('text');
+                const type = getColumnTypeInstance('text');
                 type.format('test');
             } catch (e) {
                 errorOccurred = true;
             }
 
             if (errorOccurred) {
-                console.error('❌ 安全问题: 可以通过 registerType 覆盖内置类型并注入恶意代码');
+                console.error('❌ 安全问题: 可以通过 registerColumnTypeInstance 覆盖内置类型并注入恶意代码');
             }
         });
     });
@@ -248,10 +248,10 @@ describe('types/index - 攻击性测试', () => {
                 class DynamicType extends BaseColumnType {
                     get name() { return `dynamic_${i}`; }
                 }
-                registerType(new DynamicType());
+                registerColumnTypeInstance(new DynamicType());
             }
 
-            const types = getRegisteredTypes();
+            const types = listRegisteredColumnTypes();
             console.log(`注册了 ${types.filter(t => t.startsWith('dynamic_')).length} 个动态类型`);
         });
 
@@ -259,7 +259,7 @@ describe('types/index - 攻击性测试', () => {
             const start = performance.now();
 
             for (let i = 0; i < 10000; i++) {
-                getType('numeric', {
+                getColumnTypeInstance('numeric', {
                     min: Math.random() * 1000,
                     max: Math.random() * 2000 + 1000,
                     numericFormat: { pattern: ['0,0.00', '0.00%', '$0,0.00'][i % 3]
@@ -273,18 +273,18 @@ describe('types/index - 攻击性测试', () => {
     });
 
     describe('性能压力测试', () => {
-        it('高频 getType 调用', () => {
+        it('高频 getColumnTypeInstance 调用', () => {
             const start = performance.now();
 
             for (let i = 0; i < 50000; i++) {
-                getType(['text', 'numeric', 'date', 'boolean', 'select'][i % 5]);
+                getColumnTypeInstance(['text', 'numeric', 'date', 'boolean', 'select'][i % 5]);
             }
 
             const elapsed = performance.now() - start;
             expect(elapsed).toBeLessThan(300);
         });
 
-        it('高频 getColumnTypeFromConfig 调用', () => {
+        it('高频 resolveColumnTypeFromConfig 调用', () => {
             const configs = Array.from({ length: 1000 }, (_, i) => ({
                 type: ['text', 'numeric', 'select'][i % 3],
                 ...(i % 3 === 1 ? { min: 0, max: 100 } : {}),
@@ -292,7 +292,7 @@ describe('types/index - 攻击性测试', () => {
             }));
 
             const start = performance.now();
-            configs.forEach(config => getColumnTypeFromConfig(config));
+            configs.forEach(config => resolveColumnTypeFromConfig(config));
             const elapsed = performance.now() - start;
 
             expect(elapsed).toBeLessThan(200);
@@ -311,21 +311,21 @@ describe('types/index - 集成测试', () => {
             }
         }
 
-        registerType(new EmailType());
+        registerColumnTypeInstance(new EmailType());
 
-        const emailType = getType('email', {});
+        const emailType = getColumnTypeInstance('email', {});
         expect(emailType.validate('user@example.com')).toBe(true);
         expect(emailType.validate('invalid')).toBe(false);
 
-        const fromConfig = getColumnTypeFromConfig({ type: 'email' });
+        const fromConfig = resolveColumnTypeFromConfig({ type: 'email' });
         expect(fromConfig.name).toBe('email');
     });
 
     it('所有内置类型的接口一致性', () => {
-        const builtInTypes = getRegisteredTypes();
+        const builtInTypes = listRegisteredColumnTypes();
 
         builtInTypes.forEach(typeName => {
-            const type = getType(typeName);
+            const type = getColumnTypeInstance(typeName);
 
             expect(typeof type.format).toBe('function');
             expect(typeof type.validate).toBe('function');
@@ -339,15 +339,15 @@ describe('types/index - 集成测试', () => {
         });
     });
 
-    it('getColumnTypeFromConfig 与直接调用 getType 等价', () => {
+    it('resolveColumnTypeFromConfig 与直接调用 getColumnTypeInstance 等价', () => {
         const config = {
             type: 'select',
             source: ['A', 'B', 'C'],
             allowInvalid: true,
         };
 
-        const fromConfig = getColumnTypeFromConfig(config);
-        const fromDirect = getType('select', {
+        const fromConfig = resolveColumnTypeFromConfig(config);
+        const fromDirect = getColumnTypeInstance('select', {
             source: config.source,
             allowInvalid: config.allowInvalid,
         });
@@ -360,25 +360,25 @@ describe('types/index - 集成测试', () => {
 describe('types/index - Bug 检测', () => {
     describe('源码问题识别', () => {
         it('Bug #1: 注册表全局状态污染', () => {
-            const initialCount = getRegisteredTypes().length;
+            const initialCount = listRegisteredColumnTypes().length;
 
             class TempType extends BaseColumnType {
                 get name() { return 'temp_test'; }
             }
-            registerType(new TempType());
+            registerColumnTypeInstance(new TempType());
 
-            const afterRegisterCount = getRegisteredTypes().length;
+            const afterRegisterCount = listRegisteredColumnTypes().length;
 
             expect(afterRegisterCount).toBe(initialCount + 1);
             console.warn('⚠️  全局注册表在测试间可能互相影响，需要清理机制');
         });
 
-        it('Bug #2: getType 返回的单例被意外修改', () => {
-            const type1 = getType('text');
+        it('Bug #2: getColumnTypeInstance 返回的单例被意外修改', () => {
+            const type1 = getColumnTypeInstance('text');
 
             try {
                 type1.options.customProp = 'modified';
-                const type2 = getType('text');
+                const type2 = getColumnTypeInstance('text');
 
                 if (type2.options.customProp === 'modified') {
                     console.error('❌ Bug: 单例对象被修改会影响后续使用者');
@@ -395,7 +395,7 @@ describe('types/index - Bug 检测', () => {
                 anotherOption: 123,
             };
 
-            const type = getColumnTypeFromConfig(config);
+            const type = resolveColumnTypeFromConfig(config);
 
             if (type.options.customOption) {
                 console.log('✓ 自定义选项被提取');
@@ -413,7 +413,7 @@ describe('types/index - Bug 检测', () => {
                         class RaceType extends BaseColumnType {
                             get name() { return `race_${idx}`; }
                         }
-                        registerType(new RaceType());
+                        registerColumnTypeInstance(new RaceType());
                     })
                 );
             }
@@ -425,17 +425,17 @@ describe('types/index - Bug 检测', () => {
 
     describe('边缘行为分析', () => {
         it('type 为空字符串的行为', () => {
-            const type = getType('');
+            const type = getColumnTypeInstance('');
             expect(type).toBeDefined();
             expect(type.name).toBe('text');  // 回退到默认值
         });
 
         it('type 为 null/undefined 的行为', () => {
-            expect(getType(null).name).toBe('text');
-            expect(getType(undefined).name).toBe('text');
+            expect(getColumnTypeInstance(null).name).toBe('text');
+            expect(getColumnTypeInstance(undefined).name).toBe('text');
         });
 
-        it('registerType 传入非 BaseColumnType 实例', () => {
+        it('registerColumnTypeInstance 传入非 BaseColumnType 实例', () => {
             const nonInstances = [
                 {},
                 [],
@@ -455,13 +455,13 @@ describe('types/index - Bug 检测', () => {
             nonInstances.forEach(instance => {
                 let errorOccurred = false;
                 try {
-                    registerType(instance);
+                    registerColumnTypeInstance(instance);
                 } catch (e) {
                     errorOccurred = true;
                 }
 
                 if (errorOccurred) {
-                    console.error(`❌ registerType(${typeof instance}) 抛出错误`);
+                    console.error(`❌ registerColumnTypeInstance(${typeof instance}) 抛出错误`);
                 }
             });
         });
@@ -470,9 +470,9 @@ describe('types/index - Bug 检测', () => {
             const circularOpts = {};
             circularOpts.self = circularOpts;
 
-            expect(() => getType('text', circularOpts)).not.toThrow();
+            expect(() => getColumnTypeInstance('text', circularOpts)).not.toThrow();
 
-            const type = getType('text', circularOpts);
+            const type = getColumnTypeInstance('text', circularOpts);
             expect(type.options.self).toBe(circularOpts);
         });
     });

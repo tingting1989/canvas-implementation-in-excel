@@ -21,7 +21,7 @@ import { Workbook } from "./workbook/Workbook.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./utils/utils.js";
 import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
-import { registerTypeClass } from "@/types";
+import { registerColumnTypeClass } from "@/types";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
 
 class TrafficLightType extends BaseColumnType {
@@ -106,8 +106,8 @@ class TrafficLightType extends BaseColumnType {
     }
 }
 
-// 注册自定义渲染器
-registerTypeClass("trafficLight", TrafficLightType);
+// 注册自定义类型
+registerColumnTypeClass("trafficLight", TrafficLightType);
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 

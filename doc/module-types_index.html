@@ -1,0 +1,3571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Module: types/index</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Module: types/index</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        
+            
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+            <div class="description"><h2>📋 模块概述</h2>
+<p>本模块是 Canvas Spreadsheet 的<strong>数据类型核心引擎</strong>，负责：</p>
+<ol>
+<li><strong>类型注册与发现</strong>：管理所有可用的列数据类型（文本、数字、日期等）</li>
+<li><strong>类型实例化</strong>：根据配置创建和管理类型实例</li>
+<li><strong>数据处理管道</strong>：提供格式化、解析、验证等数据转换功能</li>
+<li><strong>扩展机制</strong>：支持自定义类型的动态注册</li>
+</ol>
+<h2>🏗️ 架构设计</h2>
+<pre class="prettyprint source"><code>┌─────────────────────────────────────────────────────────────┐
+│                    types/index.js (本文件)                    │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │              TypeRegistry (单例注册表)                │   │
+│  │                                                      │   │
+│  │  内置类型 (Built-in Types):                           │   │
+│  │  ├── text      → TextColumnType     文本类型          │   │
+│  │  ├── numeric   → NumericColumnType  数字类型          │   │
+│  │  ├── date      → DateColumnType     日期类型          │   │
+│  │  ├── boolean   → BooleanColumnType  布尔类型          │   │
+│  │  ├── select    → SelectColumnType   下拉选择          │   │
+│  │  ├── textarea  → TextareaColumnType 多行文本         │   │
+│  │  │                                                    │   │
+│  │  渲染器类型 (Renderer Types):                          │   │
+│  │  ├── checkbox     → BooleanCheckboxType 复选框        │   │
+│  │  ├── progressBar  → ProgressBarType    进度条         │   │
+│  │  ├── starRating   → StarRatingType     星级评分       │   │
+│  │  ├── sparkline    → SparklineType      迷你图         │   │
+│  │  └── colorPreview → ColorPreviewType   颜色预览       │   │
+│  │                                                    │   │
+│  │  自定义类型 (Custom Types):                          │   │
+│  │  └── [用户通过 API 注册]                              │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  公共 API 函数:                                              │
+│  ├─ 注册: registerColumnTypeClass(), registerColumnTypeInstance()
+│  ├─ 查询: getColumnTypeInstance(), hasColumnType()
+│  ├─ 管理: unregisterColumnType(), listRegisteredColumnTypes()
+│  ├─ 数据处理: formatCellValue(), parseCellValue(), validateCellValue()
+│  └─ 配置解析: resolveCellTypeFromConfig()
+├─────────────────────────────────────────────────────────────┤
+│  类型实现类:                                                  │
+│  ├── BaseColumnType.js       (基类)                         │
+│  ├── TextColumnType.js       (文本)                         │
+│  ├── NumericColumnType.js    (数字)                         │
+│  ├── DateColumnType.js       (日期)                         │
+│  ├── BooleanColumnType.js    (布尔)                         │
+│  ├── SelectColumnType.js     (选择)                         │
+│  ├── TextareaColumnType.js   (多行文本)                     │
+│  └── renderers/             (渲染器类型)                    │
+└─────────────────────────────────────────────────────────────┘
+</code></pre>
+<h2>💡 使用示例</h2>
+<h3>基础用法：获取和使用类型实例</h3>
+<pre class="prettyprint source lang-javascript"><code>import { getColumnTypeInstance } from '@/types/index.js';
+
+// 获取文本类型实例
+const textType = getColumnTypeInstance('text');
+
+// 格式化值
+const formatted = textType.format(12345);  // &quot;12345&quot;
+
+// 解析输入
+const parsed = textType.parse(&quot;Hello&quot;);    // &quot;Hello&quot;
+
+// 验证值
+const isValid = textType.validate(&quot;test&quot;); // true
+</code></pre>
+<h3>高级用法：注册自定义类型</h3>
+<pre class="prettyprint source lang-javascript"><code>import {
+    registerColumnTypeClass,
+    BaseColumnType
+} from '@/types/index.js';
+
+class EmailType extends BaseColumnType {
+    get name() { return 'email'; }
+    get editorType() { return 'text'; }
+
+    validate(value) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+            return '请输入有效的邮箱地址';
+        }
+        return true;
+    }
+
+    format(value) {
+        return value ? value.toLowerCase() : '';
+    }
+}
+
+registerColumnTypeClass('email', EmailType);
+</code></pre>
+<h3>完整的数据处理流程</h3>
+<pre class="prettyprint source lang-javascript"><code>import {
+    resolveCellTypeFromConfig,
+    formatCellValue,
+    parseCellValue,
+    validateCellValue
+} from '@/types/index.js';
+
+// 根据单元格位置和配置确定类型
+const cellType = resolveCellTypeFromConfig(row, col, cellTypesMap, columnsConfig);
+
+// 用户输入 → 解析 → 验证 → 存储
+const userInput = document.getElementById('cell-input').value;
+const parsedValue = parseCellValue(cellType, userInput);
+const validationResult = validateCellValue(cellType, parsedValue, columnConfig);
+
+if (validationResult === true) {
+    cellStore.setValue(row, col, parsedValue);
+} else {
+    showError(validationResult);  // 显示错误信息
+}
+
+// 存储的值 → 格式化 → 显示
+const displayValue = formatCellValue(cellType, cellStore.getValue(row, col));
+renderer.renderText(displayValue);
+</code></pre>
+<h2>⚙️ 设计原则</h2>
+<ol>
+<li><strong>单一职责</strong>: 每个类型只负责一种数据的处理逻辑</li>
+<li><strong>开放封闭</strong>: 通过继承 BaseColumnType 扩展新类型</li>
+<li><strong>依赖倒置</strong>: 依赖抽象接口而非具体实现</li>
+<li><strong>里氏替换</strong>: 子类可以完全替代父类使用</li>
+</ol></div>
+        
+
+        
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+    <dt class="tag-version">Version:</dt>
+    <dd class="tag-version"><ul class="dummy"><li>2.0.0</li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-author">Author:</dt>
+    <dd class="tag-author">
+        <ul>
+            <li>Canvas Spreadsheet Team</li>
+        </ul>
+    </dd>
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line19">line 19</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>module:types/BaseColumnType</code> 基础类型类</li>
+        
+            <li><a href="module-types_renderers_index.html"><code>module:types/renderers/index</code></a> 渲染器类型注册表</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="module-types_index-BooleanColumnType.html">BooleanColumnType</a></dt>
+            <dd></dd>
+        
+            <dt><a href="module-types_index-DateColumnType.html">DateColumnType</a></dt>
+            <dd></dd>
+        
+            <dt><a href="module-types_index-NumericColumnType.html">NumericColumnType</a></dt>
+            <dd></dd>
+        
+            <dt><a href="module-types_index-SelectColumnType.html">SelectColumnType</a></dt>
+            <dd></dd>
+        
+            <dt><a href="module-types_index-TextColumnType.html">TextColumnType</a></dt>
+            <dd></dd>
+        
+            <dt><a href="module-types_index-TextareaColumnType.html">TextareaColumnType</a></dt>
+            <dd></dd>
+        
+            <dt><a href="module-types_index-TypeRegistry.html">TypeRegistry</a></dt>
+            <dd></dd>
+        
+            <dt><a href="module-types_index-TypeRegistry.html">TypeRegistry</a></dt>
+            <dd></dd>
+        </dl>
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id="~BUILTIN_RENDERER_TYPE_REGISTRY"><span class="type-signature">(inner, constant) </span>BUILTIN_RENDERER_TYPE_REGISTRY<span class="type-signature"> :Object</span></h4>
+
+
+
+
+<div class="description">
+    <p>内置渲染器类型注册表</p>
+<p>包含所有可视化渲染器类型（复选框、进度条、星级评分等）。</p>
+</div>
+
+
+
+    <h5>Type:</h5>
+    <ul>
+        <li>
+            
+<span class="param-type">Object</span>
+
+
+        </li>
+    </ul>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line286">line 286</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><a href="module-types_renderers_index.html"><code>module:types/renderers/index</code></a> 详细文档</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".clearAllColumnTypes"><span class="type-signature">(static) </span>clearAllColumnTypes<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>清空所有列类型（Clear All Column Types）</p>
+<p>危险操作！会移除包括内置类型在内的所有注册项。
+仅用于测试环境或特殊重置场景。</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1000">line 1000</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>resetToBuiltinTypes</code> 更安全的重置方式</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { clearAllColumnTypes } from '@canvas-sheet/core';
+
+// ⚠️ 测试前清空
+beforeAll(() => {
+    clearAllColumnTypes();
+});
+
+// 清空后需要重新注册才能使用
+clearAllColumnTypes();
+registerColumnTypeClass('text', TextColumnType);  // 必须重新注册
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".extractColumnTypeOptions"><span class="type-signature">(static) </span>extractColumnTypeOptions<span class="signature">(columnConfig)</span><span class="type-signature"> &rarr; {Object}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>从列配置中提取类型相关的选项（Extract Type-specific Options from Column Config）</p>
+<p>工具函数：从完整的列配置对象中筛选出与类型行为相关的配置项。
+这些选项会被传递给类型构造器或方法。</p>
+<h2>📋 可提取的配置项</h2>
+<table>
+<thead>
+<tr>
+<th>配置键名</th>
+<th>类型</th>
+<th>用途说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source</code></td>
+<td>Array|Function</td>
+<td>下拉选项的数据源（Select 类型专用）</td>
+</tr>
+<tr>
+<td><code>allowInvalid</code></td>
+<td>boolean</td>
+<td>是否允许无效值（宽松模式）</td>
+</tr>
+<tr>
+<td><code>strict</code></td>
+<td>boolean</td>
+<td>是否启用严格验证模式</td>
+</tr>
+<tr>
+<td><code>numericFormat</code></td>
+<td>string</td>
+<td>数字格式化模板（Numeric 类型专用）</td>
+</tr>
+<tr>
+<td><code>min</code></td>
+<td>number</td>
+<td>最小值约束</td>
+</tr>
+<tr>
+<td><code>max</code></td>
+<td>number</td>
+<td>最大值约束</td>
+</tr>
+<tr>
+<td><code>maxLength</code></td>
+<td>number</td>
+<td>最大长度限制</td>
+</tr>
+<tr>
+<td><code>dateFormat</code></td>
+<td>string</td>
+<td>日期格式化模板（Date 类型专用）</td>
+</tr>
+<tr>
+<td><code>labels</code></td>
+<td>Object</td>
+<td>显示标签映射（Select 类型专用）</td>
+</tr>
+<tr>
+<td><code>maxRows</code></td>
+<td>number</td>
+<td>最大行数限制（Textarea 类型专用）</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>columnConfig</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>完整的列配置对象</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1097">line 1097</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>过滤后的类型选项对象（只包含有效配置项）</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Object</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { extractColumnTypeOptions } from '@canvas-sheet/core';
+
+const columnDefinition = {
+    type: 'numeric',
+    header: '价格',
+    width: 120,
+    numericFormat: '¥#,##0.00',  // ← 类型相关
+    min: 0,                       // ← 类型相关
+    max: 99999,                   // ← 类型相关
+    sortable: true,               // ← 非（会被过滤掉）
+    resizable: true               // ← 非（会被过滤掉）
+};
+
+const typeOptions = extractColumnTypeOptions(columnDefinition);
+console.log(typeOptions);
+// 输出: { numericFormat: '¥#,##0.00', min: 0, max: 99999 }
+
+// 传递给类型实例
+const numericType = getColumnTypeInstance('numeric', typeOptions);
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".formatCellValue"><span class="type-signature">(static) </span>formatCellValue<span class="signature">(cellType, rawValue)</span><span class="type-signature"> &rarr; {string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>格式化单元格值以供显示（Format Cell Value for Display）</p>
+<p>将内部存储的原始值转换为用户友好的显示格式。
+这是<strong>数据展示层</strong>的核心函数。</p>
+<h2>🔄 转换流程</h2>
+<pre class="prettyprint source"><code>内部值 (raw value)
+    ↓
+[null/undefined 检查]
+    ↓ (是) → 返回 &quot;&quot;
+    ↓ (否)
+[cellType.format()]
+    ↓
+显示值 (display string)
+</code></pre>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>cellType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="BaseColumnType.html">BaseColumnType</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>单元格类型实例（可以为 null）</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>rawValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>内部存储的原始值（任意类型）</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1273">line 1273</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>parseCellValue</code> 反向操作：解析用户输入</li>
+        
+            <li><code>validateCellValue</code> 验证值的有效性</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>格式化后的显示字符串</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { getColumnTypeInstance, formatCellValue } from '@canvas-sheet/core';
+
+const dateType = getColumnTypeInstance('date');
+const internalValue = new Date('2026-01-15');
+
+const displayString = formatCellValue(dateType, internalValue);
+console.log(displayString);  // "2026-01-15" (取决于 locale 和 format 设置)
+
+// 无类型时退化为 String()
+console.log(formatCellValue(null, 123));  // "123"
+console.log(formatCellValue(undefined, null));  // "" (空值)
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".getColumnTypeInstance"><span class="type-signature">(static) </span>getColumnTypeInstance<span class="signature">(typeName, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="BaseColumnType.html">BaseColumnType</a>|null}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>获取列类型实例（Get Column Type Instance）</p>
+<p>从全局注册表中获取指定类型的实例。这是最常用的 API，
+用于在工作簿中实际使用某种数据类型。</p>
+<h2>📌 使用时机</h2>
+<ul>
+<li>需要对特定类型的值进行格式化、解析、验证时</li>
+<li>动态创建基于类型的 UI 组件时</li>
+<li>编写自定义渲染器或编辑器时</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>类型名称（不区分大小写，但建议使用标准名称）
+标准名称：'text', 'numeric', 'date', 'boolean',
+'select', 'textarea', 'checkbox',
+'progressBar', 'starRating', 'sparkline',
+'colorPreview'</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>可选的类型配置（传入则创建新实例）</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line801">line 801</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>hasColumnType</code> 先检查是否存在</li>
+        
+            <li><code>listRegisteredColumnTypes</code> 查看所有可用类型</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>类型实例，失败返回 null</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="BaseColumnType.html">BaseColumnType</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { getColumnTypeInstance } from '@canvas-sheet/core';
+
+// 获取文本类型（最常用）
+const textType = getColumnTypeInstance('text');
+const formatted = textType.format(userInput);
+
+// 获取带配置的数字类型
+const percentType = getColumnTypeInstance('numeric', {
+    numericFormat: '0.00%',
+    min: 0,
+    max: 100
+});
+
+// 不存在的类型（自动 fallback 到 text）
+const unknown = getColumnTypeInstance('nonExistent');
+console.log(unknown.name);  // "text"
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".getRegisteredTypeCount"><span class="type-signature">(static) </span>getRegisteredTypeCount<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>获取已注册列类型的总数（Get Registered Column Type Count）</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1040">line 1040</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>listRegisteredColumnTypes</code> 获取详细列表</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>当前注册表中的类型数量（含内置 + 自定义）</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">number</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { getRegisteredTypeCount } from '@canvas-sheet/core';
+
+console.log(`当前系统支持 ${getRegisteredTypeCount()} 种数据类型`);
+// 输出: "当前系统支持 12 种数据类型" (11 内置 + 1 自定义)
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".hasColumnType"><span class="type-signature">(static) </span>hasColumnType<span class="signature">(typeName)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>检查列类型是否已注册（Check if Column Type Exists）</p>
+<p>在尝试获取类型之前，先检查其是否有效。
+特别适合用于用户输入验证或条件判断场景。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>要检查的类型名称</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line834">line 834</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>getColumnTypeInstance</code> 获取实例</li>
+        
+            <li><code>listRegisteredColumnTypes</code> 列出所有名称</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>存在返回 true，否则返回 false</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { hasColumnType, getColumnTypeInstance } from '@canvas-sheet/core';
+
+function safeGetType(name) {
+    if (!hasColumnType(name)) {
+        throw new Error(`未知类型: ${name}`);
+    }
+    return getColumnTypeInstance(name);
+}
+
+// 条件判断
+if (hasColumnType('starRating')) {
+    enableStarRatingFeature();
+}
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".listRegisteredColumnTypes"><span class="type-signature">(static) </span>listRegisteredColumnTypes<span class="signature">()</span><span class="type-signature"> &rarr; {Array:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>.&lt;string:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>列出所有已注册的列类型名称（List All Registered Column Type Names）</p>
+<p>返回当前系统中所有可用类型的名称数组。
+适用于 UI 下拉框填充、文档生成、调试诊断等场景。</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line974">line 974</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>hasColumnType</code> 检查单个类型</li>
+        
+            <li><code>getRegisteredTypeCount</code> 获取数量</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>类型名称数组（按注册顺序）</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Array:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>.&lt;string:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { listRegisteredColumnTypes } from '@canvas-sheet/core';
+
+// 填充类型选择下拉框
+const typeSelector = document.getElementById('column-type-selector');
+listRegisteredColumnTypes().forEach(typeName => {
+    const option = document.createElement('option');
+    option.value = typeName;
+    option.textContent = formatTypeName(typeName);  // 'starRating' -> '星级评分'
+    typeSelector.appendChild(option);
+});
+
+// 调试输出
+console.log(`系统提供 ${listRegisteredColumnTypes().length} 种类型`);
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".parseCellValue"><span class="type-signature">(static) </span>parseCellValue<span class="signature">(cellType, input)</span><span class="type-signature"> &rarr; {*}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>解析用户输入为内部存储值（Parse User Input to Internal Value）</p>
+<p>将用户在编辑器中输入的字符串转换为适合内部存储的值。
+这是<strong>数据录入层</strong>的核心函数。</p>
+<h2>🔄 转换流程</h2>
+<pre class="prettyprint source"><code>用户输入 (user input string)
+    ↓
+[空值检查: &quot;&quot;, undefined, null]
+    ↓ (是) → 返回 &quot;&quot;
+    ↓ (否)
+[cellType.parse()]
+    ↓
+内部值 (typed value)
+</code></pre>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>cellType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="BaseColumnType.html">BaseColumnType</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>单元格类型实例（可以为 null）</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>input</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>用户输入的原始字符串</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1320">line 1320</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>formatCellValue</code> 反向操作：格式化为显示</li>
+        
+            <li><code>validateCellValue</code> 解析后的验证步骤</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>解析后的内部值（类型取决于 cellType 的实现）</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">*</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { getColumnTypeInstance, parseCellValue } from '@canvas-sheet/core';
+
+const numberType = getColumnTypeInstance('numeric');
+const userInput = "1,234.56";
+
+const internalValue = parseCellValue(numberType, userInput);
+console.log(internalValue);  // 1234.56 (数字类型)
+console.log(typeof internalValue);  // "number"
+
+// 空输入处理
+console.log(parseCellValue(dateType, ""));  // ""
+console.log(parseCellValue(null, "anything"));  // "anything" (无类型时原样返回)
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".registerColumnTypeClass"><span class="type-signature">(static) </span>registerColumnTypeClass<span class="signature">(typeName, TypeClass, options<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>注册列类型类（Register Column Type Class）</p>
+<p>通过类的构造器向系统注册新的数据类型。
+这是最推荐的注册方式，适用于绝大多数自定义类型开发。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>类型标识符（必须唯一，建议使用 camelCase）</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>TypeClass</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>类型类（需继承 BaseColumnType）</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>options</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    {}
+                
+                </td>
+            
+
+            <td class="description last"><p>默认实例的配置选项</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line883">line 883</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>registerColumnTypeInstance</code> 注册实例版本</li>
+        
+            <li><code>unregisterColumnType</code> 注销类型</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>注册成功返回 true，失败返回 false</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { registerColumnTypeClass, BaseColumnType } from '@canvas-sheet/core';
+
+class UrlType extends BaseColumnType {
+    get name() { return 'url'; }
+    get editorType() { return 'text'; }
+
+    validate(value) {
+        if (!/^https?:\/\//.test(value)) {
+            return '请输入有效的 URL（以 http:// 或 https:// 开头）';
+        }
+        return true;
+    }
+
+    format(value) {
+        return value;  // URL 保持原样
+    }
+}
+
+// 注册到系统
+const success = registerColumnTypeClass('url', UrlType, {
+    maxLength: 2048
+});
+
+if (success) {
+    console.log('URL 类型注册成功！');
+    // 现在可以在列定义中使用 type: 'url'
+}
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".registerColumnTypeInstance"><span class="type-signature">(static) </span>registerColumnTypeInstance<span class="signature">(typeInstance)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>注册列类型实例（Register Column Type Instance）</p>
+<p>直接注册一个已创建好的类型实例。
+适用于需要共享复杂配置或从外部导入预配置实例的场景。</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeInstance</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="BaseColumnType.html">BaseColumnType</a></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>类型实例（必须有 name 属性）</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line917">line 917</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>registerColumnTypeClass</code> 注册类版本</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>注册成功返回 true，失败返回 false</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { registerColumnTypeInstance, NumericColumnType } from '@canvas-sheet/core';
+
+// 创建一个预配置的货币类型实例
+const usdCurrencyType = new NumericColumnType({
+    numericFormat: '$#,##0.00',
+    min: 0,
+    decimalPlaces: 2
+});
+
+// 注册实例（后续获取时复用此配置）
+registerColumnTypeInstance(usdCurrencyType);
+
+// 使用时自动获得相同的配置
+const currencyInstance = getColumnTypeInstance('numeric');
+console.log(currencyInstance.format(1234.5));  // "$1,234.50"
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".resetToBuiltinTypes"><span class="type-signature">(static) </span>resetToBuiltinTypes<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>重置为内置列类型（Reset to Built-in Column Types）</p>
+<p>清空所有类型（包括自定义类型），然后重新加载系统内置类型。
+这是比 <code>clearAllColumnTypes</code> 更安全的重置方式。</p>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1021">line 1021</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>clearAllColumnTypes</code> 彻底清空</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { resetToBuiltinTypes } from '@canvas-sheet/core';
+
+// 重置到初始状态（清除所有自定义类型）
+resetToBuiltinTypes();
+console.log(getRegisteredTypeCount());  // 11 (只有内置类型)
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".resolveCellTypeFromPosition"><span class="type-signature">(static) </span>resolveCellTypeFromPosition<span class="signature">(row, col, cellTypes, columnsConfig)</span><span class="type-signature"> &rarr; {<a href="BaseColumnType.html">BaseColumnType</a>|null}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>根据单元格位置解析类型实例（Resolve Cell Type by Position）</p>
+<p>最精细的类型解析函数，综合考虑以下因素来确定单元格应该使用的类型：</p>
+<h2>📍 解析优先级（由高到低）</h2>
+<ol>
+<li>
+<p><strong>单元格级别覆盖</strong>（最高优先级）</p>
+<ul>
+<li>检查 <code>cellTypes</code> Map 中是否有该单元格 <code>(row, col)</code> 的特殊类型定义</li>
+<li>适用于：单个单元格需要不同于整列的类型</li>
+</ul>
+</li>
+<li>
+<p><strong>列级别定义</strong></p>
+<ul>
+<li>检查 <code>columnsConfig</code> Map 中该列 <code>col</code> 的默认类型</li>
+<li>适用于：整列统一使用某种类型</li>
+</ul>
+</li>
+<li>
+<p><strong>全局默认值</strong>（最低优先级）</p>
+<ul>
+<li>如果以上都没有，返回 <strong>text</strong> 类型作为最终 fallback</li>
+</ul>
+</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>row</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>行索引（从 0 开始）</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>col</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>列索引（从 0 开始）</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>cellTypes</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>columnsConfig</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Map:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>.&lt;number:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>, Object:<a href="module-types_TextareaColumnType.TextareaColumnType.html"></a>></span>
+|
+
+<span class="param-type">undefined</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>列级别配置映射
+键：列索引，值：列配置对象（含 type 字段）</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1212">line 1212</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>resolveColumnTypeFromConfig</code> 简化版的列级解析</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>解析出的类型实例</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="BaseColumnType.html">BaseColumnType</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { resolveCellTypeFromPosition } from '@canvas-sheet/core';
+
+// 场景1：单元格有特殊类型覆盖
+const cellTypes = new Map([
+    ['2,3', { name: 'starRating', options: { maxStars: 5 } }]
+]);
+const columnsConfig = new Map([
+    [3, { type: 'select', source: ['A', 'B', 'C'] }]
+]);
+
+// 第 2 行第 3 列 → 使用 starRating（单元格级别优先）
+const cellType1 = resolveCellTypeFromPosition(2, 3, cellTypes, columnsConfig);
+console.log(cellType1.name);  // "starRating"
+
+// 第 5 行第 3 列 → 使用 select（列级别）
+const cellType2 = resolveCellTypeFromPosition(5, 3, cellTypes, columnsConfig);
+console.log(cellType2.name);  // "select"
+
+// 第 0 行第 99 列 → 使用 text（全局默认）
+const cellType3 = resolveCellTypeFromPosition(0, 99, cellTypes, columnsConfig);
+console.log(cellType3.name);  // "text"
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".resolveColumnTypeFromConfig"><span class="type-signature">(static) </span>resolveColumnTypeFromConfig<span class="signature">(colConfig)</span><span class="type-signature"> &rarr; {<a href="BaseColumnType.html">BaseColumnType</a>|null}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>从列配置中推断并获取列类型实例（Resolve Column Type from Configuration）</p>
+<p>高级工具函数：根据列定义配置智能地获取合适的类型实例。
+自动处理配置缺失的情况（fallback 到 text 类型）。</p>
+<h2>🎯 解析优先级</h2>
+<ol>
+<li><strong>显式指定</strong>：如果 <code>colConfig.type</code> 存在，直接使用该类型</li>
+<li><strong>隐式推断</strong>：如果未指定类型，默认使用 <strong>text</strong> 类型</li>
+</ol>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>colConfig</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>列配置对象（至少包含 type 字段）</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>type</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>列类型名称</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1152">line 1152</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>resolveCellTypeFromPosition</code> 更精细的位置级解析</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>推断出的类型实例</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="BaseColumnType.html">BaseColumnType</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { resolveColumnTypeFromConfig } from '@canvas-sheet/core';
+
+// 场景1：明确指定了类型
+const config1 = { type: 'date', dateFormat: 'YYYY-MM-DD' };
+const dateType = resolveColumnTypeFromConfig(config1);
+console.log(dateType.name);  // "date"
+
+// 场景2：未指定类型（自动 fallback）
+const config2 = { header: '备注' };  // 没有 type 字段
+const textType = resolveColumnTypeFromConfig(config2);
+console.log(textType.name);  // "text" (默认)
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".unregisterColumnType"><span class="type-signature">(static) </span>unregisterColumnType<span class="signature">(typeName)</span><span class="type-signature"> &rarr; {boolean}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>注销列类型（Unregister Column Type）</p>
+<p>从系统中永久移除指定的类型。⚠️ 此操作不可逆！</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeName</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>要移除的类型名称</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line942">line 942</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>registerColumnTypeClass</code> 注册类型</li>
+        
+            <li><code>resetToBuiltinTypes</code> 重置所有类型</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>成功移除返回 true，类型不存在返回 false</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { unregisterColumnType } from '@canvas-sheet/core';
+
+// 移除不再需要的自定义类型
+if (unregisterColumnType('legacyCustomType')) {
+    console.log('旧版自定义类型已移除');
+}
+```</code></pre>
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".validateCellValue"><span class="type-signature">(static) </span>validateCellValue<span class="signature">(cellType, value, colConfig)</span><span class="type-signature"> &rarr; {boolean|string}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>验证单元格值的有效性（Validate Cell Value）</p>
+<p>对值进行两层验证：</p>
+<ol>
+<li><strong>类型级验证</strong>：调用 <code>cellType.validate()</code> 检查是否符合类型约束</li>
+<li><strong>自定义验证器</strong>：可选的列级业务逻辑验证（通过 <code>colConfig.validator</code>）</li>
+</ol>
+<h2>✅ 返回值约定</h2>
+<ul>
+<li><code>true</code>：验证通过（值有效）</li>
+<li><code>string</code>：验证失败，返回错误信息（可直接展示给用户）</li>
+<li><code>false</code>：验证失败，无具体信息（通用错误）</li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>cellType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="BaseColumnType.html">BaseColumnType</a></span>
+|
+
+<span class="param-type">null</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>单元格类型实例（可以为 null）</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">*</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>待验证的值</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>colConfig</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+|
+
+<span class="param-type">undefined</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>列配置（可选，包含 validator 函数）</p>
+                <h6>Properties</h6>
+                
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>validator</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">function</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+
+            <td class="description last"><p>自定义验证函数 <code>(value) =&gt; true|string|false</code></p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="types_index.js.html">types/index.js</a>, <a href="types_index.js.html#line1372">line 1372</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+    <dt class="tag-see">See:</dt>
+    <dd class="tag-see">
+        <ul>
+            <li><code>formatCellValue</code> 格式化前的准备</li>
+        
+            <li><code>parseCellValue</code> 解析后的必要步骤</li>
+        </ul>
+    </dd>
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>验证结果（true=通过，string=错误信息，false=失败）</p>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">boolean</span>
+|
+
+<span class="param-type">string</span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+    <h5>Example</h5>
+    
+    <pre class="prettyprint"><code>```js
+import { getColumnTypeInstance, validateCellValue } from '@canvas-sheet/core';
+
+const emailType = getColumnTypeInstance('text');  // 假设有 email 子类型
+
+// 场景1：类型验证通过
+const result1 = validateCellValue(emailType, 'test@example.com');
+console.log(result1);  // true
+
+// 场景2：类型验证失败（返回错误信息）
+const result2 = validateCellValue(emailType, 'invalid-email');
+console.log(result2);  // "请输入有效的邮箱地址"
+
+// 场景3：自定义验证器
+const columnConfig = {
+    validator: (value) => {
+        if (value.length > 50) return '内容过长（最多50字符）';
+        return true;
+    }
+};
+const result3 = validateCellValue(textType, 'a'.repeat(100), columnConfig);
+console.log(result3);  // "内容过长（最多50字符）"
+```</code></pre>
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-FormulaFunctions.html">FormulaFunctions</a></li><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_index.html">types/index</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-FormulaFunctions-FunctionRegistry.html">FunctionRegistry</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li><li><a href="module-types_index-BooleanColumnType.html">BooleanColumnType</a></li><li><a href="module-types_index-BooleanColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-DateColumnType.html">DateColumnType</a></li><li><a href="module-types_index-DateColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-NumericColumnType.html">NumericColumnType</a></li><li><a href="module-types_index-NumericColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-SelectColumnType.html">SelectColumnType</a></li><li><a href="module-types_index-SelectColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TextColumnType.html">TextColumnType</a></li><li><a href="module-types_index-TextColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TextareaColumnType.html">TextareaColumnType</a></li><li><a href="module-types_index-TextareaColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TypeRegistry.html">TypeRegistry</a></li><li><a href="module-types_renderers_index-BooleanCheckboxType.html">BooleanCheckboxType</a></li><li><a href="module-types_renderers_index-BooleanCheckboxType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-ColorPreviewType.html">ColorPreviewType</a></li><li><a href="module-types_renderers_index-ColorPreviewType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-ProgressBarType.html">ProgressBarType</a></li><li><a href="module-types_renderers_index-ProgressBarType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-SparklineType.html">SparklineType</a></li><li><a href="module-types_renderers_index-SparklineType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-StarRatingType.html">StarRatingType</a></li><li><a href="module-types_renderers_index-StarRatingType_BaseColumnType.html">BaseColumnType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 17:04:06 GMT+0800 (中国标准时间)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

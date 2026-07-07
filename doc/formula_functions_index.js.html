@@ -27,62 +27,295 @@
     <section>
         <article>
             <pre class="prettyprint source linenums"><code>﻿/**
- * 公式函数注册表（模块化版本）
+ * @license Apache-2.0
  *
- * 架构设计：
- * ┌─────────────────────────────────────────────┐
- * │              index.js (主入口)               │
- * │  - FunctionRegistry 类                       │
- * │  - 自动加载所有函数模块                       │
- * │  - 提供 API: registerFunction, unregister    │
- * ├─────────────────────────────────────────────┤
- * │  math.js          (6个函数)                  │
- * │  statistical.js   (3个函数)                  │
- * │  logical.js       (1个函数)                  │
- * │  text.js          (4个函数)                  │
- * │  conditional.js   (2个函数)                  │
- * ├─────────────────────────────────────────────┤
- * │  utils/                                      │
- * │  ├── helpers.js      (_flatten, _toNum...)   │
- * │  ├── validation.js   (_validateArgs)         │
- * │  └── matching.js     (_matchCriteria)        │
- * └─────────────────────────────────────────────┘
+ * Copyright (c) 2024 jiangsuiting
  *
- * 使用方式：
- * ```js
- * import { registerFunction, FUNCTIONS } from './functions/index.js';
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * // 注册自定义函数
- * registerFunction('MYFUNC', (args, ctx) => {
- *     return args[0] * 2 + args[1];
- * });
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * // 在单元格中使用：=MYFUNC(A1, B1)
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * 公式函数注册表（Formula Function Registry）
+ *
+ * @module FormulaFunctions
+ * @description
+ *
+ * ## 📋 模块概述
+ * 本模块是公式引擎的核心组件之一，负责管理所有公式函数的生命周期，
+ * 包括内置函数的自动注册、自定义函数的动态注册、函数查找、错误处理等。
+ *
+ * ## 🏗️ 架构设计
+ *
  * ```
+ * ┌─────────────────────────────────────────────────────────────┐
+ * │                    index.js (主入口)                         │
+ * │  ┌─────────────────────────────────────────────────────┐    │
+ * │  │              FunctionRegistry (单例)                  │    │
+ * │  │  - register() / unregister() / get() / has()         │    │
+ * │  │  - list() / getInfo() / getStats()                   │    │
+ * │  └─────────────────────────────────────────────────────┘    │
+ * │                          ↓                                   │
+ * │  ┌─────────────────────────────────────────────────────┐    │
+ * │  │              FUNCTIONS_MAP (Map)                     │    │
+ * │  │  Key: "SUM" → { implementation, category, ... }      │    │
+ * │  └─────────────────────────────────────────────────────┘    │
+ * ├─────────────────────────────────────────────────────────────┤
+ * │  内置函数模块（自动加载）                                     │
+ * │  ├── math.js          数学函数 (SUM, AVERAGE, MAX, MIN...)  │
+ * │  ├── statistical.js   统计函数 (COUNT, COUNTA, STDEV...)     │
+ * │  ├── logical.js       逻辑函数 (IF, AND, OR...)             │
+ * │  ├── text.js          文本函数 (CONCATENATE, LEFT, RIGHT..)  │
+ * │  ├── conditional.js   条件函数 (IFERROR, IFNA...)            │
+ * │  └── lookup.js        查找函数 (VLOOKUP, HLOOKUP, MATCH...)  │
+ * ├─────────────────────────────────────────────────────────────┤
+ * │  工具模块（内部使用）                                         │
+ * │  ├── helpers.js      _flatten, _toNum, _isBlank...           │
+ * │  ├── validation.js   _validateArgs, _validateNumericArg...    │
+ * │  └── matching.js     _matchCriteria, _matchWildcard...        │
+ * └─────────────────────────────────────────────────────────────┘
+ * ```
+ *
+ * ## 🎯 核心职责
+ *
+ * 1. **函数注册中心**：统一管理所有公式函数（内置 + 自定义）
+ * 2. **生命周期管理**：支持动态注册、注销、查询、统计
+ * 3. **异常隔离**：包装每个函数实现，防止自定义函数崩溃影响整个引擎
+ * 4. **分类管理**：区分内置函数（builtin）和自定义函数（custom）
+ * 5. **大小写标准化**：统一将函数名转大写存储（Excel 风格）
+ *
+ * ## 🔧 使用方式
+ *
+ * ### 基础用法
+ * ```js
+ * import { registry } from './functions/index.js';
+ *
+ * // ✅ 注册自定义函数
+ * registry.register('DOUBLE', (args) => args[0] * 2);
+ *
+ * // ✅ 在单元格中使用 =DOUBLE(A1)
+ *
+ * // ✅ 调用函数
+ * const result = registry.get('SUM')([1, 2, 3]);  // 6
+ *
+ * // ✅ 查询信息
+ * registry.has('SUM');        // true
+ * registry.list();            // ['SUM', 'AVERAGE', 'IF', ...]
+ * registry.getStats();        // { total: 16, builtin: 16, custom: 1 }
+ * ```
+ *
+ * ### 高级用法（带上下文）
+ * ```js
+ * registry.register('CROSS_SHEET_SUM', (args, ctx) => {
+ *     const otherSheet = ctx.workbook.sheets.get('Sheet2');
+ *     const value = otherSheet.cellStore.get(0, 0)?.value || 0;
+ *     return args[0] + value;
+ * });
+ * ```
+ *
+ * ## ⚠️ 重要注意事项
+ *
+ * - 函数名会**自动转大写**（`sum` 和 `SUM` 是同一个函数）
+ * - 自定义函数会覆盖同名内置函数（会有警告日志）
+ * - 所有函数都会被**异常包装**，执行失败返回 `#ERROR!`
+ * - 内置函数被注销时会记录警告（但不阻止操作）
+ *
+ * ## 📊 性能特征
+ *
+ * - **时间复杂度**：
+ *   - `register()` / `unregister()` / `get()` / `has()`: O(1) (Map 操作)
+ *   - `list()`: O(n) (遍历所有键)
+ *   - `getStats()`: O(n) (遍历所有条目)
+ * - **空间复杂度**：O(n) (n 为已注册函数数量)
+ * - **内存占用**：每个函数约 200 字节（含元数据）
+ *
+ * @author Canvas Spreadsheet Team
+ * @version 2.0.0
+ * @license UNLICENSED
  */
 
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 
-// 导入所有功能模块
+// ════════════════════════════════════════════
+// 导入内置函数模块
+// ════════════════════════════════════════════
+
+/** 数学函数模块：SUM, AVERAGE, MAX, MIN, ROUND, ABS 等 */
 import { mathFunctions } from "./math.js";
+
+/** 统计函数模块：COUNT, COUNTA, STDEV, VAR 等 */
 import { statisticalFunctions } from "./statistical.js";
+
+/** 逻辑函数模块：IF, AND, OR, NOT 等 */
 import { logicalFunctions } from "./logical.js";
+
+/** 文本函数模块：CONCATENATE, LEFT, RIGHT, MID, LEN 等 */
 import { textFunctions } from "./text.js";
+
+/** 条件函数模块：IFERROR, IFNA 等 */
 import { conditionalFunctions } from "./conditional.js";
+
+/** 查找函数模块：VLOOKUP, HLOOKUP, MATCH, INDEX 等 */
 import { lookupFunctions } from "./lookup.js";
 
+// ════════════════════════════════════════════
+// 常量定义
+// ════════════════════════════════════════════
+
 /**
- * 函数注册表（内部使用）
+ * 函数类别常量（Function Category Constants）
+ *
+ * 用于标识函数的来源和类型，在注册、查询、统计时使用。
+ * 使用常量而非字符串字面量的好处：
+ * - 类型安全：拼写错误会在编译/运行时立即发现
+ * - 代码智能提示：IDE 可以提供自动补全
+ * - 易于重构：修改常量值即可全局生效
+ * - 语义明确：比魔法字符串更具可读性
+ *
+ * @example
+ * ```js
+ * import { FUNCTION_CATEGORY } from './functions/index.js';
+ *
+ * // 注册内置函数
+ * registry.register('SUM', sumImpl, { category: FUNCTION_CATEGORY.BUILTIN });
+ *
+ * // 注册自定义函数
+ * registry.register('MYFUNC', myFuncImpl);  // 默认为 CUSTOM
+ *
+ * // 检查函数类别
+ * const info = registry.getInfo('SUM');
+ * if (info.category === FUNCTION_CATEGORY.BUILTIN) {
+ *     console.log('这是内置函数');
+ * }
+ * ```
+ */
+const FUNCTION_CATEGORY = Object.freeze({
+    /** 内置函数类别：系统自动加载的数学、统计、逻辑等函数 */
+    BUILTIN: "builtin",
+
+    /** 自定义函数类别：用户通过 API 手动注册的函数 */
+    CUSTOM: "custom",
+});
+
+/**
+ * @constant {string} FUNCTION_CATEGORY.BUILTIN
+ * @description 内置函数类别标识
+ * @default "builtin"
+ */
+
+/**
+ * @constant {string} FUNCTION_CATEGORY.CUSTOM
+ * @description 自定义函数类别标识
+ * @default "custom"
+ */
+
+// 导出常量供外部使用
+export { FUNCTION_CATEGORY };
+
+// ════════════════════════════════════════════
+// 内部数据结构
+// ════════════════════════════════════════════
+
+/**
+ * 全局函数注册表（内部 Map 存储）
+ *
+ * 数据结构：
+ * ```js
+ * Map&lt;string, FunctionEntry>
+ * // Key: 大写的函数名，如 "SUM", "AVERAGE"
+ * // Value: {
+ * //   implementation: Function,      // 包装后的函数（带异常捕获）
+ * //   originalImplementation: Function, // 原始函数（用于调试）
+ * //   category: FUNCTION_CATEGORY.BUILTIN | FUNCTION_CATEGORY.CUSTOM, // 函数类别
+ * //   module: string,                // 所属模块（如 "Math", "Statistical"）
+ * //   registeredAt: number           // 注册时间戳
+ * // }
+ * ```
+ *
+ * @type {Map&lt;string, Object>}
+ * @private
  */
 const FUNCTIONS_MAP = new Map();
 
+// ════════════════════════════════════════════
+// FunctionRegistry 类定义
+// ════════════════════════════════════════════
+
 /**
- * 函数注册器类
+ * 函数注册器类（Singleton Pattern）
  *
- * 管理所有公式函数的注册、查找和生命周期
+ * 采用单例模式确保全局只有一个注册表实例，
+ * 避免多实例导致的函数状态不一致问题。
+ *
+ * 设计原则：
+ * - **单一职责**：只负责函数的注册、查找、注销
+ * - **开放封闭**：通过 `register()` 扩展功能，无需修改源码
+ * - **依赖倒置**：不依赖具体的函数实现，只依赖函数接口 `(args, ctx?) => any`
+ * - **防御性编程**：对所有输入进行验证，对异常进行捕获
+ *
+ * 使用方式：
+ * ```js
+ * const registry = new FunctionRegistry();
+ *
+ * // 注册内置函数（通常在构造时自动完成）
+ * registry.register('SUM', sumImpl, { category: FUNCTION_CATEGORY.BUILTIN, module: 'Math' });
+ *
+ * // 注册自定义函数
+ * registry.register('MYFUNC', myFuncImpl);
+ *
+ * // 调用函数
+ * const result = registry.get('SUM')([1, 2, 3]);
+ * ```
+ *
+ * @class FunctionRegistry
+ * @example
+ * ```js
+ * // 创建实例并初始化内置函数
+ * const registry = new FunctionRegistry();
+ * console.log(registry.list());  // ['SUM', 'AVERAGE', 'IF', ...]
+ *
+ * // 注册自定义函数
+ * registry.register('DOUBLE', (args) => args[0] * 2);
+ * console.log(registry.has('DOUBLE'));  // true
+ *
+ * // 统计信息
+ * console.log(registry.getStats());
+ * // { total: 17, builtin: 16, custom: 1, modules: ['Math', 'Statistical', ...] }
+ * ```
  */
 class FunctionRegistry {
+    /**
+     * 创建函数注册器实例
+     *
+     * 在构造时会自动加载并注册所有内置函数模块。
+     * 这保证了公式引擎在启动后立即可用。
+     *
+     * @constructor
+     * @throws {Error} 当内置函数模块加载失败时抛出异常（由 errorHandler 处理）
+     *
+     * @example
+     * ```js
+     * const registry = new FunctionRegistry();
+     * // 此时已自动注册了所有内置函数：
+     * // - Math: SUM, AVERAGE, MAX, MIN, ROUND, ABS
+     * // - Statistical: COUNT, COUNTA, STDEV
+     * // - Logical: IF
+     * // - Text: CONCATENATE, LEFT, RIGHT, LEN
+     * // - Conditional: IFERROR, IFNA
+     * // - Lookup: VLOOKUP, HLOOKUP, MATCH
+     * ```
+     */
     constructor() {
+        /** @type {Map&lt;string, Object>} 内部函数存储 */
         this._functions = FUNCTIONS_MAP;
 
         // 自动注册所有内置函数模块
@@ -94,30 +327,94 @@ class FunctionRegistry {
         this._registerModule("Lookup", lookupFunctions);
     }
 
+    // ════════════════════════════════════════════
+    // 私有方法（内部使用）
+    // ════════════════════════════════════════════
+
     /**
-     * 注册整个模块的函数
+     * 批量注册一个模块的所有函数
      *
-     * @param {string} moduleName - 模块名称（用于日志）
-     * @param {Object} functionsObj - 函数对象 { name: implementation }
+     * 用于在初始化时加载内置函数模块。
+     * 会遍历 functionsObj 的所有属性，逐一调用 register()。
+     *
+     * @param {string} moduleName - 模块名称（用于日志和元数据标记）
+     *                              如 "Math"、"Statistical"、"Logical"
+     * @param {Object.&lt;string, Function>} functionsObj - 函数对象
+     *        键值对格式：{ "SUM": sumFunction, "AVG": avgFunction }
+     *
      * @private
+     * @example
+     * ```js
+     * // 内部调用示例
+     * this._registerModule("Math", {
+     *     SUM: (args) => args.reduce((a, b) => a + b, 0),
+     *     AVERAGE: (args) => args.reduce((a, b) => a + b, 0) / args.length,
+     *     MAX: (args) => Math.max(...args),
+     *     MIN: (args) => Math.min(...args),
+     * });
+     * ```
      */
     _registerModule(moduleName, functionsObj) {
         for (const [name, fn] of Object.entries(functionsObj)) {
             this.register(name, fn, {
-                category: "builtin",
+                category: FUNCTION_CATEGORY.BUILTIN,
                 module: moduleName,
             });
         }
     }
 
+    // ════════════════════════════════════════════
+    // 公共 API：核心方法
+    // ════════════════════════════════════════════
+
     /**
-     * 注册单个函数（带包装器和错误处理）
+     * 注册单个函数到注册表
      *
-     * @param {string} name - 函数名（会自动转大写）
-     * @param {Function} fn - 函数实现 (args: Array) => any
-     * @param {Object} options - 注册选项
-     * @param {string} [options.category='custom'] - 函数类别
-     * @param {string} [options.module] - 所属模块
+     * 这是注册函数的核心方法，负责：
+     * 1. 参数验证（name 必须是非空字符串，fn 必须是函数）
+     * 2. 名称标准化（自动转大写）
+     * 3. 冲突检测（同名函数存在时发出警告）
+     * 4. 异常包装（创建安全包装器，捕获运行时错误）
+     * 5. 元数据记录（类别、模块、时间戳等）
+     *
+     * @param {string} name - 函数名称（会自动转大写，如 "sum" → "SUM"）
+     *                        推荐使用大写字母以符合 Excel 规范
+     * @param {Function} fn - 函数实现
+     *        签名：(args: Array&lt;*>, ctx?: Object) => any
+     *        - args: 函数参数数组（从 AST 中提取）
+     *        - ctx: 可选上下文对象（包含 sheet, workbook 等引用）
+     * @param {Object} [options={}] - 注册选项
+     * @param {string} [options.category=FUNCTION_CATEGORY.CUSTOM] - 函数类别
+     *        - {@link FUNCTION_CATEGORY.BUILTIN}: 内置函数（由系统自动注册）
+     *        - {@link FUNCTION_CATEGORY.CUSTOM}: 用户自定义函数（通过 API 手动注册）
+     * @param {string} [options.module='unknown'] - 所属模块名称
+     *        如 "Math"、"Statistical"、用户自定义等
+     *
+     * @throws {Error} 当 name 不是有效字符串时抛出 FORMULA_INVALID_FUNCTION_NAME
+     * @throws {Error} 当 fn 不是函数类型时抛出 FORMULA_INVALID_FUNCTION
+     *
+     * @returns {void}
+     *
+     * @example
+     * ```js
+     * // 基础用法
+     * registry.register('DOUBLE', (args) => args[0] * 2);
+     *
+     * // 高级用法（使用上下文）
+     * registry.register('GET_CELL_VALUE', (args, ctx) => {
+     *     const row = args[0];
+     *     const col = args[1];
+     *     return ctx.sheet.cellStore.get(row, col)?.value ?? '';
+     * }, { category: FUNCTION_CATEGORY.CUSTOM, module: 'Utils' });
+     *
+     * // 在单元格中使用
+     * // =DOUBLE(A1)  → 返回 A1 单元格值的 2 倍
+     * // =GET_CELL_VALUE(0, 1)  → 返回第 0 行第 1 列的值
+     * ```
+     *
+     * @see {@link #unregister} 反向操作：注销函数
+     * @see {@link #get} 获取已注册的函数
+     * @see {@link #has} 检查函数是否存在
      */
     register(name, fn, options = {}) {
         if (typeof name !== "string" || name.trim() === "") {
@@ -134,8 +431,16 @@ class FunctionRegistry {
             errorHandler.warn(ERROR_CODE.FORMULA_FUNCTION_OVERRIDE, `函数 ${upperName} 已存在，将被覆盖`, { functionName: upperName });
         }
 
-        // 包装函数，添加异常捕获
-        const wrappedFn = function (...args) {
+        /**
+         * 异常安全的函数包装器
+         *
+         * 捕获所有同步异常，防止自定义函数崩溃导致整个公式引擎停止工作。
+         * 异常发生时返回 Excel 兼容的错误标识符 "#ERROR!"。
+         *
+         * @param {...*} args - 传递给原始函数的参数
+         * @returns {*} 函数计算结果或 "#ERROR!" 错误标识符
+         */
+        const wrappedFn = function wrappedFn(...args) {
             try {
                 return fn.apply(this, args);
             } catch (error) {
@@ -151,17 +456,35 @@ class FunctionRegistry {
         this._functions.set(upperName, {
             implementation: wrappedFn,
             originalImplementation: fn,
-            category: options.category || "custom",
+            category: options.category || FUNCTION_CATEGORY.CUSTOM,
             module: options.module || "unknown",
             registeredAt: Date.now(),
         });
     }
 
     /**
-     * 获取函数实现
+     * 获取已注册的函数实现
      *
-     * @param {string} name - 函数名（不区分大小写）
-     * @returns {Function|undefined} 函数实现或 undefined
+     * 返回的是经过异常包装的安全版本，不是原始实现。
+     * 如果需要调试原始实现，请使用 {@link #getInfo}。
+     *
+     * @param {string} name - 函数名称（不区分大小写）
+     * @returns {Function|undefined} 函数实现（可调用），未找到时返回 undefined
+     *
+     * @example
+     * ```js
+     * const sumFn = registry.get('SUM');
+     * if (sumFn) {
+     *     const result = sumFn([1, 2, 3, 4, 5]);  // 15
+     *     console.log(result);
+     * }
+     *
+     * const unknownFn = registry.get('NONEXISTENT');
+     * console.log(unknownFn);  // undefined
+     * ```
+     *
+     * @see {@link #has} 先检查再获取
+     * @see {@link #getInfo} 获取详细信息（包含原始实现）
      */
     get(name) {
         const entry = this._functions.get(name.toUpperCase());
@@ -171,18 +494,59 @@ class FunctionRegistry {
     /**
      * 检查函数是否已注册
      *
-     * @param {string} name - 函数名
-     * @returns {boolean}
+     * @param {string} name - 函数名称（不区分大小写）
+     * @returns {boolean} true 表示函数已存在，false 表示未找到
+     *
+     * @example
+     * ```js
+     * if (registry.has('VLOOKUP')) {
+     *     const vlookup = registry.get('VLOOKUP');
+     *     // 安全使用 vlookup...
+     * }
+     *
+     * if (!registry.has('MY_CUSTOM_FUNC')) {
+     *     registry.register('MY_CUSTOM_FUNC', (args) => args[0] * 100);
+     * }
+     * ```
+     *
+     * @see {@link #get} 获取函数
+     * @see {@link #list} 列出所有已注册函数
      */
     has(name) {
         return this._functions.has(name.toUpperCase());
     }
 
+    // ════════════════════════════════════════════
+    // 公共 API：管理方法
+    // ════════════════════════════════════════════
+
     /**
-     * 注销函数
+     * 注销（移除）已注册的函数
      *
-     * @param {string} name - 要移除的函数名
-     * @returns {boolean} 是否成功移除
+     * 注意事项：
+     * - 可以注销内置函数（但会发出警告）
+     * - 注销后再次调用 get() 将返回 undefined
+     * - 已使用该函数的公式单元格可能显示 #NAME? 错误
+     *
+     * @param {string} name - 要移除的函数名称（不区分大小写）
+     * @returns {boolean} 成功移除返回 true，函数不存在返回 false
+     *
+     * @example
+     * ```js
+     * // 注销自定义函数
+     * registry.unregister('MY_TEMP_FUNC');  // true
+     *
+     * // 尝试注销不存在的函数
+     * registry.unregister('NOT_EXIST');  // false
+     *
+     * // 注销内置函数（会有警告日志）
+     * registry.unregister('SUM');
+     * // WARN: 尝试注销内置函数 SUM
+     * // 返回 true（但仍会被移除）
+     * ```
+     *
+     * @see {@link #register} 反向操作：注册函数
+     * @see {@link #clear} 清除所有函数（慎用！）
      */
     unregister(name) {
         const upperName = name.toUpperCase();
@@ -190,7 +554,7 @@ class FunctionRegistry {
         if (this._functions.has(upperName)) {
             const entry = this._functions.get(upperName);
 
-            if (entry.category === "builtin") {
+            if (entry.category === FUNCTION_CATEGORY.BUILTIN) {
                 errorHandler.warn(ERROR_CODE.FORMULA_FUNCTION_OVERRIDE, `尝试注销内置函数 ${upperName}`, { functionName: upperName });
             }
 
@@ -201,19 +565,77 @@ class FunctionRegistry {
     }
 
     /**
-     * 获取所有已注册的函数名列表
+     * 获取所有已注册的函数名称列表
      *
-     * @returns {string[]}
+     * 返回的列表是数组的浅拷贝，修改不影响原数据。
+     * 名称全部为大写字母，按注册顺序排列。
+     *
+     * @returns {string[]} 函数名称数组（大写）
+     *                 例：['SUM', 'AVERAGE', 'MAX', 'MIN', 'IF', 'MYFUNC']
+     *
+     * @example
+     * ```js
+     * const allFuncs = registry.list();
+     * console.log(`共 ${allFuncs.length} 个函数`);
+     * console.log(allFuncs.slice(0, 5));  // ['SUM', 'AVERAGE', 'MAX', 'MIN', 'ROUND']
+     *
+     * // 搜索特定前缀的函数
+     * const countFuncs = allFuncs.filter(name => name.startsWith('COUNT'));
+     * console.log(countFuncs);  // ['COUNT', 'COUNTA']
+     * ```
+     *
+     * @see {@link #getStats} 获取统计信息（含分类计数）
+     * @see {@link #has} 检查单个函数
      */
     list() {
         return [...this._functions.keys()];
     }
 
+    // ════════════════════════════════════════════
+    // 公共 API：查询方法
+    // ════════════════════════════════════════════
+
     /**
-     * 获取函数详细信息
+     * 获取函数的详细信息（元数据）
      *
-     * @param {string} name - 函数名
-     * @returns {Object|undefined} 函数元数据
+     * 返回的信息包括：
+     * - 函数名称（标准化后的大写形式）
+     * - 分类（builtin / custom）
+     * - 所属模块（Math / Statistical / Logical / ...）
+     * - 注册时间（ISO 8601 格式）
+     * - 是否为内置函数
+     *
+     * 注意：此方法不返回函数实现本身，如需调用函数请使用 {@link #get}。
+     *
+     * @param {string} name - 函数名称（不区分大小写）
+     * @returns {Object|undefined} 函数元数据对象，未找到时返回 undefined
+     * @returns {string} returns.name - 函数名称（大写）
+     * @returns {string} returns.category - 函数类别（FUNCTION_CATEGORY.BUILTIN 或 FUNCTION_CATEGORY.CUSTOM）
+     * @returns {string} returns.module - 所属模块
+     * @returns {string} returns.registeredAt - ISO 8601 时间戳
+     * @returns {boolean} returns.isBuiltin - 是否为内置函数
+     *
+     * @example
+     * ```js
+     * const info = registry.getInfo('SUM');
+     * console.log(info);
+     * // {
+     * //   name: 'SUM',
+     * //   category: FUNCTION_CATEGORY.BUILTIN,
+     * //   module: 'Math',
+     * //   registeredAt: '2024-01-15T08:30:00.000Z',
+     * //   isBuiltin: true
+     * // }
+     *
+     * // 调试用途：查看原始实现
+     * if (info) {
+     *     const originalFn = registry._functions.get(info.name)?.originalImplementation;
+     *     console.log(originalFn.toString());  // 输出函数源码
+     * }
+     * ```
+     *
+     * @see {@link #get} 获取可调用的函数实现
+     * @see {@link #getStats} 获取全局统计
      */
     getInfo(name) {
         const entry = this._functions.get(name.toUpperCase());
@@ -225,24 +647,53 @@ class FunctionRegistry {
             category: entry.category,
             module: entry.module,
             registeredAt: new Date(entry.registeredAt).toISOString(),
-            isBuiltin: entry.category === "builtin",
+            isBuiltin: entry.category === FUNCTION_CATEGORY.BUILTIN,
         };
     }
 
     /**
-     * 获取统计信息
+     * 获取注册表的统计摘要信息
      *
-     * @returns {Object} 注册表统计
+     * 提供全局视角的数据概览，用于：
+     * - 调试和诊断问题
+     * - 性能监控
+     * - 功能展示（如"已加载 X 个内置函数 + Y 个自定义函数"）
+     *
+     * @returns {Object} 统计信息对象
+     * @returns {number} returns.total - 总函数数量（builtin + custom）
+     * @returns {number} returns.builtin - 内置函数数量
+     * @returns {number} returns.custom - 自定义函数数量
+     * @returns {string[]} returns.modules - 已使用的模块名称列表（去重）
+     *
+     * @example
+     * ```js
+     * const stats = registry.getStats();
+     * console.log(`📊 函数注册表统计:`);
+     * console.log(`   总计: ${stats.total} 个函数`);
+     * console.log(`   内置: ${stats.builtin} 个`);
+     * console.log(`   自定义: ${stats.custom} 个`);
+     * console.log(`   模块: ${stats.modules.join(', ')}`);
+     *
+     * // 输出示例:
+     * // 📊 函数注册表统计:
+     * //    总计: 17 个函数
+     * //    内置: 16 个
+     * //    自定义: 1 个
+     * //    模块: Math, Statistical, Logical, Text, Conditional, Lookup
+     * ```
+     *
+     * @see {@link #list} 获取完整函数列表
+     * @see {@link #getInfo} 获取单个函数详情
      */
     getStats() {
         let builtinCount = 0;
         let customCount = 0;
 
         for (const [, entry] of this._functions) {
-            if (entry.category === "builtin") {
-                builtinCount++;
+            if (entry.category === FUNCTION_CATEGORY.BUILTIN) {
+                builtinCount += 1;
             } else {
-                customCount++;
+                customCount += 1;
             }
         }
 
@@ -253,85 +704,166 @@ class FunctionRegistry {
             modules: [...new Set([...this._functions.values()].filter((e) => e.module !== "unknown").map((e) => e.module))],
         };
     }
+
+    // ════════════════════════════════════════════
+    // 公共 API：高级方法（可选实现）
+    // ════════════════════════════════════════════
+
+    /**
+     * 清除所有已注册的函数（危险操作！）
+     *
+     * ⚠️ **警告**：此方法会清空整个注册表，包括所有内置函数！
+     * 仅在特殊场景下使用（如单元测试、热重载等）。
+     *
+     * 清除后需要重新注册所有必要的函数才能正常使用公式引擎。
+     *
+     * @returns {void}
+     *
+     * @example
+     * ```js
+     * // ⚠️ 危险操作示例（仅在测试中使用）
+     * registry.clear();
+     * console.log(registry.list());  // []
+     * console.log(registry.getStats());  // { total: 0, builtin: 0, custom: 0, modules: [] }
+     *
+     * // 需要手动重新注册或重建实例
+     * registry.register('SUM', (args) => args.reduce((a, b) => a + b, 0));
+     * ```
+     *
+     * @see {@link #unregister} 移除单个函数（更安全）
+     * @see {@link #reset} 重置为初始状态（推荐替代方案）
+     */
+    clear() {
+        this._functions.clear();
+    }
+
+    /**
+     * 重置注册表到初始状态（清除所有自定义函数，保留内置函数）
+     *
+     * 比 {@link clear} 更安全，因为会重新加载内置函数模块。
+     * 适用于需要"恢复出厂设置"的场景。
+     *
+     * @returns {void}
+     *
+     * @example
+     * ```js
+     * // 用户注册了一些临时函数
+     * registry.register('TEMP_FUNC', () => 42);
+     * registry.register('DEBUG_HELPER', () => 'debug');
+     *
+     * // 发现状态混乱，需要重置
+     * registry.reset();
+     *
+     * // 现在：自定义函数已清除，内置函数完好
+     * console.log(registry.has('TEMP_FUNC'));  // false
+     * console.log(registry.has('SUM'));        // true ✅
+     * ```
+     *
+     * @see {@link #clear} 完全清空（更激进）
+     * @see {@link #unregister} 移除单个函数（更精确）
+     */
+    reset() {
+        this.clear();
+        this._registerModule("Math", mathFunctions);
+        this._registerModule("Statistical", statisticalFunctions);
+        this._registerModule("Logical", logicalFunctions);
+        this._registerModule("Text", textFunctions);
+        this._registerModule("Conditional", conditionalFunctions);
+        this._registerModule("Lookup", lookupFunctions);
+    }
 }
 
+// ════════════════════════════════════════════
+// 导出单例实例（唯一公共 API 入口）
+// ════════════════════════════════════════════
+
 /**
- * 全局单例实例
+ * 全局函数注册表单例实例
+ *
+ * 这是本模块唯一的导出对象，所有公式函数的操作都通过它进行。
+ * 采用单例模式确保全局状态一致性。
+ *
+ * ## 🎯 推荐使用方式
+ *
+ * ### 方式一：从公共 API 导入（推荐用于外部使用者）
+ * ```js
+ * import { functionRegistry } from '@canvas-sheet/core';
+ *
+ * functionRegistry.register('MYFUNC', (args) => args[0] * 2);
+ * const result = functionRegistry.get('MYFUNC')([21]);  // 42
+ * ```
+ *
+ * ### 方式二：从模块内部导入（推荐用于内部开发者）
+ * ```js
+ * import { registry } from '@/formula/functions/index.js';
+ *
+ * registry.register('MYFUNCTION', (args, ctx) => {
+ *     return args[0] * 2;  // 简单的乘法示例
+ * });
+ *
+ * // 调用函数（通常由公式引擎内部调用）
+ * const result = registry.get('MYFUNCTION')([21]);  // 42
+ *
+ * // 查询信息
+ * console.log(registry.has('MYFUNCTION'));  // true
+ * console.log(registry.list());              // ['SUM', ..., 'MYFUNCTION']
+ * console.log(registry.getStats());          // { total: 17, builtin: 16, custom: 1 }
+ * ```
+ *
+ * ### ⚠️ 重要提示：命名差异说明
+ *
+ * - **内部变量名**：`registry` (模块私有，用于代码实现)
+ * - **公共导出名**：`functionRegistry` (遵循 camelCase 规范，表示这是一个实例而非类)
+ * - **不要尝试**：`new functionRegistry()` 或 `new FunctionRegistry()` (❌ 它是实例，不是类！)
+ *
+ * ## 📌 快速参考卡
+ *
+ * | 方法 | 用途 | 示例 |
+ * |------|------|------|
+ * | `register()` | 注册新函数 | `functionRegistry.register('FN', impl)` |
+ * | `unregister()` | 注销函数 | `functionRegistry.unregister('FN')` |
+ * | `get()` | 获取函数 | `functionRegistry.get('SUM')([1,2,3])` |
+ * | `has()` | 检查存在性 | `functionRegistry.has('SUM')` |
+ * | `list()` | 列出所有函数 | `functionRegistry.list()` |
+ * | `getInfo()` | 函数详情 | `functionRegistry.getInfo('SUM')` |
+ * | `getStats()` | 统计信息 | `functionRegistry.getStats()` |
+ * | `clear()` | 清空全部 | `functionRegistry.clear()` (⚠️ 危险) |
+ * | `reset()` | 重置为默认 | `functionRegistry.reset()` |
+ *
+ * @type {FunctionRegistry}
+ * @global
+ * @example
+ * ```js
+ * // 完整使用流程示例（公共 API 方式）
+ * import { functionRegistry, FUNCTION_CATEGORY } from '@canvas-sheet/core';
+ *
+ * // 步骤 1: 检查函数是否已存在
+ * if (!functionRegistry.has('TAX_CALC')) {
+ *     // 步骤 2: 注册自定义税务计算函数
+ *     registry.register('TAX_CALC', (args, ctx) => {
+ *         const amount = args[0];
+ *         const rate = args[1] ?? 0.13;  // 默认税率 13%
+ *         return amount * rate;
+ *     });
+ *
+ *     console.log('✅ TAX_CALC 函数注册成功');
+ * }
+ *
+ * // 步骤 3: 使用函数
+ * const tax = registry.get('TAX_CALC')([10000]);  // 1300
+ * console.log(`税费: ${tax}`);
+ *
+ * // 步骤 4: 查看统计
+ * console.log(registry.getStats());
+ * // { total: 17, builtin: 16, custom: 1, modules: [...] }
+ * ```
  */
 export const registry = new FunctionRegistry();
 
-/**
- * 向后兼容的导出别名
- * @deprecated 建议直接使用 registry 对象
- */
-export const FUNCTIONS = registry;
-
 // ════════════════════════════════════════════
-// 公共 API 函数（保持向后兼容）
-// ════════════════════════════════════════════
-
-/**
- * 注册自定义公式函数
- *
- * @param {string} name - 函数名（如 'MYFUNC'，会自动转大写）
- * @param {Function} fn - 函数实现 (args: Array, context?: Object) => any
- * @throws {Error} 参数类型错误时抛出
- *
- * @example
- * ```js
- * // 基础用法
- * registerFunction('DOUBLE', (args) => args[0] * 2);
- *
- * // 使用上下文（访问工作簿和其他工作表）
- * registerFunction('CROSS_SUM', (args, ctx) => {
- *     const otherSheet = ctx.workbook.sheets.get('Sheet2');
- *     return args[0] + otherSheet.cellStore.get(0, 0)?.value || 0;
- * });
- * ```
- */
-export function registerFunction(name, fn) {
-    registry.register(name, fn, { category: "custom" });
-}
-
-/**
- * 注销自定义公式函数
- *
- * @param {string} name - 要移除的函数名
- * @returns {boolean} 是否成功移除
- */
-export function unregisterFunction(name) {
-    return registry.unregister(name);
-}
-
-/**
- * 检查函数是否已注册
- *
- * @param {string} name - 函数名
- * @returns {boolean}
- */
-export function hasFunction(name) {
-    return registry.has(name);
-}
-
-/**
- * 获取所有已注册的函数名列表
- *
- * @returns {string[]}
- */
-export function getRegisteredFunctions() {
-    return registry.list();
-}
-
-/**
- * 获取注册表统计信息
- *
- * @returns {Object} 统计数据
- */
-export function getFunctionStats() {
-    return registry.getStats();
-}
-
 // 初始化日志
+// ════════════════════════════════════════════
+
 errorHandler.debug(ERROR_CODE.DEBUG_LOG, "[FormulaEngine] ✅ 函数注册表初始化完成");
 errorHandler.debug(ERROR_CODE.DEBUG_LOG, `  统计信息:`, registry.getStats());
 </code></pre>
@@ -344,13 +876,13 @@ errorHandler.debug(ERROR_CODE.DEBUG_LOG, `  统计信息:`, registry.getStats())
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="FunctionRegistry.html">FunctionRegistry</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#FUNCTIONS">FUNCTIONS</a></li><li><a href="global.html#FUNCTIONS_MAP">FUNCTIONS_MAP</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#getFunctionStats">getFunctionStats</a></li><li><a href="global.html#getRegisteredFunctions">getRegisteredFunctions</a></li><li><a href="global.html#hasFunction">hasFunction</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registerFunction">registerFunction</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li><li><a href="global.html#unregisterFunction">unregisterFunction</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-FormulaFunctions.html">FormulaFunctions</a></li><li><a href="module-constants_eventNames.html">constants/eventNames</a></li><li><a href="module-constants_hitType.html">constants/hitType</a></li><li><a href="module-constants_hookNames.html">constants/hookNames</a></li><li><a href="module-constants_layerZIndex.html">constants/layerZIndex</a></li><li><a href="module-constants_sheetEvents.html">constants/sheetEvents</a></li><li><a href="module-editor_EditorManager.html">editor/EditorManager</a></li><li><a href="module-formula_functions_conditional.html">formula/functions/conditional</a></li><li><a href="module-formula_functions_logical.html">formula/functions/logical</a></li><li><a href="module-formula_functions_lookup.html">formula/functions/lookup</a></li><li><a href="module-formula_functions_math.html">formula/functions/math</a></li><li><a href="module-formula_functions_statistical.html">formula/functions/statistical</a></li><li><a href="module-formula_functions_text.html">formula/functions/text</a></li><li><a href="module-formula_functions_utils.html">formula/functions/utils</a></li><li><a href="module-formula_functions_utils_helpers.html">formula/functions/utils/helpers</a></li><li><a href="module-formula_functions_utils_matching.html">formula/functions/utils/matching</a></li><li><a href="module-formula_functions_utils_validation.html">formula/functions/utils/validation</a></li><li><a href="module-plugins_sort.html">plugins/sort</a></li><li><a href="module-render_CanvasContext.html">render/CanvasContext</a></li><li><a href="module-render_HeaderRenderer.html">render/HeaderRenderer</a></li><li><a href="module-render_OverlayRenderer.html">render/OverlayRenderer</a></li><li><a href="module-render_ViewportService.html">render/ViewportService</a></li><li><a href="module-render_layers_FrozenLayer.html">render/layers/FrozenLayer</a></li><li><a href="module-render_layers_HeaderLayer.html">render/layers/HeaderLayer</a></li><li><a href="module-render_layers_TileLayer.html">render/layers/TileLayer</a></li><li><a href="module-types_CellRenderContext.html">types/CellRenderContext</a></li><li><a href="module-types_TextareaColumnType.html">types/TextareaColumnType</a></li><li><a href="module-types_index.html">types/index</a></li><li><a href="module-types_renderers_BooleanCheckboxType.html">types/renderers/BooleanCheckboxType</a></li><li><a href="module-types_renderers_ColorPreviewType.html">types/renderers/ColorPreviewType</a></li><li><a href="module-types_renderers_ProgressBarType.html">types/renderers/ProgressBarType</a></li><li><a href="module-types_renderers_SparklineType.html">types/renderers/SparklineType</a></li><li><a href="module-types_renderers_StarRatingType.html">types/renderers/StarRatingType</a></li><li><a href="module-types_renderers_index.html">types/renderers/index</a></li><li><a href="module-ui_formulaBar_FormulaBarEvents.html">ui/formulaBar/FormulaBarEvents</a></li><li><a href="module-ui_sheetTab_SheetTabEvents.html">ui/sheetTab/SheetTabEvents</a></li><li><a href="module-utils_UrlDetector.html">utils/UrlDetector</a></li><li><a href="module-utils_canvasUtils.html">utils/canvasUtils</a></li><li><a href="module-utils_cellRef.html">utils/cellRef</a></li></ul><h3>Classes</h3><ul><li><a href="AutoFillPlugin.html">AutoFillPlugin</a></li><li><a href="AutoFillStrategy.html">AutoFillStrategy</a></li><li><a href="BaseColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="BaseHidePlugin.html">BaseHidePlugin</a></li><li><a href="BaseLayer.html">BaseLayer</a></li><li><a href="BaseMovePlugin.html">BaseMovePlugin</a></li><li><a href="BasePlugin.html">BasePlugin</a></li><li><a href="BaseValidator.html">BaseValidator</a></li><li><a href="BatchCommand.html">BatchCommand</a></li><li><a href="BatchOperationManager.html">BatchOperationManager</a></li><li><a href="BatchValidationCoordinator.html">BatchValidationCoordinator</a></li><li><a href="BooleanColumnType.html">BooleanColumnType</a></li><li><a href="Cell.html">Cell</a></li><li><a href="CellDataAccessor.html">CellDataAccessor</a></li><li><a href="CellEditor.html">CellEditor</a></li><li><a href="Chunk_Chunk.html">Chunk</a></li><li><a href="ChunkedCellStore.html">ChunkedCellStore</a></li><li><a href="ClipboardManager.html">ClipboardManager</a></li><li><a href="ColumnMovePlugin.html">ColumnMovePlugin</a></li><li><a href="ColumnTypeManager.html">ColumnTypeManager</a></li><li><a href="Command.html">Command</a></li><li><a href="ConditionalFormatManager.html">ConditionalFormatManager</a></li><li><a href="ConditionalRule.html">ConditionalRule</a></li><li><a href="ContextMenuPlugin.html">ContextMenuPlugin</a></li><li><a href="ContextMenuStrategy.html">ContextMenuStrategy</a></li><li><a href="CopyPastePlugin.html">CopyPastePlugin</a></li><li><a href="CopyPasteStrategy.html">CopyPasteStrategy</a></li><li><a href="DOMComponent.html">DOMComponent</a></li><li><a href="DataValidationPlugin.html">DataValidationPlugin</a></li><li><a href="DateColumnType.html">DateColumnType</a></li><li><a href="DateValidator.html">DateValidator</a></li><li><a href="Disposable.html">Disposable</a></li><li><a href="ErrorHandler.html">ErrorHandler</a></li><li><a href="EventBus_EventBus.html">EventBus</a></li><li><a href="EventHandler.html">EventHandler</a></li><li><a href="EventStrategy.html">EventStrategy</a></li><li><a href="ExportFilePlugin.html">ExportFilePlugin</a></li><li><a href="FormulaBarElement.html">FormulaBarElement</a></li><li><a href="FormulaBarManager.html">FormulaBarManager</a></li><li><a href="FormulaEngine.html">FormulaEngine</a></li><li><a href="FormulaEvaluator.html">FormulaEvaluator</a></li><li><a href="FormulaPlugin.html">FormulaPlugin</a></li><li><a href="FormulaValidator.html">FormulaValidator</a></li><li><a href="Fragment.html">Fragment</a></li><li><a href="FreezePlugin.html">FreezePlugin</a></li><li><a href="FrozenBoundaryInfo.html">FrozenBoundaryInfo</a></li><li><a href="HeaderLabelManager.html">HeaderLabelManager</a></li><li><a href="Hooks.html">Hooks</a></li><li><a href="KeyboardStrategy.html">KeyboardStrategy</a></li><li><a href="LayerCompositor.html">LayerCompositor</a></li><li><a href="ListValidator.html">ListValidator</a></li><li><a href="LogicalCell.html">LogicalCell</a></li><li><a href="MouseStrategy.html">MouseStrategy</a></li><li><a href="NumberValidator.html">NumberValidator</a></li><li><a href="NumericColumnType.html">NumericColumnType</a></li><li><a href="PluginManager.html">PluginManager</a></li><li><a href="RegexValidator.html">RegexValidator</a></li><li><a href="RenderEngineCanvasContext.html">RenderEngineCanvasContext</a></li><li><a href="RenderEngineViewportService.html">RenderEngineViewportService</a></li><li><a href="ResizeStrategy.html">ResizeStrategy</a></li><li><a href="RowColSync.html">RowColSync</a></li><li><a href="RowMovePlugin.html">RowMovePlugin</a></li><li><a href="RowMoveStrategy.html">RowMoveStrategy</a></li><li><a href="SelectColumnType.html">SelectColumnType</a></li><li><a href="SelectionManager.html">SelectionManager</a></li><li><a href="SettingsApplier.html">SettingsApplier</a></li><li><a href="Sheet.html">Sheet</a></li><li><a href="SheetStyleManager.html">SheetStyleManager</a></li><li><a href="SheetTabManager.html">SheetTabManager</a></li><li><a href="SortEngine.html">SortEngine</a></li><li><a href="SortPlugin.html">SortPlugin</a></li><li><a href="SortState.html">SortState</a></li><li><a href="SortStrategy.html">SortStrategy</a></li><li><a href="StylePool.html">StylePool</a></li><li><a href="TextColumnType.html">TextColumnType</a></li><li><a href="TextLengthValidator.html">TextLengthValidator</a></li><li><a href="TextareaEditor.html">TextareaEditor</a></li><li><a href="Tile.html">Tile</a></li><li><a href="TileCache.html">TileCache</a></li><li><a href="TileRenderer.html">TileRenderer</a></li><li><a href="TimeValidator.html">TimeValidator</a></li><li><a href="UniqueValidatorV3.html">UniqueValidatorV3</a></li><li><a href="UnmergeCommand.html">UnmergeCommand</a></li><li><a href="ValidationEngine.html">ValidationEngine</a></li><li><a href="ValidationFormattingBridge.html">ValidationFormattingBridge</a></li><li><a href="ValidationPortalManager.html">ValidationPortalManager</a></li><li><a href="ValidationResult.html">ValidationResult</a></li><li><a href="ValidationRule.html">ValidationRule</a></li><li><a href="ViewportTransform.html">ViewportTransform</a></li><li><a href="WebComponent.html">WebComponent</a></li><li><a href="Workbook.html">Workbook</a></li><li><a href="module-FormulaFunctions-FunctionRegistry.html">FunctionRegistry</a></li><li><a href="module-editor_EditorManager.EditorManager.html">EditorManager</a></li><li><a href="module-render_layers_TileLayer.TileLayer.html">TileLayer</a></li><li><a href="module-types_CellRenderContext.CellRenderContext.html">CellRenderContext</a></li><li><a href="module-types_index-BooleanColumnType.html">BooleanColumnType</a></li><li><a href="module-types_index-BooleanColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-DateColumnType.html">DateColumnType</a></li><li><a href="module-types_index-DateColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-NumericColumnType.html">NumericColumnType</a></li><li><a href="module-types_index-NumericColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-SelectColumnType.html">SelectColumnType</a></li><li><a href="module-types_index-SelectColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TextColumnType.html">TextColumnType</a></li><li><a href="module-types_index-TextColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TextareaColumnType.html">TextareaColumnType</a></li><li><a href="module-types_index-TextareaColumnType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_index-TypeRegistry.html">TypeRegistry</a></li><li><a href="module-types_renderers_index-BooleanCheckboxType.html">BooleanCheckboxType</a></li><li><a href="module-types_renderers_index-BooleanCheckboxType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-ColorPreviewType.html">ColorPreviewType</a></li><li><a href="module-types_renderers_index-ColorPreviewType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-ProgressBarType.html">ProgressBarType</a></li><li><a href="module-types_renderers_index-ProgressBarType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-SparklineType.html">SparklineType</a></li><li><a href="module-types_renderers_index-SparklineType_BaseColumnType.html">BaseColumnType</a></li><li><a href="module-types_renderers_index-StarRatingType.html">StarRatingType</a></li><li><a href="module-types_renderers_index-StarRatingType_BaseColumnType.html">BaseColumnType</a></li></ul><h3>Global</h3><ul><li><a href="global.html#ACTIVE_CELL_HIGHLIGHT_FILL">ACTIVE_CELL_HIGHLIGHT_FILL</a></li><li><a href="global.html#AUTO_FILL_DIR">AUTO_FILL_DIR</a></li><li><a href="global.html#AUTO_LINK_COLOR">AUTO_LINK_COLOR</a></li><li><a href="global.html#AUTO_LINK_HOVER_COLOR">AUTO_LINK_HOVER_COLOR</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_OFFSET">AUTO_LINK_UNDERLINE_OFFSET</a></li><li><a href="global.html#AUTO_LINK_UNDERLINE_WIDTH">AUTO_LINK_UNDERLINE_WIDTH</a></li><li><a href="global.html#AUTO_LINK_VISITED_COLOR">AUTO_LINK_VISITED_COLOR</a></li><li><a href="global.html#AXIS_COL">AXIS_COL</a></li><li><a href="global.html#AXIS_ROW">AXIS_ROW</a></li><li><a href="global.html#BORDER_DASH_DOTTED">BORDER_DASH_DOTTED</a></li><li><a href="global.html#BORDER_DASH_SOLID">BORDER_DASH_SOLID</a></li><li><a href="global.html#BORDER_STYLE">BORDER_STYLE</a></li><li><a href="global.html#CANVAS_ID">CANVAS_ID</a></li><li><a href="global.html#CELL_BORDER_COLOR">CELL_BORDER_COLOR</a></li><li><a href="global.html#CELL_INVALID_DATA">CELL_INVALID_DATA</a></li><li><a href="global.html#CELL_PADDING">CELL_PADDING</a></li><li><a href="global.html#CELL_TEXT_COLOR">CELL_TEXT_COLOR</a></li><li><a href="global.html#CELL_TYPE_CONFIG">CELL_TYPE_CONFIG</a></li><li><a href="global.html#CHART_AREA_LINE_WIDTH">CHART_AREA_LINE_WIDTH</a></li><li><a href="global.html#CHART_AXIS_COLOR">CHART_AXIS_COLOR</a></li><li><a href="global.html#CHART_AXIS_LINE_WIDTH">CHART_AXIS_LINE_WIDTH</a></li><li><a href="global.html#CHART_BAR_BORDER_COLOR">CHART_BAR_BORDER_COLOR</a></li><li><a href="global.html#CHART_CONFIG">CHART_CONFIG</a></li><li><a href="global.html#CHART_FONT_FAMILY">CHART_FONT_FAMILY</a></li><li><a href="global.html#CHART_FONT_SIZE">CHART_FONT_SIZE</a></li><li><a href="global.html#CHART_GRID_COLOR">CHART_GRID_COLOR</a></li><li><a href="global.html#CHART_GRID_LINE_WIDTH">CHART_GRID_LINE_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_FONT_SIZE">CHART_LEGEND_FONT_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_SIZE">CHART_LEGEND_ITEM_SIZE</a></li><li><a href="global.html#CHART_LEGEND_ITEM_WIDTH">CHART_LEGEND_ITEM_WIDTH</a></li><li><a href="global.html#CHART_LEGEND_OFFSET_Y">CHART_LEGEND_OFFSET_Y</a></li><li><a href="global.html#CHART_LINE_DOT_RADIUS">CHART_LINE_DOT_RADIUS</a></li><li><a href="global.html#CHART_MIN_HEIGHT">CHART_MIN_HEIGHT</a></li><li><a href="global.html#CHART_MIN_WIDTH">CHART_MIN_WIDTH</a></li><li><a href="global.html#CHART_SCATTER_DOT_RADIUS">CHART_SCATTER_DOT_RADIUS</a></li><li><a href="global.html#CHART_SELECTION_BORDER_COLOR">CHART_SELECTION_BORDER_COLOR</a></li><li><a href="global.html#CHART_SELECTION_BORDER_WIDTH">CHART_SELECTION_BORDER_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_FILL">CHART_SELECTION_HANDLE_FILL</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_LINE_WIDTH">CHART_SELECTION_HANDLE_LINE_WIDTH</a></li><li><a href="global.html#CHART_SELECTION_HANDLE_SIZE">CHART_SELECTION_HANDLE_SIZE</a></li><li><a href="global.html#CHART_TEXT_COLOR">CHART_TEXT_COLOR</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER">CHART_TOOLTIP_BORDER</a></li><li><a href="global.html#CHART_TOOLTIP_BORDER_WIDTH">CHART_TOOLTIP_BORDER_WIDTH</a></li><li><a href="global.html#CHART_TYPE">CHART_TYPE</a></li><li><a href="global.html#CHECKBOX_BORDER_LINE_WIDTH">CHECKBOX_BORDER_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECKED_COLOR">CHECKBOX_CHECKED_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_COLOR">CHECKBOX_CHECK_MARK_COLOR</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_LINE_WIDTH">CHECKBOX_CHECK_MARK_LINE_WIDTH</a></li><li><a href="global.html#CHECKBOX_CHECK_MARK_SIZE_RATIO">CHECKBOX_CHECK_MARK_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_CORNER_RADIUS_RATIO">CHECKBOX_CORNER_RADIUS_RATIO</a></li><li><a href="global.html#CHECKBOX_DISABLED_ALPHA">CHECKBOX_DISABLED_ALPHA</a></li><li><a href="global.html#CHECKBOX_DISABLED_FILL">CHECKBOX_DISABLED_FILL</a></li><li><a href="global.html#CHECKBOX_SIZE_RATIO">CHECKBOX_SIZE_RATIO</a></li><li><a href="global.html#CHECKBOX_UNCHECKED_COLOR">CHECKBOX_UNCHECKED_COLOR</a></li><li><a href="global.html#CHUNK_COL_SIZE">CHUNK_COL_SIZE</a></li><li><a href="global.html#CHUNK_ROW_SIZE">CHUNK_ROW_SIZE</a></li><li><a href="global.html#CLIPBOARD_READ_ERROR">CLIPBOARD_READ_ERROR</a></li><li><a href="global.html#CLIPBOARD_TYPE_MISMATCH">CLIPBOARD_TYPE_MISMATCH</a></li><li><a href="global.html#CLIPBOARD_WRITE_ERROR">CLIPBOARD_WRITE_ERROR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_COLOR">COLOR_PREVIEW_BORDER_COLOR</a></li><li><a href="global.html#COLOR_PREVIEW_BORDER_RADIUS">COLOR_PREVIEW_BORDER_RADIUS</a></li><li><a href="global.html#COLOR_PREVIEW_PADDING">COLOR_PREVIEW_PADDING</a></li><li><a href="global.html#CONDITIONAL_FORMAT_NOT_INITIALIZED">CONDITIONAL_FORMAT_NOT_INITIALIZED</a></li><li><a href="global.html#CONTENT_TYPE">CONTENT_TYPE</a></li><li><a href="global.html#CORE_CONFIG">CORE_CONFIG</a></li><li><a href="global.html#DATETIME_INVALID">DATETIME_INVALID</a></li><li><a href="global.html#DEBUG_LINE_HEIGHT">DEBUG_LINE_HEIGHT</a></li><li><a href="global.html#DEBUG_LOG">DEBUG_LOG</a></li><li><a href="global.html#DEBUG_START_Y">DEBUG_START_Y</a></li><li><a href="global.html#DEFAULT_COL_WIDTH">DEFAULT_COL_WIDTH</a></li><li><a href="global.html#DEFAULT_FONT_FAMILY">DEFAULT_FONT_FAMILY</a></li><li><a href="global.html#DEFAULT_FONT_SIZE">DEFAULT_FONT_SIZE</a></li><li><a href="global.html#DEFAULT_OPTIONS">DEFAULT_OPTIONS</a></li><li><a href="global.html#DEFAULT_ROW_HEIGHT">DEFAULT_ROW_HEIGHT</a></li><li><a href="global.html#DEFAULT_SHEET_NAME">DEFAULT_SHEET_NAME</a></li><li><a href="global.html#DEFAULT_START_COLS">DEFAULT_START_COLS</a></li><li><a href="global.html#DEFAULT_START_ROWS">DEFAULT_START_ROWS</a></li><li><a href="global.html#DISABLED_BG">DISABLED_BG</a></li><li><a href="global.html#DISABLED_COLOR">DISABLED_COLOR</a></li><li><a href="global.html#DRAG_THRESHOLD">DRAG_THRESHOLD</a></li><li><a href="global.html#DUPLICATE_VALUE">DUPLICATE_VALUE</a></li><li><a href="global.html#ERROR_HIGHLIGHT_FILL">ERROR_HIGHLIGHT_FILL</a></li><li><a href="global.html#ERROR_STYLE">ERROR_STYLE</a></li><li><a href="global.html#FILL_HANDLE_HIT_SIZE">FILL_HANDLE_HIT_SIZE</a></li><li><a href="global.html#FILL_HANDLE_SIZE">FILL_HANDLE_SIZE</a></li><li><a href="global.html#FONT_STYLE">FONT_STYLE</a></li><li><a href="global.html#FORMAT_APPLY_ERROR">FORMAT_APPLY_ERROR</a></li><li><a href="global.html#FORMAT_PRESETS">FORMAT_PRESETS</a></li><li><a href="global.html#FORMAT_REMOVE_ERROR">FORMAT_REMOVE_ERROR</a></li><li><a href="global.html#FORMAT_TEMPLATE_NOT_FOUND">FORMAT_TEMPLATE_NOT_FOUND</a></li><li><a href="global.html#FORMULA_ARGUMENT_COUNT_INVALID">FORMULA_ARGUMENT_COUNT_INVALID</a></li><li><a href="global.html#FORMULA_CIRCULAR_REFERENCE">FORMULA_CIRCULAR_REFERENCE</a></li><li><a href="global.html#FORMULA_ENGINE_INTERFACE_MISSING">FORMULA_ENGINE_INTERFACE_MISSING</a></li><li><a href="global.html#FORMULA_EVALUATION_ERROR">FORMULA_EVALUATION_ERROR</a></li><li><a href="global.html#FORMULA_EVAL_ERROR">FORMULA_EVAL_ERROR</a></li><li><a href="global.html#FORMULA_FUNCTION_NOT_FOUND">FORMULA_FUNCTION_NOT_FOUND</a></li><li><a href="global.html#FORMULA_FUNCTION_OVERRIDE">FORMULA_FUNCTION_OVERRIDE</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION">FORMULA_INVALID_FUNCTION</a></li><li><a href="global.html#FORMULA_INVALID_FUNCTION_NAME">FORMULA_INVALID_FUNCTION_NAME</a></li><li><a href="global.html#FORMULA_PARSE_ERROR">FORMULA_PARSE_ERROR</a></li><li><a href="global.html#FORMULA_VALIDATION_FAILED">FORMULA_VALIDATION_FAILED</a></li><li><a href="global.html#GENERIC_ERROR">GENERIC_ERROR</a></li><li><a href="global.html#GENERIC_WARN">GENERIC_WARN</a></li><li><a href="global.html#GHOST_FILL">GHOST_FILL</a></li><li><a href="global.html#GHOST_TEXT_COLOR">GHOST_TEXT_COLOR</a></li><li><a href="global.html#GRID_COLOR">GRID_COLOR</a></li><li><a href="global.html#GRID_LINE_WIDTH">GRID_LINE_WIDTH</a></li><li><a href="global.html#HEADER_BG">HEADER_BG</a></li><li><a href="global.html#HEADER_BORDER_COLOR">HEADER_BORDER_COLOR</a></li><li><a href="global.html#HEADER_CONFIG">HEADER_CONFIG</a></li><li><a href="global.html#HEADER_HEIGHT">HEADER_HEIGHT</a></li><li><a href="global.html#HEADER_HIGHLIGHT_BG">HEADER_HIGHLIGHT_BG</a></li><li><a href="global.html#HEADER_HIGHLIGHT_COLOR">HEADER_HIGHLIGHT_COLOR</a></li><li><a href="global.html#HEADER_HIGHLIGHT_FILL">HEADER_HIGHLIGHT_FILL</a></li><li><a href="global.html#HEADER_TEXT_COLOR">HEADER_TEXT_COLOR</a></li><li><a href="global.html#HEADER_WIDTH">HEADER_WIDTH</a></li><li><a href="global.html#HOOK_CALLBACK_INVALID">HOOK_CALLBACK_INVALID</a></li><li><a href="global.html#HOOK_EXECUTION_ERROR">HOOK_EXECUTION_ERROR</a></li><li><a href="global.html#INDEX_OUT_OF_BOUNDS">INDEX_OUT_OF_BOUNDS</a></li><li><a href="global.html#INDICATOR_HALF">INDICATOR_HALF</a></li><li><a href="global.html#INDICATOR_WIDTH">INDICATOR_WIDTH</a></li><li><a href="global.html#INTERACTION_HOVER_FILL">INTERACTION_HOVER_FILL</a></li><li><a href="global.html#LAYER_ALREADY_REGISTERED">LAYER_ALREADY_REGISTERED</a></li><li><a href="global.html#LAYER_INVALID_INSTANCE">LAYER_INVALID_INSTANCE</a></li><li><a href="global.html#LAYER_RENDER_ERROR">LAYER_RENDER_ERROR</a></li><li><a href="global.html#LIST_INVALID_OPTION">LIST_INVALID_OPTION</a></li><li><a href="global.html#LIST_VALIDATION_NOT_IMPLEMENTED">LIST_VALIDATION_NOT_IMPLEMENTED</a></li><li><a href="global.html#MAX_COLS">MAX_COLS</a></li><li><a href="global.html#MAX_ROWS">MAX_ROWS</a></li><li><a href="global.html#MIN_COL_WIDTH">MIN_COL_WIDTH</a></li><li><a href="global.html#MIN_ROW_HEIGHT">MIN_ROW_HEIGHT</a></li><li><a href="global.html#MONO_FONT_FAMILY">MONO_FONT_FAMILY</a></li><li><a href="global.html#MOVE_SOURCE_FILL">MOVE_SOURCE_FILL</a></li><li><a href="global.html#NESTED_HEADER_ROWS">NESTED_HEADER_ROWS</a></li><li><a href="global.html#NUMBER_OUT_OF_RANGE">NUMBER_OUT_OF_RANGE</a></li><li><a href="global.html#PLUGIN_ABSTRACT_METHOD">PLUGIN_ABSTRACT_METHOD</a></li><li><a href="global.html#PLUGIN_ALREADY_LOADED">PLUGIN_ALREADY_LOADED</a></li><li><a href="global.html#PLUGIN_INVALID_CLASS">PLUGIN_INVALID_CLASS</a></li><li><a href="global.html#PLUGIN_NOT_REGISTERED">PLUGIN_NOT_REGISTERED</a></li><li><a href="global.html#PROGRESS_BAR_BORDER_RADIUS">PROGRESS_BAR_BORDER_RADIUS</a></li><li><a href="global.html#PROGRESS_BAR_FONT_SIZE">PROGRESS_BAR_FONT_SIZE</a></li><li><a href="global.html#PROGRESS_BAR_HEIGHT_RATIO">PROGRESS_BAR_HEIGHT_RATIO</a></li><li><a href="global.html#PROGRESS_BAR_HIGH_COLOR">PROGRESS_BAR_HIGH_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_LOW_COLOR">PROGRESS_BAR_LOW_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_MEDIUM_COLOR">PROGRESS_BAR_MEDIUM_COLOR</a></li><li><a href="global.html#PROGRESS_BAR_PADDING">PROGRESS_BAR_PADDING</a></li><li><a href="global.html#PROGRESS_BAR_TRACK_COLOR">PROGRESS_BAR_TRACK_COLOR</a></li><li><a href="global.html#RANGE_HIGHLIGHT_FILL">RANGE_HIGHLIGHT_FILL</a></li><li><a href="global.html#REGEX_EXECUTION_ERROR">REGEX_EXECUTION_ERROR</a></li><li><a href="global.html#REGEX_MISMATCH">REGEX_MISMATCH</a></li><li><a href="global.html#RENDER_ERROR">RENDER_ERROR</a></li><li><a href="global.html#RESIZE_HIT_AREA">RESIZE_HIT_AREA</a></li><li><a href="global.html#SCROLLBAR_MIN_SIZE">SCROLLBAR_MIN_SIZE</a></li><li><a href="global.html#SCROLLBAR_WIDTH">SCROLLBAR_WIDTH</a></li><li><a href="global.html#SCROLL_AXIS">SCROLL_AXIS</a></li><li><a href="global.html#SELECTION_COLOR">SELECTION_COLOR</a></li><li><a href="global.html#SELECTION_CONFIG">SELECTION_CONFIG</a></li><li><a href="global.html#SELECTION_LINE_WIDTH">SELECTION_LINE_WIDTH</a></li><li><a href="global.html#SHEET_TAB_HEIGHT">SHEET_TAB_HEIGHT</a></li><li><a href="global.html#SORT_ACTIVE_COLOR">SORT_ACTIVE_COLOR</a></li><li><a href="global.html#SORT_ARROW_DIR">SORT_ARROW_DIR</a></li><li><a href="global.html#SORT_ARROW_LINE_WIDTH">SORT_ARROW_LINE_WIDTH</a></li><li><a href="global.html#SORT_ARROW_PADDING">SORT_ARROW_PADDING</a></li><li><a href="global.html#SORT_ARROW_SIZE">SORT_ARROW_SIZE</a></li><li><a href="global.html#SORT_COLUMN_HIGHLIGHT_FILL">SORT_COLUMN_HIGHLIGHT_FILL</a></li><li><a href="global.html#SORT_CONFIG">SORT_CONFIG</a></li><li><a href="global.html#SORT_ENGINE_NOT_INITIALIZED">SORT_ENGINE_NOT_INITIALIZED</a></li><li><a href="global.html#SORT_INACTIVE_ALPHA">SORT_INACTIVE_ALPHA</a></li><li><a href="global.html#SORT_INACTIVE_COLOR">SORT_INACTIVE_COLOR</a></li><li><a href="global.html#SORT_ORDER">SORT_ORDER</a></li><li><a href="global.html#SPARKLINE_BAR_COLOR">SPARKLINE_BAR_COLOR</a></li><li><a href="global.html#SPARKLINE_BAR_GAP">SPARKLINE_BAR_GAP</a></li><li><a href="global.html#SPARKLINE_DOT_RADIUS">SPARKLINE_DOT_RADIUS</a></li><li><a href="global.html#SPARKLINE_FILL_COLOR">SPARKLINE_FILL_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_COLOR">SPARKLINE_LINE_COLOR</a></li><li><a href="global.html#SPARKLINE_LINE_WIDTH">SPARKLINE_LINE_WIDTH</a></li><li><a href="global.html#SPARKLINE_PADDING">SPARKLINE_PADDING</a></li><li><a href="global.html#STAR_RATING_EMPTY_COLOR">STAR_RATING_EMPTY_COLOR</a></li><li><a href="global.html#STAR_RATING_FILLED_COLOR">STAR_RATING_FILLED_COLOR</a></li><li><a href="global.html#STAR_RATING_GAP_RATIO">STAR_RATING_GAP_RATIO</a></li><li><a href="global.html#STAR_RATING_LINE_WIDTH">STAR_RATING_LINE_WIDTH</a></li><li><a href="global.html#STAR_RATING_MAX_STARS">STAR_RATING_MAX_STARS</a></li><li><a href="global.html#STAR_RATING_STAR_SIZE">STAR_RATING_STAR_SIZE</a></li><li><a href="global.html#STYLE_SCOPE">STYLE_SCOPE</a></li><li><a href="global.html#SUB">SUB</a></li><li><a href="global.html#SettingsApplier.">SettingsApplier.</a></li><li><a href="global.html#TEXTAREA_ELLIPSIS">TEXTAREA_ELLIPSIS</a></li><li><a href="global.html#TEXTAREA_LINE_HEIGHT_RATIO">TEXTAREA_LINE_HEIGHT_RATIO</a></li><li><a href="global.html#TEXT_ALIGN">TEXT_ALIGN</a></li><li><a href="global.html#TEXT_LENGTH_INVALID">TEXT_LENGTH_INVALID</a></li><li><a href="global.html#TEXT_OVERFLOW_ELLIPSIS">TEXT_OVERFLOW_ELLIPSIS</a></li><li><a href="global.html#TILE_CACHE_MAX">TILE_CACHE_MAX</a></li><li><a href="global.html#TILE_SIZE">TILE_SIZE</a></li><li><a href="global.html#TOP">TOP</a></li><li><a href="global.html#TYPE_DUPLICATE">TYPE_DUPLICATE</a></li><li><a href="global.html#TYPE_INSTANTIATION_ERROR">TYPE_INSTANTIATION_ERROR</a></li><li><a href="global.html#TYPE_INVALID_CLASS">TYPE_INVALID_CLASS</a></li><li><a href="global.html#TYPE_INVALID_INSTANCE">TYPE_INVALID_INSTANCE</a></li><li><a href="global.html#TYPE_INVALID_NAME">TYPE_INVALID_NAME</a></li><li><a href="global.html#TYPE_NOT_REGISTERED">TYPE_NOT_REGISTERED</a></li><li><a href="global.html#TYPE_PARSE_ERROR">TYPE_PARSE_ERROR</a></li><li><a href="global.html#UI_CONFIG">UI_CONFIG</a></li><li><a href="global.html#UI_DASH_PATTERN">UI_DASH_PATTERN</a></li><li><a href="global.html#UNKNOWN">UNKNOWN</a></li><li><a href="global.html#VALIDATION_DEBUG_LOG">VALIDATION_DEBUG_LOG</a></li><li><a href="global.html#VALIDATION_ERROR">VALIDATION_ERROR</a></li><li><a href="global.html#VALIDATION_RULE_INVALID">VALIDATION_RULE_INVALID</a></li><li><a href="global.html#VALIDATION_RULE_TYPE">VALIDATION_RULE_TYPE</a></li><li><a href="global.html#VALIDATOR_NOT_REGISTERED">VALIDATOR_NOT_REGISTERED</a></li><li><a href="global.html#VERTICAL_ALIGN">VERTICAL_ALIGN</a></li><li><a href="global.html#ZEBRA_DARK">ZEBRA_DARK</a></li><li><a href="global.html#ZEBRA_LIGHT">ZEBRA_LIGHT</a></li><li><a href="global.html#buildOptions">buildOptions</a></li><li><a href="global.html#buildRows">buildRows</a></li><li><a href="global.html#errorHandler">errorHandler</a></li><li><a href="global.html#escapeField">escapeField</a></li><li><a href="global.html#getDataRange">getDataRange</a></li><li><a href="global.html#parseFormula">parseFormula</a></li><li><a href="global.html#registry">registry</a></li><li><a href="global.html#resolveHeaderDefaults">resolveHeaderDefaults</a></li><li><a href="global.html#serialize">serialize</a></li><li><a href="global.html#toBlob">toBlob</a></li><li><a href="global.html#triggerDownload">triggerDownload</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 11:29:42 GMT+0800 (中国标准时间)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 17:04:05 GMT+0800 (中国标准时间)
 </footer>
 
 <script> prettyPrint(); </script>
