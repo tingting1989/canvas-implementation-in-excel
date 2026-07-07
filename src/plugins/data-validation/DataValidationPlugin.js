@@ -149,14 +149,11 @@ export class DataValidationPlugin extends BasePlugin {
     }
 
     interceptBeforeSetValue(row, col, value) {
-
         if (!this.#active || !this.#engine) return true;
 
         const rules = this.#engine.getRulesForCell(row, col);
 
-
         const result = this.#engine.validateCellSync(row, col, value);
-
 
         if (!result.valid) {
             this.hooks?.runHooks(HOOKS.VALIDATION_FAILED, row, col, value, result);

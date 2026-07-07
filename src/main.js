@@ -1003,7 +1003,6 @@ const initApp = () => {
     // setTimeout(() => {
     //     window.resizeGrid.setSize(30, 15);
     // }, 5000);
-
 };
 
 document.addEventListener("DOMContentLoaded", initApp);

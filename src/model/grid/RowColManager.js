@@ -111,7 +111,6 @@ export class RowColManager {
             }
             this.#colPrefixDirty = true;
         }
-
     }
 
     /** 是否通过 resetSize() 显式设置了行列数 */
