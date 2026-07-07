@@ -89,7 +89,6 @@ export class RowColManager {
     resetSize(rows, cols) {
         rows = Math.min(rows, CONFIG.MAX_ROWS);
         cols = Math.min(cols, CONFIG.MAX_COLS);
-        errorHandler.debug(ERROR_CODE.DEBUG_LOG, `[RowColManager] resetSize: ${rows}rows x ${cols}cols (force override)`);
         this.#usedRows = rows;
         this.#usedCols = cols;
         this.#explicitlySized = true; // 标记为显式配置
@@ -113,10 +112,6 @@ export class RowColManager {
             this.#colPrefixDirty = true;
         }
 
-        errorHandler.debug(
-            ERROR_CODE.DEBUG_LOG,
-            `[RowColManager] resetSize complete: rowHeights.len=${this.#rowHeights.length}, colWidths.len=${this.#colWidths.length}, explicitlySized=${this.#explicitlySized}`,
-        );
     }
 
     /** 是否通过 resetSize() 显式设置了行列数 */

@@ -1004,9 +1004,6 @@ const initApp = () => {
     //     window.resizeGrid.setSize(30, 15);
     // }, 5000);
 
-    errorHandler.debug(ERROR_CODE.DEBUG_LOG, wb.getActiveSheet().name);
-    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Loaded plugins:", wb.pluginManager.getLoadedNames());
-    errorHandler.debug(ERROR_CODE.DEBUG_LOG, "App started! Tile Rendering + Plugin System ready.");
 };
 
 document.addEventListener("DOMContentLoaded", initApp);

@@ -94,7 +94,6 @@ export class DataValidationPlugin extends BasePlugin {
      */
     async init(options = {}) {
         super.init(options);
-        console.log("options", options);
         try {
             this.#engine = new ValidationEngine(this.sheet?.cellStore);
             const formulaEngine = this.workbook?.formulaEngine || null;
@@ -150,25 +149,19 @@ export class DataValidationPlugin extends BasePlugin {
     }
 
     interceptBeforeSetValue(row, col, value) {
-        console.log(`[DV-DEBUG] interceptBeforeSetValue called: (${row},${col}) value=${value}, active=${this.#active}, engine=${!!this.#engine}`);
 
         if (!this.#active || !this.#engine) return true;
 
         const rules = this.#engine.getRulesForCell(row, col);
-        console.log(
-            `[DV-DEBUG] Rules for cell (${row},${col}):`,
-            rules.length,
-            rules.map((r) => r.type),
-        );
+
 
         const result = this.#engine.validateCellSync(row, col, value);
-        console.log(`[DV-DEBUG] validateCellSync result: valid=${result.valid}, message=${result.message}`);
+
 
         if (!result.valid) {
             this.hooks?.runHooks(HOOKS.VALIDATION_FAILED, row, col, value, result);
 
             if (result.errorStyle === ERROR_STYLE.STOP) {
-                console.log("[DV-DEBUG] 🛑 Returning false (BLOCK)");
                 return false;
             }
         }
