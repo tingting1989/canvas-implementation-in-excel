@@ -588,8 +588,4 @@ export function getAllBuiltinRendererNames() {
 // ════════════════════════════════════════════
 
 errorHandler.debug(ERROR_CODE.DEBUG_LOG, "[Renderers] ✅ 内置渲染器类型注册表初始化完成");
-errorHandler.debug(
-    ERROR_CODE.DEBUG_LOG,
-    `  可用渲染器 (${getAllBuiltinRendererNames().length}):`,
-    getAllBuiltinRendererNames(),
-);
+errorHandler.debug(ERROR_CODE.DEBUG_LOG, `  可用渲染器 (${getAllBuiltinRendererNames().length}):`, getAllBuiltinRendererNames());

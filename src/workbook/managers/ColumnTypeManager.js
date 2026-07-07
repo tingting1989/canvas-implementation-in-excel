@@ -1,4 +1,4 @@
-import { getType, getColumnTypeFromConfig, resolveCellType, extractTypeOptions, formatValue, parseValue, validateValue } from "../../types";
+import { getColumnTypeInstance, resolveColumnTypeFromConfig, resolveCellTypeFromPosition, extractColumnTypeOptions, formatCellValue as formatCellValueInternal, parseCellValue as parseCellValueInternal, validateCellValue as validateCellValueInternal } from "../../types";
 import { isFunction, isObject } from "../../utils/utils.js";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 
@@ -86,7 +86,7 @@ export class ColumnTypeManager {
      * @returns {import("../../types/BaseColumnType.js").BaseColumnType} 列类型实例
      */
     getColumnTypeInstance(col) {
-        return getColumnTypeFromConfig(this.#columnsConfig.get(col));
+        return resolveColumnTypeFromConfig(this.#columnsConfig.get(col));
     }
 
     /**
@@ -103,10 +103,10 @@ export class ColumnTypeManager {
         const cellProps = this.#sheet.resolveCellProperties(r, c);
         if (cellProps?.type) {
             const { type: name, ...rest } = cellProps;
-            return getType(name, extractTypeOptions(rest));
+            return getColumnTypeInstance(name, extractColumnTypeOptions(rest));
         }
 
-        return resolveCellType(r, c, this.#cellTypes, this.#columnsConfig);
+        return resolveCellTypeFromPosition(r, c, this.#cellTypes, this.#columnsConfig);
     }
 
     /**
@@ -173,7 +173,7 @@ export class ColumnTypeManager {
      * @returns {string} 格式化后的显示文本
      */
     formatCellValue(r, c, value) {
-        return formatValue(this.getCellTypeInstance(r, c), value);
+        return formatCellValueInternal(this.getCellTypeInstance(r, c), value);
     }
 
     /**
@@ -187,7 +187,7 @@ export class ColumnTypeManager {
      * @returns {boolean|string} true 表示有效，false 或错误信息字符串表示无效
      */
     validateCellValue(r, c, value) {
-        return validateValue(this.getCellTypeInstance(r, c), value, this.#columnsConfig.get(c));
+        return validateCellValueInternal(this.getCellTypeInstance(r, c), value, this.#columnsConfig.get(c));
     }
 
     /**
@@ -202,6 +202,6 @@ export class ColumnTypeManager {
      * @returns {*} 解析后的值
      */
     parseCellValue(r, c, input) {
-        return parseValue(this.getCellTypeInstance(r, c), input);
+        return parseCellValueInternal(this.getCellTypeInstance(r, c), input);
     }
 }

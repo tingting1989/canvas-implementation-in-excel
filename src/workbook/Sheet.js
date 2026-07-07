@@ -24,7 +24,7 @@ import { HeaderLabelManager } from "./managers/HeaderLabelManager.js";
 import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js";
 import { BatchOperationManager } from "./managers/BatchOperationManager.js";
 import { ChartManager } from "../model/chart/ChartManager.js";
-import { extractTypeOptions } from "../types/index.js";
+import { extractColumnTypeOptions } from "../types/index.js";
 
 /** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
 const SUB = {
@@ -722,7 +722,7 @@ export class Sheet {
             this.rowColManager.ensureSize(r + 1, c + 1);
 
             if (type) {
-                this.#typeManager.cellTypes.set(`${r},${c}`, { name: type, options: extractTypeOptions(typeOptions) });
+                this.#typeManager.cellTypes.set(`${r},${c}`, { name: type, options: extractColumnTypeOptions(typeOptions) });
             }
 
             const cell = this.cellStore.get(r, c);
