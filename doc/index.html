@@ -53,7 +53,7 @@
 <p align="center">
   <strong>高性能 Canvas 渲染的 Web 电子表格引擎</strong><br/>
   基于 Canvas API + Web Components 的现代化表格解决方案<br/>
-  支持 100万+ 行数据流畅渲染、公式计算、数据验证、图表可视化
+  支持 10万+ 行数据流畅渲染、公式计算、数据验证、图表可视化
 </p>
 <hr>
 <h2>📖 目录</h2>
@@ -73,10 +73,10 @@
 <h2>✨ 核心特性</h2>
 <h3>🎯 <strong>极致性能</strong></h3>
 <ul>
-<li>✅ <strong>Canvas 硬件加速渲染</strong> - 摆脱 DOM 性能瓶颈</li>
+<li>✅ <strong>Canvas 硬件加速渲染</strong></li>
 <li>✅ <strong>瓦片化渲染架构</strong> (Tile Rendering) - 只绘制可视区域</li>
 <li>✅ <strong>智能缓存机制</strong> - TileCache + ChartCache 双层缓存</li>
-<li>✅ <strong>支持 100,000+ 行</strong>数据流畅滚动（实测性能优秀）</li>
+<li>✅ <strong>支持 100,000+ 行</strong>数据流畅滚动（在主流桌面浏览器环境下实测）,实际性能受硬件配置、浏览器实现、单元格复杂度影响，建议在目标环境中自行验证</li>
 </ul>
 <h3>🧮 <strong>强大的公式系统</strong></h3>
 <ul>
@@ -143,14 +143,40 @@
                 fontFamily: 'Microsoft YaHei'
             }
         });
+        const sheet = workbook.activeSheet;
+        
+        // 禁用单元格
+        sheet.disableCell(1, 0);
+        
+        // 启用
+        sheet.enableCell(1, 0);
 
-        // 设置单元格值
-        workbook.setCellValue(0, 0, 'Hello Canvas!');
-        workbook.setCellValue(1, 0, 42);
-        workbook.setCellValue(2, 0, '=A1 & &quot; | Count: &quot; & A2');
+        // 设置样式
+        sheet.setCellStyle(1,,0 , {
+            color: 'red',
+            fontWeight: 'bold',
+            textAlign: 'center'
+            fontStyle: 'italic'
+            backgroundColor: '#fff'
+        });
+        // 或者
+        workbook.setCellStyle(row, col, {
+            color: 'red',
+            fontWeight: 'bold',
+            textAlign: 'center'
+            fontStyle: 'italic'
+            backgroundColor: '#fff'
+        });
+        // 设置文本值
+        sheet.setCell(0, 0, 'Hello World');
 
-        console.log(workbook.getCellValue(2, 0)); 
-        // 输出: &quot;Hello Canvas! | Count: 42&quot;
+        // 设置数值
+        sheet.setCell(2, 0, 42);
+
+        // 设置公式（以 = 开头）
+        sheet.setCell(4, 0, '=SUM(A1:A10)');           // 求和
+        sheet.setCell(5, 0, '=AVERAGE(B1:B100)');      // 平均值
+        sheet.setCell(6, 0, '=IF(C1>100,&quot;High&quot;,&quot;Low&quot;)'); // 条件
     &lt;/script>
 &lt;/body>
 &lt;/html>
@@ -177,14 +203,12 @@ const wb = new Workbook(container, {
 });
 
 // 批量填充数据
-for (let row = 0; row &lt; 1000; row++) {
-    for (let col = 0; col &lt; 10; col++) {
-        wb.setCellValue(row, col, Math.random() * 100);
-    }
-}
+wb.activeSheet.loadData([
+    [&quot;姓名&quot;, &quot;年龄&quot;, &quot;green&quot;],
+    [&quot;张三&quot;, 30, &quot;yellow&quot;],
+    [&quot;李四&quot;, 25, &quot;red&quot;],
+]);
 
-// 使用公式
-wb.setCellValue(0, 11, '=SUM(A1:J1000)');  // 自动求和
 </code></pre>
 <hr>
 <h2>🏗️ 技术架构</h2>
@@ -316,61 +340,422 @@ const wb = new Workbook(document.getElementById('container'), options);
 <hr>
 <h2>💻 API 参考</h2>
 <h3>📘 Workbook 类 - 工作簿核心</h3>
-<pre class="prettyprint source lang-javascript"><code>class Workbook {
-    constructor(
-        HTMLElement,
-         WorkbookOptions
-    );
+<blockquote>
+<p><strong>顶层管理对象</strong>，作为 Facade 协调 Sheet、RenderEngine、EventHandler、EditorManager、PluginManager 等子系统。</p>
+<p>对齐 Handsontable 的 <code>new Handsontable(container, options)</code> 模式。</p>
+</blockquote>
+<h4>📌 构造函数</h4>
+<pre class="prettyprint source lang-javascript"><code>/**
+ * @param {HTMLElement|string} element - 容器元素或 Canvas 元素 ID
+ * @param {object} [options={}] - 配置选项
+ */
+new Workbook(element, options)
+</code></pre>
+<h4>🔧 静态方法：全局插件注册</h4>
+<pre class="prettyprint source lang-javascript"><code>// 全局注册插件类（统一注册源）
+Workbook.registerPlugin(name, PluginClass);
 
-    // ========== 单元格操作 ==========
-    setCellValue(row: number, col: number, value: any): void;
-    getCellValue(row: number, col: number): any;
-    getCellDisplayValue(row: number, col: number): string;
+// 全局注销插件类
+Workbook.unregisterPlugin(name);
+</code></pre>
+<h4>🔌 插件委托方法</h4>
+<pre class="prettyprint source lang-javascript"><code>// 加载已注册的插件（按名称）
+workbook.loadPlugin(name, options);
+
+// 直接加载插件类
+workbook.loadPluginClass(PluginClass, options);
+
+// 卸载插件
+workbook.unloadPlugin(name);
+
+// 获取插件实例
+workbook.getPlugin(name);
+
+// 启用/禁用插件
+workbook.enablePlugin(name);
+workbook.disablePlugin(name);
+</code></pre>
+<h4>⚙️ 初始化与生命周期</h4>
+<pre class="prettyprint source lang-javascript"><code>// 初始化渲染引擎、编辑器、事件处理、插件系统（延迟初始化）
+workbook.initRender();
+
+// 销毁所有资源（必须在移除 DOM 前调用）
+workbook.destroy();
+</code></pre>
+<h4>📑 工作表管理</h4>
+<pre class="prettyprint source lang-javascript"><code>// 添加工作表
+const sheet = workbook.addSheet(name);
+
+// 删除工作表（至少保留一个）
+const success = workbook.removeSheet(name);
+
+// 重命名工作表
+const success = workbook.renameSheet(oldName, newName);
+
+// 切换到指定工作表
+workbook.switchTo(name);
+
+// 获取当前活动工作表
+const sheet = workbook.getActiveSheet();
+</code></pre>
+<h4>🎨 渲染控制</h4>
+<pre class="prettyprint source lang-javascript"><code>// 重新渲染当前活动工作表
+workbook.render();
+</code></pre>
+<h4>📋 剪贴板操作（委托到 CopyPastePlugin）</h4>
+<pre class="prettyprint source lang-javascript"><code>// 复制当前选区
+workbook.copy();
+
+// 粘贴到当前选区
+workbook.paste();
+</code></pre>
+<h4>↩️ 撤销/重做</h4>
+<pre class="prettyprint source lang-javascript"><code>// 撤销
+workbook.undo();
+
+// 重做
+workbook.redo();
+</code></pre>
+<h4>📊 单元格操作</h4>
+<pre class="prettyprint source lang-javascript"><code>// 禁用/启用单元格
+workbook.disableCell();
+workbook.enableCell();
+
+// 合并/取消合并单元格
+workbook.mergeCells(topRow, topCol, bottomRow, bottomCol);
+workbook.unmergeCells();
+
+// 插入/删除行和列
+// atRow:第几行
+// atCol:第几列
+workbook.insertRow(atRow);
+workbook.insertCol(atCol);
+workbook.deleteRow(atRow);
+workbook.deleteCol(atCol);
+</code></pre>
+<h4>🎯 钩子系统（Hooks）（委托到 EventHandler，支持 Early Hooks）</h4>
+<pre class="prettyprint source lang-javascript"><code>// 添加钩子监听器（eventHandler 创建前会缓存）
+workbook.addHook(hookName, callback);
+
+// 添加一次性钩子监听器
+workbook.addHookOnce(hookName, callback);
+
+// 移除钩子监听器
+workbook.removeHook(hookName, callback);
+
+// 清空指定钩子的所有监听器
+workbook.clearHook(hookName);
+
+// 检查是否有指定钩子的监听器
+const exists = workbook.hasHook(hookName);
+
+// 触发所有监听器
+workbook.runHooks(hookName, ...args);
+
+// 触发监听器直到返回 false
+workbook.runHooksUntil(hookName, ...args);
+</code></pre>
+<h4>💅 样式操作</h4>
+<pre class="prettyprint source lang-javascript"><code>// 更新配置（对齐 Handsontable 的 updateSettings API）
+workbook.updateSettings(settings);
+
+// 单元格样式
+
+const style = workbook.getCellStyle(row, col);
+workbook.clearCellStyle(row, col);
+
+// 范围样式
+workbook.setRangeStyle(range, styleObj);
+workbook.clearRangeStyle(range);
+
+// 行列样式
+workbook.setRowStyle(row, styleObj);
+workbook.setColStyle(col, styleObj);
+workbook.clearRowStyle(row);
+workbook.clearColStyle(col);
+
+// 默认样式（全局基础）
+workbook.setDefaultStyle(styleObj);  // 所有 Sheet 继承
+const defaultStyle = workbook.getDefaultStyle();
+
+// 批量样式更新（性能优化）
+workbook.batchStyleUpdate(fn);
+</code></pre>
+<h4>📤 导出功能（委托到 exportFile 插件）</h4>
+<pre class="prettyprint source lang-javascript"><code>// 导出为字符串
+const csvString = workbook.exportAsString('csv', options);
+
+// 导出为 Blob 对象
+const blob = workbook.exportAsBlob('xlsx', options);
+
+// 直接触发下载
+workbook.downloadFile('csv', options);
+</code></pre>
+<h4>🏷️ 公共属性</h4>
+<table>
+<thead>
+<tr>
+<th>属性</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sheets</code></td>
+<td><code>Map&lt;string, Sheet&gt;</code></td>
+<td>所有工作表的 Map</td>
+</tr>
+<tr>
+<td><code>activeSheet</code></td>
+<td><code>Sheet|null</code></td>
+<td>当前活动的工作表</td>
+</tr>
+<tr>
+<td><code>clipboard</code></td>
+<td><code>ClipboardManager|null</code></td>
+<td>剪贴板管理器（由 CopyPastePlugin 注入）</td>
+</tr>
+<tr>
+<td><code>renderEngine</code></td>
+<td><code>RenderEngine|null</code></td>
+<td>渲染引擎实例</td>
+</tr>
+<tr>
+<td><code>editor</code></td>
+<td><code>EditorManager|null</code></td>
+<td>编辑器管理器</td>
+</tr>
+<tr>
+<td><code>eventHandler</code></td>
+<td><code>EventHandler|null</code></td>
+<td>事件处理器</td>
+</tr>
+<tr>
+<td><code>pluginManager</code></td>
+<td><code>PluginManager|null</code></td>
+<td>插件管理器</td>
+</tr>
+<tr>
+<td><code>formulaEngine</code></td>
+<td><code>FormulaEngine|null</code></td>
+<td>公式引擎（由 FormulaPlugin 注入）</td>
+</tr>
+<tr>
+<td><code>formulaBar</code></td>
+<td><code>FormulaBarManager|null</code></td>
+<td>公式栏管理器（由 FormulaPlugin 注入）</td>
+</tr>
+</tbody>
+</table>
+<h3>📗 配置选项</h3>
+<h4>🔹 Workbook 级别配置（WorkbookOptions）</h4>
+<blockquote>
+<p>以下配置项作用于 <strong>Workbook 全局</strong>，或作为<strong>默认值</strong>应用到所有 Sheet。</p>
+</blockquote>
+<pre class="prettyprint source lang-typescript"><code>interface WorkbookOptions {
+    // ========== 尺寸设置（Workbook 全局）==========
+    width?: number;                              // 画布宽度（px），默认自适应容器
+    height?: number;                             // 画布高度（px），默认自适应容器
     
-    // ========== 选择操作 ==========
-    selectCell(row: number, col: number): void;
-    selectRange(startRow: number, startCol: number, endRow: number, endCol: number): void;
-    getSelectedRange(): Range | null;
+    // ========== 工作表配置 ==========
+    sheetName?: string;                          // 初始工作表名称（默认: 'Sheet1'）
+    sheets?: SheetConfig[];                      // 多工作表配置数组（推荐使用）
     
-    // ========== 列定义 ==========
-    setColumnDefinition(colIndex: number, definition: ColumnDefinition): void;
-    getColumnDefinition(colIndex: number): ColumnDefinition | undefined;
+    // ========== 全局默认样式 ==========
+    defaultStyle?: CellStyle;                    // 单元格默认样式（所有 Sheet 继承的基础样式）
     
-    // ========== 工作表管理 ==========
-    addSheet(name?: string): Sheet;
-    removeSheet(sheetId: string): boolean;
-    setActiveSheet(sheetId: string): void;
+    // ========== 插件系统（Workbook 全局）==========
+    plugins?: string[];                          // 要加载的插件名称列表
+    pluginOptions?: { [pluginName: string]: any }; // 插件选项映射 { pluginName: options }
     
-    // ========== 事件监听 ==========
-    on(event: string, handler: Function): void;
-    off(event: string, handler: Function): void;
+    // ========== 钩子系统（Workbook 全局）==========
+    hooks?: { [hookName: string]: Function };    // 事件钩子映射 { hookName: callback }
     
-    // ========== 导出 ==========
-    exportToCSV(options): string;
-    exportToExcel(option): Blob;
+    // ========== 生命周期回调 ==========
+    afterInit?: Function;                        // 初始化完成回调 (workbook) => void
 }
 </code></pre>
-<h3>📗 配置选项 (WorkbookOptions)</h3>
-<pre class="prettyprint source lang-typescript"><code>interface WorkbookOptions {
-    // 尺寸设置
-    width?: number;              // 容器宽度 (px)
-    height?: number;             // 容器高度 (px)
-    startRows?: number;          // 初始行数 (默认: 100)
-    startCols?: number;          // 初始列数 (默认: 26)
+<h4>🔸 Sheet 级别配置（SheetConfig）</h4>
+<blockquote>
+<p>⚠️ <strong>重要：</strong> 以下配置项属于<strong>具体某个 Sheet</strong> 的配置，建议放在 <code>sheets</code> 数组的每个 sheet 对象中。</p>
+<p>如果直接放在顶层 <code>options</code> 中，将作为<strong>默认值</strong>应用到所有 Sheet。</p>
+</blockquote>
+<pre class="prettyprint source lang-typescript"><code>interface SheetConfig {
+    // ========== 基础信息 ==========
+    name?: string;                               // 工作表名称（默认自动生成 'SheetN'）
     
-    // 默认样式
-    defaultStyle?: CellStyle;    // 单元格默认样式
+    // ========== 数据初始化 ==========
+    data?: Array&lt;Array&lt;any>>;                    // 初始数据（二维数组）
     
-    // 功能开关
-    readOnly?: boolean;          // 只读模式
-    enableFormulas?: boolean;    // 启用公式 (默认: true)
-    enablePlugins?: PluginConfig; // 插件配置
+    // ========== 行列配置 ==========
+    startRows?: number;                          // 初始行数（默认: 100）
+    startCols?: number;                          // 初始列数（默认: 26）
+    maxRows?: number;                            // 最大行数限制（超过则忽略新增）
+    maxCols?: number;                            // 最大列数限制（超过则忽略新增）
+    rowHeights?: number | number[];              // 行高配置
+    colWidths?: number | number[];               // 列宽配置
     
-    // 性能调优
-    tileWidth?: number;          // 瓦片宽度 (默认: 200)
-    tileHeight?: number;         // 瓦片高度 (默认: 200)
-    maxCacheSize?: number;       // 最大缓存数量 (默认: 100)
+    // ========== 表头配置 ==========
+    colHeaders?: true | string[] | Function;     // 列头标签（默认: true）
+    rowHeaders?: true | string[] | Function;     // 行头标签（默认: true）
+    headerHeight?: number;                       // 表头高度
+    rowHeaderWidth?: number;                     // 行头宽度
+    nestedHeaders?: Array&lt;Array&lt;{                // 嵌套表头配置
+        label: string;
+        colspan?: number;
+        rowspan?: number;
+        style?: object;
+    }>>;
+    
+    // ========== 样式配置 ==========
+    defaultStyle?: CellStyle;                    // 该 Sheet 的默认样式（覆盖 Workbook 级别）
+    rowStyles?: Array&lt;object>;                   // 行样式数组
+    colStyles?: Array&lt;object>;                   // 列样式数组
+    rangeStyles?: Array&lt;object>;                 // 区域样式数组
+    
+    // ========== 单元格配置 ==========
+    cell?: Array&lt;{
+        row: number;
+        col: number;
+        style?: object;
+        disabled?: boolean;
+        readOnly?: boolean;
+        value?: any;
+    }>;                                         // 静态单元格配置
+    cells?: Function;                            // 动态单元格属性函数 (row, col) => { style?, disabled?, ... }
+    
+    // ========== 合并单元格 ==========
+    mergeCells?: Array&lt;{
+        row: number;
+        col: number;
+        rowspan: number;
+        colspan: number;
+    }>;
+    
+    // ========== 条件格式 ==========
+    conditionalStyles?: Array&lt;{
+        range: object;
+        condition: Function;
+        style: object;
+    }>;
+    
+    // ========== 列定义 ==========
+    columns?: Array&lt;object | Function>;          // 列配置数组
+    
+    // ========== 冻结窗格 ==========
+    fixedRowsTop?: number;                       // 固定顶部行数
+    fixedColumnsStart?: number;                  // 固定左侧列数
+    
+    // ========== 渲染配置 ==========
+    cellPadding?: number;                        // 单元格内边距
+    textOverflowEllipsis?: boolean;              // 文本溢出显示省略号
+    
+    // ========== 功能开关 ==========
+    readOnly?: boolean;                          // 只读模式
 }
+</code></pre>
+<h4>📊 配置优先级说明</h4>
+<pre class="prettyprint source"><code>┌─────────────────────────────────────────┐
+│  Workbook.defaultStyle (全局基础 - 最低优先级) │
+└─────────────────────┬───────────────────┘
+                      ↓
+┌─────────────────────────────────────────┐
+│   Sheet.defaultStyle (Sheet 级别 - 中等)    │
+└─────────────────────┬───────────────────┘
+                      ↓
+┌─────────────────────────────────────────┐
+│  rangeStyles / cell / cells (最高优先级)  │
+└─────────────────────────────────────────┘
+</code></pre>
+<p>当同一属性在多个层级都有配置时，<strong>越具体的配置优先级越高</strong>。</p>
+<hr>
+<h4>📝 使用示例</h4>
+<pre class="prettyprint source lang-javascript"><code>import { Workbook } from '@canvas-sheet/core';
+
+const workbook = new Workbook(document.getElementById('container'), {
+    // ✅ Workbook 级别配置（全局）
+    width: window.innerWidth,
+    height: window.innerHeight,
+    
+    // 全局默认样式（所有 Sheet 继承的基础）
+    defaultStyle: {
+        fontSize: 13,
+        fontFamily: 'Arial',
+        textAlign: 'left',
+        color: '#333'
+    },
+    
+    // 加载插件（全局）
+    plugins: ['freeze', 'sort', 'filter', 'autoFill'],
+    pluginOptions: {
+        freeze: { fixedRowsTop: 2, fixedColsLeft: 1 }
+    },
+    
+    // 推荐方式：使用 sheets 数组配置每个 Sheet
+    sheets: [
+        {
+            name: 'Sheet1',
+            
+            // ✅ Sheet 级别配置
+            startRows: 100,
+            startCols: 26,
+            
+            // 表头配置
+            colHeaders: true,
+            rowHeaders: true,
+            
+            // 该 Sheet 的默认样式（会合并全局 defaultStyle）
+            defaultStyle: {
+                backgroundColor: '#fff'
+            },
+            
+            // 初始数据
+            data: [
+                ['姓名', '年龄', '城市'],
+                ['张三', 25, '北京'],
+                ['李四', 30, '上海']
+            ],
+            
+            // 合并单元格
+            mergeCells: [
+                { row: 0, col: 0, rowspan: 1, colspan: 3 }
+            ],
+            
+            // 单元格配置
+            cell: [
+                { row: 1, col: 0, value: '张三', readOnly: true },
+                { row: 1, col: 1, value: 25, style: { color: 'blue' } }
+            ]
+        },
+        {
+            name: '数据统计',
+            
+            // 另一个 Sheet 可以有完全不同的配置
+            startRows: 50,
+            startCols: 10,
+            readOnly: true,
+            
+            data: [
+                ['项目', '数值'],
+                ['总计', '=SUM(Sheet1!B:B)']
+            ]
+        }
+    ],
+    
+    // 初始化完成回调
+    afterInit: (workbook) => {
+        console.log('准备就绪！', workbook);
+        
+        // 添加自定义钩子
+        workbook.addHook('afterSelection', (row, col) => {
+            console.log(`选中单元格: ${row}, ${col}`);
+        });
+    }
+});
+
+// 必须调用 initRender() 完成初始化
+workbook.initRender();
 </code></pre>
 <h3>📙 示例代码库</h3>
 <details>
@@ -488,8 +873,8 @@ const wb = new Workbook('canvas', {
             nestedHeaders: [
                 [
                     {
-                        label: &quot;原水调节池+废水污泥池运行日报表&quot;,
-                        colspan: 14,
+                        label: &quot;日报表&quot;,
+                        colspan: 5,
                         style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
                     },
                 ],
@@ -497,7 +882,7 @@ const wb = new Workbook('canvas', {
                     { label: &quot;日期：yyyy-mm-dd&quot;, style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; } },
                     {
                         label: &quot;时间&quot;,
-                        colspan: 13,
+                        colspan: 4,
 
                         style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
                     },
@@ -523,42 +908,6 @@ const wb = new Workbook('canvas', {
                     },
                     {
                         label: &quot;6:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;8:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;10:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;12:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;14:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;16:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;18:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;20:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;22:00&quot;,
-                        style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
-                    },
-                    {
-                        label: &quot;24:00&quot;,
                         style: { fontWeight: &quot;bold&quot;, textAlign: &quot;center&quot;, backgroundColor: &quot;#fff&quot; },
                     },
                 ],
@@ -816,252 +1165,7 @@ const wb = new Workbook('canvas', {
         },
     },
     hooks: {
-        // ==================== 编辑相关钩子 ====================
-        // ✅ 已执行
-        // [HOOKS.BEFORE_BEGIN_EDITING]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeBeginEditing 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_BEGIN_EDITING]: (...args) => {
-        //     console.log(&quot;[HOOK] afterBeginEditing 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_FINISH_EDITING]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeFinishEditing 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_FINISH_EDITING]: (...args) => {
-        //     console.log(&quot;[HOOK] afterFinishEditing 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_CHANGE]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeChange 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_CHANGE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterChange 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 选择相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_SELECTION]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeSelection 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SELECTION]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSelection 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_SELECTION_END]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeSelectionEnd 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SELECTION_END]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSelectionEnd 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 单元格交互钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.ON_CELL_MOUSE_DOWN]: (...args) => {
-        //     console.log(&quot;[HOOK] onCellMouseDown 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.ON_CELL_MOUSE_OVER]: (...args) => {
-        //     console.log(&quot;[HOOK] onCellMouseOver 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.ON_CELL_MOUSE_OUT]: (...args) => {
-        //     console.log(&quot;[HOOK] onCellMouseOut 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.ON_CELL_CLICK]: (...args) => {
-        //     console.log(&quot;[HOOK] onCellClick 执行了&quot;, ...args);
-        //     if (isFunction(updateToolbarStyleState)) {
-        //         updateToolbarStyleState();
-        //     }
-        // },
-        // // ✅ 已执行
-        // [HOOKS.ON_CELL_DBL_CLICK]: (...args) => {
-        //     console.log(&quot;[HOOK] onCellDblClick 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 键盘相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_KEY_DOWN]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeKeyDown 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_KEY_DOWN]: (...args) => {
-        //     console.log(&quot;[HOOK] afterKeyDown 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 滚动相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SCROLL_HORIZONTALLY]: (...args) => {
-        //     console.log(&quot;[HOOK] afterScrollHorizontally 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SCROLL_VERTICALLY]: (...args) => {
-        //     console.log(&quot;[HOOK] afterScrollVertically 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 合并单元格相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_MERGE_CELLS]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeMergeCells 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_MERGE_CELLS]: (...args) => {
-        //     console.log(&quot;[HOOK] afterMergeCells 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_UNMERGE_CELLS]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeUnmergeCells 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_UNMERGE_CELLS]: (...args) => {
-        //     console.log(&quot;[HOOK] afterUnmergeCells 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 剪贴板相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_COPY]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeCopy 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_COPY]: (...args) => {
-        //     console.log(&quot;[HOOK] afterCopy 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_CUT]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeCut 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_CUT]: (...args) => {
-        //     console.log(&quot;[HOOK] afterCut 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_PASTE]: (...args) => {
-        //     console.log(&quot;[HOOK] beforePaste 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_PASTE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterPaste 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 列移动相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_COLUMN_MOVE]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeColumnMove 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_COLUMN_MOVE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterColumnMove 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 行移动相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_ROW_MOVE]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeRowMove 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_ROW_MOVE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterRowMove 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 隐藏列相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.AFTER_HIDE_COLUMN]: (...args) => {
-        //     console.log(&quot;[HOOK] afterHideColumn 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SHOW_COLUMN]: (...args) => {
-        //     console.log(&quot;[HOOK] afterShowColumn 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 隐藏行相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.AFTER_HIDE_ROW]: (...args) => {
-        //     console.log(&quot;[HOOK] afterHideRow 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SHOW_ROW]: (...args) => {
-        //     console.log(&quot;[HOOK] afterShowRow 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 冻结行列相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.AFTER_FREEZE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterFreeze 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_UNFREEZE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterUnfreeze 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 工作表切换相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSheetSwitch 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 排序相关钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SORT]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSort 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SORT_RESTORE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSortRestore 执行了&quot;, ...args);
-        // },
-        //
-        // // ==================== 生命周期钩子 ====================
-        // // ✅ 已执行
-        // [HOOKS.INIT]: (...args) => {
-        //     console.log(&quot;[HOOK] init 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.DESTROY]: (...args) => {
-        //     console.log(&quot;[HOOK] destroy 执行了&quot;, ...args);
-        // },
-        // ==================== 工作表相关钩子 ====================
-        // ✅ 已执行
-        // [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeSheetRename 执行了&quot;, ...args);
-        //     return true;
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSheetRename 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_SHEET_ADD]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeSheetAdd 执行了&quot;, ...args);
-        //     return true;
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SHEET_ADD]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSheetAdd 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_SHEET_REMOVE]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeSheetRemove 执行了&quot;, ...args);
-        //     return true;
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SHEET_REMOVE]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSheetRemove 执行了&quot;, ...args);
-        // },
-        // // ✅ 已执行
-        // [HOOKS.BEFORE_SHEET_SWITCH]: (...args) => {
-        //     console.log(&quot;[HOOK] beforeSheetSwitch 执行了&quot;, ...args);
-        //     return true;
-        // },
-        // // ✅ 已执行
-        // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
-        //     console.log(&quot;[HOOK] afterSheetSwitch 执行了&quot;, ...args);
-        //     return true;
-        // },
+        
     },
     afterInit(wb) {
         const s2 = wb.sheets.get(&quot;Sheet2&quot;);
@@ -1073,79 +1177,112 @@ const wb = new Workbook('canvas', {
 
 </code></pre>
 <h4>2️⃣ 自定义公式函数</h4>
-<pre class="prettyprint source lang-javascript"><code>import { registerFunction, FUNCTION_CATEGORY } from '@canvas-sheet/core';
+<pre class="prettyprint source lang-javascript"><code>import { functionRegistry, FUNCTION_CATEGORY } from '@canvas-sheet/core';
 
 // 注册税率计算函数
-registerFunction('TAX', (args, context) => {
+functionRegistry.register('TAX', (args, context) => {
     const amount = args[0];  // 金额
     const rate = args[1] || 0.13;  // 税率 (默认13%)
     return amount * rate;
 }, { category: FUNCTION_CATEGORY.CUSTOM });
-
-// 使用
-workbook.setCellValue(0, 0, 1000);  // 金额
-workbook.setCellValue(0, 1, '=TAX(A0)');  // 计算: 130
 </code></pre>
 <h4>3️⃣ 事件驱动编程</h4>
 <pre class="prettyprint source lang-javascript"><code>const wb = new Workbook(container);
-
-// 监听单元格变化
-wb.on('cell:change', ({ row, col, oldValue, newValue }) => {
-    console.log(`[${row},${col}]: ${oldValue} → ${newValue}`);
+wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
+    if (!e.ctrlKey && !e.metaKey) return;
+    const sheet = wb.activeSheet;
+    const cell = sheet.cellStore.get(row, col);
+    if (cell?.value && isUrl(cell.value)) {
+        const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
+        if (canOpen === false) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+        openUrl(cell.value);
+        wb.runHooks(HOOKS.AFTER_OPEN_URL, row, col, cell.value);
+        e.preventDefault();
+        e.stopPropagation();
+    }
 });
 
-// 监听选择变化
-wb.on('selection:change', (range) => {
-    console.log('当前选择:', range);
-});
-
-// 监听公式计算错误
-wb.on('formula:error', ({ cell, error }) => {
-    alert(`公式错误 @${cell}: ${error.message}`);
-});
 </code></pre>
 <h4>4️⃣ 条件格式</h4>
 <pre class="prettyprint source lang-javascript"><code>// 设置条件格式规则
-workbook.setConditionalFormat({
-    range: { startRow: 0, endRow: 100, startCol: 0, endCol: 5 },
-    rules: [
-        {
-            condition: 'greaterThan',
-            value: 90,
-            style: { backgroundColor: '#4caf50', color: '#fff' },
-        },
-        {
-            condition: 'between',
-            values: [60, 89],
-            style: { backgroundColor: '#ff9800' },
-        },
-        {
-            condition: 'lessThan',
-            value: 60,
-            style: { backgroundColor: '#f44336', color: '#fff' },
-        }
-    ]
-});
+new Workbook(container, {
+    sheets:{
+        conditionalStyles: [
+            {
+                range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                condition: (v) => isNumber(v) && v > 25,
+                style: { backgroundColor: &quot;#ffcccc&quot; },
+            },
+        ],
+    }
+})
 </code></pre>
 <h4>5️⃣ 数据验证</h4>
-<pre class="prettyprint source lang-javascript"><code>// 必填 + 唯一性验证
-workbook.setColumnDefinition(0, {
-    type: 'text',
-    header: 'ID',
-    validators: [
-        { type: 'required', message: '此字段为必填项' },
-        { type: 'unique', message: 'ID 不能重复' }
-    ]
-});
+<pre class="prettyprint source lang-javascript"><code>new Workbook(container, {
+    plugins: [
+        &quot;autoFill&quot;,
+        &quot;contextMenu&quot;,
+        &quot;columnMove&quot;,
+        &quot;copyPaste&quot;,
+        &quot;exportFile&quot;,
+        &quot;hiddenColumns&quot;,
+        &quot;hiddenRows&quot;,
+        &quot;rowMove&quot;,
+        &quot;freeze&quot;,
+        &quot;formula&quot;,
+        &quot;sort&quot;,
+        &quot;dataValidation&quot;,
+    ],
+    pluginOptions: {
+        dataValidation: {
+            conflictStrategy: &quot;short-circuit&quot;,
+            rules: [
+                {
+                    range: &quot;B:B&quot;,
+                    type: &quot;number&quot;,
+                    operator: &quot;between&quot;,
+                    value: [0, 100],
+                    errorMessage: &quot;必须输入正数&quot;,
+                    errorStyle: &quot;stop&quot;,
+                },
 
-// 数值范围验证
-workbook.setColumnDefinition(1, {
-    type: 'numeric',
-    header: '年龄',
-    validators: [
-        { type: 'range', min: 18, max: 65, message: '年龄必须在 18-65 之间' }
-    ]
-});
+                {
+                    range: &quot;A:A&quot;,
+                    type: &quot;text&quot;,
+                    operator: &quot;greaterThan&quot;,
+                    value: 5,
+                    errorMessage: &quot;必须输入正数&quot;,
+                    errorStyle: &quot;stop&quot;,
+                },
+
+                {
+                    range: &quot;C:C&quot;,
+                    type: &quot;time&quot;,
+                    operator: &quot;between&quot;,
+                    value: [&quot;09:00&quot;, &quot;18:00&quot;],
+                    errorMessage: &quot;必须输入正数&quot;,
+                    errorStyle: &quot;stop&quot;,
+                },
+                {
+                    range: &quot;D:D&quot;,
+                    type: &quot;unique&quot;,
+                },
+                {
+                    range: &quot;G:G&quot;,
+                    type: &quot;date&quot;,
+                    operator: &quot;between&quot;,
+                    value: [&quot;01/01/2020&quot;, &quot;12/31/2020&quot;],
+                    errorMessage: &quot;必须输入正数&quot;,
+                    errorStyle: &quot;stop&quot;,
+                },
+            ],
+        },
+    },
+})
 </code></pre>
 </details>
 <hr>
@@ -2000,12 +2137,10 @@ if (user.hasPermission('audit')) {
     enableAuditLog();
 }
 </code></pre>
-<h4><strong>批量清理钩子</strong></h4>
+<h4><strong>清理钩子</strong></h4>
 <pre class="prettyprint source lang-javascript"><code>// 清理某个钩子的所有监听器
 wb.clearHook(HOOKS.ON_CELL_CLICK);
 
-// 清理所有钩子（慎用！通常在销毁组件时使用）
-wb.clearAllHooks();
 
 // 检查是否有特定钩子
 if (wb.hasHook(HOOKS.BEFORE_CHANGE)) {
@@ -2062,50 +2197,55 @@ if (wb.hasHook(HOOKS.BEFORE_CHANGE)) {
 <h3>🔌 插件开发指南</h3>
 <pre class="prettyprint source lang-javascript"><code>import { BasePlugin, HOOKS } from '@canvas-sheet/core';
 
-class MyCustomPlugin extends BasePlugin {
-    constructor() {
-        super('my-custom-plugin');
+export class AutoFillPlugin extends BasePlugin {
+    static get PLUGIN_NAME() {
+        return &quot;autoFill&quot;;
     }
+
+    /** @type {AutoFillStrategy|null} */
+    #strategy = null;
 
     /**
-     * 插件初始化钩子
+     * 初始化自动填充插件
+     * 注册 AutoFillStrategy 到事件处理器
+     *
+     * @param {object} options - 插件配置
+     * @param {boolean} [options.enabled=true] - 是否默认启用
      */
-    init(workbook) {
-        this.workbook = workbook;
-        
-        // 注册生命周期钩子
-        this.registerHook(HOOKS.WORKBOOK.AFTER_CREATE, this.onAfterCreate.bind(this));
-        this.registerHook(HOOKS.CELL.BEFORE_CHANGE, this.onBeforeChange.bind(this));
-        
-        // 注册快捷键
-        this.registerShortcut('ctrl+shift+s', () => this.handleSave());
-        
-        console.log('[MyPlugin] ✓ 初始化完成');
-    }
+    init(options = {}) {
+        super.init(options);
 
-    onAfterCreate(workbook) {
-        // 工作簿创建后的逻辑
-        this.addToolbarButton();
-    }
+        this.#strategy = new AutoFillStrategy(this.eventHandler);
+        this.addStrategy(&quot;autoFill&quot;, this.#strategy);
 
-    onBeforeChange({ row, col, oldValue, newValue }, cancel) {
-        // 可以阻止修改
-        if (this.isProtected(row, col)) {
-            cancel();
-            this.showWarning('该单元格受保护');
+        if (options.enabled === false) {
+            this.disable();
         }
     }
 
-    handleSave() {
-        const data = this.workbook.exportToCSV();
-        localStorage.setItem('spreadsheet-data', data);
-        this.showToast('保存成功！');
+    /**
+     * 销毁插件
+     * 策略会由基类 removeOwnStrategies() 自动清理
+     */
+    destroy() {
+        this.#strategy = null;
+        super.destroy();
     }
 
-    destroy() {
-        // 清理资源
-        this.unregisterAllHooks();
-        this.unregisterAllShortcuts();
+    /**
+     * 启用自动填充
+     */
+    enable() {
+        super.enable();
+        this.#strategy?.enable();
+    }
+
+    /**
+     * 禁用自动填充
+     */
+    disable() {
+        super.disable();
+        this.#strategy?.disable();
     }
 }
 
@@ -2492,7 +2632,7 @@ limitations under the License.
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Tue Jul 07 2026 17:04:05 GMT+0800 (中国标准时间)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Jul 08 2026 09:33:10 GMT+0800 (中国标准时间)
 </footer>
 
 <script> prettyPrint(); </script>

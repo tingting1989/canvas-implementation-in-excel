@@ -106,14 +106,40 @@ npm install @canvas-sheet/core
                 fontFamily: 'Microsoft YaHei'
             }
         });
+        const sheet = workbook.activeSheet;
+        
+        // 禁用单元格
+        sheet.disableCell(1, 0);
+        
+        // 启用
+        sheet.enableCell(1, 0);
 
-        // 设置单元格值
-        workbook.setCellValue(0, 0, 'Hello Canvas!');
-        workbook.setCellValue(1, 0, 42);
-        workbook.setCellValue(2, 0, '=A1 & " | Count: " & A2');
+        // 设置样式
+        sheet.setCellStyle(1,,0 , {
+            color: 'red',
+            fontWeight: 'bold',
+            textAlign: 'center'
+            fontStyle: 'italic'
+            backgroundColor: '#fff'
+        });
+        // 或者
+        workbook.setCellStyle(row, col, {
+            color: 'red',
+            fontWeight: 'bold',
+            textAlign: 'center'
+            fontStyle: 'italic'
+            backgroundColor: '#fff'
+        });
+        // 设置文本值
+        sheet.setCell(0, 0, 'Hello World');
 
-        console.log(workbook.getCellValue(2, 0)); 
-        // 输出: "Hello Canvas! | Count: 42"
+        // 设置数值
+        sheet.setCell(2, 0, 42);
+
+        // 设置公式（以 = 开头）
+        sheet.setCell(4, 0, '=SUM(A1:A10)');           // 求和
+        sheet.setCell(5, 0, '=AVERAGE(B1:B100)');      // 平均值
+        sheet.setCell(6, 0, '=IF(C1>100,"High","Low")'); // 条件
     </script>
 </body>
 </html>
@@ -143,14 +169,12 @@ const wb = new Workbook(container, {
 });
 
 // 批量填充数据
-for (let row = 0; row < 1000; row++) {
-    for (let col = 0; col < 10; col++) {
-        wb.setCellValue(row, col, Math.random() * 100);
-    }
-}
+wb.activeSheet.loadData([
+    ["姓名", "年龄", "green"],
+    ["张三", 30, "yellow"],
+    ["李四", 25, "red"],
+]);
 
-// 使用公式
-wb.setCellValue(0, 11, '=SUM(A1:J1000)');  // 自动求和
 ```
 
 ---
@@ -306,65 +330,429 @@ const wb = new Workbook(document.getElementById('container'), options);
 
 ### 📘 Workbook 类 - 工作簿核心
 
-```javascript
-class Workbook {
-    constructor(
-        HTMLElement,
-         WorkbookOptions
-    );
+> **顶层管理对象**，作为 Facade 协调 Sheet、RenderEngine、EventHandler、EditorManager、PluginManager 等子系统。
+>
+> 对齐 Handsontable 的 `new Handsontable(container, options)` 模式。
 
-    // ========== 单元格操作 ==========
-    setCellValue(row: number, col: number, value: any): void;
-    getCellValue(row: number, col: number): any;
-    getCellDisplayValue(row: number, col: number): string;
-    
-    // ========== 选择操作 ==========
-    selectCell(row: number, col: number): void;
-    selectRange(startRow: number, startCol: number, endRow: number, endCol: number): void;
-    getSelectedRange(): Range | null;
-    
-    // ========== 列定义 ==========
-    setColumnDefinition(colIndex: number, definition: ColumnDefinition): void;
-    getColumnDefinition(colIndex: number): ColumnDefinition | undefined;
-    
-    // ========== 工作表管理 ==========
-    addSheet(name?: string): Sheet;
-    removeSheet(sheetId: string): boolean;
-    setActiveSheet(sheetId: string): void;
-    
-    // ========== 事件监听 ==========
-    on(event: string, handler: Function): void;
-    off(event: string, handler: Function): void;
-    
-    // ========== 导出 ==========
-    exportToCSV(options): string;
-    exportToExcel(option): Blob;
-}
+#### 📌 构造函数
+
+```javascript
+/**
+ * @param {HTMLElement|string} element - 容器元素或 Canvas 元素 ID
+ * @param {object} [options={}] - 配置选项
+ */
+new Workbook(element, options)
 ```
 
-### 📗 配置选项 (WorkbookOptions)
+#### 🔧 静态方法：全局插件注册
+
+```javascript
+// 全局注册插件类（统一注册源）
+Workbook.registerPlugin(name, PluginClass);
+
+// 全局注销插件类
+Workbook.unregisterPlugin(name);
+```
+
+#### 🔌 插件委托方法
+
+```javascript
+// 加载已注册的插件（按名称）
+workbook.loadPlugin(name, options);
+
+// 直接加载插件类
+workbook.loadPluginClass(PluginClass, options);
+
+// 卸载插件
+workbook.unloadPlugin(name);
+
+// 获取插件实例
+workbook.getPlugin(name);
+
+// 启用/禁用插件
+workbook.enablePlugin(name);
+workbook.disablePlugin(name);
+```
+
+#### ⚙️ 初始化与生命周期
+
+```javascript
+// 初始化渲染引擎、编辑器、事件处理、插件系统（延迟初始化）
+workbook.initRender();
+
+// 销毁所有资源（必须在移除 DOM 前调用）
+workbook.destroy();
+```
+
+#### 📑 工作表管理
+
+```javascript
+// 添加工作表
+const sheet = workbook.addSheet(name);
+
+// 删除工作表（至少保留一个）
+const success = workbook.removeSheet(name);
+
+// 重命名工作表
+const success = workbook.renameSheet(oldName, newName);
+
+// 切换到指定工作表
+workbook.switchTo(name);
+
+// 获取当前活动工作表
+const sheet = workbook.getActiveSheet();
+```
+
+#### 🎨 渲染控制
+
+```javascript
+// 重新渲染当前活动工作表
+workbook.render();
+```
+
+#### 📋 剪贴板操作（委托到 CopyPastePlugin）
+
+```javascript
+// 复制当前选区
+workbook.copy();
+
+// 粘贴到当前选区
+workbook.paste();
+```
+
+#### ↩️ 撤销/重做
+
+```javascript
+// 撤销
+workbook.undo();
+
+// 重做
+workbook.redo();
+```
+
+#### 📊 单元格操作
+
+```javascript
+// 禁用/启用单元格
+workbook.disableCell();
+workbook.enableCell();
+
+// 合并/取消合并单元格
+workbook.mergeCells(topRow, topCol, bottomRow, bottomCol);
+workbook.unmergeCells();
+
+// 插入/删除行和列
+// atRow:第几行
+// atCol:第几列
+workbook.insertRow(atRow);
+workbook.insertCol(atCol);
+workbook.deleteRow(atRow);
+workbook.deleteCol(atCol);
+```
+
+
+#### 🎯 钩子系统（Hooks）（委托到 EventHandler，支持 Early Hooks）
+
+```javascript
+// 添加钩子监听器（eventHandler 创建前会缓存）
+workbook.addHook(hookName, callback);
+
+// 添加一次性钩子监听器
+workbook.addHookOnce(hookName, callback);
+
+// 移除钩子监听器
+workbook.removeHook(hookName, callback);
+
+// 清空指定钩子的所有监听器
+workbook.clearHook(hookName);
+
+// 检查是否有指定钩子的监听器
+const exists = workbook.hasHook(hookName);
+
+// 触发所有监听器
+workbook.runHooks(hookName, ...args);
+
+// 触发监听器直到返回 false
+workbook.runHooksUntil(hookName, ...args);
+```
+
+#### 💅 样式操作
+
+```javascript
+// 更新配置（对齐 Handsontable 的 updateSettings API）
+workbook.updateSettings(settings);
+
+// 单元格样式
+
+const style = workbook.getCellStyle(row, col);
+workbook.clearCellStyle(row, col);
+
+// 范围样式
+workbook.setRangeStyle(range, styleObj);
+workbook.clearRangeStyle(range);
+
+// 行列样式
+workbook.setRowStyle(row, styleObj);
+workbook.setColStyle(col, styleObj);
+workbook.clearRowStyle(row);
+workbook.clearColStyle(col);
+
+// 默认样式（全局基础）
+workbook.setDefaultStyle(styleObj);  // 所有 Sheet 继承
+const defaultStyle = workbook.getDefaultStyle();
+
+// 批量样式更新（性能优化）
+workbook.batchStyleUpdate(fn);
+```
+
+#### 📤 导出功能（委托到 exportFile 插件）
+
+```javascript
+// 导出为字符串
+const csvString = workbook.exportAsString('csv', options);
+
+// 导出为 Blob 对象
+const blob = workbook.exportAsBlob('xlsx', options);
+
+// 直接触发下载
+workbook.downloadFile('csv', options);
+```
+
+#### 🏷️ 公共属性
+
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| `sheets` | `Map<string, Sheet>` | 所有工作表的 Map |
+| `activeSheet` | `Sheet\|null` | 当前活动的工作表 |
+| `clipboard` | `ClipboardManager\|null` | 剪贴板管理器（由 CopyPastePlugin 注入） |
+| `renderEngine` | `RenderEngine\|null` | 渲染引擎实例 |
+| `editor` | `EditorManager\|null` | 编辑器管理器 |
+| `eventHandler` | `EventHandler\|null` | 事件处理器 |
+| `pluginManager` | `PluginManager\|null` | 插件管理器 |
+| `formulaEngine` | `FormulaEngine\|null` | 公式引擎（由 FormulaPlugin 注入） |
+| `formulaBar` | `FormulaBarManager\|null` | 公式栏管理器（由 FormulaPlugin 注入） |
+
+### 📗 配置选项
+
+#### 🔹 Workbook 级别配置（WorkbookOptions）
+
+> 以下配置项作用于 **Workbook 全局**，或作为**默认值**应用到所有 Sheet。
 
 ```typescript
 interface WorkbookOptions {
-    // 尺寸设置
-    width?: number;              // 容器宽度 (px)
-    height?: number;             // 容器高度 (px)
-    startRows?: number;          // 初始行数 (默认: 100)
-    startCols?: number;          // 初始列数 (默认: 26)
+    // ========== 尺寸设置（Workbook 全局）==========
+    width?: number;                              // 画布宽度（px），默认自适应容器
+    height?: number;                             // 画布高度（px），默认自适应容器
     
-    // 默认样式
-    defaultStyle?: CellStyle;    // 单元格默认样式
+    // ========== 工作表配置 ==========
+    sheetName?: string;                          // 初始工作表名称（默认: 'Sheet1'）
+    sheets?: SheetConfig[];                      // 多工作表配置数组（推荐使用）
     
-    // 功能开关
-    readOnly?: boolean;          // 只读模式
-    enableFormulas?: boolean;    // 启用公式 (默认: true)
-    enablePlugins?: PluginConfig; // 插件配置
+    // ========== 全局默认样式 ==========
+    defaultStyle?: CellStyle;                    // 单元格默认样式（所有 Sheet 继承的基础样式）
     
-    // 性能调优
-    tileWidth?: number;          // 瓦片宽度 (默认: 200)
-    tileHeight?: number;         // 瓦片高度 (默认: 200)
-    maxCacheSize?: number;       // 最大缓存数量 (默认: 100)
+    // ========== 插件系统（Workbook 全局）==========
+    plugins?: string[];                          // 要加载的插件名称列表
+    pluginOptions?: { [pluginName: string]: any }; // 插件选项映射 { pluginName: options }
+    
+    // ========== 钩子系统（Workbook 全局）==========
+    hooks?: { [hookName: string]: Function };    // 事件钩子映射 { hookName: callback }
+    
+    // ========== 生命周期回调 ==========
+    afterInit?: Function;                        // 初始化完成回调 (workbook) => void
 }
+```
+
+#### 🔸 Sheet 级别配置（SheetConfig）
+
+> ⚠️ **重要：** 以下配置项属于**具体某个 Sheet** 的配置，建议放在 `sheets` 数组的每个 sheet 对象中。
+>
+> 如果直接放在顶层 `options` 中，将作为**默认值**应用到所有 Sheet。
+
+```typescript
+interface SheetConfig {
+    // ========== 基础信息 ==========
+    name?: string;                               // 工作表名称（默认自动生成 'SheetN'）
+    
+    // ========== 数据初始化 ==========
+    data?: Array<Array<any>>;                    // 初始数据（二维数组）
+    
+    // ========== 行列配置 ==========
+    startRows?: number;                          // 初始行数（默认: 100）
+    startCols?: number;                          // 初始列数（默认: 26）
+    maxRows?: number;                            // 最大行数限制（超过则忽略新增）
+    maxCols?: number;                            // 最大列数限制（超过则忽略新增）
+    rowHeights?: number | number[];              // 行高配置
+    colWidths?: number | number[];               // 列宽配置
+    
+    // ========== 表头配置 ==========
+    colHeaders?: true | string[] | Function;     // 列头标签（默认: true）
+    rowHeaders?: true | string[] | Function;     // 行头标签（默认: true）
+    headerHeight?: number;                       // 表头高度
+    rowHeaderWidth?: number;                     // 行头宽度
+    nestedHeaders?: Array<Array<{                // 嵌套表头配置
+        label: string;
+        colspan?: number;
+        rowspan?: number;
+        style?: object;
+    }>>;
+    
+    // ========== 样式配置 ==========
+    defaultStyle?: CellStyle;                    // 该 Sheet 的默认样式（覆盖 Workbook 级别）
+    rowStyles?: Array<object>;                   // 行样式数组
+    colStyles?: Array<object>;                   // 列样式数组
+    rangeStyles?: Array<object>;                 // 区域样式数组
+    
+    // ========== 单元格配置 ==========
+    cell?: Array<{
+        row: number;
+        col: number;
+        style?: object;
+        disabled?: boolean;
+        readOnly?: boolean;
+        value?: any;
+    }>;                                         // 静态单元格配置
+    cells?: Function;                            // 动态单元格属性函数 (row, col) => { style?, disabled?, ... }
+    
+    // ========== 合并单元格 ==========
+    mergeCells?: Array<{
+        row: number;
+        col: number;
+        rowspan: number;
+        colspan: number;
+    }>;
+    
+    // ========== 条件格式 ==========
+    conditionalStyles?: Array<{
+        range: object;
+        condition: Function;
+        style: object;
+    }>;
+    
+    // ========== 列定义 ==========
+    columns?: Array<object | Function>;          // 列配置数组
+    
+    // ========== 冻结窗格 ==========
+    fixedRowsTop?: number;                       // 固定顶部行数
+    fixedColumnsStart?: number;                  // 固定左侧列数
+    
+    // ========== 渲染配置 ==========
+    cellPadding?: number;                        // 单元格内边距
+    textOverflowEllipsis?: boolean;              // 文本溢出显示省略号
+    
+    // ========== 功能开关 ==========
+    readOnly?: boolean;                          // 只读模式
+}
+```
+
+#### 📊 配置优先级说明
+
+```
+┌─────────────────────────────────────────┐
+│  Workbook.defaultStyle (全局基础 - 最低优先级) │
+└─────────────────────┬───────────────────┘
+                      ↓
+┌─────────────────────────────────────────┐
+│   Sheet.defaultStyle (Sheet 级别 - 中等)    │
+└─────────────────────┬───────────────────┘
+                      ↓
+┌─────────────────────────────────────────┐
+│  rangeStyles / cell / cells (最高优先级)  │
+└─────────────────────────────────────────┘
+```
+
+当同一属性在多个层级都有配置时，**越具体的配置优先级越高**。
+
+---
+
+#### 📝 使用示例
+
+```javascript
+import { Workbook } from '@canvas-sheet/core';
+
+const workbook = new Workbook(document.getElementById('container'), {
+    // ✅ Workbook 级别配置（全局）
+    width: window.innerWidth,
+    height: window.innerHeight,
+    
+    // 全局默认样式（所有 Sheet 继承的基础）
+    defaultStyle: {
+        fontSize: 13,
+        fontFamily: 'Arial',
+        textAlign: 'left',
+        color: '#333'
+    },
+    
+    // 加载插件（全局）
+    plugins: ['freeze', 'sort', 'filter', 'autoFill'],
+    pluginOptions: {
+        freeze: { fixedRowsTop: 2, fixedColsLeft: 1 }
+    },
+    
+    // 推荐方式：使用 sheets 数组配置每个 Sheet
+    sheets: [
+        {
+            name: 'Sheet1',
+            
+            // ✅ Sheet 级别配置
+            startRows: 100,
+            startCols: 26,
+            
+            // 表头配置
+            colHeaders: true,
+            rowHeaders: true,
+            
+            // 该 Sheet 的默认样式（会合并全局 defaultStyle）
+            defaultStyle: {
+                backgroundColor: '#fff'
+            },
+            
+            // 初始数据
+            data: [
+                ['姓名', '年龄', '城市'],
+                ['张三', 25, '北京'],
+                ['李四', 30, '上海']
+            ],
+            
+            // 合并单元格
+            mergeCells: [
+                { row: 0, col: 0, rowspan: 1, colspan: 3 }
+            ],
+            
+            // 单元格配置
+            cell: [
+                { row: 1, col: 0, value: '张三', readOnly: true },
+                { row: 1, col: 1, value: 25, style: { color: 'blue' } }
+            ]
+        },
+        {
+            name: '数据统计',
+            
+            // 另一个 Sheet 可以有完全不同的配置
+            startRows: 50,
+            startCols: 10,
+            readOnly: true,
+            
+            data: [
+                ['项目', '数值'],
+                ['总计', '=SUM(Sheet1!B:B)']
+            ]
+        }
+    ],
+    
+    // 初始化完成回调
+    afterInit: (workbook) => {
+        console.log('准备就绪！', workbook);
+        
+        // 添加自定义钩子
+        workbook.addHook('afterSelection', (row, col) => {
+            console.log(`选中单元格: ${row}, ${col}`);
+        });
+    }
+});
+
+// 必须调用 initRender() 完成初始化
+workbook.initRender();
 ```
 
 ### 📙 示例代码库
@@ -794,18 +1182,14 @@ const wb = new Workbook('canvas', {
 #### 2️⃣ 自定义公式函数
 
 ```javascript
-import { registerFunction, FUNCTION_CATEGORY } from '@canvas-sheet/core';
+import { functionRegistry, FUNCTION_CATEGORY } from '@canvas-sheet/core';
 
 // 注册税率计算函数
-registerFunction('TAX', (args, context) => {
+functionRegistry.register('TAX', (args, context) => {
     const amount = args[0];  // 金额
     const rate = args[1] || 0.13;  // 税率 (默认13%)
     return amount * rate;
 }, { category: FUNCTION_CATEGORY.CUSTOM });
-
-// 使用
-workbook.setCellValue(0, 0, 1000);  // 金额
-workbook.setCellValue(0, 1, '=TAX(A0)');  // 计算: 130
 ```
 
 #### 3️⃣ 事件驱动编程
@@ -1275,14 +1659,12 @@ if (user.hasPermission('audit')) {
 }
 ```
 
-#### **批量清理钩子**
+#### **清理钩子**
 
 ```javascript
 // 清理某个钩子的所有监听器
 wb.clearHook(HOOKS.ON_CELL_CLICK);
 
-// 清理所有钩子（慎用！通常在销毁组件时使用）
-wb.clearAllHooks();
 
 // 检查是否有特定钩子
 if (wb.hasHook(HOOKS.BEFORE_CHANGE)) {
@@ -1312,50 +1694,55 @@ if (wb.hasHook(HOOKS.BEFORE_CHANGE)) {
 ```javascript
 import { BasePlugin, HOOKS } from '@canvas-sheet/core';
 
-class MyCustomPlugin extends BasePlugin {
-    constructor() {
-        super('my-custom-plugin');
+export class AutoFillPlugin extends BasePlugin {
+    static get PLUGIN_NAME() {
+        return "autoFill";
     }
+
+    /** @type {AutoFillStrategy|null} */
+    #strategy = null;
 
     /**
-     * 插件初始化钩子
+     * 初始化自动填充插件
+     * 注册 AutoFillStrategy 到事件处理器
+     *
+     * @param {object} options - 插件配置
+     * @param {boolean} [options.enabled=true] - 是否默认启用
      */
-    init(workbook) {
-        this.workbook = workbook;
-        
-        // 注册生命周期钩子
-        this.registerHook(HOOKS.WORKBOOK.AFTER_CREATE, this.onAfterCreate.bind(this));
-        this.registerHook(HOOKS.CELL.BEFORE_CHANGE, this.onBeforeChange.bind(this));
-        
-        // 注册快捷键
-        this.registerShortcut('ctrl+shift+s', () => this.handleSave());
-        
-        console.log('[MyPlugin] ✓ 初始化完成');
-    }
+    init(options = {}) {
+        super.init(options);
 
-    onAfterCreate(workbook) {
-        // 工作簿创建后的逻辑
-        this.addToolbarButton();
-    }
+        this.#strategy = new AutoFillStrategy(this.eventHandler);
+        this.addStrategy("autoFill", this.#strategy);
 
-    onBeforeChange({ row, col, oldValue, newValue }, cancel) {
-        // 可以阻止修改
-        if (this.isProtected(row, col)) {
-            cancel();
-            this.showWarning('该单元格受保护');
+        if (options.enabled === false) {
+            this.disable();
         }
     }
 
-    handleSave() {
-        const data = this.workbook.exportToCSV();
-        localStorage.setItem('spreadsheet-data', data);
-        this.showToast('保存成功！');
+    /**
+     * 销毁插件
+     * 策略会由基类 removeOwnStrategies() 自动清理
+     */
+    destroy() {
+        this.#strategy = null;
+        super.destroy();
     }
 
-    destroy() {
-        // 清理资源
-        this.unregisterAllHooks();
-        this.unregisterAllShortcuts();
+    /**
+     * 启用自动填充
+     */
+    enable() {
+        super.enable();
+        this.#strategy?.enable();
+    }
+
+    /**
+     * 禁用自动填充
+     */
+    disable() {
+        super.disable();
+        this.#strategy?.disable();
     }
 }
 
