@@ -831,5 +831,3 @@ class FunctionRegistry {
  * ```
  */
 export const registry = new FunctionRegistry();
-
-
