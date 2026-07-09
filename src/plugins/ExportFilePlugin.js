@@ -847,15 +847,14 @@ function getMergedCellStyle(sheet, row, col) {
     }
 
     // 检查条件格式样式
-    if (styleId === null && typeof sheet.hasConditionalRules === 'function' && sheet.hasConditionalRules()) {
+    if (styleId === null && typeof sheet.hasConditionalRules === "function" && sheet.hasConditionalRules()) {
         try {
             const conditionalStyleId = sheet.matchConditionalStyle(row, col, cell);
             if (conditionalStyleId !== null) {
                 styleId = conditionalStyleId;
             }
         } catch (error) {
-            errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                `获取条件格式样式失败 (${row},${col})`, {error});
+            errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取条件格式样式失败 (${row},${col})`, { error });
         }
     }
 
@@ -1026,7 +1025,7 @@ function writeNestedHeaders({ worksheet, sheet, opts, range }) {
  * @param {number} context.startRow - 起始写入行号（Excel 行号，1-based）
  * @returns {number} 下一行应写入的行号
  */
-function writeColumnHeaders({worksheet, sheet, opts, range, startRow}) {
+function writeColumnHeaders({ worksheet, sheet, opts, range, startRow }) {
     if (!opts.columnHeaders) return startRow;
 
     const headerRow = worksheet.getRow(startRow + 1);
@@ -1048,8 +1047,7 @@ function writeColumnHeaders({worksheet, sheet, opts, range, startRow}) {
                 try {
                     customStyle = stylePool.getStyle(colStyleId);
                 } catch (error) {
-                    errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                        `获取列头样式失败 (col: ${c}, styleId: ${colStyleId})`, {error});
+                    errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列头样式失败 (col: ${c}, styleId: ${colStyleId})`, { error });
                 }
             }
 
@@ -1117,22 +1115,21 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
 
             if (opts.cellStyles) {
                 // 检查单元格是否被禁用或只读
-                const isDisabled = typeof sheet.isDisabled === 'function' && sheet.isDisabled(r, c);
+                const isDisabled = typeof sheet.isDisabled === "function" && sheet.isDisabled(r, c);
 
                 if (isDisabled) {
-
                     // 应用禁用/只读样式（灰色背景）
                     excelCell.fill = {
                         type: "pattern",
                         pattern: "solid",
 
                         // 浅灰色背景
-                        fgColor: {argb: "F2F2F2"},
-                        bgColor: {argb: "F2F2F2"},
+                        fgColor: { argb: "F2F2F2" },
+                        bgColor: { argb: "F2F2F2" },
                     };
 
                     // 灰色文字
-                    excelCell.font = {color: {argb: "999999"}};
+                    excelCell.font = { color: { argb: "999999" } };
                 }
 
                 // 获取合并样式（包含条件格式样式）
@@ -1144,7 +1141,7 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
                 }
 
                 // 如果没有其他样式，检查 resolveCellProperties
-                if (!isDisabled && !mergedStyle && typeof sheet.resolveCellProperties === 'function') {
+                if (!isDisabled && !mergedStyle && typeof sheet.resolveCellProperties === "function") {
                     try {
                         const cellProps = sheet.resolveCellProperties(r, c);
                         if (cellProps?.style) {
@@ -1152,8 +1149,7 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
                             Object.assign(excelCell, propsStyle);
                         }
                     } catch (error) {
-                        errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                            `获取单元格属性失败 (${r},${c})`, {error});
+                        errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取单元格属性失败 (${r},${c})`, { error });
                     }
                 }
             }
