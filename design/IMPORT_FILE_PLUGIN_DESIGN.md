@@ -435,21 +435,26 @@ async importFromFile(file: File, options?: ImportFileOptions): Promise<ImportRes
 #### **外部使用方式对比**
 
 ```javascript
-// ✅ 方式1：使用便捷方法（内部调用addHook）
-const wb = new Workbook(document.getElementById("wrap"), {
-    hooks: {
-        onImportProgress: (progress) => {}
-    }
-})
 
-// ✅ 方式2：直接使用addHook（更灵活）
-wb.addHook('onImportProgress', (progress) => {
-    console.log('进度:', progress);
+import { HOOKS } from '../../src/constants/hookNames.js';
+// 方式一：通过插件方法（内部自动使用 HOOKS.IMPORT_PROGRESS）
+plugin.onImportProgress(callback);
+
+// 方式二：直接使用全局 Hook（推荐）
+wb.addHook(HOOKS.IMPORT_PROGRESS, (progress) => {
+    console.log(`${progress.percent}%`);
 });
 
-// ✅ 方式3：一次性监听（导入完成后自动移除）
-wb.addHookOnce('onImportComplete', (result) => {
-    alert(`导入完成！共${result.rowCount}行`);
+// Workbook 初始化时配置
+const wb = new Workbook(el, {
+    hooks: {
+        [HOOKS.IMPORT_BEFORE_IMPORT]: (preview) => {
+            return confirm('确定导入吗？');
+        },
+        [HOOKS.IMPORT_COMPLETE]: (result) => {
+            alert(`成功！${result.rowCount} 行`);
+        }
+    }
 });
 
 ```

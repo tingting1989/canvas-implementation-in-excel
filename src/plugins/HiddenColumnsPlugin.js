@@ -14,7 +14,7 @@
  * ```
  */
 import { BaseHidePlugin } from "./BaseHidePlugin.js";
-import { HOOKS } from "../constants/hookNames.js";
+import { HOOKS } from "@/constants/hookNames";
 
 export class HiddenColumnsPlugin extends BaseHidePlugin {
     static get PLUGIN_NAME() {

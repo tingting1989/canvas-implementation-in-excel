@@ -8,6 +8,7 @@ export { ColumnMovePlugin } from "./ColumnMovePlugin.js";
 export { ContextMenuPlugin } from "./ContextMenuPlugin.js";
 export { CopyPastePlugin } from "./CopyPastePlugin.js";
 export { ExportFilePlugin } from "./ExportFilePlugin.js";
+export { ImportFilePlugin } from "./ImportFilePlugin.js";
 export { HiddenColumnsPlugin } from "./HiddenColumnsPlugin.js";
 export { HiddenRowsPlugin } from "./HiddenRowsPlugin.js";
 export { RowMovePlugin } from "./RowMovePlugin.js";

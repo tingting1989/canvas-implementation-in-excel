@@ -25,6 +25,8 @@ export { EventStrategy } from "../editor/strategies/EventStrategy.js";
 export { CellEditor } from "../editor/editors/CellEditor.js";
 export { BasePlugin } from "../plugins/BasePlugin.js";
 export { PluginManager } from "../plugins/PluginManager.js";
+export { ImportFilePlugin } from "../plugins/ImportFilePlugin.js";
+export { ExportFilePlugin } from "../plugins/ExportFilePlugin.js";
 export { WebComponent } from "../core/WebComponent.js";
 export { DOMComponent } from "../core/DOMComponent.js";
 export { Disposable } from "../core/Disposable.js";

@@ -166,6 +166,28 @@ export const ERROR_CODE = Object.freeze({
     /** 导出功能 - 文件生成失败 */
     EXPORT_FILE_GENERATE_FAILED: "EXPORT_FILE_GENERATE_FAILED",
 
+    // ── 导入 ──
+    /** 导入功能 - 文件读取失败 */
+    IMPORT_FILE_READ_ERROR: "IMPORT_FILE_READ_ERROR",
+
+    /** 导入功能 - 文件解析失败 */
+    IMPORT_FILE_PARSE_ERROR: "IMPORT_FILE_PARSE_ERROR",
+
+    /** 导入功能 - 不支持的文件格式 */
+    IMPORT_UNSUPPORTED_FORMAT: "IMPORT_UNSUPPORTED_FORMAT",
+
+    /** 导入功能 - 数据验证失败 */
+    IMPORT_DATA_VALIDATION_ERROR: "IMPORT_DATA_VALIDATION_ERROR",
+
+    /** 导入功能 - 样式转换失败 */
+    IMPORT_STYLE_CONVERSION_ERROR: "IMPORT_STYLE_CONVERSION_ERROR",
+
+    /** 导入功能 - 用户取消操作 */
+    IMPORT_CANCELLED_BY_USER: "IMPORT_CANCELLED_BY_USER",
+
+    /** 导入功能 - 未知错误 */
+    IMPORT_UNKNOWN_ERROR: "IMPORT_UNKNOWN_ERROR",
+
     // 通用日志分类
     /** 通用错误 */
     GENERIC_ERROR: "GENERIC_ERROR",

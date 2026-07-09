@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UMD 加载测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .result {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        h1 { color: #333; }
+    </style>
+</head>
+<body>
+    <h1>🧪 CanvasSheet UMD 加载测试</h1>
+
+    <div id="results"></div>
+
+    <!-- 引入依赖 -->
+    <script src="./libs/exceljs.min.js"></script>
+    <script src="../dist/canvas-sheet.umd.js"></script>
+
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message, type) {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        // 测试 1：检查 ExcelJS
+        if (typeof ExcelJS !== 'undefined') {
+            log(`✅ ExcelJS 已加载 (版本: ${ExcelJS.version || '未知'})`, 'success');
+        } else {
+            log('❌ ExcelJS 未加载！', 'error');
+        }
+
+        // 测试 2：检查 CanvasSheet
+        if (typeof CanvasSheet !== 'undefined') {
+            log(`✅ CanvasSheet 已加载`, 'success');
+            
+            // 测试 3：检查导出的内容
+            const keys = Object.keys(CanvasSheet);
+            log(`📦 导出的项目数量: ${keys.length}`, 'info');
+            log(`📋 导出的内容: ${keys.join(', ')}`, 'info');
+            
+            // 测试 4：检查关键类
+            const importantClasses = ['Workbook', 'ImportFilePlugin', 'ExportFilePlugin', 'BasePlugin'];
+            importantClasses.forEach(className => {
+                if (CanvasSheet[className]) {
+                    log(`✅ ${className} 类存在`, 'success');
+                } else {
+                    log(`⚠️ ${className} 类不存在`, 'error');
+                }
+            });
+            
+            // 测试 5：尝试创建 Workbook 实例
+            try {
+                const container = document.createElement('div');
+                document.body.appendChild(container);
+                
+                const wb = new CanvasSheet.Workbook(container);
+                log('✅ Workbook 实例创建成功', 'success');
+                
+                // 清理
+                if (wb.destroy && typeof wb.destroy === 'function') {
+                    wb.destroy();
+                }
+                document.body.removeChild(container);
+                
+            } catch (error) {
+                log(`❌ Workbook 创建失败: ${error.message}`, 'error');
+            }
+            
+        } else {
+            log('❌ CanvasSheet 未加载！请运行 npm run build:lib', 'error');
+            log('\n可能的原因:', 'info');
+            log('1. 未运行构建命令: npm run build:lib', 'info');
+            log('2. dist/canvas-sheet.umd.js 文件不存在', 'info');
+            log('3. 文件路径错误', 'info');
+        }
+
+        log('\n=== 测试完成 ===', 'info');
+    </script>
+</body>
+</html>

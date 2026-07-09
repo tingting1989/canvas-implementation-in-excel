@@ -296,4 +296,30 @@ export const HOOKS = Object.freeze({
 
     /** URL 已打开 - 链接已通过 window.open 打开 */
     AFTER_OPEN_URL: "afterOpenUrl",
+
+    /*
+     * ==================== 导入文件相关钩子 (IMPORT_) ====================
+     * 管理从外部文件导入数据到工作表的生命周期
+     *
+     * 注意：这些 Hook 由 ImportFilePlugin 提供，
+     * 使用前需确保插件已加载（plugins 配置中包含 'importFile'）
+     */
+
+    /** 导入进度更新 - 文件导入过程中触发，提供详细的进度信息 */
+    IMPORT_PROGRESS: "onImportProgress",
+
+    /** 导入完成 - 文件成功导入到工作表后触发 */
+    IMPORT_COMPLETE: "onImportComplete",
+
+    /** 导入失败 - 导入过程中发生错误时触发 */
+    IMPORT_ERROR: "onImportError",
+
+    /** 导入开始前 - 即将开始导入操作时触发，返回 false 可取消导入 */
+    IMPORT_BEFORE_IMPORT: "beforeImport",
+
+    /** 单行数据处理完成 - 每行数据处理完毕后触发（细粒度进度） */
+    IMPORT_ROW_PROCESSED: "onRowProcessed",
+
+    /** 样式转换警告 - 样式转换过程中遇到非致命问题时触发 */
+    IMPORT_STYLE_WARNING: "onStyleWarning",
 });

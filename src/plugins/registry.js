@@ -4,6 +4,7 @@ import { ContextMenuPlugin } from "./ContextMenuPlugin.js";
 import { ColumnMovePlugin } from "./ColumnMovePlugin.js";
 import { CopyPastePlugin } from "./CopyPastePlugin.js";
 import { ExportFilePlugin } from "./ExportFilePlugin.js";
+import { ImportFilePlugin } from "./ImportFilePlugin.js";
 import { HiddenColumnsPlugin } from "./HiddenColumnsPlugin.js";
 import { HiddenRowsPlugin } from "./HiddenRowsPlugin.js";
 import { RowMovePlugin } from "./RowMovePlugin.js";
@@ -19,6 +20,7 @@ const builtinPlugins = [
     ["columnMove", ColumnMovePlugin],
     ["copyPaste", CopyPastePlugin],
     ["exportFile", ExportFilePlugin],
+    ["importFile", ImportFilePlugin],
     ["hiddenColumns", HiddenColumnsPlugin],
     ["hiddenRows", HiddenRowsPlugin],
     ["rowMove", RowMovePlugin],

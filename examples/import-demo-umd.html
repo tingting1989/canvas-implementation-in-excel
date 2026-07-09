@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImportFilePlugin 演示 (UMD 版本)</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 15px;
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            background: #f8f9ff;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #764ba2;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 120px;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn-preview {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-preview:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(245, 87, 108, 0.35);
+        }
+
+        .btn-import {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .btn-import:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.35);
+        }
+
+        .btn-cancel {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+        }
+
+        .btn-cancel:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(250, 112, 154, 0.35);
+        }
+
+        /* 进度条 */
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 28px;
+            background: #e9ecef;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 13px;
+            transition: width 0.3s ease;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -200% 0;
+            }
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        /* 状态消息 */
+        .status-message {
+            margin-top: 15px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-info {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-left: 4px solid #2196f3;
+        }
+
+        .status-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        /* 信息面板 */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .info-item {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .info-item value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* 预览表格 */
+        .preview-table {
+            margin-top: 20px;
+            overflow-x: auto;
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        tr:hover {
+            background: #f8f9ff;
+        }
+
+        /* 使用说明 */
+        .usage-guide {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .usage-guide h2 {
+            color: #764ba2;
+            margin-bottom: 15px;
+        }
+
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            font-family: 'Fira Code', Consolas, monospace;
+            line-height: 1.6;
+            font-size: 13px;
+        }
+
+        code {
+            font-family: inherit;
+        }
+
+        .comment {
+            color: #6a9955;
+        }
+
+        .keyword {
+            color: #c586c0;
+            font-weight: 600;
+        }
+
+        .string {
+            color: #ce9178;
+        }
+
+        .highlight {
+            color: #dcdcaa;
+        }
+
+        .function {
+            color: #dcdcaa;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 头部 -->
+    <header>
+        <h1>📥 ImportFilePlugin 导入演示</h1>
+        <p class="subtitle">✨ UMD 版本 - 无需构建工具，直接双击打开！</p>
+    </header>
+
+    <!-- 主要内容区 -->
+    <div class="main-content">
+        <!-- 左侧：文件操作 -->
+        <div class="card">
+            <h2>📂 文件导入工具</h2>
+
+            <div class="file-input-wrapper">
+                <input type="file" id="fileInput" accept=".xlsx"/>
+            </div>
+
+            <div class="button-group">
+                <button id="previewBtn" class="btn-preview" disabled>🔍 预览文件</button>
+                <button id="importBtn" class="btn-import" disabled>📥 开始导入</button>
+                <button id="cancelBtn" class="btn-cancel" disabled>⏹️ 取消导入</button>
+            </div>
+
+            <!-- 进度条 -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill">0%</div>
+                </div>
+            </div>
+
+            <!-- 状态消息 -->
+            <div class="status-message" id="statusMessage"></div>
+        </div>
+
+        <!-- 右侧：文件信息 -->
+        <div class="card">
+            <canvas id="canvas" width="600" height="400"></canvas>
+
+        </div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="usage-guide">
+        <h2>📖 使用说明（UMD 方式）</h2>
+        <pre><code><span class="comment">&lt;!-- 1. 引入 CanvasSheet UMD 库 --&gt;</span>
+<span class="keyword">&lt;script</span> src=<span class="string">"../dist/canvas-sheet.umd.js"</span><span
+                class="keyword">&gt;&lt;/script&gt;</span>
+
+<span class="comment">// 2. 使用全局变量 CanvasSheet</span>
+<span class="keyword">const</span> wb = <span
+                class="keyword">new</span> CanvasSheet.Workbook(document.getElementById(<span
+                class="string">'app'</span>), {
+    hooks: {
+        [<span class="string">'onImportProgress'</span>] (progress) {
+            console.<span class="function">log</span>(<span class="string">\`${progress.percent}%`</span>);
+        },
+        
+        [<span class="string">'onImportComplete'</span>] (result) {
+            console.<span class="function">log</span>(<span class="string">'成功!'</span>, result);
+        }
+    }
+});
+
+<span class="comment">// 3. 查找插件并使用</span>
+<span class="keyword">const</span> plugin = wb.getPlugin(<span class="string">'importFile'</span>);
+
+<span class="comment">// 4. 导入文件</span>
+<span class="keyword">await</span> plugin.importFromFile(file);
+</code></pre>
+    </div>
+</div>
+
+<script src="./libs/exceljs.min.js"></script>
+<!-- 引入 CanvasSheet UMD -->
+<script src="../dist/canvas-sheet.umd.js"></script>
+
+<script>
+
+    setTimeout(async () => {
+
+
+        // 等待 DOM 和库加载完成
+
+        console.log('\n=== ImportFilePlugin 演示开始 ===\n');
+        console.log('[Demo] 页面加载完成');
+
+        // 详细的依赖检查
+        console.log('\n--- 依赖检查 ---');
+        console.log('ExcelJS 类型:', typeof ExcelJS);
+        console.log('CanvasSheet 类型:', typeof CanvasSheet);
+
+        if (typeof ExcelJS === 'undefined') {
+            alert('❌ 错误：ExcelJS 未加载！\n\n请检查：\n1. 网络连接是否正常\n2. 尝试刷新页面\n3. 或使用本地 ExcelJS 文件');
+            return;
+        }
+
+        if (typeof CanvasSheet === 'undefined') {
+            alert('❌ 错误：CanvasSheet 未加载！\n\n请确保已运行构建命令：\nnpm run build:lib\n\n然后刷新页面');
+            return;
+        }
+
+        console.log('✅ 所有依赖已加载！');
+        console.log('CanvasSheet 包含的类/函数:', Object.keys(CanvasSheet));
+
+        // 获取 DOM 元素
+        const fileInput = document.getElementById('fileInput');
+        const previewBtn = document.getElementById('previewBtn');
+        const importBtn = document.getElementById('importBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const statusMessage = document.getElementById('statusMessage');
+
+        let workbook = null;
+        let importPlugin = null;
+
+        // 显示状态
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // 更新进度
+        function updateProgress(percent, stage, message) {
+            progressContainer.style.display = 'block';
+            progressFill.style.width = `${percent}%`;
+            progressFill.textContent = `${percent}%`;
+            showStatus(`${stage}: ${message}`, 'info');
+        }
+
+        // 隐藏进度
+        function hideProgress() {
+            setTimeout(() => {
+                progressContainer.style.display = 'none';
+            }, 1500);
+        }
+
+        try {
+            console.log('[Demo] 正在初始化 Workbook...');
+
+            // 初始化 Workbook（使用全局 CanvasSheet 对象）
+            workbook = new CanvasSheet.Workbook( document.getElementById('canvas'), {
+                width: 600,
+                height: 400,
+                plugins: [
+                    "autoFill",
+                    "contextMenu",
+                    "columnMove",
+                    "copyPaste",
+                    "exportFile",
+                    "importFile",
+                    "hiddenColumns",
+                    "hiddenRows",
+                    "rowMove",
+                    "freeze",
+                    "formula",
+                    "sort",
+                    "dataValidation",
+                ],
+
+                sheets: [{
+                    name: 'Sheet1',
+                }],
+
+                hooks: {
+                    'onImportProgress': (progress) => {
+                        console.log(`[进度] ${progress.percent}% - ${progress.stage}: ${progress.message}`);
+                        updateProgress(progress.percent, progress.stage, progress.message);
+                    },
+
+                    'onImportComplete': (result) => {
+                        console.log('[完成]', result);
+                        hideProgress();
+                        showStatus(
+                            `✅ 导入成功！共导入 ${result.rowCount} 行 x ${result.colCount} 列数据`,
+                            'success'
+                        );
+                    },
+
+                    'onImportError': (error) => {
+                        console.error('[错误]', error);
+                        hideProgress();
+                        showStatus(`❌ 导入失败: ${error.message}`, 'error');
+                    },
+
+                    'beforeImport': (preview) => {
+                        console.log('[确认] 即将导入:', preview);
+                        return confirm(
+                            `确定要导入 "${preview.fileName}" 吗？\n` +
+                            `共 ${preview.totalRows} 行 x ${preview.totalCols} 列`
+                        );
+                    }
+                }
+            });
+            workbook.initRender();
+            workbook.render();
+
+            importPlugin = workbook.getPlugin('importFile');
+
+            console.log('[Demo] ✅ 初始化完成！');
+            showStatus('✅ ImportFilePlugin 已就绪，请选择 Excel 文件', 'success');
+
+        } catch (error) {
+            console.error('[初始化失败]', error);
+            showStatus(`❌ 初始化失败: ${error.message}\n\n请确保：\n1. 已运行 npm run build:lib\n2. dist/canvas-sheet.umd.js 文件存在`, 'error');
+
+            // 显示详细的错误信息给开发者
+            console.error('\n=== 详细错误信息 ===');
+            console.error('错误类型:', error.name);
+            console.error('错误堆栈:', error.stack);
+            console.error('CanvasSheet 对象:', window.CanvasSheet);
+        }
+
+        // 文件选择事件
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            console.log(`[选择文件] ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+
+            previewBtn.disabled = false;
+            importBtn.disabled = false;
+
+            showStatus(`已选择文件: ${file.name}`, 'info');
+
+        });
+
+        // 预览按钮事件
+        previewBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file || !importPlugin) return;
+
+            try {
+                previewBtn.disabled = true;
+                showStatus('正在预览文件...', 'info');
+
+                console.log('[预览] 开始...');
+
+                const preview = await importPlugin.previewFile(file, {
+                    previewRows: 10
+                });
+
+                console.log('[预览结果]', preview);
+
+                if (preview.error) {
+                    throw new Error(preview.error);
+                }
+
+
+            } catch (error) {
+                console.error('[预览失败]', error);
+                showStatus(`预览失败: ${error.message}`, 'error');
+            } finally {
+                previewBtn.disabled = false;
+            }
+        });
+
+        // 导入按钮事件
+        importBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            console.log(123)
+            if (!file || !importPlugin) return;
+
+            try {
+                importBtn.disabled = true;
+                cancelBtn.disabled = false;
+                previewBtn.disabled = true;
+
+                showStatus('正在准备导入...', 'info');
+
+                console.log('[导入] 开始...');
+
+                const result = await importPlugin.importFromFile(file, {
+                    startRow: 0,
+                    startCol: 0,
+                    firstRowAsHeader: true,
+                    applyStyles: true,
+                    overwriteExisting: true,
+                    batchSize: 100
+                });
+
+                console.log('[导入结果]', result);
+
+                if (result && result.success) {
+                    hideProgress();
+                    showStatus(
+                        `✅ 导入成功！共导入 ${result.rowCount} 行 x ${result.colCount} 列数据`,
+                        'success'
+                    );
+                }
+
+            } catch (error) {
+                hideProgress();
+
+                if (error.message.includes('CANCELLED')) {
+                    showStatus('⏹️ 用户取消了导入操作', 'info');
+                } else {
+                    console.error('[导入失败]', error);
+                    showStatus(`❌ 导入失败: ${error.message}`, 'error');
+                }
+            } finally {
+                importBtn.disabled = false;
+                cancelBtn.disabled = true;
+                previewBtn.disabled = false;
+            }
+        });
+
+        // 取消按钮事件
+        cancelBtn.addEventListener('click', () => {
+            if (importPlugin) {
+                importPlugin.cancelImport();
+                showStatus('正在取消导入...', 'info');
+                console.log('[取消] 用户请求取消');
+            }
+        });
+
+    }, 2000);
+</script>
+</body>
+</html>

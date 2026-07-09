@@ -462,6 +462,7 @@ const initApp = () => {
             "copyPaste",
 
             "exportFile",
+            "importFile",
             "hiddenColumns",
             "hiddenRows",
             "rowMove",
@@ -962,6 +963,100 @@ const initApp = () => {
     // 无需重复通过 addHook 注册，否则会触发两次回调。
 
     window.wb = wb;
+
+    // ============================================================
+    // ImportFilePlugin 导入功能示例
+    // ============================================================
+    const importPlugin = wb.getPlugin("importFile");
+
+    if (importPlugin) {
+        console.log("[ImportFilePlugin] 插件已加载，可通过 window.importPlugin 访问");
+        window.importPlugin = importPlugin;
+
+        // 监听导入进度（可选）
+        importPlugin.onImportProgress((progress) => {
+            console.log(`[导入进度] ${progress.percent}% - ${progress.stage}: ${progress.message}`);
+        });
+
+        // 监听导入完成
+        importPlugin.onImportComplete((result) => {
+            console.log(`[导入完成] 成功导入 ${result.rowCount} 行 x ${result.colCount} 列数据`);
+            if (result.warnings?.length > 0) {
+                console.warn(`[样式警告] 共 ${result.warnings.length} 个样式转换警告`);
+            }
+        });
+
+        // 监听导入错误
+        importPlugin.onImportError((error) => {
+            console.error(`[导入失败] ${error.code}: ${error.message}`);
+        });
+
+        // 便捷方法：从文件输入元素导入 Excel 文件
+        window.importExcelFromFile = async (fileInput) => {
+            if (!fileInput || !fileInput.files[0]) {
+                console.error("请先选择一个 Excel 文件 (.xlsx)");
+                return null;
+            }
+
+            const file = fileInput.files[0];
+            console.log("[导入] 开始导入文件:", file.name, `(${(file.size / 1024).toFixed(2)} KB)`);
+
+            try {
+                const result = await importPlugin.importFromFile(file, {
+                    firstRowAsHeader: true,
+                    applyStyles: true,
+                    overwriteExisting: true,
+                });
+
+                return result;
+            } catch (error) {
+                console.error("[导入异常]", error);
+                throw error;
+            }
+        };
+
+        // 便捷方法：预览 Excel 文件内容
+        window.previewExcelFile = async (fileInput) => {
+            if (!fileInput || !fileInput.files[0]) {
+                console.error("请先选择一个 Excel 文件 (.xlsx)");
+                return null;
+            }
+
+            const file = fileInput.files[0];
+            console.log("[预览] 预览文件:", file.name);
+
+            try {
+                const preview = await importPlugin.previewFile(file, { previewRows: 10 });
+                console.table(preview.previewData);
+                console.log(`[预览结果] 总计: ${preview.totalRows} 行 x ${preview.totalCols} 列`);
+
+                return preview;
+            } catch (error) {
+                console.error("[预览异常]", error);
+                throw error;
+            }
+        };
+
+        console.log(`
+╔══════════════════════════════════════════════════╗
+║     ImportFilePlugin 使用方法                      ║
+╠══════════════════════════════════════════════════╣
+║                                                    ║
+║  1. 导入文件:                                     ║
+║     const result = await importExcelFromFile(input);║
+║                                                    ║
+║  2. 预览文件:                                     ║
+║     const preview = await previewExcelFile(input); ║
+║                                                    ║
+║  3. 直接使用插件 API:                              ║
+║     await importPlugin.importFromFile(file);       ║
+║     await importPlugin.previewFile(file);          ║
+║                                                    ║
+╚══════════════════════════════════════════════════╝
+        `);
+    } else {
+        console.warn("[ImportFilePlugin] 插件未加载，请在 plugins 配置中添加 'importFile'");
+    }
 
     // ============================================================
     // 动态调整行列数示例（可在浏览器控制台调用）
