@@ -433,9 +433,7 @@ export class StyleConverter {
                 bold: excelStyle.font.bold,
                 italic: excelStyle.font.italic,
                 underline: excelStyle.font.underline,
-                color: excelStyle.font.color?.argb
-                    ? { argb: excelStyle.font.color.argb }
-                    : undefined,
+                color: excelStyle.font.color?.argb ? { argb: excelStyle.font.color.argb } : undefined,
             };
         }
 
@@ -464,12 +462,8 @@ export class StyleConverter {
             nestedStyle.fill = {
                 type: "pattern",
                 pattern: excelStyle.fill.pattern || "solid",
-                fgColor: excelStyle.fill.fgColor?.argb
-                    ? { argb: excelStyle.fill.fgColor.argb }
-                    : { argb: "FFFFFFFF" },
-                bgColor: excelStyle.fill.bgColor?.argb
-                    ? { argb: excelStyle.fill.bgColor.argb }
-                    : { argb: "FFFFFFFF" },
+                fgColor: excelStyle.fill.fgColor?.argb ? { argb: excelStyle.fill.fgColor.argb } : { argb: "FFFFFFFF" },
+                bgColor: excelStyle.fill.bgColor?.argb ? { argb: excelStyle.fill.bgColor.argb } : { argb: "FFFFFFFF" },
             };
         }
 

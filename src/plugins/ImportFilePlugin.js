@@ -163,14 +163,14 @@ export class ImportFilePlugin extends BasePlugin {
                 await this.#applyStyles(parsedData, options, taskId);
                 console.log(`[ImportFilePlugin] 样式应用完成: ${parsedData.styles.length} 个样式`);
             } else if (options.applyStyles) {
-                console.warn('[ImportFilePlugin] 警告: applyStyles=true 但没有提取到样式');
-                console.warn('[ImportFilePlugin] 可能原因: #parseExcelFile 中 options.applyStyles 未传递');
+                console.warn("[ImportFilePlugin] 警告: applyStyles=true 但没有提取到样式");
+                console.warn("[ImportFilePlugin] 可能原因: #parseExcelFile 中 options.applyStyles 未传递");
             }
 
             // 7️⃣ 应用合并单元格
             if (parsedData.mergedCells && parsedData.mergedCells.length > 0) {
                 this.#emitProgress({ percent: 90, stage: "merging", message: "正在应用合并单元格...", taskId });
-                
+
                 await this.#applyMergedCells(parsedData.mergedCells, options, taskId);
                 console.log(`[ImportFilePlugin] 合并单元格应用完成: ${parsedData.mergedCells.length} 个`);
             }
@@ -300,12 +300,13 @@ export class ImportFilePlugin extends BasePlugin {
                 // 始终提取样式（如果 applyStyles 为 true）
                 if (options.applyStyles) {
                     const style = cell.style || {};
-                    
+
                     // 检查是否有非空样式属性
-                    const hasStyle = Object.keys(style).some(key => {
+                    const hasStyle = Object.keys(style).some((key) => {
                         const value = style[key];
-                        return value !== undefined && value !== null && value !== '' && 
-                               !(typeof value === 'object' && Object.keys(value).length === 0);
+                        return (
+                            value !== undefined && value !== null && value !== "" && !(typeof value === "object" && Object.keys(value).length === 0)
+                        );
                     });
 
                     if (hasStyle) {
@@ -509,7 +510,7 @@ export class ImportFilePlugin extends BasePlugin {
         if (!sheet || !mergedCells || mergedCells.length === 0) return;
 
         const { startRow, startCol } = options;
-        
+
         console.log(`[ImportFilePlugin] 开始应用 ${mergedCells.length} 个合并单元格...`);
 
         for (const mergeRange of mergedCells) {
@@ -520,10 +521,10 @@ export class ImportFilePlugin extends BasePlugin {
             try {
                 // 解析合并范围（如 "B1:D2"）
                 const range = this.#parseCellRange(mergeRange);
-                
+
                 if (range) {
                     const { startRow: sRow, startCol: sCol, endRow: eRow, endCol: eCol } = range;
-                    
+
                     // 调整偏移量（加上 startRow 和 startCol）
                     const adjustedStartRow = sRow + startRow;
                     const adjustedStartCol = sCol + startCol;
@@ -531,20 +532,10 @@ export class ImportFilePlugin extends BasePlugin {
                     const adjustedEndCol = eCol + startCol;
 
                     // 调用工作表的合并方法
-                    if (sheet.mergeManager && typeof sheet.mergeManager.mergeCells === 'function') {
-                        sheet.mergeManager.mergeCells(
-                            adjustedStartRow,
-                            adjustedStartCol,
-                            adjustedEndRow,
-                            adjustedEndCol
-                        );
-                    } else if (typeof sheet.mergeCells === 'function') {
-                        sheet.mergeCells(
-                            adjustedStartRow,
-                            adjustedStartCol,
-                            adjustedEndRow,
-                            adjustedEndCol
-                        );
+                    if (sheet.mergeManager && typeof sheet.mergeManager.mergeCells === "function") {
+                        sheet.mergeManager.mergeCells(adjustedStartRow, adjustedStartCol, adjustedEndRow, adjustedEndCol);
+                    } else if (typeof sheet.mergeCells === "function") {
+                        sheet.mergeCells(adjustedStartRow, adjustedStartCol, adjustedEndRow, adjustedEndCol);
                     } else {
                         console.warn(`[ImportFilePlugin] 无法找到合并单元格方法，跳过: ${mergeRange}`);
                     }
@@ -576,8 +567,8 @@ export class ImportFilePlugin extends BasePlugin {
             for (const colInfo of data.columnWidths) {
                 try {
                     const targetCol = colInfo.col + startCol;
-                    
-                    if (sheet.rowColManager && typeof sheet.rowColManager.setColumnWidth === 'function') {
+
+                    if (sheet.rowColManager && typeof sheet.rowColManager.setColumnWidth === "function") {
                         sheet.rowColManager.setColumnWidth(targetCol, colInfo.width);
                     } else if (sheet.model?.grid?.setColumnWidth) {
                         sheet.model.grid.setColumnWidth(targetCol, colInfo.width);
@@ -593,8 +584,8 @@ export class ImportFilePlugin extends BasePlugin {
             for (const rowInfo of data.rowHeights) {
                 try {
                     const targetRow = rowInfo.row + options.startRow;
-                    
-                    if (sheet.rowColManager && typeof sheet.rowColManager.setRowHeight === 'function') {
+
+                    if (sheet.rowColManager && typeof sheet.rowColManager.setRowHeight === "function") {
                         sheet.rowColManager.setRowHeight(targetRow, rowInfo.height);
                     } else if (sheet.model?.grid?.setRowHeight) {
                         sheet.model.grid.setRowHeight(targetRow, rowInfo.height);
@@ -613,13 +604,13 @@ export class ImportFilePlugin extends BasePlugin {
      * @returns {Object|null} 解析后的范围对象 { startRow, startCol, endRow, endCol } (0-based)
      */
     #parseCellRange(range) {
-        if (!range || typeof range !== 'string') return null;
+        if (!range || typeof range !== "string") return null;
 
         try {
             // 移除 $ 符号并分割
-            const cleanRange = range.replace(/\$/g, '');
-            const parts = cleanRange.split(':');
-            
+            const cleanRange = range.replace(/\$/g, "");
+            const parts = cleanRange.split(":");
+
             if (parts.length !== 2) return null;
 
             const [startRef, endRef] = parts;
@@ -650,14 +641,14 @@ export class ImportFilePlugin extends BasePlugin {
      * @returns {Object|null} 行列号对象 { row, col } (0-based)
      */
     #cellRefToPosition(cellRef) {
-        if (!cellRef || typeof cellRef !== 'string') return null;
+        if (!cellRef || typeof cellRef !== "string") return null;
 
         try {
             const match = cellRef.match(/^([A-Z]+)(\d+)$/i);
             if (!match) return null;
 
             const [, colStr, rowStr] = match;
-            
+
             // 转换列字母为数字（A=0, B=1, ..., Z=25, AA=26, ...）
             let col = 0;
             for (let i = 0; i < colStr.length; i++) {
