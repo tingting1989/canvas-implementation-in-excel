@@ -114,15 +114,10 @@ export function validateStyleProperties(styleObj) {
 export const stylePool = new StylePool();
 
 export const DEFAULT_STYLE_ID = stylePool.getStyleId({
-    fontFamily: CONFIG.DEFAULT_FONT,
+    fontFamily: CONFIG.DEFAULT_FONT_FAMILY,
     fontSize: CONFIG.DEFAULT_FONT_SIZE,
     color: CONFIG.CELL_TEXT_COLOR,
     backgroundColor: "transparent",
     textAlign: "left",
     verticalAlign: "middle",
-});
-
-export const DISABLED_STYLE_ID = stylePool.getStyleId({
-    color: CONFIG.DISABLED_COLOR,
-    backgroundColor: CONFIG.DISABLED_BG,
 });

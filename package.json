@@ -144,5 +144,8 @@
         "webpack": "^5.90.3",
         "webpack-cli": "^7.0.3",
         "webpack-dev-server": "^5.0.2"
+    },
+    "dependencies": {
+        "exceljs": "^4.4.0"
     }
 }

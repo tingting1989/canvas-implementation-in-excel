@@ -150,6 +150,22 @@ export const ERROR_CODE = Object.freeze({
     /** 用于调试时的信息日志 */
     VALIDATION_DEBUG_LOG: "VALIDATION_DEBUG_LOG",
 
+    // ── 导出 ──
+    /** 导出功能 - 样式获取失败 */
+    EXPORT_STYLE_FETCH_FAILED: "EXPORT_STYLE_FETCH_FAILED",
+
+    /** 导出功能 - 颜色解析失败 */
+    EXPORT_COLOR_PARSE_FAILED: "EXPORT_COLOR_PARSE_FAILED",
+
+    /** 导出功能 - 合并单元格处理异常 */
+    EXPORT_MERGE_ERROR: "EXPORT_MERGE_ERROR",
+
+    /** 导出功能 - 数据写入异常 */
+    EXPORT_DATA_WRITE_ERROR: "EXPORT_DATA_WRITE_ERROR",
+
+    /** 导出功能 - 文件生成失败 */
+    EXPORT_FILE_GENERATE_FAILED: "EXPORT_FILE_GENERATE_FAILED",
+
     // 通用日志分类
     /** 通用错误 */
     GENERIC_ERROR: "GENERIC_ERROR",

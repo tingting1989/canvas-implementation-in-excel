@@ -331,19 +331,20 @@ const initApp = () => {
                 cellPadding: 10,
 
                 // 固定行列数上限（使用 maxRows/maxCols）
-                maxRows: 50,
-                maxCols: 14,
+                // maxRows: 50,
+                // maxCols: 14,
 
                 colWidths: [600],
                 columns: [
                     { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
+
+                    // { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
                     { type: "textarea", width: 200, maxRows: 4, style: { textAlign: "right" } },
                 ],
 
                 cell: [
-                    { row: 0, col: 2, type: "trafficLight" }, // 第0行第2列 → trafficLight
-                    { row: 1, col: 2, type: "select", source: ["正常", "异常"] }, // → select
+                    // { row: 0, col: 2, type: "trafficLight" }, // 第0行第2列 → trafficLight
+                    // { row: 1, col: 2, type: "select", source: ["正常", "异常"] }, // → select
                 ],
             },
             {
@@ -860,22 +861,22 @@ const initApp = () => {
         }
     });
 
-    setTimeout(() => {
-        // wb.updateSettings({
-        //     maxRows: 100,
-        // });
-        wb.activeSheet.loadData([
-            ["姓名", "年龄", "green"],
-            ["张三", 30, "yellow"],
-            ["李四", 25, "red"],
-        ]);
-
-        // wb.loadData(HOOKS.AFTER_CHANGE, () => {
-        //     if (isFunction(window.updateToolbarStyleState)) {
-        //         window.updateToolbarStyleState();
-        //     }
-        // });
-    }, 1000);
+    // setTimeout(() => {
+    //     // wb.updateSettings({
+    //     //     maxRows: 100,
+    //     // });
+    //     wb.activeSheet.loadData([
+    //         ["姓名", "年龄", "green"],
+    //         ["张三", 30, "yellow"],
+    //         ["李四", 25, "red"],
+    //     ]);
+    //
+    //     // wb.loadData(HOOKS.AFTER_CHANGE, () => {
+    //     //     if (isFunction(window.updateToolbarStyleState)) {
+    //     //         window.updateToolbarStyleState();
+    //     //     }
+    //     // });
+    // }, 1000);
 
     // wb.addHook(HOOKS.AFTER_CHANGE, () => {
     //     if (isFunction(window.updateToolbarStyleState)) {

@@ -117,8 +117,24 @@
     <button onclick="toggleItalic()" title="斜体 Ctrl+I" style="font-style:italic;">I</button>
     <button onclick="toggleUnderline()" title="下划线 Ctrl+U" style="text-decoration:underline;">U</button>
     <span class="separator"></span>
-    <button onclick="exportCSV()">导出 CSV</button>
-    <button onclick="exportTSV()">导出 TSV</button>
+
+    <!-- 导出格式选择 -->
+    <select id="export-format" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;">
+        <option value="csv">CSV 格式</option>
+        <option value="tsv">TSV 格式</option>
+        <option value="xlsx" selected>XLSX 格式</option>
+    </select>
+
+    <button onclick="ExportManager.exportCurrent()">导出文件</button>
+
+    <select id="export-preset" style="padding:4px 8px;border:1px solid #bbb;border-radius:4px;font-size:13px;">
+        <option value="">快速模板</option>
+        <option value="simple">简单表格</option>
+        <option value="nested">嵌套表头</option>
+        <option value="styled">带样式导出</option>
+    </select>
+
+    <button onclick="ExportManager.applyPreset()">应用模板并导出</button>
     <span class="separator"></span>
     <button onclick="hideCol()">隐藏列</button>
     <button onclick="showCol()">显示列</button>
@@ -164,25 +180,117 @@
         wb.render();
     }
 
-    function exportCSV() {
-        const info = document.getElementById('status-info');
-        const start = performance.now();
+    /**
+     * 导出管理器 - 统一管理所有导出功能
+     */
+    const ExportManager = {
+        /**
+         * 显示状态信息
+         */
+        showStatus(message) {
+            const info = document.getElementById('status-info');
+            if (info) info.textContent = message;
+        },
 
-        wb.downloadFile('csv', {filename: 'data'});
+        /**
+         * 获取当前选择的导出格式
+         */
+        getFormat() {
+            return document.getElementById('export-format').value || 'xlsx';
+        },
 
-        const elapsed = (performance.now() - start).toFixed(0);
-        info.textContent = `CSV 导出完成 (${elapsed}ms)`;
-    }
+        /**
+         * 导出当前表格数据
+         */
+        async exportCurrent() {
+            const format = this.getFormat();
+            await this.doExport(format, {filename: 'data'});
+        },
 
-    function exportTSV() {
-        const info = document.getElementById('status-info');
-        const start = performance.now();
+        /**
+         * 执行导出操作（统一错误处理和计时）
+         */
+        async doExport(format, options = {}) {
+            this.showStatus(`正在导出 ${format.toUpperCase()}...`);
+            const start = performance.now();
 
-        wb.downloadFile('tsv', {filename: 'data'});
+            try {
+                await wb.downloadFile(format, options);
 
-        const elapsed = (performance.now() - start).toFixed(0);
-        info.textContent = `TSV 导出完成 (${elapsed}ms)`;
-    }
+                const elapsed = (performance.now() - start).toFixed(0);
+                this.showStatus(`${format.toUpperCase()} 导出完成 (${elapsed}ms)`);
+            } catch (error) {
+                console.error('导出失败:', error);
+                this.showStatus(`导出失败: ${error.message}`);
+            }
+        },
+
+        /**
+         * 应用预设模板并导出
+         */
+        async applyPreset() {
+            const preset = document.getElementById('export-preset').value;
+            if (!preset) {
+                this.showStatus('请选择一个模板');
+                return;
+            }
+
+            switch (preset) {
+                case 'simple':
+                    TestDataHelper.setupSimpleData();
+                    break;
+                case 'nested':
+                    TestDataHelper.setupNestedHeadersData();
+                    break;
+                case 'styled':
+                    TestDataHelper.setupStyledData();
+                    break;
+                default:
+                    return;
+            }
+
+            setTimeout(() => {
+                this.exportCurrent();
+            }, 300);
+        }
+    };
+
+    /**
+     * 测试数据辅助工具
+     */
+    const TestDataHelper = {
+        /**
+         * 设置简单表格数据（2行3列）
+         */
+        setupSimpleData() {
+            const sheet = wb.getActiveSheet();
+            sheet.nestedHeaders = null;
+            sheet.colHeaders = ['A', 'B', 'C'];
+
+            sheet.setCell(0, 0, 1);
+            sheet.setCell(0, 1, 2);
+            sheet.setCell(1, 0, 2);
+            sheet.setCell(1, 1, 2);
+
+            ExportManager.showStatus('已加载简单表格数据');
+            wb.render();
+        },
+
+        /**
+         * 设置嵌套表头数据（模拟运行日报表）
+         */
+        setupNestedHeadersData() {
+            wb.downloadFile('xlsx', {filename: 'nested-headers', nestedHeaders: true});
+        },
+
+        /**
+         * 设置带样式的示例数据
+         */
+        setupStyledData() {
+            wb.downloadFile('xlsx', {filename: 'nested-headers', nestedHeaders: true, cellStyles: true});
+        },
+
+    };
 
     function getHiddenColumns() {
         return wb.getPlugin('hiddenColumns');
