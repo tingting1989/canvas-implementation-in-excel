@@ -40,13 +40,13 @@
  * @version 2.1.0 (优化版)
  */
 
-import {BasePlugin} from "./BasePlugin.js";
+import { BasePlugin } from "./BasePlugin.js";
 import ExcelJS from "exceljs";
-import {indexToCol} from "../utils/cellRef.js";
-import {stylePool} from "../model/styles/index.js";
-import {errorHandler} from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes.js";
-import {CONFIG} from "@/constants/config";
+import { indexToCol } from "../utils/cellRef.js";
+import { stylePool } from "../model/styles/index.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
+import { CONFIG } from "@/constants/config";
 
 // ============================================================================
 // [Section 1] 常量与配置
@@ -158,8 +158,7 @@ const FORMAT_PRESETS = {
      * - 支持嵌套表头和单元格样式
      */
     xlsx: {
-        mimeType:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         fileExtension: "xlsx",
         isBinary: true,
     },
@@ -218,7 +217,7 @@ const DEFAULT_OPTIONS = {
  */
 function buildOptions(format, userOptions) {
     const preset = FORMAT_PRESETS[format] || FORMAT_PRESETS.csv;
-    return {...DEFAULT_OPTIONS, ...preset, ...userOptions};
+    return { ...DEFAULT_OPTIONS, ...preset, ...userOptions };
 }
 
 /**
@@ -266,17 +265,14 @@ function isDefaultAlphabetHeaders(headers) {
  */
 function resolveHeaderDefaults(sheet, opts) {
     if (opts.columnHeaders === undefined) {
-        const shouldExportColumnHeaders = (
-            Array.isArray(sheet.colHeaders) &&
-            sheet.colHeaders.length > 0 &&
-            !isDefaultAlphabetHeaders(sheet.colHeaders)
-        );
+        const shouldExportColumnHeaders =
+            Array.isArray(sheet.colHeaders) && sheet.colHeaders.length > 0 && !isDefaultAlphabetHeaders(sheet.colHeaders);
 
-        Object.defineProperty(opts, 'columnHeaders', {
+        Object.defineProperty(opts, "columnHeaders", {
             value: shouldExportColumnHeaders,
             writable: true,
             enumerable: true,
-            configurable: true
+            configurable: true,
         });
     }
 }
@@ -305,14 +301,9 @@ function resolveHeaderDefaults(sheet, opts) {
  * escapeField(null, ',');            // ''
  */
 function escapeField(value, separator) {
-    const str = (value === null || value === undefined) ? "" : String(value);
+    const str = value === null || value === undefined ? "" : String(value);
 
-    const needsEscape = (
-        str.includes(separator) ||
-        str.includes('"') ||
-        str.includes("\n") ||
-        str.includes("\r")
-    );
+    const needsEscape = str.includes(separator) || str.includes('"') || str.includes("\n") || str.includes("\r");
 
     if (needsEscape) {
         return '"' + str.replace(/"/g, '""') + '"';
@@ -340,9 +331,7 @@ function escapeField(value, separator) {
  * // 返回: 'Name,Age\r\nAlice,25'
  */
 function serialize(rows, separator) {
-    return rows
-        .map((row) => row.map((v) => escapeField(v, separator)).join(separator))
-        .join("\r\n");
+    return rows.map((row) => row.map((v) => escapeField(v, separator)).join(separator)).join("\r\n");
 }
 
 /**
@@ -371,13 +360,13 @@ function getDataRange(sheet) {
     let maxCol = -1;
 
     for (const chunk of sheet.cellStore.chunks()) {
-        for (const {row, col} of chunk.iterate()) {
+        for (const { row, col } of chunk.iterate()) {
             if (row > maxRow) maxRow = row;
             if (col > maxCol) maxCol = col;
         }
     }
 
-    return maxRow >= 0 ? {startRow: 0, startCol: 0, endRow: maxRow, endCol: maxCol} : null;
+    return maxRow >= 0 ? { startRow: 0, startCol: 0, endRow: maxRow, endCol: maxCol } : null;
 }
 
 /**
@@ -404,7 +393,7 @@ function getDataRange(sheet) {
 function buildRows(sheet, opts, range) {
     if (!range) return [];
 
-    const {startRow, startCol, endRow, endCol} = range;
+    const { startRow, startCol, endRow, endCol } = range;
     const rows = [];
 
     if (opts.columnHeaders) {
@@ -451,8 +440,8 @@ function buildRows(sheet, opts, range) {
  * // 内容: '\uFEFFName,Age\r\nAlice,25'
  */
 function toBlob(str, opts) {
-    const content = (opts.bom && opts.encoding === "utf-8") ? "\uFEFF" + str : str;
-    return new Blob([content], {type: `${opts.mimeType};charset=${opts.encoding}`});
+    const content = opts.bom && opts.encoding === "utf-8" ? "\uFEFF" + str : str;
+    return new Blob([content], { type: `${opts.mimeType};charset=${opts.encoding}` });
 }
 
 /**
@@ -553,7 +542,7 @@ const _colorCache = new Map();
  * toArgb('transparent'); // → '00000000' (特殊值快速路径)
  */
 function toArgb(color) {
-    if (!color || typeof color !== 'string') return '00000000';
+    if (!color || typeof color !== "string") return "00000000";
 
     const trimmedColor = color.trim();
 
@@ -566,8 +555,8 @@ function toArgb(color) {
 
     // 快速路径2：透明色检测
     const lowerColor = trimmedColor.toLowerCase();
-    if (lowerColor === 'transparent' || lowerColor === '') {
-        result = '00000000';
+    if (lowerColor === "transparent" || lowerColor === "") {
+        result = "00000000";
     } else if (/^[0-9a-f]{8}$/i.test(trimmedColor)) {
         // 快速路径3：完整的 ARGB 格式（8位）
         result = trimmedColor.toUpperCase();
@@ -583,10 +572,10 @@ function toArgb(color) {
         try {
             // 懒初始化：只在第一次需要时创建 DOM 元素
             if (!_colorParserElement) {
-                _colorParserElement = document.createElement('div');
-                _colorParserElement.style.position = 'absolute';
-                _colorParserElement.style.left = '-9999px';
-                _colorParserElement.style.visibility = 'hidden';
+                _colorParserElement = document.createElement("div");
+                _colorParserElement.style.position = "absolute";
+                _colorParserElement.style.left = "-9999px";
+                _colorParserElement.style.visibility = "hidden";
                 document.body.appendChild(_colorParserElement);
             }
 
@@ -605,21 +594,21 @@ function toArgb(color) {
 
                 if (!isNaN(red) && !isNaN(green) && !isNaN(blue)) {
                     // 将 RGB 分量转为十六进制（钳制到 0-255 范围）
-                    const redHex = Math.max(0, Math.min(255, red)).toString(16).padStart(2, '0').toUpperCase();
-                    const greenHex = Math.max(0, Math.min(255, green)).toString(16).padStart(2, '0').toUpperCase();
-                    const blueHex = Math.max(0, Math.min(255, blue)).toString(16).padStart(2, '0').toUpperCase();
+                    const redHex = Math.max(0, Math.min(255, red)).toString(16).padStart(2, "0").toUpperCase();
+                    const greenHex = Math.max(0, Math.min(255, green)).toString(16).padStart(2, "0").toUpperCase();
+                    const blueHex = Math.max(0, Math.min(255, blue)).toString(16).padStart(2, "0").toUpperCase();
                     result = `FF${redHex}${greenHex}${blueHex}`;
                 } else {
                     errorHandler.warn(ERROR_CODE.EXPORT_COLOR_PARSE_FAILED, `无效的RGB分量: ${computedColor}`);
-                    result = 'FF000000';
+                    result = "FF000000";
                 }
             } else {
                 errorHandler.warn(ERROR_CODE.EXPORT_COLOR_PARSE_FAILED, `无法解析浏览器颜色输出: ${computedColor}`);
-                result = 'FF000000';
+                result = "FF000000";
             }
         } catch (error) {
-            errorHandler.warn(ERROR_CODE.EXPORT_COLOR_PARSE_FAILED, `浏览器颜色解析失败: ${trimmedColor}`, {error});
-            result = 'FF000000';
+            errorHandler.warn(ERROR_CODE.EXPORT_COLOR_PARSE_FAILED, `浏览器颜色解析失败: ${trimmedColor}`, { error });
+            result = "FF000000";
         }
     }
 
@@ -699,9 +688,9 @@ function convertToExcelStyle(style) {
         const fontConfig = {};
         if (style.fontFamily) fontConfig.name = style.fontFamily;
         if (style.fontSize) fontConfig.size = style.fontSize;
-        if (style.fontWeight === 'bold' || style.fontWeight === true) fontConfig.bold = true;
-        if (style.fontStyle === 'italic') fontConfig.italic = true;
-        if (style.color) fontConfig.color = {argb: toArgb(style.color)};
+        if (style.fontWeight === "bold" || style.fontWeight === true) fontConfig.bold = true;
+        if (style.fontStyle === "italic") fontConfig.italic = true;
+        if (style.color) fontConfig.color = { argb: toArgb(style.color) };
 
         if (Object.keys(fontConfig).length > 0) {
             excelStyle.font = fontConfig;
@@ -717,15 +706,15 @@ function convertToExcelStyle(style) {
         }
 
         // 背景色（填充）- 使用 toArgb 进行颜色转换
-        if (style.backgroundColor && style.backgroundColor !== 'transparent') {
+        if (style.backgroundColor && style.backgroundColor !== "transparent") {
             const bgColor = toArgb(style.backgroundColor);
 
-            if (bgColor !== '00000000') {
+            if (bgColor !== "00000000") {
                 excelStyle.fill = {
                     type: "pattern",
                     pattern: "solid",
-                    fgColor: {argb: bgColor},
-                    bgColor: {argb: bgColor},
+                    fgColor: { argb: bgColor },
+                    bgColor: { argb: bgColor },
                 };
             }
         }
@@ -743,7 +732,7 @@ function convertToExcelStyle(style) {
             bold: style.font.bold,
             italic: style.font.italic,
             underline: style.font.underline,
-            color: style.font.color ? {argb: toArgb(style.font.color)} : undefined,
+            color: style.font.color ? { argb: toArgb(style.font.color) } : undefined,
         };
     }
 
@@ -760,25 +749,33 @@ function convertToExcelStyle(style) {
     // 边框设置（四边独立配置）
     if (style.border) {
         excelStyle.border = {
-            top: style.border.top ? {
-                style: style.border.top.style || DEFAULT_BORDER_STYLE,
-                color: {argb: toArgb(style.border.top.color) || DEFAULT_BORDER_COLOR},
-            } : undefined,
+            top: style.border.top
+                ? {
+                      style: style.border.top.style || DEFAULT_BORDER_STYLE,
+                      color: { argb: toArgb(style.border.top.color) || DEFAULT_BORDER_COLOR },
+                  }
+                : undefined,
 
-            left: style.border.left ? {
-                style: style.border.left.style || DEFAULT_BORDER_STYLE,
-                color: {argb: toArgb(style.border.left.color) || DEFAULT_BORDER_COLOR},
-            } : undefined,
+            left: style.border.left
+                ? {
+                      style: style.border.left.style || DEFAULT_BORDER_STYLE,
+                      color: { argb: toArgb(style.border.left.color) || DEFAULT_BORDER_COLOR },
+                  }
+                : undefined,
 
-            bottom: style.border.bottom ? {
-                style: style.border.bottom.style || DEFAULT_BORDER_STYLE,
-                color: {argb: toArgb(style.border.bottom.color) || DEFAULT_BORDER_COLOR},
-            } : undefined,
+            bottom: style.border.bottom
+                ? {
+                      style: style.border.bottom.style || DEFAULT_BORDER_STYLE,
+                      color: { argb: toArgb(style.border.bottom.color) || DEFAULT_BORDER_COLOR },
+                  }
+                : undefined,
 
-            right: style.border.right ? {
-                style: style.border.right.style || DEFAULT_BORDER_STYLE,
-                color: {argb: toArgb(style.border.right.color) || DEFAULT_BORDER_COLOR},
-            } : undefined,
+            right: style.border.right
+                ? {
+                      style: style.border.right.style || DEFAULT_BORDER_STYLE,
+                      color: { argb: toArgb(style.border.right.color) || DEFAULT_BORDER_COLOR },
+                  }
+                : undefined,
         };
     }
 
@@ -787,8 +784,8 @@ function convertToExcelStyle(style) {
         excelStyle.fill = {
             type: "pattern",
             pattern: style.fill.pattern || "solid",
-            fgColor: {argb: toArgb(style.fill.fgColor || style.fill.color || "#FFFFFF")},
-            bgColor: {argb: toArgb(style.fill.bgColor || "#FFFFFF")},
+            fgColor: { argb: toArgb(style.fill.fgColor || style.fill.color || "#FFFFFF") },
+            bgColor: { argb: toArgb(style.fill.bgColor || "#FFFFFF") },
         };
     }
 
@@ -849,6 +846,19 @@ function getMergedCellStyle(sheet, row, col) {
         styleId = cell.style || cell._style || cell.styleRef || cell.styleIndex || null;
     }
 
+    // 检查条件格式样式
+    if (styleId === null && typeof sheet.hasConditionalRules === 'function' && sheet.hasConditionalRules()) {
+        try {
+            const conditionalStyleId = sheet.matchConditionalStyle(row, col, cell);
+            if (conditionalStyleId !== null) {
+                styleId = conditionalStyleId;
+            }
+        } catch (error) {
+            errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                `获取条件格式样式失败 (${row},${col})`, {error});
+        }
+    }
+
     // 行样式和列样式的优先级低于单元格样式
     if (styleId === null) {
         const rowStyleId = sheet.rowStyles?.get(row);
@@ -863,12 +873,12 @@ function getMergedCellStyle(sheet, row, col) {
 
     // 使用全局导入的 stylePool 获取样式对象
     try {
-        if (typeof stylePool !== 'undefined' && stylePool && typeof stylePool.getStyle === 'function') {
+        if (typeof stylePool !== "undefined" && stylePool && typeof stylePool.getStyle === "function") {
             const style = stylePool.getStyle(styleId);
             return style || null;
         }
     } catch (error) {
-        errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取样式失败 (styleId: ${styleId})`, {error});
+        errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取样式失败 (styleId: ${styleId})`, { error });
     }
 
     return null;
@@ -911,8 +921,8 @@ function calculateNestedHeaderWidth(sheet) {
     let totalCols = 0;
 
     for (const cell of firstRow) {
-        if (cell && typeof cell === 'object') {
-            totalCols += (cell.colspan || 1);
+        if (cell && typeof cell === "object") {
+            totalCols += cell.colspan || 1;
         } else if (cell !== null && cell !== undefined) {
             totalCols += 1;
         }
@@ -956,7 +966,7 @@ function calculateNestedHeaderWidth(sheet) {
  * @requires sheet.getNestedHeaderRowCount() 方法可用
  * @requires sheet.getNestedColHeader(rowIndex, col) 方法可用
  */
-function writeNestedHeaders({worksheet, sheet, opts, range}) {
+function writeNestedHeaders({ worksheet, sheet, opts, range }) {
     const nestedHeaders = sheet.nestedHeaders;
 
     if (!Array.isArray(nestedHeaders) || nestedHeaders.length === 0) {
@@ -981,12 +991,7 @@ function writeNestedHeaders({worksheet, sheet, opts, range}) {
                 cell.value = label;
 
                 if (colspan > 1) {
-                    worksheet.mergeCells(
-                        rowIndex + 1,
-                        currentCol,
-                        rowIndex + 1,
-                        currentCol + colspan - 1
-                    );
+                    worksheet.mergeCells(rowIndex + 1, currentCol, rowIndex + 1, currentCol + colspan - 1);
                 }
 
                 applyCellStyle(cell, headerInfo, opts);
@@ -1007,7 +1012,11 @@ function writeNestedHeaders({worksheet, sheet, opts, range}) {
  * 与嵌套表头的区别：
  * - 只有一行
  * - 无合并单元格
- * - 统一的表头样式（蓝底白字）
+ * - 支持自定义样式或默认样式
+ *
+ * 样式优先级：
+ * 1. 列头自定义样式（如果存在）
+ * 2. 默认表头样式（蓝底白字）
  *
  * @param {Object} context - 配置上下文对象
  * @param {import('exceljs').Worksheet} context.worksheet - 目标工作表
@@ -1028,7 +1037,45 @@ function writeColumnHeaders({worksheet, sheet, opts, range, startRow}) {
         colIndex += 1;
 
         headerCell.value = sheet.getColHeader(c);
-        applyDefaultHeaderStyle(headerCell);
+
+        // 检查列头是否有自定义样式（通过 colStyles 或 columnsConfig）
+        if (opts.cellStyles) {
+            let customStyle = null;
+
+            // 尝试从列样式获取
+            const colStyleId = sheet.colStyles?.get(c);
+            if (colStyleId !== undefined && colStyleId !== null) {
+                try {
+                    customStyle = stylePool.getStyle(colStyleId);
+                } catch (error) {
+                    errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                        `获取列头样式失败 (col: ${c}, styleId: ${colStyleId})`, {error});
+                }
+            }
+
+            // 尝试从列配置获取
+            if (!customStyle && sheet.columnsConfig?.has(c)) {
+                const colConfig = sheet.columnsConfig.get(c);
+                if (colConfig?.style) {
+                    customStyle = colConfig.style;
+                }
+            }
+
+            // 应用自定义样式或默认样式
+            if (customStyle) {
+                const excelStyle = convertToExcelStyle(customStyle);
+                Object.assign(headerCell, excelStyle);
+
+                // 确保有边框
+                if (!headerCell.border) {
+                    headerCell.border = createThinBorder();
+                }
+            } else {
+                applyDefaultHeaderStyle(headerCell);
+            }
+        } else {
+            applyDefaultHeaderStyle(headerCell);
+        }
     }
 
     return startRow + 1;
@@ -1056,7 +1103,7 @@ function writeColumnHeaders({worksheet, sheet, opts, range, startRow}) {
  * @param {number} context.dataStartRow - 数据起始行号（Excel 行号，1-based）
  * @returns {void}
  */
-function writeDataCells({worksheet, sheet, opts, range, dataStartRow}) {
+function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
     for (let r = range.startRow; r <= range.endRow; r += 1) {
         const excelRow = worksheet.getRow(dataStartRow + (r - range.startRow) + 1);
         let colIndex = 1;
@@ -1069,11 +1116,45 @@ function writeDataCells({worksheet, sheet, opts, range, dataStartRow}) {
             excelCell.value = cell ? cell.value : "";
 
             if (opts.cellStyles) {
+                // 检查单元格是否被禁用或只读
+                const isDisabled = typeof sheet.isDisabled === 'function' && sheet.isDisabled(r, c);
+
+                if (isDisabled) {
+
+                    // 应用禁用/只读样式（灰色背景）
+                    excelCell.fill = {
+                        type: "pattern",
+                        pattern: "solid",
+
+                        // 浅灰色背景
+                        fgColor: {argb: "F2F2F2"},
+                        bgColor: {argb: "F2F2F2"},
+                    };
+
+                    // 灰色文字
+                    excelCell.font = {color: {argb: "999999"}};
+                }
+
+                // 获取合并样式（包含条件格式样式）
                 const mergedStyle = getMergedCellStyle(sheet, r, c);
 
                 if (mergedStyle) {
                     const excelStyle = convertToExcelStyle(mergedStyle);
                     Object.assign(excelCell, excelStyle);
+                }
+
+                // 如果没有其他样式，检查 resolveCellProperties
+                if (!isDisabled && !mergedStyle && typeof sheet.resolveCellProperties === 'function') {
+                    try {
+                        const cellProps = sheet.resolveCellProperties(r, c);
+                        if (cellProps?.style) {
+                            const propsStyle = convertToExcelStyle(cellProps.style);
+                            Object.assign(excelCell, propsStyle);
+                        }
+                    } catch (error) {
+                        errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                            `获取单元格属性失败 (${r},${c})`, {error});
+                    }
                 }
             }
 
@@ -1120,7 +1201,7 @@ function writeDataCells({worksheet, sheet, opts, range, dataStartRow}) {
  * // 假设 canvas-sheet 中 B4:C4 是合并的
  * // 此函数会在 Excel 中创建对应的合并单元格
  */
-function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
+function exportDataMerges({ worksheet, sheet, range, dataStartRow }) {
     try {
         let mergeManager = null;
         let merges = [];
@@ -1132,10 +1213,10 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
             mergeManager = sheet._mergeManager;
         } else {
             // 尝试从其他可能的属性名获取
-            const possibleNames = ['merges', 'mergedCells', 'cellMerges', 'mergeStore'];
+            const possibleNames = ["merges", "mergedCells", "cellMerges", "mergeStore"];
             for (const name of possibleNames) {
                 if (sheet[name]) {
-                    mergeManager = {getMerges: () => sheet[name]};
+                    mergeManager = { getMerges: () => sheet[name] };
                     break;
                 }
             }
@@ -1146,14 +1227,14 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
         }
 
         // 获取合并列表（支持多种返回类型）
-        if (typeof mergeManager.getMerges === 'function') {
+        if (typeof mergeManager.getMerges === "function") {
             const rawMerges = mergeManager.getMerges();
 
             if (rawMerges instanceof Map) {
                 merges = Array.from(rawMerges.values());
             } else if (Array.isArray(rawMerges)) {
                 merges = rawMerges;
-            } else if (rawMerges && typeof rawMerges === 'object') {
+            } else if (rawMerges && typeof rawMerges === "object") {
                 merges = Object.values(rawMerges);
             }
         } else if (Array.isArray(mergeManager)) {
@@ -1180,10 +1261,7 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
             const srcEndCol = merge.bottomCol ?? merge.endCol ?? merge.col2 ?? merge.toCol ?? srcStartCol;
 
             // 检查是否在数据范围内
-            const isInRange = !(
-                srcEndRow < range.startRow || srcStartRow > range.endRow ||
-                srcEndCol < range.startCol || srcStartCol > range.endCol
-            );
+            const isInRange = !(srcEndRow < range.startRow || srcStartRow > range.endRow || srcEndCol < range.startCol || srcStartCol > range.endCol);
 
             if (!isInRange) {
                 continue; // eslint-disable-line no-continue
@@ -1202,16 +1280,10 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
             const excelEndCol = adjustedEndCol - range.startCol + 1;
 
             // 创建合并区域
-            worksheet.mergeCells(
-                excelStartRow,
-                excelStartCol,
-                excelEndRow,
-                excelEndCol
-            );
+            worksheet.mergeCells(excelStartRow, excelStartCol, excelEndRow, excelEndCol);
         }
-
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, {error});
+        errorHandler.handle(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, { error });
     }
 }
 
@@ -1238,12 +1310,12 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
 function applyDefaultHeaderStyle(cell) {
     const targetCell = cell;
 
-    targetCell.font = {bold: true};
-    targetCell.alignment = {horizontal: "center", vertical: "middle"};
+    targetCell.font = { bold: true };
+    targetCell.alignment = { horizontal: "center", vertical: "middle" };
     targetCell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: {argb: HEADER_BG_COLOR},
+        fgColor: { argb: HEADER_BG_COLOR },
     };
     targetCell.border = createThinBorder();
 }
@@ -1288,10 +1360,10 @@ function applyCellStyle(cell, headerInfo, opts) {
  */
 function createThinBorder() {
     return {
-        top: {style: DEFAULT_BORDER_STYLE},
-        left: {style: DEFAULT_BORDER_STYLE},
-        bottom: {style: DEFAULT_BORDER_STYLE},
-        right: {style: DEFAULT_BORDER_STYLE},
+        top: { style: DEFAULT_BORDER_STYLE },
+        left: { style: DEFAULT_BORDER_STYLE },
+        bottom: { style: DEFAULT_BORDER_STYLE },
+        right: { style: DEFAULT_BORDER_STYLE },
     };
 }
 
@@ -1345,7 +1417,7 @@ function createThinBorder() {
  */
 async function generateXlsx(sheet, opts, range) {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(sheet.name || CONFIG.DEFAULT_SHEET_NAME + '1');
+    const worksheet = workbook.addWorksheet(sheet.name || CONFIG.DEFAULT_SHEET_NAME + "1");
 
     if (!range) {
         return await workbook.xlsx.writeBuffer();
@@ -1353,14 +1425,14 @@ async function generateXlsx(sheet, opts, range) {
 
     let excelRowIndex = 1;
 
-    const adjustedRange = {...range};
+    const adjustedRange = { ...range };
 
     if (opts.nestedHeaders) {
         // 计算嵌套表头宽度并扩展数据范围
         const nestedHeaderWidth = calculateNestedHeaderWidth(sheet);
         adjustedRange.endCol = Math.max(range.endCol, nestedHeaderWidth - 1);
 
-        const context = {worksheet, sheet, opts, range: adjustedRange};
+        const context = { worksheet, sheet, opts, range: adjustedRange };
 
         // 步骤1：写入嵌套表头
         writeNestedHeaders(context);
@@ -1379,7 +1451,7 @@ async function generateXlsx(sheet, opts, range) {
         exportDataMerges(context);
     } else {
         // 无嵌套表头的简化流程
-        const context = {worksheet, sheet, opts, range};
+        const context = { worksheet, sheet, opts, range };
         context.startRow = excelRowIndex - 1;
         excelRowIndex = writeColumnHeaders(context);
         context.dataStartRow = excelRowIndex;
@@ -1442,7 +1514,6 @@ async function generateXlsx(sheet, opts, range) {
  * });
  */
 export class ExportFilePlugin extends BasePlugin {
-
     static get PLUGIN_NAME() {
         return "exportFile";
     }
@@ -1486,14 +1557,14 @@ export class ExportFilePlugin extends BasePlugin {
 
         const range = options.range
             ? {
-                startRow: options.range.startRow ?? 0,
-                startCol: options.range.startCol ?? 0,
-                endRow: options.range.endRow ?? 0,
-                endCol: options.range.endCol ?? 0,
-            }
+                  startRow: options.range.startRow ?? 0,
+                  startCol: options.range.startCol ?? 0,
+                  endRow: options.range.endRow ?? 0,
+                  endCol: options.range.endCol ?? 0,
+              }
             : getDataRange(sheet);
 
-        const result = {opts, range, sheet};
+        const result = { opts, range, sheet };
 
         if (!preset.isBinary) {
             const rows = buildRows(sheet, opts, range);
@@ -1528,8 +1599,7 @@ export class ExportFilePlugin extends BasePlugin {
         const preset = FORMAT_PRESETS[format];
 
         if (preset?.isBinary) {
-            errorHandler.warn(ERROR_CODE.GENERIC_WARN,
-                `exportAsString() 不支持 ${format} 格式，请使用 exportAsBlob() 或 downloadFile() 替代`);
+            errorHandler.warn(ERROR_CODE.GENERIC_WARN, `exportAsString() 不支持 ${format} 格式，请使用 exportAsBlob() 或 downloadFile() 替代`);
             return "";
         }
 
@@ -1566,11 +1636,11 @@ export class ExportFilePlugin extends BasePlugin {
         const result = this.#prepare(format, options);
         if (!result) return null;
 
-        const {opts} = result;
+        const { opts } = result;
 
         if (FORMAT_PRESETS[format]?.isBinary) {
             const buffer = await generateXlsx(result.sheet, opts, result.range);
-            return new Blob([buffer], {type: opts.mimeType});
+            return new Blob([buffer], { type: opts.mimeType });
         }
 
         return toBlob(result.str, opts);
@@ -1618,12 +1688,12 @@ export class ExportFilePlugin extends BasePlugin {
         const result = this.#prepare(format, options);
         if (!result) return;
 
-        const {opts} = result;
+        const { opts } = result;
         let blob;
 
         if (FORMAT_PRESETS[format]?.isBinary) {
             const buffer = await generateXlsx(result.sheet, opts, result.range);
-            blob = new Blob([buffer], {type: opts.mimeType});
+            blob = new Blob([buffer], { type: opts.mimeType });
         } else {
             blob = toBlob(result.str, opts);
         }
