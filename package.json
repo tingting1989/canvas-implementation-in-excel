@@ -1,6 +1,6 @@
 {
     "name": "@canvas-sheet/core",
-    "version": "1.0.12",
+    "version": "1.0.13",
     "description": "High-performance Canvas-based spreadsheet engine for the web. Supports 100K+ rows, Excel-compatible formulas, plugins, and Web Components UI.",
     "main": "dist/canvas-sheet.umd.js",
     "module": "dist/canvas-sheet.esm.mjs",
@@ -138,6 +138,7 @@
         "jsdom": "^29.1.1",
         "lint-staged": "^16.4.0",
         "prettier": "^3.0.3",
+        "standard-version": "^9.5.0",
         "style-loader": "^4.0.0",
         "terser-webpack-plugin": "^5.6.1",
         "vitest": "^4.1.9",
