@@ -430,6 +430,26 @@ describe("ExportFilePlugin - 完整功能测试", () => {
             expect(deptHeader.style.color).toBe("#333333");
             expect(deptHeader.style.backgroundColor).toBeUndefined();  // 应该继承默认背景色
         });
+
+        it("有嵌套表头但没有数据时应该导出嵌套表头", async () => {
+            const sheet = workbook.activeSheet;
+
+            const originalChunks = sheet.cellStore.chunks;
+            sheet.cellStore.chunks = vi.fn(() => []);  // 模拟无数据
+
+            try {
+                const blob = await plugin.exportAsBlob("xlsx", { nestedHeaders: true, cellStyles: true });
+
+                expect(blob).toBeInstanceOf(Blob);
+                expect(blob.size).toBeGreaterThan(0);  // 不应该是空文件
+                expect(blob.type).toContain("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+                const buffer = await blob.arrayBuffer();
+                expect(buffer.byteLength).toBeGreaterThan(1000);  // 至少包含嵌套表头数据
+            } finally {
+                sheet.cellStore.chunks = originalChunks;  // 恢复原始配置
+            }
+        });
     });
 
     describe("5. CSV/TSV 基础导出", () => {

@@ -1588,21 +1588,40 @@ function createThinBorder() {
  * triggerDownload(blob, 'report.xlsx');
  */
 async function generateXlsx(sheet, opts, range) {
+    if (!ExcelJS) {
+        errorHandler.handle(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED,
+            "ExcelJS 库未安装。请执行: npm install exceljs");
+        throw new Error(
+            "ExcelJS is required for XLSX export. " +
+            "Please install it with: npm install exceljs"
+        );
+    }
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet(sheet.name || CONFIG.DEFAULT_SHEET_NAME + "1");
 
+    let excelRowIndex = 1;
+    let adjustedRange = range;
+
     if (!range) {
-        return await workbook.xlsx.writeBuffer();
+        if (opts.nestedHeaders && sheet.nestedHeaders && Array.isArray(sheet.nestedHeaders) && sheet.nestedHeaders.length > 0) {
+            const nestedHeaderWidth = calculateNestedHeaderWidth(sheet);
+            adjustedRange = {
+                startRow: 0,
+                startCol: 0,
+                endRow: -1,
+                endCol: nestedHeaderWidth - 1
+            };
+        } else {
+            return await workbook.xlsx.writeBuffer();
+        }
+    } else {
+        adjustedRange = { ...range };
     }
 
-    let excelRowIndex = 1;
-
-    const adjustedRange = { ...range };
-
     if (opts.nestedHeaders) {
-        // 计算嵌套表头宽度并扩展数据范围
         const nestedHeaderWidth = calculateNestedHeaderWidth(sheet);
-        adjustedRange.endCol = Math.max(range.endCol, nestedHeaderWidth - 1);
+        adjustedRange.endCol = Math.max(adjustedRange.endCol, nestedHeaderWidth - 1);
 
         const context = { worksheet, sheet, opts, range: adjustedRange };
 

@@ -1,7 +1,7 @@
 // src/core/utils.js
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-export const formatCellValue = (value) => {
+export const toDisplayString = (value) => {
     if (value === null || value === undefined) return "";
     return String(value);
 };

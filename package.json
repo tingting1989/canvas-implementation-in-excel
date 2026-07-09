@@ -146,7 +146,12 @@
         "webpack-cli": "^7.0.3",
         "webpack-dev-server": "^5.0.2"
     },
-    "dependencies": {
+    "peerDependencies": {
         "exceljs": "^4.4.0"
+    },
+    "peerDependenciesMeta": {
+        "exceljs": {
+            "optional": true
+        }
     }
 }

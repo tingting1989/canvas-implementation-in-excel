@@ -5,6 +5,14 @@ const shared = {
     mode: "production",
     devtool: false,
     entry: "./src/api/index.js",
+    externals: {
+        exceljs: {
+            commonjs: "exceljs",
+            commonjs2: "exceljs",
+            amd: "exceljs",
+            root: "ExcelJS",
+        },
+    },
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "src"),
@@ -33,6 +41,10 @@ module.exports = [
             environment: { module: true },
         },
         experiments: { outputModule: true },
+        externals: {
+            ...shared.externals,
+            exceljs: "module exceljs",  // ESM 格式使用 module 外部引用
+        },
     },
     {
         ...shared,
