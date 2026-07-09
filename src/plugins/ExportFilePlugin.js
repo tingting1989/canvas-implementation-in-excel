@@ -1589,12 +1589,8 @@ function createThinBorder() {
  */
 async function generateXlsx(sheet, opts, range) {
     if (!ExcelJS) {
-        errorHandler.handle(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED,
-            "ExcelJS 库未安装。请执行: npm install exceljs");
-        throw new Error(
-            "ExcelJS is required for XLSX export. " +
-            "Please install it with: npm install exceljs"
-        );
+        errorHandler.handle(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED, "ExcelJS 库未安装。请执行: npm install exceljs");
+        throw new Error("ExcelJS is required for XLSX export. " + "Please install it with: npm install exceljs");
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -1610,7 +1606,7 @@ async function generateXlsx(sheet, opts, range) {
                 startRow: 0,
                 startCol: 0,
                 endRow: -1,
-                endCol: nestedHeaderWidth - 1
+                endCol: nestedHeaderWidth - 1,
             };
         } else {
             return await workbook.xlsx.writeBuffer();
