@@ -798,89 +798,208 @@ function convertToExcelStyle(style) {
 }
 
 /**
- * 获取指定单元格的合并样式（考虑样式继承优先级）
+ * 获取指定单元格的最终合并样式（遵循 SheetStyleManager 的 8 层权重体系）
  *
- * 样式优先级链（高到低）：
- * 1. 单元格级样式 (cell.styleId)
- * 2. 行级样式 (sheet.rowStyles[row])
- * 3. 列级样式 (sheet.colStyles[col])
- * 4. 默认样式（不在此函数中处理）
+ * 样式优先级链（从低到高）：
+ *   第 1 层：默认样式（基础）
+ *     ↓
+ *   第 2 层：列样式 (sheet.colStyles[col])
+ *     ↓
+ *   第 3 层：行样式 (sheet.rowStyles[row])
+ *     ↓
+ *   第 4 层：单元格样式 (cell.styleId)
+ *     ↓
+ *   第 5 层：列类型默认样式（如数字列右对齐等）
+ *     ↓
+ *   第 6 层：cells() / cell 配置动态样式 ← Name 列加粗的来源
+ *     ↓
+ *   第 7 层：条件格式样式              ← Age/Salary 红色背景在这里
+ *     ↓
+ *   第 8 层：数据绑定样式（值映射）
  *
- * 查找算法：
- * 1. 先检查单元格是否有独立样式（支持多种属性名）
- * 2. 若无，检查行样式和列样式（行样式优先级高于列样式）
- * 3. 最终通过全局 stylePool 解析样式 ID 为具体样式对象
+ * 算法说明：
+ * - 采用逐层覆盖模式（{ ...base, ...layerN }），每层覆盖同名属性
+ * - 与 SheetStyleManager.resolveStyle() 保持完全一致的优先级顺序
+ * - 支持所有样式来源的完整提取和正确合并
  *
  * 特殊处理：
  * - 正确处理 styleId=0 的情况（falsy 但有效）
- * - 支持多种属性名（styleId, style, _style, styleRef, styleIndex）
  * - 使用可选链操作符安全访问可能不存在的属性
+ * - 通过 try-catch 安全调用各层获取方法
  *
  * @param {Object} sheet - Sheet 实例
  * @param {number} row - 行索引（0-based）
  * @param {number} col - 列索引（0-based）
- * @returns {Object|null} 合并后的样式对象，或 null（无样式时）
+ * @returns {Object|null} 最终合并后的样式对象，或 null（无任何样式时）
  *
  * @example
- * const style = getMergedCellStyle(sheet, 5, 3);
- * if (style) {
- *     console.log(style.font);  // { name: 'Arial', bold: true, ... }
- * }
+ * const finalStyle = getMergedCellStyle(sheet, 2, 4);  // Salary列第3行
+ * // 返回包含所有8层样式合并后的完整样式对象
  */
 function getMergedCellStyle(sheet, row, col) {
-    const cell = sheet.cellStore.get(row, col);
-
-    if (!cell) {
-        return null;
-    }
-
-    // 获取样式ID（正确处理 styleId=0 的情况）
-    let styleId = null;
-
-    if (cell.styleId !== undefined && cell.styleId !== null) {
-        styleId = cell.styleId;
-    }
-
-    // 尝试备用属性名（兼容不同版本的实现）
-    if (styleId === null) {
-        styleId = cell.style || cell._style || cell.styleRef || cell.styleIndex || null;
-    }
-
-    // 检查条件格式样式
-    if (styleId === null && typeof sheet.hasConditionalRules === "function" && sheet.hasConditionalRules()) {
-        try {
-            const conditionalStyleId = sheet.matchConditionalStyle(row, col, cell);
-            if (conditionalStyleId !== null) {
-                styleId = conditionalStyleId;
-            }
-        } catch (error) {
-            errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取条件格式样式失败 (${row},${col})`, { error });
-        }
-    }
-
-    // 行样式和列样式的优先级低于单元格样式
-    if (styleId === null) {
-        const rowStyleId = sheet.rowStyles?.get(row);
-        const colStyleId = sheet.colStyles?.get(col);
-
-        styleId = rowStyleId || colStyleId || null;
-    }
-
-    if (styleId === null) {
-        return null;
-    }
-
-    // 使用全局导入的 stylePool 获取样式对象
     try {
-        if (typeof stylePool !== "undefined" && stylePool && typeof stylePool.getStyle === "function") {
-            const style = stylePool.getStyle(styleId);
-            return style || null;
-        }
-    } catch (error) {
-        errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取样式失败 (styleId: ${styleId})`, { error });
-    }
 
-    return null;
+        // 获取单元格对象（后续多层需要用到）
+        const cell = sheet.cellStore.get(row, col);
+
+        // ══════════════════════════════════════════════
+        // 第 1 层：默认样式（基础层）
+        // ══════════════════════════════════════════════
+        let mergedStyle = {};
+
+        if (typeof sheet.getDefaultStyle === 'function') {
+            const defaultStyle = sheet.getDefaultStyle();
+            if (defaultStyle) {
+                mergedStyle = {...defaultStyle};
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // 第 2 层：列样式
+        // ══════════════════════════════════════════════
+        const colStyleId = sheet.colStyles?.get(col);
+        if (colStyleId !== undefined && colStyleId !== null) {
+            try {
+                const colStyle = stylePool.getStyle(colStyleId);
+                if (colStyle) {
+                    mergedStyle = {...mergedStyle, ...colStyle};
+                }
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                    `获取列样式失败 (col: ${col}, styleId: ${colStyleId})`, {error});
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // 第 3 层：行样式
+        // ══════════════════════════════════════════════
+        const rowStyleId = sheet.rowStyles?.get(row);
+        if (rowStyleId !== undefined && rowStyleId !== null) {
+            try {
+                const rowStyle = stylePool.getStyle(rowStyleId);
+                if (rowStyle) {
+                    mergedStyle = {...mergedStyle, ...rowStyle};
+                }
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                    `获取行样式失败 (row: ${row}, styleId: ${rowStyleId})`, {error});
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // 第 4 层：单元格独立样式 (cell.styleId)
+        // ══════════════════════════════════════════════
+        let cellStyleId = null;
+
+        if (cell) {
+
+            // 正确处理 styleId=0 的情况（falsy 但有效）
+            if (cell.styleId !== undefined && cell.styleId !== null) {
+                cellStyleId = cell.styleId;
+            }
+
+            // 尝试备用属性名（兼容不同版本实现）
+            if (cellStyleId === null) {
+                cellStyleId = cell.style || cell._style || cell.styleRef || cell.styleIndex || null;
+            }
+        }
+
+        if (cellStyleId !== undefined && cellStyleId !== null) {
+            try {
+                const cellStyle = stylePool.getStyle(cellStyleId);
+                if (cellStyle) {
+                    mergedStyle = {...mergedStyle, ...cellStyle};
+                }
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                    `获取单元格样式失败 (${row},${col}, styleId: ${cellStyleId})`, {error});
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // 第 5 层：列类型默认样式（如数字列右对齐等）
+        // ══════════════════════════════════════════════
+        if (typeof sheet.getCellTypeInstance === 'function') {
+            try {
+                const cellTypeInstance = sheet.getCellTypeInstance(row, col);
+                if (cellTypeInstance && typeof cellTypeInstance.getDefaultStyle === 'function') {
+                    const typeDefaultStyle = cellTypeInstance.getDefaultStyle(mergedStyle);
+                    if (typeDefaultStyle) {
+                        mergedStyle = {...mergedStyle, ...typeDefaultStyle};
+                    }
+                }
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                    `获取列类型默认样式失败 (${row},${col})`, {error});
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // 第 6 层：cells() / cell 配置动态样式
+        // ← 这里是 Name 列加粗的来源
+        // ══════════════════════════════════════════════
+        if (typeof sheet.resolveCellProperties === "function") {
+            try {
+                const cellProps = sheet.resolveCellProperties(row, col);
+                if (cellProps?.style) {
+                    mergedStyle = {...mergedStyle, ...cellProps.style};
+                }
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                    `获取动态单元格属性失败 (${row},${col})`, {error});
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // 第 7 层：条件格式样式
+        // ← Age/Salary 红色背景在这里
+        // ══════════════════════════════════════════════
+        if (typeof sheet.hasConditionalRules === "function" && sheet.hasConditionalRules()) {
+            try {
+                const cfStyleId = sheet.matchConditionalStyle(row, col, cell);
+                if (cfStyleId !== undefined && cfStyleId !== null) {
+                    const cfStyle = stylePool.getStyle(cfStyleId);
+                    if (cfStyle) {
+                        mergedStyle = {...mergedStyle, ...cfStyle};
+                    }
+                }
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                    `获取条件格式样式失败 (${row},${col})`, {error});
+            }
+        }
+
+        // ══════════════════════════════════════════════
+        // 第 8 层：数据绑定样式（值映射）
+        // ══════════════════════════════════════════════
+        if (typeof sheet.getDataBindStyle === "function") {
+            try {
+                const dbStyleId = sheet.getDataBindStyle(row, col);
+                if (dbStyleId !== undefined && dbStyleId !== null) {
+                    const dbStyle = stylePool.getStyle(dbStyleId);
+                    if (dbStyle) {
+                        mergedStyle = {...mergedStyle, ...dbStyle};
+                    }
+                }
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+                    `获取数据绑定样式失败 (${row},${col})`, {error});
+            }
+        }
+
+        // 如果经过所有层级后仍有样式内容，返回合并结果
+        if (Object.keys(mergedStyle).length > 0) {
+            return mergedStyle;
+        }
+
+        return null;
+
+    } catch (error) {
+        errorHandler.handle(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
+            `样式提取过程异常 (${row},${col})`, {error});
+
+        return null;
+    }
 }
 
 // ============================================================================
@@ -1084,14 +1203,17 @@ function writeColumnHeaders({ worksheet, sheet, opts, range, startRow }) {
  *
  * 处理逻辑：
  * 1. 遍历范围内的每一行
- * 2. 如启用行头，先写行头单元格（绿底加粗）
- * 3. 写入每个数据单元格的值
- * 4. 如启用样式导出，应用合并样式（单元格 > 行 > 列）
+ * 2. 写入每个数据单元格的值
+ * 3. 如启用样式导出，调用 getMergedCellStyle() 获取8层权重合并后的最终样式
+ * 4. 如果单元格被禁用/只读，在最终样式基础上强制覆盖背景色和文字颜色
  * 5. 统一添加细边框（确保视觉一致性）
+ *
+ * 样式处理流程：
+ *   单元格值 → getMergedCellStyle(8层合并) → 禁用状态检查 → convertToExcelStyle → 边框
  *
  * 坐标转换公式：
  * - Excel 行号 = dataStartRow + (源行号 - range.startRow) + 1
- * - Excel 列号 = 从 1 开始递增（根据是否包含行头）
+ * - Excel 列号 = 从 1 开始递增
  *
  * @param {Object} context - 配置上下文对象
  * @param {import('exceljs').Worksheet} context.worksheet - 目标工作表
@@ -1111,49 +1233,93 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
             const excelCell = excelRow.getCell(colIndex);
             colIndex += 1;
 
+            // 设置单元格值
             excelCell.value = cell ? cell.value : "";
 
             if (opts.cellStyles) {
-                // 检查单元格是否被禁用或只读
-                const isDisabled = typeof sheet.isDisabled === "function" && sheet.isDisabled(r, c);
 
-                if (isDisabled) {
-                    // 应用禁用/只读样式（灰色背景）
-                    excelCell.fill = {
-                        type: "pattern",
-                        pattern: "solid",
+                // ══════════════════════════════════════
+                // 步骤1：获取8层权重合并后的最终样式
+                // （包含：默认→列→行→单元格→列类型→cells()→条件格式→数据绑定）
+                // ══════════════════════════════════════
+                const finalMergedStyle = getMergedCellStyle(sheet, r, c);
 
-                        // 浅灰色背景
-                        fgColor: { argb: "F2F2F2" },
-                        bgColor: { argb: "F2F2F2" },
-                    };
+                if (finalMergedStyle) {
 
-                    // 灰色文字
-                    excelCell.font = { color: { argb: "999999" } };
-                }
+                    // 将 canvas-sheet 样式转换为 ExcelJS 兼容格式
+                    const excelStyle = convertToExcelStyle(finalMergedStyle);
 
-                // 获取合并样式（包含条件格式样式）
-                const mergedStyle = getMergedCellStyle(sheet, r, c);
-
-                if (mergedStyle) {
-                    const excelStyle = convertToExcelStyle(mergedStyle);
+                    // 应用到 ExcelJS 单元格
                     Object.assign(excelCell, excelStyle);
                 }
 
-                // 如果没有其他样式，检查 resolveCellProperties
-                if (!isDisabled && !mergedStyle && typeof sheet.resolveCellProperties === "function") {
-                    try {
-                        const cellProps = sheet.resolveCellProperties(r, c);
-                        if (cellProps?.style) {
-                            const propsStyle = convertToExcelStyle(cellProps.style);
-                            Object.assign(excelCell, propsStyle);
+                // ══════════════════════════════════════
+                // 步骤2：检查并应用禁用/只读样式（最高优先级）
+                //
+                // 禁用样式应用策略（3级优先级）：
+                //   Level 1: cell 配置数组中的自定义禁用样式（如 { disabled:true, style:{bg:"#fff3cd"} }）
+                //   Level 2: 默认禁用样式（浅灰背景 + 灰色文字）
+                //   Level 3: 保持步骤1的其他样式属性不变
+                //
+                // 示例场景：
+                // - Salary列第3行 (row=2, col=4):
+                //   → readOnly + 自定义黄色背景 + 条件格式红色背景
+                //   → 最终显示：黄色背景（Level 1 自定义样式）+ 其他属性保留
+                // ══════════════════════════════════════
+                const isDisabled = typeof sheet.isDisabled === "function" && sheet.isDisabled(r, c);
+
+                if (isDisabled) {
+
+                    // 尝试获取 cell 配置数组中的自定义禁用样式
+                    let customDisabledStyle = null;
+
+                    if (Array.isArray(sheet.cellConfig)) {
+                        const cellConfig = sheet.cellConfig.find(
+                            cfg => cfg.row === r && cfg.col === c
+                        );
+
+                        if (cellConfig?.style) {
+                            customDisabledStyle = cellConfig.style;
                         }
-                    } catch (error) {
-                        errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取单元格属性失败 (${r},${c})`, { error });
+                    }
+
+                    if (customDisabledStyle) {
+
+                        // Level 1: 使用自定义禁用样式（转换为 ExcelJS 格式）
+                        const disabledExcelStyle = convertToExcelStyle(customDisabledStyle);
+
+                        // 只覆盖样式相关属性，保留其他属性（如字体加粗等）
+                        if (disabledExcelStyle.fill) {
+                            excelCell.fill = disabledExcelStyle.fill;
+                        }
+
+                        if (disabledExcelStyle.font) {
+
+                            // 合并字体属性（保留原有的 bold 等，只覆盖 color）
+                            excelCell.font = {
+                                ...excelCell.font,
+                                ...disabledExcelStyle.font,
+                            };
+                        }
+                    } else {
+
+                        // Level 2: 使用默认禁用样式（浅灰背景 + 灰色文字）
+                        excelCell.fill = {
+                            type: "pattern",
+                            pattern: "solid",
+
+                            // 浅灰色背景
+                            fgColor: { argb: "F2F2F2" },
+                            bgColor: { argb: "F2F2F2" },
+                        };
+
+                        // 灰色文字
+                        excelCell.font = { color: { argb: "999999" } };
                     }
                 }
             }
 
+            // 统一添加细边框
             excelCell.border = createThinBorder();
         }
     }
@@ -1322,8 +1488,14 @@ function applyDefaultHeaderStyle(cell) {
  * 样式选择逻辑：
  * 1. 如果 headerInfo 包含 style 属性且启用了 cellStyles
  *    → 使用 convertToExcelStyle() 转换自定义样式
+ *    → 合并默认表头样式（确保基础属性如边框、对齐、背景色）
  * 2. 否则
  *    → 回退到 applyDefaultHeaderStyle() 应用默认样式
+ *
+ * 样式合并策略：
+ * - 自定义样式的优先级高于默认样式
+ * - 但如果自定义样式缺少某些属性（如 backgroundColor），
+ *   会使用默认值填充
  *
  * @param {import('exceljs').Cell} cell - ExcelJS 单元格对象
  * @param {Object} headerInfo - 嵌套表头信息（可能包含 style 属性）
@@ -1332,6 +1504,10 @@ function applyDefaultHeaderStyle(cell) {
  */
 function applyCellStyle(cell, headerInfo, opts) {
     if (headerInfo.style && opts.cellStyles) {
+        // 先应用默认样式作为基础
+        applyDefaultHeaderStyle(cell);
+
+        // 然后用自定义样式覆盖（保留默认样式的缺失属性）
         const excelStyle = convertToExcelStyle(headerInfo.style);
         Object.assign(cell, excelStyle);
     } else {
