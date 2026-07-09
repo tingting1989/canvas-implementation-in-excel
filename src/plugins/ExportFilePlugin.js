@@ -66,10 +66,18 @@ const DEFAULT_FONT_SIZE = 11;
 const HEADER_BG_COLOR = "D9E1F2";
 
 /**
- * 默认边框颜色（深灰色）
- * @constant {string}
+ * 默认边框颜色（使用系统配置的网格线颜色 GRID_COLOR）
+ *
+ * ARGB 格式（8位十六进制，无 # 号前缀）
+ * - 来源：CONFIG.GRID_COLOR (默认值: "#ddd")
+ * - 转换值：#ddd → FFDDDDDD
+ *
+ * 注意：此常量在 toArgb() 函数定义之后初始化（避免 TDZ 错误）
+ *
+ * @type {string}
  */
-const DEFAULT_BORDER_COLOR = "000000";
+// eslint-disable-next-line prefer-const -- 必须使用 let 以支持延迟初始化（在 toArgb 定义之后）
+let DEFAULT_BORDER_COLOR;
 
 /**
  * 默认边框样式
@@ -618,6 +626,16 @@ function toArgb(color) {
     return result;
 }
 
+// ============================================================================
+// 初始化在 toArgb() 之后的常量（避免 TDZ 错误）
+// ============================================================================
+
+/**
+ * 使用已定义的 toArgb() 函数初始化边框颜色
+ * 将系统配置的 GRID_COLOR 转换为 ARGB 格式
+ */
+DEFAULT_BORDER_COLOR = toArgb(CONFIG.GRID_COLOR || "#ddd");
+
 /**
  * 将 canvas-sheet 样式对象转换为 ExcelJS 兼容的样式格式
  *
@@ -838,7 +856,6 @@ function convertToExcelStyle(style) {
  */
 function getMergedCellStyle(sheet, row, col) {
     try {
-
         // 获取单元格对象（后续多层需要用到）
         const cell = sheet.cellStore.get(row, col);
 
@@ -847,10 +864,10 @@ function getMergedCellStyle(sheet, row, col) {
         // ══════════════════════════════════════════════
         let mergedStyle = {};
 
-        if (typeof sheet.getDefaultStyle === 'function') {
+        if (typeof sheet.getDefaultStyle === "function") {
             const defaultStyle = sheet.getDefaultStyle();
             if (defaultStyle) {
-                mergedStyle = {...defaultStyle};
+                mergedStyle = { ...defaultStyle };
             }
         }
 
@@ -862,11 +879,10 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const colStyle = stylePool.getStyle(colStyleId);
                 if (colStyle) {
-                    mergedStyle = {...mergedStyle, ...colStyle};
+                    mergedStyle = { ...mergedStyle, ...colStyle };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                    `获取列样式失败 (col: ${col}, styleId: ${colStyleId})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列样式失败 (col: ${col}, styleId: ${colStyleId})`, { error });
             }
         }
 
@@ -878,11 +894,10 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const rowStyle = stylePool.getStyle(rowStyleId);
                 if (rowStyle) {
-                    mergedStyle = {...mergedStyle, ...rowStyle};
+                    mergedStyle = { ...mergedStyle, ...rowStyle };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                    `获取行样式失败 (row: ${row}, styleId: ${rowStyleId})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取行样式失败 (row: ${row}, styleId: ${rowStyleId})`, { error });
             }
         }
 
@@ -892,7 +907,6 @@ function getMergedCellStyle(sheet, row, col) {
         let cellStyleId = null;
 
         if (cell) {
-
             // 正确处理 styleId=0 的情况（falsy 但有效）
             if (cell.styleId !== undefined && cell.styleId !== null) {
                 cellStyleId = cell.styleId;
@@ -908,29 +922,27 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const cellStyle = stylePool.getStyle(cellStyleId);
                 if (cellStyle) {
-                    mergedStyle = {...mergedStyle, ...cellStyle};
+                    mergedStyle = { ...mergedStyle, ...cellStyle };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                    `获取单元格样式失败 (${row},${col}, styleId: ${cellStyleId})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取单元格样式失败 (${row},${col}, styleId: ${cellStyleId})`, { error });
             }
         }
 
         // ══════════════════════════════════════════════
         // 第 5 层：列类型默认样式（如数字列右对齐等）
         // ══════════════════════════════════════════════
-        if (typeof sheet.getCellTypeInstance === 'function') {
+        if (typeof sheet.getCellTypeInstance === "function") {
             try {
                 const cellTypeInstance = sheet.getCellTypeInstance(row, col);
-                if (cellTypeInstance && typeof cellTypeInstance.getDefaultStyle === 'function') {
+                if (cellTypeInstance && typeof cellTypeInstance.getDefaultStyle === "function") {
                     const typeDefaultStyle = cellTypeInstance.getDefaultStyle(mergedStyle);
                     if (typeDefaultStyle) {
-                        mergedStyle = {...mergedStyle, ...typeDefaultStyle};
+                        mergedStyle = { ...mergedStyle, ...typeDefaultStyle };
                     }
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                    `获取列类型默认样式失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列类型默认样式失败 (${row},${col})`, { error });
             }
         }
 
@@ -942,11 +954,10 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const cellProps = sheet.resolveCellProperties(row, col);
                 if (cellProps?.style) {
-                    mergedStyle = {...mergedStyle, ...cellProps.style};
+                    mergedStyle = { ...mergedStyle, ...cellProps.style };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                    `获取动态单元格属性失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取动态单元格属性失败 (${row},${col})`, { error });
             }
         }
 
@@ -960,12 +971,11 @@ function getMergedCellStyle(sheet, row, col) {
                 if (cfStyleId !== undefined && cfStyleId !== null) {
                     const cfStyle = stylePool.getStyle(cfStyleId);
                     if (cfStyle) {
-                        mergedStyle = {...mergedStyle, ...cfStyle};
+                        mergedStyle = { ...mergedStyle, ...cfStyle };
                     }
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                    `获取条件格式样式失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取条件格式样式失败 (${row},${col})`, { error });
             }
         }
 
@@ -978,12 +988,11 @@ function getMergedCellStyle(sheet, row, col) {
                 if (dbStyleId !== undefined && dbStyleId !== null) {
                     const dbStyle = stylePool.getStyle(dbStyleId);
                     if (dbStyle) {
-                        mergedStyle = {...mergedStyle, ...dbStyle};
+                        mergedStyle = { ...mergedStyle, ...dbStyle };
                     }
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-                    `获取数据绑定样式失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取数据绑定样式失败 (${row},${col})`, { error });
             }
         }
 
@@ -993,10 +1002,8 @@ function getMergedCellStyle(sheet, row, col) {
         }
 
         return null;
-
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED,
-            `样式提取过程异常 (${row},${col})`, {error});
+        errorHandler.handle(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `样式提取过程异常 (${row},${col})`, { error });
 
         return null;
     }
@@ -1237,7 +1244,6 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
             excelCell.value = cell ? cell.value : "";
 
             if (opts.cellStyles) {
-
                 // ══════════════════════════════════════
                 // 步骤1：获取8层权重合并后的最终样式
                 // （包含：默认→列→行→单元格→列类型→cells()→条件格式→数据绑定）
@@ -1245,7 +1251,6 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
                 const finalMergedStyle = getMergedCellStyle(sheet, r, c);
 
                 if (finalMergedStyle) {
-
                     // 将 canvas-sheet 样式转换为 ExcelJS 兼容格式
                     const excelStyle = convertToExcelStyle(finalMergedStyle);
 
@@ -1269,14 +1274,11 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
                 const isDisabled = typeof sheet.isDisabled === "function" && sheet.isDisabled(r, c);
 
                 if (isDisabled) {
-
                     // 尝试获取 cell 配置数组中的自定义禁用样式
                     let customDisabledStyle = null;
 
                     if (Array.isArray(sheet.cellConfig)) {
-                        const cellConfig = sheet.cellConfig.find(
-                            cfg => cfg.row === r && cfg.col === c
-                        );
+                        const cellConfig = sheet.cellConfig.find((cfg) => cfg.row === r && cfg.col === c);
 
                         if (cellConfig?.style) {
                             customDisabledStyle = cellConfig.style;
@@ -1284,7 +1286,6 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
                     }
 
                     if (customDisabledStyle) {
-
                         // Level 1: 使用自定义禁用样式（转换为 ExcelJS 格式）
                         const disabledExcelStyle = convertToExcelStyle(customDisabledStyle);
 
@@ -1294,7 +1295,6 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
                         }
 
                         if (disabledExcelStyle.font) {
-
                             // 合并字体属性（保留原有的 bold 等，只覆盖 color）
                             excelCell.font = {
                                 ...excelCell.font,
@@ -1302,7 +1302,6 @@ function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
                             };
                         }
                     } else {
-
                         // Level 2: 使用默认禁用样式（浅灰背景 + 灰色文字）
                         excelCell.fill = {
                             type: "pattern",
@@ -1523,19 +1522,20 @@ function applyCellStyle(cell, headerInfo, opts) {
  *
  * 边框规格：
  * - 四边统一使用 thin 样式
- * - 无颜色指定（使用 Excel 默认黑色）
+ * - 颜色使用系统配置的 GRID_COLOR（默认 #ddd，浅灰色）
+ * - 与 canvas-sheet 网格线颜色保持一致，确保视觉统一性
  *
  * @returns {Object} ExcelJS 边框样式对象
  *
  * @example
- * cell.border = createThinBorder();  // 应用四边细边框
+ * cell.border = createThinBorder();  // 应用四边细边框（#ddd 颜色）
  */
 function createThinBorder() {
     return {
-        top: { style: DEFAULT_BORDER_STYLE },
-        left: { style: DEFAULT_BORDER_STYLE },
-        bottom: { style: DEFAULT_BORDER_STYLE },
-        right: { style: DEFAULT_BORDER_STYLE },
+        top: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
+        left: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
+        bottom: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
+        right: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
     };
 }
 
