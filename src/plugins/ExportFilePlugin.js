@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @fileoverview 导出文件插件
  *
  * 功能概述：
@@ -44,9 +44,11 @@ import { BasePlugin } from "./BasePlugin.js";
 import ExcelJS from "exceljs";
 import { indexToCol } from "../utils/cellRef.js";
 import { stylePool } from "../model/styles/index.js";
-import { errorHandler, ERROR_CODE } from "../core/index.js";
+import { ERROR_CODE, errorHandler } from "../core/index.js";
 import { CONFIG } from "@/constants/config";
 import { StyleConverter, toArgb } from "@/shared/StyleConverter.js";
+import { pixelToExcelHeight, pixelToExcelWidth } from "../utils/excelUnits.js";
+import { HOOKS } from "@/constants/hookNames";
 
 // ============================================================================
 // [Section 1] 常量与配置
@@ -84,10 +86,10 @@ const DEFAULT_BORDER_STYLE = "thin";
 const DEFAULT_COLUMN_WIDTH = 15;
 
 /**
- * 默认行高（像素）
+ * 默认行高（磅/points）- Excel标准单位
  * @constant {number}
  */
-const DEFAULT_ROW_HEIGHT = 20;
+const DEFAULT_ROW_HEIGHT = 15;
 
 // ============================================================================
 // [Section 2] 格式预设配置
@@ -1308,11 +1310,13 @@ async function generateXlsx(sheet, opts, range) {
         adjustedRange = { ...range };
     }
 
+    let context; // 声明在外部作用域，以便后续使用
+
     if (opts.nestedHeaders) {
         const nestedHeaderWidth = calculateNestedHeaderWidth(sheet);
         adjustedRange.endCol = Math.max(adjustedRange.endCol, nestedHeaderWidth - 1);
 
-        const context = { worksheet, sheet, opts, range: adjustedRange };
+        context = { worksheet, sheet, opts, range: adjustedRange };
 
         // 步骤1：写入嵌套表头
         writeNestedHeaders(context);
@@ -1331,7 +1335,7 @@ async function generateXlsx(sheet, opts, range) {
         exportDataMerges(context);
     } else {
         // 无嵌套表头的简化流程
-        const context = { worksheet, sheet, opts, range };
+        context = { worksheet, sheet, opts, range };
         context.startRow = excelRowIndex - 1;
         excelRowIndex = writeColumnHeaders(context);
         context.dataStartRow = excelRowIndex;
@@ -1339,14 +1343,78 @@ async function generateXlsx(sheet, opts, range) {
         exportDataMerges(context);
     }
 
-    // 设置工作表默认属性
+    // 设置工作表默认属性（使用Excel标准单位：磅/points）
     worksheet.properties.defaultRowHeight = DEFAULT_ROW_HEIGHT;
 
-    // 设置列宽（统一使用默认宽度）
+    // ══════════════════════════════════════
+    // 步骤5：应用实际尺寸（从Canvas-Sheet读取并转换为Excel单位）
+    // ══════════════════════════════════════
+
     const totalCols = adjustedRange.endCol - adjustedRange.startCol + 1;
-    for (let i = 1; i <= Math.max(totalCols, 1); i += 1) {
-        const column = worksheet.getColumn(i);
-        column.width = DEFAULT_COLUMN_WIDTH;
+    const totalRows = adjustedRange.endRow - adjustedRange.startRow + 1;
+
+    try {
+        // 应用实际列宽（像素 → 字符宽度）
+        if (sheet.rowColManager && typeof sheet.rowColManager.getColWidth === "function") {
+            for (let colIdx = 0; colIdx < totalCols; colIdx++) {
+                const actualCol = adjustedRange.startCol + colIdx;
+                try {
+                    const colWidthPx = sheet.rowColManager.getColWidth(actualCol);
+                    if (colWidthPx && typeof colWidthPx === "number" && colWidthPx > 0) {
+                        worksheet.getColumn(colIdx + 1).width = pixelToExcelWidth(colWidthPx);
+                    } else {
+                        // 使用默认值
+                        worksheet.getColumn(colIdx + 1).width = DEFAULT_COLUMN_WIDTH;
+                    }
+                } catch (colError) {
+                    // 单个列读取失败时使用默认值
+                    worksheet.getColumn(colIdx + 1).width = DEFAULT_COLUMN_WIDTH;
+                }
+            }
+        } else {
+            // 无法读取实际列宽，统一使用默认值
+            for (let i = 1; i <= Math.max(totalCols, 1); i += 1) {
+                worksheet.getColumn(i).width = DEFAULT_COLUMN_WIDTH;
+            }
+        }
+
+        // 应用实际行高（像素 → 磅/points）
+
+        // 设置表头行高（嵌套表头使用统一的headerHeight）
+        if (opts.nestedHeaders && sheet.nestedHeaders && Array.isArray(sheet.nestedHeaders) && sheet.nestedHeaders.length > 0) {
+            const nestedHeaderRowCount = sheet.getNestedHeaderRowCount();
+            const headerHeightPx = sheet.headerHeight || CONFIG.HEADER_HEIGHT;
+
+            for (let headerRowIndex = 0; headerRowIndex < nestedHeaderRowCount; headerRowIndex++) {
+                try {
+                    worksheet.getRow(headerRowIndex + 1).height = pixelToExcelHeight(headerHeightPx);
+                } catch (headerError) {
+                    // 单个表头行失败时跳过
+                }
+            }
+        }
+
+        // 设置数据行高（从RowColManager获取每行的实际高度）
+        if (sheet.rowColManager && typeof sheet.rowColManager.getRowHeight === "function") {
+            for (let r = adjustedRange.startRow; r <= adjustedRange.endRow; r++) {
+                try {
+                    const rowHeightPx = sheet.rowColManager.getRowHeight(r);
+
+                    if (rowHeightPx && typeof rowHeightPx === "number" && rowHeightPx > 0) {
+                        const excelRowNumber = context.dataStartRow + (r - adjustedRange.startRow) + 1;
+                        worksheet.getRow(excelRowNumber).height = pixelToExcelHeight(rowHeightPx);
+                    }
+                } catch (rowError) {
+                    // 单个数据行失败时跳过
+                }
+            }
+        }
+        // 注意：如果无法读取行高，不强制设置（让Excel使用defaultRowHeight）
+    } catch (dimensionsError) {
+        // 降级处理：使用默认尺寸
+        for (let i = 1; i <= Math.max(totalCols, 1); i += 1) {
+            worksheet.getColumn(i).width = DEFAULT_COLUMN_WIDTH;
+        }
     }
 
     return await workbook.xlsx.writeBuffer();
@@ -1513,17 +1581,29 @@ export class ExportFilePlugin extends BasePlugin {
      fetch('/api/upload', { method: 'POST', body: formData });
      */
     async exportAsBlob(format = "csv", options = {}) {
-        const result = this.#prepare(format, options);
-        if (!result) return null;
+        try {
+            const result = this.#prepare(format, options);
+            if (!result) {
+                this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error: new Error("Sheet 无效或准备失败") });
+                return null;
+            }
 
-        const { opts } = result;
+            const { opts } = result;
+            let blob;
 
-        if (FORMAT_PRESETS[format]?.isBinary) {
-            const buffer = await generateXlsx(result.sheet, opts, result.range);
-            return new Blob([buffer], { type: opts.mimeType });
+            if (FORMAT_PRESETS[format]?.isBinary) {
+                const buffer = await generateXlsx(result.sheet, opts, result.range);
+                blob = new Blob([buffer], { type: opts.mimeType });
+            } else {
+                blob = toBlob(result.str, opts);
+            }
+
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { format, options, result });
+            return blob;
+        } catch (error) {
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error });
+            throw error;
         }
-
-        return toBlob(result.str, opts);
     }
 
     /**
@@ -1565,20 +1645,30 @@ export class ExportFilePlugin extends BasePlugin {
      * });
      */
     async downloadFile(format = "csv", options = {}) {
-        const result = this.#prepare(format, options);
-        if (!result) return;
+        try {
+            const result = this.#prepare(format, options);
+            if (!result) {
+                this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error: new Error("Sheet 无效或准备失败") });
+                return;
+            }
 
-        const { opts } = result;
-        let blob;
+            const { opts } = result;
+            let blob;
 
-        if (FORMAT_PRESETS[format]?.isBinary) {
-            const buffer = await generateXlsx(result.sheet, opts, result.range);
-            blob = new Blob([buffer], { type: opts.mimeType });
-        } else {
-            blob = toBlob(result.str, opts);
+            if (FORMAT_PRESETS[format]?.isBinary) {
+                const buffer = await generateXlsx(result.sheet, opts, result.range);
+                blob = new Blob([buffer], { type: opts.mimeType });
+            } else {
+                blob = toBlob(result.str, opts);
+            }
+
+            const filename = `${opts.filename}.${opts.fileExtension}`;
+            triggerDownload(blob, filename);
+
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { format, options, result, filename });
+        } catch (error) {
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error });
+            throw error;
         }
-
-        const filename = `${opts.filename}.${opts.fileExtension}`;
-        triggerDownload(blob, filename);
     }
 }

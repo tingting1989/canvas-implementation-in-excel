@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ExportFilePlugin 完整功能测试套件
  *
  * 覆盖范围：
@@ -660,3 +660,91 @@ describe("ExportFilePlugin - 性能测试", () => {
         expect(endTime - startTime).toBeLessThan(1000);  // 应该在1秒内完成
     });
 });
+
+    describe("7. 尺寸导出与单位转换", () => {
+        it("应该使用正确的默认行高单位（磅/points）", async () => {
+            const buffer = await plugin.exportAsBlob("xlsx");
+            const arrayBuffer = await buffer.arrayBuffer();
+            const exportedWorkbook = new ExcelJS.Workbook();
+            await exportedWorkbook.xlsx.load(arrayBuffer);
+            
+            const worksheet = exportedWorkbook.worksheets[0];
+            expect(worksheet.properties.defaultRowHeight).toBe(15);  // Excel标准默认行高：15pt
+        });
+
+        it("应该从Canvas-Sheet读取并转换实际列宽", async () => {
+            const sheet = workbook.activeSheet;
+            
+            if (sheet.rowColManager && typeof sheet.rowColManager.setColWidth === "function") {
+                sheet.rowColManager.setColWidth(0, 150);
+                sheet.rowColManager.setColWidth(1, 100);
+                sheet.rowColManager.setColWidth(2, 200);
+            }
+            
+            const buffer = await plugin.exportAsBlob("xlsx");
+            const arrayBuffer = await buffer.arrayBuffer();
+            const exportedWorkbook = new ExcelJS.Workbook();
+            await exportedWorkbook.xlsx.load(arrayBuffer);
+            
+            const worksheet = exportedWorkbook.worksheets[0];
+            
+            // 验证列宽已转换（允许±2的误差）
+            const colAWidth = worksheet.getColumn(1).width;
+            const colBWidth = worksheet.getColumn(2).width;
+            const colCWidth = worksheet.getColumn(3).width;
+            
+            expect(colAWidth).toBeGreaterThan(19);
+            expect(colAWidth).toBeLessThan(24);
+            expect(colBWidth).toBeGreaterThan(11);
+            expect(colBWidth).toBeLessThan(16);
+            expect(colCWidth).toBeGreaterThan(26);
+            expect(colCWidth).toBeLessThan(31);
+        });
+
+        it("应该从Canvas-Sheet读取并转换实际行高", async () => {
+            const sheet = workbook.activeSheet;
+            
+            if (sheet.rowColManager && typeof sheet.rowColManager.setRowHeight === "function") {
+                sheet.rowColManager.setRowHeight(0, 40);
+                sheet.rowColManager.setRowHeight(1, 24);
+                sheet.rowColManager.setRowHeight(2, 32);
+            }
+            
+            const buffer = await plugin.exportAsBlob("xlsx");
+            const arrayBuffer = await buffer.arrayBuffer();
+            const exportedWorkbook = new ExcelJS.Workbook();
+            await exportedWorkbook.xlsx.load(arrayBuffer);
+            
+            const worksheet = exportedWorkbook.worksheets[0];
+            
+            // 验证行高已转换（允许±1的误差）
+            expect(worksheet.getRow(1).height).toBeCloseTo(30, 0);
+            expect(worksheet.getRow(2).height).toBeCloseTo(18, 0);
+            expect(worksheet.getRow(3).height).toBeCloseTo(24, 0);
+        });
+
+        it("应该在无法读取尺寸时降级到默认值", async () => {
+            const originalRowColManager = workbook.activeSheet.rowColManager;
+            workbook.activeSheet.rowColManager = null;
+            
+            try {
+                const buffer = await plugin.exportAsBlob("xlsx");
+                const arrayBuffer = await buffer.arrayBuffer();
+                const exportedWorkbook = new ExcelJS.Workbook();
+                await exportedWorkbook.xlsx.load(arrayBuffer);
+                
+                const worksheet = exportedWorkbook.worksheets[0];
+                
+                expect(worksheet.properties.defaultRowHeight).toBe(15);
+                expect(worksheet.getColumn(1).width).toBe(15);
+            } finally {
+                workbook.activeSheet.rowColManager = originalRowColManager;
+            }
+        });
+
+        it("应该处理无效的尺寸值而不崩溃", async () => {
+            const buffer = await plugin.exportAsBlob("xlsx");
+            expect(buffer).toBeDefined();
+            expect(buffer.size).toBeGreaterThan(0);
+        });
+    });

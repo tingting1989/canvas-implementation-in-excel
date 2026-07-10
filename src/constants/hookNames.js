@@ -322,4 +322,18 @@ export const HOOKS = Object.freeze({
 
     /** 样式转换警告 - 样式转换过程中遇到非致命问题时触发 */
     IMPORT_STYLE_WARNING: "onStyleWarning",
+
+    /*
+     * ==================== 导出文件相关钩子 (EXPORT_) ====================
+     * 管理从工作表导出数据到外部文件的生命周期
+     *
+     * 注意：这些 Hook 由 ExportFilePlugin 提供，
+     * 使用前需确保插件已加载（plugins 配置中包含 'exportFile'）
+     */
+
+    /** 导出完成 - 文件成功从工作表导出后触发 */
+    EXPORT_COMPLETE: "onExportComplete",
+
+    /** 导出失败 - 导出过程中发生错误时触发 */
+    EXPORT_ERROR: "onExportError",
 });
