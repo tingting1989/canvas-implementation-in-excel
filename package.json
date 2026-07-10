@@ -1,6 +1,6 @@
 {
     "name": "@canvas-sheet/core",
-    "version": "1.0.13",
+    "version": "1.0.14",
     "description": "High-performance Canvas-based spreadsheet engine for the web. Supports 100K+ rows, Excel-compatible formulas, plugins, and Web Components UI.",
     "main": "dist/canvas-sheet.umd.js",
     "module": "dist/canvas-sheet.esm.mjs",

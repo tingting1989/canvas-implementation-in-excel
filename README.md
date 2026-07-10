@@ -1842,6 +1842,7 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
 - [x] 数据验证插件 (DataValidationPlugin)
 - [x] 右键菜单插件 (ContextMenuPlugin)
 - [x] 导出文件插件 (ExportFilePlugin)
+- [x] 导入文件插件 (ImportFilePlugin)
 - [x] 公式插件 (FormulaPlugin)
 - [x] 图表插件 (ChartPlugin) - 基础图表
 - [x] 行/列移动插件 (MovePlugins)
