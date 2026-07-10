@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ImportFilePlugin } from "../../src/plugins/ImportFilePlugin.js";
 import { HOOKS } from "../../src/constants/hookNames.js";
-import { StyleConverter, toArgb, fromArgb } from "@/shared/style-converter.js";
+import { StyleConverter, toArgb, fromArgb } from "@/shared/StyleConverter.js";
 
 // ============================================================================
 // Mock 工厂函数

@@ -35,7 +35,7 @@
 
 | 原则 | 描述 | 实现方式 |
 |------|------|---------|
-| **🔄 双向对称** | 导入/导出使用同一套转换逻辑 | 共享 `style-converter.js` 模块 |
+| **🔄 双向对称** | 导入/导出使用同一套转换逻辑 | 共享 `StyleConverter.js` 模块 |
 | **🎯 Hook驱动** | 遵循Canvas-Sheet插件规范 | 使用 `BasePlugin.addHook()` 机制 |
 | **⚡ 性能优先** | 支持大数据量导入 | Web Worker + 分块处理 |
 | **🛡️ 安全可靠** | 完善的错误处理 | 统一错误码体系 |
@@ -55,7 +55,7 @@
 │                         ↓                                   │
 │              ┌─────────────────────┐                       │
 │              │  Shared Style       │ ← 共享模块            │
-│              │  Converter Module   │   (style-converter.js)│
+│              │  Converter Module   │   (StyleConverter.js)│
 │              └─────────────────────┘                       │
 │                         ↓                                   │
 │              ┌─────────────────────┐                       │
@@ -721,7 +721,7 @@ src/
 │   ├── ExportFilePlugin.js      # 导出插件（消费者）
 │   └── ImportFilePlugin.js      # 导入插件（消费者）
 └── shared/
-    └── style-converter.js       # 共享样式转换模块（生产者）← 新增！
+    └── StyleConverter.js       # 共享样式转换模块（生产者）← 新增！
 ```
 
 **核心价值**：
@@ -1357,7 +1357,7 @@ import {
     toArgb, 
     StyleConverter,
     // ... 其他需要的导出
-} from '../shared/style-converter.js';
+} from '../shared/StyleConverter.js';
 
 // 创建全局转换器实例
 const styleConverter = new StyleConverter();
@@ -1381,7 +1381,7 @@ import {
     StyleConverter,
     argbToHex,
     // ... 其他需要的导入
-} from '../shared/style-converter.js';
+} from '../shared/StyleConverter.js';
 
 class ImportFilePlugin extends BasePlugin {
     #styleConverter = new StyleConverter();
@@ -1877,7 +1877,7 @@ describe('ImportFilePlugin Hooks系统测试', () => {
 **目标**: 实现基础导入功能 + 共享样式转换模块
 
 **交付物**:
-- [ ] 创建 `src/shared/style-converter.js` 模块
+- [ ] 创建 `src/shared/StyleConverter.js` 模块
 - [ ] 实现 `StyleConverter` 类（双向转换）
 - [ ] 实现 `ImportFilePlugin` 基础框架
 - [ ] 实现 XLSX/CSV 解析器
@@ -1925,7 +1925,7 @@ npm test -- --grep "RoundTrip"
 ```
 新增文件:
 ├── src/shared/
-│   └── style-converter.js          # 共享样式转换模块 (NEW!)
+│   └── StyleConverter.js          # 共享样式转换模块 (NEW!)
 ├── src/plugins/
 │   └── ImportFilePlugin.js         # 导入插件主类
 ├── src/plugins/parsers/
@@ -1949,7 +1949,7 @@ npm test -- --grep "RoundTrip"
 
 | 特性 | v1.0设计（旧） | v2.0设计（新版） | 改进点 |
 |------|---------------|-----------------|--------|
-| **样式转换** | 各自独立实现 | 共享 `style-converter.js` | ✅ 避免重复代码+保证一致性 |
+| **样式转换** | 各自独立实现 | 共享 `StyleConverter.js` | ✅ 避免重复代码+保证一致性 |
 | **事件系统** | EventEmitter模式 | BasePlugin Hooks | ✅ 符合插件规范+自动清理 |
 | **错误处理** | 自定义ErrorHandler | 复用现有体系 | ✅ 统一体验 |
 | **类型安全** | JSDoc注释 | TypeScript接口 | ✅ 更好的IDE支持 |
@@ -1967,7 +1967,7 @@ npm test -- --grep "RoundTrip"
    }
    
    // 新：使用共享模块
-   import { StyleConverter } from '../shared/style-converter.js';
+   import { StyleConverter } from '../shared/StyleConverter.js';
    ```
 
 2. **替换事件系统**
@@ -2003,7 +2003,7 @@ npm test -- --grep "RoundTrip"
 
 ### ✅ **问题1：样式转换是否对应？**
 
-**答案：完全对应！** 通过引入**共享样式转换模块** (`shared/style-converter.js`)，确保：
+**答案：完全对应！** 通过引入**共享样式转换模块** (`shared/StyleConverter.js`)，确保：
 - 导入/导出使用**同一套转换算法**
 - 颜色、字体、边框等所有属性**双向可逆**
 - 通过**自动化往返测试**保证一致性
@@ -2021,7 +2021,7 @@ npm test -- --grep "RoundTrip"
 
 1. **审阅本文档**，确认设计方向
 2. **开始Phase 1开发**：
-   - 先创建 `src/shared/style-converter.js`
+   - 先创建 `src/shared/StyleConverter.js`
    - 编写完整的单元测试
    - 再实现 `ImportFilePlugin`
 3. **运行往返测试**，确保样式100%兼容

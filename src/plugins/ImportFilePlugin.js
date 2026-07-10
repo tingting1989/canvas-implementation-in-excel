@@ -1,6 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import ExcelJS from "exceljs";
-import { StyleConverter } from "@/shared/style-converter.js";
+import { StyleConverter } from "@/shared/StyleConverter.js";
 import { ERROR_CODE, errorHandler } from "../core/index.js";
 import { HOOKS } from "@/constants/hookNames";
 
@@ -185,7 +185,6 @@ export class ImportFilePlugin extends BasePlugin {
             if (options.applyStyles && parsedData.styles.length > 0) {
                 this.#emitProgress({ percent: 80, stage: "styling", message: "正在应用样式...", taskId });
                 await this.#applyStyles(parsedData, options, taskId);
-
             }
 
             if (options.applyMerges && parsedData.mergedCells && parsedData.mergedCells.length > 0) {
@@ -401,20 +400,17 @@ export class ImportFilePlugin extends BasePlugin {
         }
 
         // 尝试其他可能的属性名
-        const alternativeProps = [
-            'model._merges', 'model.mergeCells', 
-            '_worksheet.merges', '_merges'
-        ];
-        
+        const alternativeProps = ["model._merges", "model.mergeCells", "_worksheet.merges", "_merges"];
+
         for (const prop of alternativeProps) {
-            const value = prop.split('.').reduce((obj, key) => obj?.[key], worksheet);
+            const value = prop.split(".").reduce((obj, key) => obj?.[key], worksheet);
             if (value && (Array.isArray(value) || value.length > 0)) {
                 return value;
             }
         }
 
         // 尝试通过 getMergeCells() 方法获取
-        if (typeof worksheet.getMergeCells === 'function') {
+        if (typeof worksheet.getMergeCells === "function") {
             return worksheet.getMergeCells();
         }
 
@@ -429,17 +425,17 @@ export class ImportFilePlugin extends BasePlugin {
      */
     #normalizeMergesToArray(rawMerges, target) {
         if (Array.isArray(rawMerges)) {
-            rawMerges.forEach(merge => {
+            rawMerges.forEach((merge) => {
                 if (merge) target.push(String(merge));
             });
         } else if (rawMerges[Symbol.iterator]) {
             for (const merge of rawMerges) {
                 if (merge) target.push(String(merge));
             }
-        } else if (typeof rawMerges === 'string') {
+        } else if (typeof rawMerges === "string") {
             target.push(rawMerges);
-        } else if (typeof rawMerges === 'object') {
-            Object.keys(rawMerges).forEach(key => target.push(key));
+        } else if (typeof rawMerges === "object") {
+            Object.keys(rawMerges).forEach((key) => target.push(key));
         }
     }
 
@@ -716,27 +712,25 @@ export class ImportFilePlugin extends BasePlugin {
         const sheet = this.sheet;
 
         // 检测嵌套表头行数
-        const nestedHeadersCount = (sheet?.nestedHeaders && Array.isArray(sheet.nestedHeaders)) 
-            ? sheet.nestedHeaders.length 
-            : 0;
+        const nestedHeadersCount = sheet?.nestedHeaders && Array.isArray(sheet.nestedHeaders) ? sheet.nestedHeaders.length : 0;
 
         // 按优先级确定数据起始行
         if (dataStartRow !== undefined && dataStartRow !== null) {
             return dataStartRow;
         }
-        
+
         if (_autoDetectedHeaderRows && _autoDetectedHeaderRows > 1) {
             return _autoDetectedHeaderRows;
         }
-        
+
         if (headerRows && headerRows > 1) {
             return headerRows;
         }
-        
+
         if (nestedHeadersCount > 1) {
             return nestedHeadersCount;
         }
-        
+
         if (firstRowAsHeader) {
             return 1;
         }
@@ -930,7 +924,7 @@ export class ImportFilePlugin extends BasePlugin {
         if (!sheet || !mergedCells) return;
 
         const { startRow, startCol } = options;
-        
+
         // 使用统一的格式转换方法
         const mergeArray = [];
         try {
@@ -1020,7 +1014,6 @@ export class ImportFilePlugin extends BasePlugin {
                 // 继续处理其他合并区域，不中断整个导入流程
             }
         }
-
     }
 
     /**
