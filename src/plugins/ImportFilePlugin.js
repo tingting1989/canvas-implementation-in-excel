@@ -1,8 +1,10 @@
-import { BasePlugin } from "./BasePlugin.js";
+﻿import { BasePlugin } from "./BasePlugin.js";
 import ExcelJS from "exceljs";
 import { StyleConverter } from "@/shared/StyleConverter.js";
 import { ERROR_CODE, errorHandler } from "../core/index.js";
 import { HOOKS } from "@/constants/hookNames";
+import { colToIndex } from "../utils/cellRef.js";
+import { excelWidthToPixel, excelHeightToPixel, convertColumnWidthsToPixels, convertRowHeightsToPixels } from "../utils/excelUnits.js";
 
 /**
  * 导入文件插件
@@ -146,7 +148,7 @@ export class ImportFilePlugin extends BasePlugin {
             const shouldContinue = this.hooks?.runHooksUntil(HOOKS.IMPORT_BEFORE_IMPORT, preview);
 
             if (shouldContinue === false) {
-                throw new Error(ERROR_CODE.IMPORT_CANCELLED_BY_USER);
+                return;
             }
 
             // 2️⃣ 开始读取文件
@@ -195,6 +197,33 @@ export class ImportFilePlugin extends BasePlugin {
 
             if (options.applyDimensions) {
                 await this.#applyDimensions(parsedData, options, taskId);
+            }
+
+            // 🔟 刷新工作表（确保所有更改可见）
+            this.#emitProgress({ percent: 100, stage: "refreshing", message: "正在刷新视图...", taskId });
+
+            const sheet = this.sheet;
+            if (sheet) {
+                try {
+                    // 标记所有瓦片为脏（与ClipboardManager保持一致）
+                    if (typeof sheet.invalidateAll === "function") {
+                        sheet.invalidateAll();
+                    }
+
+                    // 触发重新渲染
+                    if (typeof sheet.render === "function") {
+                        sheet.render();
+                    }
+
+                    // 如果有冻结区域，需要失效冻结缓存
+                    if (typeof sheet.invalidateFreezeCache === "function") {
+                        sheet.invalidateFreezeCache();
+                    }
+                } catch (refreshError) {
+                    errorHandler.handle(ERROR_CODE.IMPORT_DIMENSION_WARNING, "导入后刷新视图时发生错误（不影响数据）", {
+                        error: refreshError.message,
+                    });
+                }
             }
 
             // 9️⃣ 导入完成
@@ -343,21 +372,21 @@ export class ImportFilePlugin extends BasePlugin {
             result.cells.push(rowData);
             result.styles.push(...rowStyles);
 
-            // 记录行高
+            // 只记录显式设置过的行高（避免用Excel默认值覆盖Canvas-Sheet的系统默认值）
             if (row.height) {
                 result.rowHeights.push({
                     row: rowNumber - 1,
-                    height: row.height,
+                    height: excelHeightToPixel(row.height),
                 });
             }
         });
 
-        // 提取列宽
+        // 提取列宽（ExcelJS的width是字符宽度，需要转换为像素）
         worksheet.columns.forEach((col, index) => {
             if (col.width) {
                 result.columnWidths.push({
                     col: index,
-                    width: col.width,
+                    width: excelWidthToPixel(col.width),
                 });
             }
         });
@@ -749,10 +778,6 @@ export class ImportFilePlugin extends BasePlugin {
             throw new Error("数据格式无效：缺少 cells 数组");
         }
 
-        if (data.cells.length === 0) {
-            errorHandler.warn(ERROR_CODE.IMPORT_NO_DATA_WARN, "导入的文件没有数据");
-        }
-
         if (this.#cancelled) {
             throw new Error(ERROR_CODE.IMPORT_CANCELLED_BY_USER);
         }
@@ -999,7 +1024,6 @@ export class ImportFilePlugin extends BasePlugin {
                         sheet.mergeCells(adjustedStartRow, adjustedStartCol, adjustedEndRow, adjustedEndCol);
                         appliedCount++;
                     } else {
-                        errorHandler.warn(ERROR_CODE.IMPORT_MERGE_WARNING, `无法找到合并单元格方法，跳过: ${mergeRange}`, { mergeRange });
                         failedCount++;
                     }
                 } else {
@@ -1028,17 +1052,13 @@ export class ImportFilePlugin extends BasePlugin {
         if (!sheet) return;
 
         const { startCol } = options;
-
         // 应用列宽
         if (data.columnWidths && data.columnWidths.length > 0) {
             for (const colInfo of data.columnWidths) {
                 try {
                     const targetCol = colInfo.col + startCol;
-
-                    if (sheet.rowColManager && typeof sheet.rowColManager.setColumnWidth === "function") {
-                        sheet.rowColManager.setColumnWidth(targetCol, colInfo.width);
-                    } else if (sheet.model?.grid?.setColumnWidth) {
-                        sheet.model.grid.setColumnWidth(targetCol, colInfo.width);
+                    if (sheet.rowColManager && typeof sheet.rowColManager.setColWidth === "function") {
+                        sheet.rowColManager.setColWidth(targetCol, colInfo.width);
                     }
                 } catch (error) {
                     errorHandler.warn(ERROR_CODE.IMPORT_DIMENSION_WARNING, `设置列宽失败: 列 ${colInfo.col}`, {
@@ -1048,17 +1068,19 @@ export class ImportFilePlugin extends BasePlugin {
                 }
             }
         }
-
-        // 应用行高
+        // 应用行高（需要考虑表头偏移，与数据应用逻辑保持一致）
         if (data.rowHeights && data.rowHeights.length > 0) {
+            const headerRowCount = this.#calculateDataStartRow(options);
             for (const rowInfo of data.rowHeights) {
                 try {
-                    const targetRow = rowInfo.row + options.startRow;
+                    // 跳过表头行的行高设置（表头行高由系统默认值决定）
+                    if (rowInfo.row < headerRowCount) continue;
+
+                    // 计算目标行：考虑表头偏移
+                    const targetRow = options.startRow + (rowInfo.row - headerRowCount);
 
                     if (sheet.rowColManager && typeof sheet.rowColManager.setRowHeight === "function") {
                         sheet.rowColManager.setRowHeight(targetRow, rowInfo.height);
-                    } else if (sheet.model?.grid?.setRowHeight) {
-                        sheet.model.grid.setRowHeight(targetRow, rowInfo.height);
                     }
                 } catch (error) {
                     errorHandler.warn(ERROR_CODE.IMPORT_DIMENSION_WARNING, `设置行高失败: 行 ${rowInfo.row}`, {
@@ -1125,12 +1147,8 @@ export class ImportFilePlugin extends BasePlugin {
 
             const [, colStr, rowStr] = match;
 
-            // 转换列字母为数字（A=0, B=1, ..., Z=25, AA=26, ...）
-            let col = 0;
-            for (let i = 0; i < colStr.length; i++) {
-                col = col * 26 + (colStr.charCodeAt(i) - 64); // 'A' 的 ASCII 是 65
-            }
-            col--; // 转换为 0-based
+            // 使用 cellRef.js 工具函数转换列索引
+            const col = colToIndex(colStr);
 
             // 转换行为数字（0-based）
             const row = parseInt(rowStr, 10) - 1;
@@ -1143,6 +1161,49 @@ export class ImportFilePlugin extends BasePlugin {
             });
             return null;
         }
+    }
+    /**
+     * 将Excel字符宽度转换为像素宽度
+     *
+     * Excel的列宽单位是字符宽度（基于字体Calibri 11, 96 DPI），
+     * 而Canvas-Sheet使用像素作为列宽单位。
+     *
+     * 转换公式：pixels = (charWidth × 7) + 5
+     * - 7: 最大数字宽度（Maximum Digit Width for Calibri 11 at 96 DPI）
+     * - 5: 内边距（左右各2px + 网格线1px）
+     *
+     * @param {number} charWidth - Excel字符宽度
+     * @returns {number} 像素宽度
+     */
+
+    /**
+     * 将Excel磅值转换为像素高度
+     *
+     * Excel的行高单位是磅（points, 1/72英寸），
+     * 而Canvas-Sheet使用像素作为行高单位。
+     *
+     * 转换公式：pixels = points × (DPI / 72)
+     * - 标准Windows DPI: 96
+     * - 简化公式: pixels = points × 1.3333
+     *
+     * @param {number} heightInPoints - Excel行高（磅）
+     * @returns {number} 像素高度
+     */
+    #excelHeightToPixel(heightInPoints) {
+        if (!heightInPoints || typeof heightInPoints !== "number" || heightInPoints <= 0) {
+            return 28; // 返回默认行高
+        }
+        // Excel磅转像素（基于96 DPI）
+        const pixelHeight = Math.round(heightInPoints * (96 / 72));
+        return Math.max(pixelHeight, 15); // 最小15像素
+    }
+    #excelWidthToPixel(charWidth) {
+        if (!charWidth || typeof charWidth !== "number" || charWidth <= 0) {
+            return 100; // 返回默认列宽
+        }
+        // Excel字符宽度转像素公式
+        const pixelWidth = Math.round(charWidth * 7 + 5);
+        return Math.max(pixelWidth, 20); // 最小20像素
     }
 
     /**

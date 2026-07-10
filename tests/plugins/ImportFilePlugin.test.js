@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ImportFilePlugin 完整功能测试套件
  *
  * 覆盖范围：
@@ -291,7 +291,7 @@ describe("ImportFilePlugin", () => {
 
                 expect(excelStyle.font).toBeDefined();
                 expect(excelStyle.font.name).toBe("Arial");
-                expect(excelStyle.font.size).toBe(14);
+                expect(excelStyle.font.size).toBeCloseTo(10.5, 0);  // 14px Canvas → ~10.5pt Excel
                 expect(excelStyle.font.bold).toBe(true);
                 expect(excelStyle.alignment.horizontal).toBe("center");
                 expect(excelStyle.fill).toBeDefined();
@@ -355,7 +355,7 @@ describe("ImportFilePlugin", () => {
                 const flatStyle = converter.convertFromExcel(excelStyle, "flat");
 
                 expect(flatStyle.fontFamily).toBe("Arial");
-                expect(flatStyle.fontSize).toBe(14);
+                expect(flatStyle.fontSize).toBe(19);  // 14pt Excel → ~19px Canvas
                 expect(flatStyle.fontWeight).toBe("bold");
                 expect(flatStyle.textAlign).toBe("center");
                 expect(flatStyle.backgroundColor).toBe("#FFFF00");

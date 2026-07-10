@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @fileoverview 共享样式转换模块
  *
  * 功能概述：
@@ -19,6 +19,7 @@
 
 import { errorHandler } from "../core/ErrorHandler.js";
 import { ERROR_CODE } from "../constants/errorCodes.js";
+import { excelFontSizeToPixel, pixelToExcelFontSize } from "../utils/excelUnits.js";
 
 // ============================================================================
 // [Section 1] 颜色转换工具
@@ -251,7 +252,7 @@ export class StyleConverter {
         // 字体设置
         const fontConfig = {};
         if (style.fontFamily) fontConfig.name = style.fontFamily;
-        if (style.fontSize) fontConfig.size = style.fontSize;
+        if (style.fontSize) fontConfig.size = pixelToExcelFontSize(style.fontSize);
         if (style.fontWeight === "bold" || style.fontWeight === true) fontConfig.bold = true;
         if (style.fontStyle === "italic") fontConfig.italic = true;
         if (style.color) fontConfig.color = { argb: toArgb(style.color) };
@@ -391,7 +392,7 @@ export class StyleConverter {
         // 字体设置
         if (excelStyle.font) {
             if (excelStyle.font.name) flatStyle.fontFamily = excelStyle.font.name;
-            if (excelStyle.font.size) flatStyle.fontSize = excelStyle.font.size;
+            if (excelStyle.font.size) flatStyle.fontSize = excelFontSizeToPixel(excelStyle.font.size);
             if (excelStyle.font.bold) flatStyle.fontWeight = "bold";
             if (excelStyle.font.italic) flatStyle.fontStyle = "italic";
             if (excelStyle.font.color?.argb) {
