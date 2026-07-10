@@ -188,14 +188,8 @@ export const ERROR_CODE = Object.freeze({
     /** 导入功能 - 未知错误 */
     IMPORT_UNKNOWN_ERROR: "IMPORT_UNKNOWN_ERROR",
 
-    /** 导入功能 - 样式应用完成（信息） */
-    IMPORT_STYLES_APPLIED: "IMPORT_STYLES_APPLIED",
-
-    /** 导入功能 - 样式提取警告 */
-    IMPORT_STYLE_EXTRACTION_WARN: "IMPORT_STYLE_EXTRACTION_WARN",
-
-    /** 导入功能 - 合并单元格应用完成（信息） */
-    IMPORT_MERGED_CELLS_APPLIED: "IMPORT_MERGED_CELLS_APPLIED",
+    /** 导入功能 - 无效文件格式 */
+    INVALID_FILE_FORMAT: "INVALID_FILE_FORMAT",
 
     /** 导入功能 - 合并单元格处理警告 */
     IMPORT_MERGE_WARNING: "IMPORT_MERGE_WARNING",
