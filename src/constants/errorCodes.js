@@ -188,6 +188,27 @@ export const ERROR_CODE = Object.freeze({
     /** 导入功能 - 未知错误 */
     IMPORT_UNKNOWN_ERROR: "IMPORT_UNKNOWN_ERROR",
 
+    /** 导入功能 - 样式应用完成（信息） */
+    IMPORT_STYLES_APPLIED: "IMPORT_STYLES_APPLIED",
+
+    /** 导入功能 - 样式提取警告 */
+    IMPORT_STYLE_EXTRACTION_WARN: "IMPORT_STYLE_EXTRACTION_WARN",
+
+    /** 导入功能 - 合并单元格应用完成（信息） */
+    IMPORT_MERGED_CELLS_APPLIED: "IMPORT_MERGED_CELLS_APPLIED",
+
+    /** 导入功能 - 合并单元格处理警告 */
+    IMPORT_MERGE_WARNING: "IMPORT_MERGE_WARNING",
+
+    /** 导入功能 - 尺寸设置警告 */
+    IMPORT_DIMENSION_WARNING: "IMPORT_DIMENSION_WARNING",
+
+    /** 导入功能 - 单元格范围解析错误 */
+    IMPORT_RANGE_PARSE_ERROR: "IMPORT_RANGE_PARSE_ERROR",
+
+    /** 导入功能 - 文件无数据警告 */
+    IMPORT_NO_DATA_WARN: "IMPORT_NO_DATA_WARN",
+
     // 通用日志分类
     /** 通用错误 */
     GENERIC_ERROR: "GENERIC_ERROR",

@@ -631,10 +631,11 @@
                 const result = await importPlugin.importFromFile(file, {
                     startRow: 0,
                     startCol: 0,
-                    firstRowAsHeader: true,
+                    firstRowAsHeader: false,
+                    headerRows: 3,
                     applyStyles: true,
                     overwriteExisting: true,
-                    batchSize: 100
+                    batchSize: 100,
                 });
 
                 console.log('[导入结果]', result);
