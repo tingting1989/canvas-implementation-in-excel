@@ -44,19 +44,13 @@ import { BasePlugin } from "./BasePlugin.js";
 import ExcelJS from "exceljs";
 import { indexToCol } from "../utils/cellRef.js";
 import { stylePool } from "../model/styles/index.js";
-import { errorHandler } from "../core/ErrorHandler.js";
-import { ERROR_CODE } from "../constants/errorCodes.js";
+import { errorHandler, ERROR_CODE } from "../core/index.js";
 import { CONFIG } from "@/constants/config";
+import { StyleConverter, toArgb } from "@/shared/StyleConverter.js";
 
 // ============================================================================
 // [Section 1] 常量与配置
 // ============================================================================
-
-/**
- * 默认字体大小（用于样式转换时的回退值）
- * @constant {number}
- */
-const DEFAULT_FONT_SIZE = 11;
 
 /**
  * 表头默认背景色（浅蓝色，Excel 标准配色）
@@ -72,12 +66,10 @@ const HEADER_BG_COLOR = "D9E1F2";
  * - 来源：CONFIG.GRID_COLOR (默认值: "#ddd")
  * - 转换值：#ddd → FFDDDDDD
  *
- * 注意：此常量在 toArgb() 函数定义之后初始化（避免 TDZ 错误）
+ * 注意：使用从 @/shared/StyleConverter.js 导入的共享 toArgb() 函数
  *
  * @type {string}
  */
-// eslint-disable-next-line prefer-const -- 必须使用 let 以支持延迟初始化（在 toArgb 定义之后）
-let DEFAULT_BORDER_COLOR;
 
 /**
  * 默认边框样式
@@ -490,329 +482,30 @@ function triggerDownload(blob, filename) {
 }
 
 // ============================================================================
-// [Section 6] ExcelJS 样式转换工具函数
+// [Section 6] 使用共享的 StyleConverter 模块
 // ============================================================================
 
 /**
- * 全局状态：颜色缓存和复用元素
- *
- * 性能优化策略：
- * - _colorCache: Map 缓存已解析的颜色（O(1) 查找）
- * - _colorParserElement: 单个 DOM 元素复用（避免重复创建/销毁）
- *
- * 生命周期：
- * - 创建时机：首次调用 toArgb() 时懒初始化
- * - 销毁时机：页面卸载时自动回收（无需手动管理）
- *
- * @private
+ * 默认边框颜色（使用共享的 toArgb 函数初始化）
  */
-let _colorParserElement = null;
-
-/** @type {Map<string, string>} 颜色值缓存（原始值 → ARGB） */
-const _colorCache = new Map();
-
-/**
- * 将颜色值转换为 ExcelJS 兼容的 ARGB 格式
- *
- * 🚀 高性能版本：采用双缓存策略
- *
- * 性能优化特性：
- * - ✅ 颜色缓存：相同颜色只解析一次（Map 缓存，O(1) 查找）
- * - ✅ 元素复用：全局共享单个 DOM 元素（避免重复创建/销毁）
- * - ✅ 快速路径：标准格式直接转换（无需 DOM 操作）
- * - ✅ 零依赖：不需要第三方库，利用浏览器原生 API
- * - ✅ 全覆盖：自动支持所有 CSS 颜色格式（140+ 颜色名）
- *
- * 支持的输入格式：
- * - 颜色名称：'red', 'yellow', 'tomato', 'lightcoral' 等
- * - 十六进制：'#FF0000', '#F00', 'FF0000'
- * - RGB：'rgb(255, 0, 0)', 'rgba(255, 0, 0, 0.5)'
- * - HSL：'hsl(0, 100%, 50%)', 'hsla(0, 100%, 50%, 0.5)'
- * - 特殊值：'transparent', ''
- *
- * 输出格式：
- * - 8 位十六进制 ARGB（无 # 号前缀）
- * - 示例：'FFFF0000'（完全不透明的红色）
- * - 示例：'00000000'（完全透明）
- *
- * 性能对比（1000 次调用）：
- * - 无缓存版本：~120ms（每次创建/销毁 DOM 元素）
- * - 有缓存版本：~2ms（首次解析后直接返回）
- * - 提升：约 60 倍 ⚡
- *
- * @param {string} color - 输入颜色值
- * @returns {string} ARGB 格式颜色（8 位十六进制，无 # 号）
- *
- * @example
- * toArgb('yellow');      // → 'FFFFFF00' (首次解析后缓存)
- * toArgb('#FF0000');     // → 'FFFF0000' (快速路径，无需缓存)
- * toArgb('tomato');       // → 'FFFF6347' (首次解析后缓存)
- * toArgb('transparent'); // → '00000000' (特殊值快速路径)
- */
-function toArgb(color) {
-    if (!color || typeof color !== "string") return "00000000";
-
-    const trimmedColor = color.trim();
-
-    // 快速路径1：查询缓存（已解析的颜色直接返回）
-    if (_colorCache.has(trimmedColor)) {
-        return _colorCache.get(trimmedColor);
-    }
-
-    let result;
-
-    // 快速路径2：透明色检测
-    const lowerColor = trimmedColor.toLowerCase();
-    if (lowerColor === "transparent" || lowerColor === "") {
-        result = "00000000";
-    } else if (/^[0-9a-f]{8}$/i.test(trimmedColor)) {
-        // 快速路径3：完整的 ARGB 格式（8位）
-        result = trimmedColor.toUpperCase();
-    } else if (trimmedColor.match(/^#?([0-9a-f]{6})$/i)) {
-        // 快速路径4：标准的 6 位十六进制格式
-        result = `FF${RegExp.$1.toUpperCase()}`;
-    } else if (trimmedColor.match(/^#?([0-9a-f])([0-9a-f])([0-9a-f])$/i)) {
-        // 快速路径5：简写的 3 位十六进制格式（如 #F00）
-        const fullHex = `${RegExp.$1}${RegExp.$1}${RegExp.$2}${RegExp.$2}${RegExp.$3}${RegExp.$3}`;
-        result = `FF${fullHex.toUpperCase()}`;
-    } else {
-        // 核心逻辑：使用浏览器原生 API 解析（带元素复用）
-        try {
-            // 懒初始化：只在第一次需要时创建 DOM 元素
-            if (!_colorParserElement) {
-                _colorParserElement = document.createElement("div");
-                _colorParserElement.style.position = "absolute";
-                _colorParserElement.style.left = "-9999px";
-                _colorParserElement.style.visibility = "hidden";
-                document.body.appendChild(_colorParserElement);
-            }
-
-            // 复用现有元素，仅更新样式属性
-            _colorParserElement.style.color = trimmedColor;
-
-            // 获取浏览器计算后的颜色值（返回 rgb()/rgba() 格式）
-            const computedColor = window.getComputedStyle(_colorParserElement).color;
-
-            // 解析 rgb()/rgba() 格式
-            const rgbMatch = computedColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-            if (rgbMatch) {
-                const red = parseInt(rgbMatch[1], 10);
-                const green = parseInt(rgbMatch[2], 10);
-                const blue = parseInt(rgbMatch[3], 10);
-
-                if (!isNaN(red) && !isNaN(green) && !isNaN(blue)) {
-                    // 将 RGB 分量转为十六进制（钳制到 0-255 范围）
-                    const redHex = Math.max(0, Math.min(255, red)).toString(16).padStart(2, "0").toUpperCase();
-                    const greenHex = Math.max(0, Math.min(255, green)).toString(16).padStart(2, "0").toUpperCase();
-                    const blueHex = Math.max(0, Math.min(255, blue)).toString(16).padStart(2, "0").toUpperCase();
-                    result = `FF${redHex}${greenHex}${blueHex}`;
-                } else {
-                    errorHandler.warn(ERROR_CODE.EXPORT_COLOR_PARSE_FAILED, `无效的RGB分量: ${computedColor}`);
-                    result = "FF000000";
-                }
-            } else {
-                errorHandler.warn(ERROR_CODE.EXPORT_COLOR_PARSE_FAILED, `无法解析浏览器颜色输出: ${computedColor}`);
-                result = "FF000000";
-            }
-        } catch (error) {
-            errorHandler.warn(ERROR_CODE.EXPORT_COLOR_PARSE_FAILED, `浏览器颜色解析失败: ${trimmedColor}`, { error });
-            result = "FF000000";
-        }
-    }
-
-    // 缓存结果以供后续复用
-    _colorCache.set(trimmedColor, result);
-
-    return result;
-}
-
-// ============================================================================
-// 初始化在 toArgb() 之后的常量（避免 TDZ 错误）
-// ============================================================================
-
-/**
- * 使用已定义的 toArgb() 函数初始化边框颜色
- * 将系统配置的 GRID_COLOR 转换为 ARGB 格式
- */
-DEFAULT_BORDER_COLOR = toArgb(CONFIG.GRID_COLOR || "#ddd");
+const DEFAULT_BORDER_COLOR = toArgb(CONFIG.GRID_COLOR || "#ddd");
 
 /**
  * 将 canvas-sheet 样式对象转换为 ExcelJS 兼容的样式格式
  *
+ * 🎯 重构说明：
+ * 此函数现在使用共享的 StyleConverter 模块，确保与 ImportFilePlugin 保持一致。
  * 支持两种输入格式：
- *
- * 格式1：canvas-sheet 扁平格式（来自 stylePool）
- * ```javascript
- * {
- *     fontFamily: 'Arial',
- *     fontSize: 14,
- *     fontWeight: 'bold',
- *     textAlign: 'center',
- *     backgroundColor: '#FF0000',
- *     color: '#FFFFFF'
- * }
- * ```
- *
- * 格式2：ExcelJS 嵌套格式（标准 ExcelJS 样式）
- * ```javascript
- * {
- *     font: { name: 'Arial', size: 14, bold: true },
- *     alignment: { horizontal: 'left', vertical: 'middle' },
- *     border: { top: { style: 'thin', color: '...' }, ... },
- *     fill: { type: 'pattern', pattern: 'solid', fgColor: '...' }
- * }
- * ```
- *
- * 转换映射关系：
- * - fontFamily/fontSize/fontWeight/color → excelStyle.font
- * - textAlign/verticalAlign → excelStyle.alignment
- * - backgroundColor → excelStyle.fill（带 toArgb 颜色转换）
- * - border → excelStyle.border（四边独立边框）
- * - fill → excelStyle.fill（背景色和图案）
- * - numberFormat → excelStyle.numFmt
- *
- * 注意事项：
- * - 所有颜色值会通过 toArgb() 转为 ARGB 格式
- * - 未指定的属性不会出现在结果对象中
- * - 返回的对象可直接赋值给 ExcelJS Cell（Object.assign）
+ * - 扁平格式（来自 stylePool）
+ * - 嵌套格式（ExcelJS 标准格式，直接透传）
  *
  * @param {Object|null} style - canvas-sheet 的样式对象
  * @returns {Object} ExcelJS 样式对象（空对象表示无效输入）
- *
- * @example
- * convertToExcelStyle({
- *     font: { name: 'Arial', size: 14, bold: true },
- *     fill: { color: '#FF0000' }
- * });
- * // 返回: { font: { name:'Arial', size:14, bold:true }, fill: {...} }
  */
+const _styleConverter = new StyleConverter();
+
 function convertToExcelStyle(style) {
-    if (!style || typeof style !== "object") return {};
-
-    const excelStyle = {};
-
-    // 检测是否为扁平格式（canvas-sheet StylePool 返回的格式）
-    const isFlatFormat =
-        style.backgroundColor !== undefined ||
-        style.fontFamily !== undefined ||
-        style.fontSize !== undefined ||
-        style.fontWeight !== undefined ||
-        style.textAlign !== undefined;
-
-    if (isFlatFormat) {
-        // ========== 处理 canvas-sheet 扁平格式 ==========
-
-        // 字体设置
-        const fontConfig = {};
-        if (style.fontFamily) fontConfig.name = style.fontFamily;
-        if (style.fontSize) fontConfig.size = style.fontSize;
-        if (style.fontWeight === "bold" || style.fontWeight === true) fontConfig.bold = true;
-        if (style.fontStyle === "italic") fontConfig.italic = true;
-        if (style.color) fontConfig.color = { argb: toArgb(style.color) };
-
-        if (Object.keys(fontConfig).length > 0) {
-            excelStyle.font = fontConfig;
-        }
-
-        // 对齐方式
-        const alignConfig = {};
-        if (style.textAlign) alignConfig.horizontal = style.textAlign;
-        if (style.verticalAlign) alignConfig.vertical = style.verticalAlign;
-
-        if (Object.keys(alignConfig).length > 0) {
-            excelStyle.alignment = alignConfig;
-        }
-
-        // 背景色（填充）- 使用 toArgb 进行颜色转换
-        if (style.backgroundColor && style.backgroundColor !== "transparent") {
-            const bgColor = toArgb(style.backgroundColor);
-
-            if (bgColor !== "00000000") {
-                excelStyle.fill = {
-                    type: "pattern",
-                    pattern: "solid",
-                    fgColor: { argb: bgColor },
-                    bgColor: { argb: bgColor },
-                };
-            }
-        }
-
-        return excelStyle;
-    }
-
-    // ========== 处理 ExcelJS 嵌套格式（原有逻辑）==========
-
-    // 字体设置
-    if (style.font) {
-        excelStyle.font = {
-            name: style.font.name || "Calibri",
-            size: style.font.size || DEFAULT_FONT_SIZE,
-            bold: style.font.bold,
-            italic: style.font.italic,
-            underline: style.font.underline,
-            color: style.font.color ? { argb: toArgb(style.font.color) } : undefined,
-        };
-    }
-
-    // 对齐方式
-    if (style.alignment) {
-        excelStyle.alignment = {
-            horizontal: style.alignment.horizontal || "left",
-            vertical: style.alignment.vertical || "middle",
-            wrapText: style.alignment.wrapText,
-            indent: style.alignment.indent,
-        };
-    }
-
-    // 边框设置（四边独立配置）
-    if (style.border) {
-        excelStyle.border = {
-            top: style.border.top
-                ? {
-                      style: style.border.top.style || DEFAULT_BORDER_STYLE,
-                      color: { argb: toArgb(style.border.top.color) || DEFAULT_BORDER_COLOR },
-                  }
-                : undefined,
-
-            left: style.border.left
-                ? {
-                      style: style.border.left.style || DEFAULT_BORDER_STYLE,
-                      color: { argb: toArgb(style.border.left.color) || DEFAULT_BORDER_COLOR },
-                  }
-                : undefined,
-
-            bottom: style.border.bottom
-                ? {
-                      style: style.border.bottom.style || DEFAULT_BORDER_STYLE,
-                      color: { argb: toArgb(style.border.bottom.color) || DEFAULT_BORDER_COLOR },
-                  }
-                : undefined,
-
-            right: style.border.right
-                ? {
-                      style: style.border.right.style || DEFAULT_BORDER_STYLE,
-                      color: { argb: toArgb(style.border.right.color) || DEFAULT_BORDER_COLOR },
-                  }
-                : undefined,
-        };
-    }
-
-    // 填充设置（背景色和图案）
-    if (style.fill) {
-        excelStyle.fill = {
-            type: "pattern",
-            pattern: style.fill.pattern || "solid",
-            fgColor: { argb: toArgb(style.fill.fgColor || style.fill.color || "#FFFFFF") },
-            bgColor: { argb: toArgb(style.fill.bgColor || "#FFFFFF") },
-        };
-    }
-
-    // 数字格式
-    if (style.numberFormat) {
-        excelStyle.numFmt = style.numberFormat;
-    }
-
-    return excelStyle;
+    return _styleConverter.convertToExcel(style);
 }
 
 /**
