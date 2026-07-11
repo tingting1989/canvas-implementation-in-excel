@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SheetStyleManager } from "@/workbook/SheetStyleManager";
+import { SheetStyleManager } from "@/workbook/managers/SheetStyleManager";
 import { stylePool } from "@/model/styles";
 import { Cell } from "@/model/store/Cell";
 import { ChunkedCellStore } from "@/model/store/ChunkedCellStore";

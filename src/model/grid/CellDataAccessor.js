@@ -1,31 +1,38 @@
 /**
  * 单元格数据访问代理（CellDataAccessor）
  *
- * 统一管理单元格数据读写，提供与 CellStore 一致的 API。
- * 所有 Strategy / Plugin 层代码应通过此类访问 cellStore。
+ * 提供高效的批量数据操作方法，消除重复的遍历逻辑。
+ * 核心价值：统一非空单元格提取、值矩阵构建、批量遍历等高频操作。
  *
- * ## 使用方式
+ * ## 使用场景
  *
  * ```js
  * const accessor = sheet.cellDataAccessor;
  *
- * // 读取
- * const cell = accessor.get(row, col);
+ * // 1. 获取非空单元格（用于验证、删除、剪切）
+ * const nonEmpty = accessor.getNonEmptyCells(0, 0, 100, 10);
  *
- * // 写入
- * accessor.set(row, col, { value: 'hello', styleId: 0 });
+ * // 2. 提取值矩阵（用于导出、复制、公式计算）
+ * const values = accessor.getValueMatrix(0, 0, 10, 5);
  *
- * // 批量操作
- * const cells = accessor.getRange(topRow, topCol, bottomRow, bottomCol);
+ * // 3. 批量遍历（用于样式应用、合并检测）
+ * accessor.forEach(0, 0, 100, 10, (r, c, cell) => {
+ *     console.log(`[${r},${c}] =`, cell?.value);
+ * });
+ *
+ * // 4. 迭代器模式（节省内存）
+ * for (const {row, col, cell} of accessor[Symbol.iterator](0, 0, 1000, 20)) {
+ *     if (cell) process(cell);
+ * }
+ *
+ * // 5. 批量写入（用于导入、粘贴）
+ * accessor.setRange(0, 0, importedData);
  * ```
  */
 export class CellDataAccessor {
     /** @type {import("../workbook/Sheet.js").Sheet} */
     #sheet;
 
-    /**
-     * @param {import("../workbook/Sheet.js").Sheet} sheet - 工作表实例
-     */
     constructor(sheet) {
         this.#sheet = sheet;
     }
@@ -34,10 +41,8 @@ export class CellDataAccessor {
         return this.#sheet.cellStore;
     }
 
-    // ─── 单元格读取 ───────────────────────────────────────
-
     /**
-     * 获取单元格数据
+     * 获取单个单元格数据（基础读取方法）
      * @param {number} row - 行号
      * @param {number} col - 列号
      * @returns {import("../store/Cell.js").Cell|null}
@@ -47,95 +52,16 @@ export class CellDataAccessor {
     }
 
     /**
-     * 批量获取矩形区域的单元格数据
-     * 注意：此方法会一次性加载所有数据到内存。
-     * 对于大范围（>1000 行），请使用 forEach() 或迭代器。
+     * 获取区域内所有非空单元格及其坐标
+     *
+     * 适用场景：
+     * - 数据验证（检查重复值、唯一性）
+     * - 批量删除/剪切前收集目标
+     * - 条件格式计算
+     *
      * @param {number} topRow - 左上角行号
      * @param {number} topCol - 左上角列号
      * @param {number} bottomRow - 右下角行号
-     * @param {number} bottomCol - 右下角列号
-     * @returns {Array<Array<import("../store/Cell.js").Cell|null>>} 二维数组
-     */
-    getRange(topRow, topCol, bottomRow, bottomCol) {
-        const cells = [];
-        for (let r = topRow; r <= bottomRow; r++) {
-            const rowData = [];
-            for (let c = topCol; c <= bottomCol; c++) {
-                rowData.push(this.get(r, c));
-            }
-            cells.push(rowData);
-        }
-        return cells;
-    }
-
-    /**
-     * 获取单元格值（便捷方法）
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @returns {*} 单元格值
-     */
-    getValue(row, col) {
-        const cell = this.get(row, col);
-        return cell ? cell.value : undefined;
-    }
-
-    /**
-     * 检查单元格是否存在
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @returns {boolean}
-     */
-    has(row, col) {
-        return this.get(row, col) !== null && this.get(row, col) !== undefined;
-    }
-
-    // ─── 单元格写入 ───────────────────────────────────────
-
-    /**
-     * 设置单元格数据
-     * 注意：此方法直接操作 cellStore，不触发 Sheet 的事件和命令历史。
-     * 如需完整功能（撤销/重做、事件通知），请使用 sheet.setCell()
-     *
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @param {import("../store/Cell.js").Cell} cell - 单元格对象
-     */
-    set(row, col, cell) {
-        this.#cellStore.set(row, col, cell);
-    }
-
-    /**
-     * 批量设置矩形区域的数据
-     * @param {number} topRow - 左上角行号
-     * @param {number} topCol - 左上角列号
-     * @param {Array<Array<import("../store/Cell.js").Cell>>} cells - 二维数组
-     */
-    setRange(topRow, topCol, cells) {
-        for (let r = 0; r < cells.length; r++) {
-            for (let c = 0; c < cells[r].length; c++) {
-                if (cells[r][c]) {
-                    this.set(topRow + r, topCol + c, cells[r][c]);
-                }
-            }
-        }
-    }
-
-    /**
-     * 删除单元格数据
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     */
-    delete(row, col) {
-        this.#cellStore.delete(row, col);
-    }
-
-    // ─── 高级查询 ─────────────────────────────────────────
-
-    /**
-     * 获取区域内的所有非空单元格及其坐标
-     * @param {number} topRow - 左上角页面行号
-     * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角页面行号
      * @param {number} bottomCol - 右下角列号
      * @returns {Array<{row:number, col:number, cell: import("../store/Cell.js").Cell}>}
      */
@@ -153,10 +79,19 @@ export class CellDataAccessor {
     }
 
     /**
-     * 提取区域内的值矩阵（用于复制/粘贴等操作）
-     * @param {number} topRow - 左上角页面行号
+     * 提取区域内的值矩阵（纯值二维数组）
+     *
+     * 适用场景：
+     * - 导出 Excel/CSV
+     * - 复制/剪贴板操作
+     * - 公式计算（SUM, AVERAGE等聚合函数）
+     * - 自动填充源数据获取
+     *
+     * 特点：空单元格自动填充空字符串 ""
+     *
+     * @param {number} topRow - 左上角行号
      * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角页面行号
+     * @param {number} bottomRow - 右下角行号
      * @param {number} bottomCol - 右下角列号
      * @returns {Array<Array<*>>} 二维值数组
      */
@@ -173,13 +108,50 @@ export class CellDataAccessor {
         return matrix;
     }
 
-    // ─── 迭代器支持 ───────────────────────────────────────
+    /**
+     * 遍历区域内的每个单元格（回调模式）
+     *
+     * 适用场景：
+     * - 批量样式修改
+     * - 合并单元格检测与处理
+     * - 条件判断与标记
+     * - 数据统计与汇总
+     *
+     * 性能提示：对于 >1000 行的大范围，优先使用迭代器模式 [Symbol.iterator]
+     *
+     * @param {number} topRow - 左上角行号
+     * @param {number} topCol - 左上角列号
+     * @param {number} bottomRow - 右下角行号
+     * @param {number} bottomCol - 右下角列号
+     * @param {function} callback - 回调函数 (row, col, cell) => void
+     */
+    forEach(topRow, topCol, bottomRow, bottomCol, callback) {
+        for (let r = topRow; r <= bottomRow; r++) {
+            for (let c = topCol; c <= bottomCol; c++) {
+                callback(r, c, this.get(r, c));
+            }
+        }
+    }
 
     /**
-     * 创建区域迭代器（用于遍历大范围数据时节省内存）
-     * @param {number} topRow - 左上角页面行号
+     * 区域迭代器（生成器模式，惰性求值）
+     *
+     * 适用场景：
+     * - 大范围数据遍历（>1000行）时节省内存
+     * - 需要提前终止遍历的场景
+     * - 流式数据处理
+     *
+     * 使用示例：
+     * ```js
+     * for (const {row, col, cell} of accessor[Symbol.iterator](0, 0, 10000, 20)) {
+     *     if (!cell) continue;
+     *     if (foundTarget(cell)) break;  // 可提前退出
+     * }
+     * ```
+     *
+     * @param {number} topRow - 左上角行号
      * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角页面行号
+     * @param {number} bottomRow - 右下角行号
      * @param {number} bottomCol - 右下角列号
      * @yields {{row:number, col:number, cell: import("../store/Cell.js").Cell|null}}
      */
@@ -192,17 +164,26 @@ export class CellDataAccessor {
     }
 
     /**
-     * 遍历区域内的每个单元格
-     * @param {number} topRow - 左上角页面行号
-     * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角页面行号
-     * @param {number} bottomCol - 右下角列号
-     * @param {function} callback - 回调函数 (pageRow, pageCol, cell) => void
+     * 批量写入矩形区域的数据
+     *
+     * 适用场景：
+     * - 导入外部数据（Excel、CSV解析后）
+     * - 粘贴操作
+     * - 批量初始化
+     *
+     * ⚠️ 注意：此方法直接操作 cellStore，不触发事件和撤销历史。
+     * 如需完整功能，请使用 sheet.setCell() 循环调用
+     *
+     * @param {number} topRow - 左上角起始行号
+     * @param {number} topCol - 左上角起始列号
+     * @param {Array<Array<import("../store/Cell.js").Cell>>} cells - 二维单元格数组
      */
-    forEach(topRow, topCol, bottomRow, bottomCol, callback) {
-        for (let r = topRow; r <= bottomRow; r++) {
-            for (let c = topCol; c <= bottomCol; c++) {
-                callback(r, c, this.get(r, c));
+    setRange(topRow, topCol, cells) {
+        for (let r = 0; r < cells.length; r++) {
+            for (let c = 0; c < cells[r].length; c++) {
+                if (cells[r][c]) {
+                    this.#cellStore.set(topRow + r, topCol + c, cells[r][c]);
+                }
             }
         }
     }

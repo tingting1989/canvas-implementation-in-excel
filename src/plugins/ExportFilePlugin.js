@@ -42,12 +42,12 @@
 
 import { BasePlugin } from "./BasePlugin.js";
 import ExcelJS from "exceljs";
-import { indexToCol } from "../utils/cellRef.js";
-import { stylePool } from "../model/styles/index.js";
+import { indexToCol } from "@/utils";
+import { stylePool } from "@/model/styles";
 import { ERROR_CODE, errorHandler } from "../core/index.js";
 import { CONFIG } from "@/constants/config";
 import { StyleConverter, toArgb } from "@/shared/StyleConverter.js";
-import { pixelToExcelHeight, pixelToExcelWidth } from "../utils/excelUnits.js";
+import { pixelToExcelHeight, pixelToExcelWidth } from "@/utils";
 import { HOOKS } from "@/constants/hookNames";
 
 // ============================================================================

@@ -1,7 +1,7 @@
-import { stylePool, DEFAULT_STYLE_ID } from "../model/styles";
-import { Cell } from "../model/index.js";
-import { StyleChangeRecorder, StyleChangeCommand } from "../model/command/StyleChangeRecorder.js";
-import { STYLE_SCOPE } from "../constants/enums/StyleScope.js";
+import { stylePool, DEFAULT_STYLE_ID } from "../../model/styles";
+import { Cell } from "../../model";
+import { StyleChangeRecorder, StyleChangeCommand } from "../../model/command/StyleChangeRecorder.js";
+import { STYLE_SCOPE } from "../../constants/enums/StyleScope.js";
 
 /**
  * 工作表样式管理器
@@ -45,7 +45,7 @@ export class SheetStyleManager {
     #recorder = new StyleChangeRecorder();
 
     /**
-     * @param {import("./Sheet.js").Sheet} sheet - 所属工作表实例
+     * @param {import("../Sheet.js").Sheet} sheet - 所属工作表实例
      */
     constructor(sheet) {
         this.#sheet = sheet;
