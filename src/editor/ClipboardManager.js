@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 剪贴板管理器
  *
  * 负责复制/粘贴的核心逻辑，不依赖插件系统，保持纯数据操作。
@@ -43,7 +43,6 @@ export class ClipboardManager {
     copy(sheet) {
         const range = sheet.selection.getRange();
         const accessor = sheet.cellDataAccessor;
-        const cells = [];
 
         // 记录每个复制列的类型名称，用于粘贴时的类型一致性检查
         const columnTypes = [];
@@ -51,14 +50,22 @@ export class ClipboardManager {
             const cellType = sheet.getCellTypeInstance(range.topRow, c);
             columnTypes.push(cellType ? cellType.name : "text");
         }
-        for (let r = range.topRow; r <= range.bottomRow; r++) {
-            const row = [];
-            for (let c = range.topCol; c <= range.bottomCol; c++) {
-                const cell = accessor.get(r, c);
-                row.push(cell ? { value: cell.value, styleId: cell.styleId || 0 } : null);
-            }
-            cells.push(row);
-        }
+        const valueMatrix = accessor.getValueMatrix(
+            range.topRow, range.topCol,
+            range.bottomRow, range.bottomCol
+        );
+
+        const cells = valueMatrix.map((row, rIdx) =>
+            row.map((value, cIdx) => {
+                const cell = accessor.get(
+                    range.topRow + rIdx,
+                    range.topCol + cIdx
+                );
+                return cell
+                    ? { value, styleId: cell.styleId || 0 }
+                    : null;
+            })
+        );
         this.#data = {
             sourceSheetName: sheet.name,
             topRow: range.topRow,

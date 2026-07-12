@@ -1,4 +1,4 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { isNumber } from "../../utils/utils.js";
 import { AUTO_FILL_DIR } from "../../constants/enums/AutoFillDir.js";
@@ -236,15 +236,11 @@ export class AutoFillStrategy extends EventStrategy {
     #executeFill(sheet, src, target) {
         const dir = this.#fillDirection;
 
-        const srcValues = [];
-        for (let r = src.topRow; r <= src.bottomRow; r++) {
-            const rowData = [];
-            for (let c = src.topCol; c <= src.bottomCol; c++) {
-                const cell = sheet.cellStore.get(r, c);
-                rowData.push(cell ? cell.value : "");
-            }
-            srcValues.push(rowData);
-        }
+                const accessor = sheet.cellDataAccessor;
+        const srcValues = accessor.getValueMatrix(
+            src.topRow, src.topCol,
+            src.bottomRow, src.bottomCol
+        );
 
         const srcHeight = src.bottomRow - src.topRow + 1;
         const srcWidth = src.bottomCol - src.topCol + 1;

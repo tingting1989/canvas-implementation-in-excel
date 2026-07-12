@@ -1,4 +1,4 @@
-# 图表引擎 (Chart Engine) — 技术设计文档
+﻿# 图表引擎 (Chart Engine) — 技术设计文档
 
 ## 目录
 
@@ -801,9 +801,9 @@ export const CHART_TYPE = {
 - 图表的视口位置 = `ViewportTransform.cellToViewRect(anchorRow, anchorCol)` + offset
 
 **行列号约定**：
-- `anchorRow`：实际行号（通过 `sheet.toRealRow()` 转换后存储）
+- `anchorRow`：实际行号（~~通过 `sheet.toRealRow()` 转换后存储~~ (v2.0+ 无需转换)）
 - `dataRange` 中的行号：实际行号
-- 渲染时通过 `sheet.toPageRow()` 转换为页面行号再传给 ViewportTransform
+- 渲染时~~通过 `sheet.toPageRow()` 转换~~ (v2.0+ 直接使用统一坐标)
 
 **完整属性列表**：
 
@@ -2011,10 +2011,10 @@ colToViewX(col) {
 **问题**：分页模式下，页面行号和实际行号不同。图表的 `dataRange` 和 `anchorRow` 到底用哪套？
 
 - `ChartModel.anchorRow` 应该用**实际行号**（因为 `sheet.getCell(realRow, col)` 需要实际行号）
-- 渲染时需要通过 `sheet.toPageRow()` 转换为页面行号再传给 ViewportTransform
+- 渲染时需要~~通过 `sheet.toPageRow()` 转换~~ (v2.0+ 直接使用统一坐标)
 - 用户选择选区时，`sheet.selection.getRange()` 返回的是**页面行号**
 
-**解决方案**：`dataRange` 和 `anchorRow` 统一存储**实际行号**，创建时通过 `sheet.toRealRow()` 转换，渲染时通过 `sheet.toPageRow()` 转换。
+**解决方案**：`dataRange` 和 `anchorRow` 统一存储**实际行号**，~~创建/渲染时的坐标转换已移除~~ (v2.0+ 统一坐标系)。
 
 ### 8.2 P1 — 核心功能阶段解决
 

@@ -406,16 +406,9 @@ function buildRows(sheet, opts, range) {
         rows.push(headerRow);
     }
 
-    for (let r = startRow; r <= endRow; r += 1) {
-        const row = [];
-
-        for (let c = startCol; c <= endCol; c += 1) {
-            const cell = sheet.cellStore.get(r, c);
-            row.push(cell ? cell.value : "");
-        }
-
-        rows.push(row);
-    }
+            const accessor = sheet.cellDataAccessor;
+        const dataRows = accessor.getValueMatrix(startRow, startCol, endRow, endCol);
+        rows.push(...dataRows);
 
     return rows;
 }

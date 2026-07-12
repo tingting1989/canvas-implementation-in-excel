@@ -1,4 +1,4 @@
-import { stylePool, DEFAULT_STYLE_ID } from "../../model/styles";
+﻿import { stylePool, DEFAULT_STYLE_ID } from "../../model/styles";
 import { Cell } from "../../model";
 import { StyleChangeRecorder, StyleChangeCommand } from "../../model/command/StyleChangeRecorder.js";
 import { STYLE_SCOPE } from "../../constants/enums/StyleScope.js";
@@ -222,24 +222,26 @@ export class SheetStyleManager {
             return;
         }
 
-        for (let r = topRow; r <= bottomRow; r++) {
-            for (let c = topCol; c <= bottomCol; c++) {
-                if (!this.#sheet.isDisabled(r, c)) {
-                    this.setCellStyle(r, c, styleObj);
-                }
+        const accessor = this.#sheet.cellDataAccessor;
+        accessor.forEach(topRow, topCol, bottomRow, bottomCol, (r, c) => {
+            if (!this.#sheet.isDisabled(r, c)) {
+                this.setCellStyle(r, c, styleObj);
             }
-        }
+        });
         this.invalidateCache();
     }
 
     clearRangeStyle(range) {
         const { topRow, topCol, bottomRow, bottomCol } = range;
+        const accessor = this.#sheet.cellDataAccessor;
+
         for (let r = topRow; r <= bottomRow; r++) {
             this.#rowStyles.delete(r);
-            for (let c = topCol; c <= bottomCol; c++) {
-                this.clearCellStyle(r, c);
-            }
         }
+
+        accessor.forEach(topRow, topCol, bottomRow, bottomCol, (r, c) => {
+            this.clearCellStyle(r, c);
+        });
         this.invalidateCache();
     }
 

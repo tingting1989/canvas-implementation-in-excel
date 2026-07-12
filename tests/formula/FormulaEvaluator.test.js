@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+﻿import { describe, it, expect, vi } from "vitest";
 import { FormulaEvaluator } from "@/formula/FormulaEvaluator";
 
 function createMockCellStore(data = {}) {
@@ -8,9 +8,26 @@ function createMockCellStore(data = {}) {
 }
 
 function createMockSheet(name = "Sheet1", data = {}) {
+    const store = createMockCellStore(data);
     return {
         name,
-        cellStore: createMockCellStore(data),
+        cellStore: store,
+        // v2.0+ 重构：添加 CellDataAccessor 支持
+        cellDataAccessor: {
+            getValueMatrix: (topRow, topCol, bottomRow, bottomCol) => {
+                const matrix = [];
+                for (let r = topRow; r <= bottomRow; r++) {
+                    const rowData = [];
+                    for (let c = topCol; c <= bottomCol; c++) {
+                        const cell = store.get(r, c);
+                        rowData.push(cell ? cell.value : "");
+                    }
+                    matrix.push(rowData);
+                }
+                return matrix;
+            },
+            get: (row, col) => store.get(row, col),
+        },
     };
 }
 
@@ -352,5 +369,53 @@ describe("FormulaEvaluator - Unknown Node Type", () => {
         const evaluator = new FormulaEvaluator(null);
         const result = evaluator.evaluate({ type: "unknown" }, null);
         expect(result).toBe("#VALUE!");
+    });
+});
+describe("FormulaEvaluator - CellDataAccessor Integration", () => {
+    it("should use getValueMatrix for range references (v2.0+ refactor)", () => {
+        const sheet = createMockSheet("Sheet1", {
+            "0,0": { value: 1 },
+            "0,1": { value: 2 },
+            "1,0": { value: 3 },
+            "1,1": { value: 4 },
+        });
+
+        const evaluator = new FormulaEvaluator(null);
+        const result = evaluator.evaluate(
+            {
+                type: "rangeRef",
+                sheet: null,
+                topRow: 0,
+                topCol: 0,
+                bottomRow: 1,
+                bottomCol: 1
+            },
+            sheet
+        );
+
+        expect(result).toEqual([[1, 2], [3, 4]]);
+    });
+
+    it("should track dependencies via CellDataAccessor", () => {
+        const sheet = createMockSheet("Sheet1", {
+            "0,0": { value: 10 },
+            "0,1": { value: 20 },
+        });
+
+        const evaluator = new FormulaEvaluator(null);
+        evaluator.evaluate(
+            {
+                type: "rangeRef",
+                sheet: null,
+                topRow: 0,
+                topCol: 0,
+                bottomRow: 0,
+                bottomCol: 1
+            },
+            sheet
+        );
+
+        expect(evaluator.dependencies.has("Sheet1!0,0")).toBe(true);
+        expect(evaluator.dependencies.has("Sheet1!0,1")).toBe(true);
     });
 });

@@ -20,6 +20,17 @@ function createMockSheet() {
         getDataBindStyle: () => null,
         getCellTypeInstance: () => null,
         resolveCellProperties: () => null,
+        // v2.0+ 重构：添加 CellDataAccessor 支持
+        cellDataAccessor: {
+            forEach: (topRow, topCol, bottomRow, bottomCol, callback) => {
+                for (let r = topRow; r <= bottomRow; r++) {
+                    for (let c = topCol; c <= bottomCol; c++) {
+                        callback(r, c);
+                    }
+                }
+            },
+            get: (row, col) => store.get(row, col),
+        },
     };
 }
 

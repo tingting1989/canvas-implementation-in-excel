@@ -10,10 +10,27 @@ function createMockCellStore(data = {}) {
 }
 
 function createMockSheet(name = "Sheet1", data = {}) {
+    const store = createMockCellStore(data);
     return {
         name,
-        cellStore: createMockCellStore(data),
+        cellStore: store,
         _invalidateCellInternal: vi.fn(),
+        // v2.0+ 重构：添加 CellDataAccessor 支持
+        cellDataAccessor: {
+            getValueMatrix: (topRow, topCol, bottomRow, bottomCol) => {
+                const matrix = [];
+                for (let r = topRow; r <= bottomRow; r++) {
+                    const rowData = [];
+                    for (let c = topCol; c <= bottomCol; c++) {
+                        const cell = store.get(r, c);
+                        rowData.push(cell ? cell.value : "");
+                    }
+                    matrix.push(rowData);
+                }
+                return matrix;
+            },
+            get: (row, col) => store.get(row, col),
+        },
     };
 }
 

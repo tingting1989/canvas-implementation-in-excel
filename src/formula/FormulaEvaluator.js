@@ -1,4 +1,4 @@
-import { registry } from "./functions/index.js";
+﻿import { registry } from "./functions/index.js";
 import { isNumber, isString } from "../utils/utils.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
@@ -134,18 +134,19 @@ export class FormulaEvaluator {
         }
         if (!targetSheet) return "#REF!";
 
-        const result = [];
+                const accessor = targetSheet.cellDataAccessor;
+        const matrix = accessor.getValueMatrix(
+            node.topRow, node.topCol,
+            node.bottomRow, node.bottomCol
+        );
+
         for (let r = node.topRow; r <= node.bottomRow; r++) {
-            const rowData = [];
             for (let c = node.topCol; c <= node.bottomCol; c++) {
-                const cell = targetSheet.cellStore.get(r, c);
                 const key = this.#cellKey(targetSheet.name, r, c);
                 this.dependencies.add(key);
-                rowData.push(cell ? cell.value : "");
             }
-            result.push(rowData);
         }
-        return result;
+        return matrix;
     }
 
     #evalFunction(node, sheet) {

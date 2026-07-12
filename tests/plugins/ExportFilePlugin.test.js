@@ -197,6 +197,23 @@ function createMockSheetWithNestedHeaders() {
             visibleRowCount: vi.fn(() => 100),
             visibleColCount: vi.fn(() => 26),
         },
+
+        // v2.0+ 重构：CellDataAccessor 支持
+        cellDataAccessor: {
+            getValueMatrix: (topRow, topCol, bottomRow, bottomCol) => {
+                const matrix = [];
+                for (let r = topRow; r <= bottomRow; r++) {
+                    const rowData = [];
+                    for (let c = topCol; c <= bottomCol; c++) {
+                        const cell = mockSheet.cellStore.get(r, c);
+                        rowData.push(cell ? cell.value : '');
+                    }
+                    matrix.push(rowData);
+                }
+                return matrix;
+            },
+            get: (row, col) => mockSheet.cellStore.get(row, col),
+        },
     };
 
     return mockSheet;

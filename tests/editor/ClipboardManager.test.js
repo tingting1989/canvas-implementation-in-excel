@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ClipboardManager } from "@/editor/ClipboardManager";
 import { Cell } from "@/model/store/Cell";
 import { ChunkedCellStore } from "@/model/store/ChunkedCellStore";
@@ -14,7 +14,21 @@ function createMockSheet(cells = {}) {
     return {
         name: "Sheet1",
         cellStore: store,
-         cellDataAccessor: store,
+                cellDataAccessor: {
+            getValueMatrix: (topRow, topCol, bottomRow, bottomCol) => {
+                const matrix = [];
+                for (let r = topRow; r <= bottomRow; r++) {
+                    const rowData = [];
+                    for (let c = topCol; c <= bottomCol; c++) {
+                        const cell = store.get(r, c);
+                        rowData.push(cell ? cell.value : "");
+                    }
+                    matrix.push(rowData);
+                }
+                return matrix;
+            },
+            get: (row, col) => store.get(row, col),
+        },
         selection,
         getCellTypeInstance: () => ({ name: "text" }),
         render: vi.fn(),

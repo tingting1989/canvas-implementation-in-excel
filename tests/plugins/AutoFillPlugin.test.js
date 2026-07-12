@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+﻿import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AutoFillPlugin } from "../../src/plugins/AutoFillPlugin.js";
+import { AutoFillStrategy } from "../../src/editor/strategies/AutoFillStrategy.js";
 
 function createMockWorkbook(overrides = {}) {
     return {
