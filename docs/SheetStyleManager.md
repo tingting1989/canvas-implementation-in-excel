@@ -1,4 +1,4 @@
-# SheetStyleManager — 工作表样式管理器
+﻿# SheetStyleManager — 工作表样式管理器
 
 ## 概述
 
@@ -193,8 +193,8 @@ sheet.styleManager.setColStyle(2, styleId); // 第 2 列居中
 
 内部流程：
 ```
-r → toRealRow(r) → realR
-cellStore.get(realR, c) → 当前 cell
+r → 直接访问（无坐标转换）
+cellStore.get(r, c) → 当前 cell
 当前 styleId → 当前 style 对象
 {...currentStyle, ...styleObj} → 合并
 stylePool.getStyleId(merged) → 新 styleId
@@ -289,11 +289,11 @@ sheet.styleManager.invalidateCache();
 |-----|--------|------|------|
 | `setRowStyle` | `row` | 实际行号（realRow） | 数据的真实行索引 |
 | `clearRowStyle` | `row` | 实际行号（realRow） | 同上 |
-| `setCellStyle` | `r` | 页面行号（pageRow） | 屏幕上的显示行号 |
-| `clearCellStyle` | `r` | 页面行号（pageRow） | 同上 |
-| `resolveStyle` | `r` | 页面行号（pageRow） | 渲染时传入的是显示行号 |
+| `setCellStyle` | `r` | 行号 | 屏幕上的显示行号 |
+| `clearCellStyle` | `r` | 行号 | 同上 |
+| `resolveStyle` | `r` | 行号 | 渲染时传入的是显示行号 |
 
-> 内部通过 `this.#sheet.toRealRow(r)` 将页面行号统一转换为实际行号后再操作数据。
+> 直接使用传入的行号访问数据（当前无分页模式）。
 
 ## 与其他模块的关系
 

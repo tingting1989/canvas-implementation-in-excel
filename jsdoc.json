@@ -5,7 +5,7 @@
         "includePattern": ".+\\.js$"
     },
     "opts": {
-        "destination": "./doc",
+        "destination": "./api-docs",
         "recurse": true,
         "readme": "README.md"
     },

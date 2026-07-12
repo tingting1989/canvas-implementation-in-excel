@@ -1,4 +1,4 @@
-# 富内容系统（Rich Content）
+﻿# 富内容系统（Rich Content）
 
 ## 概述
 
@@ -112,8 +112,8 @@ workbook.copyPaste.insertImage({ row: 2, col: 3 });
 
 ```js
 setCellChart(sheet, r, c, chartConfig) {
-    const realR = sheet.toRealRow(r);
-    const key = this.#cellKey(sheet, realR, c);
+    const realR = r;  // 当前无分页模式，直接使用传入行号
+    const key = this.#cellKey(sheet, r, c);
     const old = this.#cellContent.get(key);
     if (old) URL.revokeObjectURL(old.objectUrl);
     // 图表数据转为 Blob 或直接存储配置

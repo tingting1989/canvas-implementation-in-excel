@@ -1,4 +1,4 @@
-# 视口坐标转换器（ViewportTransform）技术文档
+﻿# 视口坐标转换器（ViewportTransform）技术文档
 
 > 本文档介绍了 Canvas 电子表格引擎中统一管理「行列号 ↔ 视口像素坐标」双向转换的核心工具类，消除散落在多个渲染器中的重复坐标计算逻辑。
 
@@ -224,9 +224,9 @@ const lineX = vt.colRightToViewX(col);
 ```javascript
 // mergeInfo 的行号为实际行号，需先转为页面行号
 const pageMerge = {
-    topRow: sheet.toPageRow(merge.topRow),
+    topRow: merge.topRow,
     topCol: merge.topCol,
-    bottomRow: sheet.toPageRow(merge.bottomRow),
+    bottomRow: merge.bottomRow,
     bottomCol: merge.bottomCol,
 };
 const rect = vt.mergeToViewRect(pageMerge);
@@ -351,6 +351,6 @@ const { x, w } = vt.cellToViewRect(row, col);
 
 ### 注意事项
 
-1. **行号转换**：`ViewportTransform` 的 `rowToViewY` 等方法接收**页面行号**。若持有实际行号，需先调用 `sheet.toPageRow(realRow)` 转换。
+1. **行号转换**：`ViewportTransform` 的 `rowToViewY` 等方法接收**页面行号**。若持有实际行号，直接使用实际行号即可。
 2. **合并单元格**：`mergeToViewRect` 接收的 merge 对象的行号也应是页面行号。
 3. **缓存实例的线程安全**：`RenderEngine` 的缓存是实例级别的，同一时刻只有一个 sheet 在渲染，无需考虑并发。

@@ -1,4 +1,4 @@
-# 行列头与行列尺寸配置
+﻿# 行列头与行列尺寸配置
 
 本文档涵盖 5 个核心配置项：`rowHeaderWidth`、`rowHeaders`、`rowHeights`、`colHeaders`、`colWidths`，控制表格的行列头显示及行列尺寸。
 
@@ -439,7 +439,7 @@ SettingsApplier.apply({ sheet, renderEngine, settings })
 - **行号/列号**：均从 0 开始
   - `rowHeaders: [0]` → 第 0 行（数据第一行）
   - `colHeaders: [0]` → 第 0 列（数据第一列）
-- **分页模式**：`RowColManager` 内部处理分页偏移，通过 `sheet.toRealRow()` / `sheet.toPageRow()` 转换
+- **坐标系**：当前使用统一坐标体系，无需行号转换（已移除分页模式）
 - **尺寸单位**：所有宽度/高度均为 CSS 像素（px），自动适配 `devicePixelRatio`
 
 ---

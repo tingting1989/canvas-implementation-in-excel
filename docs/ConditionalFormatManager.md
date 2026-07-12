@@ -1,4 +1,4 @@
-# ConditionalFormatManager — 条件格式与数据绑定管理器
+﻿# ConditionalFormatManager — 条件格式与数据绑定管理器
 
 ## 概述
 
@@ -15,7 +15,7 @@ src/workbook/ConditionalFormatManager.js
 - **职责分离**：将条件格式和数据绑定逻辑从 `Sheet` 剥离，降低 `Sheet` 的复杂度。
 - **两大功能统一管理**：条件格式（按范围/条件匹配）和数据绑定（按值映射）本质都是"动态样式覆盖"，归入同一模块。
 - **快速路径优化**：提供 `hasRules()` / `hasBindings()` 方法，渲染时无规则/绑定可跳过查询，避免不必要的遍历开销。
-- **与 Sheet 解耦**：仅通过构造函数持有 `Sheet` 引用以获取 `toRealRow` 和 `cellStore`。
+- **与 Sheet 解耦**：仅通过构造函数持有 `Sheet` 引用以访问 `cellStore`。
 
 ## 工作原理
 

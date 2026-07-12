@@ -22,7 +22,7 @@ export default defineConfig([
         "**/eslint.config.mjs",
         "**/src/icons/***",
         "**/docs/**",
-        "**/doc/**",
+        "**/api-docs/**",
         "**/design/**",
         "**/examples/**",
         "**/tests/**",

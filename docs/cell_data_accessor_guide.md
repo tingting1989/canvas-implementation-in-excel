@@ -1,8 +1,8 @@
-# CellDataAccessor 快速使用指南
+﻿# CellDataAccessor 快速使用指南
 
 ## 🎯 一句话总结
 
-> **在 Strategy/Plugin/UI 层访问单元格数据时，使用 `sheet.cellDataAccessor` 代替直接调用 `sheet.cellStore`，让系统自动处理分页模式下的行号转换。**
+> **在 Strategy/Plugin/UI 层访问单元格数据时，使用 `sheet.cellDataAccessor` 代替直接调用 `sheet.cellStore`，提供统一的批量数据访问接口。**
 
 ---
 
@@ -11,9 +11,7 @@
 ### 基础用法
 
 ```javascript
-// ❌ 旧写法（容易出错）
-const realRow = sheet.toRealRow(pageRow);
-const cell = sheet.cellStore.get(realRow, col);
+// ❌ 旧写法（直接操作底层存储）`nconst cell = sheet.cellStore.get(row, col);
 
 // ✅ 新写法（安全简洁）
 const accessor = sheet.cellDataAccessor;
@@ -116,18 +114,7 @@ const oldStyleId = oldCell?.styleId || 0;
 sheet.setCell(row, col, newValue, oldStyleId);
 ```
 
-### 配合 PageContext 使用
 
-```javascript
-const pc = sheet.pageContext;
-const accessor = sheet.cellDataAccessor;
-
-// 获取页面相对坐标
-const pageRow = pc.toPageRow(someRealRow);
-
-// 用页面坐标访问数据
-const cell = accessor.get(pageRow, col);
-```
 
 ---
 
@@ -147,7 +134,7 @@ class Sheet {
 // ✅ 正确：核心层保持原始方式
 class Sheet {
     setCell(r, c, value) {
-        const realR = this.toRealRow(r);  // 直接调用
+        // 直接使用传入的行号（当前无分页转换）
         const cell = this.cellStore.get(realR, c);
         // ...
     }
@@ -334,7 +321,7 @@ const accessor = new CellDataAccessor(sheet);
    ```javascript
    // ❌ 不一致的代码
    accessor.get(r, c);
-   sheet.cellStore.get(toRealRow(r), c);  // 混合使用
+   sheet.cellStore.get(r, c);  // 混合使用（应统一使用 accessor）
    ```
 
 3. **不要忽略返回值检查**
