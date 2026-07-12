@@ -236,11 +236,8 @@ export class AutoFillStrategy extends EventStrategy {
     #executeFill(sheet, src, target) {
         const dir = this.#fillDirection;
 
-                const accessor = sheet.cellDataAccessor;
-        const srcValues = accessor.getValueMatrix(
-            src.topRow, src.topCol,
-            src.bottomRow, src.bottomCol
-        );
+        const accessor = sheet.cellDataAccessor;
+        const srcValues = accessor.getValueMatrix(src.topRow, src.topCol, src.bottomRow, src.bottomCol);
 
         const srcHeight = src.bottomRow - src.topRow + 1;
         const srcWidth = src.bottomCol - src.topCol + 1;

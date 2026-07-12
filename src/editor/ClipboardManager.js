@@ -50,21 +50,13 @@ export class ClipboardManager {
             const cellType = sheet.getCellTypeInstance(range.topRow, c);
             columnTypes.push(cellType ? cellType.name : "text");
         }
-        const valueMatrix = accessor.getValueMatrix(
-            range.topRow, range.topCol,
-            range.bottomRow, range.bottomCol
-        );
+        const valueMatrix = accessor.getValueMatrix(range.topRow, range.topCol, range.bottomRow, range.bottomCol);
 
         const cells = valueMatrix.map((row, rIdx) =>
             row.map((value, cIdx) => {
-                const cell = accessor.get(
-                    range.topRow + rIdx,
-                    range.topCol + cIdx
-                );
-                return cell
-                    ? { value, styleId: cell.styleId || 0 }
-                    : null;
-            })
+                const cell = accessor.get(range.topRow + rIdx, range.topCol + cIdx);
+                return cell ? { value, styleId: cell.styleId || 0 } : null;
+            }),
         );
         this.#data = {
             sourceSheetName: sheet.name,

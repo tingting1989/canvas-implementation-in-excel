@@ -406,9 +406,9 @@ function buildRows(sheet, opts, range) {
         rows.push(headerRow);
     }
 
-            const accessor = sheet.cellDataAccessor;
-        const dataRows = accessor.getValueMatrix(startRow, startCol, endRow, endCol);
-        rows.push(...dataRows);
+    const accessor = sheet.cellDataAccessor;
+    const dataRows = accessor.getValueMatrix(startRow, startCol, endRow, endCol);
+    rows.push(...dataRows);
 
     return rows;
 }

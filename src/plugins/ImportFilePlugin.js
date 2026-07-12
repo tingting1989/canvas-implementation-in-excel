@@ -148,7 +148,7 @@ export class ImportFilePlugin extends BasePlugin {
             const shouldContinue = this.hooks?.runHooksUntil(HOOKS.IMPORT_BEFORE_IMPORT, preview);
 
             if (shouldContinue === false) {
-                return;
+                throw new Error(ERROR_CODE.IMPORT_CANCELLED_BY_USER);
             }
 
             // 2️⃣ 开始读取文件

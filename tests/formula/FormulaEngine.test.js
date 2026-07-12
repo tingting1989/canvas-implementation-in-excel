@@ -10,10 +10,36 @@ function createMockCellStore(data = {}) {
 }
 
 function createMockSheet(name = "Sheet1", data = {}) {
+    const cellStore = createMockCellStore(data);
+    
     return {
         name,
-        cellStore: createMockCellStore(data),
+        cellStore,
         _invalidateCellInternal: vi.fn(),
+        
+        // CellDataAccessor (支持 FormulaEngine/FormulaEvaluator 读取)
+        cellDataAccessor: {
+            getValue: vi.fn((row, col) => {
+                return cellStore.get(row, col)?.value;
+            }),
+            getValueMatrix: vi.fn((startRow, startCol, endRow, endCol) => {
+                const matrix = [];
+                for (let r = startRow; r <= endRow; r++) {
+                    const row = [];
+                    for (let c = startCol; c <= endCol; c++) {
+                        row.push(cellStore.get(r, c)?.value ?? null);
+                    }
+                    matrix.push(row);
+                }
+                return matrix;
+            }),
+            forEach: vi.fn((callback) => {
+                Object.keys(data).forEach((key) => {
+                    const [row, col] = key.split(",").map(Number);
+                    callback(data[key].value, row, col);
+                });
+            }),
+        },
     };
 }
 

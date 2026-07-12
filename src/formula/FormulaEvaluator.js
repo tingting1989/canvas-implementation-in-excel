@@ -134,11 +134,8 @@ export class FormulaEvaluator {
         }
         if (!targetSheet) return "#REF!";
 
-                const accessor = targetSheet.cellDataAccessor;
-        const matrix = accessor.getValueMatrix(
-            node.topRow, node.topCol,
-            node.bottomRow, node.bottomCol
-        );
+        const accessor = targetSheet.cellDataAccessor;
+        const matrix = accessor.getValueMatrix(node.topRow, node.topCol, node.bottomRow, node.bottomCol);
 
         for (let r = node.topRow; r <= node.bottomRow; r++) {
             for (let c = node.topCol; c <= node.bottomCol; c++) {

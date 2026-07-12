@@ -8,7 +8,27 @@ function createMockCellStore(data = {}) {
 }
 
 function createMockSheet(name = "Sheet1", data = {}) {
-    return { name, cellStore: createMockCellStore(data) };
+    const cellStore = createMockCellStore(data);
+    
+    return { 
+        name, 
+        cellStore,
+        
+        // CellDataAccessor (支持 FormulaEvaluator 读取范围引用)
+        cellDataAccessor: {
+            getValueMatrix: vi.fn((startRow, startCol, endRow, endCol) => {
+                const matrix = [];
+                for (let r = startRow; r <= endRow; r++) {
+                    const row = [];
+                    for (let c = startCol; c <= endCol; c++) {
+                        row.push(cellStore.get(r, c)?.value ?? "");
+                    }
+                    matrix.push(row);
+                }
+                return matrix;
+            }),
+        },
+    };
 }
 
 function createMockWorkbook(sheets = {}) {
