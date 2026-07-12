@@ -1,4 +1,4 @@
-# 自定义渲染器 API（Custom Renderer）完整设计文档
+﻿# 自定义渲染器 API（Custom Renderer）完整设计文档
 
 > 本文档定义了 Canvas 电子表格引擎的自定义渲染器体系，允许用户注册自定义的 Canvas 绘制函数，实现丰富的可视化效果。
 
@@ -172,7 +172,7 @@ export class CellRenderContext {
         isDisabled,       // 是否禁用 (boolean)
         isMerged,         // 是否为合并单元格 (boolean)
         mergeInfo,        // 合并区域信息 (object|null)
-        pageInfo,         // 分页/冻结信息 (object) - 分页模式下的额外信息
+        pageInfo,         // ~~分页/~~ 冻结信息 (object) - 分页模式下的额外信息
     })
 
     // ========== 基础属性（只读） ==========
@@ -195,11 +195,11 @@ export class CellRenderContext {
     get isDisabled()      // 禁用状态
     get isMerged()        // 合并状态
     get mergeInfo()       // 合并信息
-    get pageInfo()        // 分页/冻结信息
+    get pageInfo()        // ~~分页/~~ 冻结信息
 
     // ========== 转换方法 ==========
-    toRealRow(pageRow)    // 页面行号 → 实际行号
-    toPageRow(realRow)    // 实际行号 → 页面行号
+    ~~toRealRow(pageRow)~~    // ⚠️ 已废弃（v2.0+）
+    ~~toPageRow(realRow)~~    // ⚠️ 已废弃
     toRealCol(pageCol)    // 页面列号 → 实际列号
     toPageCol(realCol)    // 实际列号 → 页面列号
 
@@ -211,8 +211,8 @@ export class CellRenderContext {
 
 // pageInfo 结构定义
 {
-    isPaged: Boolean,          // 是否处于分页模式
-    currentPage: Number,       // 当前页码（从0开始）
+    isPaged: Boolean,  // ~~是否处于分页模式~~ (v2.0+ 始终为 false)
+    currentPage: Number,  // ~~当前页码~~ (v2.0+ 始终为 0)
     pageSize: Number,          // 每页行数
     frozenRowCount: Number,    // 冻结行数
     frozenColCount: Number,    // 冻结列数
@@ -549,10 +549,10 @@ export const getRegisteredRenderers = RendererRegistry.getRegisteredRenderers.bi
     const style = sheet.resolveStyle(r, c);
 
     // ★★★ 核心：计算实际行号（与图表引擎对齐）★★★
-    const realR = (options?.useRealRows) ? r : sheet.toRealRow(r);
+    const realR = r;  // 当前无分页模式，直接使用传入行号
     const realC = c;  // 列号通常不需要转换（除非有隐藏列的特殊处理）
 
-    // 构建分页/冻结信息
+    // 构建冻结区域信息（已移除分页模式）
     const rc = sheet.rowColManager;
     const pageInfo = {
         isPaged: sheet.isPagedMode(),
@@ -598,11 +598,11 @@ export const getRegisteredRenderers = RendererRegistry.getRegisteredRenderers.bi
 ```javascript
 // 场景1：冻结2行的情况下，页面第3行 → 实际第5行
 const pageRow = 3;  // 用户看到的行号
-const realRow = sheet.toRealRow(pageRow);  // → 5（数据存储的真实位置）
+const realRow = pageRow;  // v2.0+ 统一坐标系，无需转换
 
 // 场景2：反向转换
 const dataRow = 10;  // 数据中的实际位置
-const displayRow = sheet.toPageRow(dataRow);  // → 8（用户界面显示的位置）
+const displayRow = dataRow;  // v2.0+ 统一坐标系
 
 // 场景3：在自定义渲染器中使用
 render(context) {
@@ -1991,11 +1991,11 @@ render(context) {
 
 ---
 
-### 9.5 分页模式支持 ⭐ 重要
+### 9.5 分页模式支持 ~~⭐ 已废弃~~ ⚠️
 
-#### 分页模式的特殊性
+#### 分页模式的特殊性 ~~（v2.0+ 已移除）~~
 
-当工作表启用分页模式时，行列号的行为会更加复杂：
+~~当工作表启用分页模式时~~ **v2.0+ 已移除分页功能**，以下内容仅作历史参考：
 
 | 属性 | 说明 | 示例（每页10行，第2页） |
 |------|------|------------------------|
@@ -2040,12 +2040,12 @@ class PagedFrozenRenderer extends BaseColumnType {
 }
 ```
 
-#### 分页模式最佳实践
+#### ~~分页模式~~ 最佳实践（已过时）
 
 ✅ **推荐做法**：
-1. **始终使用 `realRow` 进行数据访问**
-2. **检查 `pageInfo.isPaged` 判断当前模式**
-3. **使用 `sheet.toRealRow()` 和 `sheet.toPageRow()` 进行转换**
+1. **直接使用传入的 row/col**（当前无分页转换）
+2. **~~检查 pageInfo.isPaged~~ （已废弃）当前模式**
+3. **~~使用 toRealRow()/toPageRow()~~ （已移除，v2.0+ 统一坐标）**
 4. **在开发环境打印调试信息**
 
 ❌ **避免的做法**：
@@ -2072,7 +2072,7 @@ class PagedFrozenRenderer extends BaseColumnType {
 | 维度 | 自定义渲染器 | 图表引擎 | 一致性 |
 |------|-------------|---------|--------|
 | **存储行号** | `realRow` / `realCol` | `anchorRow` (实际行号) | ✅ 一致 |
-| **显示行号** | `row` / `col` | 渲染时通过 `toPageRow()` 转换 | ✅ 一致 |
+| **显示行号** | `row` / `col` | 渲染时直接使用（v2.0+ 无需转换） | ✅ 一致 |
 | **数据访问** | `sheet.cellStore.get(realRow, realCol)` | `dataRange` 使用实际行号 | ✅ 一致 |
 | **冻结支持** | `pageInfo.isInFrozenArea` | `crossesFrozenBoundary()` | ✅ 一致 |
 | **转换方法** | `toRealRow()` / `toPageRow()` | `sheet.toRealRow()` / `sheet.toPageRow()` | ✅ 一致 |
@@ -2306,7 +2306,7 @@ docs/
 ```javascript
 describe('Custom Renderer - 架构一致性测试', () => {
     test('冻结模式下 realRow != row', () => { /* ... */ });
-    test('分页模式下 realRow 计算正确', () => { /* ... */ });
+    test('~~分页模式下 realRow 计算正确~~ (已废弃), () => { /* ... */ });
     test('冻结+分页组合场景', () => { /* ... */ });
     test('与图表引擎共享数据范围时行号一致', () => { /* ... */ });
     test('sheet 引用可用于跨单元格数据访问', () => { /* ... */ });

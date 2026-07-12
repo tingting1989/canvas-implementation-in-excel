@@ -1,4 +1,4 @@
-# 单元格样式系统重构设计文档
+﻿# 单元格样式系统重构设计文档
 
 > **版本**: v1.0
 > **日期**: 2026-06-29
@@ -406,14 +406,14 @@ sheet.setRowStyle(0, { backgroundColor: "yellow" });
 ```js
 // Sheet.js — 统一使用 pageRow
 setRowStyle(row, styleObj) {
-    const realRow = this.toRealRow(row);
+    const realRow = row;  // v2.0+ 无分页模式，直接使用传入行号
     const styleId = stylePool.getStyleId(styleObj);
     this.#styleManager.setRowStyle(realRow, styleId);
     this.#invalidateAll();
 }
 
 clearRowStyle(row) {
-    const realRow = this.toRealRow(row);
+    const realRow = row;  // v2.0+ 无分页模式，直接使用传入行号
     this.#styleManager.clearRowStyle(realRow);
     this.#invalidateAll();
 }
@@ -522,7 +522,7 @@ clearRangeStyle(range) {
     const { topRow, topCol, bottomRow, bottomCol } = range;
 
     for (let r = topRow; r <= bottomRow; r++) {
-        const realR = this.#sheet.toRealRow(r);
+        const realR = r;  // v2.0+ 无需转换
         this.#rowStyles.delete(realR);
         for (let c = topCol; c <= bottomCol; c++) {
             this.clearCellStyle(r, c);
@@ -754,7 +754,7 @@ setRangeStyle(range, styleObj) {
     // 整行选区优化：合并而非替换
     if (topCol === 0 && bottomCol >= rowColManager.colCount - 1) {
         for (let r = topRow; r <= bottomRow; r++) {
-            const realR = this.#sheet.toRealRow(r);
+            const realR = r;  // v2.0+ 无需转换
             const existingId = this.#rowStyles.get(realR);
             const existing = existingId ? stylePool.getStyle(existingId) : {};
             const merged = { ...existing, ...styleObj };
@@ -1011,7 +1011,7 @@ export class SetCellStyleCommand {
 ```js
 // SheetStyleManager.js — setCellStyle 改用 Command
 setCellStyle(r, c, styleObj) {
-    const realR = this.#sheet.toRealRow(r);
+    const realR = r;  // v2.0+ 无需转换
     this.#sheet.rowColManager.ensureSize(realR + 1, c + 1);
     const cell = this.#sheet.cellStore.get(realR, c);
     const currentStyleId = cell?.styleId || 0;
@@ -1135,7 +1135,7 @@ getStyleId(obj = {}) {
 |------|------|------|
 | Workbook 级 defaultStyle 继承 | `Workbook.js` | 新增 `#defaultStyle`、`#resolveDefaultStyle()`、修改 `#applySheetsConfig()`、修改 `addSheet()` |
 | setRowStyle/setColStyle 参数统一 | `Sheet.js` | 改为仅接受 `styleObj`，内部转换 |
-| 行号坐标统一 | `Sheet.js` | `setRowStyle`/`clearRowStyle` 内部加 `toRealRow()` |
+| 行号坐标统一 | `Sheet.js` | `setRowStyle`/`clearRowStyle` ~~内部加 `toRealRow()`~~ (v2.0+ 已移除) |
 | 更新调用方 | `main.js`、`ColumnTypeManager.js`、`ContextMenuStrategy.js` | 移除 `stylePool.getStyleId()` 调用，改为直接传入样式对象 |
 
 ### Phase 2：P1 构造选项 & 语义统一（1-2 天）
@@ -1279,7 +1279,7 @@ conditionalStyles: [{ range: { topRow: 0, topCol: 0, bottomRow: 100, bottomCol: 
 |---------|------------|---------|
 | `tests/workbook/SheetStyleManager.test.js` | "should set and retrieve row style" | `setRowStyle` 改为接受 `styleObj`，移除手动 `stylePool.getStyleId()` |
 | `tests/workbook/SheetStyleManager.test.js` | "should set and retrieve column style" | `setColStyle` 改为接受 `styleObj`，移除手动 `stylePool.getStyleId()` |
-| `tests/workbook/SheetStyleManager.test.js` | "should clear row style" | `clearRowStyle` 入参改为 pageRow，需验证内部 `toRealRow` 转换 |
+| `tests/workbook/SheetStyleManager.test.js` | "should clear row style" | `clearRowStyle` 入参改为 pageRow，需验证 ~~`toRealRow` 转换~~ (v2.0+ 已移除) |
 | `tests/workbook/SheetStyleManager.test.js` | "should clear column style" | 同上 |
 | `tests/workbook/SheetStyleManager.test.js` | "should merge column style over default" | `setColStyle` 改为接受 `styleObj` |
 | `tests/workbook/SheetStyleManager.test.js` | "should merge row style over column style" | `setRowStyle` 改为接受 `styleObj` |

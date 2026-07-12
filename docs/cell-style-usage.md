@@ -1,4 +1,4 @@
-# 单元格样式系统 — 使用指南
+﻿# 单元格样式系统 — 使用指南
 
 ## 1. 概述
 
@@ -692,7 +692,7 @@ wb.setRowStyle(0, null);
 
 ```js
 wb.setRowStyle(pageRow, { backgroundColor: "yellow" });
-// 内部调用 toRealRow(pageRow) 转换，无需手动转换坐标
+// v2.0+ 无需坐标转换（已移除分页模式）
 ```
 
 `getCellStyle`、`setCellStyle`、`clearCellStyle` 等接受 `(row, col)` 的 API 同理。
