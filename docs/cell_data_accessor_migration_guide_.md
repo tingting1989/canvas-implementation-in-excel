@@ -1023,7 +1023,7 @@ if (USE_NEW_ACCESSOR) {
 
 ### A. 相关文档链接
 
-- [CellDataAccessor API 文档](./CELL_DATA_ACCESSOR_GUIDE.md)
+- [CellDataAccessor API 文档](cell_data_accessor_guide.md)
 - [Sheet 重构计划](./SHEET_REFACTORING_PLAN.md)
 - [ISheet 接口定义](../src/workbook/interfaces/ISheet.js)
 - [架构设计文档](./ARCHITECTURE.md)
@@ -1040,24 +1040,10 @@ if (USE_NEW_ACCESSOR) {
 | **DRY** | Don't Repeat Yourself（不要重复自己）原则 |
 | **SRP** | Single Responsibility Principle（单一职责原则） |
 
-### C. 联系方式
 
-如有疑问或发现问题，请联系：
-
-- **技术负责人**: [姓名] - [邮箱]
-- **Code Reviewer**: [姓名] - [Slack ID]
-- **Issue Tracker**: [项目链接]/issues
-
----
 
 ## 版本历史
 
-| 版本 | 日期 | 作者 | 变更说明 |
-|------|------|------|---------|
-| 1.0.0 | 2026-07-11 | AI Assistant | 初始版本，完整迁移指南 |
-
----
-
-**文档结束**
-
-> 💡 **提示**: 建议在实施前召开一次 30 分钟的技术讨论会议，确保团队成员对方案达成共识。
+| 版本 | 日期 | 作者           | 变更说明 |
+|------|------|--------------|---------|
+| 1.0.0 | 2026-07-11 | jiangsuiting | 初始版本，完整迁移指南 |

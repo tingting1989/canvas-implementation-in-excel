@@ -133,23 +133,7 @@ const cell = accessor.get(pageRow, col);
 
 ## 🚨 常见错误与纠正
 
-### 错误 1：混淆 CellDataAccessor 和 PageContext
-
-```javascript
-// ❌ 错误：用 PageContext 访问数据
-const pc = sheet.pageContext;
-const cell = pc.get(row, col);  // PageContext 没有 get() 方法！
-
-// ✅ 正确：各司其职
-const pc = sheet.pageContext;
-const accessor = sheet.cellDataAccessor;
-
-const realRow = pc.toRealRow(pageRow);     // 坐标转换
-const y = pc.getPageRowY(pageRow);         // 像素坐标
-const cell = accessor.get(pageRow, col);   // 数据访问
-```
-
-### 错误 2：在 Sheet 内部实现中使用
+### 错误 1：在 Sheet 内部实现中使用
 
 ```javascript
 // ❌ 错误：Sheet 方法内部使用自己的 cellDataAccessor
@@ -219,29 +203,16 @@ function processData(sheet) {
 
 ## 🧪 调试技巧
 
-### 打印实际访问的坐标
 
-```javascript
-// 临时调试：查看转换结果
-const accessor = sheet.cellDataAccessor;
-
-const pageRow = 5;
-const realRow = accessor.toRealRow(pageRow);
-
-console.log(`页面行号: ${pageRow} → 实际行号: ${realRow}`);
-console.log(`是否分页: ${sheet.pageContext.isActive}`);
-console.log(`pageStart: ${sheet.pageContext.pageStart}`);
-```
 
 ### 对比新旧方式的结果
 
 ```javascript
 // 验证一致性
-const row = 4;
+const row = 4,col = 5;
 
 // 旧方式
-const oldRealRow = sheet.toRealRow(row);
-const oldCell = sheet.cellStore.get(oldRealRow, col);
+const oldCell = sheet.cellStore.get(row, col);
 
 // 新方式
 const newCell = sheet.cellDataAccessor.get(row, col);
@@ -265,27 +236,6 @@ accessor.forEach(0, 0, 100, 20, (r, c, cell) => {
 });
 ```
 
-### 条件搜索
-
-```javascript
-// 在区域中查找特定值
-function findValue(accessor, targetValue, maxRow, maxCol) {
-    for (let r = 0; r <= maxRow; r++) {
-        for (let c = 0; c <= maxCol; c++) {
-            const value = accessor.getValue(r, c);
-            if (value === targetValue) {
-                return {row: r, col: c};
-            }
-        }
-    }
-    return null;
-}
-
-const result = findValue(accessor, '关键字', 1000, 26);
-if (result) {
-    console.log(`找到位置: (${result.row}, ${result.col})`);
-}
-```
 
 ### 数据统计
 
@@ -339,39 +289,17 @@ import { CellDataAccessor } from '@/model/grid/CellDataAccessor.js';
 const accessor = new CellDataAccessor(sheet);
 ```
 
-### 核心方法
+### 方法
 
 | 方法 | 参数 | 返回值 | 说明 |
 |------|------|--------|------|
 | `get(row, col)` | 页面行号, 列号 | `Cell\|null` | 读取单元格 |
-| `set(row, col, cell)` | 页面行号, 列号, Cell对象 | `void` | 写入单元格 |
-| `getValue(row, col)` | 页面行号, 列号 | `*\|undefined` | 快速获取值 |
-| `has(row, col)` | 页面行号, 列号 | `boolean` | 检查存在性 |
-| `delete(row, col)` | 页面行号, 列号 | `void` | 删除单元格 |
-
-### 批量方法
-
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `getRange(tR, tC, bR, bC)` | 区域边界 | `Cell[][]` | 批量读取 |
 | `setRange(tR, tC, cells)` | 边界+二维数组 | `void` | 批量写入 |
 | `getValueMatrix(tR, tC, bR, bC)` | 区域边界 | `*[][]` | 提取值矩阵 |
 | `getNonEmptyCells(tR, tC, bR, bC)` | 区域边界 | `Array` | 非空单元格列表 |
-
-### 遍历方法
-
-| 方法 | 参数 | 说明 |
-|------|------|------|
 | `forEach(tR, tC, bR, bC, callback)` | 边界+回调 | 回调遍历 |
 | `[Symbol.iterator]()` | - | 迭代器支持 |
 
-### 工具方法
-
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `toRealRow(pageRow)` | 页面行号 | `number` | 行号转换 |
-
----
 
 ## 💡 最佳实践总结
 
@@ -419,30 +347,6 @@ const accessor = new CellDataAccessor(sheet);
 
 ---
 
-## 🆘 故障排除
-
-### 问题：访问返回 undefined 或 null
-
-**可能原因**：
-1. 单元格确实为空
-2. 行号超出范围
-3. 分页模式配置错误
-
-**排查步骤**：
-```javascript
-// 1. 检查分页状态
-console.log('分页激活:', sheet.pageContext.isActive);
-console.log('pageStart:', sheet.pageContext.pageStart);
-
-// 2. 检查转换结果
-console.log('输入行号:', row);
-console.log('实际行号:', accessor.toRealRow(row));
-
-// 3. 直接验证 cellStore
-const realRow = accessor.toRealRow(row);
-console.log('直接访问:', sheet.cellStore.get(realRow, col));
-```
-
 ### 问题：性能下降
 
 **解决方案**：
@@ -453,16 +357,3 @@ const cells = accessor.getRange(0, 0, maxRow, maxCol);
 // 或者减少访问次数
 const neededCells = accessor.getNonEmptyCells(...);
 ```
-
----
-
-## 📞 获取帮助
-
-- 查看 [重构报告](./REFACTORING_REPORT.md) 了解设计背景
-- 参考 [PageContext 文档](./PAGE_CONTEXT_DESIGN.md) 理解坐标体系
-- 阅读 [Coordinate System Guide](./COORDINATE_SYSTEM_GUIDE.md) 掌握完整知识
-
----
-
-**最后更新**: 2026-07-02
-**适用版本**: v2.0+
