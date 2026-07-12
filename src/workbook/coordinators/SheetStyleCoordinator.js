@@ -1,5 +1,6 @@
 import { stylePool } from "../../model/styles";
 import { ISheet } from "../interfaces/ISheet.js";
+import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 
 /**
  * 工作表样式协调者
@@ -219,14 +220,26 @@ export class SheetStyleCoordinator {
     // ─── 条件格式 ─────────────────────────────────────
 
     /**
-     * 添加条件格式规则
+     * 添加条件格式规则（对象形式 API）
      *
-     * @param {{topRow:number, topCol:number, bottomRow:number, bottomCol:number}} range - 应用范围
-     * @param {function(cell: Object): boolean} conditionFn - 条件判断函数
-     * @param {number} styleId - 符合条件时应用的样式 ID
+     * @param {Object} options - 规则选项
+     * @param {{topRow:number, topCol:number, bottomRow:number, bottomCol:number}} options.range - 应用范围
+     * @param {function(value: *, cell?: Object): boolean} options.condition - 条件判断函数
+     * @param {Object} [options.style={}] - 命中时应用的样式对象（支持 {@link CELL_STYLE_PROPERTIES} 中的所有属性）
      */
-    addConditionalRule(range, conditionFn, styleId) {
-        this.#conditionalFormat.addRule(range, conditionFn, styleId);
+    addConditionalRule(options) {
+        const { range, condition, style = {} } = options;
+
+        if (!range || typeof condition !== 'function') {
+            errorHandler.warn(ERROR_CODE.FORMAT_APPLY_ERROR, 'addConditionalRule 参数错误: range 或 condition 无效', {
+                hasRange: !!range,
+                conditionType: typeof condition
+            });
+            return;
+        }
+
+        const styleId = stylePool.getStyleId(style);
+        this.#conditionalFormat.addRule(range, condition, styleId);
     }
 
     /**

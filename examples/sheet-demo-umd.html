@@ -835,16 +835,15 @@ sheet.<span class="code-function">merges</span>.<span class="code-function">merg
                     </button>
 
                     <div class="code-preview" style="margin-top: 15px;">
-<span class="code-comment">// 添加条件格式：工资 > 30000 显示红色</span>
+<span class="code-comment">// 添加条件格式：工资 &gt; 30000 显示红色</span>
 sheet.<span class="code-function">styles</span>.<span class="code-function">addConditionalRule</span>({
-  range: { startRow: <span class="code-number">1</span>, startCol: <span class="code-number">2</span>, endRow: <span class="code-number">10</span>, endCol: <span class="code-number">2</span> },
+  range: { topRow: <span class="code-number">1</span>, topCol: <span class="code-number">2</span>, bottomRow: <span class="code-number">10</span>, bottomCol: <span class="code-number">2</span> },
   condition: (value) => value > <span class="code-number">30000</span>,
   style: {
     backgroundColor: <span class="code-string">"#FFCDD2"</span>,
     color: <span class="code-string">"#C62828"</span>,
     bold: <span class="code-keyword">true</span>
-  },
-  priority: <span class="code-number">1</span>
+  }
 });
                     </div>
                 </div>
@@ -1144,7 +1143,7 @@ sheet.readOnly = <span class="code-keyword">true</span>;
                         "sort",
                         "dataValidation",
                     ],
-                    sheets: [],
+                    sheets: [2],
                 });
                 
 
@@ -1486,14 +1485,13 @@ sheet.readOnly = <span class="code-keyword">true</span>;
             }
             
             sheet.styles.addConditionalRule({
-                range: { startRow, startCol, endRow, endCol },
+                range: { topRow: startRow, topCol: startCol, bottomRow: endRow, bottomCol: endCol },
                 condition: condition,
                 style: {
                     backgroundColor: bgColor,
                     color: textColor,
                     bold: true
-                },
-                priority: 1
+                }
             });
             
             log(`🎯 条件格式规则已添加 (${type} ${valueStr})`, 'success');

@@ -1,6 +1,5 @@
 ﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 
-import { stylePool } from "../../model/styles";
 import { isFunction, isNumber, isObject } from "../../utils/utils.js";
 import { CONFIG } from "@/constants/config";
 
@@ -164,11 +163,13 @@ export class SettingsApplier {
         }
     }
 
-    /** @param {import("../Sheet.js").Sheet} sheet */
+    /** @param {import("../Sheet.js").Sheet} sheet
+     * @param conditionalStyles
+     */
     static #applyConditionalStyles(sheet, conditionalStyles) {
         for (const cs of conditionalStyles) {
             if (!cs.range || !cs.condition || !cs.style) continue;
-            sheet.addConditionalRule(cs.range, cs.condition, stylePool.getStyleId(cs.style));
+            sheet.addConditionalRule(cs);
         }
     }
 

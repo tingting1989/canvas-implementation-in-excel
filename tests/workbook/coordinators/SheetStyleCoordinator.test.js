@@ -120,21 +120,21 @@ describe("SheetStyleCoordinator - 样式管理协调者", () => {
     // 条件格式
     // ============================================================
     describe("条件格式", () => {
-        it("应该添加条件格式规则（使用正确的参数签名）", () => {
-            const range = { topRow: 0, topCol: 0, bottomRow: 10, rightCol: 0 };
-            const conditionFn = (cell) => cell && parseFloat(cell.value) > 100;
-            const styleId = 1;
-
-            sheet.addConditionalRule(range, conditionFn, styleId);
+        it("应该添加条件格式规则（使用对象形式 API）", () => {
+            sheet.addConditionalRule({
+                range: { topRow: 0, topCol: 0, bottomRow: 10, bottomCol: 0 },
+                condition: (value) => typeof value === 'number' && value > 100,
+                style: { backgroundColor: '#FFCDD2', color: '#C62828' }
+            });
             expect(sheet.hasConditionalRules()).toBe(true);
         });
 
         it("应该匹配条件格式样式（使用 matchConditionalStyle）", () => {
-            const range = { topRow: 0, topCol: 0, bottomRow: 10, rightCol: 0 };
-            const conditionFn = (cell) => cell && cell.value === "test";
-            const styleId = 99;
-
-            sheet.addConditionalRule(range, conditionFn, styleId);
+            sheet.addConditionalRule({
+                range: { topRow: 0, topCol: 0, bottomRow: 10, bottomCol: 0 },
+                condition: (value) => value === "test",
+                style: { bold: true }
+            });
             sheet.setCell(0, 0, "test");
 
             const cell = sheet.cellStore.get(0, 0);
