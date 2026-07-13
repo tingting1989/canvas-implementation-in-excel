@@ -474,6 +474,7 @@ const initApp = () => {
             "formula",
             "sort",
             "dataValidation",
+            // "chart"
         ],
         pluginOptions: {
             contextMenu: {
