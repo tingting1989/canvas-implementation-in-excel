@@ -229,12 +229,7 @@ export class ChartSelectionStrategy extends EventStrategy {
         const handles = this.#getHandlePositions(b);
         const half = CONFIG.CHART_SELECTION_HANDLE_SIZE / 2;
         for (const [name, pos] of Object.entries(handles)) {
-            if (
-                px >= pos.x - half &&
-                px <= pos.x + half &&
-                py >= pos.y - half &&
-                py <= pos.y + half
-            ) {
+            if (px >= pos.x - half && px <= pos.x + half && py >= pos.y - half && py <= pos.y + half) {
                 return name;
             }
         }
@@ -286,18 +281,8 @@ export class ChartSelectionStrategy extends EventStrategy {
             ctx.fillStyle = CONFIG.CHART_SELECTION_HANDLE_FILL;
             ctx.strokeStyle = CONFIG.CHART_SELECTION_BORDER_COLOR;
             ctx.lineWidth = CONFIG.CHART_SELECTION_HANDLE_LINE_WIDTH;
-            ctx.fillRect(
-                pos.x - half,
-                pos.y - half,
-                CONFIG.CHART_SELECTION_HANDLE_SIZE,
-                CONFIG.CHART_SELECTION_HANDLE_SIZE
-            );
-            ctx.strokeRect(
-                pos.x - half,
-                pos.y - half,
-                CONFIG.CHART_SELECTION_HANDLE_SIZE,
-                CONFIG.CHART_SELECTION_HANDLE_SIZE
-            );
+            ctx.fillRect(pos.x - half, pos.y - half, CONFIG.CHART_SELECTION_HANDLE_SIZE, CONFIG.CHART_SELECTION_HANDLE_SIZE);
+            ctx.strokeRect(pos.x - half, pos.y - half, CONFIG.CHART_SELECTION_HANDLE_SIZE, CONFIG.CHART_SELECTION_HANDLE_SIZE);
         }
         ctx.restore();
     }

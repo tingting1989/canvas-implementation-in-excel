@@ -10,17 +10,17 @@
 
     async extract(chart, sheet) {
         if (!chart.dataRange) return { headers: [], data: [], source: "none" };
-        
+
         const cellCount = this.#calculateCellCount(chart.dataRange);
-        
+
         if (cellCount < 500) {
             return this.#extractSync(chart, sheet);
         }
-        
+
         if (cellCount <= 5000 || !this.#workerReady) {
             return this.#extractAsyncChunked(chart, sheet);
         }
-        
+
         return this.#extractInWorker(chart, sheet);
     }
 
@@ -46,7 +46,7 @@
             }
             rowData.push(colData);
         }
-        
+
         return { headers: rowData[0] || [], data: rowData.slice(1), source: "sync" };
     }
 
@@ -71,7 +71,7 @@
             }
             rowData.push(colData);
         }
-        
+
         return { headers: rowData[0] || [], data: rowData.slice(1), source: "async-chunked" };
     }
 
@@ -81,7 +81,7 @@
         }
 
         const taskId = ++this.#taskIdCounter;
-        
+
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.#pendingTasks.delete(taskId);
@@ -90,12 +90,12 @@
 
             const handler = (e) => {
                 if (e.data.taskId !== taskId) return;
-                
+
                 clearTimeout(timeout);
                 this.#pendingTasks.delete(taskId);
                 this.#worker.removeEventListener("message", handler);
                 this.#worker.removeEventListener("error", errorHandler);
-                
+
                 resolve(e.data.result);
             };
 
@@ -128,12 +128,12 @@
         for (let row = startRow; row <= endRow; row++) {
             const rowData = [];
             for (let col = startCol; col <= endCol; col++) {
-                const cell =  accessor.get(row, col);
+                const cell = accessor.get(row, col);
                 rowData.push(cell?.value ?? null);
             }
             result.push(rowData);
         }
-        
+
         return result;
     }
 

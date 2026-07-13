@@ -5,15 +5,11 @@ export class ChartRendererFactory {
     static NATIVE_TYPES = ["bar", "line", "pie", "area", "scatter"];
     static ECHARTS_TYPES = ["radar", "candlestick", "funnel", "gauge", "treemap", "sunburst", "heatmap"];
 
-    static #nativeRenderer = null;
     static #echartsBridge = null;
 
     static getRenderer(chartType) {
         if (this.NATIVE_TYPES.includes(chartType)) {
-            if (!this.#nativeRenderer) {
-                this.#nativeRenderer = new NativeChartRenderer();
-            }
-            return this.#nativeRenderer;
+            return NativeChartRenderer;
         } else if (this.ECHARTS_TYPES.includes(chartType)) {
             if (!this.#echartsBridge) {
                 console.warn("[ChartRendererFactory] ECharts bridge not yet implemented. Type:", chartType);
@@ -34,7 +30,6 @@ export class ChartRendererFactory {
     }
 
     static reset() {
-        this.#nativeRenderer = null;
         this.#echartsBridge = null;
     }
 }

@@ -258,7 +258,7 @@ const initApp = () => {
             "formula",
             "sort",
             "dataValidation",
-            "chart"
+            "chart",
         ],
         pluginOptions: {
             contextMenu: {
@@ -651,16 +651,16 @@ const initApp = () => {
         }
     });
     function prepareData() {
-        const chartPlugin = wb.getPlugin('chart');
+        const chartPlugin = wb.getPlugin("chart");
 
-        console.log(chartPlugin)
+        console.log(chartPlugin);
         const s = wb.activeSheet;
-        s.setCell(0, 0, '产品');
-        s.setCell(0, 1, 'Q1');
-        s.setCell(0, 2, 'Q2');
-        s.setCell(0, 3, 'Q3');
-        s.setCell(0, 4, 'Q4');
-        ['A', 'B', 'C', 'D', 'E'].forEach((p, i) => {
+        s.setCell(0, 0, "产品");
+        s.setCell(0, 1, "Q1");
+        s.setCell(0, 2, "Q2");
+        s.setCell(0, 3, "Q3");
+        s.setCell(0, 4, "Q4");
+        ["A", "B", "C", "D", "E"].forEach((p, i) => {
             s.setCell(i + 1, 0, p);
             s.setCell(i + 1, 1, Math.floor(Math.random() * 1000) + 500);
             s.setCell(i + 1, 2, Math.floor(Math.random() * 1000) + 500);
@@ -668,14 +668,17 @@ const initApp = () => {
             s.setCell(i + 1, 4, Math.floor(Math.random() * 1000) + 500);
         });
 
-        const c = chartPlugin.addBarChart({startRow: 0, startCol: 0, endRow: 5, endCol: 4}, {
-            anchorRow: 8,
-            anchorCol: 1,
-            width: 450,
-            height: 300,
-            style: {title: '销售对比(柱状图)', showLegend: true}
-        });
-        console.log(c)
+        const c = chartPlugin.addBarChart(
+            { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
+            {
+                anchorRow: 8,
+                anchorCol: 1,
+                width: 450,
+                height: 300,
+                style: { title: "销售对比(柱状图)", showLegend: true },
+            },
+        );
+        console.log(c);
 
         if (c) {
             console.log(`📊 柱状图 ${c.id}`);

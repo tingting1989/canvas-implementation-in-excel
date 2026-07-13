@@ -26,7 +26,7 @@ export class ChartLayer extends BaseLayer {
 
     render(ctx, sheet, viewport, options = {}) {
         if (!sheet || !sheet.chartManager) return;
-        
+
         const charts = sheet.chartManager.getAll();
         if (charts.length === 0) return;
 
@@ -35,7 +35,7 @@ export class ChartLayer extends BaseLayer {
         const viewH = options.viewH || 0;
 
         const visibleCharts = [];
-        
+
         for (const chart of charts) {
             const bounds = chart.getBounds(vt);
             if (bounds.x + bounds.w < 0 || bounds.y + bounds.h < 0) continue;
@@ -45,7 +45,7 @@ export class ChartLayer extends BaseLayer {
 
         for (const chart of visibleCharts) {
             const isDirty = this.#cacheManager ? this.#cacheManager.isDirty(chart.id) : true;
-            
+
             if (!isDirty) {
                 const cached = this.#cache.get(chart.id);
                 if (cached) {
@@ -74,29 +74,29 @@ export class ChartLayer extends BaseLayer {
     async #renderPendingCharts(sheet) {
         if (this.#isRendering) return;
         this.#isRendering = true;
-        
+
         const pendingIds = Array.from(this.#pendingCharts);
         this.#pendingCharts.clear();
-        
+
         for (const chartId of pendingIds) {
             if (this.#pendingCharts.has(chartId)) continue;
-            
+
             const chart = sheet.chartManager?.get(chartId);
             if (!chart) continue;
-            
+
             await this.#renderToCache(chart, sheet);
-            
+
             if (this.#cacheManager) {
                 this.#cacheManager.markClean(chartId);
             }
         }
-        
+
         this.#isRendering = false;
         this.markDirty();
         if (typeof this.onContentReady === "function") {
             this.onContentReady();
         }
-        
+
         if (this.#pendingCharts.size > 0) {
             this.#renderPendingCharts(sheet);
         }
