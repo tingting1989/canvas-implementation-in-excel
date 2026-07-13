@@ -230,10 +230,10 @@ export class SheetStyleCoordinator {
     addConditionalRule(options) {
         const { range, condition, style = {} } = options;
 
-        if (!range || typeof condition !== 'function') {
-            errorHandler.warn(ERROR_CODE.FORMAT_APPLY_ERROR, 'addConditionalRule 参数错误: range 或 condition 无效', {
+        if (!range || typeof condition !== "function") {
+            errorHandler.warn(ERROR_CODE.FORMAT_APPLY_ERROR, "addConditionalRule 参数错误: range 或 condition 无效", {
                 hasRange: !!range,
-                conditionType: typeof condition
+                conditionType: typeof condition,
             });
             return;
         }

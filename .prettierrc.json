@@ -18,6 +18,5 @@
     "requirePragma": false,
     "tabWidth": 4,
     "useTabs": false,
-    "embeddedLanguageFormatting": "auto",
-    "no-unexpected-multiline": "error"
+    "embeddedLanguageFormatting": "auto"
 }

@@ -54,8 +54,10 @@ module.exports = [
             library: {
                 name: "CanvasSheet",
                 type: "umd",
+
                 // 不设置 export，导出所有命名导出（包括 Workbook, ImportFilePlugin 等）
             },
+
             // 使用兼容性更好的全局对象
             globalObject: "(typeof self !== 'undefined' ? self : typeof global !== 'undefined' ? global : this)",
         },

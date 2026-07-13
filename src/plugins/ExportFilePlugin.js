@@ -1402,6 +1402,7 @@ async function generateXlsx(sheet, opts, range) {
                 }
             }
         }
+
         // 注意：如果无法读取行高，不强制设置（让Excel使用defaultRowHeight）
     } catch (dimensionsError) {
         // 降级处理：使用默认尺寸

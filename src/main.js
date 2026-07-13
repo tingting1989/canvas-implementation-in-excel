@@ -244,6 +244,7 @@ const initApp = () => {
                 readOnly: false,
                 headerHeight: 48,
                 textOverflowEllipsis: true,
+
                 // 嵌套表头配置
                 nestedHeaders: [
                     [

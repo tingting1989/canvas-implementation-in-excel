@@ -173,6 +173,7 @@ export class ImportFilePlugin extends BasePlugin {
                 if (nestedHeaders && nestedHeaders.length > 0) {
                     if (this.workbook?.updateSettings) {
                         this.workbook.updateSettings({ nestedHeaders });
+
                         // 记录设置的嵌套表头行数，供后续 #applyToSheet 使用
                         options._autoDetectedHeaderRows = nestedHeaders.length;
                     }
@@ -505,6 +506,7 @@ export class ImportFilePlugin extends BasePlugin {
             const checkRow = currentHeaderRows + i;
             const rowData = cells[checkRow];
             if (!rowData || rowData.length === 0) break;
+
             // 启发式规则：判断这一行是否像表头
             const isLikelyHeader = this.#isRowLikelyHeader(rowData, checkRow);
             if (isLikelyHeader) {
@@ -877,6 +879,7 @@ export class ImportFilePlugin extends BasePlugin {
         }
 
         const { startRow, startCol } = options;
+
         // 使用统一的计算方法（与 #applyToSheet 保持一致）
         const styleFilterStartRow = this.#calculateDataStartRow(options);
         let appliedCount = 0;
@@ -926,6 +929,7 @@ export class ImportFilePlugin extends BasePlugin {
                 appliedCount++;
             } catch (warning) {
                 failCount++;
+
                 // 触发样式警告 Hook（非致命错误，不影响导入流程）
                 this.hooks?.runHooks(HOOKS.IMPORT_STYLE_WARNING, {
                     message: warning.message || "样式转换失败",
@@ -1035,6 +1039,7 @@ export class ImportFilePlugin extends BasePlugin {
                     error: error.message,
                 });
                 failedCount++;
+
                 // 继续处理其他合并区域，不中断整个导入流程
             }
         }
@@ -1052,6 +1057,7 @@ export class ImportFilePlugin extends BasePlugin {
         if (!sheet) return;
 
         const { startCol } = options;
+
         // 应用列宽
         if (data.columnWidths && data.columnWidths.length > 0) {
             for (const colInfo of data.columnWidths) {
@@ -1068,6 +1074,7 @@ export class ImportFilePlugin extends BasePlugin {
                 }
             }
         }
+
         // 应用行高（需要考虑表头偏移，与数据应用逻辑保持一致）
         if (data.rowHeights && data.rowHeights.length > 0) {
             const headerRowCount = this.#calculateDataStartRow(options);
@@ -1112,6 +1119,7 @@ export class ImportFilePlugin extends BasePlugin {
 
             // 解析起始位置
             const startPos = this.#cellRefToPosition(startRef);
+
             // 解析结束位置
             const endPos = this.#cellRefToPosition(endRef);
 
@@ -1162,6 +1170,7 @@ export class ImportFilePlugin extends BasePlugin {
             return null;
         }
     }
+
     /**
      * 将Excel字符宽度转换为像素宽度
      *
@@ -1193,6 +1202,7 @@ export class ImportFilePlugin extends BasePlugin {
         if (!heightInPoints || typeof heightInPoints !== "number" || heightInPoints <= 0) {
             return 28; // 返回默认行高
         }
+
         // Excel磅转像素（基于96 DPI）
         const pixelHeight = Math.round(heightInPoints * (96 / 72));
         return Math.max(pixelHeight, 15); // 最小15像素
@@ -1201,6 +1211,7 @@ export class ImportFilePlugin extends BasePlugin {
         if (!charWidth || typeof charWidth !== "number" || charWidth <= 0) {
             return 100; // 返回默认列宽
         }
+
         // Excel字符宽度转像素公式
         const pixelWidth = Math.round(charWidth * 7 + 5);
         return Math.max(pixelWidth, 20); // 最小20像素

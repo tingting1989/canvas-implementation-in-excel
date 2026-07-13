@@ -219,6 +219,7 @@ export class RowColManager {
             this.#rowHeights.fill(CONFIG.DEFAULT_ROW_HEIGHT, oldLen, rows);
             this.#rowPrefixDirty = true;
         }
+
         // 扩展列宽数组（如果需要）
         if (this.#colWidths.length < cols) {
             const oldLen = this.#colWidths.length;
@@ -310,6 +311,7 @@ export class RowColManager {
             // 在已分配范围内，从前缀和数组获取
             return this.#rowPrefixSum[row - 1];
         }
+
         // 超出已分配范围的部分按默认高度计算
         return this.#allocatedHeight + (row - this.#rowHeights.length) * CONFIG.DEFAULT_ROW_HEIGHT;
     }
@@ -328,6 +330,7 @@ export class RowColManager {
             // 在已分配范围内，从前缀和数组获取
             return this.#colPrefixSum[col - 1];
         }
+
         // 超出已分配范围的部分按默认宽度计算
         return this.#allocatedWidth + (col - this.#colWidths.length) * CONFIG.DEFAULT_COL_WIDTH;
     }
@@ -365,6 +368,7 @@ export class RowColManager {
             const virtualY = y - this.#allocatedHeight;
             row = this.#rowHeights.length + Math.floor(virtualY / CONFIG.DEFAULT_ROW_HEIGHT);
         }
+
         // 跳过隐藏的行，找到下一个可见行
         while (row < CONFIG.MAX_ROWS && this.#hiddenRows.has(row)) {
             row++;
@@ -394,6 +398,7 @@ export class RowColManager {
             const virtualX = x - this.#allocatedWidth;
             col = this.#colWidths.length + Math.floor(virtualX / CONFIG.DEFAULT_COL_WIDTH);
         }
+
         // 跳过隐藏的列，找到下一个可见列
         while (col < CONFIG.MAX_COLS && this.#hiddenCols.has(col)) {
             col++;
@@ -437,6 +442,7 @@ export class RowColManager {
 
         // 更新隐藏行集合：>= atRow 的行号都 +1
         this.#hiddenRows = new Set([...this.#hiddenRows].map((r) => (r >= atRow ? r + 1 : r)));
+
         // 更新原始高度缓存：>= atRow 的行号都 +1
         this.#originalRowHeights = new Map([...this.#originalRowHeights].map(([r, h]) => [r >= atRow ? r + 1 : r, h]));
         this.#rowPrefixDirty = true; // 标记前缀和需重建
@@ -455,6 +461,7 @@ export class RowColManager {
 
         // 更新隐藏列集合：>= atCol 的列号都 +1
         this.#hiddenCols = new Set([...this.#hiddenCols].map((c) => (c >= atCol ? c + 1 : c)));
+
         // 更新原始宽度缓存：>= atCol 的列号都 +1
         this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [c >= atCol ? c + 1 : c, w]));
         this.#colPrefixDirty = true; // 标记前缀和需重建
@@ -476,6 +483,7 @@ export class RowColManager {
 
         // 更新剩余隐藏行的索引：> row 的行号都 -1
         this.#hiddenRows = new Set([...this.#hiddenRows].map((r) => (r > row ? r - 1 : r)));
+
         // 更新剩余原始高度缓存的索引：> row 的行号都 -1
         this.#originalRowHeights = new Map([...this.#originalRowHeights].map(([r, h]) => [r > row ? r - 1 : r, h]));
         this.#rowPrefixDirty = true; // 标记前缀和需重建
@@ -497,6 +505,7 @@ export class RowColManager {
 
         // 更新剩余隐藏列的索引：> col 的列号都 -1
         this.#hiddenCols = new Set([...this.#hiddenCols].map((c) => (c > col ? c - 1 : c)));
+
         // 更新剩余原始宽度缓存的索引：> col 的列号都 -1
         this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [c > col ? c - 1 : c, w]));
         this.#colPrefixDirty = true; // 标记前缀和需重建
@@ -519,6 +528,7 @@ export class RowColManager {
             // 向右移动：中间的元素向左移一位
             return idx > from && idx <= to ? idx - 1 : idx;
         }
+
         // 向左移动：中间的元素向右移一位
         return idx >= to && idx < from ? idx + 1 : idx;
     }
@@ -541,6 +551,7 @@ export class RowColManager {
 
         // 更新隐藏列集合的索引映射
         this.#hiddenCols = new Set([...this.#hiddenCols].map((c) => this.#shiftIndex(c, fromCol, toCol)));
+
         // 更新原始宽度缓存的索引映射
         this.#originalColWidths = new Map([...this.#originalColWidths].map(([c, w]) => [this.#shiftIndex(c, fromCol, toCol), w]));
 
@@ -565,6 +576,7 @@ export class RowColManager {
 
         // 更新隐藏行集合的索引映射
         this.#hiddenRows = new Set([...this.#hiddenRows].map((r) => this.#shiftIndex(r, fromRow, toRow)));
+
         // 更新原始高度缓存的索引映射
         this.#originalRowHeights = new Map([...this.#originalRowHeights].map(([r, h]) => [this.#shiftIndex(r, fromRow, toRow), h]));
 

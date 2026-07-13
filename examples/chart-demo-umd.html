@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas-Sheet 图表功能演示 (UMD)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px
+        }
+
+        .toolbar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center
+        }
+
+        .toolbar button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s
+        }
+
+        .btn-primary {
+            background: #4472C4;
+            color: white
+        }
+
+        .btn-primary:hover {
+            background: #365a9c
+        }
+
+        .btn-success {
+            background: #70AD47;
+            color: white
+        }
+
+        .btn-success:hover {
+            background: #5a8d39
+        }
+
+        .btn-warning {
+            background: #FFC000;
+            color: #333
+        }
+
+        .btn-warning:hover {
+            background: #e6ad00
+        }
+
+        .btn-danger {
+            background: #ED7D31;
+            color: white
+        }
+
+        .btn-danger:hover {
+            background: #d56b28
+        }
+
+        .btn-info {
+            background: #5B9BD5;
+            color: white
+        }
+
+        .btn-info:hover {
+            background: #4889bf
+        }
+
+        .divider {
+            width: 1px;
+            height: 32px;
+            background: #ddd;
+            margin: 0 8px
+        }
+
+        .sheet-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden
+        }
+
+        #sheet {
+            width: 100%;
+            height: 600px
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+
+        .info-panel h3 {
+            color: #333;
+            margin-bottom: 12px;
+            font-size: 18px
+        }
+
+        .chart-list {
+            display: grid;
+            gap: 10px
+        }
+
+        .chart-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #4472C4;
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .chart-item .chart-info {
+            flex: 1
+        }
+
+        .chart-item .chart-type {
+            font-weight: 600;
+            color: #333
+        }
+
+        .chart-item .chart-id {
+            font-size: 12px;
+            color: #666;
+            font-family: monospace
+        }
+
+        .log-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+
+        .section-title {
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 Canvas-Sheet 图表功能演示</h1>
+
+    <div class="toolbar">
+        <span class="section-title">添加图表:</span>
+        <button class="btn-primary" onclick="addBarChart()">📊 柱状图</button>
+        <button class="btn-success" onclick="addLineChart()">📈 折线图</button>
+        <button class="btn-warning" onclick="addPieChart()">🥧 饼图</button>
+        <button class="btn-info" onclick="addAreaChart()">📉 面积图</button>
+        <button class="btn-danger" onclick="addScatterChart()">⚬ 散点图</button>
+        <div class="divider"></div>
+        <span class="section-title">操作:</span>
+        <button class="btn-primary" onclick="moveSelectedChart()">🔄 移动图表</button>
+        <button class="btn-success" onclick="resizeSelectedChart()">📐 调整大小</button>
+        <button class="btn-danger" onclick="removeSelectedChart()">🗑️ 删除选中</button>
+        <div class="divider"></div>
+        <button class="btn-info" onclick="showAllCharts()">📋 显示全部</button>
+        <button class="btn-danger" onclick="clearAllCharts()">🧹 清空全部</button>
+    </div>
+
+    <div class="sheet-container">
+        <canvas id="sheet"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📋 图表列表</h3>
+        <div id="chartList" class="chart-list"><p style="color:#999;text-align:center">暂无图表</p></div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪...</div>
+</div>
+
+<script src="../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null, chartPlugin = null, selectedChartId = null;
+
+    function log(msg) {
+        const la = document.getElementById('logArea');
+        la.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+        la.scrollTop = la.scrollHeight;
+    }
+
+    function init() {
+        try {
+            workbook = new CanvasSheet.Workbook(document.getElementById('sheet'), {
+                plugins: [
+                    "autoFill",
+                    "contextMenu",
+                    "columnMove",
+                    "copyPaste",
+                    "exportFile",
+                    "importFile",
+                    "hiddenColumns",
+                    "hiddenRows",
+                    "rowMove",
+                    "freeze",
+                    "formula",
+                    "sort",
+                    "dataValidation",
+                    "chart"
+                ],
+            });
+            workbook.initRender();
+            workbook.render();
+            log('✅ Workbook OK');
+            prepareData();
+            chartPlugin = workbook.getPlugin('chart');
+            log(chartPlugin ? '✅ ChartPlugin OK' : '❌ ChartPlugin FAIL');
+            updateList();
+        } catch (e) {
+            log(`❌ Error: ${e.message}`);
+        }
+    }
+
+    function prepareData() {
+        const s = workbook.activeSheet;
+        s.setCell(0, 0, '产品');
+        s.setCell(0, 1, 'Q1');
+        s.setCell(0, 2, 'Q2');
+        s.setCell(0, 3, 'Q3');
+        s.setCell(0, 4, 'Q4');
+        ['A', 'B', 'C', 'D', 'E'].forEach((p, i) => {
+            s.setCell(i + 1, 0, p);
+            s.setCell(i + 1, 1, Math.floor(Math.random() * 1000) + 500);
+            s.setCell(i + 1, 2, Math.floor(Math.random() * 1000) + 500);
+            s.setCell(i + 1, 3, Math.floor(Math.random() * 1000) + 500);
+            s.setCell(i + 1, 4, Math.floor(Math.random() * 1000) + 500);
+        });
+        log('📝 数据已准备 (5产品×4季度)');
+    }
+
+    function addBarChart() {
+        const c = chartPlugin.addBarChart({startRow: 0, startCol: 0, endRow: 5, endCol: 4}, {
+            anchorRow: 8,
+            anchorCol: 1,
+            width: 450,
+            height: 300,
+            style: {title: '销售对比(柱状图)', showLegend: true}
+        });
+        console.log(c)
+
+        if (c) {
+            log(`📊 柱状图 ${c.id}`);
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
+    function addLineChart() {
+        const c = chartPlugin.addLineChart({startRow: 0, startCol: 0, endRow: 5, endCol: 4}, {
+            anchorRow: 8,
+            anchorCol: 8,
+            width: 450,
+            height: 300,
+            style: {title: '趋势(折线图)'}
+        });
+        if (c) {
+            log(`📈 折线图 ${c.id}`);
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
+    function addPieChart() {
+        const c = chartPlugin.addPieChart({startRow: 0, startCol: 0, endRow: 5, endCol: 1}, {
+            anchorRow: 22,
+            anchorCol: 1,
+            width: 400,
+            height: 300,
+            style: {title: '占比(饼图)'}
+        });
+        if (c) {
+            log(`🥧 饼图 ${c.id}`);
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
+    function addAreaChart() {
+        const c = chartPlugin.addAreaChart({startRow: 0, startCol: 0, endRow: 5, endCol: 4}, {
+            anchorRow: 22,
+            anchorCol: 8,
+            width: 450,
+            height: 300,
+            style: {title: '面积(面积图)'}
+        });
+        if (c) {
+            log(`📉 面积图 ${c.id}`);
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
+    function addScatterChart() {
+        const c = chartPlugin.addScatterChart({startRow: 0, startCol: 1, endRow: 5, endCol: 2}, {
+            anchorRow: 36,
+            anchorCol: 1,
+            width: 400,
+            height: 280,
+            style: {title: '相关性(散点图)'}
+        });
+        if (c) {
+            log(`⚬ 散点图 ${c.id}`);
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
+    function moveSelectedChart() {
+        if (!selectedChartId) return log('⚠️ 先选择图表');
+        chartPlugin.moveChart(selectedChartId, Math.floor(Math.random() * 30) + 5, Math.floor(Math.random() * 15) + 1, 20, 20);
+        log(`🔄 已移动`);
+    }
+
+    function resizeSelectedChart() {
+        if (!selectedChartId) return log('⚠️ 先选择图表');
+        chartPlugin.resizeChart(selectedChartId, Math.floor(Math.random() * 300) + 350, Math.floor(Math.random() * 200) + 250);
+        log(`📐 已调整`);
+    }
+
+    function removeSelectedChart() {
+        if (!selectedChartId) return log('⚠️ 先选择图表');
+        chartPlugin.removeChart(selectedChartId);
+        log('🗑️ 已删除');
+        selectedChartId = null;
+        updateList();
+    }
+
+    function showAllCharts() {
+        const charts = chartPlugin.getAllCharts();
+        if (!charts.length) return log('📋 无图表');
+        log(`📋 共${charts.length}个:`);
+        charts.forEach((c, i) => log(`  ${i + 1}. [${c.type}] ${c.id} (${c.anchorRow},${c.anchorCol})`));
+    }
+
+    function clearAllCharts() {
+        chartPlugin.getAllCharts().forEach(c => chartPlugin.removeChart(c.id));
+        log('🧹 已清空');
+        selectedChartId = null;
+        updateList();
+    }
+
+    function updateList() {
+        const lc = document.getElementById('chartList'), charts = chartPlugin.getAllCharts();
+        if (!charts.length) {
+            lc.innerHTML = '<p style="color:#999;text-align:center">暂无图表</p>';
+            return;
+        }
+        const names = {bar: '柱状图', line: '折线图', pie: '饼图', area: '面积图', scatter: '散点图'};
+        lc.innerHTML = charts.map(c => `
+                <div class="chart-item" style="border-left-color:${c.style?.colors?.[0] || '#4472C4'}">
+                    <div class="chart-info">
+                        <div class="chart-type">${names[c.type] || c.type}</div>
+                        <div class="chart-id">${c.id}</div>
+                        <div style="font-size:12px;color:#666;margin-top:4px">位置:(${c.anchorRow},${c.anchorCol}) | ${c.width}×${c.height}</div>
+                    </div><div>
+                        <button class="btn-primary" onclick="sel('${c.id}')">选择</button>
+                        <button class="btn-danger" onclick="del('${c.id}')">删除</button>
+                    </div></div>`).join('');
+    }
+
+    function sel(id) {
+        selectedChartId = id;
+        chartPlugin.selectChart(id);
+        log(`✅ 选择: ${id}`);
+        updateList();
+    }
+
+    function del(id) {
+        chartPlugin.removeChart(id);
+        if (selectedChartId === id) selectedChartId = null;
+        log(`🗑️ 删除: ${id}`);
+        updateList();
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+    window.addEventListener('error', e => log(`❌ ${e.message}`));
+</script>
+</body>
+</html>
