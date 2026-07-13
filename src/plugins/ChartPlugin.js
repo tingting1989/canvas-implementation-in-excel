@@ -1,9 +1,10 @@
-﻿import { BasePlugin } from "./BasePlugin.js";
+import { BasePlugin } from "./BasePlugin.js";
 import { ChartModel, CHART_TYPE } from "@/model/chart/ChartModel";
 import { ChartManager } from "@/model/chart/ChartManager";
 import { ChartSelectionStrategy } from "@/editor/strategies";
 import { HOOKS } from "@/constants/hookNames";
 import { SHEET_EVENTS } from "@/constants/sheetEvents";
+import { CONFIG } from "@/constants/config.js";
 
 export class ChartPlugin extends BasePlugin {
     static PLUGIN_NAME = "chart";
@@ -16,8 +17,9 @@ export class ChartPlugin extends BasePlugin {
     }
 
     #attachToSheets() {
-        const sheets = this.workbook?.sheets || [];
-        for (const sheet of sheets) {
+        const sheetsMap = this.workbook?.sheets;
+        if (!sheetsMap) return;
+        for (const sheet of sheetsMap.values()) {
             if (!sheet.chartManager) {
                 sheet.chartManager = new ChartManager(sheet);
             }
@@ -37,7 +39,10 @@ export class ChartPlugin extends BasePlugin {
 
     addChart(type, dataRange, options = {}) {
         const sheet = this.sheet;
-        if (!sheet || !sheet.chartManager) return null;
+        if (!sheet || !sheet.chartManager) {
+            return null;
+        }
+
         let anchorRow = options.anchorRow ?? 0;
         let anchorCol = options.anchorCol ?? 0;
         const merge = sheet.getMerge?.(anchorRow, anchorCol);
@@ -54,7 +59,7 @@ export class ChartPlugin extends BasePlugin {
         });
         this.#clampToFrozenBoundary(chart, sheet);
         sheet.chartManager.add(chart);
-        this.hooks?.runHook(HOOKS.AFTER_CHART_ADD, chart);
+        this.hooks?.runHooks(HOOKS.AFTER_CHART_ADD, chart);
         this.render();
         return chart;
     }
@@ -84,7 +89,7 @@ export class ChartPlugin extends BasePlugin {
         if (!sheet || !sheet.chartManager) return null;
         const chart = sheet.chartManager.remove(id);
         if (chart) {
-            this.hooks?.runHook(HOOKS.AFTER_CHART_REMOVE, id);
+            this.hooks?.runHooks(HOOKS.AFTER_CHART_REMOVE, id);
             this.render();
         }
         return chart;
@@ -95,7 +100,7 @@ export class ChartPlugin extends BasePlugin {
         if (!sheet || !sheet.chartManager) return null;
         const chart = sheet.chartManager.update(id, { style: styleUpdate });
         if (chart) {
-            this.hooks?.runHook(HOOKS.AFTER_CHART_UPDATE, id);
+            this.hooks?.runHooks(HOOKS.AFTER_CHART_UPDATE, id);
             this.render();
         }
         return chart;
@@ -106,7 +111,7 @@ export class ChartPlugin extends BasePlugin {
         if (!sheet || !sheet.chartManager) return null;
         const chart = sheet.chartManager.update(id, { dataRange });
         if (chart) {
-            this.hooks?.runHook(HOOKS.AFTER_CHART_UPDATE, id);
+            this.hooks?.runHooks(HOOKS.AFTER_CHART_UPDATE, id);
             this.render();
         }
         return chart;
@@ -183,11 +188,13 @@ export class ChartPlugin extends BasePlugin {
     }
 
     destroy() {
-        const sheets = this.workbook?.sheets || [];
-        for (const sheet of sheets) {
-            if (sheet.chartManager) {
-                sheet.chartManager.destroy();
-                sheet.chartManager = null;
+        const sheetsMap = this.workbook?.sheets;
+        if (sheetsMap) {
+            for (const sheet of sheetsMap.values()) {
+                if (sheet.chartManager) {
+                    sheet.chartManager.destroy();
+                    sheet.chartManager = null;
+                }
             }
         }
         super.destroy();

@@ -8,14 +8,14 @@ export class ChartManager {
 
     add(chart) {
         this.charts.set(chart.id, chart);
-        this.sheet.bus.emit(SHEET_EVENTS.CHART_ADDED, { chartId: chart.id, type: chart.type });
+        this.sheet.bus.emit(SHEET_EVENTS.CHART_ADDED, { chartId: chart.id, type: chart.type }, { source: "ChartManager" });
     }
 
     remove(id) {
         const chart = this.charts.get(id);
         if (chart) {
             this.charts.delete(id);
-            this.sheet.bus.emit(SHEET_EVENTS.CHART_REMOVED, { chartId: id });
+            this.sheet.bus.emit(SHEET_EVENTS.CHART_REMOVED, { chartId: id }, { source: "ChartManager" });
             return chart;
         }
         return null;
@@ -38,7 +38,7 @@ export class ChartManager {
         if (updates.height !== undefined) chart.height = updates.height;
         if (updates.dataRange !== undefined) chart.dataRange = updates.dataRange;
         if (updates.style !== undefined) Object.assign(chart.style, updates.style);
-        this.sheet.bus.emit(SHEET_EVENTS.CHART_UPDATED, { chartId: id });
+        this.sheet.bus.emit(SHEET_EVENTS.CHART_UPDATED, { chartId: id }, { source: "ChartManager" });
         return chart;
     }
 

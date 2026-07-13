@@ -165,14 +165,8 @@
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .control-group {
@@ -347,14 +341,8 @@
         }
 
         @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         .log-success {
@@ -394,26 +382,11 @@
             border: 1px solid #3e4451;
         }
 
-        .code-keyword {
-            color: #c678dd;
-        }
-
-        .code-string {
-            color: #98c379;
-        }
-
-        .code-number {
-            color: #d19a66;
-        }
-
-        .code-comment {
-            color: #5c6370;
-            font-style: italic;
-        }
-
-        .code-function {
-            color: #61afef;
-        }
+        .code-keyword { color: #c678dd; }
+        .code-string { color: #98c379; }
+        .code-number { color: #d19a66; }
+        .code-comment { color: #5c6370; font-style: italic; }
+        .code-function { color: #61afef; }
 
         .status-bar {
             display: flex;
@@ -443,14 +416,8 @@
         }
 
         @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(0.95);
-            }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.95); }
         }
 
         .stats-grid {
@@ -485,7 +452,7 @@
             .main-layout {
                 grid-template-columns: 1fr;
             }
-
+            
             .header h1 {
                 font-size: 2em;
             }
@@ -551,412 +518,385 @@
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <!-- Header -->
-    <div class="header">
-        <h1>
-            <span class="icon">📊</span>
-            Sheet 工作表核心功能演示
-        </h1>
-        <p>
-            全面展示 Canvas-Excel Sheet 类的强大功能：数据操作、样式管理、合并单元格、条件格式、
-            列类型系统、冻结窗格等。通过交互式示例快速掌握 API 用法。
-        </p>
-
-        <div class="features-grid">
-            <div class="feature-badge">✨ 8层样式权重体系</div>
-            <div class="feature-badge">🎯 智能合并单元格</div>
-            <div class="feature-badge">🎨 动态条件格式</div>
-            <div class="feature-badge">🔢 灵活列类型系统</div>
-            <div class="feature-badge">❄️ 冻结窗格支持</div>
-            <div class="feature-badge">📥📤 导入导出集成</div>
-            <div class="feature-badge">⚡ 高性能批量操作</div>
-            <div class="feature-badge">🔄 完整撤销/重做</div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-layout">
-        <!-- Canvas Section -->
-        <div class="canvas-section">
-            <h2 class="section-title">
-                <span class="icon">🖼️</span>
-                工作表预览
-            </h2>
-
-            <div class="canvas-wrapper">
-                <canvas id="spreadsheet-canvas"></canvas>
-            </div>
-
-            <!-- Stats -->
-            <div class="stats-grid" style="margin-top: 20px;">
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-rows">0</div>
-                    <div class="stat-label">总行数</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-cols">0</div>
-                    <div class="stat-label">总列数</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-merges">0</div>
-                    <div class="stat-label">合并区域</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="stat-styles">0</div>
-                    <div class="stat-label">自定义样式</div>
-                </div>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <span class="icon">📊</span>
+                Sheet 工作表核心功能演示
+            </h1>
+            <p>
+                全面展示 Canvas-Excel Sheet 类的强大功能：数据操作、样式管理、合并单元格、条件格式、
+                列类型系统、冻结窗格等。通过交互式示例快速掌握 API 用法。
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-badge">✨ 8层样式权重体系</div>
+                <div class="feature-badge">🎯 智能合并单元格</div>
+                <div class="feature-badge">🎨 动态条件格式</div>
+                <div class="feature-badge">🔢 灵活列类型系统</div>
+                <div class="feature-badge">❄️ 冻结窗格支持</div>
+                <div class="feature-badge">📥📤 导入导出集成</div>
+                <div class="feature-badge">⚡ 高性能批量操作</div>
+                <div class="feature-badge">🔄 完整撤销/重做</div>
             </div>
         </div>
 
-        <!-- Control Panel -->
-        <div class="control-panel">
-            <h2 class="section-title">
-                <span class="icon">🎛️</span>
-                功能控制面板
-            </h2>
+        <!-- Main Content -->
+        <div class="main-layout">
+            <!-- Canvas Section -->
+            <div class="canvas-section">
+                <h2 class="section-title">
+                    <span class="icon">🖼️</span>
+                    工作表预览
+                </h2>
+                
+                <div class="canvas-wrapper">
+                    <canvas id="spreadsheet-canvas"></canvas>
+                </div>
 
-            <!-- Tab Navigation -->
-            <div class="tab-container">
-                <button class="tab-button active" onclick="switchTab('data')">
-                    <span>📝</span> 数据操作
-                </button>
-                <button class="tab-button" onclick="switchTab('styles')">
-                    <span>🎨</span> 样式管理
-                </button>
-                <button class="tab-button" onclick="switchTab('merge')">
-                    <span>🔗</span> 合并单元格
-                </button>
-                <button class="tab-button" onclick="switchTab('conditional')">
-                    <span>🎯</span> 条件格式
-                </button>
-                <button class="tab-button" onclick="switchTab('headers')">
-                    <span>📋</span> 表头配置
-                </button>
-                <button class="tab-button" onclick="switchTab('columns')">
-                    <span>🔢</span> 列类型
-                </button>
-                <button class="tab-button" onclick="switchTab('freeze')">
-                    <span>❄️</span> 冻结窗格
-                </button>
-                <button class="tab-button" onclick="switchTab('advanced')">
-                    <span>⚡</span> 高级功能
-                </button>
+                <!-- Stats -->
+                <div class="stats-grid" style="margin-top: 20px;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-rows">0</div>
+                        <div class="stat-label">总行数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-cols">0</div>
+                        <div class="stat-label">总列数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-merges">0</div>
+                        <div class="stat-label">合并区域</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-styles">0</div>
+                        <div class="stat-label">自定义样式</div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Tab Contents -->
+            <!-- Control Panel -->
+            <div class="control-panel">
+                <h2 class="section-title">
+                    <span class="icon">🎛️</span>
+                    功能控制面板
+                </h2>
 
-            <!-- Data Operations Tab -->
-            <div id="tab-data" class="tab-content active">
-                <div class="control-group">
-                    <label>加载示例数据</label>
-                    <select id="data-template">
-                        <option value="employee">员工信息表</option>
-                        <option value="financial">财务报表</option>
-                        <option value="inventory">库存清单</option>
-                        <option value="custom">自定义数据</option>
-                    </select>
-                </div>
-
-                <button class="btn btn-primary" onclick="loadSampleData()">
-                    <span>📥</span> 加载数据
-                </button>
-
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>单元格操作</label>
-                    <div class="control-row">
-                        <input type="number" id="cell-row" placeholder="行号 (0-based)" min="0">
-                        <input type="number" id="cell-col" placeholder="列号 (0-based)" min="0">
-                    </div>
-                    <input type="text" id="cell-value" placeholder="单元格值（支持公式 =SUM(A1:A10)）"
-                           style="margin-top: 10px;">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                    <button class="btn btn-success" onclick="setCell()">
-                        <span>✏️</span> 设置值
+                <!-- Tab Navigation -->
+                <div class="tab-container">
+                    <button class="tab-button active" onclick="switchTab('data')">
+                        <span>📝</span> 数据操作
                     </button>
-                    <button class="btn btn-warning" onclick="clearCell()">
-                        <span>🗑️</span> 清除值
+                    <button class="tab-button" onclick="switchTab('styles')">
+                        <span>🎨</span> 样式管理
+                    </button>
+                    <button class="tab-button" onclick="switchTab('merge')">
+                        <span>🔗</span> 合并单元格
+                    </button>
+                    <button class="tab-button" onclick="switchTab('conditional')">
+                        <span>🎯</span> 条件格式
+                    </button>
+                    <button class="tab-button" onclick="switchTab('headers')">
+                        <span>📋</span> 表头配置
+                    </button>
+                    <button class="tab-button" onclick="switchTab('columns')">
+                        <span>🔢</span> 列类型
+                    </button>
+                    <button class="tab-button" onclick="switchTab('freeze')">
+                        <span>❄️</span> 冻结窗格
+                    </button>
+                    <button class="tab-button" onclick="switchTab('advanced')">
+                        <span>⚡</span> 高级功能
                     </button>
                 </div>
 
-                <button class="btn btn-info" onclick="disableCell()" style="margin-top: 10px;">
-                    <span>🔒</span> 禁用单元格
-                </button>
-
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 设置单元格值</span>
-                    sheet.<span class="code-function">data</span>.<span class="code-function">setCell</span>(row, col,
-                    value);
-
-                    <span class="code-comment">// 加载数组数据</span>
-                    sheet.<span class="code-function">data</span>.<span class="code-function">loadData</span>([
-                    [<span class="code-string">"姓名"</span>, <span class="code-string">"年龄"</span>, <span
-                    class="code-string">"工资"</span>],
-                    [<span class="code-string">"张三"</span>, <span class="code-number">30</span>, <span
-                    class="code-number">25000</span>]
-                    ]);
-                </div>
-            </div>
-
-            <!-- Styles Management Tab -->
-            <div id="tab-styles" class="tab-content">
-                <div class="control-group">
-                    <label>默认样式设置</label>
-                    <div class="control-row">
-                        <input type="number" id="default-fontsize" placeholder="字号" value="12" min="8" max="72">
-                        <input type="text" id="default-fontfamily" placeholder="字体" value="Arial">
-                    </div>
-                    <input type="text" id="default-bgcolor" placeholder="背景色 (#FFFFFF)" value="#FFFFFF"
-                           style="margin-top: 10px;">
-                </div>
-
-                <button class="btn btn-primary" onclick="setDefaultStyle()">
-                    <span>🎨</span> 应用默认样式
-                </button>
-
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>单元格/行列样式</label>
-                    <div class="control-row">
-                        <input type="number" id="style-row" placeholder="起始行" min="0">
-                        <input type="number" id="style-col" placeholder="起始列" min="0">
-                    </div>
-                    <div class="control-row" style="margin-top: 10px;">
-                        <input type="number" id="style-endrow" placeholder="结束行" min="0">
-                        <input type="number" id="style-endcol" placeholder="结束列" min="0">
+                <!-- Tab Contents -->
+                
+                <!-- Data Operations Tab -->
+                <div id="tab-data" class="tab-content active">
+                    <div class="control-group">
+                        <label>加载示例数据</label>
+                        <select id="data-template">
+                            <option value="employee">员工信息表</option>
+                            <option value="financial">财务报表</option>
+                            <option value="inventory">库存清单</option>
+                            <option value="custom">自定义数据</option>
+                        </select>
                     </div>
 
-                    <div class="checkbox-group" style="margin-top: 15px;">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="style-bold">
-                            <label for="style-bold">加粗 (Bold)</label>
+                    <button class="btn btn-primary" onclick="loadSampleData()">
+                        <span>📥</span> 加载数据
+                    </button>
+
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>单元格操作</label>
+                        <div class="control-row">
+                            <input type="number" id="cell-row" placeholder="行号 (0-based)" min="0">
+                            <input type="number" id="cell-col" placeholder="列号 (0-based)" min="0">
                         </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="style-italic">
-                            <label for="style-italic">斜体 (Italic)</label>
+                        <input type="text" id="cell-value" placeholder="单元格值（支持公式 =SUM(A1:A10)）" style="margin-top: 10px;">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <button class="btn btn-success" onclick="setCell()">
+                            <span>✏️</span> 设置值
+                        </button>
+                        <button class="btn btn-warning" onclick="clearCell()">
+                            <span>🗑️</span> 清除值
+                        </button>
+                    </div>
+
+                    <button class="btn btn-info" onclick="disableCell()" style="margin-top: 10px;">
+                        <span>🔒</span> 禁用单元格
+                    </button>
+
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 设置单元格值</span>
+sheet.<span class="code-function">data</span>.<span class="code-function">setCell</span>(row, col, value);
+
+<span class="code-comment">// 加载数组数据</span>
+sheet.<span class="code-function">data</span>.<span class="code-function">loadData</span>([
+  [<span class="code-string">"姓名"</span>, <span class="code-string">"年龄"</span>, <span class="code-string">"工资"</span>],
+  [<span class="code-string">"张三"</span>, <span class="code-number">30</span>, <span class="code-number">25000</span>]
+]);
+                    </div>
+                </div>
+
+                <!-- Styles Management Tab -->
+                <div id="tab-styles" class="tab-content">
+                    <div class="control-group">
+                        <label>默认样式设置</label>
+                        <div class="control-row">
+                            <input type="number" id="default-fontsize" placeholder="字号" value="12" min="8" max="72">
+                            <input type="text" id="default-fontfamily" placeholder="字体" value="Arial">
                         </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="style-header">
-                            <label for="style-header">表头样式 (蓝底白字)</label>
+                        <input type="text" id="default-bgcolor" placeholder="背景色 (#FFFFFF)" value="#FFFFFF" style="margin-top: 10px;">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="setDefaultStyle()">
+                        <span>🎨</span> 应用默认样式
+                    </button>
+
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>单元格/行列样式</label>
+                        <div class="control-row">
+                            <input type="number" id="style-row" placeholder="起始行" min="0">
+                            <input type="number" id="style-col" placeholder="起始列" min="0">
                         </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="style-border">
-                            <label for="style-border">添加边框</label>
+                        <div class="control-row" style="margin-top: 10px;">
+                            <input type="number" id="style-endrow" placeholder="结束行" min="0">
+                            <input type="number" id="style-endcol" placeholder="结束列" min="0">
+                        </div>
+                        
+                        <div class="checkbox-group" style="margin-top: 15px;">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="style-bold">
+                                <label for="style-bold">加粗 (Bold)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="style-italic">
+                                <label for="style-italic">斜体 (Italic)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="style-header">
+                                <label for="style-header">表头样式 (蓝底白字)</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="style-border">
+                                <label for="style-border">添加边框</label>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <button class="btn btn-success" onclick="applyCellStyle()">
-                    <span>✨</span> 应用样式
-                </button>
+                    <button class="btn btn-success" onclick="applyCellStyle()">
+                        <span>✨</span> 应用样式
+                    </button>
 
-                <button class="btn btn-warning" onclick="clearStyles()" style="margin-top: 10px;">
-                    <span>🧹</span> 清除样式
-                </button>
+                    <button class="btn btn-warning" onclick="clearStyles()" style="margin-top: 10px;">
+                        <span>🧹</span> 清除样式
+                    </button>
 
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 8层样式权重体系</span>
-                    sheet.<span class="code-function">styles</span>.<span class="code-function">setDefaultStyle</span>({
-                    fontSize: <span class="code-number">12</span>,
-                    fontFamily: <span class="code-string">"Arial"</span>
-                    });
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 8层样式权重体系</span>
+sheet.<span class="code-function">styles</span>.<span class="code-function">setDefaultStyle</span>({
+  fontSize: <span class="code-number">12</span>,
+  fontFamily: <span class="code-string">"Arial"</span>
+});
 
-                    sheet.<span class="code-function">styles</span>.<span
-                    class="code-function">setCellStyle</span>(<span class="code-number">0</span>, <span
-                    class="code-number">0</span>, {
-                    bold: <span class="code-keyword">true</span>,
-                    backgroundColor: <span class="code-string">"#FFEB3B"</span>
-                    });
+sheet.<span class="code-function">styles</span>.<span class="code-function">setCellStyle</span>(<span class="code-number">0</span>, <span class="code-number">0</span>, {
+  bold: <span class="code-keyword">true</span>,
+  backgroundColor: <span class="code-string">"#FFEB3B"</span>
+});
 
-                    <span class="code-comment">// 解析完整样式（应用所有层级）</span>
-                    <span class="code-keyword">const</span> fullStyle = sheet.<span class="code-function">styles</span>.<span
-                    class="code-function">resolveStyle</span>(<span class="code-number">0</span>, <span
-                    class="code-number">0</span>);
-                </div>
-            </div>
-
-            <!-- Merge Cells Tab -->
-            <div id="tab-merge" class="tab-content">
-                <div class="control-group">
-                    <label>合并区域设置</label>
-                    <div class="control-row">
-                        <input type="number" id="merge-startrow" placeholder="起始行" value="0" min="0">
-                        <input type="number" id="merge-startcol" placeholder="起始列" value="0" min="0">
-                    </div>
-                    <div class="control-row" style="margin-top: 10px;">
-                        <input type="number" id="merge-endrow" placeholder="结束行" value="0" min="0">
-                        <input type="number" id="merge-endcol" placeholder="结束列" value="3" min="0">
+<span class="code-comment">// 解析完整样式（应用所有层级）</span>
+<span class="code-keyword">const</span> fullStyle = sheet.<span class="code-function">styles</span>.<span class="code-function">resolveStyle</span>(<span class="code-number">0</span>, <span class="code-number">0</span>);
                     </div>
                 </div>
 
-                <button class="btn btn-primary" onclick="mergeCells()">
-                    <span>🔗</span> 合并单元格
-                </button>
-
-                <button class="btn btn-warning" onclick="unmergeCells()" style="margin-top: 10px;">
-                    <span>✂️</span> 取消合并
-                </button>
-
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>快速合并预设</label>
-                    <select id="merge-preset">
-                        <option value="">选择预设...</option>
-                        <option value="title-row">合并标题行 (A1:D1)</option>
-                        <option value="first-col">合并首列标识 (A2:A10)</option>
-                        <option value="header-area">合并表头区域</option>
-                    </select>
-                </div>
-
-                <button class="btn btn-info" onclick="applyMergePreset()" style="margin-top: 10px;">
-                    <span>⚡</span> 应用预设
-                </button>
-
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 合并 A1:D1 标题行</span>
-                    sheet.<span class="code-function">merges</span>.<span class="code-function">mergeCells</span>(<span
-                    class="code-number">0</span>, <span class="code-number">0</span>, <span class="code-number">0</span>,
-                    <span class="code-number">3</span>);
-
-                    <span class="code-comment">// 查询合并状态</span>
-                    <span class="code-keyword">if</span> (sheet.<span class="code-function">merges</span>.<span
-                    class="code-function">isMergedCell</span>(<span class="code-number">0</span>, <span
-                    class="code-number">0</span>)) {
-                    <span class="code-keyword">const</span> info = sheet.<span class="code-function">merges</span>.<span
-                    class="code-function">getMerge</span>(<span class="code-number">0</span>, <span class="code-number">0</span>);
-                    console.<span class="code-function">log</span>(info);
-                    }
-
-                    <span class="code-comment">// 获取所有合并区域</span>
-                    <span class="code-keyword">const</span> allMerges = sheet.<span class="code-function">merges</span>.<span
-                    class="code-function">getAllMerges</span>();
-                </div>
-            </div>
-
-            <!-- Conditional Format Tab -->
-            <div id="tab-conditional" class="tab-content">
-                <div class="control-group">
-                    <label>规则范围</label>
-                    <div class="control-row">
-                       起始行 <input type="number" id="cond-startrow" placeholder="起始行" value="1" min="0">
-                        起始列  <input type="number" id="cond-startcol" placeholder="起始列" value="2" min="0">
+                <!-- Merge Cells Tab -->
+                <div id="tab-merge" class="tab-content">
+                    <div class="control-group">
+                        <label>合并区域设置</label>
+                        <div class="control-row">
+                            <input type="number" id="merge-startrow" placeholder="起始行" value="0" min="0">
+                            <input type="number" id="merge-startcol" placeholder="起始列" value="0" min="0">
+                        </div>
+                        <div class="control-row" style="margin-top: 10px;">
+                            <input type="number" id="merge-endrow" placeholder="结束行" value="0" min="0">
+                            <input type="number" id="merge-endcol" placeholder="结束列" value="3" min="0">
+                        </div>
                     </div>
-                    <div class="control-row" style="margin-top: 10px;">
-                        结束行  <input type="number" id="cond-endrow" placeholder="结束行" value="10" min="0">
-                        结束列  <input type="number" id="cond-endcol" placeholder="结束列" value="2" min="0">
+
+                    <button class="btn btn-primary" onclick="mergeCells()">
+                        <span>🔗</span> 合并单元格
+                    </button>
+
+                    <button class="btn btn-warning" onclick="unmergeCells()" style="margin-top: 10px;">
+                        <span>✂️</span> 取消合并
+                    </button>
+
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>快速合并预设</label>
+                        <select id="merge-preset">
+                            <option value="">选择预设...</option>
+                            <option value="title-row">合并标题行 (A1:D1)</option>
+                            <option value="first-col">合并首列标识 (A2:A10)</option>
+                            <option value="header-area">合并表头区域</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-info" onclick="applyMergePreset()" style="margin-top: 10px;">
+                        <span>⚡</span> 应用预设
+                    </button>
+
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 合并 A1:D1 标题行</span>
+sheet.<span class="code-function">merges</span>.<span class="code-function">mergeCells</span>(<span class="code-number">0</span>, <span class="code-number">0</span>, <span class="code-number">0</span>, <span class="code-number">3</span>);
+
+<span class="code-comment">// 查询合并状态</span>
+<span class="code-keyword">if</span> (sheet.<span class="code-function">merges</span>.<span class="code-function">isMergedCell</span>(<span class="code-number">0</span>, <span class="code-number">0</span>)) {
+  <span class="code-keyword">const</span> info = sheet.<span class="code-function">merges</span>.<span class="code-function">getMerge</span>(<span class="code-number">0</span>, <span class="code-number">0</span>);
+  console.<span class="code-function">log</span>(info);
+}
+
+<span class="code-comment">// 获取所有合并区域</span>
+<span class="code-keyword">const</span> allMerges = sheet.<span class="code-function">merges</span>.<span class="code-function">getAllMerges</span>();
                     </div>
                 </div>
 
-                <div class="control-group">
-                    <label>条件类型</label>
-                    <select id="cond-type">
-                        <option value="greaterThan">大于指定值</option>
-                        <option value="lessThan">小于指定值</option>
-                        <option value="equal">等于指定值</option>
-                        <option value="range">在范围内</option>
-                    </select>
-                    <input type="text" id="cond-value" placeholder="阈值或范围 (如 >30000 或 20000-40000)"
-                           style="margin-top: 10px;" value="30000">
+                <!-- Conditional Format Tab -->
+                <div id="tab-conditional" class="tab-content">
+                    <div class="control-group">
+                        <label>规则范围</label>
+                        <div class="control-row">
+                            <input type="number" id="cond-startrow" placeholder="起始行" value="1" min="0">
+                            <input type="number" id="cond-startcol" placeholder="起始列" value="2" min="0">
+                        </div>
+                        <div class="control-row" style="margin-top: 10px;">
+                            <input type="number" id="cond-endrow" placeholder="结束行" value="10" min="0">
+                            <input type="number" id="cond-endcol" placeholder="结束列" value="2" min="0">
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label>条件类型</label>
+                        <select id="cond-type">
+                            <option value="greaterThan">大于指定值</option>
+                            <option value="lessThan">小于指定值</option>
+                            <option value="equal">等于指定值</option>
+                            <option value="range">在范围内</option>
+                        </select>
+                        <input type="text" id="cond-value" placeholder="阈值或范围 (如 >30000 或 20000-40000)" 
+                               style="margin-top: 10px;" value="30000">
+                    </div>
+
+                    <div class="control-group">
+                        <label>匹配时的样式</label>
+                        <input type="text" id="cond-bgcolor" placeholder="背景色 (#FFCDD2)" value="#FFCDD2">
+                        <input type="text" id="cond-textcolor" placeholder="文字色 (#C62828)" value="#C62828" style="margin-top: 10px;">
+                    </div>
+
+                    <button class="btn btn-primary" onclick="addConditionalRule()">
+                        <span>➕</span> 添加规则
+                    </button>
+
+                    <button class="btn btn-warning" onclick="clearConditionalRules()" style="margin-top: 10px;">
+                        <span>🗑️</span> 清除所有规则
+                    </button>
+
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 添加条件格式：工资 &gt; 30000 显示红色</span>
+sheet.<span class="code-function">styles</span>.<span class="code-function">addConditionalRule</span>({
+  range: { topRow: <span class="code-number">1</span>, topCol: <span class="code-number">2</span>, bottomRow: <span class="code-number">10</span>, bottomCol: <span class="code-number">2</span> },
+  condition: (value) => value > <span class="code-number">30000</span>,
+  style: {
+    backgroundColor: <span class="code-string">"#FFCDD2"</span>,
+    color: <span class="code-string">"#C62828"</span>,
+    bold: <span class="code-keyword">true</span>
+  }
+});
+                    </div>
                 </div>
 
-                <div class="control-group">
-                    <label>匹配时的样式</label>
-                    <input type="text" id="cond-bgcolor" placeholder="背景色 (#FFCDD2)" value="#FFCDD2">
-                    <input type="text" id="cond-textcolor" placeholder="文字色 (#C62828)" value="#C62828"
-                           style="margin-top: 10px;">
-                </div>
+                <!-- Headers Configuration Tab -->
+                <div id="tab-headers" class="tab-content">
+                    <div class="control-group">
+                        <label>列头标签（逗号分隔）</label>
+                        <textarea id="col-headers" rows="3" placeholder="工号, 姓名, 部门, 职位, 入职日期, 月薪">工号, 姓名, 部门, 职位, 入职日期, 月薪</textarea>
+                    </div>
 
-                <button class="btn btn-primary" onclick="addConditionalRule()">
-                    <span>➕</span> 添加规则
-                </button>
+                    <button class="btn btn-primary" onclick="setColumnHeaders()">
+                        <span>📋</span> 设置列表头
+                    </button>
 
-                <button class="btn btn-warning" onclick="clearConditionalRules()" style="margin-top: 10px;">
-                    <span>🗑️</span> 清除所有规则
-                </button>
-
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 添加条件格式：工资 &gt; 30000 显示红色</span>
-                    sheet.<span class="code-function">styles</span>.<span
-                    class="code-function">addConditionalRule</span>({
-                    range: { topRow: <span class="code-number">1</span>, topCol: <span class="code-number">2</span>,
-                    bottomRow: <span class="code-number">10</span>, bottomCol: <span class="code-number">2</span> },
-                    condition: (value) => value > <span class="code-number">30000</span>,
-                    style: {
-                    backgroundColor: <span class="code-string">"#FFCDD2"</span>,
-                    color: <span class="code-string">"#C62828"</span>,
-                    bold: <span class="code-keyword">true</span>
-                    }
-                    });
-                </div>
-            </div>
-
-            <!-- Headers Configuration Tab -->
-            <div id="tab-headers" class="tab-content">
-                <div class="control-group">
-                    <label>列头标签（逗号分隔）</label>
-                    <textarea id="col-headers" rows="3" placeholder="工号, 姓名, 部门, 职位, 入职日期, 月薪">工号, 姓名, 部门, 职位, 入职日期, 月薪</textarea>
-                </div>
-
-                <button class="btn btn-primary" onclick="setColumnHeaders()">
-                    <span>📋</span> 设置列表头
-                </button>
-
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>嵌套表头（JSON格式）</label>
-                    <textarea id="nested-headers" rows="5"
-                              placeholder='[{"label": "基本信息", "colspan": 2}, {"label": "薪资信息", "colspan": 2}]'>[
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>嵌套表头（JSON格式）</label>
+                        <textarea id="nested-headers" rows="5" placeholder='[{"label": "基本信息", "colspan": 2}, {"label": "薪资信息", "colspan": 2}]'>[
   [{"label": "基本信息", "colspan": 2}, {"label": "薪资信息", "colspan": 2}],
   ["姓名", "年龄", "基本工资", "绩效奖金"]
 ]</textarea>
-                </div>
+                    </div>
 
-                <button class="btn btn-success" onclick="setNestedHeaders()">
-                    <span>📑</span> 设置嵌套表头
-                </button>
+                    <button class="btn btn-success" onclick="setNestedHeaders()">
+                        <span>📑</span> 设置嵌套表头
+                    </button>
 
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>表头尺寸</label>
-                    <div class="control-row">
-                        <input type="number" id="header-width" placeholder="行头宽度" value="60" min="40">
-                        <input type="number" id="header-height" placeholder="表头高度" value="35" min="25">
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>表头尺寸</label>
+                        <div class="control-row">
+                            <input type="number" id="header-width" placeholder="行头宽度" value="60" min="40">
+                            <input type="number" id="header-height" placeholder="表头高度" value="35" min="25">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-info" onclick="setHeaderDimensions()">
+                        <span>📐</span> 应用尺寸
+                    </button>
+
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 设置简单列头</span>
+sheet.meta.colHeaders = [<span class="code-string">"姓名"</span>, <span class="code-string">"年龄"</span>, <span class="code-string">"工资"</span>];
+
+<span class="code-comment">// 设置嵌套表头（多层表头）</span>
+sheet.meta.nestedHeaders = [
+  [{ label: <span class="code-string">"基本信息"</span>, colspan: <span class="code-number">2</span> }, { label: <span class="code-string">"薪资"</span>, colspan: <span class="code-number">2</span> }],
+  [<span class="code-string">"姓名"</span>, <span class="code-string">"年龄"</span>, <span class="code-string">"基本工资"</span>, <span class="code-string">"奖金"</span>]
+];
                     </div>
                 </div>
 
-                <button class="btn btn-info" onclick="setHeaderDimensions()">
-                    <span>📐</span> 应用尺寸
-                </button>
-
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 设置简单列头</span>
-                    sheet.meta.colHeaders = [<span class="code-string">"姓名"</span>, <span
-                    class="code-string">"年龄"</span>, <span class="code-string">"工资"</span>];
-
-                    <span class="code-comment">// 设置嵌套表头（多层表头）</span>
-                    sheet.meta.nestedHeaders = [
-                    [{ label: <span class="code-string">"基本信息"</span>, colspan: <span class="code-number">2</span>
-                    }, { label: <span class="code-string">"薪资"</span>, colspan: <span class="code-number">2</span> }],
-                    [<span class="code-string">"姓名"</span>, <span class="code-string">"年龄"</span>, <span
-                    class="code-string">"基本工资"</span>, <span class="code-string">"奖金"</span>]
-                    ];
-                </div>
-            </div>
-
-            <!-- Column Types Tab -->
-            <div id="tab-columns" class="tab-content">
-                <div class="control-group">
-                    <label>列类型配置（JSON数组）</label>
-                    <textarea id="columns-config" rows="6"
-                              placeholder='[{"col": 0, "type": "text"}, {"col": 2, "type": "currency"}]'>[
+                <!-- Column Types Tab -->
+                <div id="tab-columns" class="tab-content">
+                    <div class="control-group">
+                        <label>列类型配置（JSON数组）</label>
+                        <textarea id="columns-config" rows="6" placeholder='[{"col": 0, "type": "text"}, {"col": 2, "type": "currency"}]'>[
   {"col": 0, "field": "id", "type": "text", "width": 100},
   {"col": 1, "field": "name", "type": "text", "width": 120},
   {"col": 2, "field": "age", "type": "number", "width": 80},
@@ -964,826 +904,804 @@
   {"col": 4, "field": "dept", "type": "select", "options": ["技术部", "市场部"]},
   {"col": 5, "field": "date", "type": "date", "width": 120}
 ]</textarea>
-                </div>
+                    </div>
 
-                <button class="btn btn-primary" onclick="applyColumnsConfig()">
-                    <span>🔧</span> 应用列配置
-                </button>
+                    <button class="btn btn-primary" onclick="applyColumnsConfig()">
+                        <span>🔧</span> 应用列配置
+                    </button>
 
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>测试格式化效果</label>
-                    <div class="control-row">
-                        <input type="number" id="test-format-col" placeholder="列号" value="3" min="0">
-                        <input type="text" id="test-format-value" placeholder="原始值" value="25000">
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>测试格式化效果</label>
+                        <div class="control-row">
+                            <input type="number" id="test-format-col" placeholder="列号" value="3" min="0">
+                            <input type="text" id="test-format-value" placeholder="原始值" value="25000">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-info" onclick="testFormatCellValue()">
+                        <span>✨</span> 格式化测试
+                    </button>
+
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 配置列类型</span>
+sheet.meta.applyColumnsConfig([
+  { col: <span class="code-number">3</span>, field: <span class="code-string">"salary"</span>, type: <span class="code-string">"currency"</span>,
+    options: { symbol: <span class="code-string">"¥"</span>, decimals: <span class="code-number">2</span> } },
+  { col: <span class="code-number">4</span>, field: <span class="code-string">"dept"</span>, type: <span class="code-string">"select"</span>,
+    options: [<span class="code-string">"技术部"</span>, <span class="code-string">"市场部"</span>] }
+]);
+
+<span class="code-comment">// 格式化显示</span>
+<span class="code-keyword">const</span> formatted = sheet.meta.formatCellValue(<span class="code-number">3</span>, <span class="code-number">25000</span>);
+<span class="code-comment">// 返回: "¥25,000.00"</span>
                     </div>
                 </div>
 
-                <button class="btn btn-info" onclick="testFormatCellValue()">
-                    <span>✨</span> 格式化测试
-                </button>
+                <!-- Freeze Panes Tab -->
+                <div id="tab-freeze" class="tab-content">
+                    <div class="control-group">
+                        <label>冻结顶部行数</label>
+                        <input type="number" id="freeze-rows" placeholder="冻结行数" value="1" min="0" max="10">
+                        <small style="color: #6c757d; margin-top: 5px; display: block;">
+                            通常用于冻结表头行（推荐：1-2行）
+                        </small>
+                    </div>
 
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 配置列类型</span>
-                    sheet.meta.applyColumnsConfig([
-                    { col: <span class="code-number">3</span>, field: <span class="code-string">"salary"</span>, type:
-                    <span class="code-string">"currency"</span>,
-                    options: { symbol: <span class="code-string">"¥"</span>, decimals: <span
-                    class="code-number">2</span> } },
-                    { col: <span class="code-number">4</span>, field: <span class="code-string">"dept"</span>, type:
-                    <span class="code-string">"select"</span>,
-                    options: [<span class="code-string">"技术部"</span>, <span class="code-string">"市场部"</span>] }
-                    ]);
+                    <button class="btn btn-primary" onclick="freezeRows()">
+                        <span>❄️</span> 冻结顶部行
+                    </button>
 
-                    <span class="code-comment">// 格式化显示</span>
-                    <span class="code-keyword">const</span> formatted = sheet.meta.formatCellValue(<span
-                    class="code-number">3</span>, <span class="code-number">25000</span>);
-                    <span class="code-comment">// 返回: "¥25,000.00"</span>
-                </div>
-            </div>
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>冻结左侧列数</label>
+                        <input type="number" id="freeze-cols" placeholder="冻结列数" value="1" min="0" max="5">
+                        <small style="color: #6c757d; margin-top: 5px; display: block;">
+                            通常用于冻结行号/标识列（推荐：1列）
+                        </small>
+                    </div>
 
-            <!-- Freeze Panes Tab -->
-            <div id="tab-freeze" class="tab-content">
-                <div class="control-group">
-                    <label>冻结顶部行数</label>
-                    <input type="number" id="freeze-rows" placeholder="冻结行数" value="1" min="0" max="10">
-                    <small style="color: #6c757d; margin-top: 5px; display: block;">
-                        通常用于冻结表头行（推荐：1-2行）
-                    </small>
-                </div>
+                    <button class="btn btn-success" onclick="freezeCols()">
+                        <span>🧊</span> 冻结左侧列
+                    </button>
 
-                <button class="btn btn-primary" onclick="freezeRows()">
-                    <span>❄️</span> 冻结顶部行
-                </button>
+                    <button class="btn btn-warning" onclick="clearFreeze()" style="margin-top: 15px;">
+                        <span>🔓</span> 清除冻结
+                    </button>
 
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>冻结左侧列数</label>
-                    <input type="number" id="freeze-cols" placeholder="冻结列数" value="1" min="0" max="5">
-                    <small style="color: #6c757d; margin-top: 5px; display: block;">
-                        通常用于冻结行号/标识列（推荐：1列）
-                    </small>
-                </div>
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>当前冻结状态</label>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
+                            <p><strong>冻结行数:</strong> <span id="current-frozen-rows">0</span></p>
+                            <p style="margin-top: 8px;"><strong>冻结列数:</strong> <span id="current-frozen-cols">0</span></p>
+                            <p style="margin-top: 8px;"><strong>冻结高度:</strong> <span id="frozen-height">0</span> px</p>
+                            <p style="margin-top: 8px;"><strong>冻结宽度:</strong> <span id="frozen-width">0</span> px</p>
+                        </div>
+                    </div>
 
-                <button class="btn btn-success" onclick="freezeCols()">
-                    <span>🧊</span> 冻结左侧列
-                </button>
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 冻结前2行（表头+副标题）</span>
+sheet.fixedRowsTop = <span class="code-number">2</span>;
 
-                <button class="btn btn-warning" onclick="clearFreeze()" style="margin-top: 15px;">
-                    <span>🔓</span> 清除冻结
-                </button>
+<span class="code-comment">// 冻结第1列（行号列）</span>
+sheet.fixedColumnsStart = <span class="code-number">1</span>;
 
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>当前冻结状态</label>
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #e9ecef;">
-                        <p><strong>冻结行数:</strong> <span id="current-frozen-rows">0</span></p>
-                        <p style="margin-top: 8px;"><strong>冻结列数:</strong> <span id="current-frozen-cols">0</span>
-                        </p>
-                        <p style="margin-top: 8px;"><strong>冻结高度:</strong> <span id="frozen-height">0</span> px</p>
-                        <p style="margin-top: 8px;"><strong>冻结宽度:</strong> <span id="frozen-width">0</span> px</p>
+<span class="code-comment">// 获取冻结尺寸（只读，带缓存优化）</span>
+console.<span class="code-function">log</span>(sheet.frozenRowsHeight); <span class="code-comment">// 56 (px)</span>
+console.<span class="code-function">log</span>(sheet.frozenColsWidth);   <span class="code-comment">// 60 (px)</span>
+
+<span class="code-comment">// 手动失效缓存（修改行列尺寸后）</span>
+sheet.invalidateFreezeCache();
                     </div>
                 </div>
 
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 冻结前2行（表头+副标题）</span>
-                    sheet.fixedRowsTop = <span class="code-number">2</span>;
-
-                    <span class="code-comment">// 冻结第1列（行号列）</span>
-                    sheet.fixedColumnsStart = <span class="code-number">1</span>;
-
-                    <span class="code-comment">// 获取冻结尺寸（只读，带缓存优化）</span>
-                    console.<span class="code-function">log</span>(sheet.frozenRowsHeight); <span class="code-comment">// 56 (px)</span>
-                    console.<span class="code-function">log</span>(sheet.frozenColsWidth); <span class="code-comment">// 60 (px)</span>
-
-                    <span class="code-comment">// 手动失效缓存（修改行列尺寸后）</span>
-                    sheet.invalidateFreezeCache();
-                </div>
-            </div>
-
-            <!-- Advanced Features Tab -->
-            <div id="tab-advanced" class="tab-content">
-                <div class="control-group">
-                    <label>批量操作事务</label>
-                    <textarea id="batch-data" rows="4" placeholder='输入要批量设置的值（每行一个）'>Item 1
+                <!-- Advanced Features Tab -->
+                <div id="tab-advanced" class="tab-content">
+                    <div class="control-group">
+                        <label>批量操作事务</label>
+                        <textarea id="batch-data" rows="4" placeholder='输入要批量设置的值（每行一个）'>Item 1
 Item 2
 Item 3
 Item 4
 Item 5</textarea>
-                </div>
-
-                <button class="btn btn-primary" onclick="runBatchOperation()">
-                    <span>⚡</span> 批量写入（事务）
-                </button>
-
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>撤销/重做控制</label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button class="btn btn-info" onclick="undoOperation()">
-                            <span>↩️</span> 撤销
-                        </button>
-                        <button class="btn btn-info" onclick="redoOperation()">
-                            <span>↪️</span> 重做
-                        </button>
                     </div>
-                </div>
 
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>工作表属性</label>
-                    <div class="checkbox-group">
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="readonly-mode">
-                            <label for="readonly-mode">只读模式（禁止编辑）</label>
-                        </div>
-                        <div class="checkbox-item">
-                            <input type="checkbox" id="visible-toggle" checked>
-                            <label for="visible-toggle">可见性</label>
+                    <button class="btn btn-primary" onclick="runBatchOperation()">
+                        <span>⚡</span> 批量写入（事务）
+                    </button>
+
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>撤销/重做控制</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <button class="btn btn-info" onclick="undoOperation()">
+                                <span>↩️</span> 撤销
+                            </button>
+                            <button class="btn btn-info" onclick="redoOperation()">
+                                <span>↪️</span> 重做
+                            </button>
                         </div>
                     </div>
-                </div>
 
-                <button class="btn btn-warning" onclick="applySheetProperties()">
-                    <span>⚙️</span> 应用属性
-                </button>
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>工作表属性</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="readonly-mode">
+                                <label for="readonly-mode">只读模式（禁止编辑）</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="visible-toggle" checked>
+                                <label for="visible-toggle">可见性</label>
+                            </div>
+                        </div>
+                    </div>
 
-                <div class="control-group" style="margin-top: 20px;">
-                    <label>网格尺寸调整</label>
-                    <div class="control-row">
-                        <input type="number" id="grid-rows" placeholder="总行数" value="100" min="1">
-                        <input type="number" id="grid-cols" placeholder="总列数" value="26" min="1">
+                    <button class="btn btn-warning" onclick="applySheetProperties()">
+                        <span>⚙️</span> 应用属性
+                    </button>
+
+                    <div class="control-group" style="margin-top: 20px;">
+                        <label>网格尺寸调整</label>
+                        <div class="control-row">
+                            <input type="number" id="grid-rows" placeholder="总行数" value="100" min="1">
+                            <input type="number" id="grid-cols" placeholder="总列数" value="26" min="1">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-success" onclick="resizeGrid()">
+                        <span>📏</span> 调整大小
+                    </button>
+
+                    <div class="code-preview" style="margin-top: 15px;">
+<span class="code-comment">// 批量操作（自动记录为单个历史点）</span>
+sheet.operations.beginBatch(<span class="code-string">"批量导入"</span>);
+<span class="code-keyword">try</span> {
+  <span class="code-keyword">for</span> (<span class="code-keyword">let</span> i = <span class="code-number">0</span>; i < <span class="code-number">1000</span>; i++) {
+    sheet.data.setCell(i, <span class="code-number">0</span>, <span class="code-string">`Item ${i}`</span>);
+  }
+  sheet.operations.endBatch();
+} <span class="code-keyword">catch</span> (e) {
+  <span class="code-comment">// 错误处理</span>
+}
+
+<span class="code-comment">// 撤销/重做</span>
+sheet.operations.undo(); <span class="code-comment">// 撤销上一步</span>
+sheet.operations.redo(); <span class="code-comment">// 重做</span>
+
+<span class="code-comment">// 只读模式</span>
+sheet.readOnly = <span class="code-keyword">true</span>;
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <button class="btn btn-success" onclick="resizeGrid()">
-                    <span>📏</span> 调整大小
-                </button>
+        <!-- Log Panel -->
+        <div class="log-panel">
+            <div class="log-title">
+                <span class="icon">📜</span>
+                操作日志
+                <button onclick="clearLogs()" style="margin-left: auto; background: #ff6b6b; color: white; border: none; 
+                        padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;">清空</button>
+            </div>
+            <div class="log-content" id="log-content">
+                <div class="log-entry log-info">✨ Sheet Demo 已初始化，等待操作...</div>
+            </div>
+        </div>
 
-                <div class="code-preview" style="margin-top: 15px;">
-                    <span class="code-comment">// 批量操作（自动记录为单个历史点）</span>
-                    sheet.operations.beginBatch(<span class="code-string">"批量导入"</span>);
-                    <span class="code-keyword">try</span> {
-                    <span class="code-keyword">for</span> (<span class="code-keyword">let</span> i = <span
-                    class="code-number">0</span>; i < <span class="code-number">1000</span>; i++) {
-                    sheet.data.setCell(i, <span class="code-number">0</span>, <span
-                    class="code-string">`Item ${i}`</span>);
-                    }
-                    sheet.operations.endBatch();
-                    } <span class="code-keyword">catch</span> (e) {
-                    <span class="code-comment">// 错误处理</span>
-                    }
-
-                    <span class="code-comment">// 撤销/重做</span>
-                    sheet.operations.undo(); <span class="code-comment">// 撤销上一步</span>
-                    sheet.operations.redo(); <span class="code-comment">// 重做</span>
-
-                    <span class="code-comment">// 只读模式</span>
-                    sheet.readOnly = <span class="code-keyword">true</span>;
-                </div>
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Canvas-Excel Sheet Demo v2.0</span>
+            </div>
+            <div>
+                <span id="status-text">就绪</span>
             </div>
         </div>
     </div>
 
-    <!-- Log Panel -->
-    <div class="log-panel">
-        <div class="log-title">
-            <span class="icon">📜</span>
-            操作日志
-            <button onclick="clearLogs()" style="margin-left: auto; background: #ff6b6b; color: white; border: none;
-                        padding: 5px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;">清空
-            </button>
-        </div>
-        <div class="log-content" id="log-content">
-            <div class="log-entry log-info">✨ Sheet Demo 已初始化，等待操作...</div>
-        </div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-spinner"></div>
     </div>
 
-    <!-- Status Bar -->
-    <div class="status-bar">
-        <div class="status-indicator">
-            <div class="status-dot"></div>
-            <span>Canvas-Excel Sheet Demo v2.0</span>
-        </div>
-        <div>
-            <span id="status-text">就绪</span>
-        </div>
-    </div>
-</div>
+    <!-- Scripts -->
+    <script src="../dist/canvas-sheet.umd.js"></script>
+    
+    <script>
+        // ============================================================
+        // 全局变量
+        // ============================================================
+        let workbook = null;
+        let sheet = null;
+        let canvas = null;
+        let ctx = null;
 
-<!-- Loading Overlay -->
-<div class="loading-overlay" id="loading">
-    <div class="loading-spinner"></div>
-</div>
+        // ============================================================
+        // 初始化
+        // ============================================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                showLoading(true);
+                log('正在初始化 Canvas-Sheet...', 'info');
 
-<!-- Scripts -->
-<script src="../dist/canvas-sheet.umd.js"></script>
+                // 创建 Workbook 和 Sheet
+                workbook = new CanvasSheet.Workbook(document.getElementById('spreadsheet-canvas'),{
+                    plugins: [
+                        "autoFill",
+                        "contextMenu",
+                        "columnMove",
+                        "copyPaste",
+                        "exportFile",
+                        "importFile",
+                        "hiddenColumns",
+                        "hiddenRows",
+                        "rowMove",
+                        "freeze",
+                        "formula",
+                        "sort",
+                        "dataValidation",
+                    ],
+                    sheets: [2],
+                });
+                
 
-<script>
-    // ============================================================
-    // 全局变量
-    // ============================================================
-    let workbook = null;
-    let sheet = null;
-    let canvas = null;
-    let ctx = null;
 
-    // ============================================================
-    // 初始化
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            showLoading(true);
-            log('正在初始化 Canvas-Sheet...', 'info');
 
-            // 创建 Workbook 和 Sheet
-            workbook = new CanvasSheet.Workbook(document.getElementById('spreadsheet-canvas'), {
-                plugins: [
-                    "autoFill",
-                    "contextMenu",
-                    "columnMove",
-                    "copyPaste",
-                    "exportFile",
-                    "importFile",
-                    "hiddenColumns",
-                    "hiddenRows",
-                    "rowMove",
-                    "freeze",
-                    "formula",
-                    "sort",
-                    "dataValidation",
-                ],
-                sheets: [2],
+                canvas = document.getElementById('spreadsheet-canvas');
+                ctx = canvas.getContext('2d');
+                workbook.initRender();
+                workbook.render();
+                sheet = workbook.activeSheet;
+                console.log(sheet)
+                log('✅ 工作簿和工作表创建成功', 'success');
+                
+                updateStats();
+                showLoading(false);
+                
+                // 监听事件
+                setupEventListeners();
+                
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+                showLoading(false);
+            }
+        });
+
+        function setupEventListeners() {
+            // 监听单元格变化事件
+            sheet.bus.on('CELL_CHANGED', ({ r, c, oldValue, newValue }) => {
+                log(`📝 单元格 [${r},${c}] 变化: ${oldValue} → ${newValue}`, 'info');
+                renderSheet();
             });
 
-
-            canvas = document.getElementById('spreadsheet-canvas');
-            ctx = canvas.getContext('2d');
-            workbook.initRender();
-            workbook.render();
-            sheet = workbook.activeSheet;
-            console.log(sheet)
-            log('✅ 工作簿和工作表创建成功', 'success');
-
-            updateStats();
-            showLoading(false);
-
-            // 监听事件
-            setupEventListeners();
-
-        } catch (error) {
-            log(`❌ 初始化失败: ${error.message}`, 'error');
-            showLoading(false);
+            // 监听样式变化
+            sheet.bus.on('STYLE_CHANGED', ({ r, c }) => {
+                log(`🎨 单元格 [${r},${c}] 样式已更新`, 'warn');
+            });
         }
-    });
 
-    function setupEventListeners() {
-        // 监听单元格变化事件
-        sheet.bus.on('CELL_CHANGED', ({r, c, oldValue, newValue}) => {
-            log(`📝 单元格 [${r},${c}] 变化: ${oldValue} → ${newValue}`, 'info');
+        // ============================================================
+        // Tab 切换
+        // ============================================================
+        function switchTab(tabName) {
+            // 隐藏所有内容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有按钮激活状态
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // 显示选中的内容
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            // 激活对应按钮
+            event.target.classList.add('active');
+        }
+
+        // ============================================================
+        // 数据操作功能
+        // ============================================================
+        function loadSampleData() {
+            const template = document.getElementById('data-template').value;
+            
+            try {
+                switch(template) {
+                    case 'employee':
+                        loadEmployeeData();
+                        break;
+                    case 'financial':
+                        loadFinancialData();
+                        break;
+                    case 'inventory':
+                        loadInventoryData();
+                        break;
+                    case 'custom':
+                        log('请手动输入自定义数据', 'warn');
+                        return;
+                }
+                
+                renderSheet();
+                updateStats();
+                log(`✅ 已加载 "${template}" 模板数据`, 'success');
+            } catch (error) {
+                log(`❌ 加载数据失败: ${error.message}`, 'error');
+            }
+        }
+
+        function loadEmployeeData() {
+            sheet.colHeaders = ['工号', '姓名', '部门', '职位', '入职日期', '月薪'];
+            
+            sheet.data.loadData([
+                ['EMP001', '张三', '技术部', '高级工程师', '2020-03-15', 28000],
+                ['EMP002', '李四', '市场部', '产品经理', '2019-07-01', 32000],
+                ['EMP003', '王五', '人事部', 'HR专员', '2021-11-20', 18000],
+                ['EMP004', '赵六', '技术部', '前端工程师', '2022-01-10', 22000],
+                ['EMP007', '钱七', '财务部', '会计', '2020-09-05', 20000],
+                ['EMP008', '孙八', '技术部', '后端工程师', '2021-06-18', 26000],
+                ['EMP010', '周九', '市场部', '销售经理', '2018-12-01', 35000]
+            ]);
+        }
+
+        function loadFinancialData() {
+            sheet.nestedHeaders = [
+                [
+                    { label: '收入项目', colspan: 3 },
+                    { label: '支出项目', colspan: 3 },
+                    { label: '净利润', rowspan: 2 }
+                ],
+                ['产品销售', '服务收入', '其他收入', '人力成本', '运营费用', '税费']
+            ];
+            
+            sheet.data.loadData([
+                [1000000, 200000, 50000, 600000, 300000, 150000],
+                [1200000, 250000, 60000, 650000, 320000, 180000],
+                [900000, 180000, 40000, 580000, 280000, 130000],
+                [1100000, 230000, 55000, 620000, 310000, 165000]
+            ]);
+        }
+
+        function loadInventoryData() {
+            sheet.colHeaders = ['SKU', '商品名称', '分类', '库存数量', '单价', '库存金额'];
+            
+            sheet.data.loadData([
+                ['SKU001', '笔记本电脑 Pro', '电子产品', 150, 8999, '=D2*E2'],
+                ['SKU002', '无线鼠标', '配件', 500, 199, '=D3*E3'],
+                ['SKU003', '机械键盘', '配件', 320, 599, '=D4*E4'],
+                ['SKU004', '27寸显示器', '电子产品', 85, 2999, '=D5*E5'],
+                ['SKU005', 'USB-C 扩展坞', '配件', 420, 359, '=D6*E6']
+            ]);
+        }
+
+        function setCell() {
+            const row = parseInt(document.getElementById('cell-row').value);
+            const col = parseInt(document.getElementById('cell-col').value);
+            const value = document.getElementById('cell-value').value;
+            
+            if (isNaN(row) || isNaN(col)) {
+                log('❌ 请输入有效的行号和列号', 'error');
+                return;
+            }
+            
+            sheet.data.setCell(row, col, value);
+            log(`✅ 单元格 [${row},${col}] 设置为: ${value}`, 'success');
             renderSheet();
-        });
+        }
 
-        // 监听样式变化
-        sheet.bus.on('STYLE_CHANGED', ({r, c}) => {
-            log(`🎨 单元格 [${r},${c}] 样式已更新`, 'warn');
-        });
-    }
+        function clearCell() {
+            const row = parseInt(document.getElementById('cell-row').value);
+            const col = parseInt(document.getElementById('cell-col').value);
+            
+            if (isNaN(row) || isNaN(col)) return;
+            
+            sheet.data.setCell(row, col, '');
+            log(`🗑️ 单元格 [${row},${col}] 已清除`, 'warn');
+            renderSheet();
+        }
 
-    // ============================================================
-    // Tab 切换
-    // ============================================================
-    function switchTab(tabName) {
-        // 隐藏所有内容
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.remove('active');
-        });
+        function disableCell() {
+            const row = parseInt(document.getElementById('cell-row').value);
+            const col = parseInt(document.getElementById('cell-col').value);
+            
+            if (isNaN(row) || isNaN(col)) return;
+            
+            sheet.disableCell(row, col);
+            log(`🔒 单元格 [${row},${col}] 已禁用`, 'warn');
+            renderSheet();
+        }
 
-        // 移除所有按钮激活状态
-        document.querySelectorAll('.tab-button').forEach(btn => {
-            btn.classList.remove('active');
-        });
+        // ============================================================
+        // 样式管理功能
+        // ============================================================
+        function setDefaultStyle() {
+            const fontSize = parseInt(document.getElementById('default-fontsize').value);
+            const fontFamily = document.getElementById('default-fontfamily').value;
+            const bgColor = document.getElementById('default-bgcolor').value;
+            
+            sheet.styles.setDefaultStyle({
+                fontSize: fontSize,
+                fontFamily: fontFamily,
+                backgroundColor: bgColor
+            });
+            
+            log(`✅ 默认样式已设置 (${fontSize}px ${fontFamily})`, 'success');
+            renderSheet();
+        }
 
-        // 显示选中的内容
-        document.getElementById(`tab-${tabName}`).classList.add('active');
+        function applyCellStyle() {
+            const startRow = parseInt(document.getElementById('style-row').value);
+            const startCol = parseInt(document.getElementById('style-col').value);
+            const endRow = parseInt(document.getElementById('style-endrow').value) || startRow;
+            const endCol = parseInt(document.getElementById('style-endcol').value) || startCol;
+            
+            if (isNaN(startRow) || isNaN(startCol)) {
+                log('❌ 请输入有效的行列号', 'error');
+                return;
+            }
+            
+            const style = {};
+            
+            if (document.getElementById('style-bold').checked) style.bold = true;
+            if (document.getElementById('style-italic').checked) style.italic = true;
+            if (document.getElementById('style-header').checked) {
+                style.backgroundColor = '#1976D2';
+                style.color = '#FFFFFF';
+                style.align = 'center';
+            }
+            if (document.getElementById('style-border').checked) {
+                style.border = {
+                    top: { style: 'thin', color: '#000' },
+                    bottom: { style: 'thin', color: '#000' },
+                    left: { style: 'thin', color: '#000' },
+                    right: { style: 'thin', color: '#000' }
+                };
+            }
+            
+            if (startRow === endRow && startCol === endCol) {
+                sheet.styles.setCellStyle(startRow, startCol, style);
+                log(`✅ 单元格 [${startRow},${startCol}] 样式已应用`, 'success');
+            } else {
+                sheet.styles.setRangeStyle(startRow, startCol, endRow, endCol, style);
+                log(`✅ 区域 [${startRow},${startCol}]-[${endRow},${endCol}] 样式已应用`, 'success');
+            }
+            
+            renderSheet();
+        }
 
-        // 激活对应按钮
-        event.target.classList.add('active');
-    }
+        function clearStyles() {
+            const startRow = parseInt(document.getElementById('style-row').value);
+            const startCol = parseInt(document.getElementById('style-col').value);
+            const endRow = parseInt(document.getElementById('style-endrow').value) || startRow;
+            const endCol = parseInt(document.getElementById('style-endcol').value) || startCol;
+            
+            if (!isNaN(startRow) && !isNaN(startCol)) {
+                if (startRow === endRow && startCol === endCol) {
+                    sheet.styles.clearCellStyle(startRow, startCol);
+                } else {
+                    sheet.styles.clearRangeStyle(startRow, startCol, endRow, endCol);
+                }
+                log('🧹 样式已清除', 'warn');
+                renderSheet();
+            }
+        }
 
-    // ============================================================
-    // 数据操作功能
-    // ============================================================
-    function loadSampleData() {
-        const template = document.getElementById('data-template').value;
+        // ============================================================
+        // 合并单元格功能
+        // ============================================================
+        function mergeCells() {
+            const startRow = parseInt(document.getElementById('merge-startrow').value);
+            const startCol = parseInt(document.getElementById('merge-startcol').value);
+            const endRow = parseInt(document.getElementById('merge-endrow').value);
+            const endCol = parseInt(document.getElementById('merge-endcol').value);
+            
+            if ([startRow, startCol, endRow, endCol].some(isNaN)) {
+                log('❌ 请输入完整的合并范围', 'error');
+                return;
+            }
+            
+            sheet.merges.mergeCells(startRow, startCol, endRow, endCol);
+            log(`🔗 合并区域 [${startRow},${startCol}]-[${endRow},${endCol}] 成功`, 'success');
+            renderSheet();
+            updateStats();
+        }
 
-        try {
-            switch (template) {
-                case 'employee':
-                    loadEmployeeData();
+        function unmergeCells() {
+            const startRow = parseInt(document.getElementById('merge-startrow').value);
+            const startCol = parseInt(document.getElementById('merge-startcol').value);
+            const endRow = parseInt(document.getElementById('merge-endrow').value);
+            const endCol = parseInt(document.getElementById('merge-endcol').value);
+            
+            if ([startRow, startCol, endRow, endCol].some(isNaN)) {
+                log('❌ 请输入完整的取消合并范围', 'error');
+                return;
+            }
+            
+            sheet.merges.unmergeCells(startRow, startCol, endRow, endCol);
+            log(`✂️ 取消合并 [${startRow},${startCol}]-[${endRow},${endCol}] 成功`, 'success');
+            renderSheet();
+            updateStats();
+        }
+
+        function applyMergePreset() {
+            const preset = document.getElementById('merge-preset').value;
+            
+            switch(preset) {
+                case 'title-row':
+                    sheet.merges.mergeCells(0, 0, 0, 5);
+                    log('⚡ 已合并标题行 A1:F1', 'success');
                     break;
-                case 'financial':
-                    loadFinancialData();
+                case 'first-col':
+                    sheet.merges.mergeCells(1, 0, 10, 0);
+                    log('⚡ 已合并首列 A2:A11', 'success');
                     break;
-                case 'inventory':
-                    loadInventoryData();
+                case 'header-area':
+                    sheet.merges.mergeCells(0, 0, 0, 2);
+                    sheet.merges.mergeCells(0, 3, 0, 5);
+                    log('⚡ 已合并表头区域', 'success');
                     break;
-                case 'custom':
-                    log('请手动输入自定义数据', 'warn');
+                default:
+                    log('请选择一个预设', 'warn');
                     return;
             }
-
+            
             renderSheet();
             updateStats();
-            log(`✅ 已加载 "${template}" 模板数据`, 'success');
-        } catch (error) {
-            log(`❌ 加载数据失败: ${error.message}`, 'error');
-        }
-    }
-
-    function loadEmployeeData() {
-        sheet.colHeaders = ['工号', '姓名', '部门', '职位', '入职日期', '月薪'];
-
-        sheet.data.loadData([
-            ['EMP001', '张三', '技术部', '高级工程师', '2020-03-15', 28000],
-            ['EMP002', '李四', '市场部', '产品经理', '2019-07-01', 32000],
-            ['EMP003', '王五', '人事部', 'HR专员', '2021-11-20', 18000],
-            ['EMP004', '赵六', '技术部', '前端工程师', '2022-01-10', 22000],
-            ['EMP007', '钱七', '财务部', '会计', '2020-09-05', 20000],
-            ['EMP008', '孙八', '技术部', '后端工程师', '2021-06-18', 26000],
-            ['EMP010', '周九', '市场部', '销售经理', '2018-12-01', 35000]
-        ]);
-    }
-
-    function loadFinancialData() {
-        sheet.nestedHeaders = [
-            [
-                {label: '收入项目', colspan: 3},
-                {label: '支出项目', colspan: 3},
-                {label: '净利润', rowspan: 2}
-            ],
-            ['产品销售', '服务收入', '其他收入', '人力成本', '运营费用', '税费']
-        ];
-
-        sheet.data.loadData([
-            [1000000, 200000, 50000, 600000, 300000, 150000],
-            [1200000, 250000, 60000, 650000, 320000, 180000],
-            [900000, 180000, 40000, 580000, 280000, 130000],
-            [1100000, 230000, 55000, 620000, 310000, 165000]
-        ]);
-    }
-
-    function loadInventoryData() {
-        sheet.colHeaders = ['SKU', '商品名称', '分类', '库存数量', '单价', '库存金额'];
-
-        sheet.data.loadData([
-            ['SKU001', '笔记本电脑 Pro', '电子产品', 150, 8999, '=D2*E2'],
-            ['SKU002', '无线鼠标', '配件', 500, 199, '=D3*E3'],
-            ['SKU003', '机械键盘', '配件', 320, 599, '=D4*E4'],
-            ['SKU004', '27寸显示器', '电子产品', 85, 2999, '=D5*E5'],
-            ['SKU005', 'USB-C 扩展坞', '配件', 420, 359, '=D6*E6']
-        ]);
-    }
-
-    function setCell() {
-        const row = parseInt(document.getElementById('cell-row').value);
-        const col = parseInt(document.getElementById('cell-col').value);
-        const value = document.getElementById('cell-value').value;
-
-        if (isNaN(row) || isNaN(col)) {
-            log('❌ 请输入有效的行号和列号', 'error');
-            return;
         }
 
-        sheet.data.setCell(row, col, value);
-        log(`✅ 单元格 [${row},${col}] 设置为: ${value}`, 'success');
-        renderSheet();
-    }
-
-    function clearCell() {
-        const row = parseInt(document.getElementById('cell-row').value);
-        const col = parseInt(document.getElementById('cell-col').value);
-
-        if (isNaN(row) || isNaN(col)) return;
-
-        sheet.data.setCell(row, col, '');
-        log(`🗑️ 单元格 [${row},${col}] 已清除`, 'warn');
-        renderSheet();
-    }
-
-    function disableCell() {
-        const row = parseInt(document.getElementById('cell-row').value);
-        const col = parseInt(document.getElementById('cell-col').value);
-
-        if (isNaN(row) || isNaN(col)) return;
-
-        sheet.disableCell(row, col);
-        log(`🔒 单元格 [${row},${col}] 已禁用`, 'warn');
-        renderSheet();
-    }
-
-    // ============================================================
-    // 样式管理功能
-    // ============================================================
-    function setDefaultStyle() {
-        const fontSize = parseInt(document.getElementById('default-fontsize').value);
-        const fontFamily = document.getElementById('default-fontfamily').value;
-        const bgColor = document.getElementById('default-bgcolor').value;
-
-        sheet.styles.setDefaultStyle({
-            fontSize: fontSize,
-            fontFamily: fontFamily,
-            backgroundColor: bgColor
-        });
-
-        log(`✅ 默认样式已设置 (${fontSize}px ${fontFamily})`, 'success');
-        renderSheet();
-    }
-
-    function applyCellStyle() {
-        const startRow = parseInt(document.getElementById('style-row').value);
-        const startCol = parseInt(document.getElementById('style-col').value);
-        const endRow = parseInt(document.getElementById('style-endrow').value) || startRow;
-        const endCol = parseInt(document.getElementById('style-endcol').value) || startCol;
-
-        if (isNaN(startRow) || isNaN(startCol)) {
-            log('❌ 请输入有效的行列号', 'error');
-            return;
-        }
-
-        const style = {};
-
-        if (document.getElementById('style-bold').checked) style.bold = true;
-        if (document.getElementById('style-italic').checked) style.italic = true;
-        if (document.getElementById('style-header').checked) {
-            style.backgroundColor = '#1976D2';
-            style.color = '#FFFFFF';
-            style.align = 'center';
-        }
-        if (document.getElementById('style-border').checked) {
-            style.border = {
-                top: {style: 'thin', color: '#000'},
-                bottom: {style: 'thin', color: '#000'},
-                left: {style: 'thin', color: '#000'},
-                right: {style: 'thin', color: '#000'}
-            };
-        }
-
-        if (startRow === endRow && startCol === endCol) {
-            sheet.styles.setCellStyle(startRow, startCol, style);
-            log(`✅ 单元格 [${startRow},${startCol}] 样式已应用`, 'success');
-        } else {
-            sheet.styles.setRangeStyle(startRow, startCol, endRow, endCol, style);
-            log(`✅ 区域 [${startRow},${startCol}]-[${endRow},${endCol}] 样式已应用`, 'success');
-        }
-
-        renderSheet();
-    }
-
-    function clearStyles() {
-        const startRow = parseInt(document.getElementById('style-row').value);
-        const startCol = parseInt(document.getElementById('style-col').value);
-        const endRow = parseInt(document.getElementById('style-endrow').value) || startRow;
-        const endCol = parseInt(document.getElementById('style-endcol').value) || startCol;
-
-        if (!isNaN(startRow) && !isNaN(startCol)) {
-            if (startRow === endRow && startCol === endCol) {
-                sheet.styles.clearCellStyle(startRow, startCol);
-            } else {
-                sheet.styles.clearRangeStyle(startRow, startCol, endRow, endCol);
+        // ============================================================
+        // 条件格式功能
+        // ============================================================
+        function addConditionalRule() {
+            const startRow = parseInt(document.getElementById('cond-startrow').value);
+            const startCol = parseInt(document.getElementById('cond-startcol').value);
+            const endRow = parseInt(document.getElementById('cond-endrow').value);
+            const endCol = parseInt(document.getElementById('cond-endcol').value);
+            const type = document.getElementById('cond-type').value;
+            const valueStr = document.getElementById('cond-value').value;
+            const bgColor = document.getElementById('cond-bgcolor').value;
+            const textColor = document.getElementById('cond-textcolor').value;
+            
+            let condition;
+            const threshold = parseFloat(valueStr.split('-')[0]);
+            
+            switch(type) {
+                case 'greaterThan':
+                    condition = (v) => typeof v === 'number' && v > threshold;
+                    break;
+                case 'lessThan':
+                    condition = (v) => typeof v === 'number' && v < threshold;
+                    break;
+                case 'equal':
+                    condition = (v) => v == threshold;
+                    break;
+                case 'range':
+                    const [min, max] = valueStr.split('-').map(Number);
+                    condition = (v) => typeof v === 'number' && v >= min && v <= max;
+                    break;
             }
-            log('🧹 样式已清除', 'warn');
-            renderSheet();
-        }
-    }
-
-    // ============================================================
-    // 合并单元格功能
-    // ============================================================
-    function mergeCells() {
-        const startRow = parseInt(document.getElementById('merge-startrow').value);
-        const startCol = parseInt(document.getElementById('merge-startcol').value);
-        const endRow = parseInt(document.getElementById('merge-endrow').value);
-        const endCol = parseInt(document.getElementById('merge-endcol').value);
-
-        if ([startRow, startCol, endRow, endCol].some(isNaN)) {
-            log('❌ 请输入完整的合并范围', 'error');
-            return;
-        }
-
-        sheet.merges.mergeCells(startRow, startCol, endRow, endCol);
-        log(`🔗 合并区域 [${startRow},${startCol}]-[${endRow},${endCol}] 成功`, 'success');
-        renderSheet();
-        updateStats();
-    }
-
-    function unmergeCells() {
-        const startRow = parseInt(document.getElementById('merge-startrow').value);
-        const startCol = parseInt(document.getElementById('merge-startcol').value);
-        const endRow = parseInt(document.getElementById('merge-endrow').value);
-        const endCol = parseInt(document.getElementById('merge-endcol').value);
-
-        if ([startRow, startCol, endRow, endCol].some(isNaN)) {
-            log('❌ 请输入完整的取消合并范围', 'error');
-            return;
-        }
-
-        sheet.merges.unmergeCells(startRow, startCol, endRow, endCol);
-        log(`✂️ 取消合并 [${startRow},${startCol}]-[${endRow},${endCol}] 成功`, 'success');
-        renderSheet();
-        updateStats();
-    }
-
-    function applyMergePreset() {
-        const preset = document.getElementById('merge-preset').value;
-
-        switch (preset) {
-            case 'title-row':
-                sheet.merges.mergeCells(0, 0, 0, 5);
-                log('⚡ 已合并标题行 A1:F1', 'success');
-                break;
-            case 'first-col':
-                sheet.merges.mergeCells(1, 0, 10, 0);
-                log('⚡ 已合并首列 A2:A11', 'success');
-                break;
-            case 'header-area':
-                sheet.merges.mergeCells(0, 0, 0, 2);
-                sheet.merges.mergeCells(0, 3, 0, 5);
-                log('⚡ 已合并表头区域', 'success');
-                break;
-            default:
-                log('请选择一个预设', 'warn');
-                return;
-        }
-
-        renderSheet();
-        updateStats();
-    }
-
-    // ============================================================
-    // 条件格式功能
-    // ============================================================
-    function addConditionalRule() {
-        const startRow = parseInt(document.getElementById('cond-startrow').value);
-        const startCol = parseInt(document.getElementById('cond-startcol').value);
-        const endRow = parseInt(document.getElementById('cond-endrow').value);
-        const endCol = parseInt(document.getElementById('cond-endcol').value);
-        const type = document.getElementById('cond-type').value;
-        const valueStr = document.getElementById('cond-value').value;
-        const bgColor = document.getElementById('cond-bgcolor').value;
-        const textColor = document.getElementById('cond-textcolor').value;
-
-        let condition;
-        const threshold = parseFloat(valueStr.split('-')[0]);
-
-        switch (type) {
-            case 'greaterThan':
-                condition = function (v) {
-                    console.log(v)
-                    const num = Number(v);
-                    return !isNaN(num) && num > threshold;  // 强制转数字 + 排除 NaN
-                };
-                break;
-            case 'lessThan':
-                condition = function (v) {
-                    console.log(v)
-                    const num = Number(v);
-                    return !isNaN(num) && num < threshold;  // 强制转数字 + 排除 NaN
-                };
-                break;
-            case 'equal':
-                condition = function (v) {
-                    console.log(v)
-                    const num = Number(v);
-                    return !isNaN(num) && num === threshold;  // 强制转数字 + 排除 NaN
-                };
-                break;
-            case 'range':
-                const [min, max] = valueStr.split('-').map(Number);
-                condition = function (v) {
-                    console.log(v)
-                    const num = Number(v);
-                    return !isNaN(num) && num >= min && num <= max;
-                };
-                break;
-        }
-
-        sheet.styles.addConditionalRule({
-            range: {topRow: startRow, topCol: startCol, bottomRow: endRow, bottomCol: endCol},
-            condition: condition,
-            style: {
-                backgroundColor: bgColor,
-                color: textColor,
-                bold: true
-            }
-        });
-
-        log(`🎯 条件格式规则已添加 (${type} ${valueStr})`, 'success');
-        renderSheet();
-    }
-
-    function clearConditionalRules() {
-        sheet.conditionalFormat.clearRules();
-        log('🗑️ 所有条件格式规则已清除', 'warn');
-        renderSheet();
-    }
-
-    // ============================================================
-    // 表头配置功能
-    // ============================================================
-    function setColumnHeaders() {
-        const headersText = document.getElementById('col-headers').value;
-        const headers = headersText.split(',').map(h => h.trim());
-
-        sheet.meta.colHeaders = headers;
-        log(`📋 列表头已设置 (${headers.length} 列)`, 'success');
-        renderSheet();
-    }
-
-    function setNestedHeaders() {
-        const nestedText = document.getElementById('nested-headers').value;
-
-        try {
-            const nestedHeaders = JSON.parse(nestedText);
-            sheet.meta.nestedHeaders = nestedHeaders;
-            log(`📑 嵌套表头已设置 (${nestedHeaders.length} 行)`, 'success');
-            renderSheet();
-        } catch (e) {
-            log('❌ JSON 格式错误，请检查输入', 'error');
-        }
-    }
-
-    function setHeaderDimensions() {
-        const width = parseInt(document.getElementById('header-width').value);
-        const height = parseInt(document.getElementById('header-height').value);
-
-        sheet.meta.rowHeaderWidth = width;
-        sheet.meta.headerHeight = height;
-
-        log(`📐 表头尺寸已设置 (${width}x${height})`, 'success');
-        renderSheet();
-    }
-
-    // ============================================================
-    // 列类型功能
-    // ============================================================
-    function applyColumnsConfig() {
-        const configText = document.getElementById('columns-config').value;
-
-        try {
-            const configs = JSON.parse(configText);
-            sheet.meta.applyColumnsConfig(configs);
-            log(`🔧 列配置已应用 (${configs.length} 个配置项)`, 'success');
-            renderSheet();
-        } catch (e) {
-            log('❌ JSON 格式错误: ' + e.message, 'error');
-        }
-    }
-
-    function testFormatCellValue() {
-        const col = parseInt(document.getElementById('test-format-col').value);
-        const value = document.getElementById('test-format-value').value;
-        const numericValue = parseFloat(value) || value;
-
-        try {
-            const formatted = sheet.meta.formatCellValue(col, numericValue);
-            log(`✨ 格式化结果 [列${col}]: ${numericValue} → "${formatted}"`, 'success');
-        } catch (e) {
-            log(`❌ 格式化失败: ${e.message}`, 'error');
-        }
-    }
-
-    // ============================================================
-    // 冻结窗格功能
-    // ============================================================
-    function freezeRows() {
-        const count = parseInt(document.getElementById('freeze-rows').value);
-        sheet.fixedRowsTop = count;
-
-        updateFreezeStatus();
-        log(`❄️ 顶部 ${count} 行已冻结`, 'success');
-        renderSheet();
-    }
-
-    function freezeCols() {
-        const count = parseInt(document.getElementById('freeze-cols').value);
-        sheet.fixedColumnsStart = count;
-
-        updateFreezeStatus();
-        log(`🧊 左侧 ${count} 列已冻结`, 'success');
-        renderSheet();
-    }
-
-    function clearFreeze() {
-        sheet.fixedRowsTop = 0;
-        sheet.fixedColumnsStart = 0;
-
-        updateFreezeStatus();
-        log('🔓 所有冻结已清除', 'warn');
-        renderSheet();
-    }
-
-    function updateFreezeStatus() {
-        document.getElementById('current-frozen-rows').textContent = sheet.fixedRowsTop;
-        document.getElementById('current-frozen-cols').textContent = sheet.fixedColumnsStart;
-        document.getElementById('frozen-height').textContent = Math.round(sheet.frozenRowsHeight);
-        document.getElementById('frozen-width').textContent = Math.round(sheet.frozenColsWidth);
-    }
-
-    // ============================================================
-    // 高级功能
-    // ============================================================
-    function runBatchOperation() {
-        const dataText = document.getElementById('batch-data').value;
-        const lines = dataText.split('\n').filter(line => line.trim());
-
-        sheet.operations.beginBatch('批量导入数据');
-
-        try {
-            lines.forEach((line, index) => {
-                sheet.data.setCell(index, 0, line.trim());
+            
+            sheet.styles.addConditionalRule({
+                range: { topRow: startRow, topCol: startCol, bottomRow: endRow, bottomCol: endCol },
+                condition: condition,
+                style: {
+                    backgroundColor: bgColor,
+                    color: textColor,
+                    bold: true
+                }
             });
-
-            sheet.operations.endBatch();
-            log(`⚡ 批量操作完成 (${lines.length} 条记录，单个历史点)`, 'success');
+            
+            log(`🎯 条件格式规则已添加 (${type} ${valueStr})`, 'success');
             renderSheet();
-        } catch (e) {
-            log(`❌ 批量操作失败: ${e.message}`, 'error');
         }
-    }
 
-    function undoOperation() {
-        sheet.operations.undo();
-        log('↩️ 已撤销上一步操作', 'info');
-        renderSheet();
-    }
-
-    function redoOperation() {
-        sheet.operations.redo();
-        log('↪️ 已重做操作', 'info');
-        renderSheet();
-    }
-
-    function applySheetProperties() {
-        sheet.readOnly = document.getElementById('readonly-mode').checked;
-        sheet.visible = document.getElementById('visible-toggle').checked;
-
-        log(`⚙️ 属性已更新 (readOnly=${sheet.readOnly}, visible=${sheet.visible})`, 'info');
-    }
-
-    function resizeGrid() {
-        const rows = parseInt(document.getElementById('grid-rows').value);
-        const cols = parseInt(document.getElementById('grid-cols').value);
-
-        sheet.operations.setGridSize(rows, cols);
-        log(`📏 网格尺寸调整为 ${rows}行 x ${cols}列`, 'success');
-        updateStats();
-        renderSheet();
-    }
-
-    // ============================================================
-    // 辅助函数
-    // ============================================================
-    function renderSheet() {
-        if (workbook && sheet) {
-            workbook.render();
+        function clearConditionalRules() {
+            sheet.conditionalFormat.clearRules();
+            log('🗑️ 所有条件格式规则已清除', 'warn');
+            renderSheet();
         }
-    }
 
-    function updateStats() {
-        document.getElementById('stat-rows').textContent = sheet.rowColManager.totalRows || 0;
-        document.getElementById('stat-cols').textContent = sheet.rowColManager.totalCols || 0;
-        document.getElementById('stat-merges').textContent = sheet.merges.getAllMerges().length;
-        document.getElementById('stat-styles').textContent = Object.keys(sheet.styleManager._customStyles || {}).length;
-
-        updateFreezeStatus();
-    }
-
-    function log(message, type = 'info') {
-        const logContent = document.getElementById('log-content');
-        const timestamp = new Date().toLocaleTimeString();
-
-        const entry = document.createElement('div');
-        entry.className = `log-entry log-${type}`;
-        entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
-
-        logContent.insertBefore(entry, logContent.firstChild);
-
-        // 保持最多50条日志
-        while (logContent.children.length > 50) {
-            logContent.removeChild(logContent.lastChild);
+        // ============================================================
+        // 表头配置功能
+        // ============================================================
+        function setColumnHeaders() {
+            const headersText = document.getElementById('col-headers').value;
+            const headers = headersText.split(',').map(h => h.trim());
+            
+            sheet.meta.colHeaders = headers;
+            log(`📋 列表头已设置 (${headers.length} 列)`, 'success');
+            renderSheet();
         }
-    }
 
-    function clearLogs() {
-        document.getElementById('log-content').innerHTML = '';
-        log('日志已清空', 'info');
-    }
+        function setNestedHeaders() {
+            const nestedText = document.getElementById('nested-headers').value;
+            
+            try {
+                const nestedHeaders = JSON.parse(nestedText);
+                sheet.meta.nestedHeaders = nestedHeaders;
+                log(`📑 嵌套表头已设置 (${nestedHeaders.length} 行)`, 'success');
+                renderSheet();
+            } catch (e) {
+                log('❌ JSON 格式错误，请检查输入', 'error');
+            }
+        }
 
-    function showLoading(show) {
-        document.getElementById('loading').style.display = show ? 'flex' : 'none';
-    }
+        function setHeaderDimensions() {
+            const width = parseInt(document.getElementById('header-width').value);
+            const height = parseInt(document.getElementById('header-height').value);
+            
+            sheet.meta.rowHeaderWidth = width;
+            sheet.meta.headerHeight = height;
+            
+            log(`📐 表头尺寸已设置 (${width}x${height})`, 'success');
+            renderSheet();
+        }
 
-    // 更新状态栏
-    setInterval(() => {
-        const statusText = document.getElementById('status-text');
-        statusText.textContent = `工作表: ${sheet?.name || '未加载'} | 就绪`;
-    }, 1000);
-</script>
+        // ============================================================
+        // 列类型功能
+        // ============================================================
+        function applyColumnsConfig() {
+            const configText = document.getElementById('columns-config').value;
+            
+            try {
+                const configs = JSON.parse(configText);
+                sheet.meta.applyColumnsConfig(configs);
+                log(`🔧 列配置已应用 (${configs.length} 个配置项)`, 'success');
+                renderSheet();
+            } catch (e) {
+                log('❌ JSON 格式错误: ' + e.message, 'error');
+            }
+        }
+
+        function testFormatCellValue() {
+            const col = parseInt(document.getElementById('test-format-col').value);
+            const value = document.getElementById('test-format-value').value;
+            const numericValue = parseFloat(value) || value;
+            
+            try {
+                const formatted = sheet.meta.formatCellValue(col, numericValue);
+                log(`✨ 格式化结果 [列${col}]: ${numericValue} → "${formatted}"`, 'success');
+            } catch (e) {
+                log(`❌ 格式化失败: ${e.message}`, 'error');
+            }
+        }
+
+        // ============================================================
+        // 冻结窗格功能
+        // ============================================================
+        function freezeRows() {
+            const count = parseInt(document.getElementById('freeze-rows').value);
+            sheet.fixedRowsTop = count;
+            
+            updateFreezeStatus();
+            log(`❄️ 顶部 ${count} 行已冻结`, 'success');
+            renderSheet();
+        }
+
+        function freezeCols() {
+            const count = parseInt(document.getElementById('freeze-cols').value);
+            sheet.fixedColumnsStart = count;
+            
+            updateFreezeStatus();
+            log(`🧊 左侧 ${count} 列已冻结`, 'success');
+            renderSheet();
+        }
+
+        function clearFreeze() {
+            sheet.fixedRowsTop = 0;
+            sheet.fixedColumnsStart = 0;
+            
+            updateFreezeStatus();
+            log('🔓 所有冻结已清除', 'warn');
+            renderSheet();
+        }
+
+        function updateFreezeStatus() {
+            document.getElementById('current-frozen-rows').textContent = sheet.fixedRowsTop;
+            document.getElementById('current-frozen-cols').textContent = sheet.fixedColumnsStart;
+            document.getElementById('frozen-height').textContent = Math.round(sheet.frozenRowsHeight);
+            document.getElementById('frozen-width').textContent = Math.round(sheet.frozenColsWidth);
+        }
+
+        // ============================================================
+        // 高级功能
+        // ============================================================
+        function runBatchOperation() {
+            const dataText = document.getElementById('batch-data').value;
+            const lines = dataText.split('\n').filter(line => line.trim());
+            
+            sheet.operations.beginBatch('批量导入数据');
+            
+            try {
+                lines.forEach((line, index) => {
+                    sheet.data.setCell(index, 0, line.trim());
+                });
+                
+                sheet.operations.endBatch();
+                log(`⚡ 批量操作完成 (${lines.length} 条记录，单个历史点)`, 'success');
+                renderSheet();
+            } catch (e) {
+                log(`❌ 批量操作失败: ${e.message}`, 'error');
+            }
+        }
+
+        function undoOperation() {
+            sheet.operations.undo();
+            log('↩️ 已撤销上一步操作', 'info');
+            renderSheet();
+        }
+
+        function redoOperation() {
+            sheet.operations.redo();
+            log('↪️ 已重做操作', 'info');
+            renderSheet();
+        }
+
+        function applySheetProperties() {
+            sheet.readOnly = document.getElementById('readonly-mode').checked;
+            sheet.visible = document.getElementById('visible-toggle').checked;
+            
+            log(`⚙️ 属性已更新 (readOnly=${sheet.readOnly}, visible=${sheet.visible})`, 'info');
+        }
+
+        function resizeGrid() {
+            const rows = parseInt(document.getElementById('grid-rows').value);
+            const cols = parseInt(document.getElementById('grid-cols').value);
+            
+            sheet.operations.setGridSize(rows, cols);
+            log(`📏 网格尺寸调整为 ${rows}行 x ${cols}列`, 'success');
+            updateStats();
+            renderSheet();
+        }
+
+        // ============================================================
+        // 辅助函数
+        // ============================================================
+        function renderSheet() {
+            if (workbook && sheet) {
+                workbook.render();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('stat-rows').textContent = sheet.rowColManager.totalRows || 0;
+            document.getElementById('stat-cols').textContent = sheet.rowColManager.totalCols || 0;
+            document.getElementById('stat-merges').textContent = sheet.merges.getAllMerges().length;
+            document.getElementById('stat-styles').textContent = Object.keys(sheet.styleManager._customStyles || {}).length;
+            
+            updateFreezeStatus();
+        }
+
+        function log(message, type = 'info') {
+            const logContent = document.getElementById('log-content');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            
+            logContent.insertBefore(entry, logContent.firstChild);
+            
+            // 保持最多50条日志
+            while (logContent.children.length > 50) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('log-content').innerHTML = '';
+            log('日志已清空', 'info');
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+        }
+
+        // 更新状态栏
+        setInterval(() => {
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = `工作表: ${sheet?.name || '未加载'} | 就绪`;
+        }, 1000);
+    </script>
 </body>
 </html>

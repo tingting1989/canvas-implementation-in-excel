@@ -253,7 +253,7 @@ export const EVENT_FLOW_REGISTRY = Object.freeze({
 
     [SHEET_EVENTS.SHEET_SWITCHED]: {
         emitters: ["Workbook"],
-        listeners: ["SortPlugin", "FreezePlugin"],
+        listeners: ["SortPlugin", "FreezePlugin", "ChartPlugin"],
     },
 
     /*
@@ -298,5 +298,21 @@ export const EVENT_FLOW_REGISTRY = Object.freeze({
     [SHEET_EVENTS.WORKBOOK_DESTROY]: {
         emitters: ["Workbook"],
         listeners: ["EventHandler"],
+    },
+
+    /*
+     * ==================== 图表事件流向 ====================
+     */
+    [SHEET_EVENTS.CHART_ADDED]: {
+        emitters: ["ChartManager"],
+        listeners: ["ChartPlugin", "ChartLayer"],
+    },
+    [SHEET_EVENTS.CHART_REMOVED]: {
+        emitters: ["ChartManager"],
+        listeners: ["ChartPlugin", "ChartLayer"],
+    },
+    [SHEET_EVENTS.CHART_UPDATED]: {
+        emitters: ["ChartManager"],
+        listeners: ["ChartPlugin", "ChartLayer"],
     },
 });

@@ -132,224 +132,8 @@ const initApp = () => {
         // startCols: 10,
         // cellPadding: 30,
         sheets: [
-            // {
-            //     name: "Sheet1",
-            //     // readOnly: false,
-            //     data: [
-            //         // ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
-            //         // ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
-            //         // ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
-            //     ],
-            //     // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-            //     rowHeaderWidth: 120,
-            //     rowHeights: [30, 50, 90],
-            //     rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
-            //     maxRows: 200,
-            //     // 嵌套表头配置（支持完整 style 属性）
-            //     nestedHeaders: [
-            //         [
-            //             {
-            //                 label: "基本信息",
-            //                 colspan: 2,
-            //                 style: {
-            //                     backgroundColor: "#FFC000",
-            //                     color: "#FFFFFF",
-            //                     fontWeight: "bold",
-            //                     fontSize: "14px",
-            //                     textAlign: "left",
-            //                 },
-            //             },
-            //             {
-            //                 label: "工作信息",
-            //                 colspan: 4,
-            //                 style: {
-            //                     backgroundColor: "#70AD47",
-            //                     color: "#FFFFFF",
-            //                     fontWeight: "bold",
-            //                     fontSize: "14px",
-            //                     textAlign: "center",
-            //                 },
-            //             },
-            //         ],
-            //         [
-            //             {
-            //                 label: "姓名",
-            //                 style: {
-            //                     backgroundColor: "#FFC000",
-            //                     fontWeight: "bold",
-            //                 },
-            //             },
-            //             "年龄",
-            //             {
-            //                 label: "城市",
-            //                 style: {
-            //                     backgroundColor: "#FFC000",
-            //                     fontWeight: "bold",
-            //                 },
-            //             },
-            //             {
-            //                 label: "部门",
-            //                 style: {
-            //                     fontStyle: "italic",
-            //                     color: "#333333",
-            //                 },
-            //             },
-            //             {
-            //                 label: "薪酬",
-            //                 colspan: 2,
-            //                 style: {
-            //                     backgroundColor: "#ED7D31",
-            //                     color: "#FFFFFF",
-            //                     textAlign: "center",
-            //                 },
-            //             },
-            //         ],
-            //         ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-            //     ],
-            //     textOverflowEllipsis: false,
-            //     cellPadding: 10,
-            //     conditionalStyles: [
-            //         {
-            //             range: {topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25},
-            //             condition: (v) => isNumber(v) && v > 25,
-            //             style: {backgroundColor: "#ffcccc"},
-            //         },
-            //     ],
-            //     cell: [
-            //         {row: 0, col: 0, style: {backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center"}},
-            //         {row: 1, col: 3, disabled: true},
-            //         {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
-            //     ],
-            //     cells: (row, col) => {
-            //         if (row === 0) {
-            //             return {style: {fontWeight: "bold", backgroundColor: "#e8f4fd"}};
-            //         }
-            //         if (col === 0 && row > 0) {
-            //             return {style: {textAlign: "right", fontWeight: "bold"}};
-            //         }
-            //     },
-            //     columns: [
-            //         {type: "text", width: 120, style: {textAlign: "left"}},
-            //         {type: "numeric", width: 80, style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
-            //         {type: "text", width: 100},
-            //         {type: "text", width: 100},
-            //         {type: "numeric", width: 100, style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
-            //         {type: "date", width: 300},
-            //     ],
-            // },
             {
                 name: "Sheet1",
-
-                // 是否只读
-                readOnly: false,
-                headerHeight: 48,
-                textOverflowEllipsis: true,
-
-                // 嵌套表头配置
-                nestedHeaders: [
-                    [
-                        {
-                            label: "原水调节池+废水污泥池运行日报表",
-                            colspan: 14,
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                    ],
-                    [
-                        {
-                            label: "日期：yyyy-mm-dd",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "时间",
-                            colspan: 13,
-
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                    ],
-                    [
-                        {
-                            label: "名称",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "0:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-
-                        {
-                            label: "2:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-
-                        {
-                            label: "4:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "6:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "8:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "10:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "12:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "14:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "16:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "18:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "20:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "22:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                        {
-                            label: "24:00",
-                            style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                        },
-                    ],
-                ],
-
-                // 单元格内容超出单元格宽度时是否显示省略号
-                textOverflowEllipsis: true,
-
-                // 每个单元格的内边距（像素值）
-                cellPadding: 10,
-
-                // 固定行列数上限（使用 maxRows/maxCols）
-                // maxRows: 50,
-                // maxCols: 14,
-
-                colWidths: [600],
-                columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-
-                    // { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
-                    // {type: "textarea", width: 200, maxRows: 4, style: {textAlign: "right"}},
-                ],
-
-                cell: [
-                    // { row: 0, col: 2, type: "trafficLight" }, // 第0行第2列 → trafficLight
-                    // { row: 1, col: 2, type: "select", source: ["正常", "异常"] }, // → select
-                ],
             },
             {
                 name: "Sheet2",
@@ -474,7 +258,7 @@ const initApp = () => {
             "formula",
             "sort",
             "dataValidation",
-            // "chart"
+            "chart"
         ],
         pluginOptions: {
             contextMenu: {
@@ -866,23 +650,40 @@ const initApp = () => {
             }
         }
     });
+    function prepareData() {
+        const chartPlugin = wb.getPlugin('chart');
 
-    // setTimeout(() => {
-    //     // wb.updateSettings({
-    //     //     maxRows: 100,
-    //     // });
-    //     wb.activeSheet.loadData([
-    //         ["姓名", "年龄", "green"],
-    //         ["张三", 30, "yellow"],
-    //         ["李四", 25, "red"],
-    //     ]);
-    //
-    //     // wb.loadData(HOOKS.AFTER_CHANGE, () => {
-    //     //     if (isFunction(window.updateToolbarStyleState)) {
-    //     //         window.updateToolbarStyleState();
-    //     //     }
-    //     // });
-    // }, 1000);
+        console.log(chartPlugin)
+        const s = wb.activeSheet;
+        s.setCell(0, 0, '产品');
+        s.setCell(0, 1, 'Q1');
+        s.setCell(0, 2, 'Q2');
+        s.setCell(0, 3, 'Q3');
+        s.setCell(0, 4, 'Q4');
+        ['A', 'B', 'C', 'D', 'E'].forEach((p, i) => {
+            s.setCell(i + 1, 0, p);
+            s.setCell(i + 1, 1, Math.floor(Math.random() * 1000) + 500);
+            s.setCell(i + 1, 2, Math.floor(Math.random() * 1000) + 500);
+            s.setCell(i + 1, 3, Math.floor(Math.random() * 1000) + 500);
+            s.setCell(i + 1, 4, Math.floor(Math.random() * 1000) + 500);
+        });
+
+        const c = chartPlugin.addBarChart({startRow: 0, startCol: 0, endRow: 5, endCol: 4}, {
+            anchorRow: 8,
+            anchorCol: 1,
+            width: 450,
+            height: 300,
+            style: {title: '销售对比(柱状图)', showLegend: true}
+        });
+        console.log(c)
+
+        if (c) {
+            console.log(`📊 柱状图 ${c.id}`);
+        }
+    }
+    setTimeout(() => {
+        prepareData();
+    }, 1000);
 
     // wb.addHook(HOOKS.AFTER_CHANGE, () => {
     //     if (isFunction(window.updateToolbarStyleState)) {

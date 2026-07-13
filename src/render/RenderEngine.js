@@ -87,6 +87,10 @@ export class RenderEngine extends DOMComponent {
             this.requestRender();
         };
 
+        this.chartLayer.onContentReady = () => {
+            this.requestRender();
+        };
+
         this.compositor.register(this.tileLayer);
         this.compositor.register(this.selectionLayer);
         this.compositor.register(this.frozenLayer);
@@ -186,6 +190,9 @@ export class RenderEngine extends DOMComponent {
 
     render(sheet) {
         if (!sheet || !sheet.visible) return;
+        if (this.#currentSheet !== sheet) {
+            this.chartLayer?.bindSheet(sheet);
+        }
         this.#currentSheet = sheet;
 
         sheet.invalidateFreezeCache();

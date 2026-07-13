@@ -22,8 +22,8 @@
         "npm": ">=8.0.0"
     },
     "scripts": {
-        "dev": "webpack serve --mode development",
-        "build": "webpack --mode production",
+        "dev": "node --max-old-space-size=8192 ./node_modules/webpack/bin/webpack.js serve --mode development",
+        "build": "node --max-old-space-size=8192 ./node_modules/webpack/bin/webpack.js --mode production",
         "build:lib": "webpack --config webpack.lib.config.js",
         "lint": "npm run lint:js",
         "lint:js": "eslint . --fix",
