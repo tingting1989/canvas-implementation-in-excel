@@ -1,9 +1,8 @@
-﻿# FilterPlugin 筛选功能详细设计文档
-
-> 版本：v1.1  
-> 日期：2026-06-30  
-> 作者：项目组  
-> 状态：设计阶段
+﻿> **技术栈**：WebComponent（extends HTMLElement + Disposable）
+> **参考实现**：[SheetTabBarElement.js](../src/ui/sheetTab/SheetTabBarElement.js)、[WebComponent.js](../src/core/WebComponent.js)
+> **版本**：v2.0
+> **日期**：2026-07-14
+> **状态**：设计阶段
 
 ---
 
@@ -23,6 +22,8 @@
 12. [文件结构](#12-文件结构)
 13. [测试计划](#13-测试计划)
 14. [实现路线图](#14-实现路线图)
+15. [附录 A: WebComponent 迁移指南](#附录-a-webcomponent-迁移指南)
+16. [附录 B: Excel 100% 兼容的空值处理实现](#附录-b-excel-100-兼容的空值处理实现)
 
 ---
 
@@ -92,40 +93,64 @@
 
 ### 2.1 功能需求
 
-| 编号 | 需求 | 优先级 | 描述 |
-|------|------|--------|------|
-| F-01 | 列头筛选按钮 | P0 | 在列头区域显示可点击的筛选图标 |
-| F-02 | 值列表筛选 | P0 | 展示列内所有唯一值，支持勾选筛选 |
-| F-03 | 搜索过滤 | P0 | 在值列表中搜索文本 |
-| F-04 | 全选/取消全选 | P0 | 快捷操作所有值的勾选状态 |
-| F-05 | 条件筛选 | P1 | 按条件表达式筛选（等于、包含、大于等） |
-| F-06 | 多列筛选 | P0 | 支持同时对多列设置不同筛选条件 |
-| F-07 | 筛选状态指示 | P0 | 已筛选列的图标变色 |
-| F-08 | 清除筛选 | P0 | 清除单列或全部筛选 |
-| F-09 | 筛选与排序协同 | P1 | 筛选后排序仅作用于可见行 |
-| F-10 | 筛选与冻结协同 | P1 | 冻结行不参与筛选 |
-| F-11 | 筛选行数统计 | P1 | 显示筛选后剩余行数 |
-| F-12 | 自定义筛选条件 | P2 | 支持自定义筛选函数 |
-| F-13 | 虚拟滚动 | P0 | 唯一值超过阈值时自动启用虚拟滚动，避免 DOM 卡顿 |
+#### FR-001: 列头筛选按钮
+- 在每列列头右侧渲染筛选图标（漏斗形状）
+- 图标状态：未激活（灰色）、激活（蓝色）、悬停（浅蓝）
+- 点击图标打开/关闭筛选下拉面板
+
+#### FR-002: 值列表筛选
+- 显示该列所有唯一值（去重）
+- 每个值前有复选框，默认全选
+- 取消勾选某值后，对应行被隐藏
+- 支持"全选"和"取消全选"操作
+
+#### FR-003: 文本搜索
+- 提供搜索输入框，实时过滤值列表
+- 支持模糊匹配（包含即可）
+- 搜索不影响已勾选状态
+
+#### FR-004: 条件筛选
+- 支持以下操作符：等于、不等于、包含、不包含、开头是、结尾是、大于、小于、大于等于、小于等于
+- 条件筛选与值列表筛选互斥（二选一）
+- 支持自定义筛选函数
+
+#### FR-005: 多列筛选
+- 可同时为多列设置筛选条件
+- 行需满足所有列的筛选条件才可见（AND 逻辑）
+
+#### FR-006: 筛选状态持久化
+- 筛选状态在内存中维护
+- 工作表切换时保留各表的筛选状态
 
 ### 2.2 非功能需求
 
-| 编号 | 需求 | 指标 |
-|------|------|------|
-| NF-01 | 性能 | 10万行数据筛选响应 < 200ms |
-| NF-02 | 唯一值提取 | 10万行数据唯一值提取 < 100ms |
-| NF-03 | 下拉面板渲染 | 面板打开/关闭 < 50ms |
-| NF-04 | 内存 | 筛选状态增量内存 < 1MB/列 |
-| NF-05 | 虚拟滚动 | 5000+ 唯一值时面板打开 < 100ms，滚动帧率 > 30fps |
-| NF-06 | DOM 节点数 | 虚拟滚动模式下值列表 DOM 节点数 ≤ 可视区行数 + 缓冲行数 |
+#### NFR-001: 性能要求
+- 唯一值提取：10,000 行数据 < 100ms
+- 面板打开：< 50ms
+- 虚拟滚动：60fps 流畅滚动
+
+#### NFR-002: 内存控制
+- 大数据量时启用虚拟滚动（阈值可配置，默认 200 条）
+- 筛选状态缓存，避免重复计算
+
+#### NFR-003: 用户体验
+- 下拉面板定位准确（不超出视口）
+- 点击外部自动关闭面板
+- ESC 键关闭面板
+- 键盘导航支持（可选）
 
 ---
 
 ## 3. 整体架构设计
 
-### 3.1 架构定位
+### 3.1 技术选型
 
-筛选功能作为独立插件（FilterPlugin）集成到现有插件体系中，遵循 BasePlugin 生命周期模式，与 SortPlugin 架构对齐。
+| 组件 | 技术方案 | 说明 |
+|------|----------|------|
+| UI 组件 | WebComponent | 继承 `WebComponent` 基类，使用 Shadow DOM |
+| 样式隔离 | Shadow DOM | 组件内部样式完全隔离 |
+| 事件管理 | Disposable.trackEvent() | 自动清理事件监听 |
+| 生命周期 | WebComponent 生命周期 | connectedCallback → onConnect → render |
 
 ### 3.2 模块关系图
 
@@ -149,45 +174,61 @@
 │  │                                   ┌──────┴──────┐   │   │
 │  │                                   │FilterDropdown│   │   │
 │  │                                   │ extends      │   │   │
-│  │                                   │ DOMComponent │   │   │
+│  │                                   │ WebComponent │   │   │
 │  │                                   └──────┬──────┘   │   │
 │  │                                          │           │   │
 │  │                              ┌───────────┴────────┐  │   │
 │  │                              │VirtualValueList     │  │   │
-│  │                              │ extends DOMComponent│  │   │
+│  │                              │ extends WebComponent│  │   │
 │  │                              └────────────────────┘  │   │
 │  │  ┌────────────────┐                                │   │
 │  │  │ FilterStrategy │  ← 事件策略                    │   │
 │  │  └────────────────┘                                │   │
-│  └─────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                    渲染层                             │   │
-│  │  ┌──────────────┐  ┌────────────┐  ┌─────────────┐  │   │
-│  │  │ HeaderRenderer│  │HeaderLayer │  │SelectionLayer│  │   │
-│  │  └──────────────┘  └────────────┘  └─────────────┘  │   │
-│  └──────────────────────────────────────────────────────┘   │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │                    数据层                             │   │
-│  │  ┌────────────────┐  ┌──────────────┐               │   │
-│  │  │ ChunkedCellStore│  │HiddenRowsPlugin│              │   │
-│  │  └────────────────┘  └──────────────┘               │   │
-│  └──────────────────────────────────────────────────────┘   │
+│  └────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 3.3 核心设计决策
+### 3.3 核心类关系
 
-| 决策 | 方案 | 原因 |
-|------|------|------|
-| 行隐藏机制 | 复用 HiddenRowsPlugin | 避免重复实现行隐藏逻辑，与现有插件协同 |
-| 筛选状态存储 | FilterState 独立管理 | 与 SortState 对齐，职责清晰 |
-| 下拉面板实现 | DOMComponent 子类 + Portal | 遵循项目 DOM 组件规范，自动管理生命周期 |
-| 唯一值提取 | 延迟计算 + 缓存 | 避免每次打开面板都重新计算 |
-| 筛选执行 | 通过 HiddenRowsPlugin 隐藏行 | 统一行的可见性管理 |
-| DOM 生命周期 | 继承 DOMComponent | 使用 createElement / trackEvent / injectStyle，destroy 自动清理 |
-| 大数据量值列表 | VirtualValueList 虚拟滚动 | 唯一值超过阈值时仅渲染可视区 DOM，避免卡顿 |
+```
+                    ┌──────────────┐
+                    │   BasePlugin  │
+                    └──────┬───────┘
+                           │ extends
+                    ┌──────┴───────┐
+                    │ FilterPlugin  │
+                    └──────┬───────┘
+                           │ contains
+              ┌────────────┼────────────┐
+              │            │            │
+     ┌────────┴────┐ ┌────┴─────┐ ┌───┴────────┐
+     │ FilterState │ │FilterEng │ │FilterUIMgr │
+     └─────────────┘ └──────────┘ └──────┬─────┘
+                                         │ creates
+                                  ┌──────┴────────┐
+                                  │ FilterDropdown │
+                                  │ extends        │
+                                  │ WebComponent   │
+                                  └──────┬─────────┘
+                                         │ contains
+                                  ┌──────┴──────────┐
+                                  │ VirtualValueList │
+                                  │ extends          │
+                                  │ WebComponent     │
+                                  └─────────────────┘
+
+                    ┌──────────────┐
+                    │ WebComponent │
+                    └──────┬───────┘
+                           │ extends
+                    ┌──────┴───────┐
+                    │ HTMLElement   │
+                    └──────┬───────┘
+                           │ uses
+                    ┌──────┴───────┐
+                    │  Disposable   │
+                    └──────────────┘
+```
 
 ---
 
@@ -206,7 +247,6 @@ import { FilterEngine } from "./filter/FilterEngine.js";
 import { FilterUIManager } from "./filter/FilterUIManager.js";
 import { FilterStrategy } from "./filter/FilterStrategy.js";
 import { HOOKS } from "../constants/hookNames.js";
-import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 
 export class FilterPlugin extends BasePlugin {
 
@@ -214,42 +254,38 @@ export class FilterPlugin extends BasePlugin {
         return "filter";
     }
 
-    /** @type {FilterState} 筛选状态管理器 */
+    /** @type {FilterState} */
     #filterState;
 
-    /** @type {FilterEngine} 筛选引擎 */
+    /** @type {FilterEngine} */
     #filterEngine;
 
-    /** @type {FilterUIManager} 筛选 UI 管理器 */
+    /** @type {FilterUIManager} */
     #filterUIManager;
 
-    /** @type {FilterStrategy} 筛选事件策略 */
+    /** @type {FilterStrategy} */
     #filterStrategy;
 
-    /** @type {boolean} 插件是否激活 */
+    /** @type {boolean} */
     #active = false;
 
-    /** @type {Function|null} 列头渲染回调 */
+    /** @type {Function|null} */
     #headerRendererCallback = null;
 
-    /** @type {Function|null} 工作表切换取消订阅 */
-    #sheetSwitchUnsubscribe = null;
-
-    /** @type {object} 合并后的配置 */
+    /** @type {object} */
     #options;
 
     static DEFAULT_OPTIONS = {
         filterButtonVisible: true,
         conditionOperators: [
             "eq", "neq", "contains", "notContains",
-            "startsWith", "endsWith", "gt", "gte", "lt", "lte",
+            "startsWith", "endsWith", "gt", "gte", "lt", "lte"
         ],
-        customFilterFn: null,
         dropdownWidth: 240,
         dropdownMaxHeight: 360,
         virtualScrollThreshold: 200,
         maxUniqueValues: 10000,
-        searchDebounceMs: 150,
+        searchDebounceMs: 150
     };
 
     constructor(workbook) {
@@ -259,13 +295,8 @@ export class FilterPlugin extends BasePlugin {
         this.#filterEngine = null;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // 生命周期
-    // ═══════════════════════════════════════════════════════════════
-
     init(options = {}) {
         super.init(options);
-
         this.#options = { ...FilterPlugin.DEFAULT_OPTIONS, ...options };
 
         const sheet = this.sheet;
@@ -288,8 +319,6 @@ export class FilterPlugin extends BasePlugin {
             this.#reapplyFilter();
         });
 
-        this.#bindSheetSwitchListener(sheet);
-
         this.#active = true;
         this.renderEngine?.invalidateAll();
         this.render();
@@ -298,7 +327,6 @@ export class FilterPlugin extends BasePlugin {
     destroy() {
         this.#filterUIManager.destroy();
         this.#filterState.clearAll();
-        this.#unbindSheetSwitchListener();
         this.#unregisterHeaderRenderer();
         super.destroy();
         this.#active = false;
@@ -316,10 +344,6 @@ export class FilterPlugin extends BasePlugin {
         this.#filterUIManager.closeDropdown();
         this.render();
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // 公共 API
-    // ═══════════════════════════════════════════════════════════════
 
     getFilterState() {
         return this.#filterState;
@@ -342,181 +366,91 @@ export class FilterPlugin extends BasePlugin {
     }
 
     addFilter(col, condition) {
-        const result = this.hooks?.runHook(HOOKS.BEFORE_FILTER, { col, filter: condition });
-        if (result === false) return;
-
         this.#filterState.setColumnFilter(col, condition);
-        this.#applyFilter();
+        this.#reapplyFilter();
     }
 
-    clearColumnFilter(col) {
-        const result = this.hooks?.runHook(HOOKS.BEFORE_FILTER_CLEAR, { col });
-        if (result === false) return;
-
+    removeFilter(col) {
         this.#filterState.removeColumnFilter(col);
-        this.#applyFilter();
-
-        this.hooks?.runHook(HOOKS.AFTER_FILTER_CLEAR, { col });
+        this.#reapplyFilter();
     }
 
     clearAllFilters() {
-        const result = this.hooks?.runHook(HOOKS.BEFORE_FILTER_CLEAR, { col: null });
-        if (result === false) return;
-
         this.#filterState.clearAll();
-        this.#applyFilter();
-
-        this.hooks?.runHook(HOOKS.AFTER_FILTER_CLEAR, { col: null });
+        this.#reapplyFilter();
     }
-
-    getUniqueValues(col) {
-        return this.#filterEngine.extractUniqueValues(col);
-    }
-
-    getFilteredRowCount() {
-        return this.#filterState.visibleRowCount;
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // 私有方法
-    // ═══════════════════════════════════════════════════════════════
 
     #initFilterEngine(sheet) {
-        if (!sheet) return;
-        this.#filterEngine = new FilterEngine(
-            sheet.cellStore,
-            this.#filterState,
-            sheet.rowColManager?.rowCount || 1000
-        );
-    }
-
-    #registerHeaderRenderer() {
-        this.#headerRendererCallback = (ctx, col, x, y, w, h) => {
-            this.#filterUIManager.drawFilterIndicator(ctx, col, x, y, w, h);
-        };
-        this.renderEngine?.headerRenderer?.registerColumnHeaderRenderer(
-            this.#headerRendererCallback
-        );
-    }
-
-    #unregisterHeaderRenderer() {
-        if (this.#headerRendererCallback) {
-            this.renderEngine?.headerRenderer?.unregisterColumnHeaderRenderer(
-                this.#headerRendererCallback
-            );
-            this.#headerRendererCallback = null;
-        }
-    }
-
-    #applyFilter() {
-        if (!this.#filterEngine) return;
-
-        const sheet = this.sheet;
-        const fixedRowsTop = sheet?.fixedRowsTop || 0;
-
-        const hiddenRows = this.#filterEngine.computeHiddenRows({ fixedRowsTop });
-        this.#applyHiddenRows(hiddenRows);
-
-        this.#filterState.setVisibleRowCount(
-            this.#filterEngine.computeVisibleRowCount({ fixedRowsTop })
-        );
-
-        this.renderEngine?.invalidateAll();
-        this.render();
-
-        this.hooks?.runHook(HOOKS.AFTER_FILTER, {
-            columnFilters: this.#filterState.getAllColumnFilters(),
-            hiddenRows,
-            visibleRowCount: this.#filterState.visibleRowCount,
-        });
+        this.#filterEngine = new FilterEngine(sheet, this.#filterState);
     }
 
     #reapplyFilter() {
-        if (this.#filterState.hasActiveFilters()) {
-            this.#applyFilter();
-        }
-    }
+        if (!this.#active || !this.#filterEngine) return;
 
-    #applyHiddenRows(hiddenRows) {
-        const hiddenRowsPlugin = this.workbook.getPlugin("hiddenRows");
+        const hiddenRows = this.#filterEngine.computeHiddenRows();
+        const hiddenRowsPlugin = this.getPlugin("hiddenRows");
         if (hiddenRowsPlugin) {
-            hiddenRowsPlugin.setFilterHiddenRows(hiddenRows);
+            hiddenRowsPlugin.setHiddenRows(hiddenRows);
         }
-    }
 
-    #bindSheetSwitchListener(sheet) {
-        if (!sheet?.bus) return;
-        this.#unbindSheetSwitchListener();
-        this.#sheetSwitchUnsubscribe = sheet.bus.on(
-            SHEET_EVENTS.SHEET_SWITCHED,
-            (envelope) => {
-                const { currentSheet } = envelope.payload;
-                const newSheet = this.workbook.sheets.get(currentSheet);
-                if (newSheet) {
-                    this.#onSheetSwitched(newSheet);
-                }
-            }
-        );
-    }
-
-    #unbindSheetSwitchListener() {
-        if (this.#sheetSwitchUnsubscribe) {
-            this.#sheetSwitchUnsubscribe();
-            this.#sheetSwitchUnsubscribe = null;
-        }
-    }
-
-    #onSheetSwitched(newSheet) {
-        this.#filterUIManager.closeDropdown();
-        this.#filterState.clearAll();
-        this.#initFilterEngine(newSheet);
         this.renderEngine?.invalidateAll();
         this.render();
+    }
+
+    #registerHeaderRenderer() {
+        const headerRenderer = this.renderEngine?.headerRenderer;
+        if (!headerRenderer) return;
+
+        this.#headerRendererCallback = (ctx, col, x, y, w, h) => {
+            this.#filterUIManager.drawFilterIndicator(ctx, col, x, y, w, h);
+        };
+
+        headerRenderer.addDecorator("filter", this.#headerRendererCallback);
+    }
+
+    #unregisterHeaderRenderer() {
+        const headerRenderer = this.renderEngine?.headerRenderer;
+        if (headerRenderer && this.#headerRendererCallback) {
+            headerRenderer.removeDecorator("filter");
+            this.#headerRendererCallback = null;
+        }
     }
 }
 ```
 
 ### 4.2 FilterState
 
-筛选状态管理器，负责维护每列的筛选条件和缓存。
+筛选状态管理器，负责存储和管理所有列的筛选条件。
 
 ```javascript
 // src/plugins/filter/FilterState.js
 
 export class FilterState {
 
-    /** @type {Map<number, ColumnFilter>} 各列的筛选条件 */
+    /** @type {Map<number, ColumnFilter>} */
     #columnFilters = new Map();
 
-    /** @type {Map<number, {values: Array, dirty: boolean}>} 各列唯一值缓存 */
-    #uniqueValueCache = new Map();
+    /** @type {Map<number, Set<string>>} */
+    #uniqueValuesCache = new Map();
 
-    /** @type {number} 筛选后可见行数 */
-    #visibleRowCount = -1;
-
-    /** @type {boolean} 是否启用筛选按钮 */
-    #filterButtonVisible = true;
+    /** @type {Set<number>} */
+    #invalidatedColumns = new Set();
 
     setColumnFilter(col, filter) {
         this.#columnFilters.set(col, filter);
-        this.#invalidateCache(col);
-    }
-
-    getColumnFilter(col) {
-        return this.#columnFilters.get(col);
     }
 
     removeColumnFilter(col) {
         this.#columnFilters.delete(col);
-        this.#invalidateCache(col);
+        this.#uniqueValuesCache.delete(col);
     }
 
-    getAllColumnFilters() {
+    getColumnFilter(col) {
+        return this.#columnFilters.get(col) || null;
+    }
+
+    getAllFilters() {
         return new Map(this.#columnFilters);
-    }
-
-    isColumnFiltered(col) {
-        return this.#columnFilters.has(col) && this.#columnFilters.get(col).active;
     }
 
     hasActiveFilters() {
@@ -525,202 +459,131 @@ export class FilterState {
 
     clearAll() {
         this.#columnFilters.clear();
-        this.#uniqueValueCache.clear();
-        this.#visibleRowCount = -1;
+        this.#uniqueValuesCache.clear();
+        this.#invalidatedColumns.clear();
     }
 
-    getCachedUniqueValues(col) {
-        const cached = this.#uniqueValueCache.get(col);
-        if (cached && !cached.dirty) return cached.values;
-        return null;
+    cacheUniqueValues(col, values) {
+        this.#uniqueValuesCache.set(col, values);
     }
 
-    setCachedUniqueValues(col, values) {
-        this.#uniqueValueCache.set(col, { values, dirty: false });
+    getUniqueValuesCache(col) {
+        return this.#uniqueValuesCache.get(col) || null;
     }
 
-    #invalidateCache(col) {
-        const cached = this.#uniqueValueCache.get(col);
-        if (cached) cached.dirty = true;
-    }
-
-    invalidateColumnCache() {
-        for (const entry of this.#uniqueValueCache.values()) {
-            entry.dirty = true;
+    invalidateColumnCache(col) {
+        if (col !== undefined) {
+            this.#invalidatedColumns.add(col);
+            this.#uniqueValuesCache.delete(col);
+        } else {
+            this.#uniqueValuesCache.clear();
         }
     }
 
-    get visibleRowCount() { return this.#visibleRowCount; }
-    setVisibleRowCount(count) { this.#visibleRowCount = count; }
-
-    get filterButtonVisible() { return this.#filterButtonVisible; }
-    set filterButtonVisible(val) { this.#filterButtonVisible = val; }
+    isCacheValid(col) {
+        return !this.#invalidatedColumns.has(col);
+    }
 }
-
-/**
- * @typedef {Object} ColumnFilter
- * @property {boolean} active - 筛选是否激活
- * @property {"value"|"condition"} type - 筛选类型
- * @property {ValueFilter} [valueFilter] - 值列表筛选配置
- * @property {ConditionFilter} [conditionFilter] - 条件筛选配置
- */
-
-/**
- * @typedef {Object} ValueFilter
- * @property {Set<any>} uncheckedValues - 未勾选的值集合
- * @property {Array<{value: any, count: number}>} allValues - 所有唯一值列表
- */
-
-/**
- * @typedef {Object} ConditionFilter
- * @property {string} operator - 操作符
- * @property {any} value - 比较值
- * @property {string} [logicalOp="and"] - 多条件逻辑运算
- * @property {ConditionFilter} [secondCondition] - 第二个条件
- */
 ```
 
 ### 4.3 FilterEngine
 
-筛选引擎，负责执行筛选逻辑和计算隐藏行。
+筛选引擎，负责计算哪些行应该被隐藏。
 
 ```javascript
 // src/plugins/filter/FilterEngine.js
 
 export class FilterEngine {
 
-    /** @type {import("../../model/store/ChunkedCellStore.js").ChunkedCellStore} */
-    #cellStore;
+    /** @type {object} */
+    #sheet;
 
-    /** @type {import("./FilterState.js").FilterState} */
+    /** @type {FilterState} */
     #filterState;
 
-    /** @type {number} */
-    #rowCount;
-
-    constructor(cellStore, filterState, rowCount) {
-        this.#cellStore = cellStore;
+    constructor(sheet, filterState) {
+        this.#sheet = sheet;
         this.#filterState = filterState;
-        this.#rowCount = rowCount;
     }
 
-    extractUniqueValues(col, options = {}) {
-        const cached = this.#filterState.getCachedUniqueValues(col);
-        if (cached) return cached;
-
-        const { fixedRowsTop = 0, hiddenRows = new Set() } = options;
-        const valueMap = new Map();
-
-        for (let row = fixedRowsTop; row < this.#rowCount; row++) {
-            if (hiddenRows.has(row)) continue;
-
-            const cell = this.#cellStore.getCell(row, col);
-            const value = cell?.value ?? null;
-            const key = value === null ? "__NULL__" : String(value);
-
-            valueMap.set(key, {
-                value,
-                count: (valueMap.get(key)?.count || 0) + 1,
-            });
+    extractUniqueValues(col) {
+        const cached = this.#filterState.getUniqueValuesCache(col);
+        if (cached && this.#filterState.isCacheValid(col)) {
+            return cached;
         }
 
-        const values = Array.from(valueMap.values());
-        values.sort((a, b) => {
-            if (a.value === null) return 1;
-            if (b.value === null) return -1;
-            if (typeof a.value === "number" && typeof b.value === "number") {
-                return a.value - b.value;
-            }
-            return String(a.value).localeCompare(String(b.value));
-        });
+        const values = new Set();
+        const rowCount = this.#sheet.rowCount || 1000;
 
-        this.#filterState.setCachedUniqueValues(col, values);
-        return values;
+        for (let row = 0; row < rowCount; row++) {
+            const cellValue = this.#sheet.getCellValue(row, col);
+            const key = String(cellValue ?? "");
+            values.add(key);
+        }
+
+        const result = Array.from(values).sort();
+        this.#filterState.cacheUniqueValues(col, result);
+        return result;
     }
 
-    computeHiddenRows(options = {}) {
-        const { fixedRowsTop = 0 } = options;
-        const columnFilters = this.#filterState.getAllColumnFilters();
+    computeHiddenRows() {
+        const filters = this.#filterState.getAllFilters();
+        if (filters.size === 0) return new Set();
 
-        if (columnFilters.size === 0) return new Set();
-
+        const rowCount = this.#sheet.rowCount || 1000;
         const hiddenRows = new Set();
 
-        for (let row = fixedRowsTop; row < this.#rowCount; row++) {
-            let shouldHide = false;
+        for (let row = 0; row < rowCount; row++) {
+            let visible = true;
 
-            for (const [col, filter] of columnFilters) {
-                if (!filter.active) continue;
-
-                const cell = this.#cellStore.getCell(row, col);
-                const value = cell?.value ?? null;
-
-                if (!this.#matchesFilter(value, filter)) {
-                    shouldHide = true;
+            for (const [col, filter] of filters) {
+                if (!this.#rowMatchesFilter(row, col, filter)) {
+                    visible = false;
                     break;
                 }
             }
 
-            if (shouldHide) hiddenRows.add(row);
+            if (!visible) {
+                hiddenRows.add(row);
+            }
         }
 
         return hiddenRows;
     }
 
-    computeVisibleRowCount(options = {}) {
-        const hiddenRows = this.computeHiddenRows(options);
-        return this.#rowCount - hiddenRows.size;
-    }
+    #rowMatchesFilter(row, col, filter) {
+        const cellValue = this.#sheet.getCellValue(row, col);
 
-    #matchesFilter(value, filter) {
-        if (filter.type === "value") {
-            return this.#matchesValueFilter(value, filter.valueFilter);
+        if (filter.type === "values") {
+            const key = String(cellValue ?? "");
+            return !filter.uncheckedValues.has(key);
         }
+
         if (filter.type === "condition") {
-            return this.#matchesConditionFilter(value, filter.conditionFilter);
+            return this.#evaluateCondition(cellValue, filter.operator, filter.value);
         }
+
         return true;
     }
 
-    #matchesValueFilter(value, valueFilter) {
-        if (!valueFilter) return true;
-        const key = value === null ? "__NULL__" : String(value);
-        return !valueFilter.uncheckedValues.has(key);
-    }
-
-    #matchesConditionFilter(value, conditionFilter) {
-        if (!conditionFilter) return true;
-
-        const firstResult = this.#evaluateCondition(value, conditionFilter);
-
-        if (conditionFilter.secondCondition) {
-            const secondResult = this.#evaluateCondition(value, conditionFilter.secondCondition);
-            const logicalOp = conditionFilter.logicalOp || "and";
-            return logicalOp === "and"
-                ? firstResult && secondResult
-                : firstResult || secondResult;
-        }
-
-        return firstResult;
-    }
-
-    #evaluateCondition(value, condition) {
-        const { operator, value: compareValue } = condition;
-        const strVal = String(value ?? "").toLowerCase();
-        const strCmp = String(compareValue ?? "").toLowerCase();
+    #evaluateCondition(value, operator, conditionValue) {
+        const numValue = Number(value);
+        const numCondition = Number(conditionValue);
+        const strValue = String(value ?? "").toLowerCase();
+        const strCondition = String(conditionValue ?? "").toLowerCase();
 
         switch (operator) {
-            case "eq":        return value === compareValue;
-            case "neq":       return value !== compareValue;
-            case "contains":  return strVal.includes(strCmp);
-            case "notContains": return !strVal.includes(strCmp);
-            case "startsWith": return strVal.startsWith(strCmp);
-            case "endsWith":  return strVal.endsWith(strCmp);
-            case "gt":        return Number(value) > Number(compareValue);
-            case "gte":       return Number(value) >= Number(compareValue);
-            case "lt":        return Number(value) < Number(compareValue);
-            case "lte":       return Number(value) <= Number(compareValue);
-            default:          return true;
+            case "eq":  return value == conditionValue;
+            case "neq": return value != conditionValue;
+            case "contains": return strValue.includes(strCondition);
+            case "notContains": return !strValue.includes(strCondition);
+            case "startsWith": return strValue.startsWith(strCondition);
+            case "endsWith": return strValue.endsWith(strCondition);
+            case "gt": return numValue > numCondition;
+            case "gte": return numValue >= numCondition;
+            case "lt": return numValue < numCondition;
+            case "lte": return numValue <= numCondition;
+            default: return true;
         }
     }
 }
@@ -743,796 +606,414 @@ export class FilterUIManager {
     /** @type {FilterDropdown|null} */
     #dropdown = null;
 
-    /** @type {Map<string, Path2D>} */
-    #iconCache = new Map();
-
     static ICON_SIZE = 10;
     static ICON_PADDING = 4;
     static ACTIVE_COLOR = "#1890ff";
     static INACTIVE_COLOR = "#bfbfbf";
     static HOVER_COLOR = "#40a9ff";
 
-    /** @type {number} */
-    #hoveredCol = -1;
-
     constructor(plugin) {
         this.#plugin = plugin;
     }
 
-    init(options = {}) {
-        if (typeof Path2D !== "undefined") {
-            this.#preCacheIcons();
-        }
-    }
+    init(options = {}) {}
 
     destroy() {
         this.closeDropdown();
-        this.#iconCache.clear();
     }
 
     drawFilterIndicator(ctx, col, x, y, w, h) {
         const state = this.#plugin.getFilterState();
-        if (!state.filterButtonVisible) return;
+        const options = this.#plugin.getOptions();
 
-        const isActive = state.isColumnFiltered(col);
-        const isHovered = this.#hoveredCol === col;
+        if (!options.filterButtonVisible) return;
 
+        const isActive = state.getColumnFilter(col) !== null;
         const iconSize = FilterUIManager.ICON_SIZE;
         const padding = FilterUIManager.ICON_PADDING;
-        const iconX = x + padding;
+        const iconX = x + w - iconSize - padding;
         const iconY = y + (h - iconSize) / 2;
 
-        let color;
-        if (isActive) {
-            color = FilterUIManager.ACTIVE_COLOR;
-        } else if (isHovered) {
-            color = FilterUIManager.HOVER_COLOR;
-        } else {
-            color = FilterUIManager.INACTIVE_COLOR;
-        }
-
-        this.#drawFunnelIcon(ctx, iconX, iconY, iconSize, color);
+        ctx.save();
+        ctx.fillStyle = isActive ? FilterUIManager.ACTIVE_COLOR : FilterUIManager.INACTIVE_COLOR;
+        ctx.beginPath();
+        this.#drawFunnelIcon(ctx, iconX, iconY, iconSize);
+        ctx.fill();
+        ctx.restore();
     }
 
-    getFilterButtonBounds(col, x, y, w, h) {
-        const iconSize = FilterUIManager.ICON_SIZE;
-        const padding = FilterUIManager.ICON_PADDING;
-        return {
-            x: x + padding - 2,
-            y: y + (h - iconSize) / 2 - 2,
-            width: iconSize + 4,
-            height: iconSize + 4,
-        };
+    #drawFunnelIcon(ctx, x, y, size) {
+        const midX = x + size / 2;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x + size * 0.7, y + size * 0.6);
+        ctx.lineTo(x + size * 0.5, y + size);
+        ctx.lineTo(x + size * 0.3, y + size * 0.6);
+        ctx.closePath();
     }
 
-    setHoveredCol(col) {
-        if (this.#hoveredCol !== col) {
-            this.#hoveredCol = col;
-            this.#plugin.renderEngine?.invalidateAll();
-            this.#plugin.render();
+    handleHeaderClick(e, col, position) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (this.#dropdown && this.#dropdown.col === col) {
+            this.closeDropdown();
+            return;
         }
+
+        this.openDropdown(col, position);
     }
 
     openDropdown(col, position) {
         this.closeDropdown();
 
-        const uniqueValues = this.#plugin.getUniqueValues(col);
-        const currentFilter = this.#plugin.getFilterState().getColumnFilter(col);
+        const engine = this.#plugin.getFilterEngine();
+        const state = this.#plugin.getFilterState();
         const options = this.#plugin.getOptions();
 
-        this.#dropdown = new FilterDropdown({
+        const uniqueValues = engine.extractUniqueValues(col);
+        const currentFilter = state.getColumnFilter(col);
+
+        this.#dropdown = document.createElement("filter-dropdown");
+        document.body.appendChild(this.#dropdown);
+
+        this.#dropdown.show(
             col,
             position,
             uniqueValues,
             currentFilter,
-            virtualScrollThreshold: options.virtualScrollThreshold,
-            onApply: (filter) => {
-                this.#plugin.addFilter(col, filter);
-                this.closeDropdown();
-            },
-            onClear: () => {
-                this.#plugin.clearColumnFilter(col);
-                this.closeDropdown();
-            },
-            onClose: () => {
-                this.closeDropdown();
-            },
-            container: this.#plugin.workbook.container,
-        });
-
-        this.#dropdown.open();
+            options,
+            (filter) => this.#onApply(filter),
+            () => this.#onClear()
+        );
     }
 
     closeDropdown() {
         if (this.#dropdown) {
             this.#dropdown.destroy();
+            this.#dropdown.remove();
             this.#dropdown = null;
         }
     }
 
-    toggleDropdown(col, position) {
-        if (this.#dropdown?.col === col) {
-            this.closeDropdown();
-        } else {
-            this.openDropdown(col, position);
-        }
+    #onApply(filter) {
+        if (!this.#dropdown) return;
+
+        const col = this.#dropdown.col;
+        this.#plugin.getFilterState().setColumnFilter(col, filter);
+        this.#plugin.getFilterEngine().computeHiddenRows();
+        this.closeDropdown();
+        this.#plugin.render();
     }
 
-    isDropdownOpen() {
-        return this.#dropdown !== null;
-    }
+    #onClear() {
+        if (!this.#dropdown) return;
 
-    #preCacheIcons() {
-        const size = FilterUIManager.ICON_SIZE;
-        const path = new Path2D();
-        path.moveTo(0, 0);
-        path.lineTo(size, 0);
-        path.lineTo(size * 0.6, size * 0.5);
-        path.lineTo(size * 0.6, size);
-        path.lineTo(size * 0.4, size);
-        path.lineTo(size * 0.4, size * 0.5);
-        path.closePath();
-        this.#iconCache.set("funnel", path);
-    }
-
-    #drawFunnelIcon(ctx, x, y, size, color) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.fillStyle = color;
-
-        const cached = this.#iconCache.get("funnel");
-        if (cached) {
-            ctx.fill(cached);
-        } else {
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(size, 0);
-            ctx.lineTo(size * 0.6, size * 0.5);
-            ctx.lineTo(size * 0.6, size);
-            ctx.lineTo(size * 0.4, size);
-            ctx.lineTo(size * 0.4, size * 0.5);
-            ctx.closePath();
-            ctx.fill();
-        }
-
-        ctx.restore();
+        const col = this.#dropdown.col;
+        this.#plugin.getFilterState().removeColumnFilter(col);
+        this.#plugin.getFilterEngine().computeHiddenRows();
+        this.closeDropdown();
+        this.#plugin.render();
     }
 }
 ```
 
 ### 4.5 FilterStrategy
 
-筛选事件策略，注册到 EventHandler，处理列头点击事件。
+事件策略类，处理筛选相关的用户交互事件。
 
 ```javascript
 // src/plugins/filter/FilterStrategy.js
 
-import { HIT_TYPE } from "../../constants/hitType.js";
-import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { EventStrategy } from "../../editor/strategies/EventStrategy.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
 
-export class FilterStrategy {
-
-    /** @type {import("../../core/EventHandler.js").EventHandler} */
-    #eventHandler;
+export class FilterStrategy extends EventStrategy {
 
     /** @type {import("../FilterPlugin.js").FilterPlugin} */
     #plugin;
 
     constructor(eventHandler, plugin) {
-        this.#eventHandler = eventHandler;
+        super(eventHandler);
         this.#plugin = plugin;
     }
 
-    getEventHandlers() {
-        return {
-            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: this.#handleMouseDown.bind(this),
-            [DELEGATE_KEYS.CANVAS_MOUSEMOVE]: this.#handleMouseMove.bind(this),
-        };
+    canHandle(eventType) {
+        return eventType === EVENT_NAMES.CLICK;
     }
 
-    #handleMouseDown(event) {
-        if (!this.#plugin.active) return true;
+    handle(e) {
+        const uiManager = this.#plugin.getFilterUIManager();
+        if (!uiManager) return false;
 
-        const hitResult = this.#plugin.renderEngine?.hitTest(event);
-        if (!hitResult || hitResult.type !== HIT_TYPE.COL_HEADER) {
-            return true;
-        }
-
-        const { col, bounds } = hitResult;
-        const uiManager = this.#plugin.getFilterUIManager?.();
-        if (!uiManager) return true;
-
-        const buttonBounds = uiManager.getFilterButtonBounds(
-            col, bounds.x, bounds.y, bounds.width, bounds.height
-        );
-
-        const { offsetX, offsetY } = event;
-        if (
-            offsetX >= buttonBounds.x &&
-            offsetX <= buttonBounds.x + buttonBounds.width &&
-            offsetY >= buttonBounds.y &&
-            offsetY <= buttonBounds.y + buttonBounds.height
-        ) {
-            uiManager.toggleDropdown(col, {
-                x: bounds.x,
-                y: bounds.y + bounds.height,
-            });
+        const target = e.target;
+        if (!target?.classList?.contains("filter-indicator")) {
             return false;
         }
 
-        return true;
-    }
+        const col = parseInt(target.dataset.col, 10);
+        if (isNaN(col)) return false;
 
-    #handleMouseMove(event) {
-        if (!this.#plugin.active) return true;
+        const rect = target.getBoundingClientRect();
+        const position = { x: rect.left, y: rect.bottom };
 
-        const hitResult = this.#plugin.renderEngine?.hitTest(event);
-        if (!hitResult || hitResult.type !== HIT_TYPE.COL_HEADER) {
-            const uiManager = this.#plugin.getFilterUIManager?.();
-            if (uiManager) uiManager.setHoveredCol(-1);
-            return true;
-        }
-
-        const { col, bounds } = hitResult;
-        const uiManager = this.#plugin.getFilterUIManager?.();
-        if (!uiManager) return true;
-
-        const buttonBounds = uiManager.getFilterButtonBounds(
-            col, bounds.x, bounds.y, bounds.width, bounds.height
-        );
-
-        const { offsetX, offsetY } = event;
-        const isOverButton =
-            offsetX >= buttonBounds.x &&
-            offsetX <= buttonBounds.x + buttonBounds.width &&
-            offsetY >= buttonBounds.y &&
-            offsetY <= buttonBounds.y + buttonBounds.height;
-
-        uiManager.setHoveredCol(isOverButton ? col : -1);
-
+        uiManager.handleHeaderClick(e, col, position);
         return true;
     }
 }
 ```
 
-### 4.6 FilterDropdown（继承 DOMComponent）
+### 4.6 FilterDropdown（继承 WebComponent）
 
-筛选下拉面板，**继承 `DOMComponent`**，遵循项目 DOM 组件规范。
-
-> **设计要点**：
-> - 继承 `DOMComponent`（→ `Disposable`），使用 `createElement()` 创建 DOM 元素，destroy 时自动清理
-> - 使用 `trackEvent()` 注册事件监听，destroy 时自动移除
-> - 使用 `injectStyle()` 注入面板样式，destroy 时自动移除
-> - 覆写 `onDestroy()` 释放特有资源
-> - 对齐项目中 `FormulaBar`、`SheetTabBar`、`ValidationPortalManager` 的 DOM 组件模式
-> - 唯一值超过 `virtualScrollThreshold` 时使用 `VirtualValueList` 替代直接渲染
+筛选下拉面板组件，使用 Shadow DOM 实现样式隔离。
 
 ```javascript
 // src/plugins/filter/FilterDropdown.js
 
-import { DOMComponent } from "../../core/DOMComponent.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { WebComponent } from "../../core/WebComponent.js";
 import { VirtualValueList } from "./VirtualValueList.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
 
-export class FilterDropdown extends DOMComponent {
+export class FilterDropdown extends WebComponent {
 
-    /** @type {number} 关联的列索引 */
-    #col;
+    /** @type {number} */
+    #col = -1;
 
-    /** @type {{x: number, y: number}} 面板定位 */
-    #position;
+    /** @type {Array<string>} */
+    #allValues = [];
 
-    /** @type {Array<{value: any, count: number}>} 唯一值列表 */
-    #uniqueValues;
-
-    /** @type {ColumnFilter|null} 当前筛选条件 */
-    #currentFilter;
-
-    /** @type {number} 虚拟滚动阈值 */
-    #virtualScrollThreshold;
-
-    /** @type {Function} 应用筛选回调 */
-    #onApply;
-
-    /** @type {Function} 清除筛选回调 */
-    #onClear;
-
-    /** @type {Function} 关闭面板回调 */
-    #onClose;
-
-    /** @type {HTMLElement} 容器元素 */
-    #container;
-
-    /** @type {HTMLElement|null} 面板根元素（由 createElement 跟踪） */
-    #panelEl = null;
-
-    /** @type {HTMLInputElement|null} 搜索输入框 */
-    #searchInput = null;
-
-    /** @type {HTMLDivElement|null} 值列表容器 */
-    #valueListEl = null;
-
-    /** @type {VirtualValueList|null} 虚拟滚动列表实例 */
-    #virtualList = null;
-
-    /** @type {Set<string>} 当前未勾选的值 */
+    /** @type {Set<string>} */
     #uncheckedValues = new Set();
 
-    /** @type {string} 搜索关键词 */
+    /** @type {string} */
     #searchKeyword = "";
 
-    /** @type {string} 当前条件筛选操作符 */
-    #conditionOperator = "contains";
+    /** @type {string|null} */
+    #conditionOperator = null;
 
-    /** @type {string} 条件筛选值 */
-    #conditionValue = "";
+    /** @type {string|null} */
+    #conditionValue = null;
 
-    /** @type {string} 当前标签页（"values" | "conditions"） */
-    #activeTab = "values";
+    /** @type {"values"|"condition"} */
+    #filterMode = "values";
 
-    /** 面板宽度 */
-    static PANEL_WIDTH = 240;
+    /** @type {VirtualValueList|null} */
+    #virtualList = null;
 
-    /** 面板最大高度 */
-    static PANEL_MAX_HEIGHT = 360;
+    /** @type {Function|null} */
+    #onApply = null;
 
-    /** 值列表可视区高度 */
-    static VALUE_LIST_HEIGHT = 200;
+    /** @type {Function|null} */
+    #onClear = null;
 
-    constructor(options) {
-        super();
-        this.#col = options.col;
-        this.#position = options.position;
-        this.#uniqueValues = options.uniqueValues || [];
-        this.#currentFilter = options.currentFilter || null;
-        this.#virtualScrollThreshold = options.virtualScrollThreshold ?? 200;
-        this.#onApply = options.onApply;
-        this.#onClear = options.onClear;
-        this.#onClose = options.onClose;
-        this.#container = options.container;
-        this.#initUncheckedValues();
-    }
+    /** @type {object|null} */
+    #options = null;
 
     get col() {
         return this.#col;
     }
 
-    /**
-     * 是否应启用虚拟滚动
-     */
-    get #shouldVirtualize() {
-        return this.#getFilteredValues().length > this.#virtualScrollThreshold;
+    show(col, position, allValues, currentFilter, options, onApply, onClear) {
+        this.#col = col;
+        this.#allValues = allValues;
+        this.#options = options;
+        this.#onApply = onApply;
+        this.#onClear = onClear;
+
+        if (currentFilter) {
+            this.#filterMode = currentFilter.type;
+            if (currentFilter.type === "values") {
+                this.#uncheckedValues = new Set(currentFilter.uncheckedValues);
+            } else {
+                this.#conditionOperator = currentFilter.operator;
+                this.#conditionValue = currentFilter.value;
+            }
+        } else {
+            this.#uncheckedValues = new Set();
+            this.#conditionOperator = null;
+            this.#conditionValue = null;
+            this.#filterMode = "values";
+        }
+
+        this.style.position = "fixed";
+        this.style.left = `${position.x}px`;
+        this.style.top = `${position.y}px`;
+        this.style.zIndex = "9999";
+
+        document.body.appendChild(this);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // 生命周期
-    // ═══════════════════════════════════════════════════════════════
+    render() {
+        this.shadowRoot.innerHTML = `
+            <style>
+                .filter-dropdown-panel {
+                    width: ${this.#options?.dropdownWidth || 240}px;
+                    max-height: ${this.#options?.dropdownMaxHeight || 360}px;
+                    background: #fff;
+                    border: 1px solid #d9d9d9;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    font-size: 13px;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+                .filter-dropdown-panel .filter-header {
+                    padding: 8px 12px;
+                    border-bottom: 1px solid #f0f0f0;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .filter-dropdown-panel .filter-tab {
+                    flex: 1;
+                    padding: 8px;
+                    text-align: center;
+                    cursor: pointer;
+                    color: #666;
+                }
+                .filter-dropdown-panel .filter-tab.active {
+                    color: #1890ff;
+                    border-bottom: 2px solid #1890ff;
+                }
+                .filter-dropdown-panel .filter-tab:hover {
+                    background: #f5f5f5;
+                }
+                .filter-dropdown-panel .filter-search-box {
+                    padding: 8px 12px;
+                    border-bottom: 1px solid #f0f0f0;
+                }
+                .filter-dropdown-panel .filter-search-input {
+                    width: 100%;
+                    padding: 4px 8px;
+                    border: 1px solid #d9d9d9;
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                    outline: none;
+                }
+                .filter-dropdown-panel .filter-search-input:focus {
+                    border-color: #1890ff;
+                    box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+                }
+                .filter-dropdown-panel .filter-content {
+                    flex: 1;
+                    overflow-y: auto;
+                    min-height: 100px;
+                    max-height: 250px;
+                }
+                .filter-dropdown-panel .filter-value-item {
+                    padding: 4px 12px;
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                }
+                .filter-dropdown-panel .filter-value-item:hover {
+                    background: #f5f5f5;
+                }
+                .filter-dropdown-panel .filter-value-item input[type="checkbox"] {
+                    margin-right: 8px;
+                }
+                .filter-dropdown-panel .filter-condition-area {
+                    padding: 12px;
+                    display: none;
+                }
+                .filter-dropdown-panel .filter-condition-area.visible {
+                    display: block;
+                }
+                .filter-dropdown-panel .filter-condition-operator,
+                .filter-dropdown-panel .filter-condition-value {
+                    width: 100%;
+                    padding: 4px 8px;
+                    border: 1px solid #d9d9d9;
+                    border-radius: 4px;
+                    box-sizing: border-box;
+                    margin-bottom: 8px;
+                    outline: none;
+                }
+                .filter-dropdown-panel .filter-condition-value:focus {
+                    border-color: #1890ff;
+                    box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+                }
+                .filter-dropdown-panel .filter-footer {
+                    padding: 8px 12px;
+                    border-top: 1px solid #f0f0f0;
+                    display: flex;
+                    justify-content: space-between;
+                }
+                .filter-dropdown-panel .filter-clear-btn {
+                    padding: 4px 12px;
+                    border: 1px solid #d9d9d9;
+                    border-radius: 4px;
+                    background: #fff;
+                    cursor: pointer;
+                }
+                .filter-dropdown-panel .filter-clear-btn:hover {
+                    border-color: #1890ff;
+                    color: #1890ff;
+                }
+                .filter-dropdown-panel .filter-apply-btn {
+                    padding: 4px 12px;
+                    border: 1px solid #1890ff;
+                    border-radius: 4px;
+                    background: #1890ff;
+                    color: #fff;
+                    cursor: pointer;
+                }
+                .filter-dropdown-panel .filter-apply-btn:hover {
+                    background: #40a9ff;
+                }
+            </style>
+            <div class="filter-dropdown-panel">
+                <div class="filter-header">
+                    <span class="filter-tab active" data-mode="values">值</span>
+                    <span class="filter-tab" data-mode="condition">条件</span>
+                </div>
+                <div class="filter-search-box">
+                    <input type="text" class="filter-search-input" placeholder="搜索...">
+                </div>
+                <div class="filter-content"></div>
+                <div class="filter-condition-area">
+                    <select class="filter-condition-operator"></select>
+                    <input type="text" class="filter-condition-value" placeholder="输入值...">
+                </div>
+                <div class="filter-footer">
+                    <button class="filter-clear-btn">清除筛选</button>
+                    <button class="filter-apply-btn">确定</button>
+                </div>
+            </div>
+        `;
+    }
 
-    open() {
-        this.#injectStyles();
-        this.#createPanel();
-        this.#bindEvents();
-        document.body.appendChild(this.#panelEl);
+    onConnect(disposable) {
+        disposable.trackEvent(document, EVENT_NAMES.MOUSEDOWN, this.#handleClickOutside.bind(this));
+        disposable.trackEvent(this.shadowRoot, EVENT_NAMES.CLICK, this.#handlePanelClick.bind(this));
+        disposable.trackEvent(this.shadowRoot, EVENT_NAMES.INPUT, this.#handlePanelInput.bind(this));
+
+        this.#renderContent();
         this.#adjustPosition();
     }
 
-    /**
-     * @override
-     */
-    onDestroy() {
+    onDisconnect() {
         if (this.#virtualList) {
             this.#virtualList.destroy();
             this.#virtualList = null;
         }
-        this.#onApply = null;
-        this.#onClear = null;
-        this.#onClose = null;
-        this.#panelEl = null;
-        this.#searchInput = null;
-        this.#valueListEl = null;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // 样式注入（使用 DOMComponent.injectStyle，destroy 自动移除）
-    // ═══════════════════════════════════════════════════════════════
-
-    #injectStyles() {
-        this.injectStyle("filter-dropdown-styles", `
-            .filter-dropdown-panel {
-                position: fixed;
-                width: ${FilterDropdown.PANEL_WIDTH}px;
-                max-height: ${FilterDropdown.PANEL_MAX_HEIGHT}px;
-                background: #fff;
-                border: 1px solid #e8e8e8;
-                border-radius: 4px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                z-index: 10000;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                font-size: 13px;
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-            }
-            .filter-dropdown-panel .filter-tab {
-                flex: 1;
-                padding: 8px;
-                text-align: center;
-                cursor: pointer;
-                color: #666;
-            }
-            .filter-dropdown-panel .filter-tab.active {
-                color: #1890ff;
-                border-bottom: 2px solid #1890ff;
-            }
-            .filter-dropdown-panel .filter-tab:hover {
-                background: #f5f5f5;
-            }
-            .filter-dropdown-panel .filter-value-item {
-                padding: 4px 12px;
-                display: flex;
-                align-items: center;
-                cursor: pointer;
-            }
-            .filter-dropdown-panel .filter-value-item:hover {
-                background: #f5f5f5;
-            }
-            .filter-dropdown-panel .filter-value-item input[type="checkbox"] {
-                margin: 0;
-            }
-            .filter-dropdown-panel .filter-search-input {
-                width: 100%;
-                padding: 4px 8px;
-                border: 1px solid #d9d9d9;
-                border-radius: 4px;
-                box-sizing: border-box;
-                outline: none;
-            }
-            .filter-dropdown-panel .filter-search-input:focus {
-                border-color: #1890ff;
-                box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
-            }
-            .filter-dropdown-panel .filter-condition-operator,
-            .filter-dropdown-panel .filter-condition-value {
-                width: 100%;
-                padding: 4px 8px;
-                border: 1px solid #d9d9d9;
-                border-radius: 4px;
-                box-sizing: border-box;
-                outline: none;
-            }
-            .filter-dropdown-panel .filter-condition-value:focus {
-                border-color: #1890ff;
-                box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
-            }
-            .filter-dropdown-panel .filter-clear-btn {
-                padding: 4px 12px;
-                border: 1px solid #d9d9d9;
-                border-radius: 4px;
-                background: #fff;
-                cursor: pointer;
-            }
-            .filter-dropdown-panel .filter-clear-btn:hover {
-                border-color: #1890ff;
-                color: #1890ff;
-            }
-            .filter-dropdown-panel .filter-apply-btn {
-                padding: 4px 12px;
-                border: 1px solid #1890ff;
-                border-radius: 4px;
-                background: #1890ff;
-                color: #fff;
-                cursor: pointer;
-            }
-            .filter-dropdown-panel .filter-apply-btn:hover {
-                background: #40a9ff;
-            }
-        `);
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // DOM 构建（使用 DOMComponent.createElement，destroy 自动移除）
-    // ═══════════════════════════════════════════════════════════════
-
-    #createPanel() {
-        this.#panelEl = this.createElement("div", { className: "filter-dropdown-panel" });
-
-        const tabsEl = this.createElement("div", {
-            className: "filter-tabs",
-            style: { display: "flex", borderBottom: "1px solid #e8e8e8" },
-        }, this.#panelEl);
-
-        const valuesTab = this.createElement("div", {
-            className: `filter-tab ${this.#activeTab === "values" ? "active" : ""}`,
-            textContent: "值筛选",
-        }, tabsEl);
-        valuesTab.dataset.tab = "values";
-
-        const conditionsTab = this.createElement("div", {
-            className: `filter-tab ${this.#activeTab === "conditions" ? "active" : ""}`,
-            textContent: "条件筛选",
-        }, tabsEl);
-        conditionsTab.dataset.tab = "conditions";
-
-        if (this.#activeTab === "values") {
-            this.#buildValueTab(this.#panelEl);
-        } else {
-            this.#buildConditionTab(this.#panelEl);
+    #handleClickOutside(e) {
+        const path = e.composedPath();
+        if (!path.includes(this)) {
+            this.destroy();
         }
-
-        const actionsEl = this.createElement("div", {
-            style: {
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "8px 12px",
-                borderTop: "1px solid #e8e8e8",
-            },
-        }, this.#panelEl);
-
-        this.createElement("button", {
-            className: "filter-clear-btn",
-            textContent: "清除筛选",
-        }, actionsEl);
-
-        this.createElement("button", {
-            className: "filter-apply-btn",
-            textContent: "确定",
-        }, actionsEl);
-    }
-
-    /**
-     * 构建值筛选标签页
-     * 根据唯一值数量自动选择直接渲染或虚拟滚动
-     */
-    #buildValueTab(parent) {
-        const searchWrap = this.createElement("div", {
-            style: { padding: "8px 12px", borderBottom: "1px solid #f0f0f0" },
-        }, parent);
-
-        this.#searchInput = this.createElement("input", {
-            className: "filter-search-input",
-            type: "text",
-            placeholder: "搜索...",
-        }, searchWrap);
-        if (this.#searchKeyword) {
-            this.#searchInput.value = this.#searchKeyword;
-        }
-
-        const selectAllWrap = this.createElement("div", {
-            style: {
-                padding: "6px 12px",
-                borderBottom: "1px solid #f0f0f0",
-                display: "flex",
-                alignItems: "center",
-            },
-        }, parent);
-
-        const selectAllCheckbox = this.createElement("input", {
-            className: "filter-select-all",
-            type: "checkbox",
-        }, selectAllWrap);
-        if (this.#uncheckedValues.size === 0) {
-            selectAllCheckbox.checked = true;
-        }
-
-        this.createElement("span", {
-            textContent: "全选",
-            style: { marginLeft: "6px", color: "#333" },
-        }, selectAllWrap);
-
-        // 值列表容器 —— 根据数据量决定渲染模式
-        this.#valueListEl = this.createElement("div", {
-            className: "filter-value-list",
-            style: {
-                maxHeight: `${FilterDropdown.VALUE_LIST_HEIGHT}px`,
-                overflowY: "auto",
-                padding: "4px 0",
-                position: "relative",
-            },
-        }, parent);
-
-        if (this.#shouldVirtualize) {
-            this.#renderVirtualValueList();
-        } else {
-            this.#renderValueItems();
-        }
-
-        const filteredValues = this.#getFilteredValues();
-        this.createElement("div", {
-            textContent: `${filteredValues.length} 个值${this.#shouldVirtualize ? "（虚拟滚动）" : ""}`,
-            style: {
-                padding: "4px 12px",
-                color: "#999",
-                fontSize: "11px",
-                borderTop: "1px solid #f0f0f0",
-            },
-        }, parent);
-    }
-
-    /**
-     * 直接渲染值列表项（少量数据模式）
-     */
-    #renderValueItems() {
-        if (!this.#valueListEl) return;
-        this.#valueListEl.innerHTML = "";
-
-        if (this.#virtualList) {
-            this.#virtualList.destroy();
-            this.#virtualList = null;
-        }
-
-        const filteredValues = this.#getFilteredValues();
-
-        for (const { value, count } of filteredValues) {
-            const key = value === null ? "__NULL__" : String(value);
-            const checked = !this.#uncheckedValues.has(key);
-            const displayValue = value === null ? "(空白)" : String(value);
-
-            const item = this.createElement("div", {
-                className: "filter-value-item",
-            }, this.#valueListEl);
-            item.dataset.value = key;
-
-            const checkbox = this.createElement("input", {
-                type: "checkbox",
-            }, item);
-            checkbox.checked = checked;
-            checkbox.dataset.key = key;
-
-            this.createElement("span", {
-                textContent: displayValue,
-                style: {
-                    marginLeft: "6px",
-                    flex: "1",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                },
-            }, item);
-
-            this.createElement("span", {
-                textContent: String(count),
-                style: { marginLeft: "8px", color: "#999", fontSize: "11px" },
-            }, item);
-        }
-    }
-
-    /**
-     * 渲染虚拟滚动值列表（大数据量模式）
-     */
-    #renderVirtualValueList() {
-        if (this.#virtualList) {
-            this.#virtualList.destroy();
-            this.#virtualList = null;
-        }
-
-        const filteredValues = this.#getFilteredValues();
-
-        this.#virtualList = new VirtualValueList({
-            container: this.#valueListEl,
-            items: filteredValues,
-            uncheckedValues: this.#uncheckedValues,
-            itemHeight: 28,
-            viewportHeight: FilterDropdown.VALUE_LIST_HEIGHT,
-            bufferSize: 5,
-            onToggle: (key) => {
-                if (this.#uncheckedValues.has(key)) {
-                    this.#uncheckedValues.delete(key);
-                } else {
-                    this.#uncheckedValues.add(key);
-                }
-            },
-        });
-
-        this.#virtualList.render();
-    }
-
-    /**
-     * 构建条件筛选标签页
-     */
-    #buildConditionTab(parent) {
-        const wrap = this.createElement("div", {
-            style: { padding: "12px" },
-        }, parent);
-
-        const operators = [
-            { value: "eq", label: "等于" },
-            { value: "neq", label: "不等于" },
-            { value: "contains", label: "包含" },
-            { value: "notContains", label: "不包含" },
-            { value: "startsWith", label: "开头是" },
-            { value: "endsWith", label: "结尾是" },
-            { value: "gt", label: "大于" },
-            { value: "gte", label: "大于等于" },
-            { value: "lt", label: "小于" },
-            { value: "lte", label: "小于等于" },
-        ];
-
-        const selectWrap = this.createElement("div", {
-            style: { marginBottom: "8px" },
-        }, wrap);
-
-        const select = this.createElement("select", {
-            className: "filter-condition-operator",
-        }, selectWrap);
-
-        for (const op of operators) {
-            const option = this.createElement("option", {
-                value: op.value,
-                textContent: op.label,
-            }, select);
-            if (this.#conditionOperator === op.value) {
-                option.selected = true;
-            }
-        }
-
-        this.createElement("input", {
-            className: "filter-condition-value",
-            type: "text",
-            placeholder: "输入值...",
-        }, wrap);
-    }
-
-    // ═══════════════════════════════════════════════════════════════
-    // 事件绑定（使用 DOMComponent.trackEvent，destroy 自动移除）
-    // ═══════════════════════════════════════════════════════════════
-
-    #bindEvents() {
-        this.trackEvent(document, EVENT_NAMES.MOUSEDOWN, (e) => {
-            if (this.#panelEl && !this.#panelEl.contains(e.target)) {
-                this.#onClose?.();
-            }
-        }, true);
-
-        this.trackEvent(this.#panelEl, EVENT_NAMES.CLICK, (e) => {
-            this.#handlePanelClick(e);
-        });
-
-        this.trackEvent(this.#panelEl, EVENT_NAMES.KEYUP, (e) => {
-            this.#handlePanelInput(e);
-        });
     }
 
     #handlePanelClick(e) {
         const target = e.target;
 
         if (target.classList.contains("filter-tab")) {
-            this.#activeTab = target.dataset.tab;
-            this.#rebuildPanel();
-            return;
-        }
-
-        if (target.classList.contains("filter-select-all")) {
-            if (target.checked) {
-                this.#uncheckedValues.clear();
-            } else {
-                this.#uniqueValues.forEach(({ value }) => {
-                    const key = value === null ? "__NULL__" : String(value);
-                    this.#uncheckedValues.add(key);
-                });
-            }
-            if (this.#virtualList) {
-                this.#virtualList.updateUncheckedValues(this.#uncheckedValues);
-            } else {
-                this.#renderValueItems();
-            }
-            return;
-        }
-
-        // 虚拟滚动模式下，勾选由 VirtualValueList 内部处理
-        if (this.#virtualList) return;
-
-        const valueItem = target.closest(".filter-value-item");
-        if (valueItem) {
-            const key = valueItem.dataset.value;
-            const checkbox = valueItem.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                if (target !== checkbox) checkbox.checked = !checkbox.checked;
-                if (checkbox.checked) {
-                    this.#uncheckedValues.delete(key);
-                } else {
-                    this.#uncheckedValues.add(key);
-                }
-            }
+            const mode = target.dataset.mode;
+            this.#switchMode(mode);
             return;
         }
 
@@ -1552,11 +1033,7 @@ export class FilterDropdown extends DOMComponent {
 
         if (target.classList.contains("filter-search-input")) {
             this.#searchKeyword = target.value;
-            if (this.#shouldVirtualize) {
-                this.#renderVirtualValueList();
-            } else {
-                this.#renderValueItems();
-            }
+            this.#renderContent();
             return;
         }
 
@@ -1571,439 +1048,339 @@ export class FilterDropdown extends DOMComponent {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // 筛选应用
-    // ═══════════════════════════════════════════════════════════════
+    #switchMode(mode) {
+        this.#filterMode = mode;
+
+        const tabs = this.shadowRoot.querySelectorAll(".filter-tab");
+        tabs.forEach(tab => {
+            tab.classList.toggle("active", tab.dataset.mode === mode);
+        });
+
+        const contentArea = this.shadowRoot.querySelector(".filter-content");
+        const conditionArea = this.shadowRoot.querySelector(".filter-condition-area");
+
+        if (mode === "values") {
+            contentArea.style.display = "block";
+            conditionArea.classList.remove("visible");
+            this.#renderContent();
+        } else {
+            contentArea.style.display = "none";
+            conditionArea.classList.add("visible");
+            this.#renderConditionOperators();
+        }
+    }
+
+    #getFilteredValues() {
+        let filtered = this.#allValues;
+
+        if (this.#searchKeyword) {
+            const keyword = this.#searchKeyword.toLowerCase();
+            filtered = filtered.filter(v => v.toLowerCase().includes(keyword));
+        }
+
+        return filtered;
+    }
+
+    #shouldVirtualize(values) {
+        const threshold = this.#options?.virtualScrollThreshold || 200;
+        return values.length > threshold;
+    }
+
+    #renderContent() {
+        const contentArea = this.shadowRoot.querySelector(".filter-content");
+        if (!contentArea) return;
+
+        contentArea.innerHTML = "";
+
+        const filteredValues = this.#getFilteredValues();
+
+        if (this.#shouldVirtualize(filteredValues)) {
+            this.#renderVirtualValueList(contentArea, filteredValues);
+        } else {
+            this.#renderDirectValueList(contentArea, filteredValues);
+        }
+    }
+
+    #renderDirectValueList(container, values) {
+        const allChecked = values.every(v => !this.#uncheckedValues.has(v));
+
+        const selectAllItem = document.createElement("div");
+        selectAllItem.className = "filter-value-item";
+        selectAllItem.innerHTML = `
+            <input type="checkbox" ${allChecked ? "checked" : ""}>
+            <span>(全选)</span>
+        `;
+        selectAllItem.addEventListener("click", () => {
+            if (allChecked) {
+                values.forEach(v => this.#uncheckedValues.add(v));
+            } else {
+                values.forEach(v => this.#uncheckedValues.delete(v));
+            }
+            this.#renderContent();
+        });
+        container.appendChild(selectAllItem);
+
+        values.forEach(value => {
+            const item = document.createElement("div");
+            item.className = "filter-value-item";
+            item.dataset.value = value;
+
+            const checked = !this.#uncheckedValues.has(value);
+            item.innerHTML = `
+                <input type="checkbox" ${checked ? "checked" : ""}>
+                <span>${this.escapeHtml(value)}</span>
+            `;
+
+            item.addEventListener("click", () => {
+                if (this.#uncheckedValues.has(value)) {
+                    this.#uncheckedValues.delete(value);
+                } else {
+                    this.#uncheckedValues.add(value);
+                }
+            });
+
+            container.appendChild(item);
+        });
+    }
+
+    #renderVirtualValueList(container, values) {
+        if (this.#virtualList) {
+            this.#virtualList.updateItems(values, this.#uncheckedValues);
+            return;
+        }
+
+        this.#virtualList = document.createElement("virtual-value-list");
+        container.appendChild(this.#virtualList);
+
+        this.#virtualList.init(
+            values,
+            this.#uncheckedValues,
+            (value, checked) => {
+                if (checked) {
+                    this.#uncheckedValues.delete(value);
+                } else {
+                    this.#uncheckedValues.add(value);
+                }
+            }
+        );
+    }
+
+    #renderConditionOperators() {
+        const select = this.shadowRoot.querySelector(".filter-condition-operator");
+        if (!select) return;
+
+        const operators = this.#options?.conditionOperators || [
+            "eq", "neq", "contains", "notContains"
+        ];
+
+        const operatorLabels = {
+            eq: "等于",
+            neq: "不等于",
+            contains: "包含",
+            notContains: "不包含",
+            startsWith: "开头是",
+            endsWith: "结尾是",
+            gt: "大于",
+            gte: "大于等于",
+            lt: "小于",
+            lte: "小于等于"
+        };
+
+        select.innerHTML = "";
+        operators.forEach(op => {
+            const option = document.createElement("option");
+            option.value = op;
+            option.textContent = operatorLabels[op] || op;
+            if (op === this.#conditionOperator) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    }
 
     #applyCurrentFilter() {
         let filter;
 
-        if (this.#activeTab === "values") {
+        if (this.#filterMode === "values") {
             filter = {
-                active: this.#uncheckedValues.size > 0,
-                type: "value",
-                valueFilter: {
-                    uncheckedValues: new Set(this.#uncheckedValues),
-                    allValues: this.#uniqueValues,
-                },
+                type: "values",
+                uncheckedValues: new Set(this.#uncheckedValues)
             };
         } else {
-            if (!this.#conditionValue) return;
             filter = {
-                active: true,
                 type: "condition",
-                conditionFilter: {
-                    operator: this.#conditionOperator,
-                    value: this.#conditionValue,
-                },
+                operator: this.#conditionOperator,
+                value: this.#conditionValue
             };
         }
 
         this.#onApply?.(filter);
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // 辅助方法
-    // ═══════════════════════════════════════════════════════════════
-
-    #initUncheckedValues() {
-        if (this.#currentFilter?.type === "value" && this.#currentFilter.valueFilter) {
-            this.#uncheckedValues = new Set(this.#currentFilter.valueFilter.uncheckedValues);
-        } else if (this.#currentFilter?.type === "condition" && this.#currentFilter.conditionFilter) {
-            this.#conditionOperator = this.#currentFilter.conditionFilter.operator;
-            this.#conditionValue = String(this.#currentFilter.conditionFilter.value ?? "");
-            this.#activeTab = "conditions";
-        }
-    }
-
-    #getFilteredValues() {
-        if (!this.#searchKeyword) return this.#uniqueValues;
-        const keyword = this.#searchKeyword.toLowerCase();
-        return this.#uniqueValues.filter(({ value }) =>
-            String(value ?? "").toLowerCase().includes(keyword)
-        );
-    }
-
     #adjustPosition() {
-        if (!this.#panelEl) return;
-        let { x, y } = this.#position;
-        const containerRect = this.#container?.getBoundingClientRect();
-        if (containerRect) {
-            x += containerRect.left;
-            y += containerRect.top;
-        }
-        if (x + FilterDropdown.PANEL_WIDTH > window.innerWidth) {
-            x = window.innerWidth - FilterDropdown.PANEL_WIDTH - 8;
-        }
-        if (y + FilterDropdown.PANEL_MAX_HEIGHT > window.innerHeight) {
-            y = window.innerHeight - FilterDropdown.PANEL_MAX_HEIGHT - 8;
-        }
-        this.#panelEl.style.left = `${x}px`;
-        this.#panelEl.style.top = `${y}px`;
-    }
+        const rect = this.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
 
-    #rebuildPanel() {
-        if (!this.#panelEl) return;
-
-        if (this.#virtualList) {
-            this.#virtualList.destroy();
-            this.#virtualList = null;
+        if (rect.right > viewportWidth) {
+            this.style.left = `${viewportWidth - rect.width - 10}px`;
         }
 
-        while (this.#panelEl.firstChild) {
-            this.#panelEl.firstChild.remove();
+        if (rect.bottom > viewportHeight) {
+            const headerHeight = this.querySelector(".filter-dropdown-panel")?.offsetHeight || 300;
+            this.style.top = `${rect.top - headerHeight}px`;
         }
-
-        const tabsEl = this.createElement("div", {
-            className: "filter-tabs",
-            style: { display: "flex", borderBottom: "1px solid #e8e8e8" },
-        }, this.#panelEl);
-
-        const valuesTab = this.createElement("div", {
-            className: `filter-tab ${this.#activeTab === "values" ? "active" : ""}`,
-            textContent: "值筛选",
-        }, tabsEl);
-        valuesTab.dataset.tab = "values";
-
-        const conditionsTab = this.createElement("div", {
-            className: `filter-tab ${this.#activeTab === "conditions" ? "active" : ""}`,
-            textContent: "条件筛选",
-        }, tabsEl);
-        conditionsTab.dataset.tab = "conditions";
-
-        if (this.#activeTab === "values") {
-            this.#buildValueTab(this.#panelEl);
-        } else {
-            this.#buildConditionTab(this.#panelEl);
-        }
-
-        const actionsEl = this.createElement("div", {
-            style: {
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "8px 12px",
-                borderTop: "1px solid #e8e8e8",
-            },
-        }, this.#panelEl);
-
-        this.createElement("button", {
-            className: "filter-clear-btn",
-            textContent: "清除筛选",
-        }, actionsEl);
-
-        this.createElement("button", {
-            className: "filter-apply-btn",
-            textContent: "确定",
-        }, actionsEl);
     }
 }
-```
 
-> **DOMComponent 继承带来的优势**：
->
-> | 特性 | 手动管理 | DOMComponent 继承 |
-> |------|----------|-------------------|
-> | DOM 元素创建 | `document.createElement()` | `this.createElement()` — 自动跟踪 |
-> | DOM 元素销毁 | 手动 `el.remove()` | `destroy()` 自动移除所有跟踪元素 |
-> | 事件注册 | `addEventListener()` | `this.trackEvent()` — 自动跟踪 |
-> | 事件销毁 | 手动 `removeEventListener()` | `destroy()` 自动移除所有跟踪事件 |
-> | 样式注入 | 手动创建 `<style>` | `this.injectStyle()` — 自动跟踪 |
-> | 样式销毁 | 手动 `style.remove()` | `destroy()` 自动移除所有注入样式 |
-> | 内存泄漏风险 | 高（易遗漏清理） | 低（框架保障） |
-> | 与项目一致性 | 不一致 | 与 FormulaBar / SheetTabBar / ValidationPortalManager 一致 |
+customElements.define("filter-dropdown", FilterDropdown);
+```
 
 ---
 
 ## 5. 虚拟滚动设计
 
-### 5.1 问题分析
+### 5.1 VirtualValueList 组件
 
-当某列唯一值数量极大（如 5000+ 个不同值）时，直接一次性渲染所有 `<div class="filter-value-item">` 会产生严重的 DOM 渲染性能问题：
-
-| 唯一值数量 | DOM 节点数（每项 3 个） | 首次渲染耗时 | 内存占用 |
-|-----------|------------------------|-------------|---------|
-| 100       | ~300                   | < 10ms      | 极低    |
-| 500       | ~1500                  | ~30ms       | 低      |
-| 2000      | ~6000                  | ~150ms      | 中      |
-| 5000      | ~15000                 | ~400ms      | 高      |
-| 10000     | ~30000                 | ~900ms      | 极高    |
-
-> 5000 个唯一值时，首次渲染 400ms 已超出用户感知阈值（100ms），需要虚拟滚动。
-
-### 5.2 设计方案
-
-采用 **虚拟滚动（Virtual Scrolling）** 策略：仅渲染可视区域内的 DOM 节点，滚动时动态替换。
-
-```
-┌──────────────────────────┐
-│  ☑ Alice                 │ ← 可视区（实际渲染 DOM）
-│  ☑ Bob                   │
-│  ☑ Carol                 │
-│  ☑ David                 │
-│  ☑ Eve                   │    viewportHeight = 200px
-│  ☑ Frank                 │    itemHeight = 28px
-│  ☑ Grace                 │    可视行数 ≈ 7
-│  ☑ Helen                 │
-├──────────────────────────┤ ← 不可见区域（用 padding 模拟高度）
-│  ... (虚拟) ...          │    总高度 = itemCount × itemHeight
-│  ... (虚拟) ...          │    上方 padding = startIndex × itemHeight
-│  ... (虚拟) ...          │    下方 padding = (total - endIndex) × itemHeight
-└──────────────────────────┘
-```
-
-### 5.3 渲染模式切换策略
-
-```
-唯一值数量 ≤ virtualScrollThreshold（默认 200）
-  → 直接渲染模式：一次性创建所有 DOM 节点
-  → 优点：实现简单，无滚动计算开销
-  → 适合：小数据量场景
-
-唯一值数量 > virtualScrollThreshold
-  → 虚拟滚动模式：仅渲染可视区 + 缓冲区
-  → 优点：DOM 节点数恒定，性能稳定
-  → 适合：大数据量场景
-```
-
-### 5.4 VirtualValueList（继承 DOMComponent）
-
-虚拟滚动值列表组件，**继承 `DOMComponent`**，负责大数据量下的值列表渲染。
-
-> **设计要点**：
-> - 继承 `DOMComponent`，使用 `createElement` / `trackEvent`，destroy 自动清理
-> - 仅渲染可视区 + 上下缓冲区的 DOM 节点
-> - 通过上下 padding 模拟完整列表高度，保持滚动条正确
-> - 滚动时通过 `requestAnimationFrame` 节流，避免频繁重绘
-> - 勾选状态由外部 `uncheckedValues` Set 管理，不依赖 DOM
+当唯一值数量超过阈值时，使用虚拟滚动优化性能。
 
 ```javascript
 // src/plugins/filter/VirtualValueList.js
 
-import { DOMComponent } from "../../core/DOMComponent.js";
+import { WebComponent } from "../../core/WebComponent.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 
-export class VirtualValueList extends DOMComponent {
+export class VirtualValueList extends WebComponent {
 
-    /** @type {HTMLElement} 滚动容器 */
-    #container;
+    /** @type {Array<string>} */
+    #items = [];
 
-    /** @type {Array<{value: any, count: number}>} 数据项 */
-    #items;
+    /** @type {Set<string>} */
+    #uncheckedValues = new Set();
 
-    /** @type {Set<string>} 未勾选的值 */
-    #uncheckedValues;
+    /** @type {Function|null} */
+    #onToggle = null;
 
-    /** @type {number} 每行高度（px） */
-    #itemHeight;
+    /** @type {number} */
+    #itemHeight = 28;
 
-    /** @type {number} 可视区高度（px） */
-    #viewportHeight;
+    /** @type {number} */
+    #visibleCount = 10;
 
-    /** @type {number} 上下缓冲区行数 */
-    #bufferSize;
+    /** @type {number} */
+    #scrollTop = 0;
 
-    /** @type {Function} 勾选切换回调 */
-    #onToggle;
-
-    /** @type {HTMLElement} 内容包裹层（撑开总高度） */
-    #contentWrapper = null;
-
-    /** @type {HTMLElement} 实际渲染的节点容器 */
+    /** @type {HTMLElement|null} */
     #renderZone = null;
 
-    /** @type {number} 当前渲染的起始索引 */
-    #startIndex = 0;
-
-    /** @type {number} 当前渲染的结束索引 */
-    #endIndex = 0;
-
-    /** @type {number|null} rAF ID */
-    #rafId = null;
-
-    static SCROLL_RAF_THRESHOLD = 16;
-
-    constructor(options) {
-        super();
-        this.#container = options.container;
-        this.#items = options.items || [];
-        this.#uncheckedValues = options.uncheckedValues || new Set();
-        this.#itemHeight = options.itemHeight || 28;
-        this.#viewportHeight = options.viewportHeight || 200;
-        this.#bufferSize = options.bufferSize || 5;
-        this.#onToggle = options.onToggle;
-    }
-
-    /**
-     * 渲染虚拟列表
-     * 创建两层结构：contentWrapper（撑高度）+ renderZone（放实际 DOM）
-     */
-    render() {
-        this.#container.innerHTML = "";
-
-        this.#contentWrapper = this.createElement("div", {
-            style: {
-                position: "relative",
-                height: `${this.#items.length * this.#itemHeight}px`,
-            },
-        }, this.#container);
-
-        this.#renderZone = this.createElement("div", {
-            className: "filter-virtual-render-zone",
-            style: {
-                position: "absolute",
-                top: "0",
-                left: "0",
-                right: "0",
-            },
-        }, this.#contentWrapper);
-
-        this.#renderVisibleItems(0);
-
-        this.trackEvent(this.#container, EVENT_NAMES.SCROLL, () => {
-            this.#scheduleRender();
-        });
-    }
-
-    /**
-     * 更新未勾选值集合（全选/取消全选时调用）
-     * @param {Set<string>} uncheckedValues
-     */
-    updateUncheckedValues(uncheckedValues) {
-        this.#uncheckedValues = uncheckedValues;
-        this.#renderVisibleItems(this.#container.scrollTop);
-    }
-
-    /**
-     * 更新数据项（搜索过滤后调用）
-     * @param {Array<{value: any, count: number}>} items
-     */
-    updateItems(items) {
+    init(items, uncheckedValues, onToggle) {
         this.#items = items;
-        if (this.#contentWrapper) {
-            this.#contentWrapper.style.height = `${items.length * this.#itemHeight}px`;
-        }
-        this.#container.scrollTop = 0;
-        this.#renderVisibleItems(0);
+        this.#uncheckedValues = new Set(uncheckedValues);
+        this.#onToggle = onToggle;
     }
 
-    /**
-     * @override
-     */
-    onDestroy() {
-        if (this.#rafId !== null) {
-            cancelAnimationFrame(this.#rafId);
-            this.#rafId = null;
-        }
+    updateItems(items, uncheckedValues) {
+        this.#items = items;
+        this.#uncheckedValues = new Set(uncheckedValues);
+        this.#renderVisibleItems();
+    }
+
+    render() {
+        this.shadowRoot.innerHTML = `
+            <style>
+                :host {
+                    display: block;
+                    height: ${this.#visibleCount * this.#itemHeight}px;
+                    overflow-y: auto;
+                    position: relative;
+                }
+                .virtual-container {
+                    height: ${this.#items.length * this.#itemHeight}px;
+                    position: relative;
+                }
+                .virtual-item {
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    height: ${this.#itemHeight}px;
+                    display: flex;
+                    align-items: center;
+                    padding: 0 12px;
+                    cursor: pointer;
+                    box-sizing: border-box;
+                }
+                .virtual-item:hover {
+                    background: #f5f5f5;
+                }
+                .virtual-item input[type="checkbox"] {
+                    margin-right: 8px;
+                }
+            </style>
+            <div class="virtual-container">
+                <div class="virtual-render-zone"></div>
+            </div>
+        `;
+
+        this.#renderZone = this.shadowRoot.querySelector(".virtual-render-zone");
+    }
+
+    onConnect(disposable) {
+        disposable.trackEvent(this, EVENT_NAMES.SCROLL, this.#handleScroll.bind(this));
+        this.#renderVisibleItems();
+    }
+
+    onDisconnect() {
+        this.#items = [];
+        this.#uncheckedValues.clear();
         this.#onToggle = null;
-        this.#contentWrapper = null;
-        this.#renderZone = null;
-        this.#container = null;
     }
 
-    // ═══════════════════════════════════════════════════════════════
-    // 核心渲染逻辑
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * 调度渲染（rAF 节流）
-     */
-    #scheduleRender() {
-        if (this.#rafId !== null) return;
-        this.#rafId = requestAnimationFrame(() => {
-            this.#rafId = null;
-            this.#renderVisibleItems(this.#container.scrollTop);
-        });
+    #handleScroll() {
+        this.#scrollTop = this.scrollTop;
+        this.#renderVisibleItems();
     }
 
-    /**
-     * 渲染可视区内的列表项
-     * @param {number} scrollTop - 当前滚动位置
-     */
-    #renderVisibleItems(scrollTop) {
+    #renderVisibleItems() {
         if (!this.#renderZone) return;
 
-        const totalItems = this.#items.length;
-        const visibleCount = Math.ceil(this.#viewportHeight / this.#itemHeight);
+        const startIndex = Math.floor(this.#scrollTop / this.#itemHeight);
+        const endIndex = Math.min(startIndex + this.#visibleCount + 2, this.#items.length);
 
-        const rawStart = Math.floor(scrollTop / this.#itemHeight);
-        const rawEnd = rawStart + visibleCount;
+        let html = "";
+        for (let i = startIndex; i < endIndex; i++) {
+            const value = this.#items[i];
+            const checked = !this.#uncheckedValues.has(value);
+            const top = i * this.#itemHeight;
 
-        this.#startIndex = Math.max(0, rawStart - this.#bufferSize);
-        this.#endIndex = Math.min(totalItems, rawEnd + this.#bufferSize);
-
-        // 定位渲染区域
-        this.#renderZone.style.transform = `translateY(${this.#startIndex * this.#itemHeight}px)`;
-
-        // 清空并重建 DOM
-        this.#renderZone.innerHTML = "";
-
-        for (let i = this.#startIndex; i < this.#endIndex; i++) {
-            const { value, count } = this.#items[i];
-            const key = value === null ? "__NULL__" : String(value);
-            const checked = !this.#uncheckedValues.has(key);
-            const displayValue = value === null ? "(空白)" : String(value);
-
-            const item = this.createElement("div", {
-                className: "filter-value-item",
-                style: {
-                    height: `${this.#itemHeight}px`,
-                    boxSizing: "border-box",
-                },
-            }, this.#renderZone);
-            item.dataset.value = key;
-            item.dataset.index = String(i);
-
-            const checkbox = this.createElement("input", {
-                type: "checkbox",
-            }, item);
-            checkbox.checked = checked;
-            checkbox.dataset.key = key;
-
-            this.createElement("span", {
-                textContent: displayValue,
-                style: {
-                    marginLeft: "6px",
-                    flex: "1",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                },
-            }, item);
-
-            this.createElement("span", {
-                textContent: String(count),
-                style: { marginLeft: "8px", color: "#999", fontSize: "11px" },
-            }, item);
+            html += `
+                <div class="virtual-item" style="top: ${top}px;" data-value="${this.escapeHtml(value)}">
+                    <input type="checkbox" ${checked ? "checked" : ""}>
+                    <span>${this.escapeHtml(value)}</span>
+                </div>
+            `;
         }
 
-        // 绑定渲染区内的勾选事件（事件委托）
+        this.#renderZone.innerHTML = html;
         this.#bindRenderZoneEvents();
     }
 
-    /**
-     * 为渲染区绑定事件委托
-     * 每次重新渲染后调用，替换旧的事件处理
-     */
     #bindRenderZoneEvents() {
         if (!this.#renderZone) return;
 
-        // 使用事件委托而非逐项绑定，减少事件监听器数量
-        this.trackEvent(this.#renderZone, EVENT_NAMES.CLICK, (e) => {
-            const valueItem = e.target.closest(".filter-value-item");
+        this.#renderZone.addEventListener(EVENT_NAMES.CLICK, (e) => {
+            const valueItem = e.target.closest(".virtual-item");
             if (!valueItem) return;
 
             const key = valueItem.dataset.value;
             const checkbox = valueItem.querySelector('input[type="checkbox"]');
 
             if (e.target === checkbox) {
-                // 点击复选框本身
                 if (checkbox.checked) {
                     this.#uncheckedValues.delete(key);
                 } else {
                     this.#uncheckedValues.add(key);
                 }
             } else {
-                // 点击行其他区域 → 切换复选框
                 checkbox.checked = !checkbox.checked;
                 if (checkbox.checked) {
                     this.#uncheckedValues.delete(key);
@@ -2016,152 +1393,94 @@ export class VirtualValueList extends DOMComponent {
         });
     }
 }
+
+customElements.define("virtual-value-list", VirtualValueList);
 ```
 
-### 5.5 虚拟滚动性能指标
-
-| 指标 | 目标值 | 实现方式 |
-|------|--------|----------|
-| 首次渲染时间 | < 100ms（5000 项） | 仅渲染 ~12 个 DOM 节点（7 可视 + 5 缓冲） |
-| 滚动帧率 | > 30fps | rAF 节流 + 缓冲区减少重绘 |
-| DOM 节点数 | ≤ 可视行数 + 2 × 缓冲行数 | 恒定，与数据量无关 |
-| 内存增量 | < 0.5MB（10000 项） | 仅存储数据引用，不创建 DOM |
-| 搜索后重渲染 | < 50ms | 复用 VirtualValueList.updateItems() |
-
-### 5.6 渲染模式对比
+### 5.2 虚拟滚动原理
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                    直接渲染模式                                   │
-│  唯一值 ≤ 200（virtualScrollThreshold）                          │
-│                                                                  │
-│  ┌──────────────────┐                                            │
-│  │ ☑ Item 1         │ ← 所有项都是真实 DOM                       │
-│  │ ☑ Item 2         │                                            │
-│  │ ☑ ...            │                                            │
-│  │ ☑ Item 200       │                                            │
-│  └──────────────────┘                                            │
-│  DOM 节点数 = itemCount × 3 ≈ 600                                │
-│  滚动：原生滚动，无额外计算                                       │
-└─────────────────────────────────────────────────────────────────┘
+可视区域（280px = 10项 × 28px/项）
+┌─────────────────────────────────┐
+│ Item 50  ← 实际渲染             │
+│ Item 51                         │
+│ ...                             │
+│ Item 60                         │
+└─────────────────────────────────┘
+         ↑ scrollTop
 
-┌─────────────────────────────────────────────────────────────────┐
-│                    虚拟滚动模式                                   │
-│  唯一值 > 200（virtualScrollThreshold）                          │
-│                                                                  │
-│  ┌──────────────────┐                                            │
-│  │ padding-top       │ ← 模拟上方不可见区域                      │
-│  ├──────────────────┤                                            │
-│  │ ☑ Item 195       │ ← 缓冲区（5 行）                          │
-│  │ ☑ Item 196       │                                            │
-│  │ ☑ Item 197       │ ← 可视区（7 行）                          │
-│  │ ☑ Item 198       │                                            │
-│  │ ☑ Item 199       │                                            │
-│  │ ☑ Item 200       │                                            │
-│  │ ☑ Item 201       │                                            │
-│  │ ☑ Item 202       │                                            │
-│  │ ☑ Item 203       │ ← 缓冲区（5 行）                          │
-│  ├──────────────────┤                                            │
-│  │ padding-bottom    │ ← 模拟下方不可见区域                      │
-│  └──────────────────┘                                            │
-│  DOM 节点数 = (visibleCount + 2 × bufferSize) × 3 ≈ 51          │
-│  滚动：rAF 节流，动态替换 DOM                                    │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### 5.7 搜索与虚拟滚动的交互
-
-搜索过滤后，唯一值列表可能从大数据量变为小数据量（或反之），需要动态切换渲染模式：
-
-```
-搜索前：5000 个唯一值 → 虚拟滚动模式
-  ↓ 输入搜索关键词 "A"
-搜索后：120 个匹配值 → 直接渲染模式（低于阈值）
-  ↓ 清空搜索关键词
-搜索后：5000 个唯一值 → 虚拟滚动模式
-
-切换逻辑在 FilterDropdown.#handlePanelInput() 中：
-  每次搜索关键词变化时，重新判断 #shouldVirtualize
-  - 如果之前是虚拟滚动，现在是直接渲染 → destroy VirtualValueList，调用 #renderValueItems()
-  - 如果之前是直接渲染，现在是虚拟滚动 → 调用 #renderVirtualValueList()
-  - 如果模式不变 → 更新数据（VirtualValueList.updateItems() 或 #renderValueItems()）
+完整容器（1400px = 50项 × 28px/项）
+┌─────────────────────────────────┐
+│ Item 0                          │  ← 不渲染
+│ Item 1                          │
+│ ...                             │
+│ Item 49                         │
+│ Item 50  ← startIndex           │  ← 渲染区域
+│ Item 61  ← endIndex             │
+│ ...                             │
+│ Item 99                         │  ← 不渲染
+└─────────────────────────────────┘
 ```
 
 ---
 
 ## 6. 数据流设计
 
-### 6.1 筛选操作数据流
+### 6.1 筛选应用数据流
 
 ```
-用户点击列头筛选按钮
-        │
-        ▼
-  FilterStrategy.#handleMouseDown()
-        │
-        ▼
-  FilterUIManager.toggleDropdown(col, position)
-        │
-        ▼
-  new FilterDropdown({...})   ← 继承 DOMComponent
-        │
-        ▼
-  FilterDropdown.open()
-   ├─ this.injectStyle()      ← DOMComponent 方法，自动跟踪
-   ├─ this.createElement()    ← DOMComponent 方法，自动跟踪
-   └─ this.trackEvent()       ← DOMComponent 方法，自动跟踪
-        │
-        ▼
-  唯一值数量 > virtualScrollThreshold?
-   ├─ Yes → new VirtualValueList({...})   ← 继承 DOMComponent
-   │        └─ 仅渲染可视区 + 缓冲区 DOM
-   └─ No  → 直接渲染所有值列表项
-        │
-        ▼
-  用户操作面板（勾选值 / 设置条件 / 搜索）
+用户点击"确定"按钮
         │
         ▼
   FilterDropdown.#applyCurrentFilter()
         │
         ▼
-  FilterPlugin.addFilter(col, filter)
-   ├─ hooks.runHook(BEFORE_FILTER)
-   ├─ FilterState.setColumnFilter(col, filter)
-   └─ FilterPlugin.#applyFilter()
+  构建 ColumnFilter 对象
+        │
+        ▼
+  FilterUIManager.#onApply(filter)
+        │
+        ▼
+  FilterState.setColumnFilter(col, filter)
+        │
+        ▼
+  FilterPlugin.#reapplyFilter()
         │
         ▼
   FilterEngine.computeHiddenRows()
         │
         ▼
-  HiddenRowsPlugin.setFilterHiddenRows(hiddenRows)
+  HiddenRowsPlugin.setHiddenRows(hiddenRows)
         │
         ▼
-  RenderEngine.invalidateAll() → render()
-        │
-        ▼
-  hooks.runHook(AFTER_FILTER)
+  renderEngine.invalidateAll() → render()
 ```
 
-### 6.2 虚拟滚动渲染数据流
+### 6.2 面板打开数据流
 
 ```
-用户滚动值列表
+用户点击列头筛选按钮
         │
         ▼
-  VirtualValueList scroll 事件
+  FilterUIManager.#handleHeaderClick(e)
         │
         ▼
-  #scheduleRender() → requestAnimationFrame
+  FilterUIManager.#openDropdown(col, position)
         │
         ▼
-  #renderVisibleItems(scrollTop)
-   ├─ 计算 startIndex / endIndex（含缓冲区）
-   ├─ 设置 renderZone.style.transform = translateY(...)
-   ├─ 清空 renderZone
-   └─ 循环创建 startIndex → endIndex 的 DOM 节点
+  FilterEngine.extractUniqueValues(col)
         │
         ▼
-  #bindRenderZoneEvents() → 事件委托
+  document.createElement("filter-dropdown")
+  document.body.appendChild(dropdown)
+        │
+        ▼
+  dropdown.show(col, position, uniqueValues, currentFilter, options)
+        │
+        ▼
+  FilterDropdown.render() → Shadow DOM 模板渲染
+  FilterDropdown.onConnect() → 事件绑定
+  FilterDropdown.#adjustPosition() → 定位
 ```
 
 ### 6.3 搜索过滤数据流
@@ -2180,44 +1499,10 @@ export class VirtualValueList extends DOMComponent {
         │
         ▼
   #shouldVirtualize?（重新判断渲染模式）
-   ├─ 之前虚拟 + 现在直接 → destroy VirtualValueList → #renderValueItems()
+   ├─ 之前虚拟 + 现在直接 → destroy VirtualValueList → #renderDirectValueList()
    ├─ 之前直接 + 现在虚拟 → #renderVirtualValueList()
    ├─ 虚拟 → 虚拟 → VirtualValueList.updateItems(filteredValues)
-   └─ 直接 → 直接 → #renderValueItems()
-```
-
-### 6.4 缓存失效数据流
-
-```
-单元格数据变更
-        │
-        ▼
-  hooks.runHook(AFTER_CHANGE)
-        │
-        ▼
-  FilterState.invalidateColumnCache()
-   └─ 标记所有列的缓存为 dirty
-        │
-        ▼
-  下次 extractUniqueValues() 时重新计算
-```
-
-### 6.5 排序重应用数据流
-
-```
-排序操作完成
-        │
-        ▼
-  hooks.runHook(AFTER_SORT)
-        │
-        ▼
-  FilterPlugin.#reapplyFilter()
-   ├─ FilterState.hasActiveFilters()?
-   │   └─ Yes → FilterPlugin.#applyFilter()
-   │           ├─ FilterEngine.computeHiddenRows()
-   │           ├─ HiddenRowsPlugin.setFilterHiddenRows()
-   │           └─ renderEngine.invalidateAll() → render()
-   └─ No → 无操作
+   └─ 直接 → 直接 → #renderDirectValueList()
 ```
 
 ---
@@ -2226,45 +1511,23 @@ export class VirtualValueList extends DOMComponent {
 
 ### 7.1 新增钩子
 
-在 `src/constants/hookNames.js` 中新增以下钩子：
+| 钩子名 | 触发时机 | 参数 |
+|--------|----------|------|
+| `BEFORE_FILTER_APPLY` | 筛选应用前 | `{ col, filter }` |
+| `AFTER_FILTER_APPLY` | 筛选应用后 | `{ col, filter, hiddenCount }` |
+| `BEFORE_FILTER_CLEAR` | 清除筛选前 | `{ col }` |
+| `AFTER_FILTER_CLEAR` | 清除筛选后 | `{ col }` |
+| `BEFORE_FILTER_DROPDOWN_OPEN` | 面板打开前 | `{ col }` |
+| `AFTER_FILTER_DROPDOWN_OPEN` | 面板打开后 | `{ col, uniqueValues }` |
+
+### 7.2 钩子注册示例
 
 ```javascript
-BEFORE_FILTER: "beforeFilter",
-AFTER_FILTER: "afterFilter",
-BEFORE_FILTER_CLEAR: "beforeFilterClear",
-AFTER_FILTER_CLEAR: "afterFilterClear",
-```
-
-### 7.2 钩子参数定义
-
-| 钩子 | 参数 | 说明 |
-|------|------|------|
-| `beforeFilter` | `{ col: number, filter: ColumnFilter }` | 返回 `false` 阻止筛选 |
-| `afterFilter` | `{ columnFilters: Map, hiddenRows: Set, visibleRowCount: number }` | 筛选完成后的回调 |
-| `beforeFilterClear` | `{ col: number \| null }` | 返回 `false` 阻止清除，`col=null` 表示清除全部 |
-| `afterFilterClear` | `{ col: number \| null }` | 清除完成后的回调 |
-
-### 7.3 使用示例
-
-```javascript
-const workbook = new Workbook(container, {
-    plugins: {
-        filter: true,
-    },
-    hooks: {
-        beforeFilter: ({ col, filter }) => {
-            console.log(`即将筛选列 ${col}`, filter);
-        },
-        afterFilter: ({ columnFilters, hiddenRows, visibleRowCount }) => {
-            console.log(`筛选完成，剩余 ${visibleRowCount} 行可见`);
-        },
-        beforeFilterClear: ({ col }) => {
-            console.log(`即将清除列 ${col} 的筛选`);
-        },
-        afterFilterClear: ({ col }) => {
-            console.log(`已清除列 ${col} 的筛选`);
-        },
-    },
+// 在 FilterPlugin.init() 中注册
+this.addHook(HOOKS.BEFORE_FILTER_APPLY, (payload) => {
+    // 允许拦截或修改筛选条件
+    console.log("即将应用筛选:", payload.col, payload.filter);
+    return payload; // 返回修改后的 payload 或 undefined 取消
 });
 ```
 
@@ -2272,90 +1535,28 @@ const workbook = new Workbook(container, {
 
 ## 8. 与现有插件的交互
 
-### 8.1 HiddenRowsPlugin
+### 8.1 与 HiddenRowsPlugin 的交互
 
-筛选功能通过 `HiddenRowsPlugin` 实现行隐藏，避免重复实现行隐藏逻辑。
+| 场景 | 行为 |
+|------|------|
+| 筛选激活 | 通过 `HiddenRowsPlugin.setHiddenRows()` 设置隐藏行 |
+| 筛选清除 | 重新计算隐藏行（可能其他列仍有筛选） |
+| 排序后 | 重新应用筛选（排序改变行顺序） |
+| 冻结列 | 筛选面板不受冻结影响（DOM 覆盖层） |
 
-```javascript
-const hiddenRowsPlugin = this.workbook.getPlugin("hiddenRows");
-if (hiddenRowsPlugin) {
-    hiddenRowsPlugin.setFilterHiddenRows(hiddenRowsSet);
-}
-```
+### 8.2 与 SortPlugin 的交互
 
-**HiddenRowsPlugin 需要新增的方法**：
+| 场景 | 行为 |
+|------|------|
+| 排序后 | 重新应用筛选（行顺序变化） |
+| 筛选后排序 | 排序仅对可见行生效 |
 
-```javascript
-setFilterHiddenRows(rows) {
-    this.#filterHiddenRows = new Set(rows);
-    this.#mergeHiddenRows();
-}
+### 8.3 与 FreezePlugin 的交互
 
-getFilterHiddenRows() {
-    return new Set(this.#filterHiddenRows);
-}
-
-clearFilterHiddenRows() {
-    this.#filterHiddenRows.clear();
-    this.#mergeHiddenRows();
-}
-
-#mergeHiddenRows() {
-    this.#allHiddenRows = new Set([...this.#manualHiddenRows, ...this.#filterHiddenRows]);
-    this.#notifyChange();
-}
-```
-
-### 8.2 SortPlugin
-
-筛选与排序需要协同工作：
-
-- **筛选后排序**：排序仅作用于可见行（排除被筛选隐藏的行）
-- **排序后筛选**：排序完成后重新应用筛选条件
-
-```javascript
-this.addHook(HOOKS.AFTER_SORT, () => {
-    this.#reapplyFilter();
-});
-```
-
-### 8.3 FreezePlugin
-
-冻结行不参与筛选：
-
-```javascript
-const fixedRowsTop = sheet?.fixedRowsTop || 0;
-for (let row = fixedRowsTop; row < this.#rowCount; row++) {
-    // ... 筛选逻辑
-}
-```
-
-### 8.4 ContextMenuPlugin
-
-右键菜单中添加筛选相关选项：
-
-```javascript
-{
-    key: "filter-by-cell-value",
-    label: "按所选单元格的值筛选",
-    callback: (context) => {
-        const { row, col } = context;
-        const value = sheet.getCell(row, col)?.value;
-        filterPlugin.addFilter(col, {
-            active: true,
-            type: "condition",
-            conditionFilter: { operator: "eq", value },
-        });
-    },
-},
-{
-    key: "clear-filter",
-    label: "清除筛选",
-    callback: () => {
-        filterPlugin.clearAllFilters();
-    },
-},
-```
+| 场景 | 行为 |
+|------|------|
+| 冻结列筛选 | 面板定位需考虑冻结偏移 |
+| 筛选面板层级 | z-index 高于冻结区域 |
 
 ---
 
@@ -2363,11 +1564,7 @@ for (let row = fixedRowsTop; row < this.#rowCount; row++) {
 
 ### 9.1 列头筛选图标渲染
 
-筛选图标通过 `HeaderRenderer` 的列头渲染器机制绘制：
-
-```javascript
-this.renderEngine.headerRenderer.registerColumnHeaderRenderer(callback);
-```
+筛选图标由 `FilterPlugin.#registerHeaderRenderer()` 通过 `HeaderRenderer.addDecorator()` 注入，在列头右侧绘制漏斗图标。
 
 ### 9.2 渲染层级
 
@@ -2375,117 +1572,65 @@ this.renderEngine.headerRenderer.registerColumnHeaderRenderer(callback);
 |------|---------|------|
 | Canvas 底层 | 0 | 单元格内容 |
 | Canvas 列头层 | 1 | 列头文字 + 筛选图标 |
-| DOM 覆盖层 | 9999+ | FilterDropdown 面板（DOMComponent） |
+| Canvas 选择层 | 2 | 选区高亮 |
+| DOM 覆盖层 | 9999+ | FilterDropdown 面板（WebComponent） |
 
-### 9.3 筛选图标绘制细节
+### 9.3 性能优化
 
-```
-列头布局：
-┌─────────────────────────────┐
-│  A          ▼  🔍           │
-│  ← 文字区 →  ← 排序 → ←筛选→│
-└─────────────────────────────┘
-
-图标位置计算：
-  iconX = x + width - ICON_SIZE - ICON_PADDING
-  iconY = y + (height - ICON_SIZE) / 2
-
-颜色规则：
-  - 未筛选 + 未悬停：#bfbfbf（灰色）
-  - 未筛选 + 悬停：  #40a9ff（浅蓝）
-  - 已筛选：         #1890ff（蓝色）
-```
+- 筛选图标使用 Path2D 缓存，避免重复创建
+- 唯一值结果缓存，避免重复计算
+- 虚拟滚动减少 DOM 节点数量
+- Shadow DOM 隔离样式，避免全局污染
 
 ---
 
 ## 10. API 设计
 
-### 10.1 初始化配置
+### 10.1 公共 API
 
 ```javascript
-const workbook = new Workbook(container, {
-    plugins: {
-        filter: {
-            filterButtonVisible: true,
-            conditionOperators: [
-                "eq", "neq", "contains", "notContains",
-                "startsWith", "endsWith", "gt", "gte", "lt", "lte",
-            ],
-            customFilterFn: null,
-            dropdownWidth: 240,
-            dropdownMaxHeight: 360,
-            virtualScrollThreshold: 200,
-            maxUniqueValues: 10000,
-            searchDebounceMs: 150,
-        },
-    },
-});
-```
-
-### 10.2 编程 API
-
-```javascript
+// 获取筛选插件实例
 const filterPlugin = workbook.getPlugin("filter");
 
+// 编程式添加筛选
 filterPlugin.addFilter(0, {
-    active: true,
-    type: "value",
-    valueFilter: {
-        uncheckedValues: new Set(["Alice", "Bob"]),
-        allValues: [
-            { value: "Alice", count: 3 },
-            { value: "Bob", count: 2 },
-            { value: "Carol", count: 1 },
-        ],
-    },
+    type: "values",
+    uncheckedValues: new Set(["Alice", "Bob"])
 });
 
+// 编程式添加条件筛选
 filterPlugin.addFilter(1, {
-    active: true,
     type: "condition",
-    conditionFilter: {
-        operator: "gt",
-        value: 25,
-    },
+    operator: "gt",
+    value: "25"
 });
 
-filterPlugin.addFilter(1, {
-    active: true,
-    type: "condition",
-    conditionFilter: {
-        operator: "gt",
-        value: 20,
-        logicalOp: "and",
-        secondCondition: {
-            operator: "lt",
-            value: 35,
-        },
-    },
-});
+// 移除单列筛选
+filterPlugin.removeFilter(0);
 
-filterPlugin.clearColumnFilter(0);
+// 清除所有筛选
 filterPlugin.clearAllFilters();
 
-const uniqueValues = filterPlugin.getUniqueValues(0);
-const visibleCount = filterPlugin.getFilteredRowCount();
+// 获取当前筛选状态
 const state = filterPlugin.getFilterState();
+console.log(state.getAllFilters());
+
+// 获取筛选引擎
+const engine = filterPlugin.getFilterEngine();
+const uniqueValues = engine.extractUniqueValues(0);
 ```
 
-### 10.3 钩子使用
+### 10.2 事件 API
 
 ```javascript
-const workbook = new Workbook(container, {
-    hooks: {
-        beforeFilter: ({ col, filter }) => {
-            if (col === 0 && filter.type === "condition") {
-                return false;
-            }
-        },
-        afterFilter: ({ columnFilters, hiddenRows, visibleRowCount }) => {
-            document.getElementById("status").textContent =
-                `${visibleRowCount} 条记录`;
-        },
-    },
+// 监听筛选变化
+workbook.on("afterFilterApply", ({ col, filter, hiddenCount }) => {
+    console.log(`列 ${col} 应用筛选，隐藏 ${hiddenCount} 行`);
+});
+
+// 监听筛选清除
+workbook.on("afterFilterClear", ({ col }) => {
+    console.log(`列 ${col} 筛选已清除`);
 });
 ```
 
@@ -2493,23 +1638,27 @@ const workbook = new Workbook(container, {
 
 ## 11. 配置项设计
 
+### 11.1 可配置项
+
 | 配置项 | 类型 | 默认值 | 说明 |
 |--------|------|--------|------|
-| `filterButtonVisible` | `boolean` | `true` | 是否在列头显示筛选按钮 |
-| `conditionOperators` | `string[]` | 全部操作符 | 可用的条件筛选操作符列表 |
-| `customFilterFn` | `Function\|null` | `null` | 自定义筛选函数 `(value, col) => boolean` |
-| `dropdownWidth` | `number` | `240` | 下拉面板宽度（px） |
-| `dropdownMaxHeight` | `number` | `360` | 下拉面板最大高度（px） |
-| `virtualScrollThreshold` | `number` | `200` | 唯一值超过此数量时启用虚拟滚动 |
-| `maxUniqueValues` | `number` | `10000` | 值列表最大显示数量 |
-| `searchDebounceMs` | `number` | `150` | 搜索防抖时间（ms） |
+| `filterButtonVisible` | boolean | true | 是否显示筛选按钮 |
+| `conditionOperators` | string[] | [...] | 支持的条件操作符 |
+| `dropdownWidth` | number | 240 | 下拉面板宽度（px） |
+| `dropdownMaxHeight` | number | 360 | 下拉面板最大高度（px） |
+| `virtualScrollThreshold` | number | 200 | 启用虚拟滚动的阈值 |
+| `maxUniqueValues` | number | 10000 | 最大唯一值数量限制 |
+| `searchDebounceMs` | number | 150 | 搜索防抖时间（ms） |
 
-> **`virtualScrollThreshold` 详解**：
->
-> - 默认值 `200`：200 个唯一值 × 3 个 DOM 节点/项 = 600 个节点，渲染耗时约 30ms，在用户可接受范围内
-> - 设为 `0`：始终启用虚拟滚动（即使只有少量值）
-> - 设为 `Infinity`：始终使用直接渲染模式（不推荐大数据量场景）
-> - 推荐范围：100 ~ 500，根据实际性能测试调整
+### 11.2 配置示例
+
+```javascript
+workbook.initPlugin("filter", {
+    filterButtonVisible: true,
+    virtualScrollThreshold: 500,
+    dropdownWidth: 280
+});
+```
 
 ---
 
@@ -2523,11 +1672,11 @@ src/
 │       ├── FilterState.js                 # 筛选状态管理
 │       ├── FilterEngine.js                # 筛选引擎
 │       ├── FilterUIManager.js             # UI 管理器
-│       ├── FilterDropdown.js              # 下拉面板（继承 DOMComponent）
-│       ├── VirtualValueList.js            # 虚拟滚动值列表（继承 DOMComponent）
+│       ├── FilterDropdown.js              # 下拉面板（继承 WebComponent）
+│       ├── VirtualValueList.js            # 虚拟滚动值列表（继承 WebComponent）
 │       └── FilterStrategy.js              # 事件策略
 ├── core/
-│   ├── DOMComponent.js                    # DOM 组件基类（已有）
+│   ├── WebComponent.js                    # Web Components 基类（已有）
 │   └── Disposable.js                      # 可销毁基类（已有）
 └── constants/
     └── hookNames.js                       # 钩子名称（新增筛选钩子）
@@ -2549,61 +1698,32 @@ test/
 
 ### 13.1 单元测试
 
-| 编号 | 测试用例 | 模块 |
-|------|----------|------|
-| UT-01 | 设置列筛选条件 | FilterState |
-| UT-02 | 移除列筛选条件 | FilterState |
-| UT-03 | 清除所有筛选条件 | FilterState |
-| UT-04 | 唯一值缓存命中/失效 | FilterState |
-| UT-05 | 提取列唯一值（含排序） | FilterEngine |
-| UT-06 | 计算隐藏行（值筛选） | FilterEngine |
-| UT-07 | 计算隐藏行（条件筛选） | FilterEngine |
-| UT-08 | 计算隐藏行（多列筛选） | FilterEngine |
-| UT-09 | 冻结行不参与筛选 | FilterEngine |
-| UT-10 | 条件操作符：等于/不等于 | FilterEngine |
-| UT-11 | 条件操作符：包含/不包含 | FilterEngine |
-| UT-12 | 条件操作符：大于/小于 | FilterEngine |
-| UT-13 | 复合条件（AND/OR） | FilterEngine |
-| UT-14 | 下拉面板创建与销毁 | FilterDropdown |
-| UT-15 | 下拉面板 DOM 自动清理 | FilterDropdown |
-| UT-16 | 下拉面板事件自动移除 | FilterDropdown |
-| UT-17 | 值列表勾选/取消勾选 | FilterDropdown |
-| UT-18 | 搜索过滤值列表 | FilterDropdown |
-| UT-19 | 渲染模式切换（直接→虚拟） | FilterDropdown |
-| UT-20 | 渲染模式切换（虚拟→直接） | FilterDropdown |
-| UT-21 | 虚拟列表渲染正确行数 | VirtualValueList |
-| UT-22 | 虚拟列表滚动后 DOM 更新 | VirtualValueList |
-| UT-23 | 虚拟列表缓冲区计算 | VirtualValueList |
-| UT-24 | 虚拟列表勾选状态同步 | VirtualValueList |
-| UT-25 | 虚拟列表 updateItems 后重渲染 | VirtualValueList |
-| UT-26 | 虚拟列表 destroy 清理验证 | VirtualValueList |
+| 测试模块 | 测试内容 |
+|----------|----------|
+| FilterState | 状态存取、缓存管理、清除操作 |
+| FilterEngine | 唯一值提取、行隐藏计算、条件评估 |
+| FilterDropdown | Shadow DOM 渲染、事件处理、模式切换 |
+| VirtualValueList | 虚拟滚动渲染、滚动事件、项目更新 |
+| FilterStrategy | 事件识别、坐标计算、策略分发 |
 
 ### 13.2 集成测试
 
-| 编号 | 测试用例 |
-|------|----------|
-| IT-01 | 筛选插件初始化与销毁 |
-| IT-02 | 点击列头筛选按钮打开/关闭面板 |
-| IT-03 | 值列表筛选 → 行隐藏 → 渲染更新 |
-| IT-04 | 条件筛选 → 行隐藏 → 渲染更新 |
-| IT-05 | 筛选后排序 → 筛选重应用 |
-| IT-06 | 多列筛选 → 交叉筛选 |
-| IT-07 | 清除筛选 → 行恢复显示 |
-| IT-08 | 大数据量（5000+ 唯一值）虚拟滚动筛选 |
-| IT-09 | 搜索过滤后渲染模式自动切换 |
+| 测试场景 | 测试内容 |
+|----------|----------|
+| 完整筛选流程 | 打开面板 → 设置筛选 → 应用 → 验证隐藏行 |
+| 多列筛选 | 同时设置两列筛选，验证 AND 逻辑 |
+| 搜索过滤 | 输入关键词 → 验证值列表过滤 |
+| 虚拟滚动 | 大数据量 → 验证虚拟滚动启用 |
+| 状态持久化 | 切换工作表 → 验证筛选状态保留 |
 
-### 13.3 BugHunt 测试
+### 13.3 性能测试
 
-| 编号 | 场景 |
-|------|------|
-| BH-01 | 大数据量（10万行）筛选性能 |
-| BH-02 | 虚拟滚动快速滚动时渲染稳定性 |
-| BH-03 | 虚拟滚动搜索过滤后滚动位置重置 |
-| BH-04 | 筛选面板位置溢出屏幕边界 |
-| BH-05 | 筛选面板在滚动/缩放时定位 |
-| BH-06 | 快速连续切换筛选列 |
-| BH-07 | 筛选面板内存泄漏检测（DOMComponent.destroy 验证） |
-| BH-08 | 虚拟滚动模式下全选/取消全选性能 |
+| 测试指标 | 目标值 |
+|----------|--------|
+| 10,000 行数据唯一值提取 | < 100ms |
+| 面板打开响应时间 | < 50ms |
+| 虚拟滚动帧率 | ≥ 55fps |
+| 内存占用增长 | 线性（无泄漏） |
 
 ---
 
@@ -2615,84 +1735,820 @@ test/
 |------|------|------|
 | 1 | FilterState + FilterEngine | 筛选状态管理和筛选计算 |
 | 2 | FilterPlugin 骨架 + FilterStrategy | 插件注册、事件处理 |
-| 3 | FilterDropdown（继承 DOMComponent） | 下拉面板 DOM 构建 |
+| 3 | FilterDropdown（继承 WebComponent） | 下拉面板 DOM 构建 |
 | 4 | FilterUIManager + 列头图标渲染 | 筛选按钮和面板管理 |
 | 5 | 集成测试 + Bug 修复 | 可用的筛选功能 |
 
-### 阶段二：虚拟滚动 + 增强功能（6.5 天）
+### 阶段二：高级功能（3 天）
 
 | 天数 | 任务 | 产出 |
 |------|------|------|
-| 1 | VirtualValueList（继承 DOMComponent） | 虚拟滚动核心实现 |
-| 2 | FilterDropdown 集成虚拟滚动 | 渲染模式自动切换 |
-| 3 | 条件筛选 UI + 逻辑 | 条件筛选完整功能 |
-| 4 | 搜索过滤 + 防抖 + 模式切换 | 值列表搜索与虚拟滚动联动 |
-| 5 | 复合条件筛选 + 排序协同 | AND/OR 逻辑 + 插件交互 |
-| 5.5 | 右键菜单 + 钩子系统完善 | 快捷筛选 + 事件拦截 |
+| 6 | VirtualValueList（继承 WebComponent） | 虚拟滚动优化 |
+| 7 | 条件筛选 + 搜索功能 | 完整筛选能力 |
+| 8 | 钩子系统 + 文档完善 | 可扩展架构 |
 
-### 阶段三：优化与完善（4 天）
+### 阶段三：优化完善（2 天）
 
 | 天数 | 任务 | 产出 |
 |------|------|------|
-| 1 | 虚拟滚动性能调优 | 缓冲区大小、rAF 节流参数调优 |
-| 2 | 面板定位优化 + 键盘导航 | 边界情况 + 无障碍访问 |
-| 3 | 完整测试覆盖 | 测试通过 |
-| 4 | 文档和示例 | 使用指南 |
-
-**总计：15.5 天**
+| 9 | 性能优化 + 边界情况处理 | 生产级质量 |
+| 10 | 全面测试 + 代码审查 | 发布就绪 |
 
 ---
 
-## 附录 A：DOMComponent 继承规范
+## 附录 A: WebComponent 迁移指南
 
-本项目所有 DOM 组件必须继承 `DOMComponent`，遵循以下规范：
+### A.1 从 DOMComponent 迁移到 WebComponent
 
-### A.1 继承链
+| 特性 | DOMComponent（旧） | WebComponent（新） |
+|------|-------------------|-------------------|
+| 基类 | `DOMComponent` | `WebComponent extends HTMLElement` |
+| 样式注入 | `this.injectStyle()` | Shadow DOM `<style>` 标签 |
+| 元素创建 | `this.createElement()` | `document.createElement()` |
+| 事件绑定 | `this.trackEvent()` | `disposable.trackEvent()` |
+| 销毁回调 | `onDestroy()` | `onDisconnect()` |
+| 模板渲染 | 无标准方法 | `render()` 方法 |
+| 组件注册 | 无需 | `customElements.define()` |
+
+### A.2 生命周期对比
 
 ```
-Disposable               ← 基类：销毁生命周期
-  └── DOMComponent       ← DOM 组件基类：createElement / trackEvent / injectStyle
-        ├── FormulaBar               ← 公式栏
-        ├── SheetTabBar              ← 工作表标签栏
-        ├── ValidationPortalManager  ← 数据验证门户管理器
-        ├── FilterDropdown           ← 筛选下拉面板
-        └── VirtualValueList         ← 虚拟滚动值列表
+DOMComponent:
+  constructor → init → trackEvent → injectStyle → onDestroy
+
+WebComponent:
+  constructor → attachShadow → connectedCallback → 
+    → new Disposable() → render() → onConnect(disposable) → 
+    → [异步初始化] → render()
+  
+  销毁:
+  destroy() → shouldDestroy=true → remove() → disconnectedCallback → 
+    → onDisconnect() → disposable.destroy()
 ```
 
-### A.2 必须使用的 API
+### A.3 关键注意事项
 
-| 场景 | 使用方法 | 禁止使用 |
-|------|----------|----------|
-| 创建 DOM 元素 | `this.createElement(tag, attrs, parent)` | `document.createElement()` |
-| 注册事件监听 | `this.trackEvent(target, type, handler)` | `target.addEventListener()` |
-| 注入全局样式 | `this.injectStyle(id, cssText)` | 手动创建 `<style>` |
-| 注入实例样式 | `this.injectInstanceStyle(ns, cssText)` | 手动创建 `<style>` |
-| 销毁特有资源 | `this.onDestroy()` 覆写 | 手动清理 |
-
-### A.3 生命周期保证
-
-调用 `destroy()` 时，`DOMComponent` 保证按以下顺序清理：
-
-1. **`onDestroy()`** — 子类覆写的销毁钩子，释放特有资源
-2. **移除所有跟踪的 DOM 元素** — `createElement()` 创建的元素自动 `remove()`
-3. **移除所有注入的 `<style>`** — `injectStyle()` 注入的样式自动 `remove()`
-4. **移除所有跟踪的事件监听** — `trackEvent()` 注册的事件自动 `removeEventListener()`
-5. **级联销毁子 Disposable** — `trackChild()` 注册的子对象自动 `destroy()`
+1. **Shadow DOM 隔离**：样式只作用于组件内部，不会影响外部
+2. **事件穿透**：使用 `composed: true` 和 `bubbles: true` 让事件穿透 Shadow DOM
+3. **资源清理**：在 `onDisconnect()` 中清理所有子组件和引用
+4. **显式销毁**：必须调用 `destroy()` 而非直接 `remove()` 来触发完整清理
 
 ---
 
-## 附录 B：与 Handsontable 筛选功能对比
+---
 
-| 功能 | Handsontable | 本项目 |
-|------|-------------|--------|
-| 值列表筛选 | ✅ | ✅ |
-| 条件筛选 | ✅（付费） | ✅（免费） |
-| 多列筛选 | ✅ | ✅ |
-| 搜索过滤 | ✅ | ✅ |
-| 复合条件 | ✅（付费） | ✅（免费） |
-| 自定义筛选函数 | ✅ | ✅ |
-| 筛选与排序协同 | ✅ | ✅ |
-| 筛选指示器 | ✅ | ✅ |
-| API 编程筛选 | ✅ | ✅ |
-| 钩子拦截 | ✅ | ✅ |
-| 虚拟滚动值列表 | ❌ | ✅ |
+## 附录 B: Excel 100% 兼容的空值处理实现
+
+### B.1 空值定义与分类
+
+#### B.1.1 空值类型定义
+
+```javascript
+// src/plugins/filter/NullValueTypes.js
+
+export const NULL_VALUE_TYPES = {
+    BLANK: "blank",
+    EMPTY_STRING: "emptyString",
+    NULL: "null",
+    UNDEFINED: "undefined"
+};
+
+export class NullValueHandler {
+
+    static BLANK_DISPLAY = "(空白)";
+    static NULL_KEY = "__EXCEL_NULL__";
+
+    static isNullValue(value) {
+        return value === null ||
+               value === undefined ||
+               value === "" ||
+               (typeof value === "string" && value.trim() === "");
+    }
+
+    static getNullType(value) {
+        if (value === null) return NULL_VALUE_TYPES.NULL;
+        if (value === undefined) return NULL_VALUE_TYPES.UNDEFINED;
+        if (value === "") return NULL_VALUE_TYPES.EMPTY_STRING;
+        if (typeof value === "string" && value.trim() === "") return NULL_VALUE_TYPES.BLANK;
+        return null;
+    }
+
+    static normalizeToKey(value) {
+        if (this.isNullValue(value)) {
+            return this.NULL_KEY;
+        }
+        return String(value);
+    }
+
+    static formatForDisplay(value) {
+        if (this.isNullValue(value)) {
+            return this.BLANK_DISPLAY;
+        }
+        return String(value);
+    }
+
+    static isBlankOnly(value) {
+        return value === "" || 
+               (typeof value === "string" && value.trim() === "");
+    }
+}
+```
+
+### B.2 Excel 空值行为规范
+
+#### B.2.1 值列表中的空值显示规则
+
+| 场景 | Excel 行为 | 实现方案 |
+|------|-----------|----------|
+| 唯一值列表 | 显示 "(空白)" 项，始终排在最后 | 使用 `NULL_KEY` 作为内部标识 |
+| 默认状态 | "(空白)" 默认勾选 | 初始化时 `uncheckedValues` 不包含 `NULL_KEY` |
+| 取消勾选 | 隐藏所有空值行 | 将 `NULL_KEY` 加入 `uncheckedValues` |
+| 全选/取消全选 | 影响 "(空白)" 项 | 统一处理，无特殊逻辑 |
+
+**UI 示例：**
+```
+┌──────────────────────────┐
+│  🔍 搜索...              │
+├──────────────────────────┤
+│  ☑ (全选)                │
+├──────────────────────────┤
+│  ☑ Alice                 │
+│  ☑ Bob                   │
+│  ☑ Carol                 │
+│  ☑ (空白)                │  ← 始终排在最后
+├──────────────────────────┤
+│  [清除筛选]    [确定]     │
+└──────────────────────────┘
+```
+
+#### B.2.2 条件筛选的空值匹配规则
+
+| 操作符 | 输入值 | 空值单元格匹配结果 | 说明 |
+|--------|--------|-------------------|------|
+| **等于** (=) | 空 | ✅ 匹配 | 仅匹配真正的空单元格 |
+| **等于** (=) | 非空 | ❌ 不匹配 | 空单元格不等于任何非空值 |
+| **不等于** (<>) | 空 | ❌ 不匹配 | 空单元格被排除 |
+| **不等于** (<>) | 非空 | ✅ 匹配 | 空单元格不等于该值 |
+| **包含** | 任意 | ❌ 不匹配 | 空字符串不包含任何内容 |
+| **不包含** | 任意 | ✅ 匹配 | 空字符串不包含任何内容 |
+| **开头是** | 任意 | ❌ 不匹配 | 空字符串没有开头 |
+| **结尾是** | 任意 | ❌ 不匹配 | 空字符串没有结尾 |
+| **大于** (> ) | 数值 | ❌ 不匹配 | 无法数值比较 |
+| **小于** (< ) | 数值 | ❌ 不匹配 | 无法数值比较 |
+| **大于等于** (>=) | 数值 | ❌ 不匹配 | 无法数值比较 |
+| **小于等于** (<=) | 数值 | ❌ 不匹配 | 无法数值比较 |
+
+**特殊场景处理：**
+
+1. **"等于空" 筛选**：
+   ```javascript
+   if (operator === "eq" && (conditionValue == null || conditionValue === "")) {
+       return NullValueHandler.isNullValue(cellValue);
+   }
+   ```
+
+2. **"不等于空" 筛选**：
+   ```javascript
+   if (operator === "neq" && (conditionValue == null || conditionValue === "")) {
+       return !NullValueHandler.isNullValue(cellValue);
+   }
+   ```
+
+3. **文本操作符 + 空单元格**：
+   ```javascript
+   const textOperators = ["contains", "notContains", "startsWith", "endsWith"];
+   if (textOperators.includes(operator) && NullValueHandler.isNullValue(cellValue)) {
+       // 根据上表返回固定结果
+       return operator === "notContains";
+   }
+   ```
+
+4. **数值操作符 + 空单元格**：
+   ```javascript
+   const numericOperators = ["gt", "gte", "lt", "lte"];
+   if (numericOperators.includes(operator) && NullValueHandler.isNullValue(cellValue)) {
+       return false; // 空单元格永远不满足数值条件
+   }
+   ```
+
+### B.3 排序时的空值位置
+
+#### B.3.1 Excel 空值排序规则
+
+- **升序排列**：空值始终排在最前面（或最后，取决于区域设置）
+- **降序排列**：空值始终排在最后面
+- **默认行为**：空值视为"最小值"
+
+**实现代码：**
+```javascript
+// 在 FilterEngine 或 SortEngine 中
+static compareWithNull(a, b, order) {
+    const aIsNull = NullValueHandler.isNullValue(a);
+    const bIsNull = NullValueHandler.isNullValue(b);
+
+    if (aIsNull && bIsNull) return 0;
+    if (aIsNull) return -1; // 空值排前面（升序）
+    if (bIsNull) return 1;
+
+    // 正常比较逻辑...
+}
+```
+
+### B.4 更新后的 FilterEngine 实现
+
+```javascript
+// src/plugins/filter/FilterEngine.js（更新版）
+
+import { NullValueHandler } from "./NullValueTypes.js";
+
+export class FilterEngine {
+
+    #sheet;
+    #filterState;
+
+    constructor(sheet, filterState) {
+        this.#sheet = sheet;
+        this.#filterState = filterState;
+    }
+
+    extractUniqueValues(col) {
+        const cached = this.#filterState.getUniqueValuesCache(col);
+        if (cached && this.#filterState.isCacheValid(col)) {
+            return cached;
+        }
+
+        const values = new Set();
+        const hasNullValues = new Set([false]);
+        const rowCount = this.#sheet.rowCount || 1000;
+
+        for (let row = 0; row < rowCount; row++) {
+            const cellValue = this.#sheet.getCellValue(row, col);
+
+            if (NullValueHandler.isNullValue(cellValue)) {
+                values.add(NullValueHandler.NULL_KEY);
+                hasNullValues.clear();
+                hasNullValues.add(true);
+            } else {
+                const key = String(cellValue);
+                values.add(key);
+            }
+        }
+
+        let result = Array.from(values).filter(v => v !== NullValueHandler.NULL_KEY);
+        result.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+        if (hasNullValues.has(true)) {
+            result.push(NullValueHandler.NULL_KEY);
+        }
+
+        this.#filterState.cacheUniqueValues(col, result);
+        return result;
+    }
+
+    computeHiddenRows() {
+        const filters = this.#filterState.getAllFilters();
+        if (filters.size === 0) return new Set();
+
+        const rowCount = this.#sheet.rowCount || 1000;
+        const hiddenRows = new Set();
+
+        for (let row = 0; row < rowCount; row++) {
+            let visible = true;
+
+            for (const [col, filter] of filters) {
+                if (!this.#rowMatchesFilter(row, col, filter)) {
+                    visible = false;
+                    break;
+                }
+            }
+
+            if (!visible) {
+                hiddenRows.add(row);
+            }
+        }
+
+        return hiddenRows;
+    }
+
+    #rowMatchesFilter(row, col, filter) {
+        const cellValue = this.#sheet.getCellValue(row, col);
+        const isNullCell = NullValueHandler.isNullValue(cellValue);
+
+        if (filter.type === "values") {
+            const cellKey = isNullCell ? NullValueHandler.NULL_KEY : String(cellValue);
+            return !filter.uncheckedValues.has(cellKey);
+        }
+
+        if (filter.type === "condition") {
+            return this.#evaluateConditionWithNull(
+                cellValue, 
+                isNullCell,
+                filter.operator, 
+                filter.value
+            );
+        }
+
+        return true;
+    }
+
+    #evaluateConditionWithNull(cellValue, isNullCell, operator, conditionValue) {
+        const isConditionEmpty = NullValueHandler.isNullValue(conditionValue);
+
+        if (operator === "eq") {
+            if (isConditionEmpty) {
+                return isNullCell;
+            }
+            if (isNullCell) return false;
+            return cellValue == conditionValue;
+        }
+
+        if (operator === "neq") {
+            if (isConditionEmpty) {
+                return !isNullCell;
+            }
+            if (isNullCell) return true;
+            return cellValue != conditionValue;
+        }
+
+        const textOperators = ["contains", "notContains", "startsWith", "endsWith"];
+        if (textOperators.includes(operator)) {
+            if (isNullCell) {
+                return operator === "notContains";
+            }
+            return this.#evaluateTextCondition(cellValue, operator, conditionValue);
+        }
+
+        const numericOperators = ["gt", "gte", "lt", "lte"];
+        if (numericOperators.includes(operator)) {
+            if (isNullCell) {
+                return false;
+            }
+            return this.#evaluateNumericCondition(cellValue, operator, conditionValue);
+        }
+
+        return true;
+    }
+
+    #evaluateTextCondition(value, operator, conditionValue) {
+        const strValue = String(value).toLowerCase();
+        const strCondition = String(conditionValue).toLowerCase();
+
+        switch (operator) {
+            case "contains": return strValue.includes(strCondition);
+            case "notContains": return !strValue.includes(strCondition);
+            case "startsWith": return strValue.startsWith(strCondition);
+            case "endsWith": return strValue.endsWith(strCondition);
+            default: return true;
+        }
+    }
+
+    #evaluateNumericCondition(value, operator, conditionValue) {
+        const numValue = Number(value);
+        const numCondition = Number(conditionValue);
+
+        if (isNaN(numValue) || isNaN(numCondition)) {
+            return false;
+        }
+
+        switch (operator) {
+            case "gt": return numValue > numCondition;
+            case "gte": return numValue >= numCondition;
+            case "lt": return numValue < numCondition;
+            case "lte": return numValue <= numCondition;
+            default: return true;
+        }
+    }
+}
+```
+
+### B.5 更新后的 FilterDropdown UI 实现
+
+```javascript
+// src/plugins/filter/FilterDropdown.js（更新版 - 空值处理部分）
+
+import { NullValueHandler } from "./NullValueTypes.js";
+
+export class FilterDropdown extends WebComponent {
+
+    // ... 其他属性保持不变 ...
+
+    #renderDirectValueList(container, values) {
+        const normalValues = values.filter(v => v !== NullValueHandler.NULL_KEY);
+        const hasBlankValue = values.includes(NullValueHandler.NULL_KEY);
+
+        const allNormalChecked = normalValues.every(v => !this.#uncheckedValues.has(v));
+        const blankChecked = hasBlankValue && !this.#uncheckedValues.has(NullValueHandler.NULL_KEY);
+
+        const selectAllItem = document.createElement("div");
+        selectAllItem.className = "filter-value-item";
+        
+        const allChecked = allNormalChecked && (!hasBlankValue || blankChecked);
+        selectAllItem.innerHTML = `
+            <input type="checkbox" ${allChecked ? "checked" : ""}>
+            <span>(全选)</span>
+        `;
+        
+        selectAllItem.addEventListener("click", () => {
+            if (allChecked) {
+                values.forEach(v => this.#uncheckedValues.add(v));
+            } else {
+                values.forEach(v => this.#uncheckedValues.delete(v));
+            }
+            this.#renderContent();
+        });
+        container.appendChild(selectAllItem);
+
+        normalValues.forEach(value => {
+            const item = this.#createValueItem(value);
+            container.appendChild(item);
+        });
+
+        if (hasBlankValue) {
+            const blankItem = document.createElement("div");
+            blankItem.className = "filter-value-item";
+            blankItem.dataset.value = NullValueHandler.NULL_KEY;
+            
+            const checked = !this.#uncheckedValues.has(NullValueHandler.NULL_KEY);
+            blankItem.innerHTML = `
+                <input type="checkbox" ${checked ? "checked" : ""}>
+                <span style="font-style: italic; color: #999;">${NullValueHandler.BLANK_DISPLAY}</span>
+            `;
+            
+            blankItem.addEventListener("click", () => {
+                if (this.#uncheckedValues.has(NullValueHandler.NULL_KEY)) {
+                    this.#uncheckedValues.delete(NullValueHandler.NULL_KEY);
+                } else {
+                    this.#uncheckedValues.add(NullValueHandler.NULL_KEY);
+                }
+            });
+            
+            container.appendChild(blankItem);
+        }
+
+        const separator = document.createElement("div");
+        separator.style.cssText = "height: 1px; background: #f0f0f0; margin: 4px 12px;";
+        container.appendChild(separator);
+    }
+
+    #createValueItem(value) {
+        const item = document.createElement("div");
+        item.className = "filter-value-item";
+        item.dataset.value = value;
+
+        const checked = !this.#uncheckedValues.has(value);
+        item.innerHTML = `
+            <input type="checkbox" ${checked ? "checked" : ""}>
+            <span>${this.escapeHtml(value)}</span>
+        `;
+
+        item.addEventListener("click", () => {
+            if (this.#uncheckedValues.has(value)) {
+                this.#uncheckedValues.delete(value);
+            } else {
+                this.#uncheckedValues.add(value);
+            }
+        });
+
+        return item;
+    }
+
+    #getFilteredValues() {
+        let filtered = this.#allValues;
+
+        if (this.#searchKeyword) {
+            const keyword = this.#searchKeyword.toLowerCase();
+            filtered = filtered.filter(v => {
+                if (v === NullValueHandler.NULL_KEY) {
+                    return false; // 搜索时不显示空白项
+                }
+                return v.toLowerCase().includes(keyword);
+            });
+
+            if (this.#allValues.includes(NullValueHandler.NULL_KEY)) {
+                filtered.push(NullValueHandler.NULL_KEY); // 始终保持空白项在最后
+            }
+        }
+
+        return filtered;
+    }
+}
+```
+
+### B.6 VirtualValueList 空值处理更新
+
+```javascript
+// src/plugins/filter/VirtualValueList.js（更新版 - 空值处理部分）
+
+import { NullValueHandler } from "./NullValueTypes.js";
+
+export class VirtualValueList extends WebComponent {
+
+    // ... 其他方法保持不变 ...
+
+    updateItems(items, uncheckedValues) {
+        this.#items = items;
+        this.#uncheckedValues = new Set(uncheckedValues);
+        
+        const normalItems = items.filter(item => item !== NullValueHandler.NULL_KEY);
+        const hasBlank = items.includes(NullValueHandler.NULL_KEY);
+        
+        if (hasBlank) {
+            this.#visibleCount = Math.max(this.#visibleCount, normalItems.length + 1);
+        }
+        
+        this.#renderVisibleItems();
+    }
+
+    #renderVisibleItems() {
+        if (!this.#renderZone) return;
+
+        const startIndex = Math.floor(this.#scrollTop / this.#itemHeight);
+        const endIndex = Math.min(startIndex + this.#visibleCount + 2, this.#items.length);
+
+        let html = "";
+        let renderedIndex = 0;
+
+        for (let i = startIndex; i < endIndex; i++) {
+            const value = this.#items[i];
+            const isBlank = value === NullValueHandler.NULL_KEY;
+            const checked = !this.#uncheckedValues.has(value);
+            const top = i * this.#itemHeight;
+
+            if (isBlank) {
+                html += `
+                    <div class="virtual-item virtual-blank-item" style="top: ${top}px;" data-value="${value}">
+                        <input type="checkbox" ${checked ? "checked" : ""}>
+                        <span style="font-style: italic; color: #999;">${NullValueHandler.BLANK_DISPLAY}</span>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="virtual-item" style="top: ${top}px;" data-value="${this.escapeHtml(value)}">
+                        <input type="checkbox" ${checked ? "checked" : ""}>
+                        <span>${this.escapeHtml(value)}</span>
+                    </div>
+                `;
+            }
+
+            renderedIndex++;
+        }
+
+        this.#renderZone.innerHTML = html;
+        this.#bindRenderZoneEvents();
+    }
+}
+```
+
+### B.7 空值处理的测试用例
+
+#### B.7.1 单元测试
+
+```javascript
+// test/unit/NullValueHandler.test.js
+
+import { NullValueHandler, NULL_VALUE_TYPES } from "../../src/plugins/filter/NullValueTypes.js";
+
+describe("NullValueHandler", () => {
+    
+    describe("isNullValue()", () => {
+        it("应该识别 null 为空值", () => {
+            expect(NullValueHandler.isNullValue(null)).toBe(true);
+        });
+
+        it("应该识别 undefined 为空值", () => {
+            expect(NullValueHandler.isNullValue(undefined)).toBe(true);
+        });
+
+        it("应该识别空字符串为空值", () => {
+            expect(NullValueHandler.isNullValue("")).toBe(true);
+        });
+
+        it("应该识别纯空格字符串为空值", () => {
+            expect(NullValueHandler.isNullValue("   ")).toBe(true);
+        });
+
+        it("不应该识别正常值为空值", () => {
+            expect(NullValueHandler.isNullValue("Alice")).toBe(false);
+            expect(NullValueHandler.isNullValue(0)).toBe(false);
+            expect(NullValueHandler.isNullValue(false)).toBe(false);
+        });
+    });
+
+    describe("normalizeToKey()", () => {
+        it("应该将所有空值转换为 NULL_KEY", () => {
+            expect(NullValueHandler.normalizeToKey(null)).toBe(NullValueHandler.NULL_KEY);
+            expect(NullValueHandler.normalizeToKey(undefined)).toBe(NullValueHandler.NULL_KEY);
+            expect(NullValueHandler.normalizeToKey("")).toBe(NullValueHandler.NULL_KEY);
+        });
+
+        it("应该保留正常值的字符串形式", () => {
+            expect(NullValueHandler.normalizeToKey("Alice")).toBe("Alice");
+            expect(NullValueHandler.normalizeToKey(123)).toBe("123");
+        });
+    });
+
+    describe("formatForDisplay()", () => {
+        it("应该将空值格式化为 '(空白)'", () => {
+            expect(NullValueHandler.formatForDisplay(null)).toBe("(空白)");
+            expect(NullValueHandler.formatForDisplay("")).toBe("(空白)");
+        });
+
+        it("应该保留正常值的显示", () => {
+            expect(NullValueHandler.formatForDisplay("Alice")).toBe("Alice");
+        });
+    });
+});
+```
+
+#### B.7.2 集成测试
+
+```javascript
+// test/integration/FilterNullHandling.test.js
+
+describe("Excel 兼容的空值筛选", () => {
+    
+    let workbook;
+    let filterPlugin;
+
+    beforeEach(() => {
+        workbook = createTestWorkbook({
+            data: [
+                ["Name", "Age", "Dept"],
+                ["Alice", 30, "Sales"],
+                ["Bob", null, "Dev"],
+                ["", 25, "HR"],
+                ["Carol", 35, ""],
+                [null, 28, "Sales"]
+            ]
+        });
+        
+        filterPlugin = workbook.getPlugin("filter");
+        filterPlugin.init();
+    });
+
+    it("应该在唯一值列表中显示 '(空白)' 并排在最后", () => {
+        const engine = filterPlugin.getFilterEngine();
+        const uniqueValues = engine.extractUniqueValues(0); // Name 列
+        
+        expect(uniqueValues).toContain("__EXCEL_NULL__");
+        expect(uniqueValues[uniqueValues.length - 1]).toBe("__EXCEL_NULL__");
+    });
+
+    it("'等于空' 条件应该只匹配空单元格", () => {
+        filterPlugin.addFilter(0, {
+            type: "condition",
+            operator: "eq",
+            value: ""
+        });
+
+        const hiddenRows = filterPlugin.getFilterEngine().computeHiddenRows();
+        
+        expect(hiddenRows).not.toContain(1); // Alice - 可见
+        expect(hiddenRows).toContain(2);     // Bob (null Age, 但 Name 非空)
+        expect(hiddenRows).toContain(3);     // "" (空 Name)
+        expect(hiddenRows).not.toContain(4); // Carol - 可见
+        expect(hiddenRows).toContain(5);     // null Name
+    });
+
+    it("'包含' 条件不应该匹配空单元格", () => {
+        filterPlugin.addFilter(2, { // Dept 列
+            type: "condition",
+            operator: "contains",
+            value: "S"
+        });
+
+        const hiddenRows = filterPlugin.getFilterEngine().computeHiddenRows();
+        
+        expect(hiddenRows).not.toContain(1); // Sales - 包含 S
+        expect(hiddenRows).not.toContain(2); // Dev - 不包含，但这是其他原因
+        expect(hiddenRows).toContain(4);     // Carol 的空 Dept - 不匹配
+    });
+
+    it("取消勾选 '(空白)' 应该隐藏所有空值行", () => {
+        const uiManager = filterPlugin.getFilterUIManager();
+        
+        uiManager.openDropdown(0, { x: 100, y: 100 });
+        
+        const dropdown = document.querySelector("filter-dropdown");
+        const uncheckedValues = new Set(["__EXCEL_NULL__"]);
+        
+        dropdown.show(0, { x: 100, y: 100 }, ["Alice", "Bob", "__EXCEL_NULL__"], null, {}, 
+            (filter) => {
+                filterPlugin.getFilterState().setColumnFilter(0, filter);
+            },
+            () => {}
+        );
+
+        const hiddenRows = filterPlugin.getFilterEngine().computeHiddenRows();
+        
+        expect(hiddenRows).toContain(3); // "" 行
+        expect(hiddenRows).toContain(5); // null 行
+        expect(hiddenRows).not.toContain(1); // Alice 行
+    });
+
+    it("搜索时应该隐藏 '(空白)' 项但保持其在列表末尾", () => {
+        const engine = filterPlugin.getFilterEngine();
+        const allValues = engine.extractUniqueValues(0);
+        
+        const filtered = allValues.filter(v => {
+            if (v === "__EXCEL_NULL__") return false;
+            return v.toLowerCase().includes("a");
+        });
+        
+        filtered.push("__EXCEL_NULL__"); // 手动添加回空白项
+        
+        expect(filtered).toContain("Alice");
+        expect(filtered).toContain("Carol");
+        expect(filtered[filtered.length - 1]).toBe("__EXCEL_NULL__");
+    });
+});
+```
+
+### B.8 空值处理配置选项
+
+```javascript
+// 在 FilterPlugin.DEFAULT_OPTIONS 中新增
+
+static DEFAULT_OPTIONS = {
+    // ... 已有配置 ...
+    
+    nullValueHandling: {
+        displayAs: "(空白)",           // 空值显示文本
+        alwaysShowInList: true,         // 是否始终在列表中显示空值选项
+        sortToEnd: true,                // 是否将空值排到最后
+        treatBlankAsNull: true,         // 是否将空字符串视为 null
+        trimWhitespace: true,           // 是否去除空白字符后判断
+    },
+    
+    conditionNullBehavior: {
+        eqEmptyMatchesNull: true,       // "等于空" 匹配空单元格
+        textOpsExcludeNull: true,       // 文本操作符排除空单元格
+        numericOpsExcludeNull: true,    // 数值操作符排除空单元格
+    }
+};
+```
+
+### B.9 空值处理的边界情况
+
+| 场景 | 预期行为 | 测试用例 ID |
+|------|----------|-------------|
+| 整列都是空值 | 只显示 "(空白)" 一项 | NULL-001 |
+| 混合空格和空字符串 | 都视为空值 | NULL-002 |
+| 公式返回空字符串 | 视为空值 | NULL-003 |
+| 单元格格式化后为空 | 视为空值 | NULL-004 |
+| 搜索关键词为空字符串 | 显示全部值包括空值 | NULL-005 |
+| 批量粘贴含空值数据 | 正确识别和处理 | NULL-006 |
+| 撤销/重做操作 | 保持空值状态一致 | NULL-007 |
+| 复制粘贴筛选后的数据 | 空值正确复制 | NULL-008 |
+
+### B.10 性能优化建议
+
+1. **缓存空值判断结果**：
+   ```javascript
+   #nullCache = new WeakMap();
+   
+   isNullCached(value) {
+       if (this.#nullCache.has(value)) {
+           return this.#nullCache.get(value);
+       }
+       const result = NullValueHandler.isNullValue(value);
+       this.#nullCache.set(value, result);
+       return result;
+   }
+   ```
+
+2. **批量预处理空值**：
+   ```javascript
+   preprocessColumnData(col) {
+       const data = [];
+       for (let row = 0; row < this.rowCount; row++) {
+           const value = this.getCellValue(row, col);
+           data.push({
+               raw: value,
+               key: NullValueHandler.normalizeToKey(value),
+               isNull: NullValueHandler.isNullValue(value)
+           });
+       }
+       return data;
+   }
+   ```
+
+3. **使用位标记优化存储**：
+   ```javascript
+   // 使用 BitSet 存储空值行信息，节省内存
+   #nullRowFlags = new BitSet(rowCount);
+   
+   markNullRow(row, isNull) {
+       if (isNull) {
+           this.#nullRowFlags.set(row);
+       } else {
+           this.#nullRowFlags.clear(row);
+       }
+   }
+   ```
+
+---
+
+*文档结束 - 附录 B: Excel 100% 兼容的空值处理实现*
+
+
