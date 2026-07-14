@@ -24,6 +24,7 @@
 14. [实现路线图](#14-实现路线图)
 15. [附录 A: WebComponent 迁移指南](#附录-a-webcomponent-迁移指南)
 16. [附录 B: Excel 100% 兼容的空值处理实现](#附录-b-excel-100-兼容的空值处理实现)
+17. [附录 C: 公共弹框面板组件（PopupPanel）设计](#附录-c-公共弹框面板组件popuppanel设计)
 
 ---
 
@@ -2551,4 +2552,868 @@ static DEFAULT_OPTIONS = {
 
 *文档结束 - 附录 B: Excel 100% 兼容的空值处理实现*
 
+
+
+
+---
+
+## 附录 C: 公共弹框面板组件（PopupPanel）设计
+
+### C.1 架构必要性分析
+
+#### C.1.1 现有项目中的弹框场景
+
+| 组件 | 当前实现 | 弹框类型 |
+|------|----------|----------|
+| **FilterDropdown** | WebComponent + Shadow DOM | 下拉筛选面板 |
+| **ContextMenu** | 原生 DOM 操作 | 右键菜单 |
+| **SheetTabBarElement** (重命名) | 内联输入框 | 轻量弹框 |
+| **未来: DatePicker** | 待实现 | 日期选择器 |
+| **未来: ColorPicker** | 待实现 | 颜色选择器 |
+| **未来: SelectDropdown** | 待实现 | 下拉选择框 |
+
+#### C.1.2 共同特征提取
+
+```
+所有弹框组件的共性需求：
+┌─────────────────────────────────────────┐
+│  1. 定位管理                             │
+│     ├─ 锚点定位（相对于触发元素）         │
+│     ├─ 视口边界检测                       │
+│     └─ 自动翻转（超出时反向显示）          │
+│                                         │
+│  2. 生命周期管理                         │
+│     ├─ show() / hide()                  │
+│     ├─ destroy()                        │
+│     └─ 自动清理                          │
+│                                         │
+│  3. 外部点击关闭                         │
+│     ├─ 点击外部区域                      │
+│     ├─ ESC 键关闭                        │
+│     └─ 焦点丢失处理                      │
+│                                         │
+│  4. 层级管理                            │
+│     ├─ z-index 层叠                     │
+│     ├─ 多实例堆栈                        │
+│     └─ 模态遮罩支持                      │
+│                                         │
+│  5. 动画效果                            │
+│     ├─ 淡入淡出                         │
+│     ├─ 缩放动画                         │
+│     └─ 滑动动画                         │
+│                                         │
+│  6. 可访问性（A11y）                    │
+│     ├─ ARIA 属性                        │
+│     ├─ 焦点陷阱                         │
+│     └─ 键盘导航                         │
+└─────────────────────────────────────────┘
+```
+
+### C.2 PopupPanel 基类设计
+
+#### C.2.1 核心类定义
+
+```javascript
+// src/ui/components/PopupPanel.js
+
+import { WebComponent } from "../../core/WebComponent.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+
+export class PopupPanel extends WebComponent {
+
+    static DEFAULT_Z_INDEX = 10000;
+    static ANIMATION_DURATION = 150;
+
+    /** @type {HTMLElement|null} 触发元素 */
+    #anchor = null;
+
+    /** @type {{x: number, y: number}} */
+    #position = { x: 0, y: 0 };
+
+    /** @type {"top"|"bottom"|"left"|"right"} */
+    #placement = "bottom";
+
+    /** @type {number} */
+    #zIndex = PopupPanel.DEFAULT_Z_INDEX;
+
+    /** @type {boolean} */
+    #visible = false;
+
+    /** @type {boolean} */
+    #closeOnClickOutside = true;
+
+    /** @type {boolean} */
+    #closeOnEscape = true;
+
+    /** @type {Function|null} */
+    #onClose = null;
+
+    /** @type {number|null} */
+    #animationFrameId = null;
+
+    constructor() {
+        super();
+        this.style.position = "fixed";
+        this.style.display = "none";
+        this.style.zIndex = this.#zIndex;
+        this.setAttribute("role", "dialog");
+        this.setAttribute("aria-modal", "false");
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 公共 API
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 显示弹框
+     * @param {object} options - 显示选项
+     * @param {HTMLElement} [options.anchor] - 锚点元素
+     * @param {{x: number, y: number}} [options.position] - 绝对位置
+     * @param {string} [options.placement="bottom"] - 首选方向
+     * @param {number} [options.zIndex] - 层级
+     * @param {Function} [options.onClose] - 关闭回调
+     */
+    show(options = {}) {
+        if (this.#visible) return;
+
+        this.#anchor = options.anchor || null;
+        this.#position = options.position || { x: 0, y: 0 };
+        this.#placement = options.placement || "bottom";
+        this.#zIndex = options.zIndex || PopupPanel.DEFAULT_Z_INDEX;
+        this.#onClose = options.onClose || null;
+        this.#closeOnClickOutside = options.closeOnClickOutside !== false;
+        this.#closeOnEscape = options.closeOnEscape !== false;
+
+        this.style.zIndex = this.#zIndex;
+
+        if (!this.isConnected) {
+            document.body.appendChild(this);
+        }
+
+        this.#calculatePosition();
+        this.#enterAnimation();
+
+        this.#visible = true;
+    }
+
+    /**
+     * 隐藏弹框
+     * @param {string} [reason="user"] - 关闭原因
+     */
+    hide(reason = "user") {
+        if (!this.#visible) return;
+
+        this.#exitAnimation(() => {
+            this.style.display = "none";
+            this.#visible = false;
+            this.#onClose?.(reason);
+        });
+    }
+
+    /**
+     * 切换显示状态
+     */
+    toggle(options = {}) {
+        if (this.#visible) {
+            this.hide();
+        } else {
+            this.show(options);
+        }
+    }
+
+    /**
+     * 更新位置（内容变化后调用）
+     */
+    updatePosition() {
+        if (!this.#visible) return;
+        this.#calculatePosition();
+    }
+
+    get visible() {
+        return this.#visible;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 子类可覆写的方法
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * 计算偏移量（子类可覆写以自定义定位逻辑）
+     * @returns {{x: number, y: number}}
+     */
+    getOffset() {
+        return { x: 0, y: 4 };
+    }
+
+    /**
+     * 进入动画（子类可覆写）
+     */
+    onEnter() {
+        this.style.opacity = "0";
+        this.style.transform = "scaleY(0.9)";
+        this.style.transformOrigin = "top center";
+
+        requestAnimationFrame(() => {
+            this.style.transition = `opacity ${PopupPanel.ANIMATION_DURATION}ms ease, transform ${PopupPanel.ANIMATION_DURATION}ms ease`;
+            this.style.opacity = "1";
+            this.style.transform = "scaleY(1)";
+        });
+    }
+
+    /**
+     * 退出动画（子类可覆写）
+     * @param {Function} callback - 动画完成回调
+     */
+    onExit(callback) {
+        this.style.transition = `opacity ${PopupPanel.ANIMATION_DURATION}ms ease, transform ${PopupPanel.ANIMATION_DURATION}ms ease`;
+        this.style.opacity = "0";
+        this.style.transform = "scaleY(0.9)";
+
+        setTimeout(callback, PopupPanel.ANIMATION_DURATION);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 生命周期钩子
+    // ═══════════════════════════════════════════════════════════════
+
+    onConnect(disposable) {
+        if (this.#closeOnClickOutside) {
+            disposable.trackEvent(document, EVENT_NAMES.MOUSEDOWN, this.#handleClickOutside.bind(this));
+        }
+
+        if (this.#closeOnEscape) {
+            disposable.trackEvent(document, EVENT_NAMES.KEYDOWN, this.#handleEscapeKey.bind(this));
+        }
+    }
+
+    onDisconnect() {
+        this.#cancelAnimation();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 私有方法 - 定位计算
+    // ═══════════════════════════════════════════════════════════════
+
+    #calculatePosition() {
+        let x, y;
+
+        if (this.#anchor) {
+            const rect = this.#anchor.getBoundingClientRect();
+            const offset = this.getOffset();
+
+            switch (this.#placement) {
+                case "bottom":
+                    x = rect.left + offset.x;
+                    y = rect.bottom + offset.y;
+                    break;
+                case "top":
+                    x = rect.left + offset.x;
+                    y = rect.top - this.offsetHeight - Math.abs(offset.y);
+                    break;
+                case "right":
+                    x = rect.right + Math.abs(offset.x);
+                    y = rect.top + offset.y;
+                    break;
+                case "left":
+                    x = rect.left - this.offsetWidth - Math.abs(offset.x);
+                    y = rect.top + offset.y;
+                    break;
+                default:
+                    x = rect.left + offset.x;
+                    y = rect.bottom + offset.y;
+            }
+        } else {
+            x = this.#position.x;
+            y = this.#position.y;
+        }
+
+        this.#adjustForViewport(x, y);
+    }
+
+    #adjustForViewport(x, y) {
+        const width = this.offsetWidth || 240;
+        const height = this.offsetHeight || 300;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        if (x + width > viewportWidth - 10) {
+            x = viewportWidth - width - 10;
+        }
+        if (x < 10) {
+            x = 10;
+        }
+        if (y + height > viewportHeight - 10) {
+            y = viewportHeight - height - 10;
+        }
+        if (y < 10) {
+            y = 10;
+        }
+
+        this.style.left = `${x}px`;
+        this.style.top = `${y}px`;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 私有方法 - 事件处理
+    // ═══════════════════════════════════════════════════════════════
+
+    #handleClickOutside(e) {
+        const path = e.composedPath();
+        if (!path.includes(this)) {
+            this.hide("click-outside");
+        }
+    }
+
+    #handleEscapeKey(e) {
+        if (e.key === "Escape") {
+            e.preventDefault();
+            this.hide("escape");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 私有方法 - 动画
+    // ═══════════════════════════════════════════════════════════════
+
+    #enterAnimation() {
+        this.style.display = "block";
+        this.onEnter();
+    }
+
+    #exitAnimation(callback) {
+        this.onExit(callback);
+    }
+
+    #cancelAnimation() {
+        if (this.#animationFrameId) {
+            cancelAnimationFrame(this.#animationFrameId);
+            this.#animationFrameId = null;
+        }
+    }
+}
+
+customElements.define("popup-panel", PopupPanel);
+```
+
+### C.3 重构后的 FilterDropdown 实现
+
+```javascript
+// src/plugins/filter/FilterDropdown.js（重构版 - 继承 PopupPanel）
+
+import { PopupPanel } from "../../ui/components/PopupPanel.js";
+import { VirtualValueList } from "./VirtualValueList.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+
+export class FilterDropdown extends PopupPanel {
+
+    /** @type {number} */
+    #col = -1;
+
+    /** @type {Array<string>} */
+    #allValues = [];
+
+    /** @type {Set<string>} */
+    #uncheckedValues = new Set();
+
+    /** @type {string} */
+    #searchKeyword = "";
+
+    /** @type {string|null} */
+    #conditionOperator = null;
+
+    /** @type {string|null} */
+    #conditionValue = null;
+
+    /** @type {"values"|"condition"} */
+    #filterMode = "values";
+
+    /** @type {VirtualValueList|null} */
+    #virtualList = null;
+
+    /** @type {Function|null} */
+    #onApply = null;
+
+    /** @type {Function|null} */
+    #onClear = null;
+
+    /** @type {object|null} */
+    #options = null;
+
+    constructor() {
+        super();
+    }
+
+    get col() {
+        return this.#col;
+    }
+
+    /**
+     * 显示筛选面板（使用 PopupPanel 的 show API）
+     */
+    show(col, position, allValues, currentFilter, options, onApply, onClear) {
+        this.#col = col;
+        this.#allValues = allValues;
+        this.#options = options;
+        this.#onApply = onApply;
+        this.#onClear = onClear;
+
+        if (currentFilter) {
+            this.#filterMode = currentFilter.type;
+            if (currentFilter.type === "values") {
+                this.#uncheckedValues = new Set(currentFilter.uncheckedValues);
+            } else {
+                this.#conditionOperator = currentFilter.operator;
+                this.#conditionValue = currentFilter.value;
+            }
+        } else {
+            this.#uncheckedValues = new Set();
+            this.#conditionOperator = null;
+            this.#conditionValue = null;
+            this.#filterMode = "values";
+        }
+
+        super.show({
+            position,
+            placement: "bottom",
+            zIndex: 10001,
+            onClose: () => {}
+        });
+
+        this.#renderContent();
+    }
+
+    render() {
+        this.shadowRoot.innerHTML = `
+            <style>
+                /* ... 样式保持不变 ... */
+            </style>
+            <div class="filter-dropdown-panel">
+                <!-- ... 内容结构保持不变 ... -->
+            </div>
+        `;
+    }
+
+    onConnect(disposable) {
+        super.onConnect(disposable);
+
+        disposable.trackEvent(this.shadowRoot, EVENT_NAMES.CLICK, this.#handlePanelClick.bind(this));
+        disposable.trackEvent(this.shadowRoot, EVENT_NAMES.INPUT, this.#handlePanelInput.bind(this));
+    }
+
+    onDisconnect() {
+        if (this.#virtualList) {
+            this.#virtualList.destroy();
+            this.#virtualList = null;
+        }
+        super.onDisconnect();
+    }
+
+    // ... 其他方法保持不变 ...
+}
+```
+
+### C.4 重构后的 ContextMenu 实现
+
+```javascript
+// src/editor/components/ContextMenu.js（重构版 - 继承 PopupPanel）
+
+import { PopupPanel } from "../ui/components/PopupPanel.js";
+import { EVENT_NAMES } from "../constants/eventNames.js";
+
+export class ContextMenu extends PopupPanel {
+
+    /** @type {Array<object>} */
+    #items = [];
+
+    /** @type {string} */
+    #context = "";
+
+    /** @type {number} */
+    #row = -1;
+
+    /** @type {number} */
+    #col = -1;
+
+    /** @type {Function|null} */
+    #onAction = null;
+
+    constructor() {
+        super();
+        this.setAttribute("role", "menu");
+    }
+
+    /**
+     * 显示上下文菜单
+     */
+    show(clientX, clientY, row, col, context, items, onAction) {
+        this.#row = row;
+        this.#col = col;
+        this.#context = context;
+        this.#items = items;
+        this.#onAction = onAction;
+
+        super.show({
+            position: { x: clientX, y: clientY },
+            placement: "bottom-right",
+            zIndex: 10002,
+            closeOnEscape: true
+        });
+
+        this.#renderItems();
+    }
+
+    render() {
+        this.shadowRoot.innerHTML = `
+            <style>
+                :host {
+                    display: block;
+                    min-width: 160px;
+                    background: #fff;
+                    border: 1px solid #d9d9d9;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                    padding: 4px 0;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    font-size: 13px;
+                }
+                
+                .ctx-item {
+                    padding: 6px 12px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+                
+                .ctx-item:hover {
+                    background: #f5f5f5;
+                }
+                
+                .ctx-item.disabled {
+                    color: #ccc;
+                    cursor: not-allowed;
+                }
+                
+                .ctx-separator {
+                    height: 1px;
+                    background: #f0f0f0;
+                    margin: 4px 12px;
+                }
+                
+                .ctx-shortcut {
+                    color: #999;
+                    font-size: 12px;
+                    margin-left: 24px;
+                }
+            </style>
+            <div class="context-menu-container"></div>
+        `;
+    }
+
+    onConnect(disposable) {
+        super.onConnect(disposable);
+
+        disposable.trackEvent(this.shadowRoot, EVENT_NAMES.CLICK, (e) => {
+            const itemEl = e.target.closest(".ctx-item");
+            if (!itemEl || itemEl.classList.contains("disabled")) return;
+
+            const key = itemEl.dataset.key;
+            this.#onAction?.(key, this.#row, this.#col, this.#context);
+            this.hide("action");
+        });
+    }
+
+    getOffset() {
+        return { x: 0, y: 0 };
+    }
+
+    onEnter() {
+        this.style.opacity = "0";
+        this.style.transform = "scale(0.95)";
+        this.style.transformOrigin = "top left";
+
+        requestAnimationFrame(() => {
+            this.style.transition = `opacity ${PopupPanel.ANIMATION_DURATION}ms ease, transform ${PopupPanel.ANIMATION_DURATION}ms ease`;
+            this.style.opacity = "1";
+            this.style.transform = "scale(1)";
+        });
+    }
+
+    #renderItems() {
+        const container = this.shadowRoot.querySelector(".context-menu-container");
+        if (!container) return;
+
+        container.innerHTML = "";
+
+        for (const item of this.#items) {
+            if (item.type === "separator") {
+                const sep = document.createElement("div");
+                sep.className = "ctx-separator";
+                container.appendChild(sep);
+                continue;
+            }
+
+            const el = document.createElement("div");
+            el.className = `ctx-item${item.disabled ? " disabled" : ""}`;
+            el.dataset.key = item.key;
+            el.setAttribute("role", "menuitem");
+
+            el.innerHTML = `
+                <span>${this.escapeHtml(item.label)}</span>
+                ${item.shortcut ? `<span class="ctx-shortcut">${item.shortcut}</span>` : ""}
+            `;
+
+            container.appendChild(el);
+        }
+    }
+}
+
+customElements.define("context-menu", ContextMenu);
+```
+
+### C.5 组件层级关系图
+
+```
+                    ┌──────────────┐
+                    │ WebComponent │
+                    └──────┬───────┘
+                           │ extends
+                    ┌──────┴───────┐
+                    │  PopupPanel   │  ← 新增：公共弹框基类
+                    │ (Abstract)    │
+                    └──────┬───────┘
+                           │ extends
+              ┌────────────┼────────────┐
+              │            │            │
+     ┌────────┴────┐ ┌───┴──────┐ ┌───┴────────┐
+     │FilterDropdown│ │ContextMenu│ │DatePicker  │
+     │             │ │          │ │ (未来)      │
+     └─────────────┘ └──────────┘ └─────────────┘
+              │
+     ┌────────┴────────┐
+     │ VirtualValueList │
+     │ (内部组件)       │
+     └─────────────────┘
+```
+
+### C.6 文件结构调整
+
+```
+src/
+├── ui/
+│   ├── components/                   # ← 新增：公共 UI 组件目录
+│   │   ├── PopupPanel.js             # 弹框基类
+│   │   ├── ContextMenu.js            # 右键菜单（从策略中提取）
+│   │   └── index.js                  # 导出入口
+│   ├── sheetTab/
+│   │   └── SheetTabBarElement.js
+│   └── formulaBar/
+│       └── FormulaBarElement.js
+├── plugins/
+│   ├── filter/
+│   │   ├── FilterDropdown.js         # 继承 PopupPanel
+│   │   └── ...
+│   └── ContextMenuPlugin.js
+└── core/
+    └── WebComponent.js
+```
+
+### C.7 PopupManager 全局管理器
+
+```javascript
+// src/ui/components/PopupManager.js
+
+export class PopupManager {
+
+    static #instance = null;
+    #activePopups = new Map();
+    #zIndexCounter = 10000;
+
+    static getInstance() {
+        if (!PopupManager.#instance) {
+            PopupManager.#instance = new PopupManager();
+        }
+        return PopupManager.#instance;
+    }
+
+    register(popup) {
+        const id = Symbol("popup");
+        this.#activePopups.set(id, popup);
+        return id;
+    }
+
+    unregister(id) {
+        this.#activePopups.delete(id);
+    }
+
+    getNextZIndex() {
+        return ++this.#zIndexCounter;
+    }
+
+    closeAll(exceptId) {
+        for (const [id, popup] of this.#activePopups) {
+            if (id !== exceptId) {
+                popup.hide("close-all");
+            }
+        }
+    }
+
+    getTopPopup() {
+        let topPopup = null;
+        let maxZIndex = -1;
+
+        for (const [, popup] of this.#activePopups) {
+            const zIndex = parseInt(popup.style.zIndex) || 0;
+            if (zIndex > maxZIndex) {
+                maxZIndex = zIndex;
+                topPopup = popup;
+            }
+        }
+
+        return topPopup;
+    }
+}
+```
+
+### C.8 使用示例
+
+#### C.8.1 在 FilterUIManager 中使用
+
+```javascript
+// src/plugins/filter/FilterUIManager.js（更新版）
+
+import { PopupManager } from "../../ui/components/PopupManager.js";
+
+export class FilterUIManager {
+
+    openDropdown(col, position) {
+        this.closeDropdown();
+
+        const dropdown = document.createElement("filter-dropdown");
+        
+        const popupId = PopupManager.getInstance().register(dropdown);
+        
+        dropdown.show(
+            col,
+            position,
+            uniqueValues,
+            currentFilter,
+            {
+                ...options,
+                zIndex: PopupManager.getInstance().getNextZIndex()
+            },
+            (filter) => {
+                PopupManager.getInstance().unregister(popupId);
+                this.#onApply(filter);
+            },
+            () => {
+                PopupManager.getInstance().unregister(popupId);
+                this.#onClear();
+            }
+        );
+
+        this.#dropdown = dropdown;
+    }
+}
+```
+
+#### C.8.2 在 ContextMenuStrategy 中使用
+
+```javascript
+// src/editor/strategies/ContextMenuStrategy.js（重构版）
+
+import { ContextMenu } from "../ui/components/ContextMenu.js";
+import { PopupManager } from "../ui/components/PopupManager.js";
+
+#showMenu(clientX, clientY, row, col) {
+    if (!this.#menuEl) {
+        this.#menuEl = document.createElement("context-menu");
+        this.#popupId = PopupManager.getInstance().register(this.#menuEl);
+    }
+
+    this.#menuEl.show(
+        clientX,
+        clientY,
+        row,
+        col,
+        this.#context,
+        this.#getMenuItems(),
+        (key, row, col, context) => {
+            this.#handleContextAction(key);
+        }
+    );
+}
+
+#hideMenu() {
+    if (this.#menuEl) {
+        this.#menuEl.hide();
+        PopupManager.getInstance().unregister(this.#popupId);
+    }
+}
+```
+
+### C.9 配置选项扩展
+
+```javascript
+// PopupPanel 支持的配置项
+
+const POPUP_CONFIG_SCHEMA = {
+    anchor: HTMLElement,
+    position: { x: number, y: number },
+    placement: "top" | "bottom" | "left" | "right" | "top-start" | "top-end" | 
+              "bottom-start" | "bottom-end" | "left-start" | "left-end" | 
+              "right-start" | "right-end",
+    
+    zIndex: number,
+    closeOnClickOutside: boolean,
+    closeOnEscape: boolean,
+    
+    animation: {
+        enabled: boolean,
+        duration: number,
+        type: "fade" | "scale" | "slide"
+    },
+    
+    modal: boolean,
+    lockScroll: boolean,
+    trapFocus: boolean,
+    
+    offset: { x: number, y: number },
+    constraints: {
+        viewport: boolean,
+        container: HTMLElement | null
+    }
+};
+```
+
+### C.10 迁移路径
+
+#### 阶段一：创建基础架构（2 天）
+1. 实现 `PopupPanel` 基类
+2. 实现 `PopupManager` 全局管理器
+3. 创建单元测试
+
+#### 阶段二：迁移现有组件（3 天）
+1. 重构 `FilterDropdown` 继承 `PopupPanel`
+2. 重构 `ContextMenu` 继承 `PopupPanel`
+3. 更新相关插件代码
+
+#### 阶段三：验证与优化（2 天）
+1. 集成测试
+2. 性能对比测试
+3. 文档完善
+
+### C.11 收益分析
+
+| 维度 | 重构前 | 重构后 |
+|------|--------|--------|
+| **代码复用** | 各组件独立实现定位、关闭逻辑 | 公共基类统一实现 |
+| **一致性** | 行为可能不一致（如动画效果） | 统一的用户体验 |
+| **维护成本** | Bug 需要在多处修复 | 单点修复即可 |
+| **新组件开发** | 从零开始实现弹框逻辑 | 继承基类，专注业务逻辑 |
+| **可测试性** | 需要分别测试每个组件 | 基类测试覆盖通用逻辑 |
+
+---
+
+*文档结束 - 附录 C: 公共弹框面板组件（PopupPanel）设计*
 
