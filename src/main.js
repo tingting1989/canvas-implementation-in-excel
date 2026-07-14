@@ -256,9 +256,10 @@ const initApp = () => {
             "rowMove",
             "freeze",
             "formula",
-            "sort",
+            // "sort",
             "dataValidation",
             "chart",
+            // "filter",
         ],
         pluginOptions: {
             contextMenu: {
@@ -652,7 +653,7 @@ const initApp = () => {
     });
     function prepareData() {
         const chartPlugin = wb.getPlugin("chart");
-
+        if (!chartPlugin) return;
         console.log(chartPlugin);
         const s = wb.activeSheet;
         s.setCell(0, 0, "产品");

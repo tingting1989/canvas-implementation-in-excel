@@ -13,6 +13,7 @@ import { FormulaPlugin } from "./FormulaPlugin.js";
 import { SortPlugin } from "./SortPlugin.js";
 import { DataValidationPlugin } from "@/plugins/data-validation";
 import { ChartPlugin } from "@/plugins/ChartPlugin";
+import {FilterPlugin} from "@/plugins/FilterPlugin";
 
 const builtinPlugins = [
     ["autoFill", AutoFillPlugin],
@@ -29,6 +30,7 @@ const builtinPlugins = [
     ["sort", SortPlugin],
     ["dataValidation", DataValidationPlugin],
     ["chart", ChartPlugin],
+    ["filter", FilterPlugin],
 ];
 
 export function registerBuiltinPlugins() {
