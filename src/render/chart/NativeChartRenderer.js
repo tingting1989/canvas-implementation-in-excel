@@ -8,11 +8,12 @@ export class NativeChartRenderer {
             this.#renderGrid(ctx, plotArea);
         }
 
-        this.#renderAxes(ctx, data, plotArea);
+        const yScale = this.#buildYScale(data, chart.type);
+        this.#renderAxes(ctx, data, plotArea, yScale);
 
         switch (chart.type) {
             case "bar":
-                this.#renderBar(ctx, data, plotArea, style);
+                this.#renderBar(ctx, data, plotArea, style, yScale);
                 break;
             case "line":
                 this.#renderLine(ctx, data, plotArea, style);
@@ -57,7 +58,7 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
-    static #renderAxes(ctx, data, area) {
+    static #renderAxes(ctx, data, area, yScale) {
         ctx.save();
         ctx.strokeStyle = CONFIG.CHART_AXIS_COLOR;
         ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH;
@@ -79,19 +80,19 @@ export class NativeChartRenderer {
             ctx.fillText(String(categories[i]), area.x + step * i + step / 2, area.y + area.h + 6);
         }
 
-        const yTicks = this.#calcYTicks(data, 5);
+        const yTicks = yScale.ticks;
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
 
         for (const val of yTicks) {
-            const y = area.y + area.h - ((val - yTicks[0]) / (yTicks[yTicks.length - 1] - yTicks[0])) * area.h;
+            const y = area.y + area.h - ((val - yScale.min) / (yScale.max - yScale.min)) * area.h;
             ctx.fillText(this.#formatNumber(val), area.x - 6, y);
         }
 
         ctx.restore();
     }
 
-    static #renderBar(ctx, data, area, style) {
+    static #renderBar(ctx, data, area, style, yScale) {
         const seriesCount = data.headers.length - 1;
         const catCount = data.data.length;
         if (seriesCount <= 0 || catCount <= 0) return;
@@ -99,8 +100,8 @@ export class NativeChartRenderer {
         const groupWidth = area.w / catCount;
         const barWidth = (groupWidth * 0.7) / seriesCount;
         const barGap = (groupWidth * 0.3) / (seriesCount + 1);
-        const yMin = this.#getYMin(data);
-        const yMax = this.#getYMax(data);
+        const yMin = yScale.min;
+        const yMax = yScale.max;
         const yRange = yMax - yMin || 1;
 
         ctx.strokeStyle = CONFIG.CHART_BAR_BORDER_COLOR;
@@ -339,8 +340,19 @@ export class NativeChartRenderer {
         return max === -Infinity ? 1 : max;
     }
 
-    static #calcYTicks(data, count) {
-        const yMin = this.#getYMin(data);
+    static #buildYScale(data, chartType) {
+        const dataMin = this.#getYMin(data);
+        const minValue = chartType === "bar" && dataMin >= 0 ? 0 : dataMin;
+        const ticks = this.#calcYTicks(data, 5, minValue);
+        return {
+            min: ticks[0],
+            max: ticks[ticks.length - 1],
+            ticks,
+        };
+    }
+
+    static #calcYTicks(data, count, minValue) {
+        const yMin = minValue !== undefined ? minValue : this.#getYMin(data);
         const yMax = this.#getYMax(data);
         const range = yMax - yMin || 1;
         const rawStep = range / count;
@@ -354,8 +366,9 @@ export class NativeChartRenderer {
         else step = 10 * mag;
 
         const start = Math.floor(yMin / step) * step;
+        const end = Math.ceil(yMax / step) * step;
         const ticks = [];
-        for (let v = start; v <= yMax + step * 0.01; v += step) {
+        for (let v = start; v <= end + step * 0.01; v += step) {
             ticks.push(Math.round(v * 1e10) / 1e10);
         }
 
