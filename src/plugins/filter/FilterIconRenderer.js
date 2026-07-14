@@ -1,7 +1,6 @@
 ﻿import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 export class FilterIconRenderer {
-
     static ICON_SIZE = 12;
     static ICON_PADDING = 6;
     static ACTIVE_COLOR = "#1890ff";
@@ -18,9 +17,9 @@ export class FilterIconRenderer {
         const iconWrapper = document.createElement("div");
         iconWrapper.className = "filter-icon-wrapper";
         iconWrapper.dataset.col = col;
-        
+
         const color = hasActiveFilter ? this.activeColor : this.inactiveColor;
-        
+
         iconWrapper.innerHTML = `
             <svg 
                 width="${this.iconSize}" 
@@ -34,9 +33,9 @@ export class FilterIconRenderer {
                     d="M2 3h12l-5 5v5l-2 1V8L2 3z" 
                     stroke="${color}" 
                     stroke-width="1.5" 
-                    fill="${hasActiveFilter ? color : 'none'}"
+                    fill="${hasActiveFilter ? color : "none"}"
                 />
-                ${hasActiveFilter ? '<circle cx="8" cy="11" r="1.5" fill="#fff"/>' : ''}
+                ${hasActiveFilter ? '<circle cx="8" cy="11" r="1.5" fill="#fff"/>' : ""}
             </svg>
         `;
 
@@ -75,7 +74,7 @@ export class FilterIconRenderer {
             const color = hasActiveFilter ? this.activeColor : this.inactiveColor;
             path.setAttribute("stroke", color);
             path.setAttribute("fill", hasActiveFilter ? color : "none");
-            
+
             const existingCircle = svg.querySelector("circle");
             if (hasActiveFilter && !existingCircle) {
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
@@ -99,7 +98,7 @@ export class FilterIconRenderer {
             left: iconLeftEdge,
             right: iconRightEdge,
             top: rect.top,
-            bottom: rect.bottom
+            bottom: rect.bottom,
         };
     }
 }

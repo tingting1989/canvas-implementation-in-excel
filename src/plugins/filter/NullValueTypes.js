@@ -2,19 +2,15 @@
     BLANK: "blank",
     EMPTY_STRING: "emptyString",
     NULL: "null",
-    UNDEFINED: "undefined"
+    UNDEFINED: "undefined",
 };
 
 export class NullValueHandler {
-
     static BLANK_DISPLAY = "(空白)";
     static NULL_KEY = "__EXCEL_NULL__";
 
     static isNullValue(value) {
-        return value === null ||
-               value === undefined ||
-               value === "" ||
-               (typeof value === "string" && value.trim() === "");
+        return value === null || value === undefined || value === "" || (typeof value === "string" && value.trim() === "");
     }
 
     static getNullType(value) {
@@ -40,7 +36,6 @@ export class NullValueHandler {
     }
 
     static isBlankOnly(value) {
-        return value === "" || 
-               (typeof value === "string" && value.trim() === "");
+        return value === "" || (typeof value === "string" && value.trim() === "");
     }
 }

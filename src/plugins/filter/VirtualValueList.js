@@ -3,7 +3,6 @@ import { NullValueHandler } from "./NullValueTypes.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 export class VirtualValueList extends WebComponent {
-
     #items = [];
     #uncheckedValues = new Set();
     #onToggle = null;

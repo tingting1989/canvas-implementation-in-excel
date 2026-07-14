@@ -4,7 +4,6 @@ import { NullValueHandler } from "./NullValueTypes.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 export class FilterDropdown extends PopupPanel {
-
     #col = -1;
     #allValues = [];
     #uncheckedValues = new Set();
@@ -51,7 +50,7 @@ export class FilterDropdown extends PopupPanel {
             position,
             placement: "bottom",
             zIndex: 10001,
-            onClose: () => {}
+            onClose: () => {},
         });
 
         this.#renderContent();
@@ -261,7 +260,7 @@ export class FilterDropdown extends PopupPanel {
         this.#filterMode = mode;
 
         const tabs = this.shadowRoot.querySelectorAll(".filter-tab");
-        tabs.forEach(tab => {
+        tabs.forEach((tab) => {
             tab.classList.toggle("active", tab.dataset.mode === mode);
         });
 
@@ -284,7 +283,7 @@ export class FilterDropdown extends PopupPanel {
 
         if (this.#searchKeyword) {
             const keyword = this.#searchKeyword.toLowerCase();
-            filtered = filtered.filter(v => {
+            filtered = filtered.filter((v) => {
                 if (v === NullValueHandler.NULL_KEY) {
                     return false;
                 }
@@ -320,32 +319,32 @@ export class FilterDropdown extends PopupPanel {
     }
 
     #renderDirectValueList(container, values) {
-        const normalValues = values.filter(v => v !== NullValueHandler.NULL_KEY);
+        const normalValues = values.filter((v) => v !== NullValueHandler.NULL_KEY);
         const hasBlankValue = values.includes(NullValueHandler.NULL_KEY);
 
-        const allNormalChecked = normalValues.every(v => !this.#uncheckedValues.has(v));
+        const allNormalChecked = normalValues.every((v) => !this.#uncheckedValues.has(v));
         const blankChecked = hasBlankValue && !this.#uncheckedValues.has(NullValueHandler.NULL_KEY);
 
         const selectAllItem = document.createElement("div");
         selectAllItem.className = "filter-value-item";
-        
+
         const allChecked = allNormalChecked && (!hasBlankValue || blankChecked);
         selectAllItem.innerHTML = `
             <input type="checkbox" ${allChecked ? "checked" : ""}>
             <span>(全选)</span>
         `;
-        
+
         selectAllItem.addEventListener("click", () => {
             if (allChecked) {
-                values.forEach(v => this.#uncheckedValues.add(v));
+                values.forEach((v) => this.#uncheckedValues.add(v));
             } else {
-                values.forEach(v => this.#uncheckedValues.delete(v));
+                values.forEach((v) => this.#uncheckedValues.delete(v));
             }
             this.#renderContent();
         });
         container.appendChild(selectAllItem);
 
-        normalValues.forEach(value => {
+        normalValues.forEach((value) => {
             const item = this.#createValueItem(value);
             container.appendChild(item);
         });
@@ -354,13 +353,13 @@ export class FilterDropdown extends PopupPanel {
             const blankItem = document.createElement("div");
             blankItem.className = "filter-value-item";
             blankItem.dataset.value = NullValueHandler.NULL_KEY;
-            
+
             const checked = !this.#uncheckedValues.has(NullValueHandler.NULL_KEY);
             blankItem.innerHTML = `
                 <input type="checkbox" ${checked ? "checked" : ""}>
                 <span style="font-style: italic; color: #999;">${NullValueHandler.BLANK_DISPLAY}</span>
             `;
-            
+
             blankItem.addEventListener("click", () => {
                 if (this.#uncheckedValues.has(NullValueHandler.NULL_KEY)) {
                     this.#uncheckedValues.delete(NullValueHandler.NULL_KEY);
@@ -368,7 +367,7 @@ export class FilterDropdown extends PopupPanel {
                     this.#uncheckedValues.add(NullValueHandler.NULL_KEY);
                 }
             });
-            
+
             container.appendChild(blankItem);
         }
 
@@ -408,26 +407,20 @@ export class FilterDropdown extends PopupPanel {
         this.#virtualList = document.createElement("virtual-value-list");
         container.appendChild(this.#virtualList);
 
-        this.#virtualList.init(
-            values,
-            this.#uncheckedValues,
-            (value, checked) => {
-                if (checked) {
-                    this.#uncheckedValues.delete(value);
-                } else {
-                    this.#uncheckedValues.add(value);
-                }
+        this.#virtualList.init(values, this.#uncheckedValues, (value, checked) => {
+            if (checked) {
+                this.#uncheckedValues.delete(value);
+            } else {
+                this.#uncheckedValues.add(value);
             }
-        );
+        });
     }
 
     #renderConditionOperators() {
         const select = this.shadowRoot.querySelector(".filter-condition-operator");
         if (!select) return;
 
-        const operators = this.#options?.conditionOperators || [
-            "eq", "neq", "contains", "notContains"
-        ];
+        const operators = this.#options?.conditionOperators || ["eq", "neq", "contains", "notContains"];
 
         const operatorLabels = {
             eq: "等于",
@@ -439,11 +432,11 @@ export class FilterDropdown extends PopupPanel {
             gt: "大于",
             gte: "大于等于",
             lt: "小于",
-            lte: "小于等于"
+            lte: "小于等于",
         };
 
         select.innerHTML = "";
-        operators.forEach(op => {
+        operators.forEach((op) => {
             const option = document.createElement("option");
             option.value = op;
             option.textContent = operatorLabels[op] || op;
@@ -460,13 +453,13 @@ export class FilterDropdown extends PopupPanel {
         if (this.#filterMode === "values") {
             filter = {
                 type: "values",
-                uncheckedValues: new Set(this.#uncheckedValues)
+                uncheckedValues: new Set(this.#uncheckedValues),
             };
         } else {
             filter = {
                 type: "condition",
                 operator: this.#conditionOperator,
-                value: this.#conditionValue
+                value: this.#conditionValue,
             };
         }
 

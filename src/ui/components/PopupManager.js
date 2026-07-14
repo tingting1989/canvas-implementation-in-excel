@@ -1,5 +1,4 @@
 ﻿export class PopupManager {
-
     static #instance = null;
     #activePopups = new Map();
     #zIndexCounter = 10000;

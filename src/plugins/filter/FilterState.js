@@ -1,5 +1,4 @@
 ﻿export class FilterState {
-
     #columnFilters = new Map();
     #uniqueValuesCache = new Map();
     #invalidatedColumns = new Set();

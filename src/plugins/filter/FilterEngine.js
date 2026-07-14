@@ -1,7 +1,6 @@
 ﻿import { NullValueHandler } from "./NullValueTypes.js";
 
 export class FilterEngine {
-
     #sheet;
     #filterState;
 
@@ -18,7 +17,7 @@ export class FilterEngine {
 
         const values = new Set();
         const hasNullValues = new Set([false]);
-        
+
         const rowCount = this.#sheet.rowCount || 1000;
 
         for (let row = 0; row < rowCount; row++) {
@@ -34,7 +33,7 @@ export class FilterEngine {
             }
         }
 
-        let result = Array.from(values).filter(v => v !== NullValueHandler.NULL_KEY);
+        let result = Array.from(values).filter((v) => v !== NullValueHandler.NULL_KEY);
         result.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
         if (hasNullValues.has(true)) {
@@ -80,12 +79,7 @@ export class FilterEngine {
         }
 
         if (filter.type === "condition") {
-            return this.#evaluateConditionWithNull(
-                cellValue, 
-                isNullCell,
-                filter.operator, 
-                filter.value
-            );
+            return this.#evaluateConditionWithNull(cellValue, isNullCell, filter.operator, filter.value);
         }
 
         return true;
@@ -134,11 +128,16 @@ export class FilterEngine {
         const strCondition = String(conditionValue).toLowerCase();
 
         switch (operator) {
-            case "contains": return strValue.includes(strCondition);
-            case "notContains": return !strValue.includes(strCondition);
-            case "startsWith": return strValue.startsWith(strCondition);
-            case "endsWith": return strValue.endsWith(strCondition);
-            default: return true;
+            case "contains":
+                return strValue.includes(strCondition);
+            case "notContains":
+                return !strValue.includes(strCondition);
+            case "startsWith":
+                return strValue.startsWith(strCondition);
+            case "endsWith":
+                return strValue.endsWith(strCondition);
+            default:
+                return true;
         }
     }
 
@@ -151,11 +150,16 @@ export class FilterEngine {
         }
 
         switch (operator) {
-            case "gt": return numValue > numCondition;
-            case "gte": return numValue >= numCondition;
-            case "lt": return numValue < numCondition;
-            case "lte": return numValue <= numCondition;
-            default: return true;
+            case "gt":
+                return numValue > numCondition;
+            case "gte":
+                return numValue >= numCondition;
+            case "lt":
+                return numValue < numCondition;
+            case "lte":
+                return numValue <= numCondition;
+            default:
+                return true;
         }
     }
 }

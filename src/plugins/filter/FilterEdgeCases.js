@@ -1,5 +1,4 @@
 ﻿export class FilterEdgeCases {
-
     static handleSpecialValues(value) {
         if (value === undefined || value === null) {
             return { normalized: "__EXCEL_NULL__", display: "(空白)", isSpecial: true };
@@ -11,10 +10,10 @@
             }
 
             if (value.includes("\n") || value.includes("\t")) {
-                return { 
-                    normalized: value.replace(/[\n\t]/g, " "), 
-                    display: value.replace(/[\n\t]/g, " "), 
-                    isSpecial: true 
+                return {
+                    normalized: value.replace(/[\n\t]/g, " "),
+                    display: value.replace(/[\n\t]/g, " "),
+                    isSpecial: true,
                 };
             }
         }
@@ -34,10 +33,10 @@
         }
 
         if (typeof value === "boolean") {
-            return { 
-                normalized: value ? "TRUE" : "FALSE", 
-                display: value ? "TRUE" : "FALSE", 
-                isSpecial: false 
+            return {
+                normalized: value ? "TRUE" : "FALSE",
+                display: value ? "TRUE" : "FALSE",
+                isSpecial: false,
             };
         }
 
@@ -47,18 +46,18 @@
         }
 
         if (Array.isArray(value)) {
-            return { 
-                normalized: JSON.stringify(value), 
-                display: "[Array]", 
-                isSpecial: true 
+            return {
+                normalized: JSON.stringify(value),
+                display: "[Array]",
+                isSpecial: true,
             };
         }
 
         if (typeof value === "object" && value !== null) {
-            return { 
-                normalized: "[Object]", 
-                display: "[Object]", 
-                isSpecial: true 
+            return {
+                normalized: "[Object]",
+                display: "[Object]",
+                isSpecial: true,
             };
         }
 
@@ -79,11 +78,7 @@
         }
 
         if (filter.type === "condition") {
-            const validOperators = [
-                "eq", "neq", "contains", "notContains",
-                "startsWith", "endsWith",
-                "gt", "gte", "lt", "lte"
-            ];
+            const validOperators = ["eq", "neq", "contains", "notContains", "startsWith", "endsWith", "gt", "gte", "lt", "lte"];
 
             if (!validOperators.includes(filter.operator)) {
                 return { valid: false, error: `Invalid operator: ${filter.operator}` };
@@ -100,7 +95,7 @@
 
         let sanitized = keyword.trim();
 
-        sanitized = sanitized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        sanitized = sanitized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
         if (sanitized.length > 100) {
             sanitized = sanitized.substring(0, 100);
@@ -117,12 +112,12 @@
             return {
                 truncated: false,
                 values,
-                totalCount: values.length
+                totalCount: values.length,
             };
         }
 
         const sampled = [];
-        
+
         for (let i = 0; i < sampleSize; i++) {
             const index = Math.floor((i / sampleSize) * maxItems);
             sampled.push(values[index]);
@@ -132,7 +127,7 @@
             truncated: true,
             values: sampled,
             totalCount: values.length,
-            message: `显示前 ${maxItems} 条，共 ${values.length} 条`
+            message: `显示前 ${maxItems} 条，共 ${values.length} 条`,
         };
     }
 
@@ -141,14 +136,13 @@
 
         for (const update of updates) {
             const key = `${update.col}_${update.type}`;
-            
+
             if (!deduplicated.has(key) || update.timestamp > deduplicated.get(key).timestamp) {
                 deduplicated.set(key, update);
             }
         }
 
-        return Array.from(deduplicated.values())
-            .sort((a, b) => a.timestamp - b.timestamp);
+        return Array.from(deduplicated.values()).sort((a, b) => a.timestamp - b.timestamp);
     }
 
     static recoverFromError(error, context) {
@@ -157,13 +151,13 @@
         switch (context) {
             case "extractUniqueValues":
                 return [];
-                
+
             case "computeHiddenRows":
                 return new Set();
-                
+
             case "renderDropdown":
                 return null;
-                
+
             default:
                 throw error;
         }

@@ -3,7 +3,6 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 
 export class FilterStrategy extends EventStrategy {
-
     /** 筛选策略优先级（高于默认鼠标策略 50） */
     priority = 60;
 
@@ -43,7 +42,7 @@ export class FilterStrategy extends EventStrategy {
         const col = hit.col;
         const position = {
             x: e.clientX,
-            y: e.clientY
+            y: e.clientY,
         };
 
         console.log("[Filter] 点击筛选图标 - 列:", col, "位置:", position);

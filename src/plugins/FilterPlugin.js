@@ -5,7 +5,6 @@ import { FilterStrategy } from "./filter/FilterStrategy.js";
 import { FilterIconRenderer } from "./filter/FilterIconRenderer.js";
 
 export class FilterPlugin extends BasePlugin {
-
     static get PLUGIN_NAME() {
         return "filter";
     }
@@ -20,13 +19,13 @@ export class FilterPlugin extends BasePlugin {
             alwaysShowInList: true,
             sortToEnd: true,
             treatBlankAsNull: true,
-            trimWhitespace: true
+            trimWhitespace: true,
         },
         conditionOperators: ["eq", "neq", "contains", "notContains"],
         iconRenderer: {
             iconSize: 12,
-            iconPadding: 6
-        }
+            iconPadding: 6,
+        },
     };
 
     #uiManager = null;
@@ -93,7 +92,7 @@ export class FilterPlugin extends BasePlugin {
 
     openDropdown(col, position) {
         if (!this.enabled) return;
-        
+
         this.#uiManager.openDropdown(col, position);
     }
 
@@ -117,23 +116,23 @@ export class FilterPlugin extends BasePlugin {
         if (!this.#iconRenderer) return null;
 
         let existingWrapper = headerContainer.querySelector(`.filter-icon-wrapper[data-col="${col}"]`);
-        
+
         if (existingWrapper) {
             this.#iconRenderer.updateIconState(existingWrapper, hasActiveFilter);
             return existingWrapper;
         }
 
         const wrapper = this.#iconRenderer.render(headerContainer, col, hasActiveFilter);
-        
+
         wrapper.addEventListener("click", (e) => {
             e.stopPropagation();
-            
+
             const rect = wrapper.getBoundingClientRect();
             const position = {
                 x: rect.left + rect.width / 2,
-                y: rect.bottom + 4
+                y: rect.bottom + 4,
             };
-            
+
             this.openDropdown(col, position);
         });
 
@@ -157,7 +156,7 @@ export class FilterPlugin extends BasePlugin {
         for (const [col] of this.#headerRenderers) {
             this.refreshHeaderIcon(col);
         }
-        
+
         // 强制重绘表头
         this.renderEngine?.invalidateAll();
         this.renderEngine?.render();
@@ -170,10 +169,10 @@ export class FilterPlugin extends BasePlugin {
         const filterState = new FilterState();
         this.#uiManager = new FilterUIManager(sheet, filterState);
 
-        Object.defineProperty(sheet, 'filterState', {
+        Object.defineProperty(sheet, "filterState", {
             value: filterState,
             writable: false,
-            configurable: true
+            configurable: true,
         });
     }
 
@@ -183,7 +182,7 @@ export class FilterPlugin extends BasePlugin {
 
     #registerStrategies() {
         this.#strategy = new FilterStrategy(this.#uiManager, this.eventHandler);
-        
+
         // 使用 BasePlugin 的 addStrategy 方法（自动管理生命周期）
         this.addStrategy("filterClick", this.#strategy);
     }
@@ -192,8 +191,8 @@ export class FilterPlugin extends BasePlugin {
         if (!this.renderEngine?.headerRenderer || this.#headerRendererCallback) return;
 
         const self = this;
-        
-        this.#headerRendererCallback = function(ctx, colIndex, x, y, width, height) {
+
+        this.#headerRendererCallback = function (ctx, colIndex, x, y, width, height) {
             self.#drawFilterIcon(ctx, colIndex, x, y, width, height);
         };
 
@@ -214,28 +213,28 @@ export class FilterPlugin extends BasePlugin {
         if (!filterState) return;
 
         const hasActiveFilter = filterState.getColumnFilter(colIndex) !== null;
-        
+
         const iconSize = this.#iconRenderer.iconSize;
         const padding = this.#iconRenderer.iconPadding;
-        
+
         const iconX = x + width - iconSize - padding;
         const iconY = y + (height - iconSize) / 2;
 
         ctx.save();
-        
+
         ctx.fillStyle = hasActiveFilter ? "#1890ff" : "#999";
         ctx.beginPath();
-        
+
         this.#drawFunnelShape(ctx, iconX, iconY, iconSize);
-        
+
         ctx.fill();
-        
+
         ctx.restore();
     }
 
     #drawFunnelShape(ctx, x, y, size) {
         const midX = x + size / 2;
-        
+
         ctx.moveTo(x, y);
         ctx.lineTo(x + size, y);
         ctx.lineTo(x + size * 0.7, y + size * 0.6);

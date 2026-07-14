@@ -5,6 +5,7 @@
 ### ✅ 已完成的修复
 
 #### 1. **FilterStrategy 事件处理架构修正**
+
 ```javascript
 // ❌ 旧实现（不工作）
 class FilterStrategy extends BaseStrategy {
@@ -15,13 +16,13 @@ class FilterStrategy extends BaseStrategy {
 // ✅ 新实现（符合项目规范）
 class FilterStrategy extends EventStrategy {
     priority = 10; // 高优先级
-    
+
     getEventHandlers() {
         return {
             [DELEGATE_KEYS.CANVAS_MOUSEUP]: (e) => this.#handleCanvasClick(e)
         };
     }
-    
+
     #handleCanvasClick(e) {
         const hitInfo = this.handler.getHitInfo(e);
         if (hitInfo.type === HIT_TYPE.COL_HEADER && this.#isFilterIconArea(hitInfo)) {
@@ -33,6 +34,7 @@ class FilterStrategy extends EventStrategy {
 ```
 
 #### 2. **FilterPlugin 策略注册方式优化**
+
 ```javascript
 // 使用 BasePlugin 标准方法（自动生命周期管理）
 #registerStrategies() {
@@ -83,18 +85,18 @@ console.log("事件处理器:", filterStrategy?.getEventHandlers());
 
 ```javascript
 // 模拟列头点击
-const canvas = document.querySelector('canvas');
+const canvas = document.querySelector("canvas");
 if (canvas) {
     const rect = canvas.getBoundingClientRect();
-    
+
     // 创建一个模拟的鼠标事件（点击 B 列头右侧区域）
-    const mockEvent = new MouseEvent('mouseup', {
+    const mockEvent = new MouseEvent("mouseup", {
         clientX: rect.left + 200, // 调整这个值到 B 列头位置
-        clientY: rect.top + 30,   // 列头高度通常在 20-40px
+        clientY: rect.top + 30, // 列头高度通常在 20-40px
         bubbles: true,
-        cancelable: true
+        cancelable: true,
     });
-    
+
     console.log("触发模拟点击...");
     canvas.dispatchEvent(mockEvent);
     console.log("检查是否打开了下拉面板:", filterPlugin.isDropdownOpen());
@@ -106,12 +108,12 @@ if (canvas) {
 ```javascript
 // 如果有 getHitInfo 方法，测试命中检测
 if (wb.eventHandler?.getHitInfo) {
-    const testEvent = new MouseEvent('mouseup', {
+    const testEvent = new MouseEvent("mouseup", {
         clientX: window.innerWidth / 2,
         clientY: 50, // 列头区域
-        bubbles: true
+        bubbles: true,
     });
-    
+
     const hitInfo = wb.eventHandler.getHitInfo(testEvent);
     console.log("命中信息:", hitInfo);
     console.log("命中类型:", hitInfo?.type);
@@ -163,11 +165,11 @@ priority = 100; // 设置为最高优先级
     const iconRightEdge = hitInfo.rect.right - this.#iconPadding;
     const iconLeftEdge = iconRightEdge - (this.#iconSize + this.#iconPadding * 2);
     const mouseX = hitInfo.mouseX || 0;
-    
+
     console.log("图标区域:", iconLeftEdge, "-", iconRightEdge);
     console.log("鼠标位置:", mouseX);
     console.log("是否命中:", mouseX >= iconLeftEdge && mouseX <= iconRightEdge);
-    
+
     return mouseX >= iconLeftEdge && mouseX <= iconRightEdge;
 }
 ```
@@ -176,7 +178,8 @@ priority = 100; // 设置为最高优先级
 
 **现象**: 图标显示但点击无效
 
-**可能原因**: 
+**可能原因**:
+
 - Canvas 事件被其他元素遮挡
 - z-index 层级问题
 
@@ -223,14 +226,14 @@ setTimeout(() => {
         console.error("❌ FilterPlugin 未加载！");
         return;
     }
-    
+
     console.log("✅ FilterPlugin 已加载");
     console.log("状态:", filterPlugin.enabled ? "启用" : "禁用");
-    
+
     // 强制重新初始化
     filterPlugin.destroy();
     filterPlugin.init({ enabled: true });
-    
+
     console.log("🔄 FilterPlugin 已重新初始化");
 }, 1000); // 等待 1 秒确保所有组件就绪
 ```

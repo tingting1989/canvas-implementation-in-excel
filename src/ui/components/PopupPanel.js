@@ -2,7 +2,6 @@
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 export class PopupPanel extends WebComponent {
-
     static DEFAULT_Z_INDEX = 10000;
     static ANIMATION_DURATION = 150;
 

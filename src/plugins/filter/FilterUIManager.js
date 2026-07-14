@@ -3,7 +3,6 @@ import { FilterEngine } from "./FilterEngine.js";
 import { PopupManager } from "../../ui/components/PopupManager.js";
 
 export class FilterUIManager {
-
     #dropdown = null;
     #popupId = null;
     #filterEngine = null;
@@ -27,7 +26,7 @@ export class FilterUIManager {
         const currentFilter = this.#filterState.getColumnFilter(col);
 
         const dropdown = document.createElement("filter-dropdown");
-        
+
         this.#popupId = PopupManager.getInstance().register(dropdown);
 
         dropdown.show(
@@ -38,7 +37,7 @@ export class FilterUIManager {
             {
                 dropdownWidth: 240,
                 dropdownMaxHeight: 360,
-                virtualScrollThreshold: 200
+                virtualScrollThreshold: 200,
             },
             (filter) => {
                 PopupManager.getInstance().unregister(this.#popupId);
@@ -47,7 +46,7 @@ export class FilterUIManager {
             () => {
                 PopupManager.getInstance().unregister(this.#popupId);
                 this.#onClear(col);
-            }
+            },
         );
 
         this.#dropdown = dropdown;
@@ -74,7 +73,7 @@ export class FilterUIManager {
         } else {
             this.#filterState.setColumnFilter(col, filter);
         }
-        
+
         this.#applyHiddenRows();
     }
 
@@ -85,15 +84,15 @@ export class FilterUIManager {
 
     #isFilterEmpty(filter) {
         if (!filter) return true;
-        
+
         if (filter.type === "values") {
             return filter.uncheckedValues.size === 0;
         }
-        
+
         if (filter.type === "condition") {
             return !filter.operator || !filter.value;
         }
-        
+
         return true;
     }
 

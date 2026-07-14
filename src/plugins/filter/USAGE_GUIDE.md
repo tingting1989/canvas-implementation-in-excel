@@ -19,8 +19,8 @@ filterPlugin.init({
     dropdownMaxHeight: 360,
     iconRenderer: {
         iconSize: 12,
-        iconPadding: 6
-    }
+        iconPadding: 6,
+    },
 });
 ```
 
@@ -29,6 +29,7 @@ filterPlugin.init({
 **✅ 无需额外代码！**
 
 FilterPlugin 会自动：
+
 - ✅ 在每个列头右侧绘制漏斗图标
 - ✅ 有筛选时显示蓝色 (#1890ff)
 - ✅ 无筛选时显示灰色 (#999)
@@ -55,20 +56,20 @@ FilterPlugin 会自动：
 ```javascript
 filterPlugin.init({
     iconRenderer: {
-        iconSize: 14,      // 图标大小 (默认: 12)
-        iconPadding: 8,    // 内边距 (默认: 6)
-        activeColor: "#1890ff",  // 活跃颜色 (默认: #1890ff)
-        inactiveColor: "#999"    // 非活跃颜色 (默认: #999)
-    }
+        iconSize: 14, // 图标大小 (默认: 12)
+        iconPadding: 8, // 内边距 (默认: 6)
+        activeColor: "#1890ff", // 活跃颜色 (默认: #1890ff)
+        inactiveColor: "#999", // 非活跃颜色 (默认: #999)
+    },
 });
 ```
 
 ## 🖱️ 交互流程
 
 1. **鼠标悬停**: 图标高亮（可选增强）
-2. **点击图标**: 
-   - 打开 FilterDropdown 面板
-   - 显示该列的唯一值列表
+2. **点击图标**:
+    - 打开 FilterDropdown 面板
+    - 显示该列的唯一值列表
 3. **勾选/取消勾选**: 选择要显示的值
 4. **点击确定**: 应用筛选
 5. **图标变蓝**: 表示该列有活跃筛选
@@ -105,22 +106,22 @@ class CustomFilterPlugin extends FilterPlugin {
     #drawCustomIcon(ctx, colIndex, x, y, width, height) {
         // 自定义绘制代码...
         // 例如：绘制下拉箭头而不是漏斗
-        
+
         ctx.save();
         ctx.fillStyle = this.#getIconColor(colIndex);
-        
+
         // 绘制三角形箭头
         const size = 10;
         const iconX = x + width - size - 6;
         const iconY = y + (height - size) / 2;
-        
+
         ctx.beginPath();
         ctx.moveTo(iconX, iconY);
         ctx.lineTo(iconX + size, iconY);
         ctx.lineTo(iconX + size / 2, iconY + size);
         ctx.closePath();
         ctx.fill();
-        
+
         ctx.restore();
     }
 }
@@ -131,6 +132,7 @@ class CustomFilterPlugin extends FilterPlugin {
 ### 问题：图标不显示
 
 **检查清单：**
+
 1. ✅ 插件已注册: `workbook.registerPlugin(FilterPlugin)`
 2. ✅ 插件已初始化: `filterPlugin.init({ enabled: true })`
 3. ✅ 插件已启用: `filterPlugin.enable()`
@@ -138,6 +140,7 @@ class CustomFilterPlugin extends FilterPlugin {
 5. ✅ headerRenderer 可用: `console.log(filterPlugin.renderEngine?.headerRenderer)`
 
 **调试代码：**
+
 ```javascript
 console.log("FilterPlugin enabled:", filterPlugin.enabled);
 console.log("Render engine:", filterPlugin.renderEngine);
@@ -148,10 +151,12 @@ console.log("Sheet filter state:", sheet.filterState);
 ### 问题：图标颜色不变
 
 **可能原因：**
+
 - 筛选状态未正确更新
 - 表头层未强制重绘
 
 **解决方案：**
+
 ```javascript
 // 手动触发重绘
 filterPlugin.refreshHeaderIcon(0); // 刷新特定列
@@ -163,6 +168,7 @@ filterPlugin.getFilterUIManager()?.closeDropdown();
 ### 问题：点击图标无反应
 
 **检查项：**
+
 1. FilterStrategy 是否注册成功
 2. EventHandler 是否正常工作
 3. 控制台是否有错误信息
@@ -176,8 +182,8 @@ filterPlugin.getFilterUIManager()?.closeDropdown();
 ```javascript
 filterPlugin.init({
     iconRenderer: {
-        iconSize: 10,  // 减小图标尺寸
-        iconPadding: 4 // 减小内边距
+        iconSize: 10, // 减小图标尺寸
+        iconPadding: 4, // 减小内边距
     },
     // 只在可见列绘制图标（需要自定义实现）
 });
@@ -186,6 +192,7 @@ filterPlugin.init({
 ### 缓存策略
 
 FilterPlugin 已经内置了缓存机制：
+
 - 筛选状态缓存
 - 唯一值缓存
 - 图标状态缓存

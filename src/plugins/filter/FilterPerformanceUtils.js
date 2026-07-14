@@ -1,5 +1,4 @@
 ﻿export class FilterPerformanceUtils {
-
     static #nullCache = new WeakMap();
     static #batchCache = new Map();
     static BATCH_CACHE_TTL = 5000; // 5 秒
@@ -8,17 +7,14 @@
         if (this.#nullCache.has(value)) {
             return this.#nullCache.get(value);
         }
-        
+
         const result = this.#checkIsNull(value);
         this.#nullCache.set(value, result);
         return result;
     }
 
     static #checkIsNull(value) {
-        return value === null ||
-               value === undefined ||
-               value === "" ||
-               (typeof value === "string" && value.trim() === "");
+        return value === null || value === undefined || value === "" || (typeof value === "string" && value.trim() === "");
     }
 
     static clearNullCache() {
@@ -28,7 +24,7 @@
     static preprocessColumnData(sheet, col, rowCount) {
         const cacheKey = `${col}_${rowCount}`;
         const cached = this.#batchCache.get(cacheKey);
-        
+
         if (cached && Date.now() - cached.timestamp < this.BATCH_CACHE_TTL) {
             return cached.data;
         }
@@ -36,17 +32,17 @@
         const data = [];
         for (let row = 0; row < rowCount; row++) {
             const rawValue = sheet.getCellValue(row, col);
-            
+
             data.push({
                 raw: rawValue,
                 key: this.normalizeToKey(rawValue),
-                isNull: this.isNullCached(rawValue)
+                isNull: this.isNullCached(rawValue),
             });
         }
 
         this.#batchCache.set(cacheKey, {
             data,
-            timestamp: Date.now()
+            timestamp: Date.now(),
         });
 
         return data;
@@ -73,12 +69,12 @@
 
     static debounce(func, wait = 100) {
         let timeoutId = null;
-        
-        return function(...args) {
+
+        return function (...args) {
             if (timeoutId !== null) {
                 clearTimeout(timeoutId);
             }
-            
+
             timeoutId = setTimeout(() => {
                 func.apply(this, args);
                 timeoutId = null;
@@ -88,12 +84,12 @@
 
     static throttle(func, limit = 100) {
         let inThrottle = false;
-        
-        return function(...args) {
+
+        return function (...args) {
             if (!inThrottle) {
                 func.apply(this, args);
                 inThrottle = true;
-                
+
                 setTimeout(() => {
                     inThrottle = false;
                 }, limit);
@@ -106,7 +102,7 @@
 
         function processBatch() {
             const batch = items.slice(index, index + batchSize);
-            
+
             if (batch.length === 0) {
                 callback?.(items.length);
                 return;
@@ -123,9 +119,9 @@
         const start = performance.now();
         const result = fn();
         const end = performance.now();
-        
+
         console.log(`[FilterPerf] ${label}: ${end - start.toFixed(2)}ms`);
-        
+
         return result;
     }
 
@@ -140,12 +136,12 @@
             if (sizeMap.has(obj)) continue;
             sizeMap.set(obj, true);
 
-            if (typeof obj === 'object' && obj !== null) {
+            if (typeof obj === "object" && obj !== null) {
                 for (const key of Object.keys(obj)) {
                     stack.push(obj[key]);
                     totalSize += 8; // 估算每个引用的大小
                 }
-            } else if (typeof obj === 'string') {
+            } else if (typeof obj === "string") {
                 totalSize += obj.length * 2; // UTF-16
             } else {
                 totalSize += 8;

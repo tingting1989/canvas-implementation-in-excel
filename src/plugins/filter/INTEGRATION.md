@@ -18,7 +18,7 @@ const filterPlugin = workbook.getPlugin("filter");
 filterPlugin.init({
     enabled: true,
     dropdownWidth: 240,
-    dropdownMaxHeight: 360
+    dropdownMaxHeight: 360,
 });
 ```
 
@@ -43,14 +43,14 @@ const filterState = sheet.filterState;
 // 值列表筛选
 filterState.setColumnFilter(0, {
     type: "values",
-    uncheckedValues: new Set(["Alice", "Bob"])
+    uncheckedValues: new Set(["Alice", "Bob"]),
 });
 
 // 条件筛选
 filterState.setColumnFilter(1, {
     type: "condition",
     operator: "gt",
-    value: "25"
+    value: "25",
 });
 
 // 应用隐藏行
@@ -118,30 +118,36 @@ PopupPanel (公共基类) ← FilterDropdown 继承此基类
 const options = {
     // 基础配置
     enabled: true,
-    
+
     // 下拉面板尺寸
     dropdownWidth: 240,
     dropdownMaxHeight: 360,
-    
+
     // 虚拟滚动阈值（超过此数量启用虚拟滚动）
     virtualScrollThreshold: 200,
-    
+
     // 空值处理
     nullValueHandling: {
         displayAs: "(空白)",
         alwaysShowInList: true,
         sortToEnd: true,
         treatBlankAsNull: true,
-        trimWhitespace: true
+        trimWhitespace: true,
     },
-    
+
     // 支持的条件操作符
     conditionOperators: [
-        "eq", "neq",           // 等于、不等于
-        "contains", "notContains", // 包含、不包含
-        "startsWith", "endsWith",   // 开头、结尾
-        "gt", "gte", "lt", "lte"   // 数值比较
-    ]
+        "eq",
+        "neq", // 等于、不等于
+        "contains",
+        "notContains", // 包含、不包含
+        "startsWith",
+        "endsWith", // 开头、结尾
+        "gt",
+        "gte",
+        "lt",
+        "lte", // 数值比较
+    ],
 };
 ```
 
@@ -149,35 +155,35 @@ const options = {
 
 ### FilterPlugin
 
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `init(options?)` | 配置对象 | void | 初始化插件 |
-| `destroy()` | - | void | 销毁插件 |
-| `enable()` | - | void | 启用 |
-| `disable()` | - | void | 禁用 |
-| `openDropdown(col, position)` | 列号，位置 | void | 打开面板 |
-| `closeDropdown()` | - | void | 关闭面板 |
-| `isDropdownOpen()` | - | boolean | 是否打开 |
-| `clearAllFilters()` | - | void | 清除所有筛选 |
-| `getFilterUIManager()` | - | FilterUIManager | 获取管理器 |
-| `getFilterEngine()` | - | FilterEngine | 获取引擎 |
+| 方法                          | 参数       | 返回值          | 说明         |
+| ----------------------------- | ---------- | --------------- | ------------ |
+| `init(options?)`              | 配置对象   | void            | 初始化插件   |
+| `destroy()`                   | -          | void            | 销毁插件     |
+| `enable()`                    | -          | void            | 启用         |
+| `disable()`                   | -          | void            | 禁用         |
+| `openDropdown(col, position)` | 列号，位置 | void            | 打开面板     |
+| `closeDropdown()`             | -          | void            | 关闭面板     |
+| `isDropdownOpen()`            | -          | boolean         | 是否打开     |
+| `clearAllFilters()`           | -          | void            | 清除所有筛选 |
+| `getFilterUIManager()`        | -          | FilterUIManager | 获取管理器   |
+| `getFilterEngine()`           | -          | FilterEngine    | 获取引擎     |
 
 ### FilterEngine
 
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `extractUniqueValues(col)` | 列号 | string[] | 提取唯一值 |
-| `computeHiddenRows()` | - | Set\<number\> | 计算隐藏行 |
+| 方法                       | 参数 | 返回值        | 说明       |
+| -------------------------- | ---- | ------------- | ---------- |
+| `extractUniqueValues(col)` | 列号 | string[]      | 提取唯一值 |
+| `computeHiddenRows()`      | -    | Set\<number\> | 计算隐藏行 |
 
 ### FilterState
 
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
-| `setColumnFilter(col, filter)` | 列号，筛选器 | void | 设置筛选 |
-| `removeColumnFilter(col)` | 列号 | void | 移除筛选 |
-| `getColumnFilter(col)` | 列号 | object\|null | 获取筛选 |
-| `getAllFilters()` | - | Map | 获取全部 |
-| `clearAll()` | - | void | 清空 |
+| 方法                           | 参数         | 返回值       | 说明     |
+| ------------------------------ | ------------ | ------------ | -------- |
+| `setColumnFilter(col, filter)` | 列号，筛选器 | void         | 设置筛选 |
+| `removeColumnFilter(col)`      | 列号         | void         | 移除筛选 |
+| `getColumnFilter(col)`         | 列号         | object\|null | 获取筛选 |
+| `getAllFilters()`              | -            | Map          | 获取全部 |
+| `clearAll()`                   | -            | void         | 清空     |
 
 ## 注意事项
 
@@ -191,14 +197,17 @@ const options = {
 ### 常见问题
 
 **Q: 筛选面板不显示？**
+
 - 检查是否调用了 `init()` 方法
 - 确认 `enabled` 为 `true`
 - 查看浏览器控制台错误
 
 **Q: 点击筛选图标无反应？**
+
 - 检查策略是否注册成功
 - 确认 HIT_TYPE 配置正确
 
 **Q: 筛选结果不正确？**
+
 - 检查数据源是否更新
 - 尝试清除缓存：`filterState.invalidateColumnCache(col)`
