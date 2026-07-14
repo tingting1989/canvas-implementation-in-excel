@@ -24,6 +24,14 @@ export class ChartLayer extends BaseLayer {
         this.markDirty();
     }
 
+    bindStore(store) {
+        super.bindStore(store);
+        this.watchForDirty("scroll");
+        this.watchForDirty("viewport");
+        this.watchForDirty("frozen");
+        this.watchForDirty("frozenOffset");
+    }
+
     render(ctx, sheet, viewport, options = {}) {
         if (!sheet || !sheet.chartManager) return;
 
@@ -140,14 +148,20 @@ export class ChartLayer extends BaseLayer {
     }
 
     invalidateChart(chartId) {
-        this.#cache.invalidate(chartId);
+        this.#cacheManager?.invalidateAll();
         this.#pendingCharts.add(chartId);
+        this.markDirty();
+    }
+
+    invalidateChartData() {
+        this.#cacheManager?.invalidateAll();
         this.markDirty();
     }
 
     removeChartCache(chartId) {
         this.#cache.remove(chartId);
         this.#pendingCharts.delete(chartId);
+        this.markDirty();
     }
 
     markDirty() {

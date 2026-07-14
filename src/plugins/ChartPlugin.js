@@ -60,6 +60,7 @@ export class ChartPlugin extends BasePlugin {
         this.#clampToFrozenBoundary(chart, sheet);
         sheet.chartManager.add(chart);
         this.hooks?.runHooks(HOOKS.AFTER_CHART_ADD, chart);
+        this.renderEngine?.chartLayer?.markDirty();
         this.render();
         return chart;
     }
@@ -90,6 +91,7 @@ export class ChartPlugin extends BasePlugin {
         const chart = sheet.chartManager.remove(id);
         if (chart) {
             this.hooks?.runHooks(HOOKS.AFTER_CHART_REMOVE, id);
+            this.renderEngine?.chartLayer?.removeChartCache(id);
             this.render();
         }
         return chart;
@@ -101,6 +103,7 @@ export class ChartPlugin extends BasePlugin {
         const chart = sheet.chartManager.update(id, { style: styleUpdate });
         if (chart) {
             this.hooks?.runHooks(HOOKS.AFTER_CHART_UPDATE, id);
+            this.renderEngine?.chartLayer?.invalidateChart(id);
             this.render();
         }
         return chart;
@@ -112,6 +115,7 @@ export class ChartPlugin extends BasePlugin {
         const chart = sheet.chartManager.update(id, { dataRange });
         if (chart) {
             this.hooks?.runHooks(HOOKS.AFTER_CHART_UPDATE, id);
+            this.renderEngine?.chartLayer?.invalidateChart(id);
             this.render();
         }
         return chart;
@@ -128,6 +132,7 @@ export class ChartPlugin extends BasePlugin {
         const chart = sheet.chartManager.update(id, updates);
         if (chart) {
             this.#clampToFrozenBoundary(chart, sheet);
+            this.renderEngine?.chartLayer?.markDirty();
             this.render();
         }
         return chart;
@@ -139,6 +144,7 @@ export class ChartPlugin extends BasePlugin {
         const chart = sheet.chartManager.update(id, { width, height });
         if (chart) {
             this.#clampToFrozenBoundary(chart, sheet);
+            this.renderEngine?.chartLayer?.invalidateChart(id);
             this.render();
         }
         return chart;

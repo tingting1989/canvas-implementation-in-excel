@@ -403,7 +403,7 @@ export class RenderEngine extends DOMComponent {
         this.selectionLayer.markDirty();
         this.interactionLayer.markDirty();
         this.headerLayer.markDirty();
-        this.chartLayer?.markDirty();
+        this.chartLayer?.invalidateChartData();
         this.requestRender();
     }
 
@@ -411,6 +411,7 @@ export class RenderEngine extends DOMComponent {
         const rc = this.#currentSheet ? this.#currentSheet.rowColManager : null;
         this.tileLayer.markCellDirty(pageRow, col, rc);
         this.frozenLayer.markCellDirty(pageRow, col, rc);
+        this.chartLayer?.invalidateChartData();
         this.requestRender();
     }
 
