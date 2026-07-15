@@ -57,6 +57,13 @@ export class ChartSelectionStrategy extends EventStrategy {
         return this.handler.sheet?.chartManager || null;
     }
 
+    #syncSelectionToLayer() {
+        const layer = this.handler.viewport.chartLayer;
+        if (layer) {
+            layer.selectedChartId = this.#selectedChartId;
+        }
+    }
+
     #onMouseDown(e) {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
@@ -77,6 +84,7 @@ export class ChartSelectionStrategy extends EventStrategy {
         this.#isDragging = false;
         this.#isResizing = false;
         this.#selectedChartId = chart.id;
+        this.#syncSelectionToLayer();
 
         const rect = this.handler.canvasContext.canvas.getBoundingClientRect();
         const px = e.clientX - rect.left;
@@ -115,6 +123,8 @@ export class ChartSelectionStrategy extends EventStrategy {
             this.handler.canvasContext.canvas.style.cursor = handle ? this.#getCursorForHandle(handle) : "move";
             return false;
         }
+
+        this.handler.canvasContext.canvas.style.cursor = "";
     }
 
     #onMouseMove(e) {
@@ -206,6 +216,7 @@ export class ChartSelectionStrategy extends EventStrategy {
             if (cm) {
                 cm.remove(this.#selectedChartId);
                 this.#selectedChartId = null;
+                this.#syncSelectionToLayer();
             }
             this.handler.viewport.invalidateAll();
             this.handler.render();
@@ -219,6 +230,7 @@ export class ChartSelectionStrategy extends EventStrategy {
 
     #deselect() {
         this.#selectedChartId = null;
+        this.#syncSelectionToLayer();
         this.handler.viewport.invalidateAll();
         this.handler.render();
     }

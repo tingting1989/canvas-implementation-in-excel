@@ -9,11 +9,16 @@ import { CONFIG } from "@/constants/config.js";
 export class ChartPlugin extends BasePlugin {
     static PLUGIN_NAME = "chart";
 
+    #sheetSwitchUnsubscribe = null;
+
     init(options = {}) {
         super.init(options);
         this.#attachToSheets();
         this.addStrategy("chartSelection", new ChartSelectionStrategy(this.eventHandler));
-        this.#listenEvents();
+        this.#bindSheetSwitchListener(this.sheet);
+        if (options.enabled === false) {
+            this.disable();
+        }
     }
 
     #attachToSheets() {
@@ -26,14 +31,23 @@ export class ChartPlugin extends BasePlugin {
         }
     }
 
-    #listenEvents() {
-        if (this.workbook?.bus) {
-            this.workbook.bus.on(SHEET_EVENTS.SHEET_SWITCHED, () => {
-                const sheet = this.workbook.activeSheet;
-                if (sheet && !sheet.chartManager) {
-                    sheet.chartManager = new ChartManager(sheet);
-                }
-            });
+    #bindSheetSwitchListener(sheet) {
+        if (!sheet?.bus) return;
+        this.#unbindSheetSwitchListener();
+        this.#sheetSwitchUnsubscribe = sheet.bus.on(SHEET_EVENTS.SHEET_SWITCHED, (envelope) => {
+            const { currentSheet } = envelope.payload;
+            const newSheet = this.workbook.sheets.get(currentSheet);
+            if (newSheet && !newSheet.chartManager) {
+                newSheet.chartManager = new ChartManager(newSheet);
+            }
+            this.#bindSheetSwitchListener(newSheet);
+        });
+    }
+
+    #unbindSheetSwitchListener() {
+        if (this.#sheetSwitchUnsubscribe) {
+            this.#sheetSwitchUnsubscribe();
+            this.#sheetSwitchUnsubscribe = null;
         }
     }
 
@@ -194,6 +208,7 @@ export class ChartPlugin extends BasePlugin {
     }
 
     destroy() {
+        this.#unbindSheetSwitchListener();
         const sheetsMap = this.workbook?.sheets;
         if (sheetsMap) {
             for (const sheet of sheetsMap.values()) {

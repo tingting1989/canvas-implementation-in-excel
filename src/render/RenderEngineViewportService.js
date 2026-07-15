@@ -98,4 +98,8 @@ export class RenderEngineViewportService extends ViewportService {
     invalidateAll() {
         this.#renderEngine.invalidateAll();
     }
+
+    get chartLayer() {
+        return this.#renderEngine.chartLayer;
+    }
 }

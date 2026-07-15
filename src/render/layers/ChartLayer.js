@@ -1,11 +1,13 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { LAYER_Z_INDEX } from "../../constants/layerZIndex.js";
+import { CONFIG } from "../../constants/config.js";
 import { ChartRendererFactory } from "../chart/ChartRendererFactory.js";
 import { DataExtractor } from "../chart/DataExtractor.js";
 import { ChartCache } from "../chart/ChartCache.js";
 import { ChartCacheManager } from "../chart/ChartCacheManager.js";
 
 const PADDING = { top: 36, right: 20, bottom: 44, left: 56 };
+const HANDLE_SIZE = CONFIG.CHART_SELECTION_HANDLE_SIZE || 8;
 
 export class ChartLayer extends BaseLayer {
     #cache = new ChartCache();
@@ -13,6 +15,7 @@ export class ChartLayer extends BaseLayer {
     #dataExtractor = new DataExtractor();
     #isRendering = false;
     #pendingCharts = new Set();
+    #selectedChartId = null;
 
     constructor() {
         super("chart", LAYER_Z_INDEX.CHART, { offscreen: true });
@@ -30,6 +33,17 @@ export class ChartLayer extends BaseLayer {
         this.watchForDirty("viewport");
         this.watchForDirty("frozen");
         this.watchForDirty("frozenOffset");
+    }
+
+    get selectedChartId() {
+        return this.#selectedChartId;
+    }
+
+    set selectedChartId(id) {
+        if (this.#selectedChartId !== id) {
+            this.#selectedChartId = id;
+            this.markDirty();
+        }
     }
 
     render(ctx, sheet, viewport, options = {}) {
@@ -77,6 +91,52 @@ export class ChartLayer extends BaseLayer {
                 ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
             }
         }
+
+        if (this.#selectedChartId) {
+            const selectedChart = sheet.chartManager.get(this.#selectedChartId);
+            if (selectedChart) {
+                this.#renderSelectionOverlay(ctx, selectedChart, vt);
+            }
+        }
+    }
+
+    #renderSelectionOverlay(ctx, chart, vt) {
+        const b = chart.getBounds(vt);
+        if (!b) return;
+
+        ctx.save();
+        ctx.strokeStyle = CONFIG.CHART_SELECTION_BORDER_COLOR || "#4472C4";
+        ctx.lineWidth = CONFIG.CHART_SELECTION_BORDER_WIDTH || 1.5;
+        ctx.setLineDash(CONFIG.UI_DASH_PATTERN || [5, 3]);
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+        ctx.setLineDash([]);
+
+        const handles = this.#getHandlePositions(b);
+        const half = HANDLE_SIZE / 2;
+        for (const pos of Object.values(handles)) {
+            ctx.fillStyle = "#fff";
+            ctx.strokeStyle = CONFIG.CHART_SELECTION_BORDER_COLOR || "#4472C4";
+            ctx.lineWidth = 1;
+            ctx.fillRect(pos.x - half, pos.y - half, HANDLE_SIZE, HANDLE_SIZE);
+            ctx.strokeRect(pos.x - half, pos.y - half, HANDLE_SIZE, HANDLE_SIZE);
+        }
+
+        ctx.restore();
+    }
+
+    #getHandlePositions(b) {
+        const mx = b.x + b.w / 2;
+        const my = b.y + b.h / 2;
+        return {
+            nw: { x: b.x, y: b.y },
+            n: { x: mx, y: b.y },
+            ne: { x: b.x + b.w, y: b.y },
+            e: { x: b.x + b.w, y: my },
+            se: { x: b.x + b.w, y: b.y + b.h },
+            s: { x: mx, y: b.y + b.h },
+            sw: { x: b.x, y: b.y + b.h },
+            w: { x: b.x, y: my },
+        };
     }
 
     async #renderPendingCharts(sheet) {
