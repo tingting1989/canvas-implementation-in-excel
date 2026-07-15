@@ -1,10 +1,11 @@
-import { BaseLayer } from "../BaseLayer.js";
+﻿import { BaseLayer } from "../BaseLayer.js";
 import { LAYER_Z_INDEX } from "../../constants/layerZIndex.js";
 import { CONFIG } from "../../constants/config.js";
 import { ChartRendererFactory } from "../chart/ChartRendererFactory.js";
 import { DataExtractor } from "../chart/DataExtractor.js";
 import { ChartCache } from "../chart/ChartCache.js";
 import { ChartCacheManager } from "../chart/ChartCacheManager.js";
+import { NativeChartRenderer } from "../chart/NativeChartRenderer.js";
 
 const PADDING = { top: 36, right: 20, bottom: 44, left: 56 };
 const HANDLE_SIZE = CONFIG.CHART_SELECTION_HANDLE_SIZE || 8;
@@ -14,8 +15,11 @@ export class ChartLayer extends BaseLayer {
     #cacheManager = null;
     #dataExtractor = new DataExtractor();
     #isRendering = false;
+    #isResizing = false;
     #pendingCharts = new Set();
     #selectedChartId = null;
+    #hoverInfo = null;
+    #hoverChartId = null;
 
     constructor() {
         super("chart", LAYER_Z_INDEX.CHART, { offscreen: true });
@@ -68,13 +72,19 @@ export class ChartLayer extends BaseLayer {
         for (const chart of visibleCharts) {
             const isDirty = this.#cacheManager ? this.#cacheManager.isDirty(chart.id) : true;
 
-            if (!isDirty) {
-                const cached = this.#cache.get(chart.id);
-                if (cached) {
-                    const bounds = chart.getBounds(vt);
-                    ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
-                    continue;
-                }
+            const cached = this.#cache.get(chart.id);
+            
+            if (isDirty && this.#isResizing && cached) {
+                const bounds = chart.getBounds(vt);
+                ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
+                this.#pendingCharts.add(chart.id);
+                continue;
+            }
+            
+            if (!isDirty && cached) {
+                const bounds = chart.getBounds(vt);
+                ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
+                continue;
             }
 
             this.#pendingCharts.add(chart.id);
@@ -98,8 +108,33 @@ export class ChartLayer extends BaseLayer {
                 this.#renderSelectionOverlay(ctx, selectedChart, vt);
             }
         }
+
+        if (this.#hoverInfo && this.#hoverChartId) {
+            const chart = sheet.chartManager.get(this.#hoverChartId);
+            if (chart && chart.style.showTooltip !== false) {
+                const bounds = chart.getBounds(vt);
+                NativeChartRenderer.renderTooltip(ctx, this.#hoverInfo, bounds, chart.style);
+            }
+        }
     }
 
+    setHoverInfo(chartId, info) {
+        if (this.#hoverChartId !== chartId || !this.#isEqual(this.#hoverInfo, info)) {
+            this.#hoverChartId = chartId;
+            this.#hoverInfo = info;
+            this.markDirty();
+        }
+    }
+
+    setIsResizing(isResizing) {
+        this.#isResizing = isResizing;
+    }
+
+    #isEqual(a, b) {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
+        return a.category === b.category && a.seriesName === b.seriesName && a.value === b.value;
+    }
     #renderSelectionOverlay(ctx, chart, vt) {
         const b = chart.getBounds(vt);
         if (!b) return;
@@ -160,6 +195,7 @@ export class ChartLayer extends BaseLayer {
         }
 
         this.#isRendering = false;
+    this.#isResizing = false;
         this.markDirty();
         if (typeof this.onContentReady === "function") {
             this.onContentReady();
@@ -189,6 +225,7 @@ export class ChartLayer extends BaseLayer {
             };
 
             renderer.render(entry.ctx, chart, data, plotArea, chart.style);
+            chart._cachedData = data;
         } catch (e) {
             console.warn("[ChartLayer] Error rendering chart:", e);
         }
@@ -201,7 +238,7 @@ export class ChartLayer extends BaseLayer {
         for (let i = charts.length - 1; i >= 0; i--) {
             const chart = charts[i];
             if (chart.containsPoint(px, py, vt)) {
-                return { type: "chart", chartId: chart.id, chart, bounds: chart.getBounds(vt) };
+                return { type: "chart", chartId: chart.id, chart, bounds: chart.getBounds(vt), vt };
             }
         }
         return null;

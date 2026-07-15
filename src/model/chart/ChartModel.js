@@ -25,6 +25,7 @@ export class ChartModel {
             showGrid: true,
             colors: [...DEFAULT_COLORS],
             ignoreHiddenData: false,
+            showTooltip: true,
             ...options.style,
         };
         this._cachedData = null;

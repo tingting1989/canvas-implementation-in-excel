@@ -1,4 +1,6 @@
-import { CONFIG } from "../../constants/config.js";
+﻿import { CONFIG } from "../../constants/config.js";
+
+const HIT_RADIUS = 8;
 
 export class NativeChartRenderer {
     static render(ctx, chart, data, plotArea, style) {
@@ -8,7 +10,7 @@ export class NativeChartRenderer {
             this.#renderGrid(ctx, plotArea);
         }
 
-        const yScale = this.#buildYScale(data, chart.type);
+        const yScale = NativeChartRenderer.buildYScale(data, chart.type);
         this.#renderAxes(ctx, data, plotArea, yScale);
 
         switch (chart.type) {
@@ -38,6 +40,218 @@ export class NativeChartRenderer {
         }
 
         ctx.restore();
+    }
+
+    static hitTestDataPoint(px, py, chartType, data, plotArea, yScale) {
+        const seriesCount = data.headers.length - 1;
+        const catCount = data.data.length;
+        if (seriesCount <= 0 || catCount <= 0) return null;
+
+        switch (chartType) {
+            case "bar":
+                return this.#hitBar(px, py, data, plotArea, seriesCount, catCount, yScale);
+            case "line":
+                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount);
+            case "area":
+                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount);
+            case "scatter":
+                return this.#hitScatter(px, py, data, plotArea, seriesCount, catCount);
+            case "pie":
+                return this.#hitPie(px, py, data, plotArea, catCount);
+            default:
+                return null;
+        }
+    }
+
+    static renderTooltip(ctx, hoverInfo, bounds, style) {
+        if (!hoverInfo || !bounds) return;
+
+        const { category, seriesName, value, pointX, pointY } = hoverInfo;
+        const padding = { x: 8, y: 6 };
+        const lineHeight = 16;
+        const lines = [String(category)];
+        if (seriesName && seriesName !== "undefined") {
+            lines.push(`${seriesName}: ${this.#formatNumber(value)}`);
+        } else {
+            lines.push(this.#formatNumber(value));
+        }
+
+        ctx.save();
+        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+
+        let maxW = 0;
+        for (const line of lines) {
+            const w = ctx.measureText(line).width;
+            if (w > maxW) maxW = w;
+        }
+
+        const boxW = maxW + padding.x * 2;
+        const boxH = lines.length * lineHeight + padding.y * 2;
+
+        let tipX = pointX + 12;
+        let tipY = pointY - boxH - 10;
+
+        if (tipX + boxW > bounds.x + bounds.w) {
+            tipX = pointX - boxW - 12;
+        }
+        if (tipY < bounds.y) {
+            tipY = pointY + 14;
+        }
+
+        tipX = Math.max(bounds.x, Math.min(tipX, bounds.x + bounds.w - boxW));
+        tipY = Math.max(bounds.y, Math.min(tipY, bounds.y + bounds.h - boxH));
+
+        ctx.fillStyle = "rgba(0,0,0,0.75)";
+        ctx.beginPath();
+        ctx.roundRect(tipX, tipY, boxW, boxH, 4);
+        ctx.fill();
+
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], tipX + padding.x, tipY + padding.y + i * lineHeight);
+        }
+
+        ctx.restore();
+    }
+
+    static #hitBar(px, py, data, area, seriesCount, catCount, yScale) {
+        const groupWidth = area.w / catCount;
+        const barWidth = (groupWidth * 0.7) / seriesCount;
+        const barGap = (groupWidth * 0.3) / (seriesCount + 1);
+        const yMin = yScale.min;
+        const yMax = yScale.max;
+        const yRange = yMax - yMin || 1;
+
+        for (let s = 0; s < seriesCount; s++) {
+            for (let i = 0; i < catCount; i++) {
+                const val = Number(data.data[i][s + 1]) || 0;
+                const barH = ((val - yMin) / yRange) * area.h;
+                const bx = area.x + i * groupWidth + barGap + s * (barWidth + barGap);
+                const by = area.y + area.h - barH;
+
+                if (px >= bx && px <= bx + barWidth && py >= by && py <= by + barH) {
+                    return {
+                        category: String(data.data[i][0]),
+                        seriesName: String(data.headers[s + 1] || ""),
+                        value: val,
+                        pointX: bx + barWidth / 2,
+                        pointY: by,
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    static #hitLine(px, py, data, area, seriesCount, catCount) {
+        const yMin = this.#getYMin(data);
+        const yMax = this.#getYMax(data);
+        const yRange = yMax - yMin || 1;
+        const stepX = area.w / catCount;
+        const dotR = Math.max(CONFIG.CHART_LINE_DOT_RADIUS, HIT_RADIUS);
+
+        for (let s = 0; s < seriesCount; s++) {
+            for (let i = 0; i < catCount; i++) {
+                const val = Number(data.data[i][s + 1]) || 0;
+                const dx = area.x + stepX * i + stepX / 2;
+                const dy = area.y + area.h - ((val - yMin) / yRange) * area.h;
+
+                if ((px - dx) * (px - dx) + (py - dy) * (py - dy) <= dotR * dotR) {
+                    return {
+                        category: String(data.data[i][0]),
+                        seriesName: String(data.headers[s + 1] || ""),
+                        value: val,
+                        pointX: dx,
+                        pointY: dy,
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    static #hitScatter(px, py, data, area, seriesCount, catCount) {
+        const allX = data.data.map((row) => Number(row[0]) || 0);
+        const allY = data.data.flatMap((row) => row.slice(1).map((v) => Number(v) || 0));
+        const xMin = Math.min(...allX);
+        const xMax = Math.max(...allX);
+        const yMin = Math.min(...allY);
+        const yMax = Math.max(...allY);
+        const xRange = xMax - xMin || 1;
+        const yRange = yMax - yMin || 1;
+        const dotR = Math.max(CONFIG.CHART_SCATTER_DOT_RADIUS, HIT_RADIUS);
+
+        for (let s = 0; s < seriesCount; s++) {
+            for (let i = 0; i < catCount; i++) {
+                const xVal = Number(data.data[i][0]) || 0;
+                const yVal = Number(data.data[i][s + 1]) || 0;
+                const dx = area.x + ((xVal - xMin) / xRange) * area.w;
+                const dy = area.y + area.h - ((yVal - yMin) / yRange) * area.h;
+
+                if ((px - dx) * (px - dx) + (py - dy) * (py - dy) <= dotR * dotR) {
+                    return {
+                        category: String(xVal),
+                        seriesName: String(data.headers[s + 1] || ""),
+                        value: yVal,
+                        pointX: dx,
+                        pointY: dy,
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    static #hitPie(px, py, data, area, catCount) {
+        const values = data.data.map((row) => Number(row[1]) || 0);
+        const total = values.reduce((sum, v) => sum + v, 0);
+        if (total === 0) return null;
+
+        const cx = area.x + area.w / 2;
+        const cy = area.y + area.h / 2;
+        const r = Math.min(area.w, area.h) / 2 - 10;
+
+        const dx = px - cx;
+        const dy = py - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > r) return null;
+
+        let angle = Math.atan2(dy, dx);
+        if (angle < -Math.PI / 2) angle += Math.PI * 2;
+
+        let startAngle = -Math.PI / 2;
+        for (let i = 0; i < catCount; i++) {
+            const sliceAngle = (values[i] / total) * Math.PI * 2;
+            let endAngle = startAngle + sliceAngle;
+            if (endAngle > Math.PI * 3 / 2) endAngle -= Math.PI * 2;
+
+            let normalizedAngle = angle;
+            if (startAngle <= endAngle) {
+                if (normalizedAngle >= startAngle && normalizedAngle <= endAngle) {
+                    return {
+                        category: String(data.data[i][0]),
+                        seriesName: "",
+                        value: values[i],
+                        pointX: cx + Math.cos(startAngle + sliceAngle / 2) * r * 0.6,
+                        pointY: cy + Math.sin(startAngle + sliceAngle / 2) * r * 0.6,
+                    };
+                }
+            } else {
+                if (normalizedAngle >= startAngle || normalizedAngle <= endAngle) {
+                    return {
+                        category: String(data.data[i][0]),
+                        seriesName: "",
+                        value: values[i],
+                        pointX: cx + Math.cos(startAngle + sliceAngle / 2) * r * 0.6,
+                        pointY: cy + Math.sin(startAngle + sliceAngle / 2) * r * 0.6,
+                    };
+                }
+            }
+            startAngle += sliceAngle;
+        }
+        return null;
     }
 
     static #renderGrid(ctx, area) {
@@ -340,7 +554,7 @@ export class NativeChartRenderer {
         return max === -Infinity ? 1 : max;
     }
 
-    static #buildYScale(data, chartType) {
+    static buildYScale(data, chartType) {
         const dataMin = this.#getYMin(data);
         const minValue = chartType === "bar" && dataMin >= 0 ? 0 : dataMin;
         const ticks = this.#calcYTicks(data, 5, minValue);

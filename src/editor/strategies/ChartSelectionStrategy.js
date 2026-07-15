@@ -2,6 +2,7 @@ import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { CONFIG } from "../../constants/config.js";
+import { NativeChartRenderer } from "../../render/chart/NativeChartRenderer.js";
 
 const DRAG_THRESHOLD = 3;
 
@@ -110,7 +111,7 @@ export class ChartSelectionStrategy extends EventStrategy {
         return false;
     }
 
-    #onHover(e) {
+        #onHover(e) {
         if (!this.enabled || !this.handler.sheet) return;
         if (this.#isMoving) return;
 
@@ -120,11 +121,37 @@ export class ChartSelectionStrategy extends EventStrategy {
             const px = e.clientX - rect.left;
             const py = e.clientY - rect.top;
             const handle = this.#hitHandle(px, py, hit.chart, hit.bounds);
+            
+            const chartBounds = hit.chart.getBounds(hit.vt);
+            const localX = px - chartBounds.x;
+            const localY = py - chartBounds.y;
+
+            const data = hit.chart._cachedData;
+            if (data && data.data && data.data.length) {
+                const plotArea = {
+                    x: 56,
+                    y: 36,
+                    w: hit.chart.width - 56 - 20,
+                    h: hit.chart.height - 36 - 44,
+                };
+                const yScale = NativeChartRenderer.buildYScale(data, hit.chart.type);
+                const hoverInfo = NativeChartRenderer.hitTestDataPoint(localX, localY, hit.chart.type, data, plotArea, yScale);
+                
+                if (hoverInfo) {
+                    hoverInfo.pointX = chartBounds.x + hoverInfo.pointX;
+                    hoverInfo.pointY = chartBounds.y + hoverInfo.pointY;
+                    this.handler.viewport.chartLayer.setHoverInfo(hit.chartId, hoverInfo);
+                } else {
+                    this.handler.viewport.chartLayer.setHoverInfo(hit.chartId, null);
+                }
+            }
+
             this.handler.canvasContext.canvas.style.cursor = handle ? this.#getCursorForHandle(handle) : "move";
             return false;
         }
 
         this.handler.canvasContext.canvas.style.cursor = "";
+        this.handler.viewport.chartLayer.setHoverInfo(null, null);
     }
 
     #onMouseMove(e) {
@@ -188,7 +215,7 @@ export class ChartSelectionStrategy extends EventStrategy {
             this.handler.canvasContext.canvas.style.cursor = this.#getCursorForHandle(h);
         }
 
-        this.handler.viewport.invalidateAll();
+        this.handler.viewport.chartLayer?.markDirty();
         this.handler.render();
     }
 
