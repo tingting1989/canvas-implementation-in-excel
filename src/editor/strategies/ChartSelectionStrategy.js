@@ -111,7 +111,7 @@ export class ChartSelectionStrategy extends EventStrategy {
         return false;
     }
 
-        #onHover(e) {
+    #onHover(e) {
         if (!this.enabled || !this.handler.sheet) return;
         if (this.#isMoving) return;
 
@@ -121,7 +121,7 @@ export class ChartSelectionStrategy extends EventStrategy {
             const px = e.clientX - rect.left;
             const py = e.clientY - rect.top;
             const handle = this.#hitHandle(px, py, hit.chart, hit.bounds);
-            
+
             const chartBounds = hit.chart.getBounds(hit.vt);
             const localX = px - chartBounds.x;
             const localY = py - chartBounds.y;
@@ -136,7 +136,7 @@ export class ChartSelectionStrategy extends EventStrategy {
                 };
                 const yScale = NativeChartRenderer.buildYScale(data, hit.chart.type);
                 const hoverInfo = NativeChartRenderer.hitTestDataPoint(localX, localY, hit.chart.type, data, plotArea, yScale);
-                
+
                 if (hoverInfo) {
                     hoverInfo.pointX = chartBounds.x + hoverInfo.pointX;
                     hoverInfo.pointY = chartBounds.y + hoverInfo.pointY;

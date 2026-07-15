@@ -73,14 +73,14 @@ export class ChartLayer extends BaseLayer {
             const isDirty = this.#cacheManager ? this.#cacheManager.isDirty(chart.id) : true;
 
             const cached = this.#cache.get(chart.id);
-            
+
             if (isDirty && this.#isResizing && cached) {
                 const bounds = chart.getBounds(vt);
                 ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
                 this.#pendingCharts.add(chart.id);
                 continue;
             }
-            
+
             if (!isDirty && cached) {
                 const bounds = chart.getBounds(vt);
                 ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
@@ -128,6 +128,96 @@ export class ChartLayer extends BaseLayer {
 
     setIsResizing(isResizing) {
         this.#isResizing = isResizing;
+    }
+    async getChartCanvas(chartId) {
+        const cached = this.#cache.get(chartId);
+        if (cached) {
+            return cached.canvas;
+        }
+        return null;
+    }
+
+    async getChartAsDataURL(chartId, options = {}) {
+        const { format = 'png', quality = 1.0, scale = 1 } = options;
+        
+        let cached = this.#cache.get(chartId);
+        
+        if (!cached || options.rebuildHighQuality) {
+            const sheet = this.sheet;
+            if (sheet && sheet.chartManager) {
+                const chart = sheet.chartManager.get(chartId);
+                if (chart) {
+                    await this.#renderToCache(chart, sheet);
+                    cached = this.#cache.get(chartId);
+                }
+            }
+        }
+        
+        if (!cached || !cached.canvas) return null;
+        
+        const canvas = cached.canvas;
+        
+        if (scale > 1) {
+            const scaledCanvas = document.createElement('canvas');
+            scaledCanvas.width = canvas.width * scale;
+            scaledCanvas.height = canvas.height * scale;
+            const ctx = scaledCanvas.getContext('2d');
+            ctx.scale(scale, scale);
+            ctx.drawImage(canvas, 0, 0);
+            
+            const mimeType = format === 'jpeg' ? 'image/jpeg' : 
+                            format === 'webp' ? 'image/webp' : 'image/png';
+            return scaledCanvas.toDataURL(mimeType, quality);
+        } 
+            const mimeType = format === 'jpeg' ? 'image/jpeg' : 
+                            format === 'webp' ? 'image/webp' : 'image/png';
+            return canvas.toDataURL(mimeType, quality);
+        
+    }
+
+    async getChartAsBlob(chartId, options = {}) {
+        const dataUrl = await this.getChartAsDataURL(chartId, options);
+        if (!dataUrl) return null;
+        
+        const response = await fetch(dataUrl);
+        return await response.blob();
+    }
+
+    async rebuildChartCache(chartId) {
+        const sheet = this.sheet;
+        if (!sheet || !sheet.chartManager) return false;
+        
+        const chart = sheet.chartManager.get(chartId);
+        if (!chart) return false;
+        
+        try {
+            await this.#renderToCache(chart, sheet);
+            return true;
+        } catch (error) {
+            console.error(`Failed to rebuild cache for chart ${chartId}:`, error);
+            return false;
+        }
+    }
+
+    getChartsInSelection(selection) {
+        if (!this.sheet || !this.sheet.chartManager) return [];
+        
+        const charts = this.sheet.chartManager.getAll();
+        if (!selection || !selection.startRow || !selection.endRow) return charts;
+        
+        return charts.filter(chart => {
+            const chartEndRow = chart.anchorRow + Math.ceil(chart.height / 20);
+            const chartEndCol = chart.anchorCol + Math.ceil(chart.width / 80);
+            
+            return !(chart.anchorRow > selection.endRow || 
+                    chartEndRow < selection.startRow ||
+                    chart.anchorCol > selection.endCol || 
+                    chartEndCol < selection.startCol);
+        });
+    }
+
+    getAllCharts() {
+        return this.sheet?.chartManager?.getAll() || [];
     }
 
     #isEqual(a, b) {
@@ -195,7 +285,7 @@ export class ChartLayer extends BaseLayer {
         }
 
         this.#isRendering = false;
-    this.#isResizing = false;
+        this.#isResizing = false;
         this.markDirty();
         if (typeof this.onContentReady === "function") {
             this.onContentReady();

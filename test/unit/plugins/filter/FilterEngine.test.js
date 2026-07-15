@@ -106,6 +106,7 @@ describe("FilterEngine", () => {
             expect(hiddenRows.has(1)).toBe(true);
             expect(hiddenRows.has(2)).toBe(true);
             expect(hiddenRows.has(4)).toBe(true);
+
             // Row 0 ("Alice"), Row 3 ("Bob") 应该可见
             expect(hiddenRows.has(0)).toBe(false);
             expect(hiddenRows.has(3)).toBe(false);

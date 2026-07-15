@@ -256,9 +256,11 @@ const initApp = () => {
             "rowMove",
             "freeze",
             "formula",
+
             // "sort",
             "dataValidation",
             "chart",
+
             // "filter",
         ],
         pluginOptions: {
@@ -676,7 +678,7 @@ const initApp = () => {
                 anchorCol: 1,
                 width: 450,
                 height: 300,
-                style: { title: "销售对比(柱状图)", showLegend: true, showTooltip: true  },
+                style: { title: "销售对比(柱状图)", showLegend: true, showTooltip: true },
             },
         );
         console.log(c);

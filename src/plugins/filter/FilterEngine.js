@@ -33,7 +33,7 @@ export class FilterEngine {
             }
         }
 
-        let result = Array.from(values).filter((v) => v !== NullValueHandler.NULL_KEY);
+        const result = Array.from(values).filter((v) => v !== NullValueHandler.NULL_KEY);
         result.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
         if (hasNullValues.has(true)) {

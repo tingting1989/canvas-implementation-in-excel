@@ -225,9 +225,9 @@ export class NativeChartRenderer {
         for (let i = 0; i < catCount; i++) {
             const sliceAngle = (values[i] / total) * Math.PI * 2;
             let endAngle = startAngle + sliceAngle;
-            if (endAngle > Math.PI * 3 / 2) endAngle -= Math.PI * 2;
+            if (endAngle > (Math.PI * 3) / 2) endAngle -= Math.PI * 2;
 
-            let normalizedAngle = angle;
+            const normalizedAngle = angle;
             if (startAngle <= endAngle) {
                 if (normalizedAngle >= startAngle && normalizedAngle <= endAngle) {
                     return {

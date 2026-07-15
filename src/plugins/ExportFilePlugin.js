@@ -42,6 +42,7 @@
 
 import { BasePlugin } from "./BasePlugin.js";
 import ExcelJS from "exceljs";
+import JSZip from "jszip";
 import { indexToCol } from "@/utils";
 import { stylePool } from "@/model/styles";
 import { ERROR_CODE, errorHandler } from "../core/index.js";
@@ -1411,6 +1412,8 @@ async function generateXlsx(sheet, opts, range) {
         }
     }
 
+    await exportChartsToExcel(workbook, worksheet, sheet);
+
     return await workbook.xlsx.writeBuffer();
 }
 
@@ -1455,6 +1458,71 @@ async function generateXlsx(sheet, opts, range) {
  *     columnHeaders: true
  * });
  */
+
+/**
+ * 导出图表到 Excel 文件
+ *
+ * 在导出 XLSX 时，将工作表中的所有图表转换为图片并嵌入到 Excel 中。
+ * 图表位置和尺寸会根据锚点信息自动计算。
+ *
+ * @async
+ * @param {Object} workbook - ExcelJS workbook 实例
+ * @param {Object} worksheet - ExcelJS worksheet 实例
+ * @param {Object} sheet - canvas-sheet 的 Sheet 实例
+ * @returns {Promise<void>}
+ *
+ * @example
+ * // 在 generateXlsx 函数中调用
+ * await exportChartsToExcel(workbook, worksheet, sheet);
+ */
+async function exportChartsToExcel(workbook, worksheet, sheet) {
+    if (!sheet?.chartManager || !sheet?.viewport?.chartLayer) {
+        return;
+    }
+
+    const charts = sheet.chartManager.getAll();
+    const chartLayer = sheet.viewport.chartLayer;
+
+    for (const chart of charts) {
+        try {
+            let canvas = await chartLayer.getChartCanvas(chart.id);
+            
+            if (!canvas) {
+                canvas = await chartLayer.rebuildChartCache(chart.id, sheet);
+            }
+
+            if (!canvas) {
+                console.warn(`Cannot get canvas for chart ${chart.id}`);
+                continue;
+            }
+
+            const dataUrl = canvas.toDataURL('image/png');
+            const base64Data = dataUrl.split(',')[1];
+
+            const imageId = workbook.addImage({
+                base64: base64Data,
+                extension: 'png',
+            });
+
+            worksheet.addImage(imageId, {
+                tl: { 
+                    col: chart.anchorCol, 
+                    row: chart.anchorRow,
+                    colOff: Math.round(chart.offsetX * 914400 / 96),
+                    rowOff: Math.round(chart.offsetY * 914400 / 96)
+                },
+                ext: { 
+                    width: chart.width, 
+                    height: chart.height 
+                },
+                editAs: 'oneCell'
+            });
+        } catch (error) {
+            console.warn(`Failed to export chart ${chart?.id || 'unknown'} to Excel:`, error);
+        }
+    }
+}
+
 export class ExportFilePlugin extends BasePlugin {
     static get PLUGIN_NAME() {
         return "exportFile";
@@ -1664,5 +1732,395 @@ export class ExportFilePlugin extends BasePlugin {
             this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error });
             throw error;
         }
+    }
+
+    // ============================================================================
+    // [Section 11] 图表导出功能
+    // ============================================================================
+
+    /**
+     * 获取图表图层实例
+     * @private
+     * @returns {Object|null} ChartLayer 实例
+     */
+    #getChartLayer() {
+        return this.sheet?.viewport?.chartLayer || null;
+    }
+
+    /**
+     * 根据格式获取图片 MIME 类型
+     * @private
+     * @param {string} format - 图片格式 (png/jpeg/webp)
+     * @returns {string} MIME 类型字符串
+     */
+    static #getImageMimeType(format) {
+        const mimeMap = {
+            png: 'image/png',
+            jpeg: 'image/jpg',
+            jpg: 'image/jpg',
+            webp: 'image/webp'
+        };
+        return mimeMap[format.toLowerCase()] || 'image/png';
+    }
+
+    /**
+     * 导出单个图表为图片 Blob
+     *
+     * 支持功能：
+     * - 多种图片格式（PNG/JPEG/WebP）
+     * - 自定义图片质量（仅 JPEG/WebP）
+     * - 高分辨率导出（scale 参数）
+     * - 自动重建高质量缓存
+     *
+     * @async
+     * @param {string} chartId - 图表唯一标识符
+     * @param {Object} [options={}] - 导出选项
+     * @param {string} [options.format='png'] - 图片格式 ('png'|'jpeg'|'webp')
+     * @param {number} [options.quality=1.0] - 图片质量 (0-1，仅 JPEG/WebP 有效)
+     * @param {number} [options.scale=1] - 缩放比例（2 表示双倍分辨率）
+     * @param {boolean} [options.rebuildHighQuality=false] - 是否重建高质量缓存
+     * @returns {Promise<Blob>} 图片 Blob 对象
+     * @throws {Error} 当图表不存在或导出失败时抛出错误
+     *
+     * @example
+     * // 基础用法：导出为 PNG
+     * const blob = await plugin.exportChartAsImage('chart_123');
+     *
+     * // 高级用法：高质量 JPEG 导出
+     * const blob = await plugin.exportChartAsImage('chart_123', {
+     *     format: 'jpeg',
+     *     quality: 0.9,
+     *     scale: 2,
+     *     rebuildHighQuality: true
+     * });
+     */
+    async exportChartAsImage(chartId, options = {}) {
+        try {
+            const sheet = this.sheet;
+            if (!sheet?.chartManager) {
+                throw new Error('Current sheet does not exist or has no chart manager');
+            }
+
+            const chart = sheet.chartManager.get(chartId);
+            if (!chart) {
+                throw new Error(`Chart ${chartId} does not exist`);
+            }
+
+            const chartLayer = this.#getChartLayer();
+            if (!chartLayer) {
+                throw new Error('Cannot get chart layer');
+            }
+
+            const { 
+                format = 'png', 
+                quality = 1.0, 
+                scale = 1, 
+                rebuildHighQuality = false 
+            } = options;
+
+            let canvas;
+            
+            if (rebuildHighQuality || scale > 1) {
+                canvas = await chartLayer.rebuildChartCache(chartId);
+                if (!canvas) {
+                    canvas = await chartLayer.getChartCanvas(chartId);
+                }
+            } else {
+                canvas = await chartLayer.getChartCanvas(chartId);
+            }
+
+            if (!canvas) {
+                throw new Error(`Chart ${chartId} cache is not available`);
+            }
+
+            const mimeType = ExportFilePlugin.#getImageMimeType(format);
+            
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('Image export timeout'));
+                }, 10000);
+
+                try {
+                    if (scale > 1) {
+                        const scaledCanvas = document.createElement('canvas');
+                        scaledCanvas.width = canvas.width * scale;
+                        scaledCanvas.height = canvas.height * scale;
+                        const ctx = scaledCanvas.getContext('2d');
+                        ctx.scale(scale, scale);
+                        ctx.drawImage(canvas, 0, 0);
+                        
+                        scaledCanvas.toBlob((blob) => {
+                            clearTimeout(timeout);
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Failed to generate image blob'));
+                            }
+                        }, mimeType, quality);
+                    } else {
+                        canvas.toBlob((blob) => {
+                            clearTimeout(timeout);
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Failed to generate image blob'));
+                            }
+                        }, mimeType, quality);
+                    }
+                } catch (error) {
+                    clearTimeout(timeout);
+                    reject(error);
+                }
+            });
+        } catch (error) {
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
+                format: 'image', 
+                options, 
+                error 
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * 批量导出所有图表为图片
+     *
+     * 支持功能：
+     * - 导出工作表中的所有图表或仅选区内的图表
+     * - 自动打包为 ZIP 文件（多图表时）
+     * - 单个图表时直接返回 Blob
+     * - 错误容忍：个别图表失败不影响整体导出
+     *
+     * @async
+     * @param {Object} [options={}] - 导出选项
+     * @param {string} [options.format='png'] - 图片格式
+     * @param {boolean} [options.asZip=true] - 多图表时是否打包为 ZIP
+     * @param {string} [options.zipFilename='charts.zip'] - ZIP 文件名
+     * @param {boolean} [options.includeSelectionOnly=false] - 是否仅导出选区内的图表
+     * @param {number} [options.quality=1.0] - 图片质量
+     * @param {number} [options.scale=1] - 缩放比例
+     * @param {boolean} [options.rebuildHighQuality=false] - 是否重建高质量缓存
+     * @returns {Promise<Blob|Array|null>} 单个图表返回 Blob，多个返回 ZIP Blob 或结果数组
+     *
+     * @example
+     * // 导出所有图表为 ZIP
+     * const zipBlob = await plugin.exportAllChartsAsImages({ asZip: true });
+     *
+     * // 仅导出选区内图表
+     * const results = await plugin.exportAllChartsAsImages({ 
+     *     includeSelectionOnly: true,
+     *     asZip: false 
+     * });
+     */
+    async exportAllChartsAsImages(options = {}) {
+        try {
+            const sheet = this.sheet;
+            if (!sheet?.chartManager) {
+                console.warn('Current sheet does not exist or has no charts');
+                return null;
+            }
+
+            const chartLayer = this.#getChartLayer();
+            if (!chartLayer) {
+                throw new Error('Cannot get chart layer');
+            }
+
+            let chartsToExport;
+            
+            if (options.includeSelectionOnly && sheet.selection) {
+                chartsToExport = chartLayer.getChartsInSelection(sheet.selection);
+                
+                if (chartsToExport.length === 0) {
+                    console.warn('No charts in selection area');
+                    return null;
+                }
+            } else {
+                chartsToExport = chartLayer.getAllCharts();
+                
+                if (chartsToExport.length === 0) {
+                    console.warn('No charts on current sheet');
+                    return null;
+                }
+            }
+
+            const { 
+                format = 'png', 
+                asZip = true, 
+                quality = 1.0,
+                scale = 1,
+                rebuildHighQuality = false
+            } = options;
+
+            const results = [];
+            const errors = [];
+
+            for (const chart of chartsToExport) {
+                try {
+                    const blob = await this.exportChartAsImage(chart.id, { 
+                        format, 
+                        quality,
+                        scale,
+                        rebuildHighQuality 
+                    });
+                    
+                    const chartName = (chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`)
+                        .replace(/[^a-zA-Z0-9_-]/g, '_');
+                    
+                    results.push({
+                        id: chart.id,
+                        name: `${chartName}.${format}`,
+                        blob,
+                        chart
+                    });
+                } catch (error) {
+                    console.warn(`Failed to export chart ${chart.id}:`, error.message);
+                    errors.push({ chartId: chart.id, error });
+                }
+            }
+
+            if (results.length === 0) {
+                throw new Error('All chart exports failed');
+            }
+
+            if (errors.length > 0) {
+                this.hooks?.runHooks(HOOKS.EXPORT_WARNING, {
+                    format: 'images',
+                    options,
+                    warnings: errors
+                });
+            }
+
+            if (asZip && results.length > 1) {
+                return await ExportFilePlugin.#createZipFromImages(results);
+            }
+
+            return asZip ? results[0].blob : results;
+
+        } catch (error) {
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
+                format: 'images', 
+                options, 
+                error 
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * 下载单个图表为图片文件
+     *
+     * @async
+     * @param {string} chartId - 图表唯一标识符
+     * @param {string} [filename=null] - 文件名（null 时自动生成）
+     * @param {Object} [options={}] - 导出选项（同 exportChartAsImage）
+     * @returns {Promise<void>}
+     *
+     * @example
+     * // 使用默认文件名下载
+     * await plugin.downloadChart('chart_123');
+     *
+     * // 指定文件名和格式
+     * await plugin.downloadChart('chart_123', 'my-chart.png', { format: 'png' });
+     */
+    async downloadChart(chartId, filename = null, options = {}) {
+        try {
+            const sheet = this.sheet;
+            const chart = sheet?.chartManager?.get(chartId);
+            
+            const defaultName = filename || 
+                `${chart?.title || chart?.style?.title || 'chart'}_${Date.now()}.${options.format || 'png'}`;
+            
+            const blob = await this.exportChartAsImage(chartId, options);
+            triggerDownload(blob, defaultName);
+
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { 
+                format: 'chart-image', 
+                options: { ...options, chartId, filename: defaultName },
+                result: blob 
+            });
+
+        } catch (error) {
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
+                format: 'chart-image', 
+                options: { chartId, filename }, 
+                error 
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * 下载所有图表为图片文件（或多图表 ZIP）
+     *
+     * @async
+     * @param {Object} [options={}] - 导出选项（同 exportAllChartsAsImages）
+     * @returns {Promise<void>}
+     *
+     * @example
+     * // 下载所有图表为 ZIP
+     * await plugin.downloadAllCharts();
+     *
+     * // 下载选区内图表
+     * await plugin.downloadAllCharts({ includeSelectionOnly: true });
+     */
+    async downloadAllCharts(options = {}) {
+        try {
+            const { 
+                filename = null
+            } = options;
+
+            const result = await this.exportAllChartsAsImages(options);
+
+            if (!result) {
+                console.warn('No charts to download');
+                return;
+            }
+
+            if (result instanceof Blob) {
+                const downloadName = filename || 'charts.zip';
+                triggerDownload(result, downloadName);
+            } else if (Array.isArray(result)) {
+                for (const item of result) {
+                    triggerDownload(item.blob, item.name);
+                }
+            }
+
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { 
+                format: 'charts-images', 
+                options,
+                result 
+            });
+
+        } catch (error) {
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
+                format: 'charts-images', 
+                options, 
+                error 
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * 创建包含多张图片的 ZIP 文件
+     *
+     * @private
+     * @async
+     * @param {Array} images - 图片数组 [{name, blob, id, chart}]
+     * @param {string} zipFilename - ZIP 文件名
+     * @returns {Promise<Blob>} ZIP 文件 Blob
+     */
+    static async #createZipFromImages(images) {
+        const zip = new JSZip();
+        
+        images.forEach(({ name, blob }) => {
+            zip.file(name, blob);
+        });
+
+        return await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 6 }
+        });
     }
 }

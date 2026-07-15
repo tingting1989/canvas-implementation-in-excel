@@ -66,6 +66,7 @@ export class FilterStrategy extends EventStrategy {
         } else {
             // 如果 hit 没有 mouseX，从 rect 和事件计算相对位置
             mouseX = event.clientX - (hit.rect.left || 0);
+
             // 加上可能的视口偏移
             if (hit.viewportX !== undefined) {
                 mouseX += hit.viewportX;

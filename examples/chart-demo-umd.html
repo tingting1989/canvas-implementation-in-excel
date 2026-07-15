@@ -177,11 +177,54 @@
             text-transform: uppercase;
             letter-spacing: 0.5px
         }
+
+        .toolbar button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15)
+        }
+
+        .toolbar button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+
+        .feature-highlight {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600
+        }
+
+        .status-ready {
+            background: #d4edda;
+            color: #155724
+        }
+
+        .status-exporting {
+            background: #fff3cd;
+            color: #856404
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24
+        }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>📊 Canvas-Sheet 图表功能演示</h1>
+    <h1>📊 Canvas-Sheet 图表功能演示 <span class="feature-highlight">支持图片导出 & Excel内嵌</span></h1>
 
     <div class="toolbar">
         <span class="section-title">添加图表:</span>
@@ -197,7 +240,18 @@
         <button class="btn-danger" onclick="removeSelectedChart()">🗑️ 删除选中</button>
         <div class="divider"></div>
         <button class="btn-info" onclick="showAllCharts()">📋 显示全部</button>
+        <button class="btn-success" onclick="addAllChartTypes()">🎯 添加所有类型</button>
         <button class="btn-danger" onclick="clearAllCharts()">🧹 清空全部</button>
+        <div class="divider"></div>
+        <span class="section-title">导出图片:</span>
+        <button class="btn-primary" onclick="exportSelectedChartAsImage()">🖼️ 导出选中图表</button>
+        <button class="btn-success" onclick="exportAllChartsAsImages()">📦 导出所有图表(ZIP)</button>
+        <button class="btn-warning" onclick="exportAllChartsSeparately()">📁 分别导出所有图表</button>
+        <div class="divider"></div>
+        <span class="section-title">Excel导出:</span>
+        <button class="btn-info" onclick="exportExcelWithImages()">📊 导出Excel(含图表图片)</button>
+        <button class="btn-success" onclick="exportExcelAsCSV()">📋 导出CSV</button>
+        <button class="btn-warning" onclick="showExportInfo()">ℹ️ 导出说明</button>
     </div>
 
     <div class="sheet-container">
@@ -205,16 +259,29 @@
     </div>
 
     <div class="info-panel">
-        <h3>📋 图表列表</h3>
+        <h3>📋 图表列表 <span id="chartCount" style="font-size:14px;color:#666;font-weight:normal">(0个)</span></h3>
         <div id="chartList" class="chart-list"><p style="color:#999;text-align:center">暂无图表</p></div>
     </div>
 
-    <div class="log-area" id="logArea">> 系统就绪...</div>
+    <div class="info-panel">
+        <h3>📖 快速开始指南</h3>
+        <div style="font-size:13px;line-height:1.8;color:#555">
+            <p><strong>步骤1:</strong> 点击上方"添加图表"按钮创建不同类型的图表</p>
+            <p><strong>步骤2:</strong> 在图表列表中点击"选择"按钮选中要操作的图表</p>
+            <p><strong>步骤3:</strong> 使用"导出图片"区域的按钮导出图表为PNG文件</p>
+            <p><strong>步骤4:</strong> 使用"Excel导出"按钮生成包含内嵌图表的Excel文件</p>
+            <p style="margin-top:10px;padding:10px;background:#e8f4fd;border-radius:6px;border-left:4px solid #5B9BD5">
+                <strong>💡 提示:</strong> 点击"ℹ️ 导出说明"查看详细的导出功能说明
+            </p>
+        </div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪... | 支持图表导出为图片和Excel内嵌功能</div>
 </div>
 
 <script src="../dist/canvas-sheet.umd.js"></script>
 <script>
-    let workbook = null, chartPlugin = null, selectedChartId = null;
+    let workbook = null, chartPlugin = null, exportPlugin = null, selectedChartId = null;
 
     function log(msg) {
         const la = document.getElementById('logArea');
@@ -244,10 +311,24 @@
             });
             workbook.initRender();
             workbook.render();
-            log('✅ Workbook OK');
+            log('✅ Workbook 初始化成功');
+            log('📦 已加载插件: autoFill, contextMenu, exportFile, chart 等');
             prepareData();
             chartPlugin = workbook.getPlugin('chart');
-            log(chartPlugin ? '✅ ChartPlugin OK' : '❌ ChartPlugin FAIL');
+            exportPlugin = workbook.getPlugin('exportFile');
+
+            if (chartPlugin && exportPlugin) {
+                log('✅ 所有必要插件已加载完成');
+                log('');
+                log('🎯 推荐操作流程:');
+                log('  1. 点击 "🎯 添加所有类型" 快速创建示例图表');
+                log('  2. 在图表列表中选择要导出的图表');
+                log('  3. 使用导出按钮测试图片和Excel导出功能');
+                log('');
+                log('💡 提示: 点击 "ℹ️ 导出说明" 查看详细功能文档');
+            } else {
+                log(`❌ 插件加载失败: chart=${!!chartPlugin}, export=${!!exportPlugin}`);
+            }
             updateList();
         } catch (e) {
             log(`❌ Error: ${e.message}`);
@@ -382,10 +463,31 @@
         updateList();
     }
 
+    async function addAllChartTypes() {
+        log('🎯 正在添加所有类型的图表...');
+        try {
+            addBarChart();
+            await new Promise(r => setTimeout(r, 100));
+            addLineChart();
+            await new Promise(r => setTimeout(r, 100));
+            addPieChart();
+            await new Promise(r => setTimeout(r, 100));
+            addAreaChart();
+            await new Promise(r => setTimeout(r, 100));
+            addScatterChart();
+            log('✅ 已添加所有5种类型的图表！现在可以测试导出功能了');
+        } catch (error) {
+            log(`❌ 添加图表失败: ${error.message}`);
+        }
+    }
+
     function updateList() {
         const lc = document.getElementById('chartList'), charts = chartPlugin.getAllCharts();
+        const countEl = document.getElementById('chartCount');
+        countEl.textContent = `(${charts.length}个)`;
+
         if (!charts.length) {
-            lc.innerHTML = '<p style="color:#999;text-align:center">暂无图表</p>';
+            lc.innerHTML = '<p style="color:#999;text-align:center">暂无图表 | 点击上方按钮添加图表</p>';
             return;
         }
         const names = {bar: '柱状图', line: '折线图', pie: '饼图', area: '面积图', scatter: '散点图'};
@@ -395,8 +497,9 @@
                         <div class="chart-type">${names[c.type] || c.type}</div>
                         <div class="chart-id">${c.id}</div>
                         <div style="font-size:12px;color:#666;margin-top:4px">位置:(${c.anchorRow},${c.anchorCol}) | ${c.width}×${c.height}</div>
-                    </div><div>
+                    </div><div style="display:flex;gap:6px;flex-wrap:wrap">
                         <button class="btn-primary" onclick="sel('${c.id}')">选择</button>
+                        <button class="btn-success" onclick="exportSingleChart('${c.id}')">🖼️ 导出</button>
                         <button class="btn-danger" onclick="del('${c.id}')">删除</button>
                     </div></div>`).join('');
     }
@@ -413,6 +516,163 @@
         if (selectedChartId === id) selectedChartId = null;
         log(`🗑️ 删除: ${id}`);
         updateList();
+    }
+
+    async function exportSingleChart(chartId) {
+        if (!exportPlugin) return log('❌ ExportFilePlugin 未加载');
+
+        try {
+            log(`🖼️ 正在导出图表: ${chartId}...`);
+            await exportPlugin.downloadChart(chartId, null, {
+                format: 'png',
+                quality: 1.0,
+                scale: 2,
+                rebuildHighQuality: true
+            });
+            log(`✅ 图表 ${chartId} 导出成功`);
+        } catch (error) {
+            log(`❌ 导出失败: ${error.message}`);
+        }
+    }
+
+    async function exportSelectedChartAsImage() {
+        if (!selectedChartId) return log('⚠️ 先选择图表');
+        if (!exportPlugin) return log('❌ ExportFilePlugin 未加载');
+
+        try {
+            log(`🖼️ 正在导出选中图表: ${selectedChartId}...`);
+            await exportPlugin.downloadChart(selectedChartId, null, {
+                format: 'png',
+                quality: 1.0,
+                scale: 2,
+                rebuildHighQuality: true
+            });
+            log('✅ 图表导出成功 (高质量PNG, 2x分辨率)');
+        } catch (error) {
+            log(`❌ 导出失败: ${error.message}`);
+        }
+    }
+
+    async function exportAllChartsAsImages() {
+        if (!exportPlugin) return log('❌ ExportFilePlugin 未加载');
+
+        const charts = chartPlugin.getAllCharts();
+        if (!charts.length) return log('⚠️ 没有图表可导出');
+
+        try {
+            log(`📦 正在导出所有 ${charts.length} 个图表为ZIP...`);
+            await exportPlugin.downloadAllCharts({
+                format: 'png',
+                quality: 1.0,
+                scale: 2,
+                asZip: true,
+                rebuildHighQuality: true,
+                filename: 'charts_export.zip'
+            });
+            log(`✅ 成功导出 ${charts.length} 个图表到 ZIP 文件`);
+        } catch (error) {
+            log(`❌ 导出失败: ${error.message}`);
+        }
+    }
+
+    async function exportAllChartsSeparately() {
+        if (!exportPlugin) return log('❌ ExportFilePlugin 未加载');
+
+        const charts = chartPlugin.getAllCharts();
+        if (!charts.length) return log('⚠️ 没有图表可导出');
+
+        try {
+            log(`📁 正在分别导出 ${charts.length} 个图表...`);
+            const results = await exportPlugin.exportAllChartsAsImages({
+                format: 'png',
+                quality: 1.0,
+                scale: 2,
+                asZip: false,
+                rebuildHighQuality: true
+            });
+
+            if (results && Array.isArray(results)) {
+                for (const item of results) {
+                    downloadBlob(item.blob, item.name);
+                }
+                log(`✅ 成功下载 ${results.length} 个图表文件`);
+            }
+        } catch (error) {
+            log(`❌ 导出失败: ${error.message}`);
+        }
+    }
+
+    async function exportExcelWithImages() {
+        if (!exportPlugin) return log('❌ ExportFilePlugin 未加载');
+
+        const charts = chartPlugin.getAllCharts();
+        try {
+            log(`📊 正在导出Excel文件...`);
+            log(`ℹ️ 系统将自动把 ${charts.length} 个图表作为内嵌图片添加到Excel中`);
+            await exportPlugin.downloadFile('xlsx', {
+                filename: `canvas_sheet_with_${charts.length}_charts`,
+                cellStyles: true,
+                columnHeaders: true
+            });
+            log(`✅ Excel导出成功！文件包含 ${charts.length} 个内嵌图表图片`);
+            log(`💡 提示：在Excel中打开后，您可以看到图表已作为图片嵌入到对应位置`);
+        } catch (error) {
+            log(`❌ 导出失败: ${error.message}`);
+        }
+    }
+
+    async function exportExcelAsCSV() {
+        if (!exportPlugin) return log('❌ ExportFilePlugin 未加载');
+
+        try {
+            log(`📋 正在导出CSV文件 (纯数据格式)...`);
+            await exportPlugin.downloadFile('csv', {
+                filename: 'canvas_sheet_data',
+                columnHeaders: true
+            });
+            log('✅ CSV导出成功 (纯文本格式，可用Excel打开)');
+        } catch (error) {
+            log(`❌ 导出失败: ${error.message}`);
+        }
+    }
+
+    function showExportInfo() {
+        log('📖 ===== 导出功能说明 =====');
+        log('');
+        log('🖼️ 图片导出功能:');
+        log('  • 导出选中图表 - 将当前选中的图表导出为高质量PNG图片');
+        log('  • 导出所有图表(ZIP) - 将所有图表打包为ZIP文件下载');
+        log('  • 分别导出所有图表 - 每个图表单独下载为PNG文件');
+        log('  • 所有图片均为2倍分辨率，确保打印清晰度');
+        log('');
+        log('📊 Excel导出功能:');
+        log('  • 导出Excel(含图表图片) - 完整的.xlsx文件');
+        log('    - 包含所有单元格数据和样式');
+        log('    - 图表自动转换为PNG图片并嵌入到对应位置');
+        log('    - 在Excel中打开可直接查看和编辑');
+        log('');
+        log('📋 CSV导出功能:');
+        log('  • 纯文本格式，不包含样式和图表');
+        log('  • 适用于数据交换和导入其他系统');
+        log('');
+        log('💡 使用建议:');
+        log('  1. 先添加一些图表（点击上方图表按钮）');
+        log('  2. 选择要导出的图表（点击"选择"按钮）');
+        log('  3. 选择合适的导出格式');
+        log('  4. 对于正式报告，推荐使用"导出Excel(含图表图片)"');
+        log('');
+        log('=========================');
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     window.addEventListener('DOMContentLoaded', init);

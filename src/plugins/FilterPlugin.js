@@ -115,7 +115,7 @@ export class FilterPlugin extends BasePlugin {
     renderFilterIcon(headerContainer, col, hasActiveFilter) {
         if (!this.#iconRenderer) return null;
 
-        let existingWrapper = headerContainer.querySelector(`.filter-icon-wrapper[data-col="${col}"]`);
+        const existingWrapper = headerContainer.querySelector(`.filter-icon-wrapper[data-col="${col}"]`);
 
         if (existingWrapper) {
             this.#iconRenderer.updateIconState(existingWrapper, hasActiveFilter);
@@ -192,7 +192,7 @@ export class FilterPlugin extends BasePlugin {
 
         const self = this;
 
-        this.#headerRendererCallback = function (ctx, colIndex, x, y, width, height) {
+        this.#headerRendererCallback = function(ctx, colIndex, x, y, width, height) {
             self.#drawFilterIcon(ctx, colIndex, x, y, width, height);
         };
 
