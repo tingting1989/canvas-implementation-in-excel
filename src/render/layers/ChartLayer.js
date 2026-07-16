@@ -69,7 +69,6 @@ const PADDING = { top: 36, right: 20, bottom: 44, left: 56 };
 const HANDLE_SIZE = CONFIG.CHART_SELECTION_HANDLE_SIZE || 8;
 
 export class ChartLayer extends BaseLayer {
-
     /** @type {ChartCache} 图表渲染缓存实例（离屏 Canvas 存储） */
     #cache = new ChartCache();
 

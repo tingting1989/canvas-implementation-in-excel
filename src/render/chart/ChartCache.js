@@ -78,7 +78,6 @@
  */
 
 export class ChartCache {
-
     /** @type {Map<string, {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, width: number, height: number}>} 缓存存储 Map */
     #caches = new Map();
 
