@@ -671,7 +671,7 @@ const initApp = () => {
             s.setCell(i + 1, 4, Math.floor(Math.random() * 1000) + 500);
         });
 
-        const c = chartPlugin.addBarChart(
+        const c = chartPlugin.addLineChart(
             { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
             {
                 anchorRow: 8,

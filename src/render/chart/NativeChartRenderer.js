@@ -1,33 +1,37 @@
 ﻿import { CONFIG } from "../../constants/config.js";
 
-const HIT_RADIUS = 8;
+const HIT_RADIUS = 12;
 
 export class NativeChartRenderer {
     static render(ctx, chart, data, plotArea, style) {
         ctx.save();
 
-        if (style.showGrid !== false) {
-            this.#renderGrid(ctx, plotArea);
-        }
+        let yScale = null;
 
-        const yScale = NativeChartRenderer.buildYScale(data, chart.type);
-        this.#renderAxes(ctx, data, plotArea, yScale);
+        if (!this.#isAxisFreeChart(chart.type)) {
+            if (style.showGrid !== false) {
+                this.#renderGrid(ctx, plotArea);
+            }
+
+            yScale = NativeChartRenderer.buildYScale(data, chart.type);
+            this.#renderAxes(ctx, data, plotArea, yScale);
+        }
 
         switch (chart.type) {
             case "bar":
                 this.#renderBar(ctx, data, plotArea, style, yScale);
                 break;
             case "line":
-                this.#renderLine(ctx, data, plotArea, style);
+                this.#renderLine(ctx, data, plotArea, style, yScale);
                 break;
             case "pie":
                 this.#renderPie(ctx, data, plotArea, style);
                 break;
             case "area":
-                this.#renderArea(ctx, data, plotArea, style);
+                this.#renderArea(ctx, data, plotArea, style, yScale);
                 break;
             case "scatter":
-                this.#renderScatter(ctx, data, plotArea, style);
+                this.#renderScatter(ctx, data, plotArea, style, yScale);
                 break;
         }
 
@@ -51,11 +55,11 @@ export class NativeChartRenderer {
             case "bar":
                 return this.#hitBar(px, py, data, plotArea, seriesCount, catCount, yScale);
             case "line":
-                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount);
+                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount, yScale);
             case "area":
-                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount);
+                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount, yScale);
             case "scatter":
-                return this.#hitScatter(px, py, data, plotArea, seriesCount, catCount);
+                return this.#hitScatter(px, py, data, plotArea, seriesCount, catCount, yScale);
             case "pie":
                 return this.#hitPie(px, py, data, plotArea, catCount);
             default:
@@ -70,10 +74,12 @@ export class NativeChartRenderer {
         const padding = { x: 8, y: 6 };
         const lineHeight = 16;
         const lines = [String(category)];
+
+        const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(2);
         if (seriesName && seriesName !== "undefined") {
-            lines.push(`${seriesName}: ${this.#formatNumber(value)}`);
+            lines.push(`${seriesName}: ${displayValue}`);
         } else {
-            lines.push(this.#formatNumber(value));
+            lines.push(displayValue);
         }
 
         ctx.save();
@@ -145,21 +151,31 @@ export class NativeChartRenderer {
         return null;
     }
 
-    static #hitLine(px, py, data, area, seriesCount, catCount) {
-        const yMin = this.#getYMin(data);
-        const yMax = this.#getYMax(data);
+    static #hitLine(px, py, data, area, seriesCount, catCount, yScale) {
+        const yMin = yScale ? yScale.min : this.#getYMin(data);
+        const yMax = yScale ? yScale.max : this.#getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
-        const dotR = Math.max(CONFIG.CHART_LINE_DOT_RADIUS, HIT_RADIUS);
+        const dotR = Math.max(CONFIG.CHART_LINE_DOT_RADIUS || 4, HIT_RADIUS);
+        const lineSnapDist = 10;
+
+        let closestHit = null;
+        let minDistSq = dotR * dotR;
 
         for (let s = 0; s < seriesCount; s++) {
+            const points = [];
+
             for (let i = 0; i < catCount; i++) {
                 const val = Number(data.data[i][s + 1]) || 0;
                 const dx = area.x + stepX * i + stepX / 2;
                 const dy = area.y + area.h - ((val - yMin) / yRange) * area.h;
+                points.push({ x: dx, y: dy, val, idx: i });
 
-                if ((px - dx) * (px - dx) + (py - dy) * (py - dy) <= dotR * dotR) {
-                    return {
+                const distSq = (px - dx) * (px - dx) + (py - dy) * (py - dy);
+
+                if (distSq <= dotR * dotR && distSq < minDistSq) {
+                    minDistSq = distSq;
+                    closestHit = {
                         category: String(data.data[i][0]),
                         seriesName: String(data.headers[s + 1] || ""),
                         value: val,
@@ -168,17 +184,45 @@ export class NativeChartRenderer {
                     };
                 }
             }
+
+            if (!closestHit && points.length > 1) {
+                for (let i = 0; i < points.length - 1; i++) {
+                    const p1 = points[i];
+                    const p2 = points[i + 1];
+
+                    const dist = this.#pointToSegmentDistance(px, py, p1.x, p1.y, p2.x, p2.y);
+
+                    if (dist <= lineSnapDist) {
+                        const distToP1 = Math.sqrt((px - p1.x) ** 2 + (py - p1.y) ** 2);
+                        const distToP2 = Math.sqrt((px - p2.x) ** 2 + (py - p2.y) ** 2);
+                        const nearestPoint = distToP1 <= distToP2 ? p1 : p2;
+
+                        closestHit = {
+                            category: String(data.data[nearestPoint.idx][0]),
+                            seriesName: String(data.headers[s + 1] || ""),
+                            value: nearestPoint.val,
+                            pointX: nearestPoint.x,
+                            pointY: nearestPoint.y,
+                        };
+
+                        break;
+                    }
+                }
+            }
+
+            if (closestHit) break;
         }
-        return null;
+
+        return closestHit;
     }
 
-    static #hitScatter(px, py, data, area, seriesCount, catCount) {
+    static #hitScatter(px, py, data, area, seriesCount, catCount, yScale) {
         const allX = data.data.map((row) => Number(row[0]) || 0);
         const allY = data.data.flatMap((row) => row.slice(1).map((v) => Number(v) || 0));
         const xMin = Math.min(...allX);
         const xMax = Math.max(...allX);
-        const yMin = Math.min(...allY);
-        const yMax = Math.max(...allY);
+        const yMin = yScale ? yScale.min : Math.min(...allY);
+        const yMax = yScale ? yScale.max : Math.max(...allY);
         const xRange = xMax - xMin || 1;
         const yRange = yMax - yMin || 1;
         const dotR = Math.max(CONFIG.CHART_SCATTER_DOT_RADIUS, HIT_RADIUS);
@@ -336,28 +380,30 @@ export class NativeChartRenderer {
         }
     }
 
-    static #renderLine(ctx, data, area, style) {
+    static #renderLine(ctx, data, area, style, yScale) {
         const seriesCount = data.headers.length - 1;
         const catCount = data.data.length;
         if (seriesCount <= 0 || catCount <= 0) return;
 
-        const yMin = this.#getYMin(data);
-        const yMax = this.#getYMax(data);
+        const yMin = yScale ? yScale.min : this.#getYMin(data);
+        const yMax = yScale ? yScale.max : this.#getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
 
         for (let s = 0; s < seriesCount; s++) {
             ctx.strokeStyle = style.colors[s % style.colors.length];
             ctx.fillStyle = style.colors[s % style.colors.length];
-            ctx.lineWidth = CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
+            ctx.lineWidth = CONFIG.CHART_LINE_DOT_RADIUS > 3 ? 2 : CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
 
             ctx.beginPath();
             let firstPoint = true;
+            const points = [];
 
             for (let i = 0; i < catCount; i++) {
                 const val = Number(data.data[i][s + 1]) || 0;
                 const x = area.x + stepX * i + stepX / 2;
                 const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
+                points.push({ x, y });
 
                 if (firstPoint) {
                     ctx.moveTo(x, y);
@@ -365,13 +411,15 @@ export class NativeChartRenderer {
                 } else {
                     ctx.lineTo(x, y);
                 }
-
-                ctx.beginPath();
-                ctx.arc(x, y, CONFIG.CHART_LINE_DOT_RADIUS, 0, Math.PI * 2);
-                ctx.fill();
             }
 
             ctx.stroke();
+
+            for (const pt of points) {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, CONFIG.CHART_LINE_DOT_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 
@@ -416,13 +464,13 @@ export class NativeChartRenderer {
         }
     }
 
-    static #renderArea(ctx, data, area, style) {
+    static #renderArea(ctx, data, area, style, yScale) {
         const seriesCount = data.headers.length - 1;
         const catCount = data.data.length;
         if (seriesCount <= 0 || catCount <= 0) return;
 
-        const yMin = this.#getYMin(data);
-        const yMax = this.#getYMax(data);
+        const yMin = yScale ? yScale.min : this.#getYMin(data);
+        const yMax = yScale ? yScale.max : this.#getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
 
@@ -467,7 +515,7 @@ export class NativeChartRenderer {
         }
     }
 
-    static #renderScatter(ctx, data, area, style) {
+    static #renderScatter(ctx, data, area, style, yScale) {
         const seriesCount = data.headers.length - 1;
         const catCount = data.data.length;
         if (seriesCount <= 0 || catCount <= 0) return;
@@ -476,8 +524,8 @@ export class NativeChartRenderer {
         const allY = data.data.flatMap((row) => row.slice(1).map((v) => Number(v) || 0));
         const xMin = Math.min(...allX);
         const xMax = Math.max(...allX);
-        const yMin = Math.min(...allY);
-        const yMax = Math.max(...allY);
+        const yMin = yScale ? yScale.min : Math.min(...allY);
+        const yMax = yScale ? yScale.max : Math.max(...allY);
         const xRange = xMax - xMin || 1;
         const yRange = yMax - yMin || 1;
 
@@ -556,7 +604,16 @@ export class NativeChartRenderer {
 
     static buildYScale(data, chartType) {
         const dataMin = this.#getYMin(data);
-        const minValue = chartType === "bar" && dataMin >= 0 ? 0 : dataMin;
+
+        let minValue;
+        if (dataMin >= 0) {
+            minValue = 0;
+        } else if (chartType === "bar") {
+            minValue = 0;
+        } else {
+            minValue = dataMin;
+        }
+
         const ticks = this.#calcYTicks(data, 5, minValue);
         return {
             min: ticks[0],
@@ -593,5 +650,66 @@ export class NativeChartRenderer {
         if (Math.abs(val) >= 1e6) return (val / 1e6).toFixed(1) + "M";
         if (Math.abs(val) >= 1e3) return (val / 1e3).toFixed(1) + "K";
         return String(val);
+    }
+
+    /**
+     * 判断图表类型是否不需要坐标轴
+     *
+     * 某些图表类型（如饼图、仪表盘、漏斗图、旭日图等）使用非笛卡尔坐标系，
+     * 不需要 X/Y 坐标轴和网格线。
+     *
+     * @private
+     * @param {string} chartType - 图表类型
+     * @returns {boolean} 如果不需要坐标轴返回 true
+     */
+    static #isAxisFreeChart(chartType) {
+        const axisFreeTypes = ["pie", "gauge", "funnel", "sunburst"];
+        return axisFreeTypes.includes(chartType);
+    }
+
+    /**
+     * 计算点到线段的最短距离
+     *
+     * @private
+     * @param {number} px - 点的 X 坐标
+     * @param {number} py - 点的 Y 坐标
+     * @param {number} x1 - 线段起点 X
+     * @param {number} y1 - 线段起点 Y
+     * @param {number} x2 - 线段终点 X
+     * @param {number} y2 - 线段终点 Y
+     * @returns {number} 最短距离（像素）
+     */
+    static #pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+
+        let param = -1;
+
+        if (lenSq !== 0) {
+            param = dot / lenSq;
+        }
+
+        let xx, yy;
+
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+
+        const dx = px - xx;
+        const dy = py - yy;
+
+        return Math.sqrt(dx * dx + dy * dy);
     }
 }
