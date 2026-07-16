@@ -107,6 +107,10 @@ export class ChartPlugin extends BasePlugin {
         return this.addChart(CHART_TYPE.GAUGE, dataRange, options);
     }
 
+    addFunnelChart(dataRange, options = {}) {
+        return this.addChart(CHART_TYPE.FUNNEL, dataRange, options);
+    }
+
     removeChart(id) {
         const sheet = this.sheet;
         if (!sheet || !sheet.chartManager) return null;

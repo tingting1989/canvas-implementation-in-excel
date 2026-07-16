@@ -853,6 +853,57 @@ const initApp = () => {
             console.log("- 刻度清晰标注（0-100，每10一个主刻度）");
             console.log("\n点击仪表盘可查看详细信息！");
         }
+
+        // ==================== 示例5：漏斗图（Funnel）====================
+        // 漏斗图数据：[阶段名称, 数值]
+        console.log("🔍 开始准备漏斗图数据...");
+        s.setCell(38, 0, "阶段");
+        s.setCell(38, 1, "数量");
+
+        const funnelData = [
+            { stage: "Show", value: 1000 },
+            { stage: "Click", value: 600 },
+            { stage: "Visit", value: 400 },
+            { stage: "Inquiry", value: 200 },
+            { stage: "Order", value: 80 },
+        ];
+
+        funnelData.forEach((item, index) => {
+            s.setCell(39 + index, 0, item.stage);
+            s.setCell(39 + index, 1, item.value);
+        });
+
+        console.log(`   数据已写入：${funnelData.length}个阶段`);
+
+        console.log("🎯 正在创建漏斗图...");
+        const funnelChart = chartPlugin.addFunnelChart(
+            { startRow: 38, startCol: 0, endRow: 43, endCol: 1 },
+            {
+                anchorRow: 38,
+                anchorCol: 10,
+                width: 450,
+                height: 350,
+                style: {
+                    title: "📊 用户转化漏斗",
+                    showLegend: true,
+                    showTooltip: true,
+                },
+            },
+        );
+
+        console.log("📊 漏斗图创建结果:", funnelChart);
+        if (funnelChart) {
+            console.log(`📊 漏斗图 ${funnelChart.id} 创建成功`);
+            console.log("漏斗图数据格式：[阶段名称, 数值]");
+            console.log("- 阶段：显示在漏斗每一层（如 Show、Click、Visit 等）");
+            console.log("- 数值：决定该层的宽度（数值越大层越宽）");
+            console.log("\n特性：");
+            console.log("- 倒三角形设计，直观展示转化流程");
+            console.log("- 渐变色层级，每层不同颜色区分");
+            console.log("- 自动计算转化率（相邻两层对比）");
+            console.log("- 点击任意层查看详细转化数据");
+            console.log("\n适用场景：销售漏斗、用户行为分析、转化率追踪等");
+        }
     }
     setTimeout(() => {
         prepareData();

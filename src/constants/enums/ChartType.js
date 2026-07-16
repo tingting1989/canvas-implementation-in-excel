@@ -9,6 +9,7 @@
  * @property {string} SCATTER - 散点图，适合展示两个变量之间的相关性和分布情况
  * @property {string} CANDLESTICK - K 线图（蜡烛图），适合金融数据的开高低收分析
  * @property {string} GAUGE - 仪表盘，适合展示单个指标值在范围内的位置（如速度、完成度）
+ * @property {string} FUNNEL - 漏斗图，适合展示流程中的阶段转化情况（如销售漏斗、用户行为漏斗）
  */
 export const CHART_TYPE = Object.freeze({
     LINE: "line",
@@ -18,4 +19,5 @@ export const CHART_TYPE = Object.freeze({
     SCATTER: "scatter",
     CANDLESTICK: "candlestick",
     GAUGE: "gauge",
+    FUNNEL: "funnel",
 });

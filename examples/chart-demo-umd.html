@@ -235,6 +235,7 @@
         <button class="btn-danger" onclick="addScatterChart()">⚬ 散点图</button>
         <button class="btn-primary" onclick="addCandlestickChart()">🕯️ K线图</button>
         <button class="btn-success" onclick="addGaugeChart()">🎯 仪表盘</button>
+        <button class="btn-warning" onclick="addFunnelChart()">📊 漏斗图</button>
         <div class="divider"></div>
         <span class="section-title">操作:</span>
         <button class="btn-primary" onclick="moveSelectedChart()">🔄 移动图表</button>
@@ -512,6 +513,50 @@
         }
     }
 
+    function addFunnelChart() {
+        const s = workbook.activeSheet;
+
+        // 表头行
+        s.setCell(40, 6, '阶段');
+        s.setCell(40, 7, '数量');
+
+        // 数据行（5个阶段）
+        const funnelStages = [
+            { name: 'Show', value: 1000 },
+            { name: 'Click', value: 600 },
+            { name: 'Visit', value: 400 },
+            { name: 'Inquiry', value: 200 },
+            { name: 'Order', value: 80 }
+        ];
+
+        funnelStages.forEach((item, index) => {
+            s.setCell(41 + index, 6, item.name);
+            s.setCell(41 + index, 7, item.value);
+        });
+
+        // 注意：数据范围必须包含表头行
+        const c = chartPlugin.addFunnelChart({startRow: 40, startCol: 6, endRow: 45, endCol: 7}, {
+            anchorRow: 2,
+            anchorCol: 14,
+            width: 450,
+            height: 350,
+            style: {
+                title: '📊 用户转化漏斗',
+                showLegend: true,
+                showTooltip: true
+            }
+        });
+
+        if (c) {
+            log(`📊 漏斗图 ${c.id} 创建成功`);
+            log('   数据格式：[阶段名称, 数值]');
+            log('   倒三角形设计，展示转化流程');
+            log('   点击任意层查看转化率详情');
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
     function moveSelectedChart() {
         if (!selectedChartId) return log('⚠️ 先选择图表');
         chartPlugin.moveChart(selectedChartId, Math.floor(Math.random() * 30) + 5, Math.floor(Math.random() * 15) + 1, 20, 20);
@@ -562,7 +607,9 @@
             addCandlestickChart();
             await new Promise(r => setTimeout(r, 100));
             addGaugeChart();
-            log('✅ 已添加所有7种类型的图表！现在可以测试导出功能了');
+            await new Promise(r => setTimeout(r, 100));
+            addFunnelChart();
+            log('✅ 已添加所有8种类型的图表！现在可以测试导出功能了');
         } catch (error) {
             log(`❌ 添加图表失败: ${error.message}`);
         }
@@ -577,7 +624,7 @@
             lc.innerHTML = '<p style="color:#999;text-align:center">暂无图表 | 点击上方按钮添加图表</p>';
             return;
         }
-        const names = {bar: '柱状图', line: '折线图', pie: '饼图', area: '面积图', scatter: '散点图', candlestick: 'K线图', gauge: '仪表盘'};
+        const names = {bar: '柱状图', line: '折线图', pie: '饼图', area: '面积图', scatter: '散点图', candlestick: 'K线图', gauge: '仪表盘', funnel: '漏斗图'};
         lc.innerHTML = charts.map(c => `
                 <div class="chart-item" style="border-left-color:${c.style?.colors?.[0] || '#4472C4'}">
                     <div class="chart-info">
