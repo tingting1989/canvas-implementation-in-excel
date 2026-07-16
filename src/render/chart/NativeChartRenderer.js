@@ -1,174 +1,89 @@
 ﻿import { CONFIG } from "../../constants/config.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 const HIT_RADIUS = 12;
 
-export class NativeChartRenderer {
-    static render(ctx, chart, data, plotArea, style) {
-        ctx.save();
-
-        let yScale = null;
-
-        if (!this.#isAxisFreeChart(chart.type)) {
-            if (style.showGrid !== false) {
-                this.#renderGrid(ctx, plotArea);
-            }
-
-            yScale = NativeChartRenderer.buildYScale(data, chart.type);
-            this.#renderAxes(ctx, data, plotArea, yScale);
-        }
-
-        switch (chart.type) {
-            case "bar":
-                this.#renderBar(ctx, data, plotArea, style, yScale);
-                break;
-            case "line":
-                this.#renderLine(ctx, data, plotArea, style, yScale);
-                break;
-            case "pie":
-                this.#renderPie(ctx, data, plotArea, style);
-                break;
-            case "area":
-                this.#renderArea(ctx, data, plotArea, style, yScale);
-                break;
-            case "scatter":
-                this.#renderScatter(ctx, data, plotArea, style, yScale);
-                break;
-            case "candlestick":
-                this.#renderCandlestick(ctx, data, plotArea, style, yScale);
-                break;
-            case "gauge":
-                this.#renderGauge(ctx, data, plotArea, style);
-                break;
-            case "funnel":
-                this.#renderFunnel(ctx, data, plotArea, style);
-                break;
-        }
-
-        if (style.title) {
-            this.#renderTitle(ctx, style.title, plotArea);
-        }
-
-        if (style.showLegend !== false) {
-            this.#renderLegend(ctx, data, plotArea, style);
-        }
-
-        ctx.restore();
+class BaseChartStrategy {
+    constructor(type, name) {
+        this.type = type;
+        this.name = name;
     }
 
-    static hitTestDataPoint(px, py, chartType, data, plotArea, yScale) {
-        const seriesCount = data.headers.length - 1;
-        const catCount = data.data.length;
-        if (seriesCount <= 0 || catCount <= 0) return null;
+    render(ctx, data, area, style, yScale) {}
 
-        switch (chartType) {
-            case "bar":
-                return this.#hitBar(px, py, data, plotArea, seriesCount, catCount, yScale);
-            case "line":
-                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount, yScale);
-            case "area":
-                return this.#hitLine(px, py, data, plotArea, seriesCount, catCount, yScale);
-            case "scatter":
-                return this.#hitScatter(px, py, data, plotArea, seriesCount, catCount, yScale);
-            case "pie":
-                return this.#hitPie(px, py, data, plotArea, catCount);
-            case "candlestick":
-                return this.#hitCandlestick(px, py, data, plotArea, catCount, yScale);
-            case "gauge":
-                return this.#hitGauge(px, py, data, plotArea);
-            case "funnel":
-                return this.#hitFunnel(px, py, data, plotArea);
-            default:
-                return null;
-        }
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
+        return null;
     }
 
-    static renderTooltip(ctx, hoverInfo, bounds, style) {
-        if (!hoverInfo || !bounds) return;
+    isAxisFree() {
+        return false;
+    }
 
-        const { category, seriesName, value, pointX, pointY } = hoverInfo;
-        const padding = { x: 8, y: 6 };
-        const lineHeight = 16;
-        const lines = [String(category)];
-
+    formatTooltip(hoverInfo) {
+        const lines = [String(hoverInfo.category)];
         let displayValue;
-        if (typeof value === "number" && !isNaN(value)) {
-            displayValue = Number.isInteger(value) ? String(value) : value.toFixed(2);
+
+        if (typeof hoverInfo.value === "number" && !isNaN(hoverInfo.value)) {
+            displayValue = Number.isInteger(hoverInfo.value) ? String(hoverInfo.value) : hoverInfo.value.toFixed(2);
         } else {
-            displayValue = String(value ?? "");
+            displayValue = String(hoverInfo.value ?? "");
         }
 
         if (hoverInfo.detail) {
-            const d = hoverInfo.detail;
-            if (d.type === "K线" || d.type === "Candlestick") {
-                lines.push(`📊 ${d.direction || ""}`);
-                lines.push(`─────────`);
-                lines.push(`开盘: ${d.open ?? "N/A"}`);
-                lines.push(`最高: ${d.high ?? "N/A"}`);
-                lines.push(`最低: ${d.low ?? "N/A"}`);
-                lines.push(`收盘: ${d.close ?? "N/A"}`);
-                lines.push(`─────────`);
-                lines.push(`涨跌: ${d.change ?? "N/A"} (${d.changePercent ?? "N/A"})`);
-            } else if (d.type === "仪表盘") {
-                lines.push(`─────────`);
-                lines.push(`数值: ${d.value}`);
-                lines.push(`范围: ${d.min} - ${d.max}`);
-                lines.push(`完成度: ${d.percentage}`);
-            } else if (d.type === "漏斗图") {
-                lines.push(`─────────`);
-                lines.push(`阶段: ${d.stage}`);
-                lines.push(`数值: ${d.value}`);
-                lines.push(`转化率: ${d.conversionRate}`);
-                lines.push(`总体占比: ${d.totalRate}`);
-            } else {
-                lines.push(displayValue);
-            }
-        } else if (seriesName && seriesName !== "undefined") {
-            lines.push(`${seriesName}: ${displayValue}`);
+            lines.push(...this.formatDetail(hoverInfo.detail));
+        } else if (hoverInfo.seriesName && hoverInfo.seriesName !== "undefined") {
+            lines.push(`${hoverInfo.seriesName}: ${displayValue}`);
         } else {
             lines.push(displayValue);
         }
 
-        ctx.save();
-        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
-
-        let maxW = 0;
-        for (const line of lines) {
-            const w = ctx.measureText(line).width;
-            if (w > maxW) maxW = w;
-        }
-
-        const boxW = maxW + padding.x * 2;
-        const boxH = lines.length * lineHeight + padding.y * 2;
-
-        let tipX = pointX + 12;
-        let tipY = pointY - boxH - 10;
-
-        if (tipX + boxW > bounds.x + bounds.w) {
-            tipX = pointX - boxW - 12;
-        }
-        if (tipY < bounds.y) {
-            tipY = pointY + 14;
-        }
-
-        tipX = Math.max(bounds.x, Math.min(tipX, bounds.x + bounds.w - boxW));
-        tipY = Math.max(bounds.y, Math.min(tipY, bounds.y + bounds.h - boxH));
-
-        ctx.fillStyle = "rgba(0,0,0,0.75)";
-        ctx.beginPath();
-        ctx.roundRect(tipX, tipY, boxW, boxH, 4);
-        ctx.fill();
-
-        ctx.fillStyle = "#fff";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-        for (let i = 0; i < lines.length; i++) {
-            ctx.fillText(lines[i], tipX + padding.x, tipY + padding.y + i * lineHeight);
-        }
-
-        ctx.restore();
+        return lines;
     }
 
-    static #hitBar(px, py, data, area, seriesCount, catCount, yScale) {
+    formatDetail(detail) {
+        return [detail.value ?? detail];
+    }
+}
+
+class BarStrategy extends BaseChartStrategy {
+    constructor() {
+        super("bar", "柱状图");
+    }
+
+    render(ctx, data, area, style, yScale) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Bar 开始渲染`, { dataLength: data.data?.length });
+
+        const seriesCount = data.headers.length - 1;
+        const catCount = data.data.length;
+        if (seriesCount <= 0 || catCount <= 0) return;
+
+        const groupWidth = area.w / catCount;
+        const barWidth = (groupWidth * 0.7) / seriesCount;
+        const barGap = (groupWidth * 0.3) / (seriesCount + 1);
+        const yMin = yScale.min;
+        const yMax = yScale.max;
+        const yRange = yMax - yMin || 1;
+
+        ctx.strokeStyle = CONFIG.CHART_BAR_BORDER_COLOR;
+        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
+
+        for (let s = 0; s < seriesCount; s++) {
+            ctx.fillStyle = style.colors[s % style.colors.length];
+
+            for (let i = 0; i < catCount; i++) {
+                const val = Number(data.data[i][s + 1]) || 0;
+                const barH = ((val - yMin) / yRange) * area.h;
+                const x = area.x + i * groupWidth + barGap + s * (barWidth + barGap);
+                const y = area.y + area.h - barH;
+
+                ctx.fillRect(x, y, barWidth, barH);
+                ctx.strokeRect(x, y, barWidth, barH);
+            }
+        }
+    }
+
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
         const groupWidth = area.w / catCount;
         const barWidth = (groupWidth * 0.7) / seriesCount;
         const barGap = (groupWidth * 0.3) / (seriesCount + 1);
@@ -196,10 +111,61 @@ export class NativeChartRenderer {
         }
         return null;
     }
+}
 
-    static #hitLine(px, py, data, area, seriesCount, catCount, yScale) {
-        const yMin = yScale ? yScale.min : this.#getYMin(data);
-        const yMax = yScale ? yScale.max : this.#getYMax(data);
+class LineStrategy extends BaseChartStrategy {
+    constructor() {
+        super("line", "折线图");
+    }
+
+    render(ctx, data, area, style, yScale) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Line 开始渲染`);
+
+        const seriesCount = data.headers.length - 1;
+        const catCount = data.data.length;
+        if (seriesCount <= 0 || catCount <= 0) return;
+
+        const yMin = yScale ? yScale.min : NativeChartRenderer.getYMin(data);
+        const yMax = yScale ? yScale.max : NativeChartRenderer.getYMax(data);
+        const yRange = yMax - yMin || 1;
+        const stepX = area.w / catCount;
+
+        for (let s = 0; s < seriesCount; s++) {
+            ctx.strokeStyle = style.colors[s % style.colors.length];
+            ctx.fillStyle = style.colors[s % style.colors.length];
+            ctx.lineWidth = CONFIG.CHART_LINE_DOT_RADIUS > 3 ? 2 : CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
+
+            ctx.beginPath();
+            let firstPoint = true;
+            const points = [];
+
+            for (let i = 0; i < catCount; i++) {
+                const val = Number(data.data[i][s + 1]) || 0;
+                const x = area.x + stepX * i + stepX / 2;
+                const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
+                points.push({ x, y });
+
+                if (firstPoint) {
+                    ctx.moveTo(x, y);
+                    firstPoint = false;
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+
+            ctx.stroke();
+
+            for (const pt of points) {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, CONFIG.CHART_LINE_DOT_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+    }
+
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
+        const yMin = yScale ? yScale.min : NativeChartRenderer.getYMin(data);
+        const yMax = yScale ? yScale.max : NativeChartRenderer.getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
         const dotR = Math.max(CONFIG.CHART_LINE_DOT_RADIUS || 4, HIT_RADIUS);
@@ -236,7 +202,7 @@ export class NativeChartRenderer {
                     const p1 = points[i];
                     const p2 = points[i + 1];
 
-                    const dist = this.#pointToSegmentDistance(px, py, p1.x, p1.y, p2.x, p2.y);
+                    const dist = NativeChartRenderer.pointToSegmentDistance(px, py, p1.x, p1.y, p2.x, p2.y);
 
                     if (dist <= lineSnapDist) {
                         const distToP1 = Math.sqrt((px - p1.x) ** 2 + (py - p1.y) ** 2);
@@ -261,40 +227,61 @@ export class NativeChartRenderer {
 
         return closestHit;
     }
+}
 
-    static #hitScatter(px, py, data, area, seriesCount, catCount, yScale) {
-        const allX = data.data.map((row) => Number(row[0]) || 0);
-        const allY = data.data.flatMap((row) => row.slice(1).map((v) => Number(v) || 0));
-        const xMin = Math.min(...allX);
-        const xMax = Math.max(...allX);
-        const yMin = yScale ? yScale.min : Math.min(...allY);
-        const yMax = yScale ? yScale.max : Math.max(...allY);
-        const xRange = xMax - xMin || 1;
-        const yRange = yMax - yMin || 1;
-        const dotR = Math.max(CONFIG.CHART_SCATTER_DOT_RADIUS, HIT_RADIUS);
-
-        for (let s = 0; s < seriesCount; s++) {
-            for (let i = 0; i < catCount; i++) {
-                const xVal = Number(data.data[i][0]) || 0;
-                const yVal = Number(data.data[i][s + 1]) || 0;
-                const dx = area.x + ((xVal - xMin) / xRange) * area.w;
-                const dy = area.y + area.h - ((yVal - yMin) / yRange) * area.h;
-
-                if ((px - dx) * (px - dx) + (py - dy) * (py - dy) <= dotR * dotR) {
-                    return {
-                        category: String(xVal),
-                        seriesName: String(data.headers[s + 1] || ""),
-                        value: yVal,
-                        pointX: dx,
-                        pointY: dy,
-                    };
-                }
-            }
-        }
-        return null;
+class PieStrategy extends BaseChartStrategy {
+    constructor() {
+        super("pie", "饼图");
     }
 
-    static #hitPie(px, py, data, area, catCount) {
+    isAxisFree() {
+        return true;
+    }
+
+    render(ctx, data, area, style) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Pie 开始渲染`);
+
+        const seriesCount = data.headers.length - 1;
+        const catCount = data.data.length;
+        if (seriesCount <= 0 || catCount <= 0) return;
+
+        const values = data.data.map((row) => Number(row[1]) || 0);
+        const total = values.reduce((sum, v) => sum + v, 0);
+        if (total === 0) return;
+
+        const cx = area.x + area.w / 2;
+        const cy = area.y + area.h / 2;
+        const r = Math.min(area.w, area.h) / 2 - 10;
+
+        ctx.strokeStyle = CONFIG.CHART_TOOLTIP_BORDER;
+        ctx.lineWidth = CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
+        ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
+        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+
+        let startAngle = -Math.PI / 2;
+
+        for (let i = 0; i < catCount; i++) {
+            const sliceAngle = (values[i] / total) * Math.PI * 2;
+            ctx.fillStyle = style.colors[i % style.colors.length];
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            const midAngle = startAngle + sliceAngle / 2;
+            const pct = ((values[i] / total) * 100).toFixed(1) + "%";
+            ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
+            const labelR = r * 0.65;
+            ctx.fillText(pct, cx + Math.cos(midAngle) * labelR, cy + Math.sin(midAngle) * labelR);
+
+            startAngle += sliceAngle;
+        }
+    }
+
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
         const values = data.data.map((row) => Number(row[1]) || 0);
         const total = values.reduce((sum, v) => sum + v, 0);
         if (total === 0) return null;
@@ -343,180 +330,22 @@ export class NativeChartRenderer {
         }
         return null;
     }
+}
 
-    static #renderGrid(ctx, area) {
-        ctx.save();
-        ctx.strokeStyle = CONFIG.CHART_GRID_COLOR;
-        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
-
-        const yTicks = 5;
-        const stepY = area.h / yTicks;
-        for (let i = 0; i <= yTicks; i++) {
-            const y = area.y + stepY * i;
-            ctx.beginPath();
-            ctx.moveTo(area.x, y);
-            ctx.lineTo(area.x + area.w, y);
-            ctx.stroke();
-        }
-
-        ctx.restore();
+class AreaStrategy extends LineStrategy {
+    constructor() {
+        super("area", "面积图");
     }
 
-    static #renderAxes(ctx, data, area, yScale) {
-        ctx.save();
-        ctx.strokeStyle = CONFIG.CHART_AXIS_COLOR;
-        ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH;
+    render(ctx, data, area, style, yScale) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Area 开始渲染`);
 
-        ctx.beginPath();
-        ctx.moveTo(area.x, area.y);
-        ctx.lineTo(area.x, area.y + area.h);
-        ctx.lineTo(area.x + area.w, area.y + area.h);
-        ctx.stroke();
-
-        const categories = data.data.map((row) => String(row[0]));
-        ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-
-        const step = area.w / categories.length;
-        for (let i = 0; i < categories.length; i++) {
-            ctx.fillText(String(categories[i]), area.x + step * i + step / 2, area.y + area.h + 6);
-        }
-
-        const yTicks = yScale.ticks;
-        ctx.textAlign = "right";
-        ctx.textBaseline = "middle";
-
-        for (const val of yTicks) {
-            const y = area.y + area.h - ((val - yScale.min) / (yScale.max - yScale.min)) * area.h;
-            ctx.fillText(this.#formatNumber(val), area.x - 6, y);
-        }
-
-        ctx.restore();
-    }
-
-    static #renderBar(ctx, data, area, style, yScale) {
         const seriesCount = data.headers.length - 1;
         const catCount = data.data.length;
         if (seriesCount <= 0 || catCount <= 0) return;
 
-        const groupWidth = area.w / catCount;
-        const barWidth = (groupWidth * 0.7) / seriesCount;
-        const barGap = (groupWidth * 0.3) / (seriesCount + 1);
-        const yMin = yScale.min;
-        const yMax = yScale.max;
-        const yRange = yMax - yMin || 1;
-
-        ctx.strokeStyle = CONFIG.CHART_BAR_BORDER_COLOR;
-        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
-
-        for (let s = 0; s < seriesCount; s++) {
-            ctx.fillStyle = style.colors[s % style.colors.length];
-
-            for (let i = 0; i < catCount; i++) {
-                const val = Number(data.data[i][s + 1]) || 0;
-                const barH = ((val - yMin) / yRange) * area.h;
-                const x = area.x + i * groupWidth + barGap + s * (barWidth + barGap);
-                const y = area.y + area.h - barH;
-
-                ctx.fillRect(x, y, barWidth, barH);
-                ctx.strokeRect(x, y, barWidth, barH);
-            }
-        }
-    }
-
-    static #renderLine(ctx, data, area, style, yScale) {
-        const seriesCount = data.headers.length - 1;
-        const catCount = data.data.length;
-        if (seriesCount <= 0 || catCount <= 0) return;
-
-        const yMin = yScale ? yScale.min : this.#getYMin(data);
-        const yMax = yScale ? yScale.max : this.#getYMax(data);
-        const yRange = yMax - yMin || 1;
-        const stepX = area.w / catCount;
-
-        for (let s = 0; s < seriesCount; s++) {
-            ctx.strokeStyle = style.colors[s % style.colors.length];
-            ctx.fillStyle = style.colors[s % style.colors.length];
-            ctx.lineWidth = CONFIG.CHART_LINE_DOT_RADIUS > 3 ? 2 : CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
-
-            ctx.beginPath();
-            let firstPoint = true;
-            const points = [];
-
-            for (let i = 0; i < catCount; i++) {
-                const val = Number(data.data[i][s + 1]) || 0;
-                const x = area.x + stepX * i + stepX / 2;
-                const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
-                points.push({ x, y });
-
-                if (firstPoint) {
-                    ctx.moveTo(x, y);
-                    firstPoint = false;
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            }
-
-            ctx.stroke();
-
-            for (const pt of points) {
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, CONFIG.CHART_LINE_DOT_RADIUS, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-    }
-
-    static #renderPie(ctx, data, area, style) {
-        const seriesCount = data.headers.length - 1;
-        const catCount = data.data.length;
-        if (seriesCount <= 0 || catCount <= 0) return;
-
-        const values = data.data.map((row) => Number(row[1]) || 0);
-        const total = values.reduce((sum, v) => sum + v, 0);
-        if (total === 0) return;
-
-        const cx = area.x + area.w / 2;
-        const cy = area.y + area.h / 2;
-        const r = Math.min(area.w, area.h) / 2 - 10;
-
-        ctx.strokeStyle = CONFIG.CHART_TOOLTIP_BORDER;
-        ctx.lineWidth = CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
-        ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
-
-        let startAngle = -Math.PI / 2;
-
-        for (let i = 0; i < catCount; i++) {
-            const sliceAngle = (values[i] / total) * Math.PI * 2;
-            ctx.fillStyle = style.colors[i % style.colors.length];
-
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, r, startAngle, startAngle + sliceAngle);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            const midAngle = startAngle + sliceAngle / 2;
-            const pct = ((values[i] / total) * 100).toFixed(1) + "%";
-            ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-            const labelR = r * 0.65;
-            ctx.fillText(pct, cx + Math.cos(midAngle) * labelR, cy + Math.sin(midAngle) * labelR);
-
-            startAngle += sliceAngle;
-        }
-    }
-
-    static #renderArea(ctx, data, area, style, yScale) {
-        const seriesCount = data.headers.length - 1;
-        const catCount = data.data.length;
-        if (seriesCount <= 0 || catCount <= 0) return;
-
-        const yMin = yScale ? yScale.min : this.#getYMin(data);
-        const yMax = yScale ? yScale.max : this.#getYMax(data);
+        const yMin = yScale ? yScale.min : NativeChartRenderer.getYMin(data);
+        const yMax = yScale ? yScale.max : NativeChartRenderer.getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
 
@@ -560,8 +389,16 @@ export class NativeChartRenderer {
             ctx.stroke();
         }
     }
+}
 
-    static #renderScatter(ctx, data, area, style, yScale) {
+class ScatterStrategy extends BaseChartStrategy {
+    constructor() {
+        super("scatter", "散点图");
+    }
+
+    render(ctx, data, area, style, yScale) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Scatter 开始渲染`);
+
         const seriesCount = data.headers.length - 1;
         const catCount = data.data.length;
         if (seriesCount <= 0 || catCount <= 0) return;
@@ -591,157 +428,59 @@ export class NativeChartRenderer {
         }
     }
 
-    static #renderTitle(ctx, title, area) {
-        ctx.save();
-        ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-        ctx.font = `bold ${CONFIG.CHART_TITLE_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "top";
-        ctx.fillText(title, area.x + area.w / 2, 10);
-        ctx.restore();
-    }
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
+        const allX = data.data.map((row) => Number(row[0]) || 0);
+        const allY = data.data.flatMap((row) => row.slice(1).map((v) => Number(v) || 0));
+        const xMin = Math.min(...allX);
+        const xMax = Math.max(...allX);
+        const yMin = yScale ? yScale.min : Math.min(...allY);
+        const yMax = yScale ? yScale.max : Math.max(...allY);
+        const xRange = xMax - xMin || 1;
+        const yRange = yMax - yMin || 1;
+        const dotR = Math.max(CONFIG.CHART_SCATTER_DOT_RADIUS, HIT_RADIUS);
 
-    static #renderLegend(ctx, data, area, style) {
-        const seriesNames = data.headers.slice(1);
-        ctx.save();
-        ctx.font = `${CONFIG.CHART_LEGEND_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        for (let s = 0; s < seriesCount; s++) {
+            for (let i = 0; i < catCount; i++) {
+                const xVal = Number(data.data[i][0]) || 0;
+                const yVal = Number(data.data[i][s + 1]) || 0;
+                const dx = area.x + ((xVal - xMin) / xRange) * area.w;
+                const dy = area.y + area.h - ((yVal - yMin) / yRange) * area.h;
 
-        const itemWidth = CONFIG.CHART_LEGEND_ITEM_WIDTH;
-        const totalWidth = seriesNames.length * itemWidth;
-        let startX = area.x + (area.w - totalWidth) / 2;
-        const y = area.y + area.h + CONFIG.CHART_LEGEND_OFFSET_Y;
-
-        for (let i = 0; i < seriesNames.length; i++) {
-            ctx.fillStyle = style.colors[i % style.colors.length];
-            ctx.fillRect(startX, y - 5, CONFIG.CHART_LEGEND_ITEM_SIZE, CONFIG.CHART_LEGEND_ITEM_SIZE);
-
-            ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-            ctx.textAlign = "left";
-            ctx.textBaseline = "middle";
-            ctx.fillText(String(seriesNames[i]), startX + 16, y + 1);
-
-            startX += itemWidth;
-        }
-
-        ctx.restore();
-    }
-
-    static #getYMin(data) {
-        let min = Infinity;
-        for (const row of data.data) {
-            for (let c = 1; c < row.length; c++) {
-                const v = Number(row[c]);
-                if (!isNaN(v) && v < min) min = v;
+                if ((px - dx) * (px - dx) + (py - dy) * (py - dy) <= dotR * dotR) {
+                    return {
+                        category: String(xVal),
+                        seriesName: String(data.headers[s + 1] || ""),
+                        value: yVal,
+                        pointX: dx,
+                        pointY: dy,
+                    };
+                }
             }
         }
-        return min === Infinity ? 0 : min;
+        return null;
+    }
+}
+
+class CandlestickStrategy extends BaseChartStrategy {
+    constructor() {
+        super("candlestick", "K线图");
     }
 
-    static #getYMax(data) {
-        let max = -Infinity;
-        for (const row of data.data) {
-            for (let c = 1; c < row.length; c++) {
-                const v = Number(row[c]);
-                if (!isNaN(v) && v > max) max = v;
-            }
-        }
-        return max === -Infinity ? 1 : max;
-    }
+    render(ctx, data, area, style, yScale) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Candlestick 开始渲染`);
 
-    static buildYScale(data, chartType) {
-        const dataMin = this.#getYMin(data);
-
-        let minValue;
-        if (dataMin >= 0) {
-            minValue = 0;
-        } else if (chartType === "bar") {
-            minValue = 0;
-        } else {
-            minValue = dataMin;
-        }
-
-        const ticks = this.#calcYTicks(data, 5, minValue);
-        return {
-            min: ticks[0],
-            max: ticks[ticks.length - 1],
-            ticks,
-        };
-    }
-
-    static #calcYTicks(data, count, minValue) {
-        const yMin = minValue !== undefined ? minValue : this.#getYMin(data);
-        const yMax = this.#getYMax(data);
-        const range = yMax - yMin || 1;
-        const rawStep = range / count;
-        const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-        const normStep = rawStep / mag;
-
-        let step;
-        if (normStep <= 1.5) step = mag;
-        else if (normStep <= 3) step = 2 * mag;
-        else if (normStep <= 7) step = 5 * mag;
-        else step = 10 * mag;
-
-        const start = Math.floor(yMin / step) * step;
-        const end = Math.ceil(yMax / step) * step;
-        const ticks = [];
-        for (let v = start; v <= end + step * 0.01; v += step) {
-            ticks.push(Math.round(v * 1e10) / 1e10);
-        }
-
-        return ticks;
-    }
-
-    static #formatNumber(val) {
-        if (Math.abs(val) >= 1e6) return (val / 1e6).toFixed(1) + "M";
-        if (Math.abs(val) >= 1e3) return (val / 1e3).toFixed(1) + "K";
-        return String(val);
-    }
-
-    /**
-     * 判断图表类型是否不需要坐标轴
-     *
-     * 某些图表类型（如饼图、仪表盘、漏斗图、旭日图等）使用非笛卡尔坐标系，
-     * 不需要 X/Y 坐标轴和网格线。
-     *
-     * @private
-     * @param {string} chartType - 图表类型
-     * @returns {boolean} 如果不需要坐标轴返回 true
-     */
-    static #isAxisFreeChart(chartType) {
-        const axisFreeTypes = ["pie", "gauge", "funnel", "sunburst"];
-        return axisFreeTypes.includes(chartType);
-    }
-
-    /**
-     * 渲染 K 线图（蜡烛图）
-     *
-     * 数据格式：每行 [开盘价, 收盘价, 最低价, 最高价]
-     * - 绿色（上涨）：收盘价 > 开盘价
-     * - 红色（下跌）：收盘价 < 开盘价
-     *
-     * @private
-     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
-     * @param {Object} data - 图表数据
-     * @param {Object} area - 绘图区域 {x, y, w, h}
-     * @param {Object} style - 样式配置
-     * @param {Object} yScale - Y 轴刻度信息
-     */
-    static #renderCandlestick(ctx, data, area, style, yScale) {
         const catCount = data.data.length;
         if (catCount <= 0) return;
 
-        const yMin = yScale ? yScale.min : this.#getYMin(data);
-        const yMax = yScale ? yScale.max : this.#getYMax(data);
+        const yMin = yScale ? yScale.min : NativeChartRenderer.getYMin(data);
+        const yMax = yScale ? yScale.max : NativeChartRenderer.getYMax(data);
         const yRange = yMax - yMin || 1;
 
         const candleWidth = Math.max((area.w / catCount) * 0.7, 4);
-        const candleGap = (area.w / catCount - candleWidth) / 2;
         const wickWidth = 1;
 
         for (let i = 0; i < catCount; i++) {
             const row = data.data[i];
-
             if (!row || row.length < 4) continue;
 
             const open = Number(row[0]) || 0;
@@ -750,7 +489,6 @@ export class NativeChartRenderer {
             const high = Number(row[3]) || 0;
 
             const isUp = close >= open;
-
             const cx = area.x + (i + 0.5) * (area.w / catCount);
 
             const openY = area.y + area.h - ((open - yMin) / yRange) * area.h;
@@ -765,7 +503,6 @@ export class NativeChartRenderer {
             ctx.fillStyle = isUp ? "#00aa44" : "#ff4444";
 
             ctx.lineWidth = wickWidth;
-
             ctx.beginPath();
             ctx.moveTo(cx, highY);
             ctx.lineTo(cx, lowY);
@@ -773,7 +510,6 @@ export class NativeChartRenderer {
 
             if (bodyH > 1) {
                 ctx.fillRect(cx - candleWidth / 2, bodyTop, candleWidth, bodyH);
-
                 ctx.lineWidth = 1;
                 ctx.strokeRect(cx - candleWidth / 2, bodyTop, candleWidth, bodyH);
             } else {
@@ -785,23 +521,9 @@ export class NativeChartRenderer {
         }
     }
 
-    /**
-     * K 线图点击检测
-     *
-     * 检测点击位置是否落在某根 K 线的范围内
-     *
-     * @private
-     * @param {number} px - 点击 X 坐标
-     * @param {number} py - 点击 Y 坐标
-     * @param {Object} data - 图表数据
-     * @param {Object} area - 绘图区域
-     * @param {number} catCount - 类别数量
-     * @param {Object} yScale - Y 轴刻度信息
-     * @returns {Object|null} 命中信息或 null
-     */
-    static #hitCandlestick(px, py, data, area, catCount, yScale) {
-        const yMin = yScale ? yScale.min : this.#getYMin(data);
-        const yMax = yScale ? yScale.max : this.#getYMax(data);
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
+        const yMin = yScale ? yScale.min : NativeChartRenderer.getYMin(data);
+        const yMax = yScale ? yScale.max : NativeChartRenderer.getYMax(data);
         const yRange = yMax - yMin || 1;
 
         const candleWidth = Math.max((area.w / catCount) * 0.7, 4);
@@ -832,6 +554,7 @@ export class NativeChartRenderer {
                     seriesName: "OHLC",
                     value: `O:${open} H:${high} L:${low} C:${close}`,
                     detail: {
+                        type: "K线",
                         open,
                         high,
                         low,
@@ -849,64 +572,41 @@ export class NativeChartRenderer {
         return null;
     }
 
-    /**
-     * 计算点到线段的最短距离
-     *
-     * @private
-     * @param {number} px - 点的 X 坐标
-     * @param {number} py - 点的 Y 坐标
-     * @param {number} x1 - 线段起点 X
-     * @param {number} y1 - 线段起点 Y
-     * @param {number} x2 - 线段终点 X
-     * @param {number} y2 - 线段终点 Y
-     * @returns {number} 最短距离（像素）
-     */
-    static #pointToSegmentDistance(px, py, x1, y1, x2, y2) {
-        const A = px - x1;
-        const B = py - y1;
-        const C = x2 - x1;
-        const D = y2 - y1;
+    formatDetail(detail) {
+        return [
+            `📊 ${detail.direction || ""}`,
+            `─────────`,
+            `开盘: ${detail.open ?? "N/A"}`,
+            `最高: ${detail.high ?? "N/A"}`,
+            `最低: ${detail.low ?? "N/A"}`,
+            `收盘: ${detail.close ?? "N/A"}`,
+            `─────────`,
+            `涨跌: ${detail.change ?? "N/A"} (${detail.changePercent ?? "N/A"})`,
+        ];
+    }
+}
 
-        const dot = A * C + B * D;
-        const lenSq = C * C + D * D;
-
-        let param = -1;
-
-        if (lenSq !== 0) {
-            param = dot / lenSq;
-        }
-
-        let xx, yy;
-
-        if (param < 0) {
-            xx = x1;
-            yy = y1;
-        } else if (param > 1) {
-            xx = x2;
-            yy = y2;
-        } else {
-            xx = x1 + param * C;
-            yy = y1 + param * D;
-        }
-
-        const dx = px - xx;
-        const dy = py - yy;
-
-        return Math.sqrt(dx * dx + dy * dy);
+class GaugeStrategy extends BaseChartStrategy {
+    constructor() {
+        super("gauge", "仪表盘");
     }
 
-    static #renderGauge(ctx, data, area, style) {
-        console.log("[Gauge] 开始渲染仪表盘...", { data, area, style });
+    isAxisFree() {
+        return true;
+    }
+
+    render(ctx, data, area, style) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Gauge 开始渲染`, { dataType: typeof data.data });
 
         if (!data.data || data.data.length === 0) {
-            console.warn("[Gauge] 数据为空，无法渲染");
+            errorHandler.warn(ERROR_CODE.CHART_DATA_EMPTY, `Gauge 数据为空`);
             return;
         }
 
         const value = Number(data.data[0]?.[1]) || 0;
         const label = String(data.data[0]?.[0] || data.headers?.[0] || "Value");
 
-        console.log(`[Gauge] 提取数据: 标签=${label}, 数值=${value}`);
+        errorHandler.debug(ERROR_CODE.CHART_STRATEGY_DEBUG, `Gauge 数据提取`, { label, value });
 
         const min = style?.min ?? 0;
         const max = style?.max ?? 100;
@@ -1018,7 +718,7 @@ export class NativeChartRenderer {
         ctx.fillText(displayValue, cx, cy + radius * 0.42);
     }
 
-    static #hitGauge(px, py, data, area) {
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
         if (!data.data || data.data.length === 0) return null;
 
         const value = Number(data.data[0]?.[1]) || 0;
@@ -1050,11 +750,25 @@ export class NativeChartRenderer {
         };
     }
 
-    static #renderFunnel(ctx, data, area, style) {
-        console.log("[Funnel] 开始渲染漏斗图...", { data, area, style });
+    formatDetail(detail) {
+        return [`─────────`, `数值: ${detail.value}`, `范围: ${detail.min} - ${detail.max}`, `完成度: ${detail.percentage}`];
+    }
+}
+
+class FunnelStrategy extends BaseChartStrategy {
+    constructor() {
+        super("funnel", "漏斗图");
+    }
+
+    isAxisFree() {
+        return true;
+    }
+
+    render(ctx, data, area, style) {
+        errorHandler.debug(ERROR_CODE.CHART_RENDER_START, `Funnel 开始渲染`);
 
         if (!data.data || data.data.length === 0) {
-            console.warn("[Funnel] 数据为空，无法渲染");
+            errorHandler.warn(ERROR_CODE.CHART_DATA_EMPTY, `Funnel 数据为空`);
             return;
         }
 
@@ -1121,7 +835,7 @@ export class NativeChartRenderer {
         });
     }
 
-    static #hitFunnel(px, py, data, area) {
+    hitTest(px, py, data, area, seriesCount, catCount, yScale) {
         if (!data.data || data.data.length === 0) return null;
 
         const items = data.data.map((row) => ({
@@ -1194,4 +908,339 @@ export class NativeChartRenderer {
 
         return null;
     }
+
+    formatDetail(detail) {
+        return [`─────────`, `阶段: ${detail.stage}`, `数值: ${detail.value}`, `转化率: ${detail.conversionRate}`, `总体占比: ${detail.totalRate}`];
+    }
 }
+
+export class NativeChartRenderer {
+    static #registry = new Map();
+
+    static register(strategy) {
+        if (!(strategy instanceof BaseChartStrategy)) {
+            errorHandler.error(ERROR_CODE.CHART_INVALID_STRATEGY, `Invalid strategy:`, strategy);
+            return;
+        }
+
+        this.#registry.set(strategy.type, strategy);
+        errorHandler.info(ERROR_CODE.CHART_STRATEGY_REGISTERED, `Registered chart strategy: ${strategy.type} (${strategy.name})`);
+    }
+
+    static get(type) {
+        return this.#registry.get(type);
+    }
+
+    static getTypes() {
+        return Array.from(this.#registry.keys());
+    }
+
+    static getNames() {
+        return Array.from(this.#registry.values()).map((s) => s.name);
+    }
+
+    static init() {
+        this.register(new BarStrategy());
+        this.register(new LineStrategy());
+        this.register(new PieStrategy());
+        this.register(new AreaStrategy());
+        this.register(new ScatterStrategy());
+        this.register(new CandlestickStrategy());
+        this.register(new GaugeStrategy());
+        this.register(new FunnelStrategy());
+
+        errorHandler.info(ERROR_CODE.CHART_STRATEGY_REGISTERED, `Initialized with ${this.#registry.size} chart strategies`);
+    }
+
+    static setLogLevel(level) {
+        errorHandler.configure({ level });
+    }
+
+    static render(ctx, chart, data, plotArea, style) {
+        ctx.save();
+
+        let yScale = null;
+        const strategy = this.get(chart.type);
+
+        if (strategy && !strategy.isAxisFree()) {
+            if (style.showGrid !== false) {
+                this.renderGrid(ctx, plotArea);
+            }
+
+            yScale = this.buildYScale(data, chart.type);
+            this.renderAxes(ctx, data, plotArea, yScale);
+        }
+
+        if (strategy) {
+            strategy.render(ctx, data, plotArea, style, yScale);
+        } else {
+            errorHandler.warn(ERROR_CODE.CHART_TYPE_NOT_FOUND, `No strategy found for chart type: ${chart.type}`);
+        }
+
+        if (style.title) {
+            this.renderTitle(ctx, style.title, plotArea);
+        }
+
+        if (style.showLegend !== false) {
+            this.renderLegend(ctx, data, plotArea, style);
+        }
+
+        ctx.restore();
+    }
+
+    static hitTestDataPoint(px, py, chartType, data, plotArea, yScale) {
+        const strategy = this.get(chartType);
+        if (!strategy) return null;
+
+        const seriesCount = data.headers.length - 1;
+        const catCount = data.data.length;
+        if (seriesCount <= 0 || catCount <= 0) return null;
+
+        return strategy.hitTest(px, py, data, plotArea, seriesCount, catCount, yScale);
+    }
+
+    static renderTooltip(ctx, hoverInfo, bounds, style) {
+        if (!hoverInfo || !bounds) return;
+
+        const { category, seriesName, value, pointX, pointY } = hoverInfo;
+        const padding = { x: 8, y: 6 };
+        const lineHeight = 16;
+
+        const strategy = this.get(hoverInfo.chartType);
+        const lines = strategy ? strategy.formatTooltip(hoverInfo) : [String(category)];
+
+        ctx.save();
+        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+
+        let maxW = 0;
+        for (const line of lines) {
+            const w = ctx.measureText(line).width;
+            if (w > maxW) maxW = w;
+        }
+
+        const boxW = maxW + padding.x * 2;
+        const boxH = lines.length * lineHeight + padding.y * 2;
+
+        let tipX = pointX + 12;
+        let tipY = pointY - boxH - 10;
+
+        if (tipX + boxW > bounds.x + bounds.w) {
+            tipX = pointX - boxW - 12;
+        }
+        if (tipY < bounds.y) {
+            tipY = pointY + 14;
+        }
+
+        tipX = Math.max(bounds.x, Math.min(tipX, bounds.x + bounds.w - boxW));
+        tipY = Math.max(bounds.y, Math.min(tipY, bounds.y + bounds.h - boxH));
+
+        ctx.fillStyle = "rgba(0,0,0,0.75)";
+        ctx.beginPath();
+        ctx.roundRect(tipX, tipY, boxW, boxH, 4);
+        ctx.fill();
+
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], tipX + padding.x, tipY + padding.y + i * lineHeight);
+        }
+
+        ctx.restore();
+    }
+
+    static renderGrid(ctx, area) {
+        ctx.save();
+        ctx.strokeStyle = CONFIG.CHART_GRID_COLOR;
+        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
+
+        const yTicks = 5;
+        const stepY = area.h / yTicks;
+        for (let i = 0; i <= yTicks; i++) {
+            const y = area.y + stepY * i;
+            ctx.beginPath();
+            ctx.moveTo(area.x, y);
+            ctx.lineTo(area.x + area.w, y);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    static renderAxes(ctx, data, area, yScale) {
+        ctx.save();
+        ctx.strokeStyle = CONFIG.CHART_AXIS_COLOR;
+        ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH;
+
+        ctx.beginPath();
+        ctx.moveTo(area.x, area.y);
+        ctx.lineTo(area.x, area.y + area.h);
+        ctx.lineTo(area.x + area.w, area.y + area.h);
+        ctx.stroke();
+
+        const categories = data.data.map((row) => String(row[0]));
+        ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
+        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+
+        const step = area.w / categories.length;
+        for (let i = 0; i < categories.length; i++) {
+            ctx.fillText(String(categories[i]), area.x + step * i + step / 2, area.y + area.h + 6);
+        }
+
+        const yTicks = yScale.ticks;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+
+        for (const val of yTicks) {
+            const y = area.y + area.h - ((val - yScale.min) / (yScale.max - yScale.min)) * area.h;
+            ctx.fillText(this.formatNumber(val), area.x - 6, y);
+        }
+
+        ctx.restore();
+    }
+
+    static renderTitle(ctx, title, area) {
+        ctx.save();
+        ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
+        ctx.font = `bold ${CONFIG.CHART_TITLE_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(title, area.x + area.w / 2, 10);
+        ctx.restore();
+    }
+
+    static renderLegend(ctx, data, area, style) {
+        const seriesNames = data.headers.slice(1);
+        ctx.save();
+        ctx.font = `${CONFIG.CHART_LEGEND_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+
+        const itemWidth = CONFIG.CHART_LEGEND_ITEM_WIDTH;
+        const totalWidth = seriesNames.length * itemWidth;
+        let startX = area.x + (area.w - totalWidth) / 2;
+        const y = area.y + area.h + CONFIG.CHART_LEGEND_OFFSET_Y;
+
+        for (let i = 0; i < seriesNames.length; i++) {
+            ctx.fillStyle = style.colors[i % style.colors.length];
+            ctx.fillRect(startX, y - 5, CONFIG.CHART_LEGEND_ITEM_SIZE, CONFIG.CHART_LEGEND_ITEM_SIZE);
+
+            ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText(String(seriesNames[i]), startX + 16, y + 1);
+
+            startX += itemWidth;
+        }
+
+        ctx.restore();
+    }
+
+    static getYMin(data) {
+        let min = Infinity;
+        for (const row of data.data) {
+            for (let c = 1; c < row.length; c++) {
+                const v = Number(row[c]);
+                if (!isNaN(v) && v < min) min = v;
+            }
+        }
+        return min === Infinity ? 0 : min;
+    }
+
+    static getYMax(data) {
+        let max = -Infinity;
+        for (const row of data.data) {
+            for (let c = 1; c < row.length; c++) {
+                const v = Number(row[c]);
+                if (!isNaN(v) && v > max) max = v;
+            }
+        }
+        return max === -Infinity ? 1 : max;
+    }
+
+    static buildYScale(data, chartType) {
+        const dataMin = this.getYMin(data);
+
+        let minValue;
+        if (dataMin >= 0) {
+            minValue = 0;
+        } else if (chartType === "bar") {
+            minValue = 0;
+        } else {
+            minValue = dataMin;
+        }
+
+        const ticks = this.calcYTicks(data, 5, minValue);
+        return {
+            min: ticks[0],
+            max: ticks[ticks.length - 1],
+            ticks,
+        };
+    }
+
+    static calcYTicks(data, count, minValue) {
+        const yMin = minValue !== undefined ? minValue : this.getYMin(data);
+        const yMax = this.getYMax(data);
+        const range = yMax - yMin || 1;
+        const rawStep = range / count;
+        const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+        const normStep = rawStep / mag;
+
+        let step;
+        if (normStep <= 1.5) step = mag;
+        else if (normStep <= 3) step = 2 * mag;
+        else if (normStep <= 7) step = 5 * mag;
+        else step = 10 * mag;
+
+        const start = Math.floor(yMin / step) * step;
+        const end = Math.ceil(yMax / step) * step;
+        const ticks = [];
+        for (let v = start; v <= end + step * 0.01; v += step) {
+            ticks.push(Math.round(v * 1e10) / 1e10);
+        }
+
+        return ticks;
+    }
+
+    static formatNumber(val) {
+        if (Math.abs(val) >= 1e6) return (val / 1e6).toFixed(1) + "M";
+        if (Math.abs(val) >= 1e3) return (val / 1e3).toFixed(1) + "K";
+        return String(val);
+    }
+
+    static pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+
+        let param = -1;
+
+        if (lenSq !== 0) {
+            param = dot / lenSq;
+        }
+
+        let xx, yy;
+
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+
+        const dx = px - xx;
+        const dy = py - yy;
+
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+}
+
+NativeChartRenderer.init();

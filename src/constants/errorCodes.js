@@ -222,6 +222,24 @@ export const ERROR_CODE = Object.freeze({
     /** 图表缓存管理器 Sheet 或 EventBus 不可用 */
     CHART_CACHE_MANAGER_SHEET_UNAVAILABLE: "CHART_CACHE_MANAGER_SHEET_UNAVAILABLE",
 
+    /** 图表策略调试信息 */
+    CHART_STRATEGY_DEBUG: "CHART_STRATEGY_DEBUG",
+
+    /** 图表策略注册成功 */
+    CHART_STRATEGY_REGISTERED: "CHART_STRATEGY_REGISTERED",
+
+    /** 图表渲染开始 */
+    CHART_RENDER_START: "CHART_RENDER_START",
+
+    /** 图表数据为空警告 */
+    CHART_DATA_EMPTY: "CHART_DATA_EMPTY",
+
+    /** 图表类型未找到警告 */
+    CHART_TYPE_NOT_FOUND: "CHART_TYPE_NOT_FOUND",
+
+    /** 图表策略无效错误 */
+    CHART_INVALID_STRATEGY: "CHART_INVALID_STRATEGY",
+
     // 通用日志分类
     /** 通用错误 */
     GENERIC_ERROR: "GENERIC_ERROR",

@@ -140,6 +140,7 @@ export class ChartSelectionStrategy extends EventStrategy {
                 if (hoverInfo) {
                     hoverInfo.pointX = chartBounds.x + hoverInfo.pointX;
                     hoverInfo.pointY = chartBounds.y + hoverInfo.pointY;
+                    hoverInfo.chartType = hit.chart.type;
                     this.handler.viewport.chartLayer.setHoverInfo(hit.chartId, hoverInfo);
                 } else {
                     this.handler.viewport.chartLayer.setHoverInfo(hit.chartId, null);
