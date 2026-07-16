@@ -103,6 +103,10 @@ export class ChartPlugin extends BasePlugin {
         return this.addChart(CHART_TYPE.CANDLESTICK, dataRange, options);
     }
 
+    addGaugeChart(dataRange, options = {}) {
+        return this.addChart(CHART_TYPE.GAUGE, dataRange, options);
+    }
+
     removeChart(id) {
         const sheet = this.sheet;
         if (!sheet || !sheet.chartManager) return null;

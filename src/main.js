@@ -809,6 +809,50 @@ const initApp = () => {
         if (barChart) {
             console.log(`📊 柱状图 ${barChart.id}`);
         }
+
+        // ==================== 示例4：仪表盘（Gauge）====================
+        // 仪表盘数据：[标签, 数值]
+        // 注意：数据范围需要包含表头行，否则 DataExtractor 无法正确提取数据
+        console.log("🔍 开始准备仪表盘数据...");
+        s.setCell(33, 0, "指标"); // 表头行（第34行）
+        s.setCell(33, 1, "数值");
+        s.setCell(34, 0, "SCORE"); // 数据行（第35行）
+        s.setCell(34, 1, 75); // 改为75%，更容易看到效果
+
+        console.log("   数据已写入：A34=指标, B34=数值");
+        console.log("              A35=SCORE, B35=75");
+
+        console.log("🎯 正在创建仪表盘...");
+        const gaugeChart = chartPlugin.addGaugeChart(
+            { startRow: 33, startCol: 0, endRow: 34, endCol: 1 }, // 包含表头行和数据行
+            {
+                anchorRow: 36, // 改到第36行，避免与其他图表重叠
+                anchorCol: 6, // 改到第6列，更靠左
+                width: 350,
+                height: 280,
+                style: {
+                    title: "🎯 完成度仪表盘",
+                    showLegend: false,
+                    showTooltip: true,
+                    min: 0,
+                    max: 100,
+                },
+            },
+        );
+
+        console.log("📊 仪表盘创建结果:", gaugeChart);
+        if (gaugeChart) {
+            console.log(`🎯 仪表盘 ${gaugeChart.id} 创建成功`);
+            console.log("仪表盘数据格式：[标签, 数值]");
+            console.log("- 标签：显示在仪表盘中心（如 SCORE、温度、速度等）");
+            console.log("- 数值：指针指向的值（0-100范围）");
+            console.log("\n特性：");
+            console.log("- 半圆形设计，直观展示完成度/进度");
+            console.log("- 渐变色弧线（蓝→绿→红）表示数值范围");
+            console.log("- 动态指针精确指向当前值");
+            console.log("- 刻度清晰标注（0-100，每10一个主刻度）");
+            console.log("\n点击仪表盘可查看详细信息！");
+        }
     }
     setTimeout(() => {
         prepareData();

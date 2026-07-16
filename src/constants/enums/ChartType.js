@@ -8,6 +8,7 @@
  * @property {string} AREA - 面积图，与折线图类似但强调数量随时间变化的程度
  * @property {string} SCATTER - 散点图，适合展示两个变量之间的相关性和分布情况
  * @property {string} CANDLESTICK - K 线图（蜡烛图），适合金融数据的开高低收分析
+ * @property {string} GAUGE - 仪表盘，适合展示单个指标值在范围内的位置（如速度、完成度）
  */
 export const CHART_TYPE = Object.freeze({
     LINE: "line",
@@ -16,4 +17,5 @@ export const CHART_TYPE = Object.freeze({
     AREA: "area",
     SCATTER: "scatter",
     CANDLESTICK: "candlestick",
+    GAUGE: "gauge",
 });

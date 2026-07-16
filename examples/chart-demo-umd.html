@@ -233,6 +233,8 @@
         <button class="btn-warning" onclick="addPieChart()">🥧 饼图</button>
         <button class="btn-info" onclick="addAreaChart()">📉 面积图</button>
         <button class="btn-danger" onclick="addScatterChart()">⚬ 散点图</button>
+        <button class="btn-primary" onclick="addCandlestickChart()">🕯️ K线图</button>
+        <button class="btn-success" onclick="addGaugeChart()">🎯 仪表盘</button>
         <div class="divider"></div>
         <span class="section-title">操作:</span>
         <button class="btn-primary" onclick="moveSelectedChart()">🔄 移动图表</button>
@@ -429,6 +431,87 @@
         }
     }
 
+    function addCandlestickChart() {
+        const s = workbook.activeSheet;
+
+        s.setCell(0, 6, '日期');
+        s.setCell(0, 7, '开盘价');
+        s.setCell(0, 8, '收盘价');
+        s.setCell(0, 9, '最低价');
+        s.setCell(0, 10, '最高价');
+
+        const candleData = [
+            {date: '周一', data: [20, 34, 10, 38]},
+            {date: '周二', data: [40, 35, 30, 50]},
+            {date: '周三', data: [31, 38, 33, 44]},
+            {date: '周四', data: [38, 15, 5, 42]},
+            {date: '周五', data: [25, 45, 20, 48]}
+        ];
+
+        candleData.forEach((item, index) => {
+            s.setCell(index + 1, 6, item.date);
+            s.setCell(index + 1, 7, item.data[0]);
+            s.setCell(index + 1, 8, item.data[1]);
+            s.setCell(index + 1, 9, item.data[2]);
+            s.setCell(index + 1, 10, item.data[3]);
+        });
+
+        const c = chartPlugin.addCandlestickChart({startRow: 0, startCol: 7, endRow: 5, endCol: 10}, {
+            anchorRow: 8,
+            anchorCol: 14,
+            width: 500,
+            height: 320,
+            style: {
+                title: '📈 股票K线图（周线）',
+                showLegend: false,
+                showTooltip: true,
+                showGrid: true
+            }
+        });
+
+        if (c) {
+            log(`🕯️ K线图 ${c.id} 创建成功`);
+            log('   数据格式：[开盘价, 收盘价, 最低价, 最高价]');
+            log('   点击K线可查看详细信息（OHLC、涨跌幅）');
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
+    function addGaugeChart() {
+        const s = workbook.activeSheet;
+
+        // 表头行
+        s.setCell(36, 4, '指标');
+        s.setCell(36, 5, '数值');
+        // 数据行
+        s.setCell(37, 4, 'SCORE');
+        s.setCell(37, 5, 75);
+
+        // 注意：数据范围必须包含表头行，否则 DataExtractor 无法提取数据
+        const c = chartPlugin.addGaugeChart({startRow: 36, startCol: 4, endRow: 37, endCol: 5}, {
+            anchorRow: 38,
+            anchorCol: 10,
+            width: 350,
+            height: 280,
+            style: {
+                title: '🎯 完成度仪表盘',
+                showLegend: false,
+                showTooltip: true,
+                min: 0,
+                max: 100
+            }
+        });
+
+        if (c) {
+            log(`🎯 仪表盘 ${c.id} 创建成功`);
+            log('   数据格式：[标签, 数值]');
+            log('   半圆形设计，渐变色弧线，动态指针显示当前值');
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
     function moveSelectedChart() {
         if (!selectedChartId) return log('⚠️ 先选择图表');
         chartPlugin.moveChart(selectedChartId, Math.floor(Math.random() * 30) + 5, Math.floor(Math.random() * 15) + 1, 20, 20);
@@ -475,7 +558,11 @@
             addAreaChart();
             await new Promise(r => setTimeout(r, 100));
             addScatterChart();
-            log('✅ 已添加所有5种类型的图表！现在可以测试导出功能了');
+            await new Promise(r => setTimeout(r, 100));
+            addCandlestickChart();
+            await new Promise(r => setTimeout(r, 100));
+            addGaugeChart();
+            log('✅ 已添加所有7种类型的图表！现在可以测试导出功能了');
         } catch (error) {
             log(`❌ 添加图表失败: ${error.message}`);
         }
@@ -490,7 +577,7 @@
             lc.innerHTML = '<p style="color:#999;text-align:center">暂无图表 | 点击上方按钮添加图表</p>';
             return;
         }
-        const names = {bar: '柱状图', line: '折线图', pie: '饼图', area: '面积图', scatter: '散点图'};
+        const names = {bar: '柱状图', line: '折线图', pie: '饼图', area: '面积图', scatter: '散点图', candlestick: 'K线图', gauge: '仪表盘'};
         lc.innerHTML = charts.map(c => `
                 <div class="chart-item" style="border-left-color:${c.style?.colors?.[0] || '#4472C4'}">
                     <div class="chart-info">
