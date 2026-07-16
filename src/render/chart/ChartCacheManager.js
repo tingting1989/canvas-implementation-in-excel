@@ -72,7 +72,6 @@ import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
 
 export class ChartCacheManager {
-
     /** @type {number} 全局版本号，每次数据变化时递增 */
     #globalVersion = 0;
 
