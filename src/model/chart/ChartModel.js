@@ -6,7 +6,7 @@
     SCATTER: "scatter",
 });
 
-const DEFAULT_COLORS = ["#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47", "#264478", "#9B59B6"];
+const DEFAULT_COLORS = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'];
 
 export class ChartModel {
     constructor(options = {}) {

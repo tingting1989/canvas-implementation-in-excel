@@ -1486,7 +1486,7 @@ async function exportChartsToExcel(workbook, worksheet, sheet) {
     for (const chart of charts) {
         try {
             let canvas = await chartLayer.getChartCanvas(chart.id);
-            
+
             if (!canvas) {
                 canvas = await chartLayer.rebuildChartCache(chart.id, sheet);
             }
@@ -1496,29 +1496,29 @@ async function exportChartsToExcel(workbook, worksheet, sheet) {
                 continue;
             }
 
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64Data = dataUrl.split(',')[1];
+            const dataUrl = canvas.toDataURL("image/png");
+            const base64Data = dataUrl.split(",")[1];
 
             const imageId = workbook.addImage({
                 base64: base64Data,
-                extension: 'png',
+                extension: "png",
             });
 
             worksheet.addImage(imageId, {
-                tl: { 
-                    col: chart.anchorCol, 
+                tl: {
+                    col: chart.anchorCol,
                     row: chart.anchorRow,
-                    colOff: Math.round(chart.offsetX * 914400 / 96),
-                    rowOff: Math.round(chart.offsetY * 914400 / 96)
+                    colOff: Math.round((chart.offsetX * 914400) / 96),
+                    rowOff: Math.round((chart.offsetY * 914400) / 96),
                 },
-                ext: { 
-                    width: chart.width, 
-                    height: chart.height 
+                ext: {
+                    width: chart.width,
+                    height: chart.height,
                 },
-                editAs: 'oneCell'
+                editAs: "oneCell",
             });
         } catch (error) {
-            console.warn(`Failed to export chart ${chart?.id || 'unknown'} to Excel:`, error);
+            console.warn(`Failed to export chart ${chart?.id || "unknown"} to Excel:`, error);
         }
     }
 }
@@ -1755,12 +1755,12 @@ export class ExportFilePlugin extends BasePlugin {
      */
     static #getImageMimeType(format) {
         const mimeMap = {
-            png: 'image/png',
-            jpeg: 'image/jpg',
-            jpg: 'image/jpg',
-            webp: 'image/webp'
+            png: "image/png",
+            jpeg: "image/jpg",
+            jpg: "image/jpg",
+            webp: "image/webp",
         };
-        return mimeMap[format.toLowerCase()] || 'image/png';
+        return mimeMap[format.toLowerCase()] || "image/png";
     }
 
     /**
@@ -1798,7 +1798,7 @@ export class ExportFilePlugin extends BasePlugin {
         try {
             const sheet = this.sheet;
             if (!sheet?.chartManager) {
-                throw new Error('Current sheet does not exist or has no chart manager');
+                throw new Error("Current sheet does not exist or has no chart manager");
             }
 
             const chart = sheet.chartManager.get(chartId);
@@ -1808,18 +1808,13 @@ export class ExportFilePlugin extends BasePlugin {
 
             const chartLayer = this.#getChartLayer();
             if (!chartLayer) {
-                throw new Error('Cannot get chart layer');
+                throw new Error("Cannot get chart layer");
             }
 
-            const { 
-                format = 'png', 
-                quality = 1.0, 
-                scale = 1, 
-                rebuildHighQuality = false 
-            } = options;
+            const { format = "png", quality = 1.0, scale = 1, rebuildHighQuality = false } = options;
 
             let canvas;
-            
+
             if (rebuildHighQuality || scale > 1) {
                 canvas = await chartLayer.rebuildChartCache(chartId);
                 if (!canvas) {
@@ -1834,38 +1829,46 @@ export class ExportFilePlugin extends BasePlugin {
             }
 
             const mimeType = ExportFilePlugin.#getImageMimeType(format);
-            
+
             return new Promise((resolve, reject) => {
                 const timeout = setTimeout(() => {
-                    reject(new Error('Image export timeout'));
+                    reject(new Error("Image export timeout"));
                 }, 10000);
 
                 try {
                     if (scale > 1) {
-                        const scaledCanvas = document.createElement('canvas');
+                        const scaledCanvas = document.createElement("canvas");
                         scaledCanvas.width = canvas.width * scale;
                         scaledCanvas.height = canvas.height * scale;
-                        const ctx = scaledCanvas.getContext('2d');
+                        const ctx = scaledCanvas.getContext("2d");
                         ctx.scale(scale, scale);
                         ctx.drawImage(canvas, 0, 0);
-                        
-                        scaledCanvas.toBlob((blob) => {
-                            clearTimeout(timeout);
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Failed to generate image blob'));
-                            }
-                        }, mimeType, quality);
+
+                        scaledCanvas.toBlob(
+                            (blob) => {
+                                clearTimeout(timeout);
+                                if (blob) {
+                                    resolve(blob);
+                                } else {
+                                    reject(new Error("Failed to generate image blob"));
+                                }
+                            },
+                            mimeType,
+                            quality,
+                        );
                     } else {
-                        canvas.toBlob((blob) => {
-                            clearTimeout(timeout);
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Failed to generate image blob'));
-                            }
-                        }, mimeType, quality);
+                        canvas.toBlob(
+                            (blob) => {
+                                clearTimeout(timeout);
+                                if (blob) {
+                                    resolve(blob);
+                                } else {
+                                    reject(new Error("Failed to generate image blob"));
+                                }
+                            },
+                            mimeType,
+                            quality,
+                        );
                     }
                 } catch (error) {
                     clearTimeout(timeout);
@@ -1873,10 +1876,10 @@ export class ExportFilePlugin extends BasePlugin {
                 }
             });
         } catch (error) {
-            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
-                format: 'image', 
-                options, 
-                error 
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {
+                format: "image",
+                options,
+                error,
             });
             throw error;
         }
@@ -1907,70 +1910,63 @@ export class ExportFilePlugin extends BasePlugin {
      * const zipBlob = await plugin.exportAllChartsAsImages({ asZip: true });
      *
      * // 仅导出选区内图表
-     * const results = await plugin.exportAllChartsAsImages({ 
+     * const results = await plugin.exportAllChartsAsImages({
      *     includeSelectionOnly: true,
-     *     asZip: false 
+     *     asZip: false
      * });
      */
     async exportAllChartsAsImages(options = {}) {
         try {
             const sheet = this.sheet;
             if (!sheet?.chartManager) {
-                console.warn('Current sheet does not exist or has no charts');
+                console.warn("Current sheet does not exist or has no charts");
                 return null;
             }
 
             const chartLayer = this.#getChartLayer();
             if (!chartLayer) {
-                throw new Error('Cannot get chart layer');
+                throw new Error("Cannot get chart layer");
             }
 
             let chartsToExport;
-            
+
             if (options.includeSelectionOnly && sheet.selection) {
                 chartsToExport = chartLayer.getChartsInSelection(sheet.selection);
-                
+
                 if (chartsToExport.length === 0) {
-                    console.warn('No charts in selection area');
+                    console.warn("No charts in selection area");
                     return null;
                 }
             } else {
                 chartsToExport = chartLayer.getAllCharts();
-                
+
                 if (chartsToExport.length === 0) {
-                    console.warn('No charts on current sheet');
+                    console.warn("No charts on current sheet");
                     return null;
                 }
             }
 
-            const { 
-                format = 'png', 
-                asZip = true, 
-                quality = 1.0,
-                scale = 1,
-                rebuildHighQuality = false
-            } = options;
+            const { format = "png", asZip = true, quality = 1.0, scale = 1, rebuildHighQuality = false } = options;
 
             const results = [];
             const errors = [];
 
             for (const chart of chartsToExport) {
                 try {
-                    const blob = await this.exportChartAsImage(chart.id, { 
-                        format, 
+                    const blob = await this.exportChartAsImage(chart.id, {
+                        format,
                         quality,
                         scale,
-                        rebuildHighQuality 
+                        rebuildHighQuality,
                     });
-                    
-                    const chartName = (chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`)
-                        .replace(/[^a-zA-Z0-9_-]/g, '_');
-                    
+
+                    const chartName = (chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`).replace(/[^a-zA-Z0-9_-]/g, "_");
+
                     results.push({
                         id: chart.id,
                         name: `${chartName}.${format}`,
                         blob,
-                        chart
+                        chart,
                     });
                 } catch (error) {
                     console.warn(`Failed to export chart ${chart.id}:`, error.message);
@@ -1979,14 +1975,14 @@ export class ExportFilePlugin extends BasePlugin {
             }
 
             if (results.length === 0) {
-                throw new Error('All chart exports failed');
+                throw new Error("All chart exports failed");
             }
 
             if (errors.length > 0) {
                 this.hooks?.runHooks(HOOKS.EXPORT_WARNING, {
-                    format: 'images',
+                    format: "images",
                     options,
-                    warnings: errors
+                    warnings: errors,
                 });
             }
 
@@ -1995,12 +1991,11 @@ export class ExportFilePlugin extends BasePlugin {
             }
 
             return asZip ? results[0].blob : results;
-
         } catch (error) {
-            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
-                format: 'images', 
-                options, 
-                error 
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {
+                format: "images",
+                options,
+                error,
             });
             throw error;
         }
@@ -2026,24 +2021,22 @@ export class ExportFilePlugin extends BasePlugin {
         try {
             const sheet = this.sheet;
             const chart = sheet?.chartManager?.get(chartId);
-            
-            const defaultName = filename || 
-                `${chart?.title || chart?.style?.title || 'chart'}_${Date.now()}.${options.format || 'png'}`;
-            
+
+            const defaultName = filename || `${chart?.title || chart?.style?.title || "chart"}_${Date.now()}.${options.format || "png"}`;
+
             const blob = await this.exportChartAsImage(chartId, options);
             triggerDownload(blob, defaultName);
 
-            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { 
-                format: 'chart-image', 
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, {
+                format: "chart-image",
                 options: { ...options, chartId, filename: defaultName },
-                result: blob 
+                result: blob,
             });
-
         } catch (error) {
-            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
-                format: 'chart-image', 
-                options: { chartId, filename }, 
-                error 
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {
+                format: "chart-image",
+                options: { chartId, filename },
+                error,
             });
             throw error;
         }
@@ -2065,19 +2058,17 @@ export class ExportFilePlugin extends BasePlugin {
      */
     async downloadAllCharts(options = {}) {
         try {
-            const { 
-                filename = null
-            } = options;
+            const { filename = null } = options;
 
             const result = await this.exportAllChartsAsImages(options);
 
             if (!result) {
-                console.warn('No charts to download');
+                console.warn("No charts to download");
                 return;
             }
 
             if (result instanceof Blob) {
-                const downloadName = filename || 'charts.zip';
+                const downloadName = filename || "charts.zip";
                 triggerDownload(result, downloadName);
             } else if (Array.isArray(result)) {
                 for (const item of result) {
@@ -2085,17 +2076,16 @@ export class ExportFilePlugin extends BasePlugin {
                 }
             }
 
-            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { 
-                format: 'charts-images', 
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, {
+                format: "charts-images",
                 options,
-                result 
+                result,
             });
-
         } catch (error) {
-            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { 
-                format: 'charts-images', 
-                options, 
-                error 
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {
+                format: "charts-images",
+                options,
+                error,
             });
             throw error;
         }
@@ -2112,15 +2102,15 @@ export class ExportFilePlugin extends BasePlugin {
      */
     static async #createZipFromImages(images) {
         const zip = new JSZip();
-        
+
         images.forEach(({ name, blob }) => {
             zip.file(name, blob);
         });
 
         return await zip.generateAsync({
-            type: 'blob',
-            compression: 'DEFLATE',
-            compressionOptions: { level: 6 }
+            type: "blob",
+            compression: "DEFLATE",
+            compressionOptions: { level: 6 },
         });
     }
 }

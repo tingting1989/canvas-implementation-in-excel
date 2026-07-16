@@ -1,4 +1,4 @@
-﻿import { ScrollManager } from "../ui/ScrollManager.js";
+﻿﻿import { ScrollManager } from "../ui/ScrollManager.js";
 import { SheetTabManager } from "../ui/sheetTab/SheetTabManager.js";
 import { ViewportTransform } from "./ViewportTransform.js";
 import { EVENT_NAMES } from "../constants/eventNames.js";
