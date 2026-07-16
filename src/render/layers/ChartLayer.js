@@ -55,6 +55,7 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { LAYER_Z_INDEX } from "../../constants/layerZIndex.js";
 import { CONFIG } from "../../constants/config.js";
+import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
 import { ChartRendererFactory } from "../chart/ChartRendererFactory.js";
 import { DataExtractor } from "../chart/DataExtractor.js";
 import { ChartCache } from "../chart/ChartCache.js";
@@ -425,7 +426,7 @@ export class ChartLayer extends BaseLayer {
             await this.#renderToCache(chart, sheet);
             return true;
         } catch (error) {
-            console.error(`Failed to rebuild cache for chart ${chartId}:`, error);
+            errorHandler.handle(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, `Failed to rebuild cache for chart ${chartId}`, { chartId, error });
             return false;
         }
     }
@@ -524,7 +525,7 @@ export class ChartLayer extends BaseLayer {
         try {
             return new ViewportTransform(sheet, scrollX, scrollY);
         } catch (e) {
-            console.warn("[ChartLayer] 无法创建视口转换器:", e.message);
+            errorHandler.warn(ERROR_CODE.CHART_VIEWPORT_TRANSFORM_FAILED, "无法创建视口转换器", { message: e.message });
             return null;
         }
     }
@@ -700,7 +701,7 @@ export class ChartLayer extends BaseLayer {
             renderer.render(entry.ctx, chart, data, plotArea, chart.style);
             chart._cachedData = data;
         } catch (e) {
-            console.warn("[ChartLayer] Error rendering chart:", e);
+            errorHandler.handle(ERROR_CODE.CHART_RENDER_ERROR, "图表渲染异常", { error: e });
         }
     }
 

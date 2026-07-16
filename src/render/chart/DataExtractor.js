@@ -12,6 +12,8 @@
  * const result = await extractor.extract(chart, sheet);
  * console.log(result.headers, result.data);
  */
+import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+
 export class DataExtractor {
     /** @private Web Worker 实例，用于后台数据提取 */
     #worker = null;
@@ -344,7 +346,7 @@ export class DataExtractor {
             this.#worker = new Worker(URL.createObjectURL(blob));
             this.#workerReady = true;
         } catch (e) {
-            console.warn("[DataExtractor] Failed to initialize worker:", e);
+            errorHandler.warn(ERROR_CODE.CHART_DATA_EXTRACTOR_INIT_FAILED, "Failed to initialize worker", { error: e });
             this.#workerReady = false;
         }
     }
