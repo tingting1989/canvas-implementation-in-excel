@@ -1,10 +1,6 @@
-﻿export const CHART_TYPE = Object.freeze({
-    BAR: "bar",
-    LINE: "line",
-    PIE: "pie",
-    AREA: "area",
-    SCATTER: "scatter",
-});
+﻿import { CHART_TYPE } from "@/constants/enums/ChartType";
+
+export { CHART_TYPE };
 
 const DEFAULT_COLORS = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];
 

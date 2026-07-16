@@ -33,6 +33,9 @@ export class NativeChartRenderer {
             case "scatter":
                 this.#renderScatter(ctx, data, plotArea, style, yScale);
                 break;
+            case "candlestick":
+                this.#renderCandlestick(ctx, data, plotArea, style, yScale);
+                break;
         }
 
         if (style.title) {
@@ -62,6 +65,8 @@ export class NativeChartRenderer {
                 return this.#hitScatter(px, py, data, plotArea, seriesCount, catCount, yScale);
             case "pie":
                 return this.#hitPie(px, py, data, plotArea, catCount);
+            case "candlestick":
+                return this.#hitCandlestick(px, py, data, plotArea, catCount, yScale);
             default:
                 return null;
         }
@@ -75,8 +80,24 @@ export class NativeChartRenderer {
         const lineHeight = 16;
         const lines = [String(category)];
 
-        const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(2);
-        if (seriesName && seriesName !== "undefined") {
+        let displayValue;
+        if (typeof value === "number" && !isNaN(value)) {
+            displayValue = Number.isInteger(value) ? String(value) : value.toFixed(2);
+        } else {
+            displayValue = String(value ?? "");
+        }
+
+        if (hoverInfo.detail) {
+            const d = hoverInfo.detail;
+            lines.push(`📊 ${d.direction}`);
+            lines.push(`─────────`);
+            lines.push(`开盘: ${d.open}`);
+            lines.push(`最高: ${d.high}`);
+            lines.push(`最低: ${d.low}`);
+            lines.push(`收盘: ${d.close}`);
+            lines.push(`─────────`);
+            lines.push(`涨跌: ${d.change} (${d.changePercent})`);
+        } else if (seriesName && seriesName !== "undefined") {
             lines.push(`${seriesName}: ${displayValue}`);
         } else {
             lines.push(displayValue);
@@ -665,6 +686,147 @@ export class NativeChartRenderer {
     static #isAxisFreeChart(chartType) {
         const axisFreeTypes = ["pie", "gauge", "funnel", "sunburst"];
         return axisFreeTypes.includes(chartType);
+    }
+
+    /**
+     * 渲染 K 线图（蜡烛图）
+     *
+     * 数据格式：每行 [开盘价, 收盘价, 最低价, 最高价]
+     * - 绿色（上涨）：收盘价 > 开盘价
+     * - 红色（下跌）：收盘价 < 开盘价
+     *
+     * @private
+     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 上下文
+     * @param {Object} data - 图表数据
+     * @param {Object} area - 绘图区域 {x, y, w, h}
+     * @param {Object} style - 样式配置
+     * @param {Object} yScale - Y 轴刻度信息
+     */
+    static #renderCandlestick(ctx, data, area, style, yScale) {
+        const catCount = data.data.length;
+        if (catCount <= 0) return;
+
+        const yMin = yScale ? yScale.min : this.#getYMin(data);
+        const yMax = yScale ? yScale.max : this.#getYMax(data);
+        const yRange = yMax - yMin || 1;
+
+        const candleWidth = Math.max((area.w / catCount) * 0.7, 4);
+        const candleGap = (area.w / catCount - candleWidth) / 2;
+        const wickWidth = 1;
+
+        for (let i = 0; i < catCount; i++) {
+            const row = data.data[i];
+
+            if (!row || row.length < 4) continue;
+
+            const open = Number(row[0]) || 0;
+            const close = Number(row[1]) || 0;
+            const low = Number(row[2]) || 0;
+            const high = Number(row[3]) || 0;
+
+            const isUp = close >= open;
+
+            const cx = area.x + (i + 0.5) * (area.w / catCount);
+
+            const openY = area.y + area.h - ((open - yMin) / yRange) * area.h;
+            const closeY = area.y + area.h - ((close - yMin) / yRange) * area.h;
+            const lowY = area.y + area.h - ((low - yMin) / yRange) * area.h;
+            const highY = area.y + area.h - ((high - yMin) / yRange) * area.h;
+
+            const bodyTop = Math.min(openY, closeY);
+            const bodyH = Math.abs(closeY - openY) || 1;
+
+            ctx.strokeStyle = isUp ? "#00aa44" : "#ff4444";
+            ctx.fillStyle = isUp ? "#00aa44" : "#ff4444";
+
+            ctx.lineWidth = wickWidth;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, highY);
+            ctx.lineTo(cx, lowY);
+            ctx.stroke();
+
+            if (bodyH > 1) {
+                ctx.fillRect(cx - candleWidth / 2, bodyTop, candleWidth, bodyH);
+
+                ctx.lineWidth = 1;
+                ctx.strokeRect(cx - candleWidth / 2, bodyTop, candleWidth, bodyH);
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(cx - candleWidth / 2, bodyTop);
+                ctx.lineTo(cx + candleWidth / 2, bodyTop);
+                ctx.stroke();
+            }
+        }
+    }
+
+    /**
+     * K 线图点击检测
+     *
+     * 检测点击位置是否落在某根 K 线的范围内
+     *
+     * @private
+     * @param {number} px - 点击 X 坐标
+     * @param {number} py - 点击 Y 坐标
+     * @param {Object} data - 图表数据
+     * @param {Object} area - 绘图区域
+     * @param {number} catCount - 类别数量
+     * @param {Object} yScale - Y 轴刻度信息
+     * @returns {Object|null} 命中信息或 null
+     */
+    static #hitCandlestick(px, py, data, area, catCount, yScale) {
+        const yMin = yScale ? yScale.min : this.#getYMin(data);
+        const yMax = yScale ? yScale.max : this.#getYMax(data);
+        const yRange = yMax - yMin || 1;
+
+        const candleWidth = Math.max((area.w / catCount) * 0.7, 4);
+        const hitPaddingX = candleWidth / 2 + 8;
+        const hitPaddingY = 15;
+
+        for (let i = 0; i < catCount; i++) {
+            const row = data.data[i];
+            if (!row || row.length < 4) continue;
+
+            const open = Number(row[0]) || 0;
+            const close = Number(row[1]) || 0;
+            const low = Number(row[2]) || 0;
+            const high = Number(row[3]) || 0;
+
+            const cx = area.x + (i + 0.5) * (area.w / catCount);
+
+            const highY = area.y + area.h - ((high - yMin) / yRange) * area.h;
+            const lowY = area.y + area.h - ((low - yMin) / yRange) * area.h;
+
+            if (
+                px >= cx - hitPaddingX &&
+                px <= cx + hitPaddingX &&
+                py >= highY - hitPaddingY &&
+                py <= lowY + hitPaddingY
+            ) {
+                const isUp = close >= open;
+                const change = close - open;
+                const changePercent = open !== 0 ? ((change / open) * 100).toFixed(2) : "0.00";
+
+                return {
+                    category: String(data.headers?.[i] || `K${i + 1}`),
+                    seriesName: "OHLC",
+                    value: `O:${open} H:${high} L:${low} C:${close}`,
+                    detail: {
+                        open,
+                        high,
+                        low,
+                        close,
+                        change: change.toFixed(2),
+                        changePercent: `${changePercent}%`,
+                        direction: isUp ? "上涨 📈" : "下跌 📉",
+                    },
+                    pointX: cx,
+                    pointY: (highY + lowY) / 2,
+                };
+            }
+        }
+
+        return null;
     }
 
     /**

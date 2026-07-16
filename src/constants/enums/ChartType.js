@@ -7,6 +7,7 @@
  * @property {string} PIE - 饼图，适合展示各部分占整体的比例关系
  * @property {string} AREA - 面积图，与折线图类似但强调数量随时间变化的程度
  * @property {string} SCATTER - 散点图，适合展示两个变量之间的相关性和分布情况
+ * @property {string} CANDLESTICK - K 线图（蜡烛图），适合金融数据的开高低收分析
  */
 export const CHART_TYPE = Object.freeze({
     LINE: "line",
@@ -14,4 +15,5 @@ export const CHART_TYPE = Object.freeze({
     PIE: "pie",
     AREA: "area",
     SCATTER: "scatter",
+    CANDLESTICK: "candlestick",
 });

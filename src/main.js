@@ -658,6 +658,8 @@ const initApp = () => {
         if (!chartPlugin) return;
         console.log(chartPlugin);
         const s = wb.activeSheet;
+
+        // ==================== 示例1：折线图/柱状图 ====================
         s.setCell(0, 0, "产品");
         s.setCell(0, 1, "Q1");
         s.setCell(0, 2, "Q2");
@@ -671,20 +673,141 @@ const initApp = () => {
             s.setCell(i + 1, 4, Math.floor(Math.random() * 1000) + 500);
         });
 
-        const c = chartPlugin.addLineChart(
+        const lineChart = chartPlugin.addLineChart(
             { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
             {
                 anchorRow: 8,
                 anchorCol: 1,
                 width: 450,
                 height: 300,
-                style: { title: "销售对比(柱状图)", showLegend: true, showTooltip: true },
+                style: { title: "销售趋势(折线图)", showLegend: true, showTooltip: true },
             },
         );
-        console.log(c);
+        console.log(lineChart);
 
-        if (c) {
-            console.log(`📊 柱状图 ${c.id}`);
+        if (lineChart) {
+            console.log(`📊 折线图 ${lineChart.id}`);
+        }
+
+        // ==================== 示例2：K线图（股票蜡烛图）====================
+        // 设置K线图数据表头
+        s.setCell(0, 6, "日期");
+        s.setCell(0, 7, "开盘价");
+        s.setCell(0, 8, "收盘价");
+        s.setCell(0, 9, "最低价");
+        s.setCell(0, 10, "最高价");
+
+        // K线图数据：[开盘价, 收盘价, 最低价, 最高价]
+        const candlestickData = [
+            { date: "周一", data: [20, 34, 10, 38] },   // 上涨
+            { date: "周二", data: [40, 35, 30, 50] },   // 下跌
+            { date: "周三", data: [31, 38, 33, 44] },   // 上涨
+            { date: "周四", data: [38, 15, 5, 42] },    // 大幅下跌
+            { date: "周五", data: [25, 45, 20, 48] },   // 大幅上涨
+        ];
+
+        // 填充K线图数据到表格
+        candlestickData.forEach((item, index) => {
+            s.setCell(index + 1, 6, item.date);       // 日期
+            s.setCell(index + 1, 7, item.data[0]);    // 开盘价
+            s.setCell(index + 1, 8, item.data[1]);    // 收盘价
+            s.setCell(index + 1, 9, item.data[2]);    // 最低价
+            s.setCell(index + 1, 10, item.data[3]);   // 最高价
+        });
+
+        // 创建K线图（注意：数据范围只包含4个价格列 H-K，不含日期列G）
+        // H=列7(开盘价), I=列8(收盘价), J=列9(最低价), K=列10(最高价)
+        console.log("🔍 开始创建K线图...");
+        console.log("   数据范围: H1:K5 (开盘价、收盘价、最低价、最高价)");
+        const candlestickChart = chartPlugin.addCandlestickChart(
+            { startRow: 0, startCol: 7, endRow: 5, endCol: 10 },
+            {
+                anchorRow: 8,
+                anchorCol: 8,
+                width: 500,
+                height: 320,
+                style: {
+                    title: "📈 股票K线图（周线）",
+                    showLegend: false,      // K线图通常不显示图例
+                    showTooltip: true,       // 显示tooltip展示详细信息
+                    showGrid: true,          // 显示网格线
+                },
+            },
+        );
+
+        console.log("📊 K线图创建结果:", candlestickChart);
+        if (candlestickChart) {
+            console.log(`✅ K线图 ${candlestickChart.id} 创建成功`);
+            console.log("   - 类型:", candlestickChart.type);
+            console.log("   - 位置:", `(${candlestickChart.anchorRow}, ${candlestickChart.anchorCol})`);
+            console.log("   - 尺寸:", `${candlestickChart.width}x${candlestickChart.height}`);
+            console.log("   - 数据范围:", candlestickChart.dataRange);
+
+            console.log("\n📈 K线图数据说明：");
+            console.log("- 每行代表一根K线（一天/一周/一月的交易数据）");
+            console.log("- 数据格式：[开盘价, 收盘价, 最低价, 最高价]");
+            console.log("- 🟢 绿色/红色：收盘价 >= 开盘价（上涨）");
+            console.log("- 🔴 红色：收盘价 < 开盘价（下跌）");
+            console.log("\n点击K线可查看详细信息：");
+            console.log("- 开盘价、收盘价、最高价、最低价");
+            console.log("- 涨跌额、涨跌幅百分比");
+        }
+
+        // ==================== 示例3：多种图表类型演示 ====================
+        // 饼图数据
+        s.setCell(20, 0, "类别");
+        s.setCell(20, 1, "数值");
+        s.setCell(21, 0, "产品A");
+        s.setCell(21, 1, 30);
+        s.setCell(22, 0, "产品B");
+        s.setCell(22, 1, 25);
+        s.setCell(23, 0, "产品C");
+        s.setCell(23, 1, 20);
+        s.setCell(24, 0, "产品D");
+        s.setCell(24, 1, 15);
+        s.setCell(25, 0, "其他");
+        s.setCell(25, 1, 10);
+
+        const pieChart = chartPlugin.addPieChart(
+            { startRow: 20, startCol: 0, endRow: 25, endCol: 1 },
+            {
+                anchorRow: 20,
+                anchorCol: 3,
+                width: 350,
+                height: 280,
+                style: { title: "市场份额分布(饼图)", showLegend: true, showTooltip: true },
+            },
+        );
+
+        if (pieChart) {
+            console.log(`🥧 饼图 ${pieChart.id}`);
+        }
+
+        // 柱状图数据
+        s.setCell(27, 0, "月份");
+        s.setCell(27, 1, "销售额");
+        s.setCell(28, 0, "1月");
+        s.setCell(28, 1, 1200);
+        s.setCell(29, 0, "2月");
+        s.setCell(29, 1, 1800);
+        s.setCell(30, 0, "3月");
+        s.setCell(30, 1, 1500);
+        s.setCell(31, 0, "4月");
+        s.setCell(31, 1, 2100);
+
+        const barChart = chartPlugin.addBarChart(
+            { startRow: 27, startCol: 0, endRow: 31, endCol: 1 },
+            {
+                anchorRow: 20,
+                anchorCol: 8,
+                width: 380,
+                height: 280,
+                style: { title: "月度销售额(柱状图)", showLegend: true, showTooltip: true },
+            },
+        );
+
+        if (barChart) {
+            console.log(`📊 柱状图 ${barChart.id}`);
         }
     }
     setTimeout(() => {
