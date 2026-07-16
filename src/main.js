@@ -699,20 +699,20 @@ const initApp = () => {
 
         // K线图数据：[开盘价, 收盘价, 最低价, 最高价]
         const candlestickData = [
-            { date: "周一", data: [20, 34, 10, 38] },   // 上涨
-            { date: "周二", data: [40, 35, 30, 50] },   // 下跌
-            { date: "周三", data: [31, 38, 33, 44] },   // 上涨
-            { date: "周四", data: [38, 15, 5, 42] },    // 大幅下跌
-            { date: "周五", data: [25, 45, 20, 48] },   // 大幅上涨
+            { date: "周一", data: [20, 34, 10, 38] }, // 上涨
+            { date: "周二", data: [40, 35, 30, 50] }, // 下跌
+            { date: "周三", data: [31, 38, 33, 44] }, // 上涨
+            { date: "周四", data: [38, 15, 5, 42] }, // 大幅下跌
+            { date: "周五", data: [25, 45, 20, 48] }, // 大幅上涨
         ];
 
         // 填充K线图数据到表格
         candlestickData.forEach((item, index) => {
-            s.setCell(index + 1, 6, item.date);       // 日期
-            s.setCell(index + 1, 7, item.data[0]);    // 开盘价
-            s.setCell(index + 1, 8, item.data[1]);    // 收盘价
-            s.setCell(index + 1, 9, item.data[2]);    // 最低价
-            s.setCell(index + 1, 10, item.data[3]);   // 最高价
+            s.setCell(index + 1, 6, item.date); // 日期
+            s.setCell(index + 1, 7, item.data[0]); // 开盘价
+            s.setCell(index + 1, 8, item.data[1]); // 收盘价
+            s.setCell(index + 1, 9, item.data[2]); // 最低价
+            s.setCell(index + 1, 10, item.data[3]); // 最高价
         });
 
         // 创建K线图（注意：数据范围只包含4个价格列 H-K，不含日期列G）
@@ -728,9 +728,9 @@ const initApp = () => {
                 height: 320,
                 style: {
                     title: "📈 股票K线图（周线）",
-                    showLegend: false,      // K线图通常不显示图例
-                    showTooltip: true,       // 显示tooltip展示详细信息
-                    showGrid: true,          // 显示网格线
+                    showLegend: false, // K线图通常不显示图例
+                    showTooltip: true, // 显示tooltip展示详细信息
+                    showGrid: true, // 显示网格线
                 },
             },
         );

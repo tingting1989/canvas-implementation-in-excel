@@ -797,12 +797,7 @@ export class NativeChartRenderer {
             const highY = area.y + area.h - ((high - yMin) / yRange) * area.h;
             const lowY = area.y + area.h - ((low - yMin) / yRange) * area.h;
 
-            if (
-                px >= cx - hitPaddingX &&
-                px <= cx + hitPaddingX &&
-                py >= highY - hitPaddingY &&
-                py <= lowY + hitPaddingY
-            ) {
+            if (px >= cx - hitPaddingX && px <= cx + hitPaddingX && py >= highY - hitPaddingY && py <= lowY + hitPaddingY) {
                 const isUp = close >= open;
                 const change = close - open;
                 const changePercent = open !== 0 ? ((change / open) * 100).toFixed(2) : "0.00";
