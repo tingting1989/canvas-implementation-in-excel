@@ -30,6 +30,7 @@ export default defineConfig([
         "**/stylelint.config.mjs",
         "**/vitest.config.js",
         "**/webpack.config.js",
+        "**/webpack.lib.config.js",
     ]),
 
     {
