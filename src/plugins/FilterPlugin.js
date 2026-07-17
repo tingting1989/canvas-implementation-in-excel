@@ -192,7 +192,7 @@ export class FilterPlugin extends BasePlugin {
 
         const self = this;
 
-        this.#headerRendererCallback = function (ctx, colIndex, x, y, width, height) {
+        this.#headerRendererCallback = function(ctx, colIndex, x, y, width, height) {
             self.#drawFilterIcon(ctx, colIndex, x, y, width, height);
         };
 

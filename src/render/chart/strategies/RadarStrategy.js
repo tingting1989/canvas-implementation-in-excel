@@ -217,7 +217,7 @@ export class RadarStrategy extends BaseChartStrategy {
 
         const maxValues = [];
         for (let j = 0; j < seriesCount; j++) {
-            let maxVal = Math.max(...values.map((row) => row[j]));
+            const maxVal = Math.max(...values.map((row) => row[j]));
             maxValues[j] = style?.indicators?.[j]?.max || (maxVal > 0 ? maxVal * 1.2 : 100);
         }
 

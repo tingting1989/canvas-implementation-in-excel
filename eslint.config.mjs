@@ -74,8 +74,6 @@ export default defineConfig([
             "no-case-declarations": "error",
             // 使用更严格的规则
             "default-case": "error",
-            // 禁止直接调用对象的 hasOwnProperty 方法
-            "no-prototype-builtins": "error",
             // 禁止将参数命名为 arguments
             "no-shadow-restricted-names": "error",
             // 控制函数括号周围的空格 - 前边没有空格，后面有空格
@@ -110,34 +108,14 @@ export default defineConfig([
                     allowImplicit: false,
                 },
             ],
-            // 强制使用驼峰命名法
-            // "camelcase": ["error", {
-            //     "properties": "always"
-            // }],
             // 强制函数名使用驼峰命名法
             "func-name-matching": ["error", "always"],
             "func-names": ["error", "always"],
-            // 要求类方法使用 this 或定义为静态方法
-            "class-methods-use-this": [
-                "error",
-                {
-                    exceptMethods: [],
-                },
-            ],
             // 要求使用点号表示法访问对象属性
             "dot-notation": [
                 "error",
                 {
                     allowKeywords: true,
-                },
-            ],
-            // 限制函数复杂度
-            // complexity: ["warn", 10],
-            // 禁止对函数参数重新赋值
-            "no-param-reassign": [
-                "error",
-                {
-                    props: true,
                 },
             ],
             // 禁止在 return 之后使用 else
@@ -154,18 +132,7 @@ export default defineConfig([
                     treatUndefinedAsUnspecified: false,
                 },
             ],
-            // 禁止使用特定的标识符名称
-            // "id-denylist": ["error",
-            //     "data",
-            //     "err",
-            //     "e",
-            //     "cb",
-            //     "callback"
-            // ],
-            // 限制函数参数数量
-            "max-params": ["warn", 3],
-            // 限制函数中语句的数量
-            "max-statements": ["warn", 100],
+
             // 禁止使用 alert, confirm, prompt
             "no-alert": "error",
             // 禁止使用 console
@@ -181,36 +148,7 @@ export default defineConfig([
             "no-eval": "error",
             // 要求 Symbol 构造函数必须有描述参数
             "symbol-description": "error",
-            // 禁止使用魔术数字
-            "no-magic-numbers": [
-                "warn",
-                {
-                    ignore: [-1, 0, 1, 2, 10, 20, 30, 40, 50, 100],
-                    ignoreArrayIndexes: true,
-                    enforceConst: false,
-                    detectObjects: false,
-                },
-            ],
-            //禁止使用 ++ / --，但允许在 for 循环的最终表达式中使用
-            "no-plusplus": ["error", {allowForLoopAfterthoughts: true}],
             "no-unneeded-ternary": ["error", {defaultAssignment: false}],
-            // "no-mixed-operators": [
-            //     "error", // 或 "warn"
-            //     {
-            //         groups: [
-            //             // 算术运算符
-            //             ["+", "-", "*", "/", "%", "**"],
-            //             // 位运算符
-            //             ["&", "|", "^", "~", "<<", ">>", ">>>"],
-            //             // 比较运算符
-            //             ["==", "!=", "===", "!==", ">", ">=", "<", "<="],
-            //             ["&&", "||"], // 逻辑运算符
-            //             ["in", "instanceof"], // 关系运算符
-            //         ],
-            //         // 是否允许混合使用相同优先级的运算符
-            //         allowSamePrecedence: true,
-            //     },
-            // ],
             // 使用 1tbs 风格，并允许单行代码块
             "brace-style": ["error", "1tbs", {allowSingleLine: false}],
             // 强制单行注释的位置在代码上方

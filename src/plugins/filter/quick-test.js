@@ -3,7 +3,7 @@
 //  在浏览器控制台中运行此代码
 // ════════════════════════════════════════════════════════
 
-(function () {
+(function() {
     console.log("🔍 开始 FilterPlugin 诊断...");
     console.log("".padEnd(60, "═"));
 

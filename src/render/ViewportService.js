@@ -39,9 +39,9 @@
  * @module render/ViewportService
  */
 
-/* eslint-disable class-methods-use-this */
+ 
 /* eslint-disable no-unused-vars */
-/* eslint-disable max-params */
+ 
 
 export class ViewportService {
     get scrollX() {
