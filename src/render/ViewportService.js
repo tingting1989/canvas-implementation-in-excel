@@ -39,9 +39,7 @@
  * @module render/ViewportService
  */
 
- 
 /* eslint-disable no-unused-vars */
- 
 
 export class ViewportService {
     get scrollX() {

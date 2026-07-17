@@ -70,7 +70,7 @@
     static debounce(func, wait = 100) {
         let timeoutId = null;
 
-        return function(...args) {
+        return function (...args) {
             if (timeoutId !== null) {
                 clearTimeout(timeoutId);
             }
@@ -85,7 +85,7 @@
     static throttle(func, limit = 100) {
         let inThrottle = false;
 
-        return function(...args) {
+        return function (...args) {
             if (!inThrottle) {
                 func.apply(this, args);
                 inThrottle = true;

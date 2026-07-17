@@ -79,7 +79,7 @@ export class RenderEngineViewportService extends ViewportService {
      * @param {number} [tabH=0] - 标签栏高度
      * @returns {boolean}
      */
-     
+
     isCellVisible(row, col, canvasW, canvasH, tabH = 0) {
         const sheet = this.#renderEngine.currentSheet;
         if (!sheet) return false;

@@ -34,7 +34,6 @@
  * @module render/CanvasContext
  */
 
- 
 /* eslint-disable no-unused-vars */
 
 import { errorHandler } from "@/core/ErrorHandler";
