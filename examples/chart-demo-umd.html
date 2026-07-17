@@ -236,6 +236,7 @@
         <button class="btn-primary" onclick="addCandlestickChart()">🕯️ K线图</button>
         <button class="btn-success" onclick="addGaugeChart()">🎯 仪表盘</button>
         <button class="btn-warning" onclick="addFunnelChart()">📊 漏斗图</button>
+        <button class="btn-info" onclick="addRadarChart()">📡 雷达图</button>
         <div class="divider"></div>
         <span class="section-title">操作:</span>
         <button class="btn-primary" onclick="moveSelectedChart()">🔄 移动图表</button>
@@ -557,6 +558,53 @@
         }
     }
 
+    function addRadarChart() {
+        const s = workbook.activeSheet;
+
+        // 表头行
+        s.setCell(48, 0, '指标');
+        s.setCell(48, 1, '预算');
+        s.setCell(48, 2, '实际支出');
+
+        // 数据行（6个维度）
+        const radarData = [
+            { indicator: 'Sales', budget: 4200, actual: 5000 },
+            { indicator: 'Administration', budget: 3000, actual: 14000 },
+            { indicator: 'Information Technology', budget: 20000, actual: 28000 },
+            { indicator: 'Customer Support', budget: 35000, actual: 26000 },
+            { indicator: 'Development', budget: 50000, actual: 42000 },
+            { indicator: 'Marketing', budget: 18000, actual: 21000 }
+        ];
+
+        radarData.forEach((item, index) => {
+            s.setCell(49 + index, 0, item.indicator);
+            s.setCell(49 + index, 1, item.budget);
+            s.setCell(49 + index, 2, item.actual);
+        });
+
+        // 注意：数据范围必须包含表头行
+        const c = chartPlugin.addRadarChart({startRow: 48, startCol: 0, endRow: 54, endCol: 2}, {
+            anchorRow: 45,
+            anchorCol: 10,
+            width: 450,
+            height: 400,
+            style: {
+                title: '📡 预算 vs 实际支出',
+                showLegend: true,
+                showTooltip: true
+            }
+        });
+
+        if (c) {
+            log(`📡 雷达图 ${c.id} 创建成功`);
+            log('   数据格式：[指标名称, 系列1数值, 系列2数值, ...]');
+            log('   多边形网格背景，支持多系列对比分析');
+            log('   鼠标悬停显示详细数值和占比');
+            selectedChartId = c.id;
+            updateList();
+        }
+    }
+
     function moveSelectedChart() {
         if (!selectedChartId) return log('⚠️ 先选择图表');
         chartPlugin.moveChart(selectedChartId, Math.floor(Math.random() * 30) + 5, Math.floor(Math.random() * 15) + 1, 20, 20);
@@ -609,7 +657,9 @@
             addGaugeChart();
             await new Promise(r => setTimeout(r, 100));
             addFunnelChart();
-            log('✅ 已添加所有8种类型的图表！现在可以测试导出功能了');
+            await new Promise(r => setTimeout(r, 100));
+            addRadarChart();
+            log('✅ 已添加所有9种类型的图表！现在可以测试导出功能了');
         } catch (error) {
             log(`❌ 添加图表失败: ${error.message}`);
         }

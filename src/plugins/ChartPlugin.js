@@ -111,6 +111,10 @@ export class ChartPlugin extends BasePlugin {
         return this.addChart(CHART_TYPE.FUNNEL, dataRange, options);
     }
 
+    addRadarChart(dataRange, options = {}) {
+        return this.addChart(CHART_TYPE.RADAR, dataRange, options);
+    }
+
     removeChart(id) {
         const sheet = this.sheet;
         if (!sheet || !sheet.chartManager) return null;

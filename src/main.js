@@ -904,6 +904,63 @@ const initApp = () => {
             console.log("- 点击任意层查看详细转化数据");
             console.log("\n适用场景：销售漏斗、用户行为分析、转化率追踪等");
         }
+
+        // ── 雷达图示例 ──
+        const radarData = [
+            ["指标", "预算", "实际支出"],
+            ["Sales", 4200, 5000],
+            ["Administration", 3000, 14000],
+            ["Information Technology", 20000, 28000],
+            ["Customer Support", 35000, 26000],
+            ["Development", 50000, 42000],
+            ["Marketing", 18000, 21000],
+        ];
+
+        for (let r = 0; r < radarData.length; r++) {
+            for (let c = 0; c < radarData[r].length; c++) {
+                s.setCell(r + 45, c, radarData[r][c]);
+            }
+        }
+
+        console.log(`   数据已写入：${radarData.length - 1}个维度 × ${radarData[0].length - 1}个系列`);
+
+        console.log("📡 正在创建雷达图...");
+
+        const radarChart = chartPlugin.addRadarChart(
+            { startRow: 45, startCol: 0, endRow: 51, endCol: 2 },
+            {
+                anchorRow: 45,
+                anchorCol: 10,
+                width: 450,
+                height: 400,
+                style: {
+                    title: "📡 预算 vs 实际支出",
+                    showLegend: true,
+                    showTooltip: true,
+                },
+            },
+        );
+
+        console.log("📡 雷达图创建结果:", radarChart);
+        if (radarChart) {
+            console.log(`📡 雷达图 ${radarChart.id} 创建成功`);
+            console.log("雷达图数据格式（类表格结构）：");
+            console.log("| 指标 (维度) | 系列1 | 系列2 | ... |");
+            console.log("|------------|-------|-------|-----|");
+            console.log("| Sales      | 4200  | 5000  |     |");
+            console.log("| Admin      | 3000  | 14000 |     |");
+            console.log("| IT         | 20000 | 28000 |     |");
+            console.log("\n数据说明：");
+            console.log("- 第一列：维度/指标名称（显示在雷达图外围）");
+            console.log("- 后续列：每个系列的数据值（决定距离圆心的远近）");
+            console.log("- 自动计算最大值（无需手动配置 max）");
+            console.log("\n特性：");
+            console.log("- 多边形网格背景（5层同心多边形）");
+            console.log("- 多系列对比（不同颜色填充区域）");
+            console.log("- 维度标签自动分布（支持3-12个维度）");
+            console.log("- 鼠标悬停显示详细数值和占比");
+            console.log("\n适用场景：能力评估、性能分析、产品对比、SWOT分析等");
+        }
     }
     setTimeout(() => {
         prepareData();

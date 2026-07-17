@@ -2,7 +2,7 @@
 import { NativeChartRenderer } from "./NativeChartRenderer.js";
 
 export class ChartRendererFactory {
-    static NATIVE_TYPES = ["bar", "line", "pie", "area", "scatter", "candlestick", "gauge", "funnel"];
+    static NATIVE_TYPES = ["bar", "line", "pie", "area", "scatter", "candlestick", "gauge", "funnel", "radar"];
     static ECHARTS_TYPES = ["radar", "treemap", "sunburst", "heatmap"];
 
     static #echartsBridge = null;
