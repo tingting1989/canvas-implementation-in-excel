@@ -182,6 +182,15 @@ export class MouseStrategy extends EventStrategy {
         } else {
             this.handler.sheet.selection.setActive(row, col);
         }
+
+        // 检查单元格类型是否为交互式类型（如星级评分）
+        // 交互式类型通过自身处理用户输入，不需要弹出传统编辑器
+        const cellType = this.handler.sheet.getCellTypeInstance(row, col);
+        if (cellType?.isInteractive) {
+            // 交互式类型：不显示编辑器，让类型自己处理双击事件
+            return;
+        }
+
         this.handler.editor.show(row, col, "end");
     }
 
