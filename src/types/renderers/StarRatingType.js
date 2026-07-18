@@ -39,7 +39,6 @@ export class StarRatingType extends BaseColumnType {
     static hoverState(cellKey, newValue) {
         if (newValue !== undefined) {
             StarRatingType.#hoverStateMap.set(cellKey, newValue);
-            console.log(`[StarRating] 📍 静态悬停状态: [${cellKey}] = ${newValue}`);
         }
         return StarRatingType.#hoverStateMap.get(cellKey) ?? null;
     }
@@ -50,22 +49,14 @@ export class StarRatingType extends BaseColumnType {
      * @param {string} cellKey - 单元格标识
      */
     static clearHoverState(cellKey) {
-        const hadValue = StarRatingType.#hoverStateMap.has(cellKey);
         StarRatingType.#hoverStateMap.delete(cellKey);
-        if (hadValue) {
-            console.log(`[StarRating] 🧹 清除悬停状态: [${cellKey}]`);
-        }
     }
 
     /**
      * 清除所有悬停状态（静态方法）
      */
     static clearAllHoverStates() {
-        const size = StarRatingType.#hoverStateMap.size;
         StarRatingType.#hoverStateMap.clear();
-        if (size > 0) {
-            console.log(`[StarRating] 🧹 清除全部 ${size} 个悬停状态`);
-        }
     }
 
     /** 存储每颗星星的位置信息（用于点击检测） */
@@ -120,11 +111,11 @@ export class StarRatingType extends BaseColumnType {
     }
 
     format(value) {
-        return value != null ? `${value} 星` : "";
+        return value !== null ? `${value} 星` : "";
     }
 
     validate(value) {
-        if (value === "" || value == null) return true;
+        if (value === "" || value === null) return true;
         const num = Number(value);
         const max = this.options?.maxStars || CONFIG.STAR_RATING_MAX_STARS;
         if (isNaN(num) || num < 0 || num > max) return `评分必须在 0-${max} 之间`;
@@ -146,87 +137,76 @@ export class StarRatingType extends BaseColumnType {
      * @param {MouseEvent} event - 鼠标事件对象
      * @returns {number|null} 返回新的评分值，或 null 表示无效点击
      */
-    handleClick(context, event) {
+    #detectRatingFromPosition(context, event) {
+        if (!context || typeof context.x === "undefined" || typeof context.y === "undefined") {
+            return null;
+        }
+
         const { x: cellX, y: cellY, width, height, value } = context;
 
-        // ✅ 使用与 render() 一致的参数计算（基于单元格内部坐标）
+        if (typeof width === "undefined" || typeof height === "undefined" || width <= 0 || height <= 0) {
+            return null;
+        }
+
         const baseStarSize = this.options?.starSize || Math.min(CONFIG.STAR_RATING_STAR_SIZE, height * 0.6);
         const starSize = Math.max(12, Math.round(baseStarSize));
         const gap = Math.round(starSize * CONFIG.STAR_RATING_GAP_RATIO);
         const maxStars = this.options?.maxStars || CONFIG.STAR_RATING_MAX_STARS;
         const totalWidth = starSize * maxStars + gap * (maxStars - 1);
 
-        // ✅ 关键：render() 中的坐标是基于单元格内部的（从 0 开始）
-        // 所以这里也必须从 0 开始计算，而不是使用 cellX
-        const startX = Math.round((width - totalWidth) / 2); // ← 相对于单元格左边缘
-        const centerY = Math.round(height / 2); // ← 相对于单元格上边缘
+        const startX = Math.round((width - totalWidth) / 2);
+        const centerY = Math.round(height / 2);
 
-        // 获取鼠标相对于单元格内部的精确位置
         let mouseX, mouseY;
 
-        // ✅ 尝试多种方式获取鼠标坐标（兼容不同浏览器和事件类型）
         if (event.offsetX !== undefined && event.offsetY !== undefined && event.offsetX !== 0) {
-            // 方式1: offsetX/offsetY（最常用）
             mouseX = event.offsetX - cellX;
             mouseY = event.offsetY - cellY;
-            console.log(`[StarRating] 📐 使用 offsetX 计算`);
         } else if (event.layerX !== undefined && event.layerY !== undefined) {
-            // 方式2: layerX/layerY（Firefox 兼容）
             mouseX = event.layerX - cellX;
             mouseY = event.layerY - cellY;
-            console.log(`[StarRating] 📐 使用 layerX 计算`);
         } else if (event.clientX !== undefined && event.clientY !== undefined) {
-            // 方式3: clientX/clientY（备选方案）
             mouseX = event.clientX - cellX;
             mouseY = event.clientY - cellY;
-            console.log(`[StarRating] 📐 使用 clientX 计算`);
         } else {
-            console.error("[StarRating] ❌ 无法获取有效的鼠标坐标!", {
-                eventKeys: Object.keys(event),
-                offsetX: event.offsetX,
-                layerX: event.layerX,
-                clientX: event.clientX,
-            });
             return null;
         }
 
-        console.log(`[StarRating] 点击检测（坐标系修复）:`, {
-            Canvas坐标: { cellX: cellX.toFixed(1), cellY: cellY.toFixed(1) },
-            原始事件: { offsetX: event.offsetX, offsetY: event.offsetY },
-            单元格内坐标: { mouseX: mouseX.toFixed(1), mouseY: mouseY.toFixed(1) },
-            星星布局: { startX, centerY, starSize, gap, width, height },
-        });
-
-        // 诊断信息
-        const firstStarX = startX;
-        const lastStarX = startX + (maxStars - 1) * (starSize + gap) + starSize;
-        const starTopY = centerY - starSize / 2;
-        const starBottomY = centerY + starSize / 2;
-
-        console.log(`[StarRating] 📍 坐标范围:`, {
-            星星X: `[${firstStarX}, ${lastStarX}]`,
-            星星Y: `[${starTopY.toFixed(1)}, ${starBottomY.toFixed(1)}]`,
-            鼠标: `(${mouseX.toFixed(1)}, ${mouseY.toFixed(1)})`,
-            在范围内: `${mouseX >= firstStarX && mouseX <= lastStarX && mouseY >= starTopY && mouseY <= starBottomY}`,
-        });
-
-        // 检查是否点击了星星区域（使用单元格内相对坐标）
         for (let i = 0; i < maxStars; i++) {
             const starX = Math.round(startX + i * (starSize + gap));
             const starY = Math.round(centerY - starSize / 2);
 
-            console.log(`[StarRating]   第${i + 1}颗星: [${starX}, ${starY}] +${starSize}`);
-
-            // 矩形碰撞检测（使用单元格内相对坐标）
             if (mouseX >= starX && mouseX <= starX + starSize && mouseY >= starY && mouseY <= starY + starSize) {
-                const newRating = i + 1;
-                console.log(`[StarRating] ✅ 命中第 ${newRating} 颗星!`);
-                this.#startAnimation(Number(value) || 0, newRating);
-                return newRating;
+                return i + 1;
             }
         }
 
-        console.log(`[StarRating] ❌ 未命中`);
+        return null;
+    }
+
+    /**
+     * 处理单元格点击事件 ⭐ 点击设置评分值
+     *
+     * ✅ 关键功能：点击星星时保存评分值到单元格
+     *
+     * @param {import('../CellRenderContext.js').CellRenderContext} context - 单元格渲染上下文
+     * @param {MouseEvent} event - 鼠标事件对象
+     * @returns {number|null} 返回新的评分值，或 null 表示无效点击
+     */
+    handleClick(context, event) {
+        const newRating = this.#detectRatingFromPosition(context, event);
+
+        if (newRating !== null && newRating !== undefined) {
+            const { value } = context;
+            this.#startAnimation(Number(value) || 0, newRating);
+
+            const cellKey = `${context.row},${context.col}`;
+            StarRatingType.hoverState(cellKey, null);
+            this.#hoverRating = null;
+
+            return newRating;
+        }
+
         return null;
     }
 
@@ -243,115 +223,123 @@ export class StarRatingType extends BaseColumnType {
      * @returns {boolean} 是否需要重绘（true=需要重绘显示悬停效果）
      */
     handleHover(context, event) {
-        // 🔍 诊断：打印接收到的 event 对象结构
-        console.log(`[StarRating] 🔍 handleHover 接收到的事件:`, {
-            type: event?.type,
-            hasOffsetX: "offsetX" in event,
-            offsetX: event?.offsetX,
-            offsetY: event?.offsetY,
-        });
+        const newHoverRating = this.#detectRatingFromPosition(context, event);
 
-        // ✅ 直接复用 handleClick 的逻辑（已修复坐标系问题）
-        const newHoverRating = this.handleClick(context, event);
-
-        // 获取单元格标识
         const cellKey = `${context.row},${context.col}`;
         this.#currentCellKey = cellKey;
 
-        // 读取当前的静态悬停状态
         const currentStaticHover = StarRatingType.hoverState(cellKey);
 
-        console.log(`[StarRating] handleHover 检测:`, {
-            cellKey,
-            当前静态悬停值: currentStaticHover,
-            当前实例悬停值: this.#hoverRating,
-            新检测值: newHoverRating,
-            是否变化: newHoverRating !== currentStaticHover,
-        });
-
-        // ✅ 关键：同时更新静态状态和实例属性
         if (newHoverRating !== currentStaticHover) {
-            // 更新静态状态（跨实例共享）
             StarRatingType.hoverState(cellKey, newHoverRating);
-            // 同步更新实例属性（兼容旧代码）
             this.#hoverRating = newHoverRating;
-
-            console.log(`[StarRating] ✅ 悬停状态更新为: ${newHoverRating}, 需要重绘`);
-            return true; // 状态改变，需要重绘以显示新的悬停效果
+            return true;
         }
 
-        console.log(`[StarRating] ℹ️ 悬停状态未变化 (${currentStaticHover}), 无需重绘`);
         return false;
     }
 
     /**
      * 处理鼠标移出事件（静态状态版）
      *
-     * 清除当前单元格的悬停状态。
+     * ✅ 关键改进：清理所有可能的悬停状态（实例 + 静态Map），
+     * 解决快速移动时多个单元格同时显示悬停效果的问题。
+     *
+     * @returns {boolean} 是否需要重绘
      */
     handleMouseLeave() {
-        // ✅ 清除静态悬停状态
-        if (this.#currentCellKey) {
-            StarRatingType.clearHoverState(this.#currentCellKey);
-        }
+        let needsRedraw = false;
 
-        // 同时清除实例属性
+        // ✅ 清除实例悬停状态
         if (this.#hoverRating !== null) {
             this.#hoverRating = null;
-            console.log(`[StarRating] 🚪 handleMouseLeave: 清除悬停状态`);
-            return true; // 需要重绘
+            needsRedraw = true;
         }
-        return false;
+
+        // ✅ 清除当前单元格的静态悬停状态
+        if (this.#currentCellKey && StarRatingType.#hoverStateMap.has(this.#currentCellKey)) {
+            StarRatingType.clearHoverState(this.#currentCellKey);
+            needsRedraw = true;
+        }
+
+        return needsRedraw;
     }
 
     /**
-     * 处理键盘事件 ⭐ 新增键盘支持
+     * 处理键盘事件 ⭐ 新增键盘支持（增强版）
      *
      * 支持以下快捷键：
      * - Arrow Right / Up：增加 1 星
      * - Arrow Left / Down：减少 1 星
-     * - 数字键 1-5：直接设置对应评分
+     * - 数字键 0-{max}：直接设置对应评分（动态适配最大星数）
+     *
+     * ✅ 优化改进：
+     * - 动态数字键范围：根据 maxStars 配置自适应（不再硬编码 1-5）
+     * - 边界安全检查：确保返回值在有效范围内 [0, max]
+     * - 类型安全：使用 isNumber() 进行类型验证
+     * - 性能优化：提前返回避免不必要的计算
      *
      * @param {KeyboardEvent} event - 键盘事件对象
-     * @param {*} currentValue - 当前值
-     * @returns {number|null} 返回新值，或 null 表示未处理
+     * @param {*} currentValue - 当前单元格值
+     * @returns {number|null} 返回新的评分值，或 null 表示未处理此按键
      */
     handleKeydown(event, currentValue) {
         const max = this.options?.maxStars || CONFIG.STAR_RATING_MAX_STARS;
-        const current = Number(currentValue) || 0;
+
+        // 安全解析当前值为数字（处理 null/undefined/非数字情况）
+        let current = 0;
+        if (currentValue !== null && currentValue !== undefined && currentValue !== "") {
+            current = Number(currentValue);
+            if (!Number.isFinite(current)) {
+                current = 0; // 无效数值重置为 0
+            }
+        }
+        current = Math.round(current); // 取整到整数星
+
         let newValue = null;
 
         switch (event.key) {
             case "ArrowRight":
-            case "ArrowUp":
-                event.preventDefault();
-                // ✅ 整星步进：每次增加 1 颗星
-                newValue = Math.min(max, Math.round(current) + 1);
+            case "ArrowUp": {
+                // 方向键上/右：增加 1 星（不超过最大值）
+                newValue = Math.min(max, current + 1);
                 break;
+            }
             case "ArrowLeft":
-            case "ArrowDown":
-                event.preventDefault();
-                // ✅ 整星步进：每次减少 1 颗星
-                newValue = Math.max(0, Math.round(current) - 1);
+            case "ArrowDown": {
+                // 方向键下/左：减少 1 星（不小于 0）
+                newValue = Math.max(0, current - 1);
                 break;
-            case "1":
-            case "2":
-            case "3":
-            case "4":
-            case "5":
-                event.preventDefault();
-                newValue = parseInt(event.key, 10);
+            }
+            default: {
+                // 尝试匹配数字键（0 到 maxStars）
+                const digit = parseInt(event.key, 10);
+                if (!isNaN(digit) && digit >= 0 && digit <= max) {
+                    newValue = digit;
+                } else {
+                    return null; // 非目标按键，交由默认逻辑处理
+                }
                 break;
-            default:
-                return null;
+            }
         }
 
-        if (newValue !== current && newValue !== null) {
-            this.#startAnimation(current, newValue);
-            return newValue;
+        // 边界安全检查（确保值在有效范围内）
+        if (newValue === null || isNaN(newValue)) {
+            return null;
         }
 
-        return null;
+        // 限制在 [0, max] 范围内
+        newValue = Math.max(0, Math.min(max, newValue));
+
+        // 值未变化时返回 null（避免无意义的更新和动画）
+        if (newValue === current) {
+            return null;
+        }
+
+        // 启动平滑过渡动画
+        this.#startAnimation(current, newValue);
+
+        return newValue;
     }
 
     /**
@@ -416,38 +404,24 @@ export class StarRatingType extends BaseColumnType {
     render(context) {
         const { ctx, x, y, width, height, value } = context;
 
-        // ✅ 关键修复：使用静态状态而非实例属性
-        // 因为 getCellTypeInstance() 可能每次返回新实例，导致实例属性丢失
         const cellKey = `${context.row},${context.col}`;
-        this.#currentCellKey = cellKey; // 缓存当前单元格标识
+        this.#currentCellKey = cellKey;
 
-        // 从静态 Map 读取悬停状态（跨实例共享）
         const staticHoverRating = StarRatingType.hoverState(cellKey);
 
-        // 🔍 诊断日志
-        if (staticHoverRating !== null) {
-            console.log(`[StarRating] 🎨 render() 使用静态悬停状态:`, {
-                cellKey,
-                staticHoverRating,
-                instanceHoverRating: this.#hoverRating,
-                使用静态状态: "✅",
-            });
-        }
-
-        // 获取实际显示的评分值（优先级：静态悬停 > 实例悬停 > 动画 > 实际值）
         let displayValue;
         if (staticHoverRating !== null) {
-            // ✅ 优先使用静态悬停状态（解决实例复用问题）
             displayValue = staticHoverRating;
         } else if (this.#hoverRating !== null) {
-            // 兼容旧代码：如果静态状态没有，尝试实例属性
             displayValue = this.#hoverRating;
         } else if (this.#animatedRating !== null) {
-            // 动画进行中（评分变化过渡动画）
             displayValue = this.#updateAnimation();
         } else {
-            // 正常显示当前单元格的实际值
-            displayValue = Number(value) || 0;
+            const numValue = Number(value);
+            if (!Number.isFinite(numValue)) {
+                return super.render(context);
+            }
+            displayValue = numValue;
         }
 
         const maxStars = this.options?.maxStars || CONFIG.STAR_RATING_MAX_STARS;

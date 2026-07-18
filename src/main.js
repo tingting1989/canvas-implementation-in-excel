@@ -23,6 +23,7 @@ import { isFunction, isNumber } from "./utils/utils.js";
 import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
 import { registerColumnTypeClass } from "@/types";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
+import { InteractionPlugin } from "@/plugins/InteractionPlugin";
 
 class TrafficLightType extends BaseColumnType {
     get name() {
@@ -120,127 +121,120 @@ const initApp = () => {
     const wb = new Workbook(document.getElementById("wrap"), {
         defaultStyle: {},
 
-        // readOnly: true,
-        // 工作表高度和宽度（像素值）
-        // height: 600,
-        // 工作表高度和宽度（像素值）
-        // width: 800,
-
-        // 初始行数
-        // startRows: 10,
-        // 初始列数
-        // startCols: 10,
-        // cellPadding: 30,
         sheets: [
             {
-                name: "Sheet1",
-            },
-            {
-                name: "Sheet2",
+                name: "星级评分演示",
 
-                // readOnly: false,
                 data: [
-                    ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
-                    ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
-                    ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
+                    ["产品名称", "类别", "用户评分", "专家评分", "综合评价", "推荐指数", "满意度", "性价比"],
+                    ["产品A", "电子产品", 5, 5, 5, 5, 5, 5],
+                    ["产品B", "家居用品", 4, 4, 4, 4, 4, 4],
+                    ["产品C", "服装配饰", 3, 3, 3, 3, 3, 3],
+                    ["产品D", "食品饮料", 5, 4, 5, 4, 5, 4],
+                    ["产品E", "图书文具", 4, 5, 4, 5, 4, 5],
+                    ["产品F", "运动户外", 3, 4, 3, 4, 3, 4],
+                    ["产品G", "美妆护肤", 5, 5, 5, 5, 5, 5],
+                    ["产品H", "汽车配件", 4, 3, 4, 3, 4, 3],
+                    ["产品I", "数码配件", 5, 5, 5, 5, 5, 5],
+                    ["产品J", "母婴用品", 4, 4, 4, 4, 4, 4],
+                    ["产品K", "宠物用品", 3, 3, 3, 3, 3, 3],
+                    ["产品L", "办公设备", 5, 4, 5, 4, 5, 4],
                 ],
 
-                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                rowHeaderWidth: 120,
-                rowHeights: [30, 50, 90],
-                rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
-
-                // 嵌套表头配置（支持完整 style 属性）
-                nestedHeaders: [
-                    [
-                        {
-                            label: "基本信息",
-                            colspan: 2,
-                            style: {
-                                backgroundColor: "#FFC000",
-                                color: "#FFFFFF",
-                                fontWeight: "bold",
-                                fontSize: "14px",
-                                textAlign: "left",
-                            },
-                        },
-                        {
-                            label: "工作信息",
-                            colspan: 4,
-                            style: {
-                                backgroundColor: "#70AD47",
-                                color: "#FFFFFF",
-                                fontWeight: "bold",
-                                fontSize: "14px",
-                                textAlign: "center",
-                            },
-                        },
-                    ],
-                    [
-                        {
-                            label: "姓名",
-                            style: {
-                                backgroundColor: "#FFC000",
-                                fontWeight: "bold",
-                            },
-                        },
-                        "年龄",
-                        {
-                            label: "城市",
-                            style: {
-                                backgroundColor: "#FFC000",
-                                fontWeight: "bold",
-                            },
-                        },
-                        {
-                            label: "部门",
-                            style: {
-                                fontStyle: "italic",
-                                color: "#333333",
-                            },
-                        },
-                        {
-                            label: "薪酬",
-                            colspan: 2,
-                            style: {
-                                backgroundColor: "#ED7D31",
-                                color: "#FFFFFF",
-                                textAlign: "center",
-                            },
-                        },
-                    ],
-                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                ],
-                textOverflowEllipsis: false,
-                cellPadding: 10,
-                conditionalStyles: [
+                columns: [
+                    { type: "text", width: 120 },
+                    { type: "text", width: 100 },
+                    // 用户评分
                     {
-                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
-                        condition: (v) => isNumber(v) && v > 25,
-                        style: { backgroundColor: "#ffcccc" },
+                        type: "starRating",
+                        width: 180,
+                        options: { maxStars: 3, color: "#00FF00", emptyColor: "#CCCCCC" },
+                    },
+                    // 专家评分
+                    {
+                        type: "trafficLight",
+                        width: 180,
+                        options: { maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0" },
+                    },
+                    // // 综合评价
+                    {
+                        type: "select",
+                        width: 180,
+                        source: [
+                            { value: "0", label: "好" },
+                            { value: "1", label: "中" },
+                            { value: "2", label: "差" },
+                        ],
+                    },
+                    // // 推荐指数
+                    // {
+                    //     type: "starRating",
+                    //     width: 180,
+                    //     options: {maxStars: 5, color: "#9B59B6", emptyColor: "#C0C0C0"}
+                    // },
+                    // // 满意度
+                    // {
+                    //     type: "starRating",
+                    //     width: 180,
+                    //     options: {maxStars: 5, color: "#F39C12", emptyColor: "#E8E8E8"}
+                    // },
+                    // // 性价比
+                    // {
+                    //     type: "starRating",
+                    //     width: 180,
+                    //     options: {maxStars: 5, color: "#2ECC71", emptyColor: "#D5D5D5"}
+                    // }
+                ],
+
+                cell: [
+                    // 表头样式
+                    {
+                        row: 0,
+                        col: 0,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 1,
+                        type: "text",
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 2,
+                        type: "text",
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 3,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 4,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 5,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 6,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 7,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
                     },
                 ],
-                cell: [
-                    { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                    { row: 1, col: 3, disabled: true },
-                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
-                ],
-                cells: (row, col) => {
-                    if (row === 0) {
-                        return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
-                    }
-                    if (col === 0 && row > 0) {
-                        return { style: { textAlign: "right", fontWeight: "bold" } };
-                    }
-                },
-                columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text", width: 100 },
-                    { type: "text", width: 100 },
-                    { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date", width: 300 },
-                ],
+
+                rowHeights: [40, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45],
+                textOverflowEllipsis: false,
+                cellPadding: 10,
             },
         ],
         plugins: [
@@ -260,7 +254,7 @@ const initApp = () => {
             // "sort",
             "dataValidation",
             "chart",
-
+            // "interaction"
             // "filter",
         ],
         pluginOptions: {
@@ -624,7 +618,11 @@ const initApp = () => {
             }
         },
     });
-
+    wb.loadPluginClass(InteractionPlugin, {
+        debugMode: false,
+        throttleMs: 16,
+        autoRender: true,
+    });
     wb.initRender();
     wb.render();
 
@@ -653,223 +651,6 @@ const initApp = () => {
             }
         }
     });
-
-    async function prepareData() {
-        const chartPlugin = wb.getPlugin("chart");
-        if (!chartPlugin) return;
-        console.log(chartPlugin);
-        const s = wb.activeSheet;
-
-        // ==================== 示例1：折线图/柱状图 ====================
-        s.setCell(0, 0, "产品");
-        s.setCell(0, 1, "Q1");
-        s.setCell(0, 2, "Q2");
-        s.setCell(0, 3, "Q3");
-        s.setCell(0, 4, "Q4");
-        ["A", "B", "C", "D", "E"].forEach((p, i) => {
-            s.setCell(i + 1, 0, p);
-            s.setCell(i + 1, 1, Math.floor(Math.random() * 1000) + 500);
-            s.setCell(i + 1, 2, Math.floor(Math.random() * 1000) + 500);
-            s.setCell(i + 1, 3, Math.floor(Math.random() * 1000) + 500);
-            s.setCell(i + 1, 4, Math.floor(Math.random() * 1000) + 500);
-        });
-
-        const lineChart = chartPlugin.addLineChart(
-            { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
-            {
-                anchorRow: 8,
-                anchorCol: 1,
-                width: 450,
-                height: 300,
-                offsetX: 10,
-                style: {
-                    xAxisLabel: "123",
-                    yAxisLabel: "456",
-                    title: "销售趋势(折线图)",
-                    showLegend: true,
-                    showTooltip: false,
-                    smooth: true,
-                    showGrid: false,
-                    colors: ["#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"],
-                },
-            },
-        );
-        console.log(lineChart);
-        const exportPlugin = wb.getPlugin("exportFile");
-        if (lineChart) {
-            console.log(`📊 折线图 ${lineChart.id}`);
-        }
-
-        s.setCell(22, 0, "月份");
-        s.setCell(22, 1, "销售额");
-        s.setCell(22, 2, "目标值");
-        s.setCell(22, 3, "利润率");
-
-        const lineData = [
-            { month: "1月", sales: 1200, target: 1000, profit: 15 },
-            { month: "2月", sales: 1350, target: 1100, profit: 18 },
-            { month: "3月", sales: 1580, target: 1200, profit: 22 },
-            { month: "4月", sales: 1420, target: 1300, profit: 19 },
-            { month: "5月", sales: 1680, target: 1400, profit: 25 },
-            { month: "6月", sales: 1850, target: 1500, profit: 28 },
-            { month: "7月", sales: 1720, target: 1600, profit: 24 },
-            { month: "8月", sales: 1950, target: 1700, profit: 30 },
-            { month: "9月", sales: 2100, target: 1800, profit: 32 },
-            { month: "10月", sales: 1980, target: 1900, profit: 29 },
-            { month: "11月", sales: 2250, target: 2000, profit: 35 },
-            { month: "12月", sales: 2400, target: 2100, profit: 38 },
-        ];
-
-        lineData.forEach((item, index) => {
-            s.setCell(23 + index, 0, item.month);
-            s.setCell(23 + index, 1, item.sales);
-            s.setCell(23 + index, 2, item.target);
-            s.setCell(23 + index, 3, item.profit);
-        });
-
-        const c = chartPlugin.addLineChart(
-            { startRow: 22, startCol: 0, endRow: 34, endCol: 3 },
-            {
-                anchorRow: 35,
-                anchorCol: 4,
-                width: 550,
-                height: 380,
-                style: {
-                    title: "📈 月度销售趋势分析",
-                    showLegend: true,
-                    showTooltip: true,
-                    showGrid: true,
-                    smooth: true,
-                    showDataPoints: true,
-                    fill: false,
-                    colors: ["#4472C4", "#ED7D31", "#70AD47"],
-                    xAxisLabel: "月份",
-                    yAxisLabel: "金额 (万元)",
-                },
-            },
-        );
-        // await exportPlugin.downloadChart(lineChart.id, null, {
-        //     type: "png",
-        //     format: "png",
-        //     quality: 1,
-        //     scale: 3,
-        //     rebuildHighQuality: true,
-        // });
-        // setTimeout(async() => {
-        //     await exportPlugin.downloadFile("xlsx", {
-        //         filename: "bar_chart_demo",
-        //         cellStyles: true,
-        //         columnHeaders: false,
-        //     });
-        // }, 1000);
-        // setTimeout(async () => {
-        //     if (lineChart) {
-        //         await exportPlugin.downloadChart(lineChart.id, "bar_chart_demo", {
-        //             format: "png",
-        //             quality: 1.0,
-        //             scale: 2,
-        //             rebuildHighQuality: true,
-        //         });
-        //     }
-        // }, 2000);
-
-        // 必须等待渲染完成
-        // setTimeout(async () => {
-        //     await exportPlugin.downloadAllCharts({
-        //         filename: "all_charts",
-        //         format: "png",
-        //         scale: 2,
-        //         rebuildHighQuality: true,
-        //     });
-        // }, 2000); // 等待2秒确保图表渲染完成
-    }
-
-    setTimeout(() => {
-        prepareData();
-    }, 1000);
-
-    // wb.addHook(HOOKS.AFTER_CHANGE, () => {
-    //     if (isFunction(window.updateToolbarStyleState)) {
-    //         window.updateToolbarStyleState();
-    //     }
-    // });
-
-    // setTimeout(() => {
-    //     wb.updateSettings({
-    //         nestedHeaders: [
-    //             [
-    //                 {
-    //                     label: "基本信息",
-    //                     colspan: 2,
-    //                     style: {
-    //                         backgroundColor: "#FFC000",
-    //                         color: "#4472C4",
-    //                         fontWeight: "bold",
-    //                         fontSize: "14px",
-    //                         textAlign: "center",
-    //                     },
-    //                 },
-    //                 {
-    //                     label: "工作信息",
-    //                     colspan: 4,
-    //                     style: {
-    //                         backgroundColor: "#70AD47",
-    //                         color: "#FFFFFF",
-    //                         fontWeight: "bold",
-    //                         fontSize: "14px",
-    //                         textAlign: "center",
-    //                     },
-    //                 },
-    //             ],
-    //             [
-    //                 { label: "姓名", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-    //                 { label: "年龄", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-    //
-    //                 {
-    //                     label: "城市",
-    //                     style: {
-    //                         backgroundColor: "#FFC000",
-    //                         fontWeight: "bold",
-    //                     },
-    //                 },
-    //                 {
-    //                     label: "部门",
-    //                     style: {
-    //                         fontStyle: "italic",
-    //                         color: "#333333",
-    //                     },
-    //                 },
-    //                 {
-    //                     label: "薪酬",
-    //                     colspan: 2,
-    //                     style: {
-    //                         backgroundColor: "#ED7D31",
-    //                         color: "#FFFFFF",
-    //                         textAlign: "center",
-    //                     },
-    //                 },
-    //             ],
-    //             [
-    //                 {
-    //                     label: "name",
-    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-    //                 },
-    //                 {
-    //                     label: "Age",
-    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-    //                 },
-    //                 "City",
-    //                 "Dept",
-    //                 "Salary",
-    //                 "Hire Date",
-    //             ],
-    //         ],
-    //     });
-    //     // wb.destroy();
-    // }, 5000);
-
-    // 注意：BEFORE_COLUMN_MOVE、AFTER_COLUMN_MOVE、AFTER_SORT 已在 hooks 配置中注册，
-    // 无需重复通过 addHook 注册，否则会触发两次回调。
 
     window.wb = wb;
 
