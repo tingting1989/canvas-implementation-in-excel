@@ -132,6 +132,7 @@ export class BarStrategy extends BaseChartStrategy {
         const catCount = data.data.length;
         if (seriesCount <= 0 || catCount <= 0) return;
 
+        const pixelRatio = this.getPixelRatio(ctx, area);
         const groupWidth = area.w / catCount;
         const barWidth = (groupWidth * 0.7) / seriesCount;
         const barGap = (groupWidth * 0.3) / (seriesCount + 1);
@@ -140,7 +141,7 @@ export class BarStrategy extends BaseChartStrategy {
         const yRange = yMax - yMin || 1;
 
         ctx.strokeStyle = CONFIG.CHART_BAR_BORDER_COLOR;
-        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
+        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH * pixelRatio;
 
         for (let s = 0; s < seriesCount; s++) {
             ctx.fillStyle = style.colors[s % style.colors.length];

@@ -197,11 +197,11 @@ async function exportChartAsImage() {
     if (!currentChartId) return log('⚠️ 请先创建图表');
     if (!exportPlugin) return log('❌ 导出插件未加载');
     try {
-
+        console.log(0)
         log('🖼️ 正在导出柱状图为PNG图片...');
         await exportPlugin.downloadChart(currentChartId, null, {
             format: 'png',
-            quality: 1.0,
+            quality: 0.2,
             scale: 4,
             rebuildHighQuality: true
         });
@@ -219,7 +219,7 @@ async function exportExcelWithChart() {
         await exportPlugin.downloadFile('xlsx', {
             filename: 'bar_chart_demo',
             cellStyles: true,
-            columnHeaders: true
+            columnHeaders: false
         });
         log('✅ Excel导出成功！图表已作为图片嵌入');
     } catch (error) {

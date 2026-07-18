@@ -1815,10 +1815,18 @@ export class ExportFilePlugin extends BasePlugin {
             const { format = "png", quality = 1.0, scale = 2, rebuildHighQuality = false } = options;
 
             let canvas;
+            let useHighRes = false;
 
             if (rebuildHighQuality || scale > 1) {
-                canvas = await chartLayer.rebuildChartCache(chartId, scale);
-                if (!canvas) {
+                try {
+                    canvas = await chartLayer.rebuildChartCacheWithSheet(chartId, scale, sheet);
+                    if (canvas) {
+                        useHighRes = true;
+                    } else {
+                        throw new Error("高清缓存创建失败");
+                    }
+                } catch (highResError) {
+                    errorHandler.warn(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, "高清缓存创建失败，回退到普通缓存", { error: highResError.message });
                     canvas = await chartLayer.getChartCanvas(chartId);
                 }
             } else {

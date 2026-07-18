@@ -1,18 +1,28 @@
-0<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Canvas-Sheet 图表演示中心</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 40px 20px
         }
-        .container { max-width: 1200px; margin: 0 auto }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto
+        }
+
         h1 {
             color: white;
             text-align: center;
@@ -20,18 +30,21 @@
             font-size: 42px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3)
         }
+
         .subtitle {
             color: rgba(255, 255, 255, 0.9);
             text-align: center;
             margin-bottom: 40px;
             font-size: 18px
         }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
             gap: 24px;
             margin-top: 30px
         }
+
         .card {
             background: white;
             border-radius: 12px;
@@ -40,42 +53,51 @@
             transition: transform 0.3s, box-shadow 0.3s;
             cursor: pointer
         }
+
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25)
         }
+
         .card-header {
             padding: 24px;
             background: linear-gradient(135deg, #4472C4 0%, #365a9c 100%);
             color: white;
             position: relative
         }
+
         .card-icon {
             font-size: 48px;
             margin-bottom: 12px
         }
+
         .card-title {
             font-size: 22px;
             font-weight: 600;
             margin-bottom: 6px
         }
+
         .card-subtitle {
             font-size: 14px;
             opacity: 0.9
         }
+
         .card-body {
             padding: 20px 24px
         }
+
         .card-desc {
             color: #555;
             line-height: 1.6;
             margin-bottom: 16px;
             font-size: 14px
         }
+
         .features {
             list-style: none;
             margin-bottom: 16px
         }
+
         .features li {
             color: #666;
             font-size: 13px;
@@ -83,6 +105,7 @@
             padding-left: 20px;
             position: relative
         }
+
         .features li:before {
             content: "✓";
             position: absolute;
@@ -90,6 +113,7 @@
             color: #70AD47;
             font-weight: bold
         }
+
         .btn-link {
             display: inline-block;
             padding: 10px 24px;
@@ -100,20 +124,51 @@
             font-weight: 500;
             transition: background 0.3s
         }
+
         .btn-link:hover {
             background: #365a9c
         }
 
-        .bar .card-header { background: linear-gradient(135deg, #4472C4 0%, #365a9c 100%) }
-        .line .card-header { background: linear-gradient(135deg, #70AD47 0%, #5a8d39 100%) }
-        .pie .card-header { background: linear-gradient(135deg, #FFC000 0%, #e6ad00 100%); color: #333 }
-        .area .card-header { background: linear-gradient(135deg, #5B9BD5 0%, #4889bf 100%) }
-        .scatter .card-header { background: linear-gradient(135deg, #ED7D31 0%, #d56b28 100%) }
-        .candlestick .card-header { background: linear-gradient(135deg, #6c757d 0%, #545b62 100%) }
-        .gauge .card-header { background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) }
-        .funnel .card-header { background: linear-gradient(135deg, #e83e8c 0%, #d91e72 100%) }
-        .radar .card-header { background: linear-gradient(135deg, #6610f2 0%, #520dc2 100%) }
-        .heatmap .card-header { background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%) }
+        .bar .card-header {
+            background: linear-gradient(135deg, #4472C4 0%, #365a9c 100%)
+        }
+
+        .line .card-header {
+            background: linear-gradient(135deg, #70AD47 0%, #5a8d39 100%)
+        }
+
+        .pie .card-header {
+            background: linear-gradient(135deg, #FFC000 0%, #e6ad00 100%);
+            color: #333
+        }
+
+        .area .card-header {
+            background: linear-gradient(135deg, #5B9BD5 0%, #4889bf 100%)
+        }
+
+        .scatter .card-header {
+            background: linear-gradient(135deg, #ED7D31 0%, #d56b28 100%)
+        }
+
+        .candlestick .card-header {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%)
+        }
+
+        .gauge .card-header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%)
+        }
+
+        .funnel .card-header {
+            background: linear-gradient(135deg, #e83e8c 0%, #d91e72 100%)
+        }
+
+        .radar .card-header {
+            background: linear-gradient(135deg, #6610f2 0%, #520dc2 100%)
+        }
+
+        .heatmap .card-header {
+            background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%)
+        }
 
         .footer {
             text-align: center;

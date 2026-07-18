@@ -654,7 +654,7 @@ const initApp = () => {
         }
     });
 
-    function prepareData() {
+    async function prepareData() {
         const chartPlugin = wb.getPlugin("chart");
         if (!chartPlugin) return;
         console.log(chartPlugin);
@@ -695,10 +695,24 @@ const initApp = () => {
             },
         );
         console.log(lineChart);
-
+        const exportPlugin = wb.getPlugin("exportFile");
         if (lineChart) {
             console.log(`📊 折线图 ${lineChart.id}`);
         }
+
+        // await exportPlugin.downloadChart(lineChart.id, null, {
+        //     type: "png",
+        //     format: "png",
+        //     quality: 1,
+        //     scale: 3,
+        //     rebuildHighQuality: true,
+        // });
+
+        await exportPlugin.downloadFile("xlsx", {
+            filename: "bar_chart_demo",
+            cellStyles: true,
+            columnHeaders: false,
+        });
     }
 
     setTimeout(() => {

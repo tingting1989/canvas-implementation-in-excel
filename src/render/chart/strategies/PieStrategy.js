@@ -189,10 +189,11 @@ export class PieStrategy extends BaseChartStrategy {
         const cy = area.y + area.h / 2;
         const r = Math.min(area.w, area.h) / 2 - 10;
 
+        const pixelRatio = this.getPixelRatio(ctx, area);
         ctx.strokeStyle = CONFIG.CHART_TOOLTIP_BORDER;
-        ctx.lineWidth = CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
+        ctx.lineWidth = CONFIG.CHART_TOOLTIP_BORDER_WIDTH * pixelRatio;
         ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.font = `${CONFIG.CHART_FONT_SIZE * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
 
         let startAngle = -Math.PI / 2;
 

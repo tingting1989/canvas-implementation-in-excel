@@ -88,6 +88,57 @@ export class BaseChartStrategy {
     render(ctx, data, area, style, yScale) {}
 
     /**
+     * 获取当前渲染的像素比（用于高清导出）
+     *
+     * 优先级：
+     * 1. 外部通过 setPixelRatio() 设置的值（高清导出时使用）
+     * 2. 通过 Canvas 尺寸自动计算的值（普通渲染时使用）
+     * 3. 默认值 1（兜底）
+     *
+     * @protected
+     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 渲染上下文
+     * @param {Object} area - 绘制区域坐标
+     * @returns {number} 像素比（默认 1）
+     */
+    getPixelRatio(ctx, area) {
+        if (this._pixelRatio && this._pixelRatio > 1) {
+            return this._pixelRatio;
+        }
+
+        try {
+            const logicalWidth = area.x + area.w + 56;
+            const calculated = ctx.canvas.width / logicalWidth;
+
+            if (calculated > 1.5) {
+                return Math.round(calculated);
+            }
+
+            return 1;
+        } catch {
+            return 1;
+        }
+    }
+
+    /**
+     * 设置像素比（由 NativeChartRenderer 在高清渲染时调用）
+     *
+     * @protected
+     * @param {number} ratio - 像素比值
+     */
+    setPixelRatio(ratio) {
+        this._pixelRatio = ratio;
+    }
+
+    /**
+     * 清除像素比设置（渲染完成后调用）
+     *
+     * @protected
+     */
+    clearPixelRatio() {
+        this._pixelRatio = undefined;
+    }
+
+    /**
      * 检测鼠标点击是否命中图表元素（子类必须重写）
      *
      * @method hitTest

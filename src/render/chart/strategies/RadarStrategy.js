@@ -227,7 +227,8 @@ export class RadarStrategy extends BaseChartStrategy {
         const angleStep = (Math.PI * 2) / dimCount;
         const levels = 5;
 
-        ctx.lineWidth = 1;
+        const pixelRatio = this.getPixelRatio(ctx, area);
+        ctx.lineWidth = 1 * pixelRatio;
         ctx.strokeStyle = "#e0e0e0";
         for (let level = 1; level <= levels; level++) {
             const r = (radius * level) / levels;
@@ -251,14 +252,14 @@ export class RadarStrategy extends BaseChartStrategy {
             ctx.stroke();
         }
 
-        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.font = `${CONFIG.CHART_FONT_SIZE * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
         ctx.fillStyle = "#333";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
         for (let i = 0; i < dimCount; i++) {
             const angle = -Math.PI / 2 + i * angleStep;
-            const labelRadius = radius + 20;
+            const labelRadius = radius + 20 * pixelRatio;
             const x = cx + labelRadius * Math.cos(angle);
             const y = cy + labelRadius * Math.sin(angle);
             ctx.fillText(indicators[i], x, y);
@@ -299,7 +300,7 @@ export class RadarStrategy extends BaseChartStrategy {
 
             ctx.globalAlpha = 1;
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2 * pixelRatio;
             ctx.beginPath();
             points.forEach((p, idx) => {
                 if (idx === 0) ctx.moveTo(p.x, p.y);

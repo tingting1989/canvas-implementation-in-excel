@@ -156,11 +156,12 @@ export class LineStrategy extends BaseChartStrategy {
         const yMax = yScale ? yScale.max : this.getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
+        const pixelRatio = this.getPixelRatio(ctx, area);
 
         for (let s = 0; s < seriesCount; s++) {
             ctx.strokeStyle = style.colors[s % style.colors.length];
             ctx.fillStyle = style.colors[s % style.colors.length];
-            ctx.lineWidth = CONFIG.CHART_LINE_DOT_RADIUS > 3 ? 2 : CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
+            ctx.lineWidth = (CONFIG.CHART_LINE_DOT_RADIUS > 3 ? 2 : CONFIG.CHART_TOOLTIP_BORDER_WIDTH) * pixelRatio;
 
             const points = [];
 

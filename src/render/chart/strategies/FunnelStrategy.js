@@ -233,12 +233,13 @@ export class FunnelStrategy extends BaseChartStrategy {
             ctx.closePath();
             ctx.fill();
 
+            const pixelRatio = this.getPixelRatio(ctx, area);
             ctx.strokeStyle = "rgba(255,255,255,0.7)";
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 1.5 * pixelRatio;
             ctx.stroke();
 
             ctx.fillStyle = "#fff";
-            ctx.font = `bold ${Math.min(14, itemHeight * 0.35)}px ${CONFIG.CHART_FONT_FAMILY}`;
+            ctx.font = `bold ${Math.min(14, itemHeight * 0.35) * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 

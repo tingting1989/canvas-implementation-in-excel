@@ -10,7 +10,8 @@ export const CHART_CONFIG = Object.freeze({
     CHART_FONT_FAMILY: "sans-serif",
 
     /** 图表字号（px） */
-    CHART_FONT_SIZE: 12,
+    CHART_FONT_SIZE: 11,
+    CHART_TITLE_FONT_SIZE: 16,
 
     /** 图表默认文字颜色 */
     CHART_TEXT_COLOR: "#333",
@@ -46,7 +47,7 @@ export const CHART_CONFIG = Object.freeze({
     CHART_LINE_DOT_RADIUS: 3,
 
     /** 图表图例字号（px） */
-    CHART_LEGEND_FONT_SIZE: 12,
+    CHART_LEGEND_FONT_SIZE: 11,
 
     /** 图表图例色块尺寸 */
     CHART_LEGEND_ITEM_SIZE: 12,

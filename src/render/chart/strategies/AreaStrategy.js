@@ -187,8 +187,9 @@ export class AreaStrategy extends LineStrategy {
         const yMax = yScale ? yScale.max : this.getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
+        const pixelRatio = this.getPixelRatio(ctx, area);
 
-        ctx.lineWidth = CONFIG.CHART_AREA_LINE_WIDTH;
+        ctx.lineWidth = CONFIG.CHART_AREA_LINE_WIDTH * pixelRatio;
 
         for (let s = seriesCount - 1; s >= 0; s--) {
             const color = style.colors[s % style.colors.length];

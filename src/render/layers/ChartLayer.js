@@ -417,21 +417,48 @@ export class ChartLayer extends BaseLayer {
      * @returns {Promise<HTMLCanvasElement|null>} 渲染后的 Canvas，失败返回 null
      */
     async rebuildChartCache(chartId, scale = 1) {
-        const sheet = this.sheet;
-        if (!sheet || !sheet.chartManager) return null;
+        return this.rebuildChartCacheWithSheet(chartId, scale, this.sheet);
+    }
+
+    /**
+     * 使用指定的 Sheet 实例重建图表缓存
+     *
+     * 与 `rebuildChartCache` 不同，此方法接受外部传入的 sheet 参数，
+     * 解决 ExportFilePlugin 等外部模块调用时 ChartLayer 内部 sheet 引用可能为空的问题。
+     *
+     * @async
+     * @param {string} chartId - 要重建的图表 ID
+     * @param {number} [scale=1] - 缩放比例（用于高清导出）
+     * @param {import("../../workbook/Sheet.js").Sheet} [externalSheet] - 外部提供的 Sheet 实例
+     * @returns {Promise<HTMLCanvasElement|null>} 渲染后的 Canvas，失败返回 null
+     */
+    async rebuildChartCacheWithSheet(chartId, scale = 1, externalSheet = null) {
+        const sheet = externalSheet || this.sheet;
+
+        if (!sheet || !sheet.chartManager) {
+            errorHandler.warn(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, "sheet 或 chartManager 不存在");
+            return null;
+        }
 
         const chart = sheet.chartManager.get(chartId);
-        if (!chart) return null;
+        if (!chart) {
+            errorHandler.warn(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, "图表不存在", { chartId });
+            return null;
+        }
 
         try {
             if (scale > 1) {
                 return await this.#renderToHighResCache(chart, sheet, scale);
             }
+
             await this.#renderToCache(chart, sheet);
             const entry = this.#cache.get(chart.id);
             return entry?.canvas || null;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, `Failed to rebuild cache for chart ${chartId}`, { chartId, error });
+            errorHandler.handle(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, `Failed to rebuild cache for chart ${chartId}`, {
+                chartId,
+                error: error.message,
+            });
             return null;
         }
     }
@@ -439,78 +466,85 @@ export class ChartLayer extends BaseLayer {
     /**
      * 将图表渲染到高分辨率离屏缓存
      *
-     * 用于高清图片导出场景，在比原始尺寸更大的 Canvas 上重新渲染，
-     * 确保导出的图片清晰锐利。
+     * 参考 ECharts 的高清导出方案：在物理像素级别直接渲染，
+     * 不使用 ctx.scale() 避免拉伸模糊。
      *
-     * ## 高清渲染原理
+     * ## 核心原理
      *
-     * 不使用 `ctx.scale()` 避免字体拉伸模糊，
-     * 而是通过创建代理 Context 自动放大字体和线条宽度。
+     * 1. 创建 width×scale × height×scale 物理像素的 Canvas
+     * 2. 所有坐标、尺寸、字体都按 scale 放大后直接绘制
+     * 3. 文字以实际物理像素渲染，确保清晰锐利
      *
      * @private
      * @async
      * @param {import("../../model/chart/ChartModel.js").ChartModel} chart - 图表模型
      * @param {import("../../workbook/Sheet.js").Sheet} sheet - 工作表
-     * @param {number} scale - 缩放比例（如 2 表示双倍分辨率）
+     * @param {number} scale - 像素比（如 2 表示双倍分辨率，类似 ECharts 的 pixelRatio）
      * @returns {Promise<HTMLCanvasElement|null>} 高分辨率 Canvas
      */
     async #renderToHighResCache(chart, sheet, scale) {
         try {
-            const width = Math.round(chart.width * scale);
-            const height = Math.round(chart.height * scale);
+            const width = chart.width;
+            const height = chart.height;
 
             const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = Math.round(width * scale);
+            canvas.height = Math.round(height * scale);
 
-            const rawCtx = canvas.getContext("2d");
-            const ctx = this.#createHighResContext(rawCtx, scale);
+            const ctx = canvas.getContext("2d");
+            if (!ctx) throw new Error("无法创建 2D Context");
 
             const renderer = ChartRendererFactory.getRenderer(chart.type);
-            if (!renderer) return null;
+            if (!renderer) {
+                errorHandler.warn(ERROR_CODE.CHART_TYPE_NOT_FOUND, "渲染器不存在", { type: chart.type });
+                return null;
+            }
 
             const data = await this.#dataExtractor.extract(chart, sheet);
-            if (!data || !data.data || data.data.length === 0) return null;
+            if (!data || !data.data || data.data.length === 0) {
+                errorHandler.warn(ERROR_CODE.CHART_DATA_INVALID, "数据无效");
+                return null;
+            }
 
             const plotArea = {
                 x: PADDING.left * scale,
                 y: PADDING.top * scale,
-                w: (chart.width - PADDING.left - PADDING.right) * scale,
-                h: (chart.height - PADDING.top - PADDING.bottom) * scale,
+                w: (width - PADDING.left - PADDING.right) * scale,
+                h: (height - PADDING.top - PADDING.bottom) * scale,
             };
 
-            renderer.render(ctx, chart, data, plotArea, chart.style);
+            const highResStyle = this.#createHighResStyle(chart.style, scale);
+
+            renderer.renderWithPixelRatio(ctx, chart, data, plotArea, highResStyle, scale);
+
             return canvas;
         } catch (e) {
-            errorHandler.handle(ERROR_CODE.CHART_RENDER_ERROR, "高清图表渲染异常", { error: e });
+            errorHandler.handle(ERROR_CODE.CHART_RENDER_ERROR, "高清图表渲染异常", { error: e.message || e });
             return null;
         }
     }
 
     /**
-     * 创建高分辨率渲染代理 Context
+     * 创建高分辨率样式配置
      *
-     * 通过 Proxy 拦截 font 和 lineWidth 的设置，
-     * 自动按 scale 放大，确保文字和线条清晰。
+     * 将原始样式中的数值型配置按 scale 放大，
+     * 用于在高分辨率 Canvas 上正确渲染。
+     *
+     * 目前主要处理：
+     * - 字体大小相关的配置（如果未来支持自定义字体）
+     *
+     * 注意：NativeChartRenderer 中的字体是硬编码的常量，
+     * 这里返回的 style 主要用于传递非字体类配置。
+     * 字体缩放由 NativeChartRenderer 内部处理。
      *
      * @private
-     * @param {CanvasRenderingContext2D} rawCtx - 原始 Canvas Context
-     * @param {number} scale - 缩放比例
-     * @returns {CanvasRenderingContext2D} 代理 Context
+     * @param {Object} style - 原始样式配置
+     * @param {number} scale - 像素比
+     * @returns {Object} 高分辨率样式配置
      */
-    #createHighResContext(rawCtx, scale) {
-        return new Proxy(rawCtx, {
-            set(target, prop, value) {
-                if (prop === "font") {
-                    value = value.replace(/(\d+\.?\d*)px/, (match, size) => `${parseFloat(size) * scale}px`);
-                }
-                if (prop === "lineWidth" && typeof value === "number") {
-                    value = value * scale;
-                }
-                target[prop] = value;
-                return true;
-            },
-        });
+    #createHighResStyle(style, scale) {
+        if (!style) return style;
+        return { ...style };
     }
 
     /**
