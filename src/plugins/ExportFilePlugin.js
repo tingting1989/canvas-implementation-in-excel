@@ -1476,12 +1476,13 @@ async function generateXlsx(sheet, opts, range) {
  * await exportChartsToExcel(workbook, worksheet, sheet);
  */
 async function exportChartsToExcel(workbook, worksheet, sheet) {
-    if (!sheet?.chartManager || !sheet?.viewport?.chartLayer) {
+    const renderEngine = workbook?.renderEngine;
+    if (!sheet?.chartManager || !renderEngine?.chartLayer) {
         return;
     }
 
     const charts = sheet.chartManager.getAll();
-    const chartLayer = sheet.viewport.chartLayer;
+    const chartLayer = renderEngine.chartLayer;
 
     for (const chart of charts) {
         try {
@@ -1744,7 +1745,7 @@ export class ExportFilePlugin extends BasePlugin {
      * @returns {Object|null} ChartLayer 实例
      */
     #getChartLayer() {
-        return this.sheet?.viewport?.chartLayer || null;
+        return this.renderEngine?.chartLayer || null;
     }
 
     /**

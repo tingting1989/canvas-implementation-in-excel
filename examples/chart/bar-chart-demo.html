@@ -234,7 +234,7 @@ async function exportAsCSV() {
         log('📋 正在导出CSV文件...');
         await exportPlugin.downloadFile('csv', {
             filename: 'bar_chart_data',
-            columnHeaders: true
+            columnHeaders: false
         });
         log('✅ CSV导出成功 (纯数据格式)');
     } catch (error) {
