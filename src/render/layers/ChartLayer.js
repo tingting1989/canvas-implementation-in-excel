@@ -509,7 +509,7 @@ export class ChartLayer extends BaseLayer {
                 }
                 target[prop] = value;
                 return true;
-            }
+            },
         });
     }
 
