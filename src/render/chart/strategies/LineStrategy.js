@@ -84,8 +84,8 @@ export class LineStrategy extends BaseChartStrategy {
      * @description 初始化策略类型和名称。
      *              类型标识符为 "line"，用于在 NativeChartRenderer 中查找该策略。
      */
-    constructor() {
-        super("line", "折线图");
+    constructor(type = "line", name = "折线图") {
+        super(type, name);
     }
 
     /**

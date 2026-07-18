@@ -1,7 +1,3 @@
-import { CONFIG } from "../../constants/config.js";
-import { errorHandler } from "../../core/ErrorHandler.js";
-import { ERROR_CODE } from "../../constants/errorCodes.js";
-
 const HIT_RADIUS = 12;
 export { HIT_RADIUS };
 

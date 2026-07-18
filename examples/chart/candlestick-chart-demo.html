@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K线图演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px
+        }
+        .container { max-width: 1200px; margin: 0 auto }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px }
+        .toolbar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center
+        }
+        .toolbar button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s
+        }
+        .btn-primary { background: #4472C4; color: white }
+        .btn-primary:hover { background: #365a9c }
+        .btn-success { background: #70AD47; color: white }
+        .btn-success:hover { background: #5a8d39 }
+        .btn-info { background: #5B9BD5; color: white }
+        .btn-info:hover { background: #4889bf }
+        .btn-warning { background: #FFC000; color: #333 }
+        .btn-warning:hover { background: #e6ad00 }
+        .divider { width: 1px; height: 32px; background: #ddd; margin: 0 8px }
+        .sheet-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden
+        }
+        #sheet { width: 100%; height: 600px }
+        .info-panel {
+            margin-top: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+        .log-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🕯️ K线图 (Candlestick Chart) 演示</h1>
+
+    <div class="toolbar">
+        <button class="btn-primary" onclick="addCandlestickChart()">🕯️ 创建K线图</button>
+        <div class="divider"></div>
+        <span style="color:#666;font-weight:600">导出功能:</span>
+        <button class="btn-success" onclick="exportChartAsImage()">🖼️ 导出PNG图片</button>
+        <button class="btn-info" onclick="exportExcelWithChart()">📊 导出Excel(含图表)</button>
+        <button class="btn-warning" onclick="exportAsCSV()">📋 导出CSV</button>
+        <div class="divider"></div>
+        <button class="btn-primary" onclick="moveChart()">🔄 移动位置</button>
+        <button class="btn-success" onclick="resizeChart()">📐 调整大小</button>
+        <button class="btn-danger" onclick="removeChart()" style="background:#ED7D31;color:white">🗑️ 删除图表</button>
+    </div>
+
+    <div class="sheet-container">
+        <canvas id="sheet"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📖 K线图说明</h3>
+        <div style="font-size:13px;line-height:1.8;color:#555;margin-top:10px">
+            <p><strong>用途:</strong> 金融数据的开高低收（OHLC）分析</p>
+            <p><strong>数据格式:</strong> [开盘价, 收盘价, 最低价, 最高价]</p>
+            <p><strong>特性:</strong> 蜡烛图形态、涨跌颜色区分、影线显示</p>
+            <p style="margin-top:10px;padding:10px;background:#e2e3e5;border-radius:6px;border-left:4px solid #6c757d">
+                <strong>💡 提示:</strong> 本示例模拟股票周线数据，红涨绿跌（或自定义配色）
+            </p>
+        </div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪... | K线图演示模式</div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+let workbook = null, chartPlugin = null, exportPlugin = null, currentChartId = null;
+
+function log(msg) {
+    const la = document.getElementById('logArea');
+    la.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+    la.scrollTop = la.scrollHeight;
+}
+
+function init() {
+    try {
+        workbook = new CanvasSheet.Workbook(document.getElementById('sheet'), {
+            plugins: ["autoFill", "contextMenu", "chart", "exportFile"]
+        });
+        workbook.initRender();
+        workbook.render();
+        chartPlugin = workbook.getPlugin('chart');
+        exportPlugin = workbook.getPlugin('exportFile');
+
+        log('✅ 初始化成功 - K线图演示模式');
+        log('🎯 点击 "🕯️ 创建K线图" 开始');
+    } catch (e) {
+        log(`❌ Error: ${e.message}`);
+    }
+}
+
+function addCandlestickChart() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 6, '日期');
+    s.setCell(0, 7, '开盘价');
+    s.setCell(0, 8, '收盘价');
+    s.setCell(0, 9, '最低价');
+    s.setCell(0, 10, '最高价');
+
+    const candleData = [
+        {date: '周一', data: [20, 34, 10, 38]},
+        {date: '周二', data: [40, 35, 30, 50]},
+        {date: '周三', data: [31, 38, 33, 44]},
+        {date: '周四', data: [38, 15, 5, 42]},
+        {date: '周五', data: [25, 45, 20, 48]}
+    ];
+
+    candleData.forEach((item, index) => {
+        s.setCell(index + 1, 6, item.date);
+        s.setCell(index + 1, 7, item.data[0]);
+        s.setCell(index + 1, 8, item.data[1]);
+        s.setCell(index + 1, 9, item.data[2]);
+        s.setCell(index + 1, 10, item.data[3]);
+    });
+
+    const c = chartPlugin.addCandlestickChart({startRow: 0, startCol: 7, endRow: 5, endCol: 10}, {
+        anchorRow: 0,
+        anchorCol: 11,
+        width: 500,
+        height: 320,
+        style: {
+            title: '📈 股票K线图（周线）',
+            showLegend: false,
+            showTooltip: true,
+            showGrid: true
+        }
+    });
+
+    if (c) {
+        currentChartId = c.id;
+        log(`✅ K线图创建成功: ${c.id}`);
+        log('   数据: 5个交易日 OHLC 数据');
+        log('   格式: [开盘价, 收盘价, 最低价, 最高价]');
+        log('   特性: 蜡烛图 + 影线 + 涨跌颜色');
+        log('   现在可以使用导出功能了');
+    }
+}
+
+async function exportChartAsImage() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('🖼️ 正在导出K线图为PNG图片...');
+        await exportPlugin.downloadChart(currentChartId, null, {
+            format: 'png',
+            quality: 1.0,
+            scale: 2,
+            rebuildHighQuality: true
+        });
+        log('✅ PNG导出成功 (2倍分辨率, 高质量)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportExcelWithChart() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📊 正在生成Excel文件(含内嵌K线图)...');
+        await exportPlugin.downloadFile('xlsx', {
+            filename: 'candlestick_chart_demo',
+            cellStyles: true,
+            columnHeaders: true
+        });
+        log('✅ Excel导出成功！图表已作为图片嵌入');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportAsCSV() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📋 正在导出CSV文件...');
+        await exportPlugin.downloadFile('csv', {
+            filename: 'candlestick_chart_data',
+            columnHeaders: true
+        });
+        log('✅ CSV导出成功 (纯数据格式)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+function moveChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.moveChart(currentChartId, Math.floor(Math.random() * 20) + 5, Math.floor(Math.random() * 10) + 1, 20, 20);
+    log('🔄 图表位置已移动');
+}
+
+function resizeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.resizeChart(currentChartId, Math.floor(Math.random() * 200) + 450, Math.floor(Math.random() * 150) + 280);
+    log('📐 图表尺寸已调整');
+}
+
+function removeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.removeChart(currentChartId);
+    log('🗑️ 图表已删除');
+    currentChartId = null;
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

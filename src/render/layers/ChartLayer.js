@@ -223,14 +223,14 @@ export class ChartLayer extends BaseLayer {
 
             if (isDirty && this.#isResizing && cached) {
                 const bounds = chart.getBounds(vt);
-                ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
+                ctx.drawImage(cached.canvas, 0, 0, cached.canvas.width, cached.canvas.height, bounds.x, bounds.y, bounds.w, bounds.h);
                 this.#pendingCharts.add(chart.id);
                 continue;
             }
 
             if (!isDirty && cached) {
                 const bounds = chart.getBounds(vt);
-                ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
+                ctx.drawImage(cached.canvas, 0, 0, cached.canvas.width, cached.canvas.height, bounds.x, bounds.y, bounds.w, bounds.h);
                 continue;
             }
 
@@ -245,7 +245,7 @@ export class ChartLayer extends BaseLayer {
             const cached = this.#cache.get(chart.id);
             if (cached) {
                 const bounds = chart.getBounds(vt);
-                ctx.drawImage(cached.canvas, bounds.x, bounds.y, bounds.w, bounds.h);
+                ctx.drawImage(cached.canvas, 0, 0, cached.canvas.width, cached.canvas.height, bounds.x, bounds.y, bounds.w, bounds.h);
             }
         }
 

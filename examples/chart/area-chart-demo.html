@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>面积图演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px
+        }
+        .container { max-width: 1200px; margin: 0 auto }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px }
+        .toolbar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center
+        }
+        .toolbar button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s
+        }
+        .btn-primary { background: #4472C4; color: white }
+        .btn-primary:hover { background: #365a9c }
+        .btn-success { background: #70AD47; color: white }
+        .btn-success:hover { background: #5a8d39 }
+        .btn-info { background: #5B9BD5; color: white }
+        .btn-info:hover { background: #4889bf }
+        .btn-warning { background: #FFC000; color: #333 }
+        .btn-warning:hover { background: #e6ad00 }
+        .divider { width: 1px; height: 32px; background: #ddd; margin: 0 8px }
+        .sheet-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden
+        }
+        #sheet { width: 100%; height: 600px }
+        .info-panel {
+            margin-top: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+        .log-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📉 面积图 (Area Chart) 演示</h1>
+
+    <div class="toolbar">
+        <button class="btn-primary" onclick="addAreaChart()">📉 创建面积图</button>
+        <div class="divider"></div>
+        <span style="color:#666;font-weight:600">导出功能:</span>
+        <button class="btn-success" onclick="exportChartAsImage()">🖼️ 导出PNG图片</button>
+        <button class="btn-info" onclick="exportExcelWithChart()">📊 导出Excel(含图表)</button>
+        <button class="btn-warning" onclick="exportAsCSV()">📋 导出CSV</button>
+        <div class="divider"></div>
+        <button class="btn-primary" onclick="moveChart()">🔄 移动位置</button>
+        <button class="btn-success" onclick="resizeChart()">📐 调整大小</button>
+        <button class="btn-danger" onclick="removeChart()" style="background:#ED7D31;color:white">🗑️ 删除图表</button>
+    </div>
+
+    <div class="sheet-container">
+        <canvas id="sheet"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📖 面积图说明</h3>
+        <div style="font-size:13px;line-height:1.8;color:#555;margin-top:10px">
+            <p><strong>用途:</strong> 强调数量随时间变化的程度和趋势</p>
+            <p><strong>数据格式:</strong> 第一列类别标签 + 后续列数值系列（符合 AreaStrategy 规范）</p>
+            <p><strong>特性:</strong> 半透明填充区域、折线边框、多系列堆叠、从后向前绘制避免遮挡</p>
+            <p style="margin-top:10px;padding:10px;background:#d4edda;border-radius:6px;border-left:4px solid #70AD47">
+                <strong>💡 提示:</strong> 本示例展示12个月的销售趋势数据，包含销售额、成本、利润三个指标
+            </p>
+            <p style="margin-top:10px;padding:10px;background:#fff3cd;border-radius:6px;border-left:4px solid #FFC000">
+                <strong>⚠️ 技术细节:</strong> 颜色使用 25% 不透明度 (如 #4472C440)，继承自 LineStrategy 并重写 render 方法
+            </p>
+        </div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪... | 面积图演示模式</div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+let workbook = null, chartPlugin = null, exportPlugin = null, currentChartId = null;
+
+function log(msg) {
+    const la = document.getElementById('logArea');
+    la.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+    la.scrollTop = la.scrollHeight;
+}
+
+function init() {
+    try {
+        workbook = new CanvasSheet.Workbook(document.getElementById('sheet'), {
+            plugins: ["autoFill", "contextMenu", "chart", "exportFile"]
+        });
+        workbook.initRender();
+        workbook.render();
+        chartPlugin = workbook.getPlugin('chart');
+        exportPlugin = workbook.getPlugin('exportFile');
+
+        log('✅ 初始化成功 - 面积图演示模式');
+        log('');
+        log('🎯 点击 "📉 创建面积图" 开始');
+    } catch (e) {
+        log(`❌ Error: ${e.message}`);
+    }
+}
+
+function addAreaChart() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 0, '月份');
+    s.setCell(0, 1, '销售额(万)');
+    s.setCell(0, 2, '成本(万)');
+    s.setCell(0, 3, '利润(万)');
+
+    const areaData = [
+        { month: '1月', sales: 1200, cost: 800, profit: 400 },
+        { month: '2月', sales: 1350, cost: 900, profit: 450 },
+        { month: '3月', sales: 1100, cost: 750, profit: 350 },
+        { month: '4月', sales: 1500, cost: 1000, profit: 500 },
+        { month: '5月', sales: 1400, cost: 950, profit: 450 },
+        { month: '6月', sales: 1600, cost: 1100, profit: 500 },
+        { month: '7月', sales: 1300, cost: 850, profit: 450 },
+        { month: '8月', sales: 1450, cost: 950, profit: 500 },
+        { month: '9月', sales: 1550, cost: 1050, profit: 500 },
+        { month: '10月', sales: 1700, cost: 1150, profit: 550 },
+        { month: '11月', sales: 1650, cost: 1100, profit: 550 },
+        { month: '12月', sales: 1800, cost: 1200, profit: 600 }
+    ];
+
+    areaData.forEach((item, index) => {
+        s.setCell(index + 1, 0, item.month);
+        s.setCell(index + 1, 1, item.sales);
+        s.setCell(index + 1, 2, item.cost);
+        s.setCell(index + 1, 3, item.profit);
+    });
+
+    log(`📊 已准备数据: ${areaData.length}个月 × 3个指标`);
+    log('   数据范围: A1:D13 (包含表头)');
+    log('');
+
+    log('🔍 正在尝试创建面积图...');
+    log('');
+
+    try {
+        const c = chartPlugin.addAreaChart(
+            { startRow: 0, startCol: 0, endRow: 12, endCol: 3 },
+            {
+                anchorRow: 2,
+                anchorCol: 6,
+                width: 600,
+                height: 400,
+                style: {
+                    title: '📉 月度销售趋势（面积图）',
+                    showLegend: true,
+                    showTooltip: true,
+                    showGrid: true,
+                    fill: true,
+                    colors: ['#4472C4', '#ED7D31', '#70AD47'],
+                    xAxisLabel: '月份',
+                    yAxisLabel: '金额 (万元)'
+                }
+            }
+        );
+
+        if (c) {
+            currentChartId = c.id;
+            log(`✅ 面积图创建成功: ${c.id}`);
+            log('');
+            log('🎨 图表特性:');
+            log('   • 填充模式: 启用 (半透明区域填充)');
+            log('   • 边框线条: 显示 (与折线图相同样式)');
+            log('   • 绘制顺序: 从后向前 (避免遮挡)');
+            log('   • 颜色透明度: 25% (如 #4472C440)');
+            log('');
+            log('💡 面积图 vs 折线图:');
+            log('   • 面积图强调数据量级和趋势强度');
+            log('   • 半透明填充直观展示数据累积效果');
+            log('   • 多系列叠加时可见层叠关系');
+            log('');
+            log('📈 数据洞察:');
+            log('   • 销售额呈上升趋势 (1200→1800万)');
+            log('   • 成本同步增长但占比稳定 (~67%)');
+            log('   • 利润稳步提升 (400→600万)');
+            log('   现在可以使用导出功能了');
+        } else {
+            throw new Error('addAreaChart 返回 null - 策略未注册');
+        }
+    } catch (error) {
+        log(`❌ 面积图创建失败: ${error.message}`);
+        log('');
+        log('🔧 正在使用备用方案: 折线图 + fill:true');
+        log('   (AreaStrategy 继承自 LineStrategy，视觉效果相同)');
+        log('');
+
+        try {
+            const fallbackChart = chartPlugin.addLineChart(
+                { startRow: 0, startCol: 0, endRow: 12, endCol: 3 },
+                {
+                    anchorRow: 2,
+                    anchorCol: 6,
+                    width: 600,
+                    height: 400,
+                    style: {
+                        title: '📉 月度销售趋势（面积图-备用模式）',
+                        showLegend: true,
+                        showTooltip: true,
+                        showGrid: true,
+                        fill: true,
+                        smooth: false,
+                        colors: ['#4472C4', '#ED7D31', '#70AD47'],
+                        xAxisLabel: '月份',
+                        yAxisLabel: '金额 (万元)'
+                    }
+                }
+            );
+
+            if (fallbackChart) {
+                currentChartId = fallbackChart.id;
+                log(`✅ 备用方案成功: ${fallbackChart.id}`);
+                log('');
+                log('ℹ️ 使用折线图模拟面积图效果:');
+                log('   • fill: true 启用区域填充');
+                log('   • 视觉效果与原生面积图一致');
+                log('   • 支持所有交互功能');
+                log('');
+                log('⚠️ 如需原生面积图支持，请检查:');
+                log('   1. NativeChartRenderer.init() 是否执行');
+                log('   2. UMD 构建是否包含 AreaStrategy');
+                log('   3. 浏览器控制台是否有其他错误');
+                log('   现在可以使用导出功能了');
+            } else {
+                log('❌ 备用方案也失败，请检查控制台完整错误信息');
+            }
+        } catch (fallbackError) {
+            log(`❌ 备用方案失败: ${fallbackError.message}`);
+        }
+    }
+}
+
+async function exportChartAsImage() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('🖼️ 正在导出面积图为PNG图片...');
+        await exportPlugin.downloadChart(currentChartId, null, {
+            format: 'png',
+            quality: 1.0,
+            scale: 2,
+            rebuildHighQuality: true
+        });
+        log('✅ PNG导出成功 (2倍分辨率, 高质量)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportExcelWithChart() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📊 正在生成Excel文件(含内嵌面积图)...');
+        await exportPlugin.downloadFile('xlsx', {
+            filename: 'area_chart_demo',
+            cellStyles: true,
+            columnHeaders: true
+        });
+        log('✅ Excel导出成功！图表已作为图片嵌入');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportAsCSV() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📋 正在导出CSV文件...');
+        await exportPlugin.downloadFile('csv', {
+            filename: 'area_chart_data',
+            columnHeaders: true
+        });
+        log('✅ CSV导出成功 (纯数据格式)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+function moveChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.moveChart(currentChartId, Math.floor(Math.random() * 20) + 5, Math.floor(Math.random() * 10) + 1, 20, 20);
+    log('🔄 图表位置已移动');
+}
+
+function resizeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.resizeChart(currentChartId, Math.floor(Math.random() * 200) + 400, Math.floor(Math.random() * 150) + 250);
+    log('📐 图表尺寸已调整');
+}
+
+function removeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.removeChart(currentChartId);
+    log('🗑️ 图表已删除');
+    currentChartId = null;
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
