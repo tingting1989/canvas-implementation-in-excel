@@ -145,6 +145,14 @@ export class ChartLayer extends BaseLayer {
     }
 
     /**
+     * 获取关联的工作表实例
+     * @returns {import("../../workbook/Sheet.js").Sheet|null}
+     */
+    get sheet() {
+        return this.#cacheManager?.sheet || null;
+    }
+
+    /**
      * 获取当前选中的图表 ID
      *
      * @returns {string|null} 图表 ID，无选中时返回 null
