@@ -104,7 +104,7 @@
 
     <div class="log-area" id="logArea">> 系统就绪... | 柱状图演示模式</div>
 </div>
-
+<script src="../libs/exceljs.min.js"></script>
 <script src="../../dist/canvas-sheet.umd.js"></script>
 <script>
 let workbook = null, chartPlugin = null, exportPlugin = null, currentChartId = null;
@@ -165,8 +165,8 @@ function addBarChart() {
         {
             anchorRow: 8,
             anchorCol: 1,
-            width: 550,
-            height: 380,
+            width: 900,
+            height: 450,
             style: {
                 title: '📊 产品季度销售对比',
                 showLegend: true,
@@ -196,13 +196,13 @@ function addBarChart() {
 async function exportChartAsImage() {
     if (!currentChartId) return log('⚠️ 请先创建图表');
     if (!exportPlugin) return log('❌ 导出插件未加载');
-
     try {
+
         log('🖼️ 正在导出柱状图为PNG图片...');
         await exportPlugin.downloadChart(currentChartId, null, {
             format: 'png',
             quality: 1.0,
-            scale: 2,
+            scale: 4,
             rebuildHighQuality: true
         });
         log('✅ PNG导出成功 (2倍分辨率, 高质量)');

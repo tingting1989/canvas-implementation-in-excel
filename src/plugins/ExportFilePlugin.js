@@ -1812,12 +1812,12 @@ export class ExportFilePlugin extends BasePlugin {
                 throw new Error("Cannot get chart layer");
             }
 
-            const { format = "png", quality = 1.0, scale = 1, rebuildHighQuality = false } = options;
+            const { format = "png", quality = 1.0, scale = 2, rebuildHighQuality = false } = options;
 
             let canvas;
 
             if (rebuildHighQuality || scale > 1) {
-                canvas = await chartLayer.rebuildChartCache(chartId);
+                canvas = await chartLayer.rebuildChartCache(chartId, scale);
                 if (!canvas) {
                     canvas = await chartLayer.getChartCanvas(chartId);
                 }
@@ -1837,40 +1837,18 @@ export class ExportFilePlugin extends BasePlugin {
                 }, 10000);
 
                 try {
-                    if (scale > 1) {
-                        const scaledCanvas = document.createElement("canvas");
-                        scaledCanvas.width = canvas.width * scale;
-                        scaledCanvas.height = canvas.height * scale;
-                        const ctx = scaledCanvas.getContext("2d");
-                        ctx.scale(scale, scale);
-                        ctx.drawImage(canvas, 0, 0);
-
-                        scaledCanvas.toBlob(
-                            (blob) => {
-                                clearTimeout(timeout);
-                                if (blob) {
-                                    resolve(blob);
-                                } else {
-                                    reject(new Error("Failed to generate image blob"));
-                                }
-                            },
-                            mimeType,
-                            quality,
-                        );
-                    } else {
-                        canvas.toBlob(
-                            (blob) => {
-                                clearTimeout(timeout);
-                                if (blob) {
-                                    resolve(blob);
-                                } else {
-                                    reject(new Error("Failed to generate image blob"));
-                                }
-                            },
-                            mimeType,
-                            quality,
-                        );
-                    }
+                    canvas.toBlob(
+                        (blob) => {
+                            clearTimeout(timeout);
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error("Failed to generate image blob"));
+                            }
+                        },
+                        mimeType,
+                        quality,
+                    );
                 } catch (error) {
                     clearTimeout(timeout);
                     reject(error);
@@ -2098,7 +2076,6 @@ export class ExportFilePlugin extends BasePlugin {
      * @private
      * @async
      * @param {Array} images - 图片数组 [{name, blob, id, chart}]
-     * @param {string} zipFilename - ZIP 文件名
      * @returns {Promise<Blob>} ZIP 文件 Blob
      */
     static async #createZipFromImages(images) {

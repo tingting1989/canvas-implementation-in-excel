@@ -413,22 +413,104 @@ export class ChartLayer extends BaseLayer {
      *
      * @async
      * @param {string} chartId - 要重建的图表 ID
-     * @returns {Promise<boolean>} 是否成功重建
+     * @param {number} [scale=1] - 缩放比例（用于高清导出）
+     * @returns {Promise<HTMLCanvasElement|null>} 渲染后的 Canvas，失败返回 null
      */
-    async rebuildChartCache(chartId) {
+    async rebuildChartCache(chartId, scale = 1) {
         const sheet = this.sheet;
-        if (!sheet || !sheet.chartManager) return false;
+        if (!sheet || !sheet.chartManager) return null;
 
         const chart = sheet.chartManager.get(chartId);
-        if (!chart) return false;
+        if (!chart) return null;
 
         try {
+            if (scale > 1) {
+                return await this.#renderToHighResCache(chart, sheet, scale);
+            }
             await this.#renderToCache(chart, sheet);
-            return true;
+            const entry = this.#cache.get(chart.id);
+            return entry?.canvas || null;
         } catch (error) {
             errorHandler.handle(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, `Failed to rebuild cache for chart ${chartId}`, { chartId, error });
-            return false;
+            return null;
         }
+    }
+
+    /**
+     * 将图表渲染到高分辨率离屏缓存
+     *
+     * 用于高清图片导出场景，在比原始尺寸更大的 Canvas 上重新渲染，
+     * 确保导出的图片清晰锐利。
+     *
+     * ## 高清渲染原理
+     *
+     * 不使用 `ctx.scale()` 避免字体拉伸模糊，
+     * 而是通过创建代理 Context 自动放大字体和线条宽度。
+     *
+     * @private
+     * @async
+     * @param {import("../../model/chart/ChartModel.js").ChartModel} chart - 图表模型
+     * @param {import("../../workbook/Sheet.js").Sheet} sheet - 工作表
+     * @param {number} scale - 缩放比例（如 2 表示双倍分辨率）
+     * @returns {Promise<HTMLCanvasElement|null>} 高分辨率 Canvas
+     */
+    async #renderToHighResCache(chart, sheet, scale) {
+        try {
+            const width = Math.round(chart.width * scale);
+            const height = Math.round(chart.height * scale);
+
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+
+            const rawCtx = canvas.getContext("2d");
+            const ctx = this.#createHighResContext(rawCtx, scale);
+
+            const renderer = ChartRendererFactory.getRenderer(chart.type);
+            if (!renderer) return null;
+
+            const data = await this.#dataExtractor.extract(chart, sheet);
+            if (!data || !data.data || data.data.length === 0) return null;
+
+            const plotArea = {
+                x: PADDING.left * scale,
+                y: PADDING.top * scale,
+                w: (chart.width - PADDING.left - PADDING.right) * scale,
+                h: (chart.height - PADDING.top - PADDING.bottom) * scale,
+            };
+
+            renderer.render(ctx, chart, data, plotArea, chart.style);
+            return canvas;
+        } catch (e) {
+            errorHandler.handle(ERROR_CODE.CHART_RENDER_ERROR, "高清图表渲染异常", { error: e });
+            return null;
+        }
+    }
+
+    /**
+     * 创建高分辨率渲染代理 Context
+     *
+     * 通过 Proxy 拦截 font 和 lineWidth 的设置，
+     * 自动按 scale 放大，确保文字和线条清晰。
+     *
+     * @private
+     * @param {CanvasRenderingContext2D} rawCtx - 原始 Canvas Context
+     * @param {number} scale - 缩放比例
+     * @returns {CanvasRenderingContext2D} 代理 Context
+     */
+    #createHighResContext(rawCtx, scale) {
+        return new Proxy(rawCtx, {
+            set(target, prop, value) {
+                if (prop === "font") {
+                    value = value.replace(/(\d+\.?\d*)px/, (match, size) => `${parseFloat(size) * scale}px`);
+                }
+                if (prop === "lineWidth" && typeof value === "number") {
+                    value = value * scale;
+                }
+                target[prop] = value;
+                return true;
+            }
+        });
     }
 
     /**
