@@ -80,6 +80,7 @@
         <button class="btn-success" onclick="exportChartAsImage()">🖼️ 导出PNG图片</button>
         <button class="btn-info" onclick="exportExcelWithChart()">📊 导出Excel(含图表)</button>
         <button class="btn-warning" onclick="exportAsCSV()">📋 导出CSV</button>
+        <button class="btn-primary" onclick="exportChartsAsZip()" style="background:#9B59B6">📦 导出图表ZIP</button>
         <div class="divider"></div>
         <button class="btn-primary" onclick="moveChart()">🔄 移动位置</button>
         <button class="btn-success" onclick="resizeChart()">📐 调整大小</button>
@@ -163,9 +164,9 @@ function addBarChart() {
     const c = chartPlugin.addBarChart(
         { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
         {
-            anchorRow: 8,
-            anchorCol: 1,
-            width: 900,
+            anchorRow: 0,
+            anchorCol:5,
+            width: 500,
             height: 450,
             style: {
                 title: '📊 产品季度销售对比',
@@ -178,7 +179,54 @@ function addBarChart() {
             }
         }
     );
+    s.setCell(22, 0, "月份");
+    s.setCell(22, 1, "销售额");
+    s.setCell(22, 2, "目标值");
+    s.setCell(22, 3, "利润率");
 
+    const lineData = [
+        { month: "1月", sales: 1200, target: 1000, profit: 15 },
+        { month: "2月", sales: 1350, target: 1100, profit: 18 },
+        { month: "3月", sales: 1580, target: 1200, profit: 22 },
+        { month: "4月", sales: 1420, target: 1300, profit: 19 },
+        { month: "5月", sales: 1680, target: 1400, profit: 25 },
+        { month: "6月", sales: 1850, target: 1500, profit: 28 },
+        { month: "7月", sales: 1720, target: 1600, profit: 24 },
+        { month: "8月", sales: 1950, target: 1700, profit: 30 },
+        { month: "9月", sales: 2100, target: 1800, profit: 32 },
+        { month: "10月", sales: 1980, target: 1900, profit: 29 },
+        { month: "11月", sales: 2250, target: 2000, profit: 35 },
+        { month: "12月", sales: 2400, target: 2100, profit: 38 },
+    ];
+
+    lineData.forEach((item, index) => {
+        s.setCell(23 + index, 0, item.month);
+        s.setCell(23 + index, 1, item.sales);
+        s.setCell(23 + index, 2, item.target);
+        s.setCell(23 + index, 3, item.profit);
+    });
+
+    const l = chartPlugin.addLineChart(
+        { startRow: 22, startCol: 0, endRow: 34, endCol: 3 },
+        {
+            anchorRow: 22,
+            anchorCol: 4,
+            width: 550,
+            height: 380,
+            style: {
+                title: "📈 月度销售趋势分析",
+                showLegend: true,
+                showTooltip: true,
+                showGrid: true,
+                smooth: true,
+                showDataPoints: true,
+                fill: false,
+                colors: ["#4472C4", "#ED7D31", "#70AD47"],
+                xAxisLabel: "月份",
+                yAxisLabel: "金额 (万元)",
+            },
+        },
+    );
     if (c) {
         currentChartId = c.id;
         log(`✅ 柱状图创建成功: ${c.id}`);
@@ -240,6 +288,67 @@ async function exportAsCSV() {
     } catch (error) {
         log(`❌ 导出失败: ${error.message}`);
     }
+}
+
+async function exportChartsAsZip() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    const doExport = async () => {
+        try {
+            log('📦 正在扫描工作表中的所有图表...');
+            const sheet = workbook.activeSheet;
+            const allCharts = sheet.chartManager.getAll();
+
+            log(`📊 检测到 ${allCharts.length} 个图表:`);
+            allCharts.forEach((chart, idx) => {
+                const type = chart.type === 'line' ? '折线图' : chart.type === 'bar' ? '柱状图' : chart.type;
+                log(`   ${idx + 1}. [${type.toUpperCase()}] ${chart.style?.title || chart.id}`);
+                log(`      ID: ${chart.id}`);
+                log(`      尺寸: ${chart.width}×${chart.height}px`);
+            });
+
+            if (allCharts.length === 0) {
+                log('⚠️ 未找到任何图表，1.5秒后自动重试...');
+                setTimeout(doExport, 1500);
+                return;
+            }
+
+            log('');
+            log('🖼️ 开始导出 (PNG格式, 2倍分辨率)...');
+
+            await exportPlugin.downloadAllCharts({
+                filename: 'charts_collection',
+                format: 'png',
+                scale: 2,
+                rebuildHighQuality: true,
+                asZip: true
+            });
+
+            log('');
+            log('✅ ZIP导出成功！');
+            log(`   📁 文件名: charts_collection.zip`);
+            log(`   📊 包含: ${allCharts.length} 张高清PNG图片`);
+        } catch (error) {
+            log(`❌ ZIP导出失败: ${error.message}`);
+            console.error('详细错误:', error);
+
+            if (error.message.includes('No charts') && !this._retryCount) {
+                this._retryCount = (this._retryCount || 0) + 1;
+                log('⚠️ 图表尚未就绪，1.5秒后自动重试...');
+                setTimeout(doExport, 1500);
+            } else if (error.message.includes('No charts')) {
+                log('');
+                log('⚠️ 多次重试仍失败，可能原因:');
+                log('   • ChartLayer未正确绑定Sheet');
+                log('   • 图表创建失败但未报错');
+                log('   • 建议刷新页面后重试');
+            }
+        }
+    };
+
+    log('⏳ 准备导出（等待1.5秒确保图表渲染完成）...');
+    setTimeout(doExport, 1500);
 }
 
 function moveChart() {

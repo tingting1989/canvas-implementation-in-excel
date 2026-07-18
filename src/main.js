@@ -700,6 +700,54 @@ const initApp = () => {
             console.log(`📊 折线图 ${lineChart.id}`);
         }
 
+        s.setCell(22, 0, "月份");
+        s.setCell(22, 1, "销售额");
+        s.setCell(22, 2, "目标值");
+        s.setCell(22, 3, "利润率");
+
+        const lineData = [
+            { month: "1月", sales: 1200, target: 1000, profit: 15 },
+            { month: "2月", sales: 1350, target: 1100, profit: 18 },
+            { month: "3月", sales: 1580, target: 1200, profit: 22 },
+            { month: "4月", sales: 1420, target: 1300, profit: 19 },
+            { month: "5月", sales: 1680, target: 1400, profit: 25 },
+            { month: "6月", sales: 1850, target: 1500, profit: 28 },
+            { month: "7月", sales: 1720, target: 1600, profit: 24 },
+            { month: "8月", sales: 1950, target: 1700, profit: 30 },
+            { month: "9月", sales: 2100, target: 1800, profit: 32 },
+            { month: "10月", sales: 1980, target: 1900, profit: 29 },
+            { month: "11月", sales: 2250, target: 2000, profit: 35 },
+            { month: "12月", sales: 2400, target: 2100, profit: 38 },
+        ];
+
+        lineData.forEach((item, index) => {
+            s.setCell(23 + index, 0, item.month);
+            s.setCell(23 + index, 1, item.sales);
+            s.setCell(23 + index, 2, item.target);
+            s.setCell(23 + index, 3, item.profit);
+        });
+
+        const c = chartPlugin.addLineChart(
+            { startRow: 22, startCol: 0, endRow: 34, endCol: 3 },
+            {
+                anchorRow: 35,
+                anchorCol: 4,
+                width: 550,
+                height: 380,
+                style: {
+                    title: "📈 月度销售趋势分析",
+                    showLegend: true,
+                    showTooltip: true,
+                    showGrid: true,
+                    smooth: true,
+                    showDataPoints: true,
+                    fill: false,
+                    colors: ["#4472C4", "#ED7D31", "#70AD47"],
+                    xAxisLabel: "月份",
+                    yAxisLabel: "金额 (万元)",
+                },
+            },
+        );
         // await exportPlugin.downloadChart(lineChart.id, null, {
         //     type: "png",
         //     format: "png",
@@ -707,12 +755,33 @@ const initApp = () => {
         //     scale: 3,
         //     rebuildHighQuality: true,
         // });
+        // setTimeout(async() => {
+        //     await exportPlugin.downloadFile("xlsx", {
+        //         filename: "bar_chart_demo",
+        //         cellStyles: true,
+        //         columnHeaders: false,
+        //     });
+        // }, 1000);
+        // setTimeout(async () => {
+        //     if (lineChart) {
+        //         await exportPlugin.downloadChart(lineChart.id, "bar_chart_demo", {
+        //             format: "png",
+        //             quality: 1.0,
+        //             scale: 2,
+        //             rebuildHighQuality: true,
+        //         });
+        //     }
+        // }, 2000);
 
-        await exportPlugin.downloadFile("xlsx", {
-            filename: "bar_chart_demo",
-            cellStyles: true,
-            columnHeaders: false,
-        });
+        // 必须等待渲染完成
+        // setTimeout(async () => {
+        //     await exportPlugin.downloadAllCharts({
+        //         filename: "all_charts",
+        //         format: "png",
+        //         scale: 2,
+        //         rebuildHighQuality: true,
+        //     });
+        // }, 2000); // 等待2秒确保图表渲染完成
     }
 
     setTimeout(() => {

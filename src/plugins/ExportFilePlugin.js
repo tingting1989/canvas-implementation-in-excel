@@ -1950,6 +1950,8 @@ export class ExportFilePlugin extends BasePlugin {
             } else {
                 chartsToExport = chartLayer.getAllCharts();
 
+                errorHandler.debug(`📊 [Batch Export] getAllCharts() 返回 ${chartsToExport.length} 个图表`);
+
                 if (chartsToExport.length === 0) {
                     console.warn("No charts on current sheet");
                     return null;
@@ -1958,11 +1960,20 @@ export class ExportFilePlugin extends BasePlugin {
 
             const { format = "png", asZip = true, quality = 1.0, scale = 1, rebuildHighQuality = false } = options;
 
+            errorHandler.debug(`📊 [Batch Export] 准备导出 ${chartsToExport.length} 个图表`, {
+                chartIds: chartsToExport.map((c) => c.id),
+                options: { format, asZip, quality, scale, rebuildHighQuality },
+            });
+
             const results = [];
             const errors = [];
+            const usedNames = new Set();
 
-            for (const chart of chartsToExport) {
+            for (let idx = 0; idx < chartsToExport.length; idx++) {
+                const chart = chartsToExport[idx];
                 try {
+                    errorHandler.debug(`📊 [Batch Export] 正在导出第 ${idx + 1}/${chartsToExport.length} 个图表: ${chart.id}`);
+
                     const blob = await this.exportChartAsImage(chart.id, {
                         format,
                         quality,
@@ -1970,19 +1981,41 @@ export class ExportFilePlugin extends BasePlugin {
                         rebuildHighQuality,
                     });
 
-                    const chartName = (chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`).replace(/[^a-zA-Z0-9_-]/g, "_");
+                    let rawName = chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`;
+
+                    const chartName = rawName
+                        .trim()
+                        .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+                        .replace(/[^\w\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\- ]/g, "_")
+                        .replace(/\s+/g, "_")
+                        .replace(/_+/g, "_")
+                        .replace(/^_|_$/g, "")
+                        .substring(0, 45);
+
+                    let finalName = chartName;
+                    let counter = 1;
+                    while (usedNames.has(`${finalName}.${format}`)) {
+                        finalName = `${chartName}_${counter}`;
+                        counter++;
+                    }
+
+                    usedNames.add(`${finalName}.${format}`);
 
                     results.push({
                         id: chart.id,
-                        name: `${chartName}.${format}`,
+                        name: `${finalName}.${format}`,
                         blob,
                         chart,
                     });
+
+                    errorHandler.debug(`✅ [Batch Export] 图表 ${chart.id} 导出成功 → ${finalName}.${format}`);
                 } catch (error) {
-                    console.warn(`Failed to export chart ${chart.id}:`, error.message);
                     errors.push({ chartId: chart.id, error });
+                    errorHandler.warn(`❌ [Batch Export] 图表 ${chart.id} 导出失败: ${error.message}`);
                 }
             }
+
+            errorHandler.debug(`📊 [Batch Export] 完成: 成功 ${results.length}/${chartsToExport.length}, 失败 ${errors.length}`);
 
             if (results.length === 0) {
                 throw new Error("All chart exports failed");
