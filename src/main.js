@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-import { BaseColumnType } from "@/types/BaseColumnType";
-import { Workbook } from "./workbook/Workbook.js";
-import { HOOKS } from "./constants/hookNames.js";
-import { isFunction, isNumber } from "./utils/utils.js";
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
-import { registerColumnTypeClass } from "@/types";
-import { isUrl, openUrl } from "./utils/UrlDetector.js";
+import {BaseColumnType} from "@/types/BaseColumnType";
+import {Workbook} from "./workbook/Workbook.js";
+import {HOOKS} from "./constants/hookNames.js";
+import {isFunction, isNumber} from "./utils/utils.js";
+import {errorHandler, ERROR_LEVEL, ERROR_CODE} from "./core/ErrorHandler.js";
+import {registerColumnTypeClass} from "@/types";
+import {isUrl, openUrl} from "./utils/UrlDetector.js";
 
 class TrafficLightType extends BaseColumnType {
     get name() {
@@ -36,20 +36,20 @@ class TrafficLightType extends BaseColumnType {
     getEditorOptions() {
         return {
             source: [
-                { value: "green", label: "🟢 正常" },
-                { value: "yellow", label: "🟡 警告" },
-                { value: "red", label: "🔴 危险" },
+                {value: "green", label: "🟢 正常"},
+                {value: "yellow", label: "🟡 警告"},
+                {value: "red", label: "🔴 危险"},
             ],
         };
     }
 
     format(value) {
-        const map = { green: "正常", yellow: "警告", red: "危险" };
+        const map = {green: "正常", yellow: "警告", red: "危险"};
         return map[value] || String(value);
     }
 
     render(context) {
-        const { ctx, x, y, width, height, value, displayValue, style } = context;
+        const {ctx, x, y, width, height, value, displayValue, style} = context;
 
         const indicatorSize = Math.min(width, height) * 0.35;
         const indicatorRadius = indicatorSize / 2;
@@ -148,7 +148,7 @@ const initApp = () => {
                 // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
                 rowHeaderWidth: 120,
                 rowHeights: [30, 50, 90],
-                rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
+                rowHeaders: [{label: "序号", style: {textAlign: "center"}}, "年龄", "城市", "部门", "薪酬", "入职日期"],
 
                 // 嵌套表头配置（支持完整 style 属性）
                 nestedHeaders: [
@@ -215,31 +215,31 @@ const initApp = () => {
                 cellPadding: 10,
                 conditionalStyles: [
                     {
-                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
+                        range: {topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25},
                         condition: (v) => isNumber(v) && v > 25,
-                        style: { backgroundColor: "#ffcccc" },
+                        style: {backgroundColor: "#ffcccc"},
                     },
                 ],
                 cell: [
-                    { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                    { row: 1, col: 3, disabled: true },
-                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
+                    {row: 0, col: 0, style: {backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center"}},
+                    {row: 1, col: 3, disabled: true},
+                    {row: 2, col: 4, readOnly: true, style: {backgroundColor: "#fff3cd"}},
                 ],
                 cells: (row, col) => {
                     if (row === 0) {
-                        return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
+                        return {style: {fontWeight: "bold", backgroundColor: "#e8f4fd"}};
                     }
                     if (col === 0 && row > 0) {
-                        return { style: { textAlign: "right", fontWeight: "bold" } };
+                        return {style: {textAlign: "right", fontWeight: "bold"}};
                     }
                 },
                 columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text", width: 100 },
-                    { type: "text", width: 100 },
-                    { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date", width: 300 },
+                    {type: "text", width: 120, style: {textAlign: "left"}},
+                    {type: "numeric", width: 80, style: {textAlign: "right"}, numericFormat: {pattern: "0"}},
+                    {type: "text", width: 100},
+                    {type: "text", width: 100},
+                    {type: "numeric", width: 100, style: {textAlign: "right"}, numericFormat: {pattern: "$0,0.00"}},
+                    {type: "date", width: 300},
                 ],
             },
         ],
@@ -273,7 +273,7 @@ const initApp = () => {
                         // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
                         contexts: ["cell", "rowHeader"],
                         action: (row, col, sheet) => {
-                            sheet.setRowStyle(row, { backgroundColor: "yellow" });
+                            sheet.setRowStyle(row, {backgroundColor: "yellow"});
                             wb.render();
                         },
                     },
@@ -282,7 +282,7 @@ const initApp = () => {
                         contexts: ["cell"],
                         action: (row, col, sheet) => {
                             const range = sheet.selection.getRange();
-                            const styleObj = { backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724" };
+                            const styleObj = {backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724"};
                             for (let r = range.topRow; r <= range.bottomRow; r++) {
                                 for (let c = range.topCol; c <= range.bottomCol; c++) {
                                     if (!sheet.isDisabled(r, c)) {
@@ -308,7 +308,7 @@ const initApp = () => {
                             wb.render();
                         },
                     },
-                    { type: "separator" },
+                    {type: "separator"},
                     {
                         label: "导出选中区域",
                         action: (row, col, sheet) => {
@@ -647,12 +647,13 @@ const initApp = () => {
     });
 
     wb.addHook(HOOKS.AFTER_CHANGE, (changes) => {
-        for (const { row, col, newValue } of changes) {
+        for (const {row, col, newValue} of changes) {
             if (isUrl(newValue)) {
                 wb.runHooks(HOOKS.ON_URL_DETECTED, row, col, newValue);
             }
         }
     });
+
     function prepareData() {
         const chartPlugin = wb.getPlugin("chart");
         if (!chartPlugin) return;
@@ -674,13 +675,23 @@ const initApp = () => {
         });
 
         const lineChart = chartPlugin.addLineChart(
-            { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
+            {startRow: 0, startCol: 0, endRow: 5, endCol: 4},
             {
                 anchorRow: 8,
                 anchorCol: 1,
                 width: 450,
                 height: 300,
-                style: { title: "销售趋势(折线图)", showLegend: true, showTooltip: true },
+                offsetX: 10,
+                style: {
+                    xAxisLabel: "123",
+                    yAxisLabel:"456",
+                    title: "销售趋势(折线图)",
+                    showLegend: true,
+                    showTooltip: false,
+                    smooth: true,
+                    showGrid:false,
+                    colors:["#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"]
+                },
             },
         );
         console.log(lineChart);
@@ -689,6 +700,7 @@ const initApp = () => {
             console.log(`📊 折线图 ${lineChart.id}`);
         }
     }
+
     setTimeout(() => {
         prepareData();
     }, 1000);

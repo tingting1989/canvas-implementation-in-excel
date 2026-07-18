@@ -51,7 +51,7 @@ export class NativeChartRenderer {
             }
 
             yScale = this.buildYScale(data, chart.type);
-            this.renderAxes(ctx, data, plotArea, yScale);
+            this.renderAxes(ctx, data, plotArea, yScale, style);
         }
 
         if (strategy) {
@@ -150,7 +150,7 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
-    static renderAxes(ctx, data, area, yScale) {
+    static renderAxes(ctx, data, area, yScale, style) {
         ctx.save();
         ctx.strokeStyle = CONFIG.CHART_AXIS_COLOR;
         ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH;
@@ -179,6 +179,22 @@ export class NativeChartRenderer {
         for (const val of yTicks) {
             const y = area.y + area.h - ((val - yScale.min) / (yScale.max - yScale.min)) * area.h;
             ctx.fillText(this.formatNumber(val), area.x - 6, y);
+        }
+
+        if (style?.xAxisLabel) {
+            ctx.textAlign = "end";
+            ctx.textBaseline = "top";
+            ctx.fillText(style.xAxisLabel, area.x + area.w, area.y + area.h + 22);
+        }
+
+        if (style?.yAxisLabel) {
+            ctx.save();
+            ctx.translate(area.x - 6, area.y);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = "start";
+            ctx.textBaseline = "middle";
+            ctx.fillText(style.yAxisLabel, 0, 0);
+            ctx.restore();
         }
 
         ctx.restore();

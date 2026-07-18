@@ -197,35 +197,71 @@ export class AreaStrategy extends LineStrategy {
 
             const baseline = area.y + area.h;
 
-            ctx.beginPath();
-            ctx.moveTo(area.x + stepX / 2, baseline);
-
+            const points = [];
             for (let i = 0; i < catCount; i++) {
                 const val = Number(data.data[i][s + 1]) || 0;
                 const x = area.x + stepX * i + stepX / 2;
                 const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
-                ctx.lineTo(x, y);
+                points.push({ x, y });
             }
 
-            ctx.lineTo(area.x + stepX * (catCount - 1) + stepX / 2, baseline);
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, baseline);
+
+            if (style.smooth && points.length > 2) {
+                ctx.lineTo(points[0].x, points[0].y);
+                this.#drawSmoothCurve(ctx, points);
+            } else {
+                for (const pt of points) {
+                    ctx.lineTo(pt.x, pt.y);
+                }
+            }
+
+            ctx.lineTo(points[points.length - 1].x, baseline);
             ctx.closePath();
             ctx.fill();
 
             ctx.beginPath();
-            let firstPoint = true;
-            for (let i = 0; i < catCount; i++) {
-                const val = Number(data.data[i][s + 1]) || 0;
-                const x = area.x + stepX * i + stepX / 2;
-                const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
-
-                if (firstPoint) {
-                    ctx.moveTo(x, y);
-                    firstPoint = false;
-                } else {
-                    ctx.lineTo(x, y);
+            if (style.smooth && points.length > 2) {
+                ctx.moveTo(points[0].x, points[0].y);
+                this.#drawSmoothCurve(ctx, points);
+            } else {
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
                 }
             }
             ctx.stroke();
+        }
+    }
+
+    /**
+     * 绘制平滑曲线（Catmull-Rom 转三次贝塞尔）
+     *
+     * @method #drawSmoothCurve
+     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 渲染上下文
+     * @param {Array<{x: number, y: number}>} points - 数据点坐标数组
+     *
+     * @description 与 LineStrategy 相同的平滑曲线算法，
+     *              使用 Catmull-Rom 样条转三次贝塞尔曲线。
+     *              详见 LineStrategy.#drawSmoothCurve 的文档说明。
+     */
+    #drawSmoothCurve(ctx, points) {
+        const tension = 0.3;
+        const n = points.length;
+
+        for (let i = 0; i < n - 1; i++) {
+            const p0 = points[Math.max(0, i - 1)];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const p3 = points[Math.min(n - 1, i + 2)];
+
+            const cp1x = p1.x + (p2.x - p0.x) * tension;
+            const cp1y = p1.y + (p2.y - p0.y) * tension;
+            const cp2x = p2.x - (p3.x - p1.x) * tension;
+            const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
         }
     }
 }
