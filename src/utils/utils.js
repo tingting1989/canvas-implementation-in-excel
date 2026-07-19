@@ -18,6 +18,10 @@ export const isString = (value) => typeof value === "string";
 
 export const isBoolean = (value) => typeof value === "boolean";
 
+export const isUndefined = (value) => value === undefined;
+
+export const isNull = (value) => value === null;
+
 export function debounce(fn, delay) {
     let timer = null;
     const debounced = (...args) => {

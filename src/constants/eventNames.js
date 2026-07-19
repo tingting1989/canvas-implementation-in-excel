@@ -101,6 +101,12 @@ export const DELEGATE_KEYS = Object.freeze({
     /** Canvas 鼠标释放 - 完成选择或拖拽操作 */
     CANVAS_MOUSEUP: "canvas:mouseup",
 
+    /** Canvas 单击 - 处理交互式单元格类型（星级评分、进度条等） */
+    CANVAS_CLICK: "canvas:click",
+
+    /** Canvas 鼠标离开 - 清除悬停状态、重置交互反馈 */
+    CANVAS_MOUSELEAVE: "canvas:mouseleave",
+
     /** Canvas 双击 - 进入单元格编辑模式 */
     CANVAS_DBLCLICK: "canvas:dblclick",
 

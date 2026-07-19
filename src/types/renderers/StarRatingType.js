@@ -16,6 +16,7 @@
 
 import { BaseColumnType } from "../BaseColumnType.js";
 import { CONFIG } from "../../constants/config.js";
+import { isUndefined } from "@/utils";
 
 export class StarRatingType extends BaseColumnType {
     /**
@@ -138,13 +139,13 @@ export class StarRatingType extends BaseColumnType {
      * @returns {number|null} 返回新的评分值，或 null 表示无效点击
      */
     #detectRatingFromPosition(context, event) {
-        if (!context || typeof context.x === "undefined" || typeof context.y === "undefined") {
+        if (!context || isUndefined(context.x) || isUndefined(context.y)) {
             return null;
         }
 
         const { x: cellX, y: cellY, width, height, value } = context;
 
-        if (typeof width === "undefined" || typeof height === "undefined" || width <= 0 || height <= 0) {
+        if (isUndefined(width) || isUndefined(height) || width <= 0 || height <= 0) {
             return null;
         }
 
@@ -195,7 +196,7 @@ export class StarRatingType extends BaseColumnType {
      */
     handleClick(context, event) {
         const newRating = this.#detectRatingFromPosition(context, event);
-
+        console.log("点击评分Rating:", context);
         if (newRating !== null && newRating !== undefined) {
             const { value } = context;
             this.#startAnimation(Number(value) || 0, newRating);

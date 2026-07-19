@@ -1,4 +1,5 @@
-import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
+﻿import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
+import { InteractionStrategy } from "@/plugins/interaction/InteractionStrategy.js";
 import { Hooks } from "./Hooks.js";
 import { HOOKS } from "../constants/hookNames.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
@@ -163,9 +164,23 @@ export class EventHandler {
      * 可选策略（autoFill、contextMenu）由对应插件通过 addStrategy 注册
      */
     #initStrategies() {
+        console.log("[EventHandler] 🚀 开始初始化策略...");
+
         this.addStrategy("resize", new ResizeStrategy(this));
+        console.log("[EventHandler] ✅ resize 策略已注册");
+
         this.addStrategy("mouse", new MouseStrategy(this));
+        console.log("[EventHandler] ✅ mouse 策略已注册");
+
         this.addStrategy("keyboard", new KeyboardStrategy(this));
+        console.log("[EventHandler] ✅ keyboard 策略已注册");
+
+        // 单元格类型交互策略（priority=400）
+        const interactionStrategy = new InteractionStrategy(this);
+        this.addStrategy("interaction", interactionStrategy);
+        console.log("[EventHandler] ✅ interaction 策略已注册 (priority:", interactionStrategy.priority, ")");
+
+        console.log("[EventHandler] 📋 所有策略列表:", Array.from(this.strategies.keys()));
     }
 
     /**

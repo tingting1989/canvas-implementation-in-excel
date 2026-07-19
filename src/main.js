@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license Apache-2.0
  *
  * Copyright 2026 jiangsuiting <1158973435@qq.com>
@@ -23,7 +23,6 @@ import { isFunction, isNumber } from "./utils/utils.js";
 import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
 import { registerColumnTypeClass } from "@/types";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
-import { InteractionPlugin } from "@/plugins/InteractionPlugin";
 
 class TrafficLightType extends BaseColumnType {
     get name() {
@@ -151,11 +150,11 @@ const initApp = () => {
                         options: { maxStars: 3, color: "#00FF00", emptyColor: "#CCCCCC" },
                     },
                     // 专家评分
-                    {
-                        type: "trafficLight",
-                        width: 180,
-                        options: { maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0" },
-                    },
+                    // {
+                    //     type: "trafficLight",
+                    //     width: 180,
+                    //     options: { maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0" },
+                    // },
                     // // 综合评价
                     {
                         type: "select",
@@ -618,11 +617,11 @@ const initApp = () => {
             }
         },
     });
-    wb.loadPluginClass(InteractionPlugin, {
-        debugMode: false,
-        throttleMs: 16,
-        autoRender: true,
-    });
+    // wb.loadPluginClass(InteractionPlugin, {
+    //     debugMode: false,
+    //     throttleMs: 16,
+    //     autoRender: true,
+    // });
     wb.initRender();
     wb.render();
 
