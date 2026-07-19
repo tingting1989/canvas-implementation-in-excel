@@ -1,7 +1,7 @@
 import { parseFormula } from "./FormulaParser.js";
 import { indexToCol } from "../utils/cellRef.js";
 import { FormulaEvaluator } from "./FormulaEvaluator.js";
-import { isString } from "../utils/utils.js";
+import { isString } from "../utils/helper.js";
 import { registry } from "./functions/index.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 

@@ -1,5 +1,5 @@
 import { ERROR_LEVEL, ERROR_CODE } from "@/constants/errorCodes";
-import { isFunction } from "@/utils/utils";
+import { isFunction } from "@/utils/helper";
 
 /**
  * 统一错误处理器

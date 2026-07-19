@@ -1,6 +1,6 @@
 ﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 
-import { isFunction, isNumber, isObject } from "../../utils/utils.js";
+import { isFunction, isNumber, isObject } from "../../utils/helper.js";
 import { CONFIG } from "@/constants/config";
 
 /**

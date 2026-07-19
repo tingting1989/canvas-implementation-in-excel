@@ -8,7 +8,7 @@
 
 ## 2. 数据类型判断
 
-- 判断数据类型时**优先使用** `src/utils/utils.js` 中提供的工具函数
+- 判断数据类型时**优先使用** `src/utils/helper.js` 中提供的工具函数
 - 可用函数：`isNumber()`, `isFunction()`, `isObject()`, `isString()`, `isBoolean()`
 - 导入方式：`import { isNumber, isFunction, isObject, isString, isBoolean } from "@/utils/index.js";`
 - **禁止**在业务代码中直接使用 `typeof` 进行类型判断，应使用上述工具函数

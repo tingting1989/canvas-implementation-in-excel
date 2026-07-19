@@ -3,7 +3,7 @@ import { HOOKS } from "../../constants/hookNames.js";
 import { CONFIG } from "../../constants/config";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
-import { isFunction } from "../../utils/utils.js";
+import { isFunction } from "../../utils/helper.js";
 
 /**
  * 键盘交互策略

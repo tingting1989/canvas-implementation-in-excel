@@ -87,7 +87,7 @@ src/
 │   ├── formulaBar/         # 公式栏（FormulaBarElement + FormulaBarManager）
 │   └── ScrollManager.js    # 滚动管理
 ├── utils/                  # 工具函数
-│   ├── utils.js            # 类型判断（isNumber, isFunction, isObject...）
+│   ├── helper.js            # 类型判断（isNumber, isFunction, isObject...）
 │   ├── canvasUtils.js      # Canvas 绘图工具
 │   ├── cellRef.js          # 单元格引用解析
 │   └── excelUnits.js       # Excel 单位转换

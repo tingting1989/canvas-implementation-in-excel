@@ -2,7 +2,7 @@ import { Sheet } from "./Sheet.js";
 import { RenderEngine } from "@/render/RenderEngine";
 import { EditorManager } from "@/editor/EditorManager";
 import { EventHandler } from "@/core/EventHandler";
-import { isFunction, isObject } from "@/utils/utils";
+import { isFunction, isObject } from "@/utils/helper";
 import { PluginManager } from "@/plugins";
 import { CONFIG } from "@/constants/config";
 import { SettingsApplier } from "./managers/SettingsApplier.js";

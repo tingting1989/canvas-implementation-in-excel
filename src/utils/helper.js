@@ -1,4 +1,4 @@
-// src/core/utils.js
+// src/core/helper.js
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 export const toDisplayString = (value) => {

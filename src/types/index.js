@@ -297,7 +297,7 @@ import { BUILTIN_RENDERER_TYPE_REGISTRY } from "./renderers/index.js";
 // 导入工具依赖
 // ════════════════════════════════════════════
 
-import { isFunction } from "@/utils/utils";
+import { isFunction } from "@/utils/helper";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler";
 
 // ════════════════════════════════════════════

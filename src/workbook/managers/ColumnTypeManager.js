@@ -7,7 +7,7 @@ import {
     parseCellValue as parseCellValueInternal,
     validateCellValue as validateCellValueInternal,
 } from "../../types";
-import { isFunction, isObject } from "../../utils/utils.js";
+import { isFunction, isObject } from "../../utils/helper.js";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 
 /**

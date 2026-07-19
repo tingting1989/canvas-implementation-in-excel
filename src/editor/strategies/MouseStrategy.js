@@ -3,7 +3,7 @@ import { HOOKS } from "../../constants/hookNames.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
-import { debounce } from "../../utils/utils.js";
+import { debounce } from "../../utils/helper.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**

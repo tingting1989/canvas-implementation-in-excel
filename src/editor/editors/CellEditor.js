@@ -1,7 +1,7 @@
 import { CONFIG } from "@/constants/config";
 import { SHEET_EVENTS } from "@/constants/sheetEvents";
 import { EVENT_NAMES } from "@/constants/eventNames";
-import { isFunction } from "@/utils/utils";
+import { isFunction } from "@/utils/helper";
 import { DOMComponent } from "@/core/DOMComponent";
 import { FONT_STYLE } from "@/constants/enums/FontStyle.js";
 import "../editor.css";
