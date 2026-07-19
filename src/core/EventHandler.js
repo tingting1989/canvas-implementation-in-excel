@@ -110,15 +110,10 @@ export class EventHandler {
         bus.on(SHEET_EVENTS.BEFORE_CHANGE, (envelope) => {
             const [changes] = envelope.payload;
 
-            console.log("[EH-DEBUG] BEFORE_CHANGE triggered, changes =", JSON.stringify(changes));
-
             for (const change of changes) {
                 const { row, col, newValue } = change;
-                console.log(`[EH-DEBUG] Checking BEFORE_SET_VALUE_AT for (${row},${col}) value=${newValue}`);
                 const canSet = this.runHooksUntil(HOOKS.BEFORE_SET_VALUE_AT, row, col, newValue);
-                console.log(`[EH-DEBUG] BEFORE_SET_VALUE_AT result =`, canSet, `(type=${typeof canSet})`);
                 if (canSet === false) {
-                    console.log("[EH-DEBUG] 🛑 BLOCKED by BEFORE_SET_VALUE_AT");
                     return false;
                 }
             }
@@ -308,16 +303,20 @@ export class EventHandler {
                 if (!target) continue;
 
                 const boundListener = (e) => {
+                    // 已排序的策略列表
                     const entries = this.#delegateMap.get(key);
                     if (!entries) return;
 
                     // 先拷贝快照，防止迭代过程中 entries 被修改（如某个 handler 触发了 removeStrategy）
+                    // 快照，防止迭代中修改
                     const snapshot = [...entries];
                     for (const { name: strategyName, handler: h } of snapshot) {
                         // 检查策略是否仍然存在且处于启用状态
                         const strategy = this.strategies.get(strategyName);
+                        // 检查策略是否启用
                         if (!strategy || !strategy.enabled) continue;
                         const result = h(e);
+                        //  ❌ 返回 false 阻止后续策略
                         if (result === false) break;
                     }
                 };

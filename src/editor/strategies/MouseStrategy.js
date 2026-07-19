@@ -18,6 +18,8 @@ import { debounce } from "../../utils/utils.js";
  * - 单击左上角全选
  * - 双击进入编辑模式
  */
+
+// 考虑是否需要将 InteractionPlugin 的功能合并到 MouseStrategy 中
 export class MouseStrategy extends EventStrategy {
     priority = 50;
 

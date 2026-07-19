@@ -253,3 +253,327 @@
   - 使缓存失效：`sheet.styleManager.invalidateCache()` — 样式变更后必须调用
 - 样式合并优先级（从低到高）：defaultStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style → conditionalFormat
 - **禁止**绕过 styleManager 直接修改 styleId，否则样式缓存不会失效
+## 15. 策略优先级管理（EventStrategy）
+
+- **必须**使用 `src/constants/strategyPriority.js` 中定义的 `STRATEGY_PRIORITY` 常量设置策略优先级
+- **禁止**直接使用魔法数字（如 `priority = 120`），应使用语义化常量
+
+### 优先级体系架构（V3.0 - 100 间隔线性递增）
+
+采用 **100 为基准的大间隔线性递增**：100 → 200 → 300 → ... → 1100
+
+**核心设计理念：**
+- 百位数直接表示层级编号（1xx=基础层, 2xx=标准层, 3xx=高级层, 10xx+ =关键层）
+- 每个主锚点之间预留 99 个位置，提供极致的扩展能力
+- 纯线性递增，符合人类十进制直觉，零学习成本
+
+#### 四层优先级体系
+
+| 层级 | 数值范围 | 层级标识 | 适用场景 | 主锚点示例 |
+|------|---------|---------|---------|-----------|
+| Layer 1 | 100 - 299 | 基础操作层 | 键盘输入、快捷键 | KEYBOARD_BASE(100), SHORTCUT_KEY(200) |
+| Layer 2 | 300 - 599 | 标准交互层 | 鼠标行为、UI组件、单元格类型 | MOUSE_DEFAULT(300), CELL_TYPE_INTERACTION(400), POPUP_UI(500) |
+| Layer 3 | 600 - 999 | 高级功能层 | 拖拽操作、智能功能、特殊对象 | ROW_COLUMN_MOVE(600), AUTO_FILL(700), CHART_INTERACTION(800), RESIZE_LAYOUT(900) |
+| Layer 4 | 1000+ | 关键操作层 | 数据结构变更、全局性影响操作 | DATA_SORT(1000), DATA_FILTER(1100) |
+
+### 使用规范
+
+#### ✅ 正确示例
+
+```javascript
+import { EventStrategy } from "@/editor/strategies/EventStrategy.js";
+import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
+
+export class MyStrategy extends EventStrategy {
+    /** 
+     * 策略优先级
+     * 使用语义化常量，值为 300（Layer 2 标准交互层的基准值）
+     * @type {number} 
+     */
+    priority = STRATEGY_PRIORITY.MOUSE_DEFAULT;
+    
+    getEventHandlers() {
+        return {
+            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#handleMouseDown(e),
+        };
+    }
+}
+```
+
+#### ❌ 错误示例
+
+```javascript
+export class BadStrategy extends EventStrategy {
+    // ❌ 禁止：魔法数字，无法看出优先级意图
+    priority = 120;  
+    
+    // ❌ 禁止：不符合 100 间隔规范
+    priority = 55;
+}
+```
+
+### 扩展指南
+
+当需要新增策略时，按以下步骤确定优先级：
+
+1. **确定所属层级**
+   - 基础功能（键盘、快捷键）→ Layer 1 (100-299)
+   - 标准交互（鼠标、UI）→ Layer 2 (300-599)
+   - 高级功能（拖拽、图表）→ Layer 3 (600-999)
+   - 关键操作（排序、筛选）→ Layer 4 (1000+)
+
+2. **选择具体数值**
+   
+   **方式 A: 使用工具函数自动计算**
+   ```javascript
+   import { PriorityUtils } from '@/constants/strategyPriority.js';
+   
+   // 在 MOUSE_DEFAULT(300) 和 CELL_TYPE_INTERACTION(400) 之间计算
+   const myPriority = PriorityUtils.between(
+       STRATEGY_PRIORITY.MOUSE_DEFAULT,      // 300
+       STRATEGY_PRIORITY.CELL_TYPE_INTERACTION, // 400
+       'middle'  // 返回 350
+   );
+   ```
+   
+   **方式 B: 手动选择（推荐间隔 ≥ 20）**
+   ```javascript
+   // 在 300 和 400 之间的合理选择：
+   priority = 320;  // 接近下层
+   priority = 350;  // 中间位置
+   priority = 380;  // 接近上层
+   ```
+
+3. **验证唯一性**
+   ```javascript
+   import { PriorityUtils } from '@/constants/strategyPriority.js';
+   
+   const result = PriorityUtils.validate(myPriority);
+   console.log(result.valid, result.message);  // 检查是否合法
+   ```
+
+### 已有策略优先级清单
+
+| 策略类名 | 常量名称 | 优先级值 | 层级 | 说明 |
+|---------|---------|---------|------|------|
+| KeyboardStrategy | KEYBOARD_BASE | 100 | Layer 1 | 基础键盘输入 |
+| CopyPasteStrategy | SHORTCUT_KEY | 200 | Layer 1 | 快捷键操作 |
+| MouseStrategy | MOUSE_DEFAULT | 300 | Layer 2 | 默认鼠标行为 |
+| InteractionPlugin* | CELL_TYPE_INTERACTION | 400 | Layer 2 | 单元格类型交互 |
+| FilterStrategy | POPUP_UI | 500 | Layer 2 | 弹出式 UI 组件 |
+| RowMoveStrategy | ROW_COLUMN_MOVE | 600 | Layer 3 | 行列拖拽移动 |
+| ColumnMoveStrategy | ROW_COLUMN_MOVE | 600 | Layer 3 | 行列拖拽移动 |
+| AutoFillStrategy | AUTO_FILL | 700 | Layer 3 | 自动填充 |
+| ChartSelectionStrategy | CHART_INTERACTION | 800 | Layer 3 | 图表选择/移动/缩放 |
+| ResizeStrategy | RESIZE_LAYOUT | 900 | Layer 3 | 行列大小调整 |
+| SortStrategy | DATA_SORT | 1000 | Layer 4 | 数据排序 |
+
+> *注：InteractionPlugin 未来重构为 EventStrategy 后使用此优先级
+
+### 工具函数说明
+
+`src/constants/strategyPriority.js` 提供 `PriorityUtils` 工具对象：
+
+- **`between(lower, higher, position)`**: 在两个锚点间生成新优先级
+  - position: `'early'` (25%位置) | `'middle'` (50%位置) | `'late'` (75%位置)
+  
+- **`validate(priority)`**: 验证优先级合法性
+  - 返回 `{ valid: boolean, message: string }`
+  
+- **`getLayerInfo(priority)`**: 获取层级信息
+  - 返回 `{ layer: number, name: string, range: string, description: string }`
+
+### 设计原则总结
+
+1. **语义化优先**: 使用常量而非魔法数字
+2. **层级清晰**: 百位数体现功能重要性
+3. **扩展友好**: 每层预留充足空间（99个位置）
+4. **团队协作**: 零学习成本，新人 3 秒理解
+5. **未来-proof**: 支持 1900+ 策略，100 年够用
+
+### 导入方式
+
+```javascript
+// 导入优先级常量
+import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
+
+// 导入工具函数（可选）
+import { PriorityUtils } from "@/constants/strategyPriority.js";
+
+// 同时导入两者
+import { STRATEGY_PRIORITY, PriorityUtils } from "@/constants/strategyPriority.js";
+```
+
+## 16. 图层 Z-Index 管理（Layer Rendering）
+
+- **必须**使用 `src/constants/layerZIndex.js` 中定义的 `LAYER_Z_INDEX` 常量设置图层顺序
+- **禁止**直接使用魔法数字（如 `zIndex = 350`），应使用语义化常量
+
+### 图层 Z-Index 体系架构（100 间隔线性递增）
+
+采用 **100 为基准的大间隔线性递增**：100 → 200 → 300 → ... → 600
+
+**核心设计理念：**
+- 数值越小表示图层越靠下（先渲染，作为背景）
+- 数值越大表示图层越靠上（后渲染，覆盖上层）
+- 每层之间预留 99 个位置，支持插入子图层或特效层
+- 线性递增策略，与策略优先级体系保持一致的设计哲学
+
+#### 六层渲染体系（从底到顶）
+
+| 层级 | Z-Index | 层名 | 渲染内容 | 视觉效果 |
+|------|---------|------|---------|---------|
+| Layer 1 | 100 | TILE (瓦片层) | 非冻结区域的单元格数据、文本、边框 | 最底层背景 |
+| Layer 2 | 200 | SELECTION (选区层) | 选区高亮、合并单元格边框、拖拽指示器 | 覆盖在瓦片之上 |
+| Layer 3 | 300 | FROZEN (冻结层) | 冻结区域瓦片、冻结线效果 | 固定不滚动的内容 |
+| Layer 4 | 400 | CHART (图表层) | 图表对象渲染 | 浮动在数据之上 |
+| Layer 5 | 500 | INTERACTION (交互层) | 编辑框、调整指示线、调试信息、临时UI | 用户交互反馈 |
+| Layer 6 | 600 | HEADER (表头层) | 行号列标题、表头背景 | 最顶层固定元素 |
+
+### 渲染流程说明
+
+```
+渲染顺序（Canvas 绘制调用顺序）：
+
+1️⃣ TILE (100)     → 清空画布 → 绘制所有可见瓦片 → 单元格背景+文字+网格线
+                    ↓
+2️⃣ SELECTION (200) → 绘制当前选区高亮 → 合并单元格边框 → 拖拽预览
+                    ↓
+3️⃣ FROZEN (300)   → 绘制冻结区域瓦片 → 冻结线分隔符
+                    ↓
+4️⃣ CHART (400)    → 绘制图表对象 → 图片→ 形状等浮动元素
+                    ↓
+5️⃣ INTERACTION (500) → 绘制活动编辑框 → Resize手柄 → 调试信息
+                    ↓
+6️⃣ HEADER (600)   → 绘制行号列标题 → 表头背景 → 最终合成输出
+```
+
+### 使用规范
+
+#### ✅ 正确示例
+
+```javascript
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex.js";
+
+class CustomRenderer {
+    /**
+     * 渲染自定义组件到指定图层
+     * @param {CanvasRenderingContext2D} ctx - Canvas 上下文
+     */
+    render(ctx) {
+        // ✅ 使用语义化常量
+        this.zIndex = LAYER_Z_INDEX.CHART;  // = 400，图表层级
+        
+        // 或者相对于标准图层的偏移
+        this.zIndex = LAYER_Z_INDEX.SELECTION + 50;  // = 250，在选区和冻结之间
+        
+        ctx.save();
+        // ... 绘制逻辑
+        ctx.restore();
+    }
+}
+```
+
+#### ❌ 错误示例
+
+```javascript
+class BadRenderer {
+    // ❌ 禁止：魔法数字，无法看出图层意图
+    zIndex = 350;
+    
+    // ❌ 禁止：不符合 100 间隔规范
+    zIndex = 123;
+    
+    // ❌ 禁止：负数或过大数值
+    zIndex = -100;
+    zIndex = 9999;
+}
+```
+
+### 扩展指南
+
+当需要新增自定义图层时，按以下步骤确定 z-index：
+
+1. **确定视觉层级**
+   - 背景类（水印、网格辅助线）→ TILE 附近 (100-199)
+   - 数据标注类（批注、条件格式标记）→ SELECTION 附近 (200-299)
+   - 特殊区域类（打印区域、分页符）→ FROZEN 附近 (300-399)
+   - 浮动对象类（图片、形状、批注框）→ CHART 附近 (400-499)
+   - 临时 UI 类（工具提示、下拉菜单）→ INTERACTION 附近 (500-599)
+   - 全局覆盖类（加载遮罩、错误提示）→ HEADER 以上 (600+)
+
+2. **选择具体数值**
+
+   **方式 A: 相对于主锚点偏移（推荐）**
+   ```javascript
+   import { LAYER_Z_INDEX } from "@/constants/layerZIndex.js";
+   
+   // 在选区层(200)和冻结层(300)之间：
+   const myZIndex = LAYER_Z_INDEX.SELECTION + 50;    // = 250
+   
+   // 在图表层(400)之后：
+   const chartAnnotationZIndex = LAYER_Z_INDEX.CHART + 30;  // = 430
+   
+   // 在交互层(500)之前：
+   const tooltipZIndex = LAYER_Z_INDEX.INTERACTION - 20;  // = 480
+   ```
+   
+   **方式 B: 使用固定值（需确保唯一性）**
+   ```javascript
+   // 批注图层：在选区之后、冻结之前
+   const COMMENT_LAYER = 250;
+   
+   // 工具提示层：在交互层内靠前位置
+   const TOOLTIP_LAYER = 520;
+   
+   // 全局遮罩层：高于所有图层
+   const OVERLAY_LAYER = 700;
+   ```
+
+3. **验证合理性**
+   ```javascript
+   // 检查是否在合理范围内
+   if (zIndex < 0 || zIndex > 1000) {
+       console.warn('Z-Index 超出推荐范围 (0-1000)');
+   }
+   
+   // 检查是否与现有图层冲突
+   const existingLayers = [100, 200, 300, 400, 500, 600];
+   if (existingLayers.includes(zIndex)) {
+       console.warn('Z-Index 与现有主图层冲突');
+   }
+   ```
+
+### 已有图层清单
+
+| 常量名称 | Z-Index 值 | 层级 | 典型用途 | 渲染时机 |
+|---------|-----------|------|---------|---------|
+| TILE | 100 | Layer 1 | 瓦片渲染、单元格数据 | 每帧首先渲染 |
+| SELECTION | 200 | Layer 2 | 选区高亮、合并边框 | 数据渲染后 |
+| FROZEN | 300 | Layer 3 | 冻结区域、分隔线 | 选区之后 |
+| CHART | 400 | Layer 4 | 图表、浮动对象 | 冻结层之上 |
+| INTERACTION | 500 | Layer 5 | 编辑框、临时UI | 交互响应时 |
+| HEADER | 600 | Layer 6 | 行号列标题 | 最后渲染 |
+
+### 设计原则总结
+
+1. **语义化优先**: 使用常量而非魔法数字，代码自解释
+2. **层级清晰**: 数值大小直观反映叠加顺序
+3. **扩展友好**: 每层预留 99 个位置，支持子图层插入
+4. **性能优化**: 按 Z-Index 排序批量渲染，减少 Canvas 状态切换
+5. **一致性**: 与策略优先级体系(V3.0)保持相同的 100 间隔设计哲学
+
+### 导入方式
+
+```javascript
+// 导入图层常量
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex.js";
+
+// 使用示例
+const rendererConfig = {
+    backgroundZIndex: LAYER_Z_INDEX.TILE,           // = 100
+    selectionZIndex: LAYER_Z_INDEX.SELECTION,       // = 200  
+    chartZIndex: LAYER_Z_INDEX.CHART,               // = 400
+    overlayZIndex: LAYER_Z_INDEX.HEADER + 100,      // = 700（自定义扩展）
+};
+```
