@@ -58,7 +58,7 @@ export class SheetOperationCoordinator {
      * 通过事件总线通知 Workbook 执行实际的 Canvas 重绘
      */
     render() {
-        this.#sheet.bus.emit(SHEET_EVENTS.RENDER_REQUEST);
+        this.#sheet.bus.emit(SHEET_EVENTS.RENDER_REQUEST, null);
     }
 
     // ─── 撤销 / 重做 ──────────────────────────────────
@@ -81,7 +81,7 @@ export class SheetOperationCoordinator {
         if (!this.#sheet._ensureWritable()) return;
 
         this.#sheet.history.redo();
-        this.#sheet.bus.emit(SHEET_EVENTS.REDO);
+        this.#sheet.bus.emit(SHEET_EVENTS.REDO, null);
         this.#sheet._invalidateAll();
     }
 
@@ -267,6 +267,6 @@ export class SheetOperationCoordinator {
     #finishResize() {
         this.#sheet._invalidateAll();
         this.render();
-        this.#sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, { changes: [] });
+        this.#sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, []);
     }
 }

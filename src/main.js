@@ -617,6 +617,7 @@ const initApp = () => {
             }
         },
     });
+
     // wb.loadPluginClass(InteractionPlugin, {
     //     debugMode: false,
     //     throttleMs: 16,
@@ -625,6 +626,23 @@ const initApp = () => {
     wb.initRender();
     wb.render();
 
+    const sheet = wb.getActiveSheet();
+    wb.updateSettings({
+        conditionalStyles: [
+            {
+                range: { topRow: 15, topCol: 0, bottomRow: 20, bottomCol: 10 },
+                condition: function (v) {
+                    const value = Number(v);
+                    return !Number.isNaN(value) && v > 30000;
+                },
+                style: {
+                    color: "red",
+                },
+            },
+        ],
+    });
+
+    sheet.operations.setGridSize(10, 5);
     wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
         if (!e.ctrlKey && !e.metaKey) return;
         const sheet = wb.activeSheet;
