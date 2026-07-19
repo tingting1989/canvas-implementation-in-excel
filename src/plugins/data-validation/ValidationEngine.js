@@ -170,8 +170,6 @@ export class ValidationEngine {
     validateCellSync(row, col, value) {
         const rules = this.getRulesForCell(row, col);
 
-        console.log(`[VE-DEBUG] validateCellSync: (${row},${col}) value=${value}, found ${rules.length} rules`);
-
         if (rules.length === 0) {
             return ValidationResult.success();
         }

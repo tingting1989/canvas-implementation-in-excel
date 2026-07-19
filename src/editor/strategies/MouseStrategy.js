@@ -1,9 +1,10 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { debounce } from "../../utils/utils.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 鼠标交互策略
@@ -21,7 +22,7 @@ import { debounce } from "../../utils/utils.js";
 
 // 考虑是否需要将 InteractionPlugin 的功能合并到 MouseStrategy 中
 export class MouseStrategy extends EventStrategy {
-    priority = 50;
+    priority = STRATEGY_PRIORITY.MOUSE_DEFAULT;
 
     /** 是否正在拖拽选区 */
     #dragging = false;

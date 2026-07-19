@@ -2,6 +2,7 @@
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { isNumber } from "../../utils/utils.js";
 import { AUTO_FILL_DIR } from "../../constants/enums/AutoFillDir.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 自动填充策略（AutoFill）
@@ -16,7 +17,7 @@ import { AUTO_FILL_DIR } from "../../constants/enums/AutoFillDir.js";
  *   - 多行多列选区按模式循环填充
  */
 export class AutoFillStrategy extends EventStrategy {
-    priority = 90;
+    priority = STRATEGY_PRIORITY.AUTO_FILL;
 
     /** 是否正在拖拽填充 */
     #filling = false;

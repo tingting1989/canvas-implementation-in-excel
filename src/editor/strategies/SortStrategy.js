@@ -1,7 +1,8 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SORT_ORDER } from "../../constants/enums/SortOrder.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 排序事件策略（Sort Strategy）- 标准化实现
@@ -34,7 +35,7 @@ export class SortStrategy extends EventStrategy {
      * 策略优先级（高于 MouseStrategy）
      * @type {number}
      */
-    priority = 150;
+    priority = STRATEGY_PRIORITY.DATA_SORT;
 
     /**
      * 上一次点击的列索引

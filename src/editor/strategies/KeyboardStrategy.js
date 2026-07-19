@@ -1,7 +1,8 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { CONFIG } from "../../constants/config";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 键盘交互策略
@@ -20,6 +21,13 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
  * 注意：Ctrl+C/V/X（复制/粘贴/剪切）已移至 CopyPasteStrategy，由 CopyPastePlugin 管理。
  */
 export class KeyboardStrategy extends EventStrategy {
+    /**
+     * 策略优先级
+     * 使用语义化常量：KEYBOARD_BASE = 100（基础键盘输入）
+     * @type {number}
+     */
+    priority = STRATEGY_PRIORITY.KEYBOARD_BASE;
+
     constructor(handler) {
         super(handler);
     }

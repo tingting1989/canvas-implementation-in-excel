@@ -1,10 +1,11 @@
 ﻿import { EventStrategy } from "../../editor/strategies/EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 export class FilterStrategy extends EventStrategy {
     /** 筛选策略优先级（高于默认鼠标策略 50） */
-    priority = 60;
+    priority = STRATEGY_PRIORITY.POPUP_UI;
 
     #uiManager = null;
     #iconSize = 12;
