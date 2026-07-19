@@ -673,6 +673,21 @@
                         <td>Sheet</td>
                         <td>所属工作表实例引用</td>
                     </tr>
+                    <tr>
+                        <td><code>isDisabled</code></td>
+                        <td>boolean</td>
+                        <td>是否禁用单元格</td>
+                    </tr>
+                    <tr>
+                        <td><code>isMerged</code></td>
+                        <td>boolean</td>
+                        <td>是否为合并单元格</td>
+                    </tr>
+                    <tr>
+                        <td><code>sheet</code></td>
+                        <td>mergeInfo</td>
+                        <td>单元格合并信息</td>
+                    </tr>
                 </tbody>
             </table>
 
@@ -685,9 +700,7 @@ context.<span class="function">getPadding</span>(sheet)  <span class="comment">/
 
 <span class="comment">// 绘制圆角矩形</span>
 context.<span class="function">drawRoundedRect</span>(x, y, w, h, radius)
-
-<span class="comment">// 标记需要更新（用于动画场景）</span>
-context.<span class="property">needsUpdate</span> = <span class="keyword">true</span>;</code></pre>
+</pre>
         </div>
     </div>
 
@@ -746,10 +759,7 @@ context.<span class="property">needsUpdate</span> = <span class="keyword">true</
         <div class="card">
             <h2>🎬 实现平滑动画</h2>
 
-            <p style="color:#555;margin-bottom:20px;">
-                通过 <code>context.needsUpdate = true</code> 和 <code>requestAnimationFrame</code>，
-                你可以为渲染器添加流畅的动画效果。以下是 TrafficLightType 的动画实现原理：
-            </p>
+
 
             <pre><code><span class="comment">// 1. 定义动画状态属性</span>
 <span class="property">#animationStartTime</span> = <span class="keyword">null</span>;
@@ -784,7 +794,6 @@ context.<span class="property">needsUpdate</span> = <span class="keyword">true</
 
 <span class="comment">// 4. 在 render() 末尾标记需要继续更新</span>
 <span class="keyword">if</span> (<span class="property">#animationStartTime</span> !== <span class="keyword">null</span>) {
-    context.<span class="property">needsUpdate</span> = <span class="keyword">true</span>;  <span class="comment">// 触发下一帧重绘</span>
 }</code></pre>
 
             <div class="tip-box">
@@ -825,7 +834,7 @@ context.<span class="property">needsUpdate</span> = <span class="keyword">true</
                         <td>true（需要重绘）或 false</td>
                     </tr>
                     <tr>
-                        <td><code>handleMouseLeave()</code></td>
+                        <td><code>handleMouseLeave(ctx, e)</code></td>
                         <td>鼠标移出</td>
                         <td>true（需要重绘）或 false</td>
                     </tr>

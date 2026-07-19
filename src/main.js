@@ -642,7 +642,7 @@ const initApp = () => {
         ],
     });
 
-    sheet.operations.setGridSize(10, 5);
+    // sheet.operations.setGridSize(10, 5);
     wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
         if (!e.ctrlKey && !e.metaKey) return;
         const sheet = wb.activeSheet;

@@ -3,6 +3,7 @@ import { HOOKS } from "../../constants/hookNames.js";
 import { CONFIG } from "../../constants/config";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { isFunction } from "../../utils/utils.js";
 
 /**
  * 键盘交互策略
@@ -254,10 +255,35 @@ export class KeyboardStrategy extends EventStrategy {
     /**
      * 非编辑状态下的按键处理
      * 处理导航、删除、格式化、批量赋值等操作
+     *
+     * ✅ 新增：支持交互式单元格类型（如 StarRatingType、TrafficLightType）
+     * 当活动单元格的 type 是交互式类型时，优先将键盘事件分发给它的 handleKeydown() 方法
      */
     #handleNavigationKey(e) {
         const { sheet, editor } = this.handler;
         const [r, c] = sheet.selection.getActive();
+
+        // ✅ 新增：检查当前单元格是否为交互式类型
+        const cellType = this.#getCellTypeInstance(r, c);
+        if (cellType?.isInteractive && isFunction(cellType.handleKeydown)) {
+            const { sheet } = this.handler;
+            const cell = sheet.cellDataAccessor?.get(r, c);
+            const currentValue = cell?.value;
+            const result = cellType.handleKeydown(e, currentValue);
+
+            if (result !== null && result !== undefined) {
+                e.preventDefault(); // 阻止默认导航行为
+
+                if (sheet.setCell) {
+                    sheet.setCell(r, c, result);
+                }
+
+                this.handler.render();
+                return; // ✅ 已被交互式类型处理，不再执行默认导航
+            }
+
+            // 如果返回 null/undefined，说明此按键未被该类型处理，继续执行默认逻辑
+        }
 
         // Ctrl/Meta 快捷键检测（独立于 switch，避免拦截非 Ctrl 时的字母输入）
         if (e.ctrlKey || e.metaKey) {
@@ -642,5 +668,23 @@ export class KeyboardStrategy extends EventStrategy {
             return { row: merge.topRow, col: merge.topCol };
         }
         return { row, col };
+    }
+
+    /**
+     * 获取指定位置的单元格类型实例
+     *
+     * ✅ 用于交互式单元格类型的键盘事件分发
+     * 支持 StarRatingType、TrafficLightType 等自定义渲染器
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {object|null} 单元格类型实例或 null
+     */
+    #getCellTypeInstance(row, col) {
+        try {
+            return this.handler.sheet.getCellTypeInstance(row, col);
+        } catch (error) {
+            return null;
+        }
     }
 }

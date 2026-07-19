@@ -144,7 +144,7 @@ export class InteractionStrategy extends EventStrategy {
     #getHitInfo(event) {
         if (!this.enabled || !this.handler.sheet) return null;
 
-        const { viewport, sheet } = this.handler;
+        const { viewport } = this.handler;
         const hit = viewport.hitTest(event.clientX, event.clientY);
 
         if (!hit || hit.type !== "cell") {
@@ -196,6 +196,7 @@ export class InteractionStrategy extends EventStrategy {
     #buildFullContext(hit) {
         const baseContext = this.#buildContext(hit);
         const { sheet, row, col } = baseContext;
+
         const cell = sheet.cellDataAccessor?.get(row, col);
 
         return {
@@ -304,10 +305,11 @@ export class InteractionStrategy extends EventStrategy {
             }
 
             if (cellType?.handleMouseLeave) {
-                cellType.handleMouseLeave();
+                const needsRedraw = cellType.handleMouseLeave();
+                if (needsRedraw) {
+                    this.#scheduleRender();
+                }
             }
-
-            this.#scheduleRender();
         } catch (error) {
             errorHandler.warn(ERROR_CODE.PLUGIN_RUNTIME_WARNING, `InteractionStrategy#clearPreviousHoverState 警告: ${error.message}`);
         }

@@ -209,7 +209,7 @@ export class TrafficLightType extends BaseColumnType {
      * 点击时循环切换状态：green → yellow → red → green
      *
      * @param {import('../CellRenderContext.js').CellRenderContext} context - 单元格渲染上下文
-     * @param {MouseEvent} event - 鼠标事件对象
+     * @param _event
      * @returns {string|null} 返回新的状态值，或 null 表示无效点击
      */
     handleClick(context, _event) {

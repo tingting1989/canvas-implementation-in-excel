@@ -286,7 +286,6 @@ export class StarRatingType extends BaseColumnType {
      */
     handleKeydown(event, currentValue) {
         const max = this.options?.maxStars || CONFIG.STAR_RATING_MAX_STARS;
-
         // 安全解析当前值为数字（处理 null/undefined/非数字情况）
         let current = 0;
         if (currentValue !== null && currentValue !== undefined && currentValue !== "") {
