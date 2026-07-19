@@ -623,8 +623,31 @@ const initApp = () => {
     //     throttleMs: 16,
     //     autoRender: true,
     // });
-    wb.initRender();
-    wb.render();
+
+    // ✨ 新特性：autoInit=true（默认）时，构造函数会自动调用 initRender() 和 render()
+    // 如需延迟初始化，可设置 autoInit: false
+    // wb.initRender();
+    // wb.render();
+
+    // 🧹 示例：数据清空 API（v1.0.15+）
+    // 可在控制台测试以下命令：
+
+    // 1. 清空当前工作表（支持 Ctrl+Z 撤销）
+    // wb.clearActiveSheetData();
+
+    // 2. 清空所有工作表
+    // wb.clearAllSheetsData();
+
+    // 3. 清空指定范围（A1:D10）
+    // sheet.clearRange(0, 0, 9, 3);
+
+    // 4. 性能优化模式（大数据量）
+    // wb.clearActiveSheetData({ skipHistory: true });
+
+    // 5. 监听清空事件
+    // wb.addHook('afterClearData', ({ changes, clearedCount }) => {
+    //     console.log(`已清除 ${clearedCount} 个单元格`);
+    // });
 
     const sheet = wb.getActiveSheet();
     wb.updateSettings({

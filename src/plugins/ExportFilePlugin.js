@@ -362,7 +362,8 @@ function getDataRange(sheet) {
     let maxRow = -1;
     let maxCol = -1;
 
-    for (const chunk of sheet.cellStore.chunks()) {
+    // ✅ 使用 chunks getter（无括号）避免兼容性问题
+    for (const [, chunk] of sheet.cellStore.chunks) {
         for (const { row, col } of chunk.iterate()) {
             if (row > maxRow) maxRow = row;
             if (col > maxCol) maxCol = col;

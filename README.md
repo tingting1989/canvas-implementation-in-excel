@@ -377,8 +377,15 @@ workbook.disablePlugin(name);
 #### ⚙️ 初始化与生命周期
 
 ```javascript
-// 初始化渲染引擎、编辑器、事件处理、插件系统（延迟初始化）
-workbook.initRender();
+// ✨ 方式1：自动初始化（推荐，默认行为）
+// autoInit=true 时，构造函数会自动调用 initRender() 和 render()
+const workbook = new Workbook(container, options);
+
+// 方式2：手动初始化（需要完全控制初始化时机时使用）
+const workbook = new Workbook(container, { ...options, autoInit: false });
+// ... 进行额外配置 ...
+workbook.initRender();  // 手动初始化渲染引擎
+workbook.render();      // 手动触发首次渲染
 
 // 销毁所有资源（必须在移除 DOM 前调用）
 workbook.destroy();
@@ -743,7 +750,7 @@ const workbook = new Workbook(document.getElementById('container'), {
     // 初始化完成回调
     afterInit: (workbook) => {
         console.log('准备就绪！', workbook);
-        
+
         // 添加自定义钩子
         workbook.addHook('afterSelection', (row, col) => {
             console.log(`选中单元格: ${row}, ${col}`);
@@ -751,8 +758,9 @@ const workbook = new Workbook(document.getElementById('container'), {
     }
 });
 
-// 必须调用 initRender() 完成初始化
-workbook.initRender();
+// ✨ autoInit=true（默认）：构造函数自动完成初始化，无需手动调用
+// 如需延迟初始化，设置 autoInit: false 后手动调用：
+// workbook.initRender();
 ```
 
 ### 📙 示例代码库

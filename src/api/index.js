@@ -33,6 +33,9 @@ export { DOMComponent } from "../core/DOMComponent.js";
 export { Disposable } from "../core/Disposable.js";
 export { FormulaEngine } from "../formula/FormulaEngine.js";
 export { FormulaEvaluator } from "../formula/FormulaEvaluator.js";
+export { BaseColumnType } from "../types/BaseColumnType.js";
+export * from "../types/index.js";
+
 export { registry as functionRegistry, FUNCTION_CATEGORY } from "../formula/functions/index.js";
 export { BaseLayer } from "../render/BaseLayer.js";
 export { ViewportTransform } from "../render/ViewportTransform.js";

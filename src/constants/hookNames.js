@@ -336,4 +336,15 @@ export const HOOKS = Object.freeze({
 
     /** 导出失败 - 导出过程中发生错误时触发 */
     EXPORT_ERROR: "onExportError",
+
+    /*
+     * ==================== 数据清空相关钩子 ====================
+     * 控制单元格数据的批量清除操作
+     */
+
+    /** 数据清空前 - 即将清空单元格数据（全表或指定范围），返回 false 可阻止操作 */
+    BEFORE_CLEAR_DATA: "beforeClearData",
+
+    /** 数据清空后 - 单元格数据已成功清除，包含详细的变更信息 */
+    AFTER_CLEAR_DATA: "afterClearData",
 });

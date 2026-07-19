@@ -187,4 +187,72 @@ export class CellDataAccessor {
             }
         }
     }
+
+    /**
+     * 清空所有单元格数据（Clear All Data）
+     *
+     * 收集当前所有非空单元格的信息（用于撤销），然后清空整个存储。
+     *
+     * 适用场景：
+     * - 工作表重置
+     * - 数据导入前清理
+     * - 内存释放
+     *
+     * ⚠️ 注意：返回值用于撤销支持，调用方应保存并在需要时恢复
+     *
+     * @returns {{ changes: Array<{row:number, col:number, oldValue:*, styleId:number}>, clearedCount: number }}
+     */
+    clearAll() {
+        const changes = [];
+
+        // ✅ 使用显式的 chunks getter 避免迭代器兼容性问题
+        for (const [, chunk] of this.#cellStore.chunks) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (cell && cell.value !== "" && cell.value != null) {
+                    changes.push({
+                        row,
+                        col,
+                        oldValue: cell.value,
+                        styleId: cell.styleId || 0,
+                    });
+                }
+            }
+        }
+
+        const clearedCount = this.#cellStore.clear();
+
+        return { changes, clearedCount };
+    }
+
+    /**
+     * 清空指定区域内的数据（Clear Range Data）
+     *
+     * 与 clearAll() 类似，但仅处理指定矩形范围内的单元格。
+     *
+     * @param {number} topRow - 左上角行号
+     * @param {number} topCol - 左上角列号
+     * @param {number} bottomRow - 右下角行号
+     * @param {number} bottomCol - 右下角列号
+     * @returns {{ changes: Array<{row:number, col:number, oldValue:*, styleId:number}>, clearedCount: number }}
+     */
+    clearRange(topRow, topCol, bottomRow, bottomCol) {
+        const changes = [];
+
+        for (let r = topRow; r <= bottomRow; r++) {
+            for (let c = topCol; c <= bottomCol; c++) {
+                const cell = this.get(r, c);
+                if (cell && cell.value !== "" && cell.value != null) {
+                    changes.push({
+                        row: r,
+                        col: c,
+                        oldValue: cell.value,
+                        styleId: cell.styleId || 0,
+                    });
+                    this.#cellStore.delete(r, c);
+                }
+            }
+        }
+
+        return { changes, clearedCount: changes.length };
+    }
 }
