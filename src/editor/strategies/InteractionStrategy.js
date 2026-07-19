@@ -21,7 +21,7 @@ import { EventStrategy } from "@/editor/strategies/EventStrategy.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { isFunction } from "@/utils/index.js";
+import { isFunction } from "@/utils";
 
 export class InteractionStrategy extends EventStrategy {
     /**

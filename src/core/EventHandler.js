@@ -1,5 +1,5 @@
 ﻿import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
-import { InteractionStrategy } from "@/plugins/interaction/InteractionStrategy.js";
+import { InteractionStrategy } from "@/editor/strategies/InteractionStrategy.js";
 import { Hooks } from "./Hooks.js";
 import { HOOKS } from "../constants/hookNames.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
