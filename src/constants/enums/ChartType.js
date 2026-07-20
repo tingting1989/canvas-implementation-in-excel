@@ -11,6 +11,7 @@
  * @property {string} GAUGE - 仪表盘，适合展示单个指标值在范围内的位置（如速度、完成度）
  * @property {string} FUNNEL - 漏斗图，适合展示流程中的阶段转化情况（如销售漏斗、用户行为漏斗）
  * @property {string} RADAR - 雷达图，适合多维度数据的对比分析（如能力评估、性能指标）
+ * @property {string} HEATMAP - 热力图，适合展示二维数据的密度分布情况（如相关性矩阵、混淆矩阵）
  */
 export const CHART_TYPE = Object.freeze({
     LINE: "line",
@@ -22,4 +23,5 @@ export const CHART_TYPE = Object.freeze({
     GAUGE: "gauge",
     FUNNEL: "funnel",
     RADAR: "radar",
+    HEATMAP: "heatmap",
 });

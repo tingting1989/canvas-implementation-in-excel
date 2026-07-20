@@ -20,6 +20,7 @@
  * @see {@link GaugeStrategy} 仪表盘策略
  * @see {@link FunnelStrategy} 漏斗图策略
  * @see {@link RadarStrategy} 雷达图策略
+ * @see {@link HeatmapStrategy} 热力图策略
  */
 
 import { BarStrategy } from "./BarStrategy.js";
@@ -31,6 +32,7 @@ import { CandlestickStrategy } from "./CandlestickStrategy.js";
 import { GaugeStrategy } from "./GaugeStrategy.js";
 import { FunnelStrategy } from "./FunnelStrategy.js";
 import { RadarStrategy } from "./RadarStrategy.js";
+import { HeatmapStrategy } from "./HeatmapStrategy.js";
 
 /**
  * 已注册的策略实例列表（单例模式）
@@ -50,6 +52,7 @@ import { RadarStrategy } from "./RadarStrategy.js";
  * | 7    | GaugeStrategy | "gauge" | 仪表盘 | ❌ 不需要 |
  * | 8    | FunnelStrategy | "funnel" | 漏斗图 | ❌ 不需要 |
  * | 9    | RadarStrategy | "radar" | 雷达图 | ❌ 不需要 |
+ * | 10   | HeatmapStrategy | "heatmap" | 热力图 | ✅ 需要 |
  *
  * **设计说明：**
  * - 使用**单例模式**：每个策略只创建一次实例，避免重复初始化开销
@@ -81,6 +84,7 @@ const strategies = [
     new GaugeStrategy(),
     new FunnelStrategy(),
     new RadarStrategy(),
+    new HeatmapStrategy(),
 ];
 
 /**
@@ -105,6 +109,7 @@ const strategies = [
  *   GaugeStrategy,    // type: "gauge", name: "仪表盘"
  *   FunnelStrategy,   // type: "funnel", name: "漏斗图"
  *   RadarStrategy,    // type: "radar", name: "雷达图"
+ *   HeatmapStrategy,  // type: "heatmap", name: "热力图"
  * ]
  * ```
  *

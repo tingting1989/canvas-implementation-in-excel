@@ -36,8 +36,8 @@ import { ERROR_CODE } from "../../constants/errorCodes.js";
  *
  * | 类别 | 类型标识符 | 渲染方式 | 性能特点 |
  * |------|-----------|---------|---------|
- * | **原生Canvas** | bar, line, pie, area, scatter, candlestick, gauge, funnel, radar | NativeChartRenderer | ✅ 高性能、轻量级 |
- * | **ECharts** | treemap, sunburst, heatmap | EChartsBridge（待实现） | 🚧 功能丰富、依赖较重 |
+ * | **原生Canvas** | bar, line, pie, area, scatter, candlestick, gauge, funnel, radar, heatmap | NativeChartRenderer | ✅ 高性能、轻量级 |
+ * | **ECharts** | treemap, sunburst | EChartsBridge（待实现） | 🚧 功能丰富、依赖较重 |
  *
  * **设计模式：**
  * - **工厂模式**：封装对象创建逻辑，隐藏具体实现细节
@@ -106,6 +106,7 @@ export class ChartRendererFactory {
      * - `gauge` - 仪表盘（KPI 展示）
      * - `funnel` - 漏斗图（转化分析）
      * - `radar` - 雷达图（多维对比）
+     * - `heatmap` - 热力图（数据密度可视化）
      *
      * @example
      * // 检查某类型是否原生支持
@@ -113,7 +114,7 @@ export class ChartRendererFactory {
      *   console.log('柱状图支持高性能渲染');
      * }
      */
-    static NATIVE_TYPES = ["bar", "line", "pie", "area", "scatter", "candlestick", "gauge", "funnel", "radar"];
+    static NATIVE_TYPES = ["bar", "line", "pie", "area", "scatter", "candlestick", "gauge", "funnel", "radar", "heatmap"];
 
     /**
      * ECharts 支持的图表类型列表
@@ -127,7 +128,6 @@ export class ChartRendererFactory {
      * **功能特性：**
      * - 🌳 `treemap` - 矩形树图（层次数据可视化）
      * - ☀️ `sunburst` - 旭日图（多层环形层次图）
-     * - 🌡️ `heatmap` - 热力图（二维数据密度展示）
      *
      * **技术限制：**
      * - ⚠️ 需要引入 ECharts 库（~1MB gzip）
@@ -138,8 +138,7 @@ export class ChartRendererFactory {
      * **实现计划：**
      * - Phase 1: 实现 EChartsBridge 基础框架
      * - Phase 2: 支持 treemap 和 sunburst
-     * - Phase 3: 支持 heatmap 及其他 ECharts 图表
-     * - Phase 4: 性能优化和按需加载
+     * - Phase 3: 性能优化和按需加载
      *
      * @example
      * // 检查是否需要 ECharts
@@ -147,7 +146,7 @@ export class ChartRendererFactory {
      *   console.log('需要加载 ECharts 库');
      * }
      */
-    static ECHARTS_TYPES = ["treemap", "sunburst", "heatmap"];
+    static ECHARTS_TYPES = ["treemap", "sunburst"];
 
     /**
      * ECharts 桥接器实例（私有字段）
@@ -282,7 +281,7 @@ export class ChartRendererFactory {
      * const useHighPerfMode = ChartRendererFactory.isNativeType(chartType);
      * ```
      *
-     * **时间复杂度：** O(n)，其中 n = NATIVE_TYPES.length (固定为 9)
+     * **时间复杂度：** O(n)，其中 n = NATIVE_TYPES.length (固定为 10)
      *
      * @example
      * if (ChartRendererFactory.isNativeType('line')) {
