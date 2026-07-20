@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>散点图演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px
+        }
+        .container { max-width: 1200px; margin: 0 auto }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px }
+        .toolbar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center
+        }
+        .toolbar button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s
+        }
+        .btn-primary { background: #4472C4; color: white }
+        .btn-primary:hover { background: #365a9c }
+        .btn-success { background: #70AD47; color: white }
+        .btn-success:hover { background: #5a8d39 }
+        .btn-info { background: #5B9BD5; color: white }
+        .btn-info:hover { background: #4889bf }
+        .btn-warning { background: #FFC000; color: #333 }
+        .btn-warning:hover { background: #e6ad00 }
+        .divider { width: 1px; height: 32px; background: #ddd; margin: 0 8px }
+        .sheet-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden
+        }
+        #sheet { width: 100%; height: 600px }
+        .info-panel {
+            margin-top: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+        .log-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚬ 散点图 (Scatter Chart) 演示</h1>
+
+    <div class="toolbar">
+        <button class="btn-primary" onclick="addScatterChart()">⚬ 创建散点图</button>
+        <div class="divider"></div>
+        <span style="color:#666;font-weight:600">导出功能:</span>
+        <button class="btn-success" onclick="exportChartAsImage()">🖼️ 导出PNG图片</button>
+        <button class="btn-info" onclick="exportExcelWithChart()">📊 导出Excel(含图表)</button>
+        <button class="btn-warning" onclick="exportAsCSV()">📋 导出CSV</button>
+        <div class="divider"></div>
+        <button class="btn-primary" onclick="moveChart()">🔄 移动位置</button>
+        <button class="btn-success" onclick="resizeChart()">📐 调整大小</button>
+        <button class="btn-danger" onclick="removeChart()" style="background:#ED7D31;color:white">🗑️ 删除图表</button>
+    </div>
+
+    <div class="sheet-container">
+        <canvas id="sheet"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📖 散点图说明</h3>
+        <div style="font-size:13px;line-height:1.8;color:#555;margin-top:10px">
+            <p><strong>用途:</strong> 展示两个变量之间的相关性和分布情况</p>
+            <p><strong>数据格式:</strong> X轴数值 + Y轴数值（两列数值数据）</p>
+            <p><strong>特性:</strong> 数据点分布、相关性分析、聚类识别</p>
+            <p style="margin-top:10px;padding:10px;background:#f8d7da;border-radius:6px;border-left:4px solid #ED7D31">
+                <strong>💡 提示:</strong> 本示例展示"广告投入 vs 销售额"的正相关关系（20个数据点）
+            </p>
+        </div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪... | 散点图演示模式</div>
+</div>
+<script src="../libs/exceljs.min.js"></script>
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+let workbook = null, chartPlugin = null, exportPlugin = null, currentChartId = null;
+
+function log(msg) {
+    const la = document.getElementById('logArea');
+    la.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+    la.scrollTop = la.scrollHeight;
+}
+
+function init() {
+    try {
+        workbook = new CanvasSheet.Workbook(document.getElementById('sheet'), {
+            plugins: ["autoFill", "contextMenu", "chart", "exportFile"]
+        });
+        workbook.initRender();
+        workbook.render();
+
+        chartPlugin = workbook.getPlugin('chart');
+        exportPlugin = workbook.getPlugin('exportFile');
+
+        log('✅ 初始化成功 - 散点图演示模式');
+        log('');
+        log('🎯 点击 "⚬ 创建散点图" 开始');
+    } catch (e) {
+        log(`❌ Error: ${e.message}`);
+    }
+}
+
+function addScatterChart() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 0, '样本ID');
+    s.setCell(0, 1, '广告投入(万元)');
+    s.setCell(0, 2, '销售额(万元)');
+
+    const scatterData = [
+        { id: 1, ad: 10, sales: 25 },
+        { id: 2, ad: 15, sales: 32 },
+        { id: 3, ad: 20, sales: 38 },
+        { id: 4, ad: 22, sales: 42 },
+        { id: 5, ad: 25, sales: 48 },
+        { id: 6, ad: 28, sales: 52 },
+        { id: 7, ad: 30, sales: 55 },
+        { id: 8, ad: 32, sales: 58 },
+        { id: 9, ad: 35, sales: 62 },
+        { id: 10, ad: 38, sales: 68 },
+        { id: 11, ad: 40, sales: 72 },
+        { id: 12, ad: 42, sales: 75 },
+        { id: 13, ad: 45, sales: 80 },
+        { id: 14, ad: 48, sales: 85 },
+        { id: 15, ad: 50, sales: 88 },
+        { id: 16, ad: 55, sales: 95 },
+        { id: 17, ad: 60, sales: 102 },
+        { id: 18, ad: 65, sales: 108 },
+        { id: 19, ad: 70, sales: 115 },
+        { id: 20, ad: 75, sales: 122 }
+    ];
+
+    scatterData.forEach((item, index) => {
+        s.setCell(index + 1, 0, item.id);
+        s.setCell(index + 1, 1, item.ad);
+        s.setCell(index + 1, 2, item.sales);
+    });
+
+    const c = chartPlugin.addScatterChart(
+        { startRow: 0, startCol: 1, endRow: 20, endCol: 2 },
+        {
+            anchorRow: 2,
+            anchorCol: 4,
+            width: 500,
+            height: 400,
+            style: {
+                title: '📊 广告投入 vs 销售额（正相关）',
+                showLegend: false,
+                showTooltip: true,
+                showGrid: true,
+                colors: ['#4472C4'],
+                xAxisLabel: '广告投入 (万元)',
+                yAxisLabel: '销售额 (万元)'
+            }
+        }
+    );
+
+    if (c) {
+        currentChartId = c.id;
+        log(`✅ 散点图创建成功: ${c.id}`);
+        log(`   数据: ${scatterData.length}个数据点`);
+        log('   X轴: 广告投入 (10-75万元)');
+        log('   Y轴: 销售额 (25-122万元)');
+        log('   特征: 强正相关关系 (r ≈ 0.99)');
+        log('');
+        log('💡 分析结论:');
+        log('   • 随着广告投入增加，销售额明显上升');
+        log('   • 数据点分布集中，线性趋势明显');
+        log('   • 可用于预测和回归分析');
+        log('   现在可以使用导出功能了');
+    }
+}
+
+async function exportChartAsImage() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('🖼️ 正在导出散点图为PNG图片...');
+        await exportPlugin.downloadChart(currentChartId, null, {
+            format: 'png',
+            quality: 1.0,
+            scale: 2,
+            rebuildHighQuality: true
+        });
+        log('✅ PNG导出成功 (2倍分辨率, 高质量)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportExcelWithChart() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📊 正在生成Excel文件(含内嵌散点图)...');
+        await exportPlugin.downloadFile('xlsx', {
+            filename: 'scatter_chart_demo',
+            cellStyles: true,
+            columnHeaders: true
+        });
+        log('✅ Excel导出成功！图表已作为图片嵌入');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportAsCSV() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📋 正在导出CSV文件...');
+        await exportPlugin.downloadFile('csv', {
+            filename: 'scatter_chart_data',
+            columnHeaders: true
+        });
+        log('✅ CSV导出成功 (纯数据格式)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+function moveChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.moveChart(currentChartId, Math.floor(Math.random() * 20) + 5, Math.floor(Math.random() * 10) + 1, 20, 20);
+    log('🔄 图表位置已移动');
+}
+
+function resizeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.resizeChart(currentChartId, Math.floor(Math.random() * 200) + 350, Math.floor(Math.random() * 150) + 250);
+    log('📐 图表尺寸已调整');
+}
+
+function removeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.removeChart(currentChartId);
+    log('🗑️ 图表已删除');
+    currentChartId = null;
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

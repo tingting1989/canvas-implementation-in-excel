@@ -84,8 +84,8 @@ export class LineStrategy extends BaseChartStrategy {
      * @description 初始化策略类型和名称。
      *              类型标识符为 "line"，用于在 NativeChartRenderer 中查找该策略。
      */
-    constructor() {
-        super("line", "折线图");
+    constructor(type = "line", name = "折线图") {
+        super(type, name);
     }
 
     /**
@@ -156,14 +156,13 @@ export class LineStrategy extends BaseChartStrategy {
         const yMax = yScale ? yScale.max : this.getYMax(data);
         const yRange = yMax - yMin || 1;
         const stepX = area.w / catCount;
+        const pixelRatio = this.getPixelRatio(ctx, area);
 
         for (let s = 0; s < seriesCount; s++) {
             ctx.strokeStyle = style.colors[s % style.colors.length];
             ctx.fillStyle = style.colors[s % style.colors.length];
-            ctx.lineWidth = CONFIG.CHART_LINE_DOT_RADIUS > 3 ? 2 : CONFIG.CHART_TOOLTIP_BORDER_WIDTH;
+            ctx.lineWidth = (CONFIG.CHART_LINE_DOT_RADIUS > 3 ? 2 : CONFIG.CHART_TOOLTIP_BORDER_WIDTH) * pixelRatio;
 
-            ctx.beginPath();
-            let firstPoint = true;
             const points = [];
 
             for (let i = 0; i < catCount; i++) {
@@ -171,12 +170,16 @@ export class LineStrategy extends BaseChartStrategy {
                 const x = area.x + stepX * i + stepX / 2;
                 const y = area.y + area.h - ((val - yMin) / yRange) * area.h;
                 points.push({ x, y });
+            }
 
-                if (firstPoint) {
-                    ctx.moveTo(x, y);
-                    firstPoint = false;
-                } else {
-                    ctx.lineTo(x, y);
+            ctx.beginPath();
+
+            if (style.smooth && points.length > 2) {
+                this.#drawSmoothCurve(ctx, points);
+            } else {
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
                 }
             }
 
@@ -187,6 +190,66 @@ export class LineStrategy extends BaseChartStrategy {
                 ctx.arc(pt.x, pt.y, CONFIG.CHART_LINE_DOT_RADIUS, 0, Math.PI * 2);
                 ctx.fill();
             }
+        }
+    }
+
+    /**
+     * 绘制平滑曲线（Catmull-Rom 转三次贝塞尔）
+     *
+     * @method #drawSmoothCurve
+     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 渲染上下文
+     * @param {Array<{x: number, y: number}>} points - 数据点坐标数组
+     *
+     * @description 使用 Catmull-Rom 样条转三次贝塞尔曲线算法：
+     *
+     * **算法原理：**
+     * 1. 对每个线段 P[i] → P[i+1]，计算两个控制点 CP1 和 CP2
+     * 2. 控制点基于前后相邻点 P[i-1] 和 P[i+2] 的切线方向
+     * 3. 使用 `bezierCurveTo(CP1.x, CP1.y, CP2.x, CP2.y, P[i+1].x, P[i+1].y)` 绘制
+     *
+     * **控制点计算公式：**
+     * ```
+     * tension = 0.3（张力系数，控制曲线弯曲程度）
+     *
+     * CP1 = {
+     *   x: P[i].x + (P[i+1].x - P[i-1].x) * tension,
+     *   y: P[i].y + (P[i+1].y - P[i-1].y) * tension
+     * }
+     *
+     * CP2 = {
+     *   x: P[i+1].x - (P[i+2].x - P[i].x) * tension,
+     *   y: P[i+1].y - (P[i+2].y - P[i].y) * tension
+     * }
+     * ```
+     *
+     * **边界处理：**
+     * - 首段（i=0）：P[i-1] 用 P[0] 代替（镜像）
+     * - 末段（i=n-2）：P[i+2] 用 P[n-1] 代替（镜像）
+     *
+     * **张力系数说明：**
+     * - tension = 0：直线连接
+     * - tension = 0.3：适度平滑（推荐值）
+     * - tension = 0.5：较弯曲
+     * - tension > 0.5：过度弯曲，可能出现回环
+     */
+    #drawSmoothCurve(ctx, points) {
+        const tension = 0.3;
+        const n = points.length;
+
+        ctx.moveTo(points[0].x, points[0].y);
+
+        for (let i = 0; i < n - 1; i++) {
+            const p0 = points[Math.max(0, i - 1)];
+            const p1 = points[i];
+            const p2 = points[i + 1];
+            const p3 = points[Math.min(n - 1, i + 2)];
+
+            const cp1x = p1.x + (p2.x - p0.x) * tension;
+            const cp1y = p1.y + (p2.y - p0.y) * tension;
+            const cp2x = p2.x - (p3.x - p1.x) * tension;
+            const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
         }
     }
 

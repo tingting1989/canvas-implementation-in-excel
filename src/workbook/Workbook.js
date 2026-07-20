@@ -2,7 +2,7 @@ import { Sheet } from "./Sheet.js";
 import { RenderEngine } from "@/render/RenderEngine";
 import { EditorManager } from "@/editor/EditorManager";
 import { EventHandler } from "@/core/EventHandler";
-import { isFunction, isObject } from "@/utils/utils";
+import { isFunction, isObject } from "@/utils/helper";
 import { PluginManager } from "@/plugins";
 import { CONFIG } from "@/constants/config";
 import { SettingsApplier } from "./managers/SettingsApplier.js";
@@ -72,6 +72,7 @@ export class Workbook {
      * @param {Function} [options.cells] - 动态单元格属性函数 (row, col) => { style?, disabled?, ... }
      * @param {Array<object|Function>} [options.columns] - 列配置数组
      * @param {Function} [options.afterInit] - 初始化完成回调
+     * @param {boolean} [options.autoInit=true] - 是否在构造时自动调用 initRender() 和 render()
      */
     constructor(element, options = {}) {
         /** @type {Map<string, Sheet>} */
@@ -109,6 +110,12 @@ export class Workbook {
 
         this.#containerElement = element;
         this.#initOptions = options;
+
+        const autoInit = options.autoInit !== false;
+        if (autoInit) {
+            this.initRender();
+            this.render();
+        }
 
         /** @type {import("../formula/FormulaEngine.js").FormulaEngine|null} 公式引擎（由 FormulaPlugin 注入） */
         this.formulaEngine = null;
@@ -306,6 +313,16 @@ export class Workbook {
         bus.on(SHEET_EVENTS.CELL_CHANGED, (envelope) => {
             const { r, c } = envelope.payload;
             this.formulaEngine?.onCellChanged(sheet, r, c);
+        });
+
+        bus.on(SHEET_EVENTS.DATA_CLEARED, (envelope) => {
+            const { changes } = envelope.payload;
+
+            if (this.formulaEngine && changes.length > 0) {
+                for (const { row, col } of changes) {
+                    this.formulaEngine.onCellChanged(sheet, row, col);
+                }
+            }
         });
 
         bus.on(SHEET_EVENTS.UNDO, () => {
@@ -907,6 +924,159 @@ export class Workbook {
             s.batchStyleUpdate(fn);
             this.render();
         });
+    }
+
+    /**
+     * 清空当前活动工作表的所有数据（Clear Active Sheet Data）
+     *
+     * 完整的生命周期：
+     * 1. 触发 BEFORE_CLEAR_DATA hook（可返回 false 阻止操作）✅ 新增
+     * 2. 调用 Sheet.clearData() 执行纯数据操作
+     * 3. 触发 AFTER_CLEAR_DATA hook（通知完成）✅ 新增
+     * 4. 自动刷新视图
+     *
+     * 适用场景：
+     * - 用户点击"清空"按钮
+     * - 数据导入前清理旧数据
+     * - 工作表重置
+     *
+     * ⚠️ 安全性：
+     * - 默认支持 Hook 阻止（权限控制、二次确认等）
+     * - 支持撤销（除非设置 skipHistory）
+     * - 审计友好（AFTER_CLEAR_DATA 提供详细变更信息）
+     *
+     * @param {object} [options={}] - 配置选项
+     * @param {boolean} [options.skipHistory=false] - 跳过撤销记录（性能优化）
+     * @returns {{ changes: Array, clearedCount: number }|false|undefined}
+     *   - 成功：返回操作结果
+     *   - 被阻止：返回 false（Hook 返回了 false）
+     *   - 无活动表：返回 undefined
+     */
+    clearActiveSheetData(options = {}) {
+        return this.#withActiveSheet((sheet) => {
+            // ✅ 阶段1：Before Hook（可阻止操作）
+            const cancelled = this.runHooksUntil(HOOKS.BEFORE_CLEAR_DATA, { sheet });
+            if (cancelled === false) {
+                return false; // ❌ Hook 返回 false，操作被阻止
+            }
+
+            // ✅ 阶段2：执行纯数据操作（Sheet 层负责）
+            const result = sheet.clearData(options);
+
+            // ✅ 阶段3：After Hook（通知完成，不检查返回值）
+            this.runHooks(HOOKS.AFTER_CLEAR_DATA, {
+                sheet,
+                changes: result.changes,
+                clearedCount: result.clearedCount,
+            });
+
+            // ✅ 阶段4：刷新视图
+            this.render();
+
+            return result;
+        });
+    }
+
+    /**
+     * 清空指定范围的数据（Clear Range Data via Workbook）
+     *
+     * 与 clearActiveSheetData() 类似，但仅处理指定的矩形范围。
+     * 同样包含完整的 Hook 生命周期。
+     *
+     * @param {number} topRow - 左上角行号
+     * @param {number} topCol - 左上角列号
+     * @param {number} bottomRow - 右下角行号
+     * @param {number} bottomCol - 右下角列号
+     * @param {object} [options={}] - 配置选项（同 clearActiveSheetData）
+     * @returns {{ changes: Array, clearedCount: number }|false|undefined}
+     */
+    clearRangeData(topRow, topCol, bottomRow, bottomCol, options = {}) {
+        return this.#withActiveSheet((sheet) => {
+            const range = { topRow, topCol, bottomRow, bottomCol };
+
+            // ✅ Before Hook
+            const cancelled = this.runHooksUntil(HOOKS.BEFORE_CLEAR_DATA, { sheet, range });
+            if (cancelled === false) {
+                return false;
+            }
+
+            // ✅ 执行清除
+            const result = sheet.clearRange(topRow, topCol, bottomRow, bottomCol, options);
+
+            // ✅ After Hook
+            this.runHooks(HOOKS.AFTER_CLEAR_DATA, {
+                sheet,
+                range,
+                changes: result.changes,
+                clearedCount: result.clearedCount,
+            });
+
+            this.render();
+
+            return result;
+        });
+    }
+
+    /**
+     * 清空所有工作表的数据（Clear All Sheets Data）
+     *
+     * 遍历所有工作表并逐个清空数据。
+     * 适用于"新建工作簿"或"重置全部"场景。
+     *
+     * ⚠️ 性能提示：
+     * - 多工作表时可能耗时较长，建议显示加载指示器
+     * - 最后统一 render() 避免多次渲染
+     * - 每个 Sheet 都会独立触发 Before/After Hooks
+     *
+     * @param {object} [options={}] - 配置选项（同 clearActiveSheetData）
+     * @returns {{
+     *   totalCleared: number,
+     *   results: Array<{sheetName: string, clearedCount: number, success: boolean}>,
+     *   blockedSheets: Array<string>  // 被 Hook 阻止的工作表名列表
+     * }}
+     */
+    clearAllSheetsData(options = {}) {
+        const results = [];
+        let totalCleared = 0;
+        const blockedSheets = [];
+
+        for (const [name, sheet] of this.sheets) {
+            // ✅ 每个独立的 Sheet 都有完整的 Hook 生命周期
+            const cancelled = this.runHooksUntil(HOOKS.BEFORE_CLEAR_DATA, { sheet });
+
+            if (cancelled === false) {
+                results.push({
+                    sheetName: name,
+                    clearedCount: 0,
+                    success: false,
+                });
+                blockedSheets.push(name);
+                continue; // ❌ 该工作表被阻止，跳过
+            }
+
+            const { clearedCount } = sheet.clearData(options);
+
+            this.runHooks(HOOKS.AFTER_CLEAR_DATA, {
+                sheet,
+                changes: [], // 简化：不传递完整变更信息以节省内存
+                clearedCount,
+            });
+
+            results.push({
+                sheetName: name,
+                clearedCount,
+                success: true,
+            });
+            totalCleared += clearedCount;
+        }
+
+        this.render();
+
+        return {
+            totalCleared,
+            results,
+            blockedSheets,
+        };
     }
 
     // ============================================================

@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas-Sheet 图表演示中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 42px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3)
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 18px
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-top: 30px
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25)
+        }
+
+        .card-header {
+            padding: 24px;
+            background: linear-gradient(135deg, #4472C4 0%, #365a9c 100%);
+            color: white;
+            position: relative
+        }
+
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 12px
+        }
+
+        .card-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 6px
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            opacity: 0.9
+        }
+
+        .card-body {
+            padding: 20px 24px
+        }
+
+        .card-desc {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            font-size: 14px
+        }
+
+        .features {
+            list-style: none;
+            margin-bottom: 16px
+        }
+
+        .features li {
+            color: #666;
+            font-size: 13px;
+            padding: 4px 0;
+            padding-left: 20px;
+            position: relative
+        }
+
+        .features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #70AD47;
+            font-weight: bold
+        }
+
+        .btn-link {
+            display: inline-block;
+            padding: 10px 24px;
+            background: #4472C4;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: background 0.3s
+        }
+
+        .btn-link:hover {
+            background: #365a9c
+        }
+
+        .bar .card-header {
+            background: linear-gradient(135deg, #4472C4 0%, #365a9c 100%)
+        }
+
+        .line .card-header {
+            background: linear-gradient(135deg, #70AD47 0%, #5a8d39 100%)
+        }
+
+        .pie .card-header {
+            background: linear-gradient(135deg, #FFC000 0%, #e6ad00 100%);
+            color: #333
+        }
+
+        .area .card-header {
+            background: linear-gradient(135deg, #5B9BD5 0%, #4889bf 100%)
+        }
+
+        .scatter .card-header {
+            background: linear-gradient(135deg, #ED7D31 0%, #d56b28 100%)
+        }
+
+        .candlestick .card-header {
+            background: linear-gradient(135deg, #6c757d 0%, #545b62 100%)
+        }
+
+        .gauge .card-header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%)
+        }
+
+        .funnel .card-header {
+            background: linear-gradient(135deg, #e83e8c 0%, #d91e72 100%)
+        }
+
+        .radar .card-header {
+            background: linear-gradient(135deg, #6610f2 0%, #520dc2 100%)
+        }
+
+        .heatmap .card-header {
+            background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%)
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 Canvas-Sheet 图表演示中心</h1>
+    <p class="subtitle">10种专业图表类型 · 完整导出功能 · 独立运行示例</p>
+
+    <div class="grid">
+        <!-- 柱状图 -->
+        <div class="card bar">
+            <div class="card-header">
+                <div class="card-icon">📊</div>
+                <div class="card-title">柱状图 (Bar Chart)</div>
+                <div class="card-subtitle">bar-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">比较不同类别的数值大小，支持多系列对比、颜色自定义、图例显示。</p>
+                <ul class="features">
+                    <li>多系列数据对比</li>
+                    <li>自定义配色方案</li>
+                    <li>PNG/Excel/CSV 导出</li>
+                </ul>
+                <a href="bar-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 折线图 -->
+        <div class="card line">
+            <div class="card-header">
+                <div class="card-icon">📈</div>
+                <div class="card-title">折线图 (Line Chart)</div>
+                <div class="card-subtitle">line-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">展示数据随时间的变化趋势，支持平滑曲线、数据点标记、多系列对比。</p>
+                <ul class="features">
+                    <li>12个月销售趋势数据</li>
+                    <li>平滑曲线 + 数据点</li>
+                    <li>3个指标同时显示</li>
+                </ul>
+                <a href="line-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 饼图 -->
+        <div class="card pie">
+            <div class="card-header">
+                <div class="card-icon">🥧</div>
+                <div class="card-title">饼图 (Pie Chart)</div>
+                <div class="card-subtitle">pie-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">展示各部分占整体的比例关系，扇形区域清晰直观。</p>
+                <ul class="features">
+                    <li>市场份额分布示例</li>
+                    <li>5个产品类别占比</li>
+                    <li>百分比自动计算</li>
+                </ul>
+                <a href="pie-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 面积图 -->
+        <div class="card area">
+            <div class="card-header">
+                <div class="card-icon">📉</div>
+                <div class="card-title">面积图 (Area Chart)</div>
+                <div class="card-subtitle">area-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">强调数量随时间变化的程度和趋势，半透明填充更直观。</p>
+                <ul class="features">
+                    <li>半透明填充效果</li>
+                    <li>折线边框显示</li>
+                    <li>多系列堆叠支持</li>
+                </ul>
+                <a href="area-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 散点图 -->
+        <div class="card scatter">
+            <div class="card-header">
+                <div class="card-icon">⚬</div>
+                <div class="card-title">散点图 (Scatter Chart)</div>
+                <div class="card-subtitle">scatter-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">展示两个变量之间的相关性和分布情况，识别数据模式。</p>
+                <ul class="features">
+                    <li>相关性分析工具</li>
+                    <li>Q1 vs Q2 数据对比</li>
+                    <li>聚类识别功能</li>
+                </ul>
+                <a href="scatter-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- K线图 -->
+        <div class="card candlestick">
+            <div class="card-header">
+                <div class="card-icon">🕯️</div>
+                <div class="card-title">K线图 (Candlestick Chart)</div>
+                <div class="card-subtitle">candlestick-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">金融数据的开高低收（OHLC）分析，专业的股票/期货图表。</p>
+                <ul class="features">
+                    <li>OHLC 四维数据</li>
+                    <li>涨跌颜色区分</li>
+                    <li>蜡烛图 + 影线</li>
+                </ul>
+                <a href="candlestick-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 仪表盘 -->
+        <div class="card gauge">
+            <div class="card-header">
+                <div class="card-icon">🎯</div>
+                <div class="card-title">仪表盘 (Gauge Chart)</div>
+                <div class="card-subtitle">gauge-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">展示单个指标值在范围内的位置，如完成度、速度等。</p>
+                <ul class="features">
+                    <li>半圆形设计</li>
+                    <li>渐变色弧线</li>
+                    <li>动态指针显示</li>
+                </ul>
+                <a href="gauge-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 漏斗图 -->
+        <div class="card funnel">
+            <div class="card-header">
+                <div class="card-icon">📊</div>
+                <div class="card-title">漏斗图 (Funnel Chart)</div>
+                <div class="card-subtitle">funnel-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">展示流程中的阶段转化情况，如销售漏斗、用户行为漏斗。</p>
+                <ul class="features">
+                    <li>倒三角形设计</li>
+                    <li>转化率自动计算</li>
+                    <li>5阶段用户转化</li>
+                </ul>
+                <a href="funnel-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 雷达图 -->
+        <div class="card radar">
+            <div class="card-header">
+                <div class="card-icon">📡</div>
+                <div class="card-title">雷达图 (Radar Chart)</div>
+                <div class="card-subtitle">radar-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">多维度数据的对比分析，如能力评估、性能指标对比。</p>
+                <ul class="features">
+                    <li>6维度数据分析</li>
+                    <li>预算 vs 实际对比</li>
+                    <li>多边形网格背景</li>
+                </ul>
+                <a href="radar-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 热力图 -->
+        <div class="card heatmap">
+            <div class="card-header">
+                <div class="card-icon">🌡️</div>
+                <div class="card-title">热力图 (Heatmap Chart)</div>
+                <div class="card-subtitle">heatmap-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">以颜色深浅表示数据大小，展示二维数据的分布模式和热点区域。</p>
+                <ul class="features">
+                    <li>渐变色映射系统</li>
+                    <li>矩阵数据可视化</li>
+                    <li>异常值检测功能</li>
+                </ul>
+                <a href="heatmap-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>💡 每个演示页面都是独立的完整应用 | 包含完整的创建、操作、导出功能</p>
+        <p style="margin-top:8px">Powered by Canvas-Sheet | 支持现代浏览器</p>
+    </div>
+</div>
+</body>
+</html>

@@ -11,6 +11,7 @@ export const CHART_CONFIG = Object.freeze({
 
     /** 图表字号（px） */
     CHART_FONT_SIZE: 11,
+    CHART_TITLE_FONT_SIZE: 16,
 
     /** 图表默认文字颜色 */
     CHART_TEXT_COLOR: "#333",

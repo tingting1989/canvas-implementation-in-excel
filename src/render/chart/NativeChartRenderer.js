@@ -32,15 +32,72 @@ export class NativeChartRenderer {
     static init() {
         const strategies = getAllStrategies();
         strategies.forEach((strategy) => this.register(strategy));
-        errorHandler.info(ERROR_CODE.CHART_STRATEGY_REGISTERED, `Initialized with ${this.#registry.size} chart strategies`);
     }
 
     static setLogLevel(level) {
         errorHandler.configure({ level });
     }
 
+    /**
+     * 使用指定的像素比渲染图表（用于高清导出）
+     *
+     * 与 render() 不同，此方法直接接收 pixelRatio 参数，
+     * 而不是通过 Canvas 尺寸计算，确保在高分辨率 Canvas 上正确渲染。
+     *
+     * @static
+     * @param {CanvasRenderingContext2D} ctx - Canvas 2D 渲染上下文
+     * @param {import("../../model/chart/ChartModel.js").ChartModel} chart - 图表模型
+     * @param {Object} data - 图表数据对象
+     * @param {Object} plotArea - 绘制区域坐标（已按 pixelRatio 放大）
+     * @param {Object} style - 样式配置
+     * @param {number} pixelRatio - 像素比（如 2、3、4）
+     */
+    static renderWithPixelRatio(ctx, chart, data, plotArea, style, pixelRatio) {
+        ctx.save();
+
+        let yScale = null;
+        const strategy = this.get(chart.type);
+
+        if (strategy) {
+            strategy.setPixelRatio(pixelRatio);
+        }
+
+        try {
+            if (strategy && !strategy.isAxisFree()) {
+                if (style.showGrid !== false) {
+                    this.renderGridWithPixelRatio(ctx, plotArea, pixelRatio);
+                }
+
+                yScale = this.buildYScale(data, chart.type);
+                this.renderAxes(ctx, data, plotArea, yScale, style, pixelRatio);
+            }
+
+            if (strategy) {
+                strategy.render(ctx, data, plotArea, style, yScale);
+            } else {
+                errorHandler.warn(ERROR_CODE.CHART_TYPE_NOT_FOUND, `No strategy found for chart type: ${chart.type}`);
+            }
+
+            if (style.title) {
+                this.renderTitle(ctx, style.title, plotArea, pixelRatio);
+            }
+
+            if (style.showLegend !== false) {
+                this.renderLegend(ctx, data, plotArea, style, pixelRatio);
+            }
+        } finally {
+            if (strategy) {
+                strategy.clearPixelRatio();
+            }
+        }
+
+        ctx.restore();
+    }
+
     static render(ctx, chart, data, plotArea, style) {
         ctx.save();
+
+        const pixelRatio = ctx.canvas.width / (plotArea.x + plotArea.w + 56);
 
         let yScale = null;
         const strategy = this.get(chart.type);
@@ -51,7 +108,7 @@ export class NativeChartRenderer {
             }
 
             yScale = this.buildYScale(data, chart.type);
-            this.renderAxes(ctx, data, plotArea, yScale);
+            this.renderAxes(ctx, data, plotArea, yScale, style, pixelRatio);
         }
 
         if (strategy) {
@@ -61,11 +118,11 @@ export class NativeChartRenderer {
         }
 
         if (style.title) {
-            this.renderTitle(ctx, style.title, plotArea);
+            this.renderTitle(ctx, style.title, plotArea, pixelRatio);
         }
 
         if (style.showLegend !== false) {
-            this.renderLegend(ctx, data, plotArea, style);
+            this.renderLegend(ctx, data, plotArea, style, pixelRatio);
         }
 
         ctx.restore();
@@ -133,9 +190,24 @@ export class NativeChartRenderer {
     }
 
     static renderGrid(ctx, area) {
+        const pixelRatio = ctx.canvas.width / (area.x + area.w + 56);
+
+        this.renderGridWithPixelRatio(ctx, area, pixelRatio);
+    }
+
+    /**
+     * 使用指定像素比渲染网格线
+     *
+     * @private
+     * @static
+     * @param {CanvasRenderingContext2D} ctx - Canvas 渲染上下文
+     * @param {Object} area - 绘制区域
+     * @param {number} pixelRatio - 像素比
+     */
+    static renderGridWithPixelRatio(ctx, area, pixelRatio) {
         ctx.save();
         ctx.strokeStyle = CONFIG.CHART_GRID_COLOR;
-        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH;
+        ctx.lineWidth = CONFIG.CHART_GRID_LINE_WIDTH * pixelRatio;
 
         const yTicks = 5;
         const stepY = area.h / yTicks;
@@ -150,10 +222,10 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
-    static renderAxes(ctx, data, area, yScale) {
+    static renderAxes(ctx, data, area, yScale, style, pixelRatio = 1) {
         ctx.save();
         ctx.strokeStyle = CONFIG.CHART_AXIS_COLOR;
-        ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH;
+        ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH * pixelRatio;
 
         ctx.beginPath();
         ctx.moveTo(area.x, area.y);
@@ -163,13 +235,13 @@ export class NativeChartRenderer {
 
         const categories = data.data.map((row) => String(row[0]));
         ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-        ctx.font = `${CONFIG.CHART_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.font = `${CONFIG.CHART_FONT_SIZE * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
 
         const step = area.w / categories.length;
         for (let i = 0; i < categories.length; i++) {
-            ctx.fillText(String(categories[i]), area.x + step * i + step / 2, area.y + area.h + 6);
+            ctx.fillText(String(categories[i]), area.x + step * i + step / 2, area.y + area.h + 6 * pixelRatio);
         }
 
         const yTicks = yScale.ticks;
@@ -178,40 +250,55 @@ export class NativeChartRenderer {
 
         for (const val of yTicks) {
             const y = area.y + area.h - ((val - yScale.min) / (yScale.max - yScale.min)) * area.h;
-            ctx.fillText(this.formatNumber(val), area.x - 6, y);
+            ctx.fillText(this.formatNumber(val), area.x - 6 * pixelRatio, y);
+        }
+
+        if (style?.xAxisLabel) {
+            ctx.textAlign = "end";
+            ctx.textBaseline = "top";
+            ctx.fillText(style.xAxisLabel, area.x + area.w, area.y + area.h + 22 * pixelRatio);
+        }
+
+        if (style?.yAxisLabel) {
+            ctx.save();
+            ctx.textAlign = "left";
+            ctx.textBaseline = "bottom";
+            ctx.font = `${CONFIG.CHART_FONT_SIZE * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
+            ctx.fillText(style.yAxisLabel, area.x + 8 * pixelRatio, area.y - 6 * pixelRatio);
+            ctx.restore();
         }
 
         ctx.restore();
     }
 
-    static renderTitle(ctx, title, area) {
+    static renderTitle(ctx, title, area, pixelRatio = 1) {
         ctx.save();
         ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
-        ctx.font = `bold ${CONFIG.CHART_TITLE_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.font = `bold ${CONFIG.CHART_TITLE_FONT_SIZE * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillText(title, area.x + area.w / 2, 10);
+        ctx.fillText(title, area.x + area.w / 2, 10 * pixelRatio);
         ctx.restore();
     }
 
-    static renderLegend(ctx, data, area, style) {
+    static renderLegend(ctx, data, area, style, pixelRatio = 1) {
         const seriesNames = data.headers.slice(1);
         ctx.save();
-        ctx.font = `${CONFIG.CHART_LEGEND_FONT_SIZE}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.font = `${CONFIG.CHART_LEGEND_FONT_SIZE * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
 
-        const itemWidth = CONFIG.CHART_LEGEND_ITEM_WIDTH;
+        const itemWidth = CONFIG.CHART_LEGEND_ITEM_WIDTH * pixelRatio;
         const totalWidth = seriesNames.length * itemWidth;
         let startX = area.x + (area.w - totalWidth) / 2;
-        const y = area.y + area.h + CONFIG.CHART_LEGEND_OFFSET_Y;
+        const y = area.y + area.h + CONFIG.CHART_LEGEND_OFFSET_Y * pixelRatio;
 
         for (let i = 0; i < seriesNames.length; i++) {
             ctx.fillStyle = style.colors[i % style.colors.length];
-            ctx.fillRect(startX, y - 5, CONFIG.CHART_LEGEND_ITEM_SIZE, CONFIG.CHART_LEGEND_ITEM_SIZE);
+            ctx.fillRect(startX, y - 5 * pixelRatio, CONFIG.CHART_LEGEND_ITEM_SIZE * pixelRatio, CONFIG.CHART_LEGEND_ITEM_SIZE * pixelRatio);
 
             ctx.fillStyle = CONFIG.CHART_TEXT_COLOR;
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
-            ctx.fillText(String(seriesNames[i]), startX + 16, y + 1);
+            ctx.fillText(String(seriesNames[i]), startX + 16 * pixelRatio, y + 1);
 
             startX += itemWidth;
         }

@@ -88,6 +88,14 @@ export const SHEET_EVENTS = Object.freeze({
     /** 数据加载完成 - 外部数据源导入或初始化完成 */
     DATA_LOADED: "sheet:data-loaded",
 
+    /*
+     * ==================== 数据清空事件 ====================
+     * 支持全表或范围数据清除的生命周期
+     */
+
+    /** 数据已清空 - 清除操作完成后通知（用于公式更新、缓存失效等） */
+    DATA_CLEARED: "sheet:data-cleared",
+
     /** 行列尺寸调整 - 用户拖拽改变了行高或列宽 */
     ROW_COL_RESIZE: "sheet:row-col-resize",
 
@@ -238,6 +246,15 @@ export const EVENT_FLOW_REGISTRY = Object.freeze({
         emitters: [],
         listeners: [],
     },
+
+    /*
+     * ==================== 数据清空事件流向 ====================
+     */
+    [SHEET_EVENTS.DATA_CLEARED]: {
+        emitters: ["Sheet"],
+        listeners: ["Workbook"],
+    },
+
     [SHEET_EVENTS.ROW_COL_RESIZE]: {
         emitters: ["Sheet"],
         listeners: ["Workbook"],

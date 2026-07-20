@@ -21,6 +21,10 @@ import { UI_CONFIG } from "./uiConfig.js";
 import { CHART_CONFIG } from "./chartConfig.js";
 import { SORT_CONFIG } from "./sortConfig.js";
 import { CELL_TYPE_CONFIG } from "./cellTypeConfig.js";
+import { STYLE_LEVEL } from "@/constants/styleLevel";
+import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
+import { HIT_TYPE } from "@/constants/hitType";
+import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
 
 export const CONFIG = Object.freeze({
     ...CORE_CONFIG,
@@ -30,4 +34,8 @@ export const CONFIG = Object.freeze({
     ...CHART_CONFIG,
     ...SORT_CONFIG,
     ...CELL_TYPE_CONFIG,
+    ...STYLE_LEVEL,
+    ...LAYER_Z_INDEX,
+    ...HIT_TYPE,
+    ...STRATEGY_PRIORITY,
 });

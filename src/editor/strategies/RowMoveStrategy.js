@@ -1,7 +1,8 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { HOOKS } from "../../constants/hookNames.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /** 拖拽启动阈值（像素），鼠标移动超过此距离才视为拖拽开始 */
 const DRAG_THRESHOLD = 3;
@@ -19,7 +20,7 @@ const DRAG_THRESHOLD = 3;
  */
 export class RowMoveStrategy extends EventStrategy {
     /** 优先级低于列移动（80），避免同时拖列和行时冲突 */
-    priority = 79;
+    priority = STRATEGY_PRIORITY.ROW_COLUMN_MOVE;
 
     /** 是否处于 mousedown 状态（尚未超过拖拽阈值） */
     #moving = false;

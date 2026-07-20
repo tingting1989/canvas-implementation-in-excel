@@ -1,9 +1,91 @@
-﻿import { CHART_TYPE } from "@/constants/enums/ChartType";
+﻿/**
+ * @fileoverview 图表数据模型
+ * @description 定义图表的所有属性和默认值，包括位置、尺寸、样式等。
+ *              每个图表实例对应一个 ChartModel 对象。
+ *
+ * @author Canvas-Sheet Team
+ * @version 2.0.0
+ * @since 2024-01-15
+ * @license Apache-2.0
+ *
+ * @module model/chart/ChartModel
+ * @see {@link ChartPlugin} 图表插件（创建和管理图表）
+ * @see {@link ChartManager} 图表管理器（增删改查）
+ *
+ * @typedef {Object} ChartModelOptions
+ * @property {string} [id] - 图表唯一标识（默认自动生成 UUID）
+ * @property {string} [type="bar"] - 图表类型标识符（CHART_TYPE 常量）
+ * @property {number} [anchorRow=0] - 锚定行号
+ * @property {number} [anchorCol=0] - 锚定列号
+ * @property {number} [offsetX=0] - X像素偏移
+ * @property {number} [offsetY=0] - Y像素偏移
+ * @property {number} [width=400] - 图表宽度(px)
+ * @property {number} [height=300] - 图表高度(px)
+ * @property {DataRange|null} [dataRange=null] - 数据范围
+ * @property {ChartStyle} [style] - 样式配置
+ */
+
+import { CHART_TYPE } from "@/constants/enums/ChartType";
 
 export { CHART_TYPE };
 
+/** 默认系列颜色数组（9色） */
 const DEFAULT_COLORS = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];
 
+/**
+ * 图表数据模型类
+ *
+ * @class ChartModel
+ * @description 存储图表的所有配置信息，包括：
+ *
+ * **位置属性：**
+ * | 属性 | 类型 | 默认值 | 说明 |
+ * |------|------|--------|------|
+ * | anchorRow | number | 0 | 锚定行号（图表左上角绑定的单元格行） |
+ * | anchorCol | number | 0 | 锚定列号（图表左上角绑定的单元格列） |
+ * | offsetX | number | 0 | 相对锚单元格的 X 像素偏移 |
+ * | offsetY | number | 0 | 相对锚单元格的 Y 像素偏移 |
+ *
+ * **尺寸属性：**
+ * | 属性 | 类型 | 默认值 | 说明 |
+ * |------|------|--------|------|
+ * | width | number | 400 | 图表宽度(px) |
+ * | height | number | 300 | 图表高度(px) |
+ *
+ * **样式属性（style 对象）：**
+ * | 属性 | 类型 | 默认值 | 说明 |
+ * |------|------|--------|------|
+ * | title | string | "" | 图表标题 |
+ * | showLegend | boolean | true | 是否显示图例 |
+ * | showGrid | boolean | true | 是否显示网格线 |
+ * | showTooltip | boolean | true | 是否显示悬停提示 |
+ * | colors | string[] | DEFAULT_COLORS | 系列颜色数组 |
+ * | ignoreHiddenData | boolean | false | 是否跳过隐藏行列 |
+ * | fill | boolean | - | 是否填充区域 |
+ * | smooth | boolean | - | 是否平滑曲线 |
+ * | xAxisLabel | string | - | X轴标签 |
+ * | yAxisLabel | string | - | Y轴标签 |
+ * | min | number | - | 最小值（仪表盘） |
+ * | max | number | - | 最大值（仪表盘） |
+ * | indicators | Array | - | 维度配置（雷达图） |
+ *
+ * @example
+ * const chart = new ChartModel({
+ *     type: "line",
+ *     dataRange: { startRow: 0, startCol: 0, endRow: 12, endCol: 3 },
+ *     anchorRow: 8,
+ *     anchorCol: 1,
+ *     width: 450,
+ *     height: 300,
+ *     style: {
+ *         title: "销售趋势",
+ *         showLegend: true,
+ *         colors: ['#4472C4', '#ED7D31'],
+ *         fill: false,
+ *         smooth: true
+ *     }
+ * });
+ */
 export class ChartModel {
     constructor(options = {}) {
         this.id = options.id || crypto.randomUUID();

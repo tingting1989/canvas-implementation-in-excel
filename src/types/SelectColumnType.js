@@ -6,11 +6,16 @@ import { SORT_ORDER } from "../constants/enums/SortOrder.js";
  *
  * 支持：
  * - 从预定义列表中选择值
+ * - 支持两种 source 格式：
+ *   1. 简单数组：['选项A', '选项B', '选项C']
+ *   2. 对象数组：[{value: '0', label: '好'}, {value: '1', label: '中'}]
  * - 可配置是否允许输入自定义值
  * - 验证值是否在允许的列表中
  *
  * 配置选项：
- *   source: string[] — 可选值列表（必需）
+ *   source: string[] | Object[] — 可选值列表（必需）
+ *     - 简单格式：['A', 'B', 'C']
+ *     - 对象格式：[{value: 'val1', label: '显示文本'}, ...]
  *   allowInvalid: boolean — 是否允许不在列表中的值（默认 false）
  *   strict: boolean — 严格模式，仅允许选择不能手动输入（默认 false）
  */
@@ -27,24 +32,66 @@ export class SelectColumnType extends BaseColumnType {
         return this.options?.source || [];
     }
 
+    /**
+     * 判断 source 是否为对象数组格式
+     * @returns {boolean}
+     */
+    #isObjectArraySource() {
+        const source = this.source;
+        return Array.isArray(source) && source.length > 0 && typeof source[0] === "object" && source[0] !== null && "value" in source[0];
+    }
+
+    /**
+     * 根据 value 获取显示的 label
+     * @param {*} value - 存储的值
+     * @returns {string} 显示的文本
+     */
+    #getLabelByValue(value) {
+        if (value === undefined || value === null || value === "") return "";
+
+        const source = this.source;
+
+        if (!Array.isArray(source) || source.length === 0) {
+            return String(value);
+        }
+
+        if (this.#isObjectArraySource()) {
+            const item = source.find((item) => item.value === value || String(item.value) === String(value));
+            return item ? (item.label ?? item.value ?? "") : String(value);
+        }
+
+        return String(value);
+    }
+
+    /**
+     * 获取所有有效的 values（用于验证）
+     * @returns {*[]}
+     */
+    #getValidValues() {
+        const source = this.source;
+        if (!Array.isArray(source)) return [];
+
+        if (this.#isObjectArraySource()) {
+            return source.map((item) => item.value).filter((v) => v !== undefined && v !== null);
+        }
+
+        return [...source];
+    }
+
     format(value) {
         if (value === undefined || value === null) return "";
-        return String(value);
+
+        return this.#getLabelByValue(value);
     }
 
     validate(value) {
         if (value === "" || value === undefined || value === null) return true;
 
-        const source = this.options?.source;
-        if (!Array.isArray(source) || source.length === 0) return true;
+        const validValues = this.#getValidValues();
+        if (validValues.length === 0) return true;
 
-        // 严格匹配
-        const exactMatch = source.some((item) => item === value);
-
-        // 宽松匹配（类型转换后比较）
-        const looseMatch = !exactMatch && source.some((item) => String(item) === String(value));
-
-        const found = exactMatch || looseMatch;
+        const strValue = String(value);
+        const found = validValues.some((v) => v === value || String(v) === strValue);
 
         if (!found && !this.options?.allowInvalid) {
             return false;
@@ -56,16 +103,24 @@ export class SelectColumnType extends BaseColumnType {
     parse(input) {
         if (input === "" || input === undefined || input === null) return "";
 
-        const source = this.options?.source;
+        const source = this.source;
         if (!Array.isArray(source) || source.length === 0) return String(input);
 
         const strInput = String(input).trim();
 
-        // 尝试严格匹配（保留类型）
-        const exactMatch = source.find((item) => item === input || String(item) === strInput);
-        if (exactMatch !== undefined) return exactMatch;
+        if (this.#isObjectArraySource()) {
+            const item = source.find(
+                (item) => item.value === input || item.value === strInput || String(item.value) === strInput || item.label === strInput,
+            );
 
-        // 如果不允许无效值，返回空字符串
+            if (item) {
+                return item.value;
+            }
+        } else {
+            const exactMatch = source.find((item) => item === input || String(item) === strInput);
+            if (exactMatch !== undefined) return exactMatch;
+        }
+
         if (!this.options?.allowInvalid) {
             return "";
         }
@@ -83,10 +138,23 @@ export class SelectColumnType extends BaseColumnType {
 
     compare(a, b, order = "asc") {
         const source = this.options?.source || [];
+
+        if (this.#isObjectArraySource()) {
+            const getValueIndex = (val) => {
+                if (val === undefined || val === null) return Infinity;
+                return source.findIndex((item) => item.value === val || String(item.value) === String(val));
+            };
+
+            const ia = getValueIndex(a);
+            const ib = getValueIndex(b);
+            const va = ia >= 0 ? ia : Infinity;
+            const vb = ib >= 0 ? ib : Infinity;
+            return order === SORT_ORDER.ASC ? va - vb : vb - va;
+        }
+
         const sa = String(a ?? "");
         const sb = String(b ?? "");
 
-        // 如果提供了 source，按 source 中的顺序排序
         if (source.length > 0) {
             const ia = source.findIndex((item) => String(item) === sa);
             const ib = source.findIndex((item) => String(item) === sb);

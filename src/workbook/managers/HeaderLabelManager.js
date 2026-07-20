@@ -1,5 +1,5 @@
 import { CONFIG } from "@/constants/config";
-import { isFunction, isObject, isString } from "@/utils/utils";
+import { isFunction, isObject, isString } from "@/utils/helper";
 import { indexToCol } from "@/utils/cellRef";
 
 /**

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⭐ 星级评分组件 - 使用 InteractionPlugin 插件</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fafafa;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select,
+        input[type="color"] {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .log-success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .log-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .log-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment {
+            color: #5c6370;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-function {
+            color: #61afef;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⭐ 星级评分组件 - InteractionPlugin 版本</h1>
+
+    <!-- 功能介绍 -->
+    <div class="demo-section">
+        <h2 class="section-title">🎯 使用 InteractionPlugin 插件的优势</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>✨ 极简代码</h3>
+                <p>从 <strong>200+ 行事件处理代码</strong> 简化为 <strong>3 行配置</strong></p>
+            </div>
+            <div class="feature-card">
+                <h3>🔌 自动管理</h3>
+                <p>自动注册 mousemove/click/mouseleave 事件并智能分发</p>
+            </div>
+            <div class="feature-card">
+                <h3>🚀 性能优化</h3>
+                <p>内置节流控制、批量重绘、避免不必要的渲染调用</p>
+            </div>
+            <div class="feature-card">
+                <h3>🛡️ 错误处理</h3>
+                <p>统一的异常捕获和日志记录，不会因为单个单元格错误导致崩溃</p>
+            </div>
+            <div class="feature-card">
+                <h3>📦 可插拔</h3>
+                <p>随时启用/禁用/销毁插件，不影响核心功能</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔍 调试友好</h3>
+                <p>可选的调试模式，详细输出交互过程日志</p>
+            </div>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+            <span class="code-comment">// ✨ 使用 InteractionPlugin 前后对比</span>
+
+            <span class="code-comment">// ❌ 传统方式：手动编写 200+ 行事件处理代码（见 star-rating-demo-umd.html）</span>
+            canvas.addEventListener('mousemove', (event) => {
+            const hitInfo = workbook.renderEngine.hitTest(event.clientX, event.clientY);
+            if (hitInfo?.type === 'cell') {
+            const cellType = sheet.getCellTypeInstance(hitInfo.row, hitInfo.col);
+            if (cellType?.name === 'starRating') {
+            const context = createSimpleRenderContext(sheet, hitInfo.row, hitInfo.col);
+            const needsRedraw = cellType.handleHover(context, event);
+            if (needsRedraw) workbook.render();
+            }
+            }
+            });
+            <span class="code-comment">// ... 还需要处理 click、mouseleave、边界情况等 ...</span>
+
+            <span class="code-comment">// ✅ 使用 InteractionPlugin：只需 3 行！</span>
+            <span class="code-keyword">import</span> { InteractionPlugin } <span class="code-keyword">from</span> <span
+            class="code-string">'@/plugins/InteractionPlugin.js'</span>;
+            workbook.<span class="code-function">loadPluginClass</span>(InteractionPlugin, { debugMode: <span
+            class="code-keyword">true</span> });
+            sheet.<span class="code-function">setColumnType</span>(<span class="code-keyword">2</span>, <span
+            class="code-keyword">new</span> StarRatingType({ maxStars: <span class="code-keyword">5</span> }));
+            <span class="code-comment">// 完事！自动拥有完整的鼠标交互功能 🎉</span>
+        </div>
+    </div>
+
+    <!-- Canvas 展示区域 -->
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 星级评分表格展示</h2>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="targetColumn">📍 目标列 (0-based)</label>
+                <input type="number" id="targetColumn" value="2" min="0" max="10">
+            </div>
+
+            <div class="control-group">
+                <label for="filledColor">⭐ 填充颜色</label>
+                <input type="color" id="filledColor" value="#FFD700">
+            </div>
+
+            <div class="control-group">
+                <label for="emptyColor">🌑 空星颜色</label>
+                <input type="color" id="emptyColor" value="#CCCCCC">
+            </div>
+
+            <div class="control-group">
+                <label for="maxStars">🌟 最大星数</label>
+                <select id="maxStars">
+                    <option value="3">3 颗星</option>
+                    <option value="5" selected>5 颗星</option>
+                    <option value="7">7 颗星</option>
+                    <option value="10">10 颗星</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-primary" onclick="applyStarRatingConfig()">
+                    ⚙️ 应用配置
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-success" onclick="testInteraction()">
+                    🧪 测试交互
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-warning" onclick="toggleDebugMode()">
+                    🔍 切换调试模式
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-info" onclick="showPluginStatus()">
+                    📊 插件状态
+                </button>
+            </div>
+        </div>
+
+        <!-- 日志输出 -->
+        <div class="control-group" style="margin-top: 20px;">
+            <label>📝 操作日志</label>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #667eea; margin: 16px 0 8px;">基本操作</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>鼠标悬停</strong>：移入星级评分列的星星上 → 实时预览将要设置的评分值</li>
+                <li><strong>点击星星</strong>：直接点击某颗星 → 设置对应的整数值评分</li>
+                <li><strong>移动鼠标</strong>：在不同星星间移动 → 高亮预览实时跟随</li>
+                <li><strong>移出单元格</strong>：离开星星区域 → 恢复显示实际评分值</li>
+            </ul>
+
+            <h3 style="color: #667eea; margin: 16px 0 8px;">高级功能</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>动态颜色切换</strong>：通过颜色选择器自定义填充色和空星颜色</li>
+                <li><strong>可配置星数</strong>：支持 3/5/7/10 颗星的评分系统</li>
+                <li><strong>多列支持</strong>：可为不同列设置独立的星级评分渲染器</li>
+                <li><strong>调试模式</strong>：开启后可在控制台查看详细的交互日志</li>
+            </ul>
+
+            <h3 style="color: #667eea; margin: 16px 0 8px;">技术特性</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>像素对齐</strong>：所有绘制坐标和尺寸取整，避免亚像素模糊</li>
+                <li><strong>静态状态管理</strong>：使用静态 Map 跨实例共享悬停状态</li>
+                <li><strong>性能节流</strong>：可配置的重绘频率限制（默认 ~60fps）</li>
+                <li><strong>错误隔离</strong>：单个单元格的交互错误不会影响其他单元格</li>
+                <li><strong>自动清理</strong>：插件销毁时自动移除所有事件监听器和状态</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+    let interactionPlugin = null;
+    let debugMode = false;
+
+    function log(message, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        container.insertBefore(entry, container.firstChild);
+
+        if (container.children.length > 50) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1100,
+                height: 650,
+
+                sheets: [{
+                    name: "星级评分演示",
+
+                    data: [
+                        ["产品名称", "类别", "用户评分", "专家评分", "综合评价", "推荐指数", "满意度", "性价比"],
+                        ["产品A", "电子产品", 5, 5, 5, 5, 5, 5],
+                        ["产品B", "家居用品", 4, 4, 4, 4, 4, 4],
+                        ["产品C", "服装配饰", 3, 3, 3, 3, 3, 3],
+                        ["产品D", "食品饮料", 5, 4, 5, 4, 5, 4],
+                        ["产品E", "图书文具", 4, 5, 4, 5, 4, 5],
+                        ["产品F", "运动户外", 3, 4, 3, 4, 3, 4],
+                        ["产品G", "美妆护肤", 5, 5, 5, 5, 5, 5],
+                        ["产品H", "汽车配件", 4, 3, 4, 3, 4, 3],
+                        ["产品I", "数码配件", 5, 5, 5, 5, 5, 5],
+                        ["产品J", "母婴用品", 4, 4, 4, 4, 4, 4],
+                        ["产品K", "宠物用品", 3, 3, 3, 3, 3, 3],
+                        ["产品L", "办公设备", 5, 4, 5, 4, 5, 4]
+                    ],
+
+                    columns: [
+                        {type: "text", width: 120},
+                        {type: "text", width: 100},
+                        // 用户评分
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 3, color: "#FFD700", emptyColor: "#CCCCCC"}
+                        },
+                        // 专家评分
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0"}
+                        },
+                        // 综合评价
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#4ECDC4", emptyColor: "#D0D0D0"}
+                        },
+                        // 推荐指数
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#9B59B6", emptyColor: "#C0C0C0"}
+                        },
+                        // 满意度
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#F39C12", emptyColor: "#E8E8E8"}
+                        },
+                        // 性价比
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#2ECC71", emptyColor: "#D5D5D5"}
+                        }
+                    ],
+
+                    cell: [
+                        // 表头样式
+                        {
+                            row: 0,
+                            col: 0,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            row: 0,
+                            col: 1,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            row: 0,
+                            col: 2,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            row: 0,
+                            col: 3,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            row: 0,
+                            col: 4,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            row: 0,
+                            col: 5,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            row: 0,
+                            col: 6,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        },
+                        {
+                            row: 0,
+                            col: 7,
+                            type: "text",
+                            style: {backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center"}
+                        }
+                    ],
+
+                    rowHeights: [40, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45],
+                    textOverflowEllipsis: false,
+                    cellPadding: 10
+                }]
+            });
+
+            log('✅ Workbook 创建成功', 'info');
+
+            // 初始化渲染引擎
+            workbook.initRender();
+
+            const sheet = workbook.getActiveSheet();
+
+            if (!sheet) {
+                throw new Error('无法获取活动工作表');
+            }
+
+            log(`✅ 获取到活动工作表: ${sheet.name}`, 'success');
+
+            // ✅ 加载 InteractionPlugin 插件
+            log('🔌 加载 InteractionPlugin 插件...', 'info');
+
+            interactionPlugin = workbook.loadPluginClass(CanvasSheet.InteractionPlugin, {
+                debugMode: false,
+                throttleMs: 16,
+                autoRender: true
+            });
+
+            log(`✅ 插件加载成功: ${interactionPlugin.PLUGIN_NAME}`, 'success');
+            log('💡 现在可以直接使用鼠标交互了！无需手动注册事件监听器', 'info');
+
+            // 渲染表格
+            workbook.render();
+
+            log('🎉 初始化完成！尝试在星级评分列中移动鼠标或点击星星', 'success');
+            log('', 'info');
+            log('📋 功能说明：', 'info');
+            log('   🖱️ 鼠标悬停 → 实时预览评分', 'info');
+            log('   👆 点击星星 → 设置评分值', 'info');
+            log('   🚪 移出单元格 → 恢复实际值', 'info');
+            log('', 'info');
+
+        } catch (error) {
+            console.error('初始化失败:', error);
+            log(`❌ 初始化失败: ${error.message}`, 'error');
+        }
+    }
+
+    function applyStarRatingConfig() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        try {
+            const targetCol = parseInt(document.getElementById('targetColumn').value);
+            const filledColor = document.getElementById('filledColor').value;
+            const emptyColor = document.getElementById('emptyColor').value;
+            const maxStars = parseInt(document.getElementById('maxStars').value);
+
+            const sheet = workbook.getActiveSheet();
+
+            // ✅ 更新列配置中的 options
+            if (sheet.columns && sheet.columns[targetCol]) {
+                const colConfig = sheet.columns[targetCol];
+
+                if (!colConfig.options) {
+                    colConfig.options = {};
+                }
+                workbook.applyColumnsConfig({
+                    columns: [{type: "text", width: 120},
+                        {type: "text", width: 100},
+                        // 用户评分
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 3, color: "#FFD700", emptyColor: "#CCCCCC"}
+                        },
+                        // 专家评分
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0"}
+                        },
+                        // 综合评价
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#4ECDC4", emptyColor: "#D0D0D0"}
+                        },
+                        // 推荐指数
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#9B59B6", emptyColor: "#C0C0C0"}
+                        },
+                        // 满意度
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#F39C12", emptyColor: "#E8E8E8"}
+                        },
+                        // 性价比
+                        {
+                            type: "starRating",
+                            width: 180,
+                            options: {maxStars: 5, color: "#2ECC71", emptyColor: "#D5D5D5"}
+                        }]
+                })
+                // 更新配置
+                colConfig.options.color = filledColor;
+                colConfig.options.emptyColor = emptyColor;
+                colConfig.options.maxStars = maxStars;
+
+                log(`✅ 已应用配置到第 ${targetCol + 1} 列`, 'success');
+                log(`   - 填充颜色: ${filledColor}`, 'info');
+                log(`   - 空星颜色: ${emptyColor}`, 'info');
+                log(`   - 最大星数: ${maxStars}`, 'info');
+
+                // 重新渲染
+                workbook.render();
+            } else {
+                log(`⚠️ 第 ${targetCol + 1} 列不存在或未配置`, 'warning');
+            }
+
+        } catch (error) {
+            log(`❌ 配置失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function testInteraction() {
+        if (!workbook || !interactionPlugin) {
+            log('❌ 插件未加载', 'error');
+            return;
+        }
+
+        log('🧪 开始测试交互功能...', 'info');
+        log('   1️⃣ 将鼠标移入星级评分列的任意单元格', 'info');
+        log('   2️⃣ 观察星星是否高亮显示', 'info');
+        log('   3️⃣ 在不同星星间移动鼠标', 'info');
+        log('   4️⃣ 点击某颗星星设置评分', 'info');
+        log('   5️⃣ 移出单元格观察高亮消失', 'info');
+        log('💡 所有这些操作都由 InteractionPlugin 自动处理！', 'success');
+
+        interactionPlugin.clearHoverAndRender();
+    }
+
+    function toggleDebugMode() {
+        if (!interactionPlugin) return;
+
+        debugMode = !debugMode;
+
+        if (debugMode) {
+            log('🔍 调试模式已开启 - 查看浏览器控制台获取详细信息', 'warning');
+            console.log('[InteractionPlugin] 🎯 调试模式已开启');
+            console.log('[InteractionPlugin] 当前状态:', {
+                lastHoveredCell: interactionPlugin.lastHoveredCell,
+                enabled: interactionPlugin.enabled,
+                initialized: interactionPlugin.initialized
+            });
+        } else {
+            log('🔍 调试模式已关闭', 'info');
+        }
+    }
+
+    function showPluginStatus() {
+        if (!interactionPlugin) {
+            log('❌ 插件未加载', 'error');
+            return;
+        }
+
+        log('📊 InteractionPlugin 当前状态:', 'info');
+        log(`   - 插件名称: ${interactionPlugin.PLUGIN_NAME}`, 'info');
+        log(`   - 是否已初始化: ${interactionPlugin.initialized}`, 'info');
+        log(`   - 是否已启用: ${interactionPlugin.enabled}`, 'info');
+        log(`   - 当前悬停位置: ${interactionPlugin.lastHoveredCell || '无'}`, 'info');
+        log(`   - 调试模式: ${debugMode ? '开启' : '关闭'}`, 'info');
+
+        console.table({
+            '插件名称': interactionPlugin.PLUGIN_NAME,
+            '初始化': interactionPlugin.initialized,
+            '启用': interactionPlugin.enabled,
+            '悬停位置': interactionPlugin.lastHoveredCell || '-',
+            '调试模式': debugMode
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', initWorkbook);
+</script>
+</body>
+</html>

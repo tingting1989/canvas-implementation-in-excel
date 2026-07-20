@@ -1,7 +1,9 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { CONFIG } from "../../constants/config";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { isFunction } from "../../utils/helper.js";
 
 /**
  * 键盘交互策略
@@ -20,9 +22,31 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
  * 注意：Ctrl+C/V/X（复制/粘贴/剪切）已移至 CopyPasteStrategy，由 CopyPastePlugin 管理。
  */
 export class KeyboardStrategy extends EventStrategy {
+    /**
+     * 策略优先级
+     * 使用语义化常量：KEYBOARD_BASE = 100（基础键盘输入）
+     * @type {number}
+     */
+    priority = STRATEGY_PRIORITY.KEYBOARD_BASE;
+
     constructor(handler) {
         super(handler);
+
+        // ✅ 性能优化：缓存上次检查结果
+        // 避免在快速连续输入时重复DOM查询（如按住键盘不放，每秒30-60次触发）
+        this.#lastCheckedElement = null;
+        this.#lastCheckResult = false;
     }
+
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    // 私有属性：焦点检查缓存
+    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+    /** @type {HTMLElement|null} 上次检查的焦点元素 */
+    #lastCheckedElement = null;
+
+    /** @type {boolean} 上次检查的结果 */
+    #lastCheckResult = false;
 
     init() {}
 
@@ -44,6 +68,13 @@ export class KeyboardStrategy extends EventStrategy {
         const { sheet, editor } = this.handler;
         if (!sheet || !editor) return;
 
+        // ✅ 关键修复：检查当前焦点是否在非Canvas的输入元素上
+        // 如果焦点在 input、textarea、select 或 contenteditable 元素上，
+        // 则不处理键盘事件，让浏览器默认行为生效
+        if (this.#isFocusOnExternalInput()) {
+            return; // 让input/textarea正常接收输入
+        }
+
         const activeEditor = editor.getActiveEditor();
         if (activeEditor && activeEditor.editor && activeEditor.editor.style.display === "block") {
             this.#handleEditingKey(e);
@@ -53,16 +84,206 @@ export class KeyboardStrategy extends EventStrategy {
         this.#handleNavigationKey(e);
     }
 
+    /**
+     * 检查当前焦点是否在外部输入元素上（非Canvas编辑器）
+     *
+     * ✅ 解决致命Bug：防止键盘事件被全局劫持，
+     * 导致页面上的input/textarea无法正常输入。
+     *
+     * 🎯 全面性保障：
+     * - 覆盖所有HTML5原生输入元素
+     * - 支持ARIA无障碍角色
+     * - 识别Shadow DOM中的输入框
+     * - 正确识别Canvas编辑器（.cs-cell-editor）
+     * - 过滤禁用/只读/隐藏的无效输入框
+     * - 性能优化：缓存机制 + 快速路径
+     *
+     * @returns {boolean} true=焦点在外部输入元素上，false=焦点在Canvas或其他区域
+     */
+    #isFocusOnExternalInput() {
+        const activeElement = document.activeElement;
+
+        if (!activeElement) return false;
+
+        // ✅ 快速路径1：检查是否是body/html本身（非输入元素）
+        if (activeElement.tagName === "BODY" || activeElement.tagName === "HTML") {
+            return false;
+        }
+
+        // ✅ 快速路径2：缓存检查（避免重复DOM查询）
+        if (this.#lastCheckedElement === activeElement) {
+            return this.#lastCheckResult;
+        }
+
+        let result = this.#performFullCheck(activeElement);
+
+        // 缓存结果（下次同一元素直接返回）
+        this.#lastCheckedElement = activeElement;
+        this.#lastCheckResult = result;
+
+        return result;
+    }
+
+    /**
+     * 执行完整的焦点元素检查（核心逻辑）
+     */
+    #performFullCheck(activeElement) {
+        const tagName = activeElement.tagName.toLowerCase();
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 1️⃣ 第一层：快速排除非输入元素
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        // 常见的文本输入元素白名单
+        const INPUT_ELEMENTS = new Set([
+            "input",
+            "textarea",
+            "select",
+            // 可能的扩展元素
+            "button", // 按钮也可能需要键盘响应
+        ]);
+
+        if (!INPUT_ELEMENTS.has(tagName)) {
+            // 非标准输入元素，检查 contenteditable 和 ARIA 角色
+            const isContentEditable = activeElement.isContentEditable || activeElement.getAttribute("contenteditable") === "true";
+
+            const hasAriaInputRole = this.#hasAriaInputRole(activeElement);
+
+            if (!isContentEditable && !hasAriaInputRole) {
+                return false; // 完全不是输入元素
+            }
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 2️⃣ 第二层：过滤无效状态
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        // 排除禁用、只读、隐藏的元素
+        if (
+            activeElement.disabled ||
+            activeElement.readOnly ||
+            activeElement.style.display === "none" ||
+            activeElement.style.visibility === "hidden" ||
+            activeElement.offsetParent === null // 不在渲染树中
+        ) {
+            return false; // 虽然是input但无法交互
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 3️⃣ 第三层：识别Canvas编辑器（关键！）
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        if (this.#isOurCellEditor(activeElement)) {
+            return false; // 是我们自己的编辑器，不拦截
+        }
+
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 4️⃣ 第四层：确认是外部输入元素
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        return true; // 通过所有检查 → 确实是外部输入框
+    }
+
+    /**
+     * 检查元素是否有ARIA输入角色
+     *
+     * 支持WAI-ARIA规范中的文本输入相关角色：
+     * - textbox: 多行或单行文本输入
+     * - combobox: 下拉组合框
+     * - searchbox: 搜索框
+     * - spinbutton: 数字调节按钮
+     * @param {HTMLElement} element
+     * @returns {boolean}
+     */
+    #hasAriaInputRole(element) {
+        const role = element.getAttribute("role");
+        if (!role) return false;
+
+        const INPUT_ROLES = new Set(["textbox", "combobox", "searchbox", "spinbutton"]);
+
+        return INPUT_ROLES.has(role.toLowerCase());
+    }
+
+    /**
+     * 判断是否是我们自己的Canvas单元格编辑器
+     *
+     * ✅ 修复原bug：原来使用 .cell-editor 但实际class是 .cs-cell-editor
+     *
+     * 识别策略（按优先级）：
+     * 1. CSS类名匹配：.cs-cell-editor（最可靠）
+     * 2. DOM位置：在 #wrap 容器内（备用方案）
+     * 3. 数据属性：data-editor-type（未来可扩展）
+     *
+     * @param {HTMLElement} element
+     * @returns {boolean}
+     */
+    #isOurCellEditor(element) {
+        // 方式1：CSS类名匹配（最准确）
+        if (element.classList.contains("cs-cell-editor")) {
+            return true;
+        }
+
+        // 方式2：检查父级容器（兼容性方案）
+        // 注意：#wrap 是canvas的容器，编辑器被appendChild到这里
+        const wrapContainer = element.closest("#wrap");
+        if (wrapContainer && wrapContainer.querySelector("canvas")) {
+            // 确认这个wrap里确实有canvas（避免误判其他#wrap）
+
+            // 进一步验证：检查是否在canvas附近（z-index层级关系）
+            const canvas = wrapContainer.querySelector("canvas");
+            if (canvas && element.compareDocumentPosition(canvas) & Node.DOCUMENT_POSITION_CONTAINS) {
+                return true;
+            }
+        }
+
+        // 方式3：数据属性标记（未来扩展）
+        if (element.getAttribute("data-canvas-editor") === "true") {
+            return true;
+        }
+
+        // 方式4：实例引用检查（最可靠但需要额外实现）
+        // TODO: 可以考虑在CellEditor创建时注册到全局映射表
+        // const editorManager = this.handler.editor;
+        // if (editorManager?.isOurEditor(element)) return true;
+
+        return false;
+    }
+
     /** 编辑状态下的按键处理（预留扩展） */
     #handleEditingKey(e) {}
 
     /**
      * 非编辑状态下的按键处理
      * 处理导航、删除、格式化、批量赋值等操作
+     *
+     * ✅ 新增：支持交互式单元格类型（如 StarRatingType、TrafficLightType）
+     * 当活动单元格的 type 是交互式类型时，优先将键盘事件分发给它的 handleKeydown() 方法
      */
     #handleNavigationKey(e) {
         const { sheet, editor } = this.handler;
         const [r, c] = sheet.selection.getActive();
+
+        // ✅ 新增：检查当前单元格是否为交互式类型
+        const cellType = this.#getCellTypeInstance(r, c);
+        if (cellType?.isInteractive && isFunction(cellType.handleKeydown)) {
+            const { sheet } = this.handler;
+            const cell = sheet.cellDataAccessor?.get(r, c);
+            const currentValue = cell?.value;
+            const result = cellType.handleKeydown(e, currentValue);
+
+            if (result !== null && result !== undefined) {
+                e.preventDefault(); // 阻止默认导航行为
+
+                if (sheet.setCell) {
+                    sheet.setCell(r, c, result);
+                }
+
+                this.handler.render();
+                return; // ✅ 已被交互式类型处理，不再执行默认导航
+            }
+
+            // 如果返回 null/undefined，说明此按键未被该类型处理，继续执行默认逻辑
+        }
 
         // Ctrl/Meta 快捷键检测（独立于 switch，避免拦截非 Ctrl 时的字母输入）
         if (e.ctrlKey || e.metaKey) {
@@ -447,5 +668,23 @@ export class KeyboardStrategy extends EventStrategy {
             return { row: merge.topRow, col: merge.topCol };
         }
         return { row, col };
+    }
+
+    /**
+     * 获取指定位置的单元格类型实例
+     *
+     * ✅ 用于交互式单元格类型的键盘事件分发
+     * 支持 StarRatingType、TrafficLightType 等自定义渲染器
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {object|null} 单元格类型实例或 null
+     */
+    #getCellTypeInstance(row, col) {
+        try {
+            return this.handler.sheet.getCellTypeInstance(row, col);
+        } catch (error) {
+            return null;
+        }
     }
 }

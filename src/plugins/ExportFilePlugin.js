@@ -362,7 +362,8 @@ function getDataRange(sheet) {
     let maxRow = -1;
     let maxCol = -1;
 
-    for (const chunk of sheet.cellStore.chunks()) {
+    // ✅ 使用 chunks getter（无括号）避免兼容性问题
+    for (const [, chunk] of sheet.cellStore.chunks) {
         for (const { row, col } of chunk.iterate()) {
             if (row > maxRow) maxRow = row;
             if (col > maxCol) maxCol = col;
@@ -1276,7 +1277,7 @@ function createThinBorder() {
  * const blob = new Blob([buffer], { type: 'application/...' });
  * triggerDownload(blob, 'report.xlsx');
  */
-async function generateXlsx(sheet, opts, range) {
+async function generateXlsx(sheet, opts, range, pluginInstance) {
     if (!ExcelJS) {
         errorHandler.handle(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED, "ExcelJS 库未安装。请执行: npm install exceljs");
         throw new Error("ExcelJS is required for XLSX export. " + "Please install it with: npm install exceljs");
@@ -1412,7 +1413,7 @@ async function generateXlsx(sheet, opts, range) {
         }
     }
 
-    await exportChartsToExcel(workbook, worksheet, sheet);
+    await exportChartsToExcel(workbook, worksheet, sheet, pluginInstance);
 
     return await workbook.xlsx.writeBuffer();
 }
@@ -1475,24 +1476,43 @@ async function generateXlsx(sheet, opts, range) {
  * // 在 generateXlsx 函数中调用
  * await exportChartsToExcel(workbook, worksheet, sheet);
  */
-async function exportChartsToExcel(workbook, worksheet, sheet) {
-    if (!sheet?.chartManager || !sheet?.viewport?.chartLayer) {
+async function exportChartsToExcel(workbook, worksheet, sheet, pluginInstance) {
+    let renderEngine = pluginInstance?.renderEngine;
+
+    if (!renderEngine && pluginInstance?.workbook?.renderEngine) {
+        renderEngine = pluginInstance.workbook.renderEngine;
+    }
+
+    if (!sheet?.chartManager || !renderEngine?.chartLayer) {
+        errorHandler.warn("无法导出图表：缺少 chartManager 或 chartLayer");
         return;
     }
 
     const charts = sheet.chartManager.getAll();
-    const chartLayer = sheet.viewport.chartLayer;
+    const chartLayer = renderEngine.chartLayer;
+
+    errorHandler.debug(`📊 [Excel Export] 找到 ${charts.length} 个图表`);
+
+    let exportedCount = 0;
 
     for (const chart of charts) {
         try {
+            errorHandler.debug(`📊 [Excel Export] 处理图表 ${chart.id}`, {
+                type: chart.type,
+                anchorRow: chart.anchorRow,
+                anchorCol: chart.anchorCol,
+                size: `${chart.width}x${chart.height}`,
+            });
+
             let canvas = await chartLayer.getChartCanvas(chart.id);
 
             if (!canvas) {
-                canvas = await chartLayer.rebuildChartCache(chart.id, sheet);
+                errorHandler.debug(`📊 [Excel Export] 缓存未命中，重建高清缓存 ${chart.id}`);
+                canvas = await chartLayer.rebuildChartCacheWithSheet(chart.id, 2, sheet);
             }
 
             if (!canvas) {
-                console.warn(`Cannot get canvas for chart ${chart.id}`);
+                errorHandler.warn(`无法获取图表 Canvas: ${chart.id}`);
                 continue;
             }
 
@@ -1517,10 +1537,15 @@ async function exportChartsToExcel(workbook, worksheet, sheet) {
                 },
                 editAs: "oneCell",
             });
+
+            exportedCount++;
+            errorHandler.debug(`📊 [Excel Export] 图表 ${chart.id} 导出成功`);
         } catch (error) {
-            console.warn(`Failed to export chart ${chart?.id || "unknown"} to Excel:`, error);
+            errorHandler.handle(ERROR_CODE.CHART_EXPORT_ERROR, "图表导出失败", { error, chartId: chart?.id });
         }
     }
+
+    errorHandler.debug(`📊 [Excel Export] 完成，成功导出 ${exportedCount}/${charts.length} 个图表`);
 }
 
 export class ExportFilePlugin extends BasePlugin {
@@ -1654,7 +1679,7 @@ export class ExportFilePlugin extends BasePlugin {
             let blob;
 
             if (FORMAT_PRESETS[format]?.isBinary) {
-                const buffer = await generateXlsx(result.sheet, opts, result.range);
+                const buffer = await generateXlsx(result.sheet, opts, result.range, this);
                 blob = new Blob([buffer], { type: opts.mimeType });
             } else {
                 blob = toBlob(result.str, opts);
@@ -1718,7 +1743,7 @@ export class ExportFilePlugin extends BasePlugin {
             let blob;
 
             if (FORMAT_PRESETS[format]?.isBinary) {
-                const buffer = await generateXlsx(result.sheet, opts, result.range);
+                const buffer = await generateXlsx(result.sheet, opts, result.range, this);
                 blob = new Blob([buffer], { type: opts.mimeType });
             } else {
                 blob = toBlob(result.str, opts);
@@ -1744,7 +1769,7 @@ export class ExportFilePlugin extends BasePlugin {
      * @returns {Object|null} ChartLayer 实例
      */
     #getChartLayer() {
-        return this.sheet?.viewport?.chartLayer || null;
+        return this.renderEngine?.chartLayer || null;
     }
 
     /**
@@ -1811,13 +1836,21 @@ export class ExportFilePlugin extends BasePlugin {
                 throw new Error("Cannot get chart layer");
             }
 
-            const { format = "png", quality = 1.0, scale = 1, rebuildHighQuality = false } = options;
+            const { format = "png", quality = 1.0, scale = 2, rebuildHighQuality = false } = options;
 
             let canvas;
+            let useHighRes = false;
 
             if (rebuildHighQuality || scale > 1) {
-                canvas = await chartLayer.rebuildChartCache(chartId);
-                if (!canvas) {
+                try {
+                    canvas = await chartLayer.rebuildChartCacheWithSheet(chartId, scale, sheet);
+                    if (canvas) {
+                        useHighRes = true;
+                    } else {
+                        throw new Error("高清缓存创建失败");
+                    }
+                } catch (highResError) {
+                    errorHandler.warn(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, "高清缓存创建失败，回退到普通缓存", { error: highResError.message });
                     canvas = await chartLayer.getChartCanvas(chartId);
                 }
             } else {
@@ -1836,40 +1869,18 @@ export class ExportFilePlugin extends BasePlugin {
                 }, 10000);
 
                 try {
-                    if (scale > 1) {
-                        const scaledCanvas = document.createElement("canvas");
-                        scaledCanvas.width = canvas.width * scale;
-                        scaledCanvas.height = canvas.height * scale;
-                        const ctx = scaledCanvas.getContext("2d");
-                        ctx.scale(scale, scale);
-                        ctx.drawImage(canvas, 0, 0);
-
-                        scaledCanvas.toBlob(
-                            (blob) => {
-                                clearTimeout(timeout);
-                                if (blob) {
-                                    resolve(blob);
-                                } else {
-                                    reject(new Error("Failed to generate image blob"));
-                                }
-                            },
-                            mimeType,
-                            quality,
-                        );
-                    } else {
-                        canvas.toBlob(
-                            (blob) => {
-                                clearTimeout(timeout);
-                                if (blob) {
-                                    resolve(blob);
-                                } else {
-                                    reject(new Error("Failed to generate image blob"));
-                                }
-                            },
-                            mimeType,
-                            quality,
-                        );
-                    }
+                    canvas.toBlob(
+                        (blob) => {
+                            clearTimeout(timeout);
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error("Failed to generate image blob"));
+                            }
+                        },
+                        mimeType,
+                        quality,
+                    );
                 } catch (error) {
                     clearTimeout(timeout);
                     reject(error);
@@ -1940,6 +1951,8 @@ export class ExportFilePlugin extends BasePlugin {
             } else {
                 chartsToExport = chartLayer.getAllCharts();
 
+                errorHandler.debug(`📊 [Batch Export] getAllCharts() 返回 ${chartsToExport.length} 个图表`);
+
                 if (chartsToExport.length === 0) {
                     console.warn("No charts on current sheet");
                     return null;
@@ -1948,11 +1961,20 @@ export class ExportFilePlugin extends BasePlugin {
 
             const { format = "png", asZip = true, quality = 1.0, scale = 1, rebuildHighQuality = false } = options;
 
+            errorHandler.debug(`📊 [Batch Export] 准备导出 ${chartsToExport.length} 个图表`, {
+                chartIds: chartsToExport.map((c) => c.id),
+                options: { format, asZip, quality, scale, rebuildHighQuality },
+            });
+
             const results = [];
             const errors = [];
+            const usedNames = new Set();
 
-            for (const chart of chartsToExport) {
+            for (let idx = 0; idx < chartsToExport.length; idx++) {
+                const chart = chartsToExport[idx];
                 try {
+                    errorHandler.debug(`📊 [Batch Export] 正在导出第 ${idx + 1}/${chartsToExport.length} 个图表: ${chart.id}`);
+
                     const blob = await this.exportChartAsImage(chart.id, {
                         format,
                         quality,
@@ -1960,19 +1982,41 @@ export class ExportFilePlugin extends BasePlugin {
                         rebuildHighQuality,
                     });
 
-                    const chartName = (chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`).replace(/[^a-zA-Z0-9_-]/g, "_");
+                    let rawName = chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`;
+
+                    const chartName = rawName
+                        .trim()
+                        .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+                        .replace(/[^\w\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\- ]/g, "_")
+                        .replace(/\s+/g, "_")
+                        .replace(/_+/g, "_")
+                        .replace(/^_|_$/g, "")
+                        .substring(0, 45);
+
+                    let finalName = chartName;
+                    let counter = 1;
+                    while (usedNames.has(`${finalName}.${format}`)) {
+                        finalName = `${chartName}_${counter}`;
+                        counter++;
+                    }
+
+                    usedNames.add(`${finalName}.${format}`);
 
                     results.push({
                         id: chart.id,
-                        name: `${chartName}.${format}`,
+                        name: `${finalName}.${format}`,
                         blob,
                         chart,
                     });
+
+                    errorHandler.debug(`✅ [Batch Export] 图表 ${chart.id} 导出成功 → ${finalName}.${format}`);
                 } catch (error) {
-                    console.warn(`Failed to export chart ${chart.id}:`, error.message);
                     errors.push({ chartId: chart.id, error });
+                    errorHandler.warn(`❌ [Batch Export] 图表 ${chart.id} 导出失败: ${error.message}`);
                 }
             }
+
+            errorHandler.debug(`📊 [Batch Export] 完成: 成功 ${results.length}/${chartsToExport.length}, 失败 ${errors.length}`);
 
             if (results.length === 0) {
                 throw new Error("All chart exports failed");
@@ -2097,7 +2141,6 @@ export class ExportFilePlugin extends BasePlugin {
      * @private
      * @async
      * @param {Array} images - 图片数组 [{name, blob, id, chart}]
-     * @param {string} zipFilename - ZIP 文件名
      * @returns {Promise<Blob>} ZIP 文件 Blob
      */
     static async #createZipFromImages(images) {

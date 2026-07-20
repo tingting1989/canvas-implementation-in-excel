@@ -1,8 +1,9 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import "./contextMenu.css";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 右键菜单策略
@@ -41,6 +42,12 @@ import "./contextMenu.css";
  * })
  */
 export class ContextMenuStrategy extends EventStrategy {
+    /**
+     * 策略优先级
+     * 右键菜单触发器，使用弹出式 UI 优先级
+     * @type {number}
+     */
+    priority = STRATEGY_PRIORITY.POPUP_UI;
     /** 右键菜单 DOM 容器 */
     #menuEl = null;
 

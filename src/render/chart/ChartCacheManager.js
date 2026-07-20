@@ -200,6 +200,14 @@ export class ChartCacheManager {
     }
 
     /**
+     * 获取关联的工作表实例
+     * @returns {import("../../workbook/Sheet.js").Sheet|null}
+     */
+    get sheet() {
+        return this.#sheet;
+    }
+
+    /**
      * 将指定图表标记为清洁（已同步最新数据）
      *
      * 在图表成功渲染并写入缓存后调用，

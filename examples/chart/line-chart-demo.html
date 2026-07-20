@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>折线图演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px
+        }
+        .container { max-width: 1200px; margin: 0 auto }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px }
+        .toolbar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center
+        }
+        .toolbar button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s
+        }
+        .btn-primary { background: #4472C4; color: white }
+        .btn-primary:hover { background: #365a9c }
+        .btn-success { background: #70AD47; color: white }
+        .btn-success:hover { background: #5a8d39 }
+        .btn-info { background: #5B9BD5; color: white }
+        .btn-info:hover { background: #4889bf }
+        .btn-warning { background: #FFC000; color: #333 }
+        .btn-warning:hover { background: #e6ad00 }
+        .divider { width: 1px; height: 32px; background: #ddd; margin: 0 8px }
+        .sheet-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden
+        }
+        #sheet { width: 100%; height: 600px }
+        .info-panel {
+            margin-top: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+        .log-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📈 折线图 (Line Chart) 演示</h1>
+
+    <div class="toolbar">
+        <button class="btn-primary" onclick="addLineChart()">📈 创建折线图</button>
+        <div class="divider"></div>
+        <span style="color:#666;font-weight:600">导出功能:</span>
+        <button class="btn-success" onclick="exportChartAsImage()">🖼️ 导出PNG图片</button>
+        <button class="btn-info" onclick="exportExcelWithChart()">📊 导出Excel(含图表)</button>
+        <button class="btn-warning" onclick="exportAsCSV()">📋 导出CSV</button>
+        <div class="divider"></div>
+        <button class="btn-primary" onclick="moveChart()">🔄 移动位置</button>
+        <button class="btn-success" onclick="resizeChart()">📐 调整大小</button>
+        <button class="btn-danger" onclick="removeChart()" style="background:#ED7D31;color:white">🗑️ 删除图表</button>
+    </div>
+
+    <div class="sheet-container">
+        <canvas id="sheet"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📖 折线图说明</h3>
+        <div style="font-size:13px;line-height:1.8;color:#555;margin-top:10px">
+            <p><strong>用途:</strong> 展示数据随时间的变化趋势</p>
+            <p><strong>数据格式:</strong> 时间序列数据（月份/季度 + 多个指标）</p>
+            <p><strong>特性:</strong> 平滑曲线、数据点标记、多系列对比、网格背景</p>
+            <p style="margin-top:10px;padding:10px;background:#e8f4fd;border-radius:6px;border-left:4px solid #70AD47">
+                <strong>💡 提示:</strong> 本示例使用12个月的销售趋势数据，包含销售额、目标值、利润率三个指标
+            </p>
+        </div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪... | 折线图演示模式</div>
+</div>
+<script src="../libs/exceljs.min.js"></script>
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+let workbook = null, chartPlugin = null, exportPlugin = null, currentChartId = null;
+
+function log(msg) {
+    const la = document.getElementById('logArea');
+    la.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+    la.scrollTop = la.scrollHeight;
+}
+
+function init() {
+    try {
+        workbook = new CanvasSheet.Workbook(document.getElementById('sheet'), {
+            plugins: ["autoFill", "contextMenu", "chart", "exportFile"]
+        });
+        workbook.initRender();
+        workbook.render();
+        chartPlugin = workbook.getPlugin('chart');
+        exportPlugin = workbook.getPlugin('exportFile');
+
+        log('✅ 初始化成功 - 折线图演示模式');
+        log('🎯 点击 "📈 创建折线图" 开始');
+    } catch (e) {
+        log(`❌ Error: ${e.message}`);
+    }
+}
+
+function addLineChart() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 0, '月份');
+    s.setCell(0, 1, '销售额');
+    s.setCell(0, 2, '目标值');
+    s.setCell(0, 3, '利润率');
+
+    const lineData = [
+        { month: '1月', sales: 1200, target: 1000, profit: 15 },
+        { month: '2月', sales: 1350, target: 1100, profit: 18 },
+        { month: '3月', sales: 1580, target: 1200, profit: 22 },
+        { month: '4月', sales: 1420, target: 1300, profit: 19 },
+        { month: '5月', sales: 1680, target: 1400, profit: 25 },
+        { month: '6月', sales: 1850, target: 1500, profit: 28 },
+        { month: '7月', sales: 1720, target: 1600, profit: 24 },
+        { month: '8月', sales: 1950, target: 1700, profit: 30 },
+        { month: '9月', sales: 2100, target: 1800, profit: 32 },
+        { month: '10月', sales: 1980, target: 1900, profit: 29 },
+        { month: '11月', sales: 2250, target: 2000, profit: 35 },
+        { month: '12月', sales: 2400, target: 2100, profit: 38 }
+    ];
+
+    lineData.forEach((item, index) => {
+        s.setCell(1 + index, 0, item.month);
+        s.setCell(1 + index, 1, item.sales);
+        s.setCell(1 + index, 2, item.target);
+        s.setCell(1 + index, 3, item.profit);
+    });
+
+    const c = chartPlugin.addLineChart({startRow: 0, startCol: 0, endRow: 12, endCol: 3}, {
+        anchorRow: 0,
+        anchorCol: 4,
+        width: 550,
+        height: 380,
+        style: {
+            title: '📈 月度销售趋势分析',
+            showLegend: true,
+            showTooltip: true,
+            showGrid: true,
+            smooth: true,
+            showDataPoints: true,
+            fill: false,
+            colors: ['#4472C4', '#ED7D31', '#70AD47'],
+            xAxisLabel: '月份',
+            yAxisLabel: '金额 (万元)'
+        }
+    });
+
+    if (c) {
+        currentChartId = c.id;
+        log(`✅ 折线图创建成功: ${c.id}`);
+        log('   数据: 12个月 × 3个指标 (销售额/目标值/利润率)');
+        log('   特性: 平滑曲线 + 数据点标记 + 无填充');
+        log('   现在可以使用导出功能了');
+    }
+}
+
+async function exportChartAsImage() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('🖼️ 正在导出折线图为PNG图片...');
+        await exportPlugin.downloadChart(currentChartId, null, {
+            format: 'png',
+            quality: 1.0,
+            scale: 2,
+            rebuildHighQuality: true
+        });
+        log('✅ PNG导出成功 (2倍分辨率, 高质量)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportExcelWithChart() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📊 正在生成Excel文件(含内嵌折线图)...');
+        await exportPlugin.downloadFile('xlsx', {
+            filename: 'line_chart_demo',
+            cellStyles: true,
+            columnHeaders: true
+        });
+        log('✅ Excel导出成功！图表已作为图片嵌入');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportAsCSV() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📋 正在导出CSV文件...');
+        await exportPlugin.downloadFile('csv', {
+            filename: 'line_chart_data',
+            columnHeaders: true
+        });
+        log('✅ CSV导出成功 (纯数据格式)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+function moveChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.moveChart(currentChartId, Math.floor(Math.random() * 20) + 5, Math.floor(Math.random() * 10) + 1, 20, 20);
+    log('🔄 图表位置已移动');
+}
+
+function resizeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.resizeChart(currentChartId, Math.floor(Math.random() * 200) + 400, Math.floor(Math.random() * 150) + 250);
+    log('📐 图表尺寸已调整');
+}
+
+function removeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.removeChart(currentChartId);
+    log('🗑️ 图表已删除');
+    currentChartId = null;
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

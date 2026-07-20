@@ -1,5 +1,5 @@
 import { BaseColumnType } from "./BaseColumnType.js";
-import { isNumber, isString } from "../utils/utils.js";
+import { isNumber, isString } from "../utils/helper.js";
 import { SORT_ORDER } from "../constants/enums/SortOrder.js";
 
 /**

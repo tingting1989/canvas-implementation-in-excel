@@ -350,6 +350,93 @@ export class Sheet extends ISheet {
         return this.data.loadData(...args);
     }
 
+    /**
+     * 清空所有单元格数据（Clear All Data）- 纯数据操作版本
+     *
+     * 此方法仅执行数据清除逻辑，不包含：
+     * - Hook 生命周期（由 Workbook 层负责）
+     * - 权限验证（由 Workbook 层负责）
+     * - 渲染刷新（由调用方负责）
+     *
+     * 适用场景：
+     * - Workbook.clearActiveSheetData() 内部调用
+     * - 需要高性能的批量操作（配合 skipHistory）
+     * - 单元测试（无需 Workbook 实例）
+     *
+     * ⚠️ 注意：此方法会触发 SHEET_EVENTS.DATA_CLEARED 内部事件，
+     * 用于通知公式引擎、缓存系统等内部组件。
+     *
+     * @param {object} [options={}] - 配置选项
+     * @param {boolean} [options.skipHistory=false] - 是否跳过撤销记录
+     * @returns {{ changes: Array<{row:number, col:number, oldValue:*, styleId:number}>, clearedCount: number }}
+     */
+    clearData(options = {}) {
+        const { skipHistory = false } = options;
+        const accessor = this.cellDataAccessor;
+
+        const { changes, clearedCount } = accessor.clearAll();
+
+        if (changes.length > 0 && !skipHistory) {
+            this.beginBatch();
+
+            for (const { row, col, oldValue, styleId } of changes) {
+                this.setCell(row, col, "", styleId);
+            }
+
+            this.endBatch();
+        }
+
+        // ✅ 通知内部组件（公式引擎、缓存等），但不涉及 Hooks
+        this.bus.emit(SHEET_EVENTS.DATA_CLEARED, {
+            sheet: this,
+            changes,
+            clearedCount,
+            range: null, // 全表清空
+        });
+
+        return { changes, clearedCount };
+    }
+
+    /**
+     * 清空指定区域的数据（Clear Range Data）- 纯数据操作版本
+     *
+     * 与 clearData() 类似，但仅处理选定的矩形范围。
+     * 同样不包含 Hook 生命周期，由调用方负责。
+     *
+     * @param {number} topRow - 左上角行号
+     * @param {number} topCol - 左上角列号
+     * @param {number} bottomRow - 右下角行号
+     * @param {number} bottomCol - 右下角列号
+     * @param {object} [options={}] - 配置选项（同 clearData）
+     * @returns {{ changes: Array, clearedCount: number }}
+     */
+    clearRange(topRow, topCol, bottomRow, bottomCol, options = {}) {
+        const { skipHistory = false } = options;
+        const accessor = this.cellDataAccessor;
+
+        const { changes, clearedCount } = accessor.clearRange(topRow, topCol, bottomRow, bottomCol);
+
+        if (changes.length > 0 && !skipHistory) {
+            this.beginBatch();
+
+            for (const { row, col, oldValue, styleId } of changes) {
+                this.setCell(row, col, "", styleId);
+            }
+
+            this.endBatch();
+        }
+
+        // ✅ 通知内部组件
+        this.bus.emit(SHEET_EVENTS.DATA_CLEARED, {
+            sheet: this,
+            changes,
+            clearedCount,
+            range: { topRow, topCol, bottomRow, bottomCol },
+        });
+
+        return { changes, clearedCount };
+    }
+
     // ---- StyleCoordinator 代理 ----
 
     get rowStyles() {

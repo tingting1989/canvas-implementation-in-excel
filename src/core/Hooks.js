@@ -1,6 +1,6 @@
 import { HOOKS } from "@/constants/hookNames";
 import { errorHandler, ERROR_CODE } from "./ErrorHandler.js";
-import { isFunction } from "@/utils/utils";
+import { isFunction } from "@/utils/helper";
 
 /**
  * Hooks 系统

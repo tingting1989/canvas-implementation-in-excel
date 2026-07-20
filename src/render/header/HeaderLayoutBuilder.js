@@ -1,5 +1,5 @@
 import { CONFIG } from "@/constants/config";
-import { isObject, isString } from "@/utils/utils";
+import { isObject, isString } from "@/utils/helper";
 import { calcCenteredTextY } from "@/utils/canvasUtils";
 import { LogicalCell } from "./models/LogicalCell.js";
 import { Fragment } from "./models/Fragment.js";

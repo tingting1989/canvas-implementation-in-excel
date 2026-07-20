@@ -202,10 +202,11 @@ export class CandlestickStrategy extends BaseChartStrategy {
             const bodyTop = Math.min(openY, closeY);
             const bodyH = Math.abs(closeY - openY) || 1;
 
+            const pixelRatio = this.getPixelRatio(ctx, area);
             ctx.strokeStyle = isUp ? "#00aa44" : "#ff4444";
             ctx.fillStyle = isUp ? "#00aa44" : "#ff4444";
 
-            ctx.lineWidth = wickWidth;
+            ctx.lineWidth = wickWidth * pixelRatio;
             ctx.beginPath();
             ctx.moveTo(cx, highY);
             ctx.lineTo(cx, lowY);
@@ -213,7 +214,7 @@ export class CandlestickStrategy extends BaseChartStrategy {
 
             if (bodyH > 1) {
                 ctx.fillRect(cx - candleWidth / 2, bodyTop, candleWidth, bodyH);
-                ctx.lineWidth = 1;
+                ctx.lineWidth = 1 * pixelRatio;
                 ctx.strokeRect(cx - candleWidth / 2, bodyTop, candleWidth, bodyH);
             } else {
                 ctx.beginPath();

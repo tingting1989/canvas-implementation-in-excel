@@ -1,4 +1,4 @@
-// src/core/utils.js
+// src/core/helper.js
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 export const toDisplayString = (value) => {
@@ -17,6 +17,10 @@ export const isObject = (value) => value !== null && typeof value === "object" &
 export const isString = (value) => typeof value === "string";
 
 export const isBoolean = (value) => typeof value === "boolean";
+
+export const isUndefined = (value) => value === undefined;
+
+export const isNull = (value) => value === null;
 
 export function debounce(fn, delay) {
     let timer = null;

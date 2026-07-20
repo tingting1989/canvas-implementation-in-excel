@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @license Apache-2.0
  *
  * Copyright 2026 jiangsuiting <1158973435@qq.com>
@@ -19,7 +19,7 @@
 import { BaseColumnType } from "@/types/BaseColumnType";
 import { Workbook } from "./workbook/Workbook.js";
 import { HOOKS } from "./constants/hookNames.js";
-import { isFunction, isNumber } from "./utils/utils.js";
+import { isFunction, isNumber } from "./utils/helper.js";
 import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
 import { registerColumnTypeClass } from "@/types";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
@@ -120,127 +120,120 @@ const initApp = () => {
     const wb = new Workbook(document.getElementById("wrap"), {
         defaultStyle: {},
 
-        // readOnly: true,
-        // 工作表高度和宽度（像素值）
-        // height: 600,
-        // 工作表高度和宽度（像素值）
-        // width: 800,
-
-        // 初始行数
-        // startRows: 10,
-        // 初始列数
-        // startCols: 10,
-        // cellPadding: 30,
         sheets: [
             {
-                name: "Sheet1",
-            },
-            {
-                name: "Sheet2",
+                name: "星级评分演示",
 
-                // readOnly: false,
                 data: [
-                    ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
-                    ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
-                    ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
+                    ["产品名称", "类别", "用户评分", "专家评分", "综合评价", "推荐指数", "满意度", "性价比"],
+                    ["产品A", "电子产品", 5, 5, 5, 5, 5, 5],
+                    ["产品B", "家居用品", 4, 4, 4, 4, 4, 4],
+                    ["产品C", "服装配饰", 3, 3, 3, 3, 3, 3],
+                    ["产品D", "食品饮料", 5, 4, 5, 4, 5, 4],
+                    ["产品E", "图书文具", 4, 5, 4, 5, 4, 5],
+                    ["产品F", "运动户外", 3, 4, 3, 4, 3, 4],
+                    ["产品G", "美妆护肤", 5, 5, 5, 5, 5, 5],
+                    ["产品H", "汽车配件", 4, 3, 4, 3, 4, 3],
+                    ["产品I", "数码配件", 5, 5, 5, 5, 5, 5],
+                    ["产品J", "母婴用品", 4, 4, 4, 4, 4, 4],
+                    ["产品K", "宠物用品", 3, 3, 3, 3, 3, 3],
+                    ["产品L", "办公设备", 5, 4, 5, 4, 5, 4],
                 ],
 
-                // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                rowHeaderWidth: 120,
-                rowHeights: [30, 50, 90],
-                rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
-
-                // 嵌套表头配置（支持完整 style 属性）
-                nestedHeaders: [
-                    [
-                        {
-                            label: "基本信息",
-                            colspan: 2,
-                            style: {
-                                backgroundColor: "#FFC000",
-                                color: "#FFFFFF",
-                                fontWeight: "bold",
-                                fontSize: "14px",
-                                textAlign: "left",
-                            },
-                        },
-                        {
-                            label: "工作信息",
-                            colspan: 4,
-                            style: {
-                                backgroundColor: "#70AD47",
-                                color: "#FFFFFF",
-                                fontWeight: "bold",
-                                fontSize: "14px",
-                                textAlign: "center",
-                            },
-                        },
-                    ],
-                    [
-                        {
-                            label: "姓名",
-                            style: {
-                                backgroundColor: "#FFC000",
-                                fontWeight: "bold",
-                            },
-                        },
-                        "年龄",
-                        {
-                            label: "城市",
-                            style: {
-                                backgroundColor: "#FFC000",
-                                fontWeight: "bold",
-                            },
-                        },
-                        {
-                            label: "部门",
-                            style: {
-                                fontStyle: "italic",
-                                color: "#333333",
-                            },
-                        },
-                        {
-                            label: "薪酬",
-                            colspan: 2,
-                            style: {
-                                backgroundColor: "#ED7D31",
-                                color: "#FFFFFF",
-                                textAlign: "center",
-                            },
-                        },
-                    ],
-                    ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-                ],
-                textOverflowEllipsis: false,
-                cellPadding: 10,
-                conditionalStyles: [
+                columns: [
+                    { type: "text", width: 120 },
+                    { type: "text", width: 100 },
+                    // 用户评分
                     {
-                        range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
-                        condition: (v) => isNumber(v) && v > 25,
-                        style: { backgroundColor: "#ffcccc" },
+                        type: "starRating",
+                        width: 180,
+                        options: { maxStars: 3, color: "#00FF00", emptyColor: "#CCCCCC" },
+                    },
+                    // 专家评分
+                    // {
+                    //     type: "trafficLight",
+                    //     width: 180,
+                    //     options: { maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0" },
+                    // },
+                    // // 综合评价
+                    {
+                        type: "select",
+                        width: 180,
+                        source: [
+                            { value: "0", label: "好" },
+                            { value: "1", label: "中" },
+                            { value: "2", label: "差" },
+                        ],
+                    },
+                    // // 推荐指数
+                    // {
+                    //     type: "starRating",
+                    //     width: 180,
+                    //     options: {maxStars: 5, color: "#9B59B6", emptyColor: "#C0C0C0"}
+                    // },
+                    // // 满意度
+                    // {
+                    //     type: "starRating",
+                    //     width: 180,
+                    //     options: {maxStars: 5, color: "#F39C12", emptyColor: "#E8E8E8"}
+                    // },
+                    // // 性价比
+                    // {
+                    //     type: "starRating",
+                    //     width: 180,
+                    //     options: {maxStars: 5, color: "#2ECC71", emptyColor: "#D5D5D5"}
+                    // }
+                ],
+
+                cell: [
+                    // 表头样式
+                    {
+                        row: 0,
+                        col: 0,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 1,
+                        type: "text",
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 2,
+                        type: "text",
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 3,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 4,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 5,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 6,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    },
+                    {
+                        row: 0,
+                        col: 7,
+                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
                     },
                 ],
-                cell: [
-                    { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                    { row: 1, col: 3, disabled: true },
-                    { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
-                ],
-                cells: (row, col) => {
-                    if (row === 0) {
-                        return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
-                    }
-                    if (col === 0 && row > 0) {
-                        return { style: { textAlign: "right", fontWeight: "bold" } };
-                    }
-                },
-                columns: [
-                    { type: "text", width: 120, style: { textAlign: "left" } },
-                    { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                    { type: "text", width: 100 },
-                    { type: "text", width: 100 },
-                    { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                    { type: "date", width: 300 },
-                ],
+
+                rowHeights: [40, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45],
+                textOverflowEllipsis: false,
+                cellPadding: 10,
             },
         ],
         plugins: [
@@ -260,7 +253,7 @@ const initApp = () => {
             // "sort",
             "dataValidation",
             "chart",
-
+            // "interaction"
             // "filter",
         ],
         pluginOptions: {
@@ -625,9 +618,54 @@ const initApp = () => {
         },
     });
 
-    wb.initRender();
-    wb.render();
+    // wb.loadPluginClass(InteractionPlugin, {
+    //     debugMode: false,
+    //     throttleMs: 16,
+    //     autoRender: true,
+    // });
 
+    // ✨ 新特性：autoInit=true（默认）时，构造函数会自动调用 initRender() 和 render()
+    // 如需延迟初始化，可设置 autoInit: false
+    // wb.initRender();
+    // wb.render();
+
+    // 🧹 示例：数据清空 API（v1.0.15+）
+    // 可在控制台测试以下命令：
+
+    // 1. 清空当前工作表（支持 Ctrl+Z 撤销）
+    // wb.clearActiveSheetData();
+
+    // 2. 清空所有工作表
+    // wb.clearAllSheetsData();
+
+    // 3. 清空指定范围（A1:D10）
+    // sheet.clearRange(0, 0, 9, 3);
+
+    // 4. 性能优化模式（大数据量）
+    // wb.clearActiveSheetData({ skipHistory: true });
+
+    // 5. 监听清空事件
+    // wb.addHook('afterClearData', ({ changes, clearedCount }) => {
+    //     console.log(`已清除 ${clearedCount} 个单元格`);
+    // });
+
+    const sheet = wb.getActiveSheet();
+    wb.updateSettings({
+        conditionalStyles: [
+            {
+                range: { topRow: 15, topCol: 0, bottomRow: 20, bottomCol: 10 },
+                condition: function (v) {
+                    const value = Number(v);
+                    return !Number.isNaN(value) && v > 30000;
+                },
+                style: {
+                    color: "red",
+                },
+            },
+        ],
+    });
+
+    // sheet.operations.setGridSize(10, 5);
     wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
         if (!e.ctrlKey && !e.metaKey) return;
         const sheet = wb.activeSheet;
@@ -653,401 +691,6 @@ const initApp = () => {
             }
         }
     });
-    function prepareData() {
-        const chartPlugin = wb.getPlugin("chart");
-        if (!chartPlugin) return;
-        console.log(chartPlugin);
-        const s = wb.activeSheet;
-
-        // ==================== 示例1：折线图/柱状图 ====================
-        s.setCell(0, 0, "产品");
-        s.setCell(0, 1, "Q1");
-        s.setCell(0, 2, "Q2");
-        s.setCell(0, 3, "Q3");
-        s.setCell(0, 4, "Q4");
-        ["A", "B", "C", "D", "E"].forEach((p, i) => {
-            s.setCell(i + 1, 0, p);
-            s.setCell(i + 1, 1, Math.floor(Math.random() * 1000) + 500);
-            s.setCell(i + 1, 2, Math.floor(Math.random() * 1000) + 500);
-            s.setCell(i + 1, 3, Math.floor(Math.random() * 1000) + 500);
-            s.setCell(i + 1, 4, Math.floor(Math.random() * 1000) + 500);
-        });
-
-        const lineChart = chartPlugin.addLineChart(
-            { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
-            {
-                anchorRow: 8,
-                anchorCol: 1,
-                width: 450,
-                height: 300,
-                style: { title: "销售趋势(折线图)", showLegend: true, showTooltip: true },
-            },
-        );
-        console.log(lineChart);
-
-        if (lineChart) {
-            console.log(`📊 折线图 ${lineChart.id}`);
-        }
-
-        // ==================== 示例2：K线图（股票蜡烛图）====================
-        // 设置K线图数据表头
-        s.setCell(0, 6, "日期");
-        s.setCell(0, 7, "开盘价");
-        s.setCell(0, 8, "收盘价");
-        s.setCell(0, 9, "最低价");
-        s.setCell(0, 10, "最高价");
-
-        // K线图数据：[开盘价, 收盘价, 最低价, 最高价]
-        const candlestickData = [
-            { date: "周一", data: [20, 34, 10, 38] }, // 上涨
-            { date: "周二", data: [40, 35, 30, 50] }, // 下跌
-            { date: "周三", data: [31, 38, 33, 44] }, // 上涨
-            { date: "周四", data: [38, 15, 5, 42] }, // 大幅下跌
-            { date: "周五", data: [25, 45, 20, 48] }, // 大幅上涨
-        ];
-
-        // 填充K线图数据到表格
-        candlestickData.forEach((item, index) => {
-            s.setCell(index + 1, 6, item.date); // 日期
-            s.setCell(index + 1, 7, item.data[0]); // 开盘价
-            s.setCell(index + 1, 8, item.data[1]); // 收盘价
-            s.setCell(index + 1, 9, item.data[2]); // 最低价
-            s.setCell(index + 1, 10, item.data[3]); // 最高价
-        });
-
-        // 创建K线图（注意：数据范围只包含4个价格列 H-K，不含日期列G）
-        // H=列7(开盘价), I=列8(收盘价), J=列9(最低价), K=列10(最高价)
-        console.log("🔍 开始创建K线图...");
-        console.log("   数据范围: H1:K5 (开盘价、收盘价、最低价、最高价)");
-        const candlestickChart = chartPlugin.addCandlestickChart(
-            { startRow: 0, startCol: 7, endRow: 5, endCol: 10 },
-            {
-                anchorRow: 8,
-                anchorCol: 8,
-                width: 500,
-                height: 320,
-                style: {
-                    title: "📈 股票K线图（周线）",
-                    showLegend: false, // K线图通常不显示图例
-                    showTooltip: true, // 显示tooltip展示详细信息
-                    showGrid: true, // 显示网格线
-                },
-            },
-        );
-
-        console.log("📊 K线图创建结果:", candlestickChart);
-        if (candlestickChart) {
-            console.log(`✅ K线图 ${candlestickChart.id} 创建成功`);
-            console.log("   - 类型:", candlestickChart.type);
-            console.log("   - 位置:", `(${candlestickChart.anchorRow}, ${candlestickChart.anchorCol})`);
-            console.log("   - 尺寸:", `${candlestickChart.width}x${candlestickChart.height}`);
-            console.log("   - 数据范围:", candlestickChart.dataRange);
-
-            console.log("\n📈 K线图数据说明：");
-            console.log("- 每行代表一根K线（一天/一周/一月的交易数据）");
-            console.log("- 数据格式：[开盘价, 收盘价, 最低价, 最高价]");
-            console.log("- 🟢 绿色/红色：收盘价 >= 开盘价（上涨）");
-            console.log("- 🔴 红色：收盘价 < 开盘价（下跌）");
-            console.log("\n点击K线可查看详细信息：");
-            console.log("- 开盘价、收盘价、最高价、最低价");
-            console.log("- 涨跌额、涨跌幅百分比");
-        }
-
-        // ==================== 示例3：多种图表类型演示 ====================
-        // 饼图数据
-        s.setCell(20, 0, "类别");
-        s.setCell(20, 1, "数值");
-        s.setCell(21, 0, "产品A");
-        s.setCell(21, 1, 30);
-        s.setCell(22, 0, "产品B");
-        s.setCell(22, 1, 25);
-        s.setCell(23, 0, "产品C");
-        s.setCell(23, 1, 20);
-        s.setCell(24, 0, "产品D");
-        s.setCell(24, 1, 15);
-        s.setCell(25, 0, "其他");
-        s.setCell(25, 1, 10);
-
-        const pieChart = chartPlugin.addPieChart(
-            { startRow: 20, startCol: 0, endRow: 25, endCol: 1 },
-            {
-                anchorRow: 20,
-                anchorCol: 3,
-                width: 350,
-                height: 280,
-                style: { title: "市场份额分布(饼图)", showLegend: true, showTooltip: true },
-            },
-        );
-
-        if (pieChart) {
-            console.log(`🥧 饼图 ${pieChart.id}`);
-        }
-
-        // 柱状图数据
-        s.setCell(27, 0, "月份");
-        s.setCell(27, 1, "销售额");
-        s.setCell(28, 0, "1月");
-        s.setCell(28, 1, 1200);
-        s.setCell(29, 0, "2月");
-        s.setCell(29, 1, 1800);
-        s.setCell(30, 0, "3月");
-        s.setCell(30, 1, 1500);
-        s.setCell(31, 0, "4月");
-        s.setCell(31, 1, 2100);
-
-        const barChart = chartPlugin.addBarChart(
-            { startRow: 27, startCol: 0, endRow: 31, endCol: 1 },
-            {
-                anchorRow: 20,
-                anchorCol: 8,
-                width: 380,
-                height: 280,
-                style: { title: "月度销售额(柱状图)", showLegend: true, showTooltip: true },
-            },
-        );
-
-        if (barChart) {
-            console.log(`📊 柱状图 ${barChart.id}`);
-        }
-
-        // ==================== 示例4：仪表盘（Gauge）====================
-        // 仪表盘数据：[标签, 数值]
-        // 注意：数据范围需要包含表头行，否则 DataExtractor 无法正确提取数据
-        console.log("🔍 开始准备仪表盘数据...");
-        s.setCell(33, 0, "指标"); // 表头行（第34行）
-        s.setCell(33, 1, "数值");
-        s.setCell(34, 0, "SCORE"); // 数据行（第35行）
-        s.setCell(34, 1, 75); // 改为75%，更容易看到效果
-
-        console.log("   数据已写入：A34=指标, B34=数值");
-        console.log("              A35=SCORE, B35=75");
-
-        console.log("🎯 正在创建仪表盘...");
-        const gaugeChart = chartPlugin.addGaugeChart(
-            { startRow: 33, startCol: 0, endRow: 34, endCol: 1 }, // 包含表头行和数据行
-            {
-                anchorRow: 36, // 改到第36行，避免与其他图表重叠
-                anchorCol: 6, // 改到第6列，更靠左
-                width: 350,
-                height: 280,
-                style: {
-                    title: "🎯 完成度仪表盘",
-                    showLegend: false,
-                    showTooltip: true,
-                    min: 0,
-                    max: 100,
-                },
-            },
-        );
-
-        console.log("📊 仪表盘创建结果:", gaugeChart);
-        if (gaugeChart) {
-            console.log(`🎯 仪表盘 ${gaugeChart.id} 创建成功`);
-            console.log("仪表盘数据格式：[标签, 数值]");
-            console.log("- 标签：显示在仪表盘中心（如 SCORE、温度、速度等）");
-            console.log("- 数值：指针指向的值（0-100范围）");
-            console.log("\n特性：");
-            console.log("- 半圆形设计，直观展示完成度/进度");
-            console.log("- 渐变色弧线（蓝→绿→红）表示数值范围");
-            console.log("- 动态指针精确指向当前值");
-            console.log("- 刻度清晰标注（0-100，每10一个主刻度）");
-            console.log("\n点击仪表盘可查看详细信息！");
-        }
-
-        // ==================== 示例5：漏斗图（Funnel）====================
-        // 漏斗图数据：[阶段名称, 数值]
-        console.log("🔍 开始准备漏斗图数据...");
-        s.setCell(38, 0, "阶段");
-        s.setCell(38, 1, "数量");
-
-        const funnelData = [
-            { stage: "Show", value: 1000 },
-            { stage: "Click", value: 600 },
-            { stage: "Visit", value: 400 },
-            { stage: "Inquiry", value: 200 },
-            { stage: "Order", value: 80 },
-        ];
-
-        funnelData.forEach((item, index) => {
-            s.setCell(39 + index, 0, item.stage);
-            s.setCell(39 + index, 1, item.value);
-        });
-
-        console.log(`   数据已写入：${funnelData.length}个阶段`);
-
-        console.log("🎯 正在创建漏斗图...");
-        const funnelChart = chartPlugin.addFunnelChart(
-            { startRow: 38, startCol: 0, endRow: 43, endCol: 1 },
-            {
-                anchorRow: 38,
-                anchorCol: 10,
-                width: 450,
-                height: 350,
-                style: {
-                    title: "📊 用户转化漏斗",
-                    showLegend: true,
-                    showTooltip: true,
-                },
-            },
-        );
-
-        console.log("📊 漏斗图创建结果:", funnelChart);
-        if (funnelChart) {
-            console.log(`📊 漏斗图 ${funnelChart.id} 创建成功`);
-            console.log("漏斗图数据格式：[阶段名称, 数值]");
-            console.log("- 阶段：显示在漏斗每一层（如 Show、Click、Visit 等）");
-            console.log("- 数值：决定该层的宽度（数值越大层越宽）");
-            console.log("\n特性：");
-            console.log("- 倒三角形设计，直观展示转化流程");
-            console.log("- 渐变色层级，每层不同颜色区分");
-            console.log("- 自动计算转化率（相邻两层对比）");
-            console.log("- 点击任意层查看详细转化数据");
-            console.log("\n适用场景：销售漏斗、用户行为分析、转化率追踪等");
-        }
-
-        // ── 雷达图示例 ──
-        const radarData = [
-            ["指标", "预算", "实际支出"],
-            ["Sales", 4200, 5000],
-            ["Administration", 3000, 14000],
-            ["Information Technology", 20000, 28000],
-            ["Customer Support", 35000, 26000],
-            ["Development", 50000, 42000],
-            ["Marketing", 18000, 21000],
-        ];
-
-        for (let r = 0; r < radarData.length; r++) {
-            for (let c = 0; c < radarData[r].length; c++) {
-                s.setCell(r + 45, c, radarData[r][c]);
-            }
-        }
-
-        console.log(`   数据已写入：${radarData.length - 1}个维度 × ${radarData[0].length - 1}个系列`);
-
-        console.log("📡 正在创建雷达图...");
-
-        const radarChart = chartPlugin.addRadarChart(
-            { startRow: 45, startCol: 0, endRow: 51, endCol: 2 },
-            {
-                anchorRow: 45,
-                anchorCol: 10,
-                width: 450,
-                height: 400,
-                style: {
-                    title: "📡 预算 vs 实际支出",
-                    showLegend: true,
-                    showTooltip: true,
-                },
-            },
-        );
-
-        console.log("📡 雷达图创建结果:", radarChart);
-        if (radarChart) {
-            console.log(`📡 雷达图 ${radarChart.id} 创建成功`);
-            console.log("雷达图数据格式（类表格结构）：");
-            console.log("| 指标 (维度) | 系列1 | 系列2 | ... |");
-            console.log("|------------|-------|-------|-----|");
-            console.log("| Sales      | 4200  | 5000  |     |");
-            console.log("| Admin      | 3000  | 14000 |     |");
-            console.log("| IT         | 20000 | 28000 |     |");
-            console.log("\n数据说明：");
-            console.log("- 第一列：维度/指标名称（显示在雷达图外围）");
-            console.log("- 后续列：每个系列的数据值（决定距离圆心的远近）");
-            console.log("- 自动计算最大值（无需手动配置 max）");
-            console.log("\n特性：");
-            console.log("- 多边形网格背景（5层同心多边形）");
-            console.log("- 多系列对比（不同颜色填充区域）");
-            console.log("- 维度标签自动分布（支持3-12个维度）");
-            console.log("- 鼠标悬停显示详细数值和占比");
-            console.log("\n适用场景：能力评估、性能分析、产品对比、SWOT分析等");
-        }
-    }
-    setTimeout(() => {
-        prepareData();
-    }, 1000);
-
-    // wb.addHook(HOOKS.AFTER_CHANGE, () => {
-    //     if (isFunction(window.updateToolbarStyleState)) {
-    //         window.updateToolbarStyleState();
-    //     }
-    // });
-
-    // setTimeout(() => {
-    //     wb.updateSettings({
-    //         nestedHeaders: [
-    //             [
-    //                 {
-    //                     label: "基本信息",
-    //                     colspan: 2,
-    //                     style: {
-    //                         backgroundColor: "#FFC000",
-    //                         color: "#4472C4",
-    //                         fontWeight: "bold",
-    //                         fontSize: "14px",
-    //                         textAlign: "center",
-    //                     },
-    //                 },
-    //                 {
-    //                     label: "工作信息",
-    //                     colspan: 4,
-    //                     style: {
-    //                         backgroundColor: "#70AD47",
-    //                         color: "#FFFFFF",
-    //                         fontWeight: "bold",
-    //                         fontSize: "14px",
-    //                         textAlign: "center",
-    //                     },
-    //                 },
-    //             ],
-    //             [
-    //                 { label: "姓名", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-    //                 { label: "年龄", style: { textAlign: "center", backgroundColor: "#FFFFFF" } },
-    //
-    //                 {
-    //                     label: "城市",
-    //                     style: {
-    //                         backgroundColor: "#FFC000",
-    //                         fontWeight: "bold",
-    //                     },
-    //                 },
-    //                 {
-    //                     label: "部门",
-    //                     style: {
-    //                         fontStyle: "italic",
-    //                         color: "#333333",
-    //                     },
-    //                 },
-    //                 {
-    //                     label: "薪酬",
-    //                     colspan: 2,
-    //                     style: {
-    //                         backgroundColor: "#ED7D31",
-    //                         color: "#FFFFFF",
-    //                         textAlign: "center",
-    //                     },
-    //                 },
-    //             ],
-    //             [
-    //                 {
-    //                     label: "name",
-    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-    //                 },
-    //                 {
-    //                     label: "Age",
-    //                     style: { textAlign: "center", backgroundColor: "#FFFFFF" },
-    //                 },
-    //                 "City",
-    //                 "Dept",
-    //                 "Salary",
-    //                 "Hire Date",
-    //             ],
-    //         ],
-    //     });
-    //     // wb.destroy();
-    // }, 5000);
-
-    // 注意：BEFORE_COLUMN_MOVE、AFTER_COLUMN_MOVE、AFTER_SORT 已在 hooks 配置中注册，
-    // 无需重复通过 addHook 注册，否则会触发两次回调。
 
     window.wb = wb;
 

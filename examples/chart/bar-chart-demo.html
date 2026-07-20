@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>柱状图演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px
+        }
+        .container { max-width: 1200px; margin: 0 auto }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px }
+        .toolbar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center
+        }
+        .toolbar button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s
+        }
+        .btn-primary { background: #4472C4; color: white }
+        .btn-primary:hover { background: #365a9c }
+        .btn-success { background: #70AD47; color: white }
+        .btn-success:hover { background: #5a8d39 }
+        .btn-info { background: #5B9BD5; color: white }
+        .btn-info:hover { background: #4889bf }
+        .btn-warning { background: #FFC000; color: #333 }
+        .btn-warning:hover { background: #e6ad00 }
+        .divider { width: 1px; height: 32px; background: #ddd; margin: 0 8px }
+        .sheet-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden
+        }
+        #sheet { width: 100%; height: 600px }
+        .info-panel {
+            margin-top: 20px;
+            padding: 16px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+        .log-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 柱状图 (Bar Chart) 演示</h1>
+
+    <div class="toolbar">
+        <button class="btn-primary" onclick="addBarChart()">📊 创建柱状图</button>
+        <div class="divider"></div>
+        <span style="color:#666;font-weight:600">导出功能:</span>
+        <button class="btn-success" onclick="exportChartAsImage()">🖼️ 导出PNG图片</button>
+        <button class="btn-info" onclick="exportExcelWithChart()">📊 导出Excel(含图表)</button>
+        <button class="btn-warning" onclick="exportAsCSV()">📋 导出CSV</button>
+        <button class="btn-primary" onclick="exportChartsAsZip()" style="background:#9B59B6">📦 导出图表ZIP</button>
+        <div class="divider"></div>
+        <button class="btn-primary" onclick="moveChart()">🔄 移动位置</button>
+        <button class="btn-success" onclick="resizeChart()">📐 调整大小</button>
+        <button class="btn-danger" onclick="removeChart()" style="background:#ED7D31;color:white">🗑️ 删除图表</button>
+    </div>
+
+    <div class="sheet-container">
+        <canvas id="sheet"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📖 柱状图说明</h3>
+        <div style="font-size:13px;line-height:1.8;color:#555;margin-top:10px">
+            <p><strong>用途:</strong> 比较不同类别的数值大小，展示数据差异</p>
+            <p><strong>数据格式:</strong> 表头行 + 数据行（类别名 + 多列数值）</p>
+            <p><strong>特性:</strong> 分组对比、堆叠显示、颜色自定义、图例标注</p>
+            <p style="margin-top:10px;padding:10px;background:#e8f4fd;border-radius:6px;border-left:4px solid #4472C4">
+                <strong>💡 提示:</strong> 本示例展示5个产品在4个季度的销售对比，支持分组和堆叠两种模式
+            </p>
+        </div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪... | 柱状图演示模式</div>
+</div>
+<script src="../libs/exceljs.min.js"></script>
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+let workbook = null, chartPlugin = null, exportPlugin = null, currentChartId = null;
+
+function log(msg) {
+    const la = document.getElementById('logArea');
+    la.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+    la.scrollTop = la.scrollHeight;
+}
+
+function init() {
+    try {
+        workbook = new CanvasSheet.Workbook(document.getElementById('sheet'), {
+            plugins: ["autoFill", "contextMenu", "chart", "exportFile"]
+        });
+        workbook.initRender();
+        workbook.render();
+        chartPlugin = workbook.getPlugin('chart');
+        exportPlugin = workbook.getPlugin('exportFile');
+
+        log('✅ 初始化成功 - 柱状图演示模式');
+        log('');
+        log('🎯 点击 "📊 创建柱状图" 开始');
+    } catch (e) {
+        log(`❌ Error: ${e.message}`);
+    }
+}
+
+function addBarChart() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 0, '产品');
+    s.setCell(0, 1, 'Q1');
+    s.setCell(0, 2, 'Q2');
+    s.setCell(0, 3, 'Q3');
+    s.setCell(0, 4, 'Q4');
+
+    const barData = [
+        { product: 'A', q1: 801, q2: 1293, q3: 1081, q4: 520 },
+        { product: 'B', q1: 584, q2: 863, q3: 1055, q4: 698 },
+        { product: 'C', q1: 1457, q2: 1444, q3: 583, q4: 1137 },
+        { product: 'D', q1: 1025, q2: 971, q3: 974, q4: 1193 },
+        { product: 'E', q1: 1376, q2: 537, q3: 903, q4: 666 }
+    ];
+
+    barData.forEach((item, index) => {
+        s.setCell(index + 1, 0, item.product);
+        s.setCell(index + 1, 1, item.q1);
+        s.setCell(index + 1, 2, item.q2);
+        s.setCell(index + 1, 3, item.q3);
+        s.setCell(index + 1, 4, item.q4);
+    });
+
+    const c = chartPlugin.addBarChart(
+        { startRow: 0, startCol: 0, endRow: 5, endCol: 4 },
+        {
+            anchorRow: 0,
+            anchorCol:5,
+            width: 500,
+            height: 450,
+            style: {
+                title: '📊 产品季度销售对比',
+                showLegend: true,
+                showTooltip: true,
+                showGrid: true,
+                colors: ['#4472C4', '#ED7D31', '#70AD47', '#FFC000'],
+                xAxisLabel: '产品',
+                yAxisLabel: '销售额 (万元)'
+            }
+        }
+    );
+    s.setCell(22, 0, "月份");
+    s.setCell(22, 1, "销售额");
+    s.setCell(22, 2, "目标值");
+    s.setCell(22, 3, "利润率");
+
+    const lineData = [
+        { month: "1月", sales: 1200, target: 1000, profit: 15 },
+        { month: "2月", sales: 1350, target: 1100, profit: 18 },
+        { month: "3月", sales: 1580, target: 1200, profit: 22 },
+        { month: "4月", sales: 1420, target: 1300, profit: 19 },
+        { month: "5月", sales: 1680, target: 1400, profit: 25 },
+        { month: "6月", sales: 1850, target: 1500, profit: 28 },
+        { month: "7月", sales: 1720, target: 1600, profit: 24 },
+        { month: "8月", sales: 1950, target: 1700, profit: 30 },
+        { month: "9月", sales: 2100, target: 1800, profit: 32 },
+        { month: "10月", sales: 1980, target: 1900, profit: 29 },
+        { month: "11月", sales: 2250, target: 2000, profit: 35 },
+        { month: "12月", sales: 2400, target: 2100, profit: 38 },
+    ];
+
+    lineData.forEach((item, index) => {
+        s.setCell(23 + index, 0, item.month);
+        s.setCell(23 + index, 1, item.sales);
+        s.setCell(23 + index, 2, item.target);
+        s.setCell(23 + index, 3, item.profit);
+    });
+
+    const l = chartPlugin.addLineChart(
+        { startRow: 22, startCol: 0, endRow: 34, endCol: 3 },
+        {
+            anchorRow: 22,
+            anchorCol: 4,
+            width: 550,
+            height: 380,
+            style: {
+                title: "📈 月度销售趋势分析",
+                showLegend: true,
+                showTooltip: true,
+                showGrid: true,
+                smooth: true,
+                showDataPoints: true,
+                fill: false,
+                colors: ["#4472C4", "#ED7D31", "#70AD47"],
+                xAxisLabel: "月份",
+                yAxisLabel: "金额 (万元)",
+            },
+        },
+    );
+    if (c) {
+        currentChartId = c.id;
+        log(`✅ 柱状图创建成功: ${c.id}`);
+        log(`   数据: ${barData.length}个产品 × 4个季度`);
+        log('   格式: [产品名, Q1, Q2, Q3, Q4]');
+        log('');
+        log('💡 数据洞察:');
+        log('   • 产品C在Q1表现最佳 (1457万)');
+        log('   • 产品E在Q2表现最弱 (537万)');
+        log('   • 整体呈现波动趋势');
+        log('   现在可以使用导出功能了');
+    }
+}
+
+async function exportChartAsImage() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+    try {
+        console.log(0)
+        log('🖼️ 正在导出柱状图为PNG图片...');
+        await exportPlugin.downloadChart(currentChartId, null, {
+            format: 'png',
+            quality: 0.2,
+            scale: 4,
+            rebuildHighQuality: true
+        });
+        log('✅ PNG导出成功 (2倍分辨率, 高质量)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportExcelWithChart() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📊 正在生成Excel文件(含内嵌柱状图)...');
+        await exportPlugin.downloadFile('xlsx', {
+            filename: 'bar_chart_demo',
+            cellStyles: true,
+            columnHeaders: false
+        });
+        log('✅ Excel导出成功！图表已作为图片嵌入');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportAsCSV() {
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    try {
+        log('📋 正在导出CSV文件...');
+        await exportPlugin.downloadFile('csv', {
+            filename: 'bar_chart_data',
+            columnHeaders: false
+        });
+        log('✅ CSV导出成功 (纯数据格式)');
+    } catch (error) {
+        log(`❌ 导出失败: ${error.message}`);
+    }
+}
+
+async function exportChartsAsZip() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!exportPlugin) return log('❌ 导出插件未加载');
+
+    const doExport = async () => {
+        try {
+            log('📦 正在扫描工作表中的所有图表...');
+            const sheet = workbook.activeSheet;
+            const allCharts = sheet.chartManager.getAll();
+
+            log(`📊 检测到 ${allCharts.length} 个图表:`);
+            allCharts.forEach((chart, idx) => {
+                const type = chart.type === 'line' ? '折线图' : chart.type === 'bar' ? '柱状图' : chart.type;
+                log(`   ${idx + 1}. [${type.toUpperCase()}] ${chart.style?.title || chart.id}`);
+                log(`      ID: ${chart.id}`);
+                log(`      尺寸: ${chart.width}×${chart.height}px`);
+            });
+
+            if (allCharts.length === 0) {
+                log('⚠️ 未找到任何图表，1.5秒后自动重试...');
+                setTimeout(doExport, 1500);
+                return;
+            }
+
+            log('');
+            log('🖼️ 开始导出 (PNG格式, 2倍分辨率)...');
+
+            await exportPlugin.downloadAllCharts({
+                filename: 'charts_collection',
+                format: 'png',
+                scale: 2,
+                rebuildHighQuality: true,
+                asZip: true
+            });
+
+            log('');
+            log('✅ ZIP导出成功！');
+            log(`   📁 文件名: charts_collection.zip`);
+            log(`   📊 包含: ${allCharts.length} 张高清PNG图片`);
+        } catch (error) {
+            log(`❌ ZIP导出失败: ${error.message}`);
+            console.error('详细错误:', error);
+
+            if (error.message.includes('No charts') && !this._retryCount) {
+                this._retryCount = (this._retryCount || 0) + 1;
+                log('⚠️ 图表尚未就绪，1.5秒后自动重试...');
+                setTimeout(doExport, 1500);
+            } else if (error.message.includes('No charts')) {
+                log('');
+                log('⚠️ 多次重试仍失败，可能原因:');
+                log('   • ChartLayer未正确绑定Sheet');
+                log('   • 图表创建失败但未报错');
+                log('   • 建议刷新页面后重试');
+            }
+        }
+    };
+
+    log('⏳ 准备导出（等待1.5秒确保图表渲染完成）...');
+    setTimeout(doExport, 1500);
+}
+
+function moveChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.moveChart(currentChartId, Math.floor(Math.random() * 20) + 5, Math.floor(Math.random() * 10) + 1, 20, 20);
+    log('🔄 图表位置已移动');
+}
+
+function resizeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.resizeChart(currentChartId, Math.floor(Math.random() * 200) + 450, Math.floor(Math.random() * 150) + 320);
+    log('📐 图表尺寸已调整');
+}
+
+function removeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.removeChart(currentChartId);
+    log('🗑️ 图表已删除');
+    currentChartId = null;
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

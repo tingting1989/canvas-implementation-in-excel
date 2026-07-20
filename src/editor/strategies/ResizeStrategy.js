@@ -1,7 +1,8 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { CONFIG } from "../../constants/config";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 列宽/行高拖拽调整策略
@@ -13,7 +14,7 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
  * - 实时显示调整参考线
  */
 export class ResizeStrategy extends EventStrategy {
-    priority = 100;
+    priority = STRATEGY_PRIORITY.RESIZE_LAYOUT;
 
     #resizing = false;
     #resizeType = null;

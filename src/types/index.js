@@ -297,7 +297,7 @@ import { BUILTIN_RENDERER_TYPE_REGISTRY } from "./renderers/index.js";
 // 导入工具依赖
 // ════════════════════════════════════════════
 
-import { isFunction } from "@/utils/utils";
+import { isFunction } from "@/utils/helper";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler";
 
 // ════════════════════════════════════════════
@@ -1065,6 +1065,35 @@ export function getRegisteredTypeCount() {
  * | `dateFormat` | string | 日期格式化模板（Date 类型专用）|
  * | `labels` | Object | 显示标签映射（Select 类型专用）|
  * | `maxRows` | number | 最大行数限制（Textarea 类型专用）|
+ * | **`options`** | **Object** | **⭐ 通用类型选项（推荐用于自定义渲染器）** |
+ *
+ * ## 🎯 自定义渲染器配置（唯一方式）
+ *
+ * 对于所有渲染器（包括内置和自定义），统一使用 **`options`** 字段传递配置：
+ *
+ * ```js
+ * const columns = [
+ *     {
+ *         type: 'starRating',
+ *         width: 180,
+ *         options: {                    // ⭐ 统一配置字段
+ *             maxStars: 5,
+ *             color: '#FFD700',
+ *             emptyColor: '#CCCCCC'
+ *         }
+ *     },
+ *     {
+ *         type: 'customSlider',
+ *         width: 200,
+ *         options: {                    // ⭐ 同样适用于其他自定义类型
+ *             min: 0,
+ *             max: 100,
+ *             step: 5,
+ *             showLabels: true
+ *         }
+ *     }
+ * ];
+ * ```
  *
  * @param {Object} columnConfig - 完整的列配置对象
  * @returns {Object} 过滤后的类型选项对象（只包含有效配置项）
@@ -1073,6 +1102,7 @@ export function getRegisteredTypeCount() {
  * ```js
  * import { extractColumnTypeOptions } from '@canvas-sheet/core';
  *
+ * // 示例1：标准内置类型
  * const columnDefinition = {
  *     type: 'numeric',
  *     header: '价格',
@@ -1080,24 +1110,59 @@ export function getRegisteredTypeCount() {
  *     numericFormat: '¥#,##0.00',  // ← 类型相关
  *     min: 0,                       // ← 类型相关
  *     max: 99999,                   // ← 类型相关
- *     sortable: true,               // ← 非（会被过滤掉）
- *     resizable: true               // ← 非（会被过滤掉）
  * };
  *
  * const typeOptions = extractColumnTypeOptions(columnDefinition);
  * console.log(typeOptions);
  * // 输出: { numericFormat: '¥#,##0.00', min: 0, max: 99999 }
  *
- * // 传递给类型实例
- * const numericType = getColumnTypeInstance('numeric', typeOptions);
+ * // 示例2：自定义渲染器（使用通用 options）
+ * const starRatingColumn = {
+ *     type: 'starRating',
+ *     width: 180,
+ *     options: {                          // ⭐ 唯一推荐方式
+ *         maxStars: 5,
+ *         color: '#FFD700',
+ *         emptyColor: '#CCCCCC'
+ *     },
+ *     sortable: true                      // ← 会被过滤掉
+ * };
+ *
+ * const starOptions = extractColumnTypeOptions(starRatingColumn);
+ * console.log(starOptions);
+ * // 输出: { maxStars: 5, color: '#FFD700', emptyColor: '#CCCCCC' }
  * ```
  *
  * @internal 此函数主要供内部使用，普通用户通常不需要直接调用
  */
 export function extractColumnTypeOptions(columnConfig) {
-    const { source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels, maxRows } = columnConfig;
+    if (!columnConfig || typeof columnConfig !== "object") {
+        return {};
+    }
 
-    return Object.fromEntries(
+    const NON_TYPE_KEYS = new Set([
+        "type",
+        "header",
+        "name",
+        "title",
+        "width",
+        "height",
+        "sortable",
+        "resizable",
+        "frozen",
+        "hidden",
+        "locked",
+        "className",
+        "style",
+        "cssClass",
+        "data",
+        "value",
+        "values",
+    ]);
+
+    const { source, allowInvalid, strict, numericFormat, min, max, maxLength, dateFormat, labels, maxRows, width, options, ...rest } = columnConfig;
+
+    const standardOptions = Object.fromEntries(
         Object.entries({
             source,
             allowInvalid,
@@ -1111,6 +1176,22 @@ export function extractColumnTypeOptions(columnConfig) {
             maxRows,
         }).filter(([, value]) => value !== undefined),
     );
+
+    let typeSpecificOptions = {};
+
+    if (options && typeof options === "object" && !Array.isArray(options)) {
+        Object.assign(typeSpecificOptions, options);
+    }
+
+    for (const [key, value] of Object.entries(rest)) {
+        if (NON_TYPE_KEYS.has(key)) {
+            continue;
+        }
+
+        typeSpecificOptions[key] = value;
+    }
+
+    return { ...standardOptions, ...typeSpecificOptions };
 }
 
 // ════════════════════════════════════════════

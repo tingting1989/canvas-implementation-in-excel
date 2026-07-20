@@ -1,12 +1,13 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { HOOKS } from "../../constants/hookNames.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 const DRAG_THRESHOLD = 3;
 
 export class ColumnMoveStrategy extends EventStrategy {
-    priority = 80;
+    priority = STRATEGY_PRIORITY.ROW_COLUMN_MOVE;
 
     #moving = false;
     #dragStarted = false;

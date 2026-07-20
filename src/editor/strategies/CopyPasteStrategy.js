@@ -1,5 +1,6 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 复制/粘贴键盘策略
@@ -20,7 +21,7 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
  */
 export class CopyPasteStrategy extends EventStrategy {
     /** 高于 KeyboardStrategy(0) 的优先级 */
-    priority = 10;
+    priority = STRATEGY_PRIORITY.SHORTCUT_KEY;
 
     /**
      * 隐藏的 contentEditable div，用于接收浏览器 paste 事件

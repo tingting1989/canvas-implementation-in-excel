@@ -1,5 +1,5 @@
 ﻿import { registry } from "./functions/index.js";
-import { isNumber, isString } from "../utils/utils.js";
+import { isNumber, isString } from "../utils/helper.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**

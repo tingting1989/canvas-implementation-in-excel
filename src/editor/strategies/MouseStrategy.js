@@ -1,9 +1,10 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { HIT_TYPE } from "../../constants/hitType";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
-import { debounce } from "../../utils/utils.js";
+import { debounce } from "../../utils/helper.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 鼠标交互策略
@@ -18,8 +19,10 @@ import { debounce } from "../../utils/utils.js";
  * - 单击左上角全选
  * - 双击进入编辑模式
  */
+
+// 考虑是否需要将 InteractionPlugin 的功能合并到 MouseStrategy 中
 export class MouseStrategy extends EventStrategy {
-    priority = 50;
+    priority = STRATEGY_PRIORITY.MOUSE_DEFAULT;
 
     /** 是否正在拖拽选区 */
     #dragging = false;
@@ -182,6 +185,15 @@ export class MouseStrategy extends EventStrategy {
         } else {
             this.handler.sheet.selection.setActive(row, col);
         }
+
+        // 检查单元格类型是否为交互式类型（如星级评分）
+        // 交互式类型通过自身处理用户输入，不需要弹出传统编辑器
+        const cellType = this.handler.sheet.getCellTypeInstance(row, col);
+        if (cellType?.isInteractive) {
+            // 交互式类型：不显示编辑器，让类型自己处理双击事件
+            return;
+        }
+
         this.handler.editor.show(row, col, "end");
     }
 

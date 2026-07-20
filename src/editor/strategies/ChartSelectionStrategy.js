@@ -1,13 +1,14 @@
-import { EventStrategy } from "./EventStrategy.js";
+﻿import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { CONFIG } from "../../constants/config.js";
 import { NativeChartRenderer } from "../../render/chart/NativeChartRenderer.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 const DRAG_THRESHOLD = 3;
 
 export class ChartSelectionStrategy extends EventStrategy {
-    priority = 120;
+    priority = STRATEGY_PRIORITY.CHART_INTERACTION;
 
     #selectedChartId = null;
     #isMoving = false;

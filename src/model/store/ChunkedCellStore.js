@@ -47,6 +47,12 @@ export class ChunkedCellStore {
      */
     #cachedMaxRow = -1;
 
+    /**
+     * 缓存的最大列号（-1 表示未初始化或无效）
+     * @type {number}
+     */
+    #cachedMaxCol = -1;
+
     constructor() {}
 
     /**
@@ -114,9 +120,12 @@ export class ChunkedCellStore {
     set(row, col, cell) {
         this.#getChunk(row, col).set(row, col, cell);
 
-        // ✅ O(1) 更新缓存：如果新行号更大，直接更新
+        // ✅ O(1) 更新缓存：如果新行号/列号更大，直接更新
         if (row > this.#cachedMaxRow) {
             this.#cachedMaxRow = row;
+        }
+        if (col > this.#cachedMaxCol) {
+            this.#cachedMaxCol = col;
         }
     }
 
@@ -130,10 +139,14 @@ export class ChunkedCellStore {
         const chunk = this.#getChunk(row, col);
         chunk.delete(row, col);
 
-        // ⚠️ 删除操作可能影响最大行号，标记缓存待验证
+        // ⚠️ 删除操作可能影响最大行号/列号，标记缓存待验证
         // 只有当删除的行号 >= 当前缓存值时才需要重算
         if (row >= this.#cachedMaxRow && chunk.cells.size === 0) {
             this.#cachedMaxRow = -1; // 标记为无效，下次 getMaxRow 时重算
+        }
+
+        if (col >= this.#cachedMaxCol && chunk.cells.size === 0) {
+            this.#cachedMaxCol = -1; // 标记为无效，下次 getMaxCol 时重算
         }
     }
 
@@ -717,9 +730,17 @@ export class ChunkedCellStore {
      * 与 getMaxRow 对称，返回非空 Chunk 中 colStart + CHUNK_COL_SIZE - 1 的最大值。
      * 无数据时返回 -1。
      *
+     * ✅ 性能优化：使用缓存机制，O(1) 返回（与 getMaxRow 一致）
+     *
      * @returns {number} 最大列号，-1 表示无数据
      */
     getMaxCol() {
+        // ✅ 缓存命中：O(1) 直接返回
+        if (this.#cachedMaxCol >= 0) {
+            return this.#cachedMaxCol;
+        }
+
+        // ⚠️ 缓存失效：需要重新计算
         let maxCol = -1;
         for (const chunk of this.#chunks.values()) {
             if (chunk.cells.size > 0) {
@@ -727,6 +748,67 @@ export class ChunkedCellStore {
                 if (chunkMax > maxCol) maxCol = chunkMax;
             }
         }
+
+        // 更新缓存
+        this.#cachedMaxCol = maxCol;
         return maxCol;
+    }
+
+    /**
+     * 清空所有单元格数据（Clear All Cell Data）
+     *
+     * 释放所有 Chunk 实例，重置内部状态。
+     * 这是最高效的清空方式，时间复杂度 O(1)。
+     *
+     * ⚠️ 注意：
+     * - 此方法不触发任何事件或撤销历史
+     * - 调用方需自行管理事件通知和历史记录
+     * - 典型用途：Sheet.clearData() 内部调用
+     *
+     * @returns {number} 被清空的 Chunk 数量
+     */
+    clear() {
+        const size = this.#chunks.size;
+        this.#chunks.clear();
+        this.#cachedMaxRow = -1;
+        this.#cachedMaxCol = -1;
+        return size;
+    }
+
+    /**
+     * 遍历所有非空单元格（Iterator for All Cells）
+     *
+     * 用于批量操作前收集数据快照（如 clearAll 的撤销支持）。
+     * 生成器模式，惰性求值，节省内存。
+     *
+     * ⚠️ 兼容性提示：
+     * - 此方法使用 ES6 生成器函数 + Symbol.iterator
+     * - 在 UMD 构建或旧版浏览器中可能存在兼容性问题
+     * - 推荐使用 `chunks` getter 代替 for...of 直接遍历实例
+     *
+     * @yields {{row: number, col: number, cell: import("../Cell.js").Cell}}
+     */
+    *[Symbol.iterator]() {
+        for (const [, chunk] of this.#chunks) {
+            yield* chunk.iterate();
+        }
+    }
+
+    /**
+     * 获取所有 Chunk 的迭代器（推荐用于遍历）
+     *
+     * ✅ 兼容性优于直接 for...of 遍历 ChunkedCellStore 实例
+     * 返回 Map.entries() 迭代器，兼容所有环境
+     *
+     * @returns {IterableIterator<[string, import("./Chunk.js").Chunk]>}
+     *
+     * @example
+     * // 推荐用法（避免迭代器兼容性问题）
+     * for (const [key, chunk] of cellStore.chunks) {
+     *     console.log(key, chunk);
+     * }
+     */
+    get chunks() {
+        return this.#chunks.entries();
     }
 }

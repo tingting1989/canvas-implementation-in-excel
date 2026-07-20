@@ -216,12 +216,13 @@ export class GaugeStrategy extends BaseChartStrategy {
         const endAngle = 2 * Math.PI;
         const valueAngle = startAngle + (endAngle - startAngle) * percentage;
 
+        const pixelRatio = this.getPixelRatio(ctx, area);
         ctx.lineCap = "round";
 
         ctx.beginPath();
         ctx.arc(cx, cy, radius, startAngle, endAngle);
         ctx.strokeStyle = "#e0e0e0";
-        ctx.lineWidth = radius * 0.15;
+        ctx.lineWidth = radius * 0.15 * pixelRatio;
         ctx.stroke();
 
         const gradient = ctx.createLinearGradient(cx - radius, cy, cx + radius, cy);
@@ -232,7 +233,7 @@ export class GaugeStrategy extends BaseChartStrategy {
         ctx.beginPath();
         ctx.arc(cx, cy, radius, startAngle, valueAngle);
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = radius * 0.15;
+        ctx.lineWidth = radius * 0.15 * pixelRatio;
         ctx.stroke();
 
         const tickRadius = radius * 1.15;
@@ -253,7 +254,7 @@ export class GaugeStrategy extends BaseChartStrategy {
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
             ctx.strokeStyle = "#666";
-            ctx.lineWidth = isMajor ? 2 : 1;
+            ctx.lineWidth = (isMajor ? 2 : 1) * pixelRatio;
             ctx.stroke();
 
             if (isMajor) {
@@ -263,7 +264,7 @@ export class GaugeStrategy extends BaseChartStrategy {
                 const ty = cy + Math.sin(angle) * textR;
 
                 ctx.fillStyle = "#666";
-                ctx.font = `${radius * 0.12}px ${CONFIG.CHART_FONT_FAMILY}`;
+                ctx.font = `${radius * 0.12 * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillText(Math.round(tickValue).toString(), tx, ty);
@@ -294,13 +295,13 @@ export class GaugeStrategy extends BaseChartStrategy {
         ctx.fill();
 
         ctx.fillStyle = "#333";
-        ctx.font = `bold ${radius * 0.14}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.font = `bold ${radius * 0.14 * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(label.toUpperCase(), cx, cy + radius * 0.25);
 
         ctx.fillStyle = "#333";
-        ctx.font = `bold ${radius * 0.22}px ${CONFIG.CHART_FONT_FAMILY}`;
+        ctx.font = `bold ${radius * 0.22 * pixelRatio}px ${CONFIG.CHART_FONT_FAMILY}`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
