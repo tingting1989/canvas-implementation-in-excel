@@ -222,7 +222,7 @@ export class SheetMetaCoordinator {
      */
     applyColumnsConfig(columnsConfig) {
         this.#typeManager.applyColumnsConfig(columnsConfig);
-        this.#sheet._invalidateAll();
+        this.#sheet.invalidateAll();
     }
 
     // ════════════════════════════════════════════════════
@@ -311,7 +311,7 @@ export class SheetMetaCoordinator {
             }
         }
 
-        this.#sheet._invalidateAll();
+        this.#sheet.invalidateAll();
     }
 
     /**

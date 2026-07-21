@@ -44,9 +44,7 @@ export class TextColumnType extends BaseColumnType {
 
     getDefaultStyle(baseStyle) {
         // 文本默认左对齐
-        if (!baseStyle?.textAlign) {
-            return { ...baseStyle, textAlign: "left" };
-        }
-        return baseStyle;
+        const textAlign = baseStyle?.textAlign ?? "left";
+        return { ...baseStyle, textAlign };
     }
 }

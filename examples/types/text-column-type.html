@@ -1,0 +1,675 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 文本列类型 - TextColumnType 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #667eea;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fafafa;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .log-success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .log-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .log-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment {
+            color: #5c6370;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-function {
+            color: #61afef;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📝 文本列类型 - TextColumnType 演示</h1>
+
+    <!-- 功能介绍 -->
+    <div class="demo-section">
+        <h2 class="section-title">🎯 TextColumnType 核心功能</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📄 默认左对齐</h3>
+                <p>文本内容默认左对齐显示，符合阅读习惯</p>
+            </div>
+            <div class="feature-card">
+                <h3>✂️ 自动去空白</h3>
+                <p>自动去除输入文本首尾的空白字符</p>
+            </div>
+            <div class="feature-card">
+                <h3>📏 长度限制</h3>
+                <p>支持配置最大长度限制，超过时自动提示</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔄 灵活配置</h3>
+                <p>支持自定义对齐方式、最大长度等选项</p>
+            </div>
+            <div class="feature-card">
+                <h3>✅ 空值处理</h3>
+                <p>空字符串、undefined、null 均视为有效</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎨 样式继承</h3>
+                <p>用户配置的样式优先级高于默认样式</p>
+            </div>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+            <span class="code-comment">// ✨ TextColumnType 使用示例</span>
+
+            <span class="code-comment">// 创建文本列配置</span>
+            columns: [
+                { 
+                    type: "text", 
+                    width: 150,
+                    options: {
+                        maxLength: 100  // 最大长度限制
+                    }
+                },
+                {
+                    type: "text",
+                    width: 200,
+                    textAlign: "center"  // 覆盖默认左对齐
+                },
+                {
+                    type: "text",
+                    width: 180,
+                    <span class="code-comment">// style 配置项：直接设置列样式</span>
+                    style: {
+                        backgroundColor: "#f5f5f5",
+                        color: "#333333",
+                        fontWeight: "bold",
+                        fontSize: 14,
+                        fontFamily: "Microsoft YaHei"
+                    }
+                }
+            ]
+
+            <span class="code-comment">// 支持的 options 配置项</span>
+            <span class="code-keyword">const</span> options = {
+                maxLength: <span class="code-keyword">50</span>,  <span class="code-comment">// 最大字符数限制</span>
+            };
+
+            <span class="code-comment">// 支持的 style 配置项</span>
+            <span class="code-keyword">const</span> styleOptions = {
+                textAlign: <span class="code-string">"left"</span>,      <span class="code-comment">// 对齐方式: left/center/right</span>
+                backgroundColor: <span class="code-string">"#f0f0f0"</span>, <span class="code-comment">// 背景颜色</span>
+                color: <span class="code-string">"#333"</span>,        <span class="code-comment">// 文字颜色</span>
+                fontWeight: <span class="code-string">"bold"</span>,    <span class="code-comment">// 字体粗细</span>
+                fontSize: <span class="code-keyword">14</span>,          <span class="code-comment">// 字体大小</span>
+                fontFamily: <span class="code-string">"Microsoft YaHei"</span>, <span class="code-comment">// 字体</span>
+            };
+        </div>
+    </div>
+
+    <!-- Canvas 展示区域 -->
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 文本列表格展示</h2>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="targetColumn">📍 目标列 (0-based)</label>
+                <input type="number" id="targetColumn" value="1" min="0" max="5">
+            </div>
+
+            <div class="control-group">
+                <label for="textAlign">🎨 对齐方式</label>
+                <select id="textAlign">
+                    <option value="left">左对齐 (默认)</option>
+                    <option value="center">居中对齐</option>
+                    <option value="right">右对齐</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="maxLength">📏 最大长度限制</label>
+                <input type="number" id="maxLength" value="" placeholder="无限制">
+            </div>
+
+            <div class="control-group">
+                <label for="bgColor">🎨 背景颜色</label>
+                <input type="color" id="bgColor" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label for="textColor">📝 文字颜色</label>
+                <input type="color" id="textColor" value="#333333">
+            </div>
+
+            <div class="control-group">
+                <label for="fontSize">🔤 字体大小</label>
+                <input type="number" id="fontSize" value="14" min="10" max="24">
+            </div>
+
+            <div class="control-group">
+                <label for="fontWeight">⚖️ 字体粗细</label>
+                <select id="fontWeight">
+                    <option value="normal">正常</option>
+                    <option value="bold">粗体</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-primary" onclick="applyConfig()">
+                    ⚙️ 应用配置
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-success" onclick="addTestRow()">
+                    ➕ 添加测试数据
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-warning" onclick="testValidation()">
+                    🧪 测试验证
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-info" onclick="resetTable()">
+                    🔄 重置表格
+                </button>
+            </div>
+        </div>
+
+        <!-- 日志输出 -->
+        <div class="control-group" style="margin-top: 20px;">
+            <label>📝 操作日志</label>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #667eea; margin: 16px 0 8px;">基本操作</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>编辑单元格</strong>：双击文本单元格 → 进入编辑模式 → 输入文本 → 按 Enter 确认</li>
+                <li><strong>切换对齐</strong>：选择对齐方式 → 点击「应用配置」→ 表格自动更新</li>
+                <li><strong>长度限制</strong>：设置最大长度 → 超出时显示验证错误</li>
+                <li><strong>添加数据</strong>：点击「添加测试数据」→ 自动生成一行随机数据</li>
+            </ul>
+
+            <h3 style="color: #667eea; margin: 16px 0 8px;">核心功能</h3>
+            <div style="margin-left: 20px; color: #555;">
+                <p><strong>✂️ 自动去空白：</strong>输入 "  Hello World  " → 存储为 "Hello World"</p>
+                <p><strong>📏 长度验证：</strong>超过 maxLength 限制时显示错误提示</p>
+                <p><strong>🎨 默认左对齐：</strong>文本默认左对齐，可通过<code> {type:'text', style:{textAlign: "center"}}</code> 配置覆盖</p>
+            </div>
+
+            <h3 style="color: #667eea; margin: 16px 0 8px;">验证规则</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>空值</strong>：空字符串、undefined、null 均视为有效</li>
+                <li><strong>长度限制</strong>：超过 maxLength 时返回错误消息</li>
+                <li><strong>trim 处理</strong>：parse() 时自动去除首尾空白</li>
+            </ul>
+
+            <h3 style="color: #667eea; margin: 16px 0 8px;">技术特性</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>类型安全</strong>：所有输入都转换为字符串类型</li>
+                <li><strong>样式优先级</strong>：用户配置 > 类型默认 > 全局默认</li>
+                <li><strong>国际化支持</strong>：支持任意 Unicode 字符</li>
+                <li><strong>回退类型</strong>：未知类型自动 fallback 到 text</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+
+    function log(message, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        container.insertBefore(entry, container.firstChild);
+
+        if (container.children.length > 50) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1200,
+                height: 550,
+
+                sheets: [{
+                    name: "文本列演示",
+
+                    data: [
+                        ["ID", "姓名", "邮箱", "职位", "部门", "备注"],
+                        ["001", "张三", "zhangsan@example.com", "高级工程师", "技术部", "负责前端开发"],
+                        ["002", "李四", "lisi@example.com", "产品经理", "产品部", "负责产品规划"],
+                        ["003", "王五", "wangwu@example.com", "UI设计师", "设计部", "用户体验专家"],
+                        ["004", "赵六", "zhaoliu@example.com", "后端工程师", "技术部", "数据库架构"],
+                        ["005", "钱七", "qianqi@example.com", "测试工程师", "质量部", "自动化测试"],
+                        ["006", "孙八", "sunba@example.com", "运维工程师", "运维部", "系统维护"],
+                        ["007", "周九", "zhoujiu@example.com", "项目经理", "管理部", "项目协调"],
+                        ["008", "吴十", "wushi@example.com", "数据分析师", "数据部", "数据分析"],
+                    ],
+
+                    columns: [
+                        { type: "text", width: 80, textAlign: "center" },
+                        { type: "text", width: 120 },
+                        { type: "text", width: 200 },
+                        { type: "text", width: 140 },
+                        { type: "text", width: 100 },
+                        { type: "text", width: 200 },
+                    ],
+
+                    cell: [
+                        // 表头样式
+                        { row: 0, col: 0, type: "text", style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 1, type: "text", style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 2, type: "text", style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 3, type: "text", style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 4, type: "text", style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 5, type: "text", style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" } },
+                    ],
+
+                    rowHeights: [40, 42, 42, 42, 42, 42, 42, 42, 42],
+                    textOverflowEllipsis: true,
+                    cellPadding: 8
+                }]
+            });
+
+            log('✅ Workbook 创建成功', 'info');
+
+            workbook.initRender();
+            workbook.render();
+
+            log('🎉 初始化完成！尝试编辑文本单元格', 'success');
+            log('', 'info');
+            log('📋 功能说明：', 'info');
+            log('   ✏️ 双击单元格 → 编辑文本', 'info');
+            log('   🎨 选择对齐 → 切换文本对齐方式', 'info');
+            log('   📏 设置长度 → 限制最大字符数', 'info');
+            log('   ➕ 添加数据 → 生成测试数据', 'info');
+            log('', 'info');
+
+        } catch (error) {
+            console.error('初始化失败:', error);
+            log(`❌ 初始化失败: ${error.message}`, 'error');
+        }
+    }
+
+    function applyConfig() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        try {
+            const targetCol = parseInt(document.getElementById('targetColumn').value);
+            const textAlign = document.getElementById('textAlign').value;
+            const maxLength = document.getElementById('maxLength').value;
+            const bgColor = document.getElementById('bgColor').value;
+            const textColor = document.getElementById('textColor').value;
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            const fontWeight = document.getElementById('fontWeight').value;
+
+            const sheet = workbook.getActiveSheet();
+
+            if (sheet.columns && sheet.columns[targetCol]) {
+                const colConfig = sheet.columns[targetCol];
+
+                // 初始化 options 对象
+                if (!colConfig.options) {
+                    colConfig.options = {};
+                }
+
+                // 初始化 style 对象
+                if (!colConfig.style) {
+                    colConfig.style = {};
+                }
+
+                // 应用配置
+                colConfig.textAlign = textAlign;
+                
+                if (maxLength !== '') {
+                    colConfig.options.maxLength = parseInt(maxLength);
+                } else {
+                    delete colConfig.options.maxLength;
+                }
+
+                // 应用 style 配置
+                colConfig.style.backgroundColor = bgColor;
+                colConfig.style.color = textColor;
+                colConfig.style.fontSize = fontSize;
+                colConfig.style.fontWeight = fontWeight;
+
+                log(`✅ 已应用配置到第 ${targetCol + 1} 列`, 'success');
+                log(`   - 对齐方式: ${textAlign}`, 'info');
+                log(`   - 最大长度: ${maxLength || '无限制'}`, 'info');
+                log(`   - 背景颜色: ${bgColor}`, 'info');
+                log(`   - 文字颜色: ${textColor}`, 'info');
+                log(`   - 字体大小: ${fontSize}px`, 'info');
+                log(`   - 字体粗细: ${fontWeight}`, 'info');
+
+                workbook.render();
+            } else {
+                log(`⚠️ 第 ${targetCol + 1} 列不存在`, 'warning');
+            }
+
+        } catch (error) {
+            log(`❌ 配置失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function addTestRow() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        try {
+            const sheet = workbook.getActiveSheet();
+            const rowIndex = sheet.data.length;
+
+            const names = ['陈十一', '刘十二', '杨十三', '黄十四', '林十五', '何十六', '马十七', '罗十八'];
+            const departments = ['技术部', '产品部', '设计部', '质量部', '运维部', '管理部', '数据部'];
+            const positions = ['工程师', '经理', '设计师', '分析师', '架构师', '专员'];
+
+            const name = names[rowIndex % names.length];
+            const email = `${name.replace(/[\u4e00-\u9fa5]/g, (c) => c.charCodeAt(0).toString(36))}@example.com`.toLowerCase();
+            const department = departments[Math.floor(Math.random() * departments.length)];
+            const position = ['高级', '资深', '初级'][Math.floor(Math.random() * 3)] + positions[Math.floor(Math.random() * positions.length)];
+            const remark = `入职时间: ${2020 + Math.floor(Math.random() * 5)}年`;
+
+            sheet.data.push([`${String(rowIndex + 1).padStart(3, '0')}`, name, email, position, department, remark]);
+
+            log(`✅ 添加测试数据成功 (行 ${rowIndex + 1})`, 'success');
+            log(`   - 姓名: ${name}`, 'info');
+            log(`   - 邮箱: ${email}`, 'info');
+
+            workbook.render();
+        } catch (error) {
+            log(`❌ 添加数据失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function testValidation() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        log('🧪 开始测试文本验证功能...', 'info');
+
+        const sheet = workbook.getActiveSheet();
+        const colIndex = 1; // 姓名列
+        const cellType = sheet.getCellTypeInstance(1, colIndex);
+        
+        if (cellType) {
+            log(`📊 当前列类型: ${cellType.name}`, 'info');
+            
+            // 测试验证
+            const testValues = [
+                { value: '张三', desc: '有效文本' },
+                { value: '', desc: '空字符串' },
+                { value: '  带空白的文本  ', desc: '带空白的文本' },
+                { value: null, desc: 'null' },
+                { value: undefined, desc: 'undefined' },
+            ];
+
+            testValues.forEach(({ value, desc }) => {
+                const result = cellType.validate(value);
+                const status = result === true ? '✅ 有效' : `❌ ${result}`;
+                log(`   ${desc}: ${JSON.stringify(value) || value} → ${status}`, result === true ? 'success' : 'warning');
+            });
+
+            // 测试 parse
+            log('🔄 测试 parse() 方法:', 'info');
+            const parsed1 = cellType.parse('  Hello World  ');
+            log(`   '  Hello World  ' → '${parsed1}' (trim 后)`, 'info');
+            const parsed2 = cellType.parse('');
+            log(`   '' → '${parsed2}'`, 'info');
+        } else {
+            log('⚠️ 无法获取列类型实例', 'warning');
+        }
+    }
+
+    function resetTable() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        log('🔄 正在重置表格...', 'info');
+        initWorkbook();
+    }
+
+    window.addEventListener('DOMContentLoaded', initWorkbook);
+</script>
+</body>
+</html>

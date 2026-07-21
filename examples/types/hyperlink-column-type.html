@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔗 超链接列类型 - HyperlinkColumnType 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #11998e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fafafa;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #11998e;
+            box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .log-success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .log-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .log-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #11998e;
+        }
+
+        .feature-card h3 {
+            color: #11998e;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment {
+            color: #5c6370;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-function {
+            color: #61afef;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔗 超链接列类型 - HyperlinkColumnType 演示</h1>
+
+    <!-- 功能介绍 -->
+    <div class="demo-section">
+        <h2 class="section-title">🎯 HyperlinkColumnType 核心功能</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🔗 URL 自动检测</h3>
+                <p>自动识别有效 URL，支持 http/https 协议</p>
+            </div>
+            <div class="feature-card">
+                <h3>📝 自定义显示文本</h3>
+                <p>支持对象格式 {url, text}，显示友好的链接文本</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔒 安全打开</h3>
+                <p>使用 noopener,noreferrer 安全打开链接</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎨 默认链接样式</h3>
+                <p>蓝色文字、下划线、手型光标，符合用户习惯</p>
+            </div>
+            <div class="feature-card">
+                <p>支持 BEFORE_OPEN_URL/AFTER_OPEN_URL 钩子，允许拦截和追踪</p>
+            </div>
+            <div class="feature-card">
+                <h3>✅ URL 验证</h3>
+                <p>内置 URL 格式验证，确保链接有效性</p>
+            </div>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+            <span class="code-comment">// ✨ HyperlinkColumnType 使用示例</span>
+
+            <span class="code-comment">// 创建超链接列配置</span>
+            columns: [
+                { 
+                    type: "hyperlink", 
+                    width: 200,
+                    options: {
+                        maxDisplayLength: 50  // URL 显示最大长度
+                    }
+                },
+                {
+                    type: "hyperlink",
+                    width: 250,
+                    style: {
+                        color: "#1a73e8",
+                        textDecoration: "underline"
+                    }
+                }
+            ]
+
+            <span class="code-comment">// 数据格式支持</span>
+            <span class="code-comment">// 方式1: 纯 URL 字符串</span>
+            <span class="code-keyword">const</span> data1 = ["https://example.com"];
+
+            <span class="code-comment">// 方式2: 对象格式（自定义显示文本）</span>
+            <span class="code-keyword">const</span> data2 = [{ url: "https://example.com", text: "点击访问" }];
+
+            <span class="code-comment">// 方式3: 输入格式 "显示文本|URL"</span>
+            <span class="code-keyword">const</span> input = <span class="code-string">"GitHub|https://github.com"</span>;
+
+            <span class="code-comment">// 支持的 options 配置项</span>
+            <span class="code-keyword">const</span> options = {
+                maxDisplayLength: <span class="code-keyword">50</span>,  <span class="code-comment">// URL 显示最大长度</span>
+            };
+
+            <span class="code-comment">// Hooks 监听示例</span>
+            workbook.addHook(<span class="code-string">"beforeOpenUrl"</span>, (row, col, url, event) => {
+                console.log(<span class="code-string">"即将打开:"</span>, url);
+                <span class="code-comment">// 返回 false 可阻止打开</span>
+                <span class="code-keyword">if</span> (url.includes(<span class="code-string">"unsafe"</span>)) <span class="code-keyword">return false</span>;
+            });
+        </div>
+    </div>
+
+    <!-- Canvas 展示区域 -->
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 超链接列表格展示</h2>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="maxLength">📏 URL 显示最大长度</label>
+                <input type="number" id="maxLength" value="50" min="10" max="200">
+            </div>
+
+            <div class="control-group">
+                <label for="linkColor">🎨 链接颜色</label>
+                <input type="color" id="linkColor" value="#1a73e8">
+            </div>
+
+            <div class="control-group">
+                <label for="fontSize">🔤 字体大小</label>
+                <input type="number" id="fontSize" value="14" min="10" max="24">
+            </div>
+
+            <div class="control-group">
+                <label for="fontWeight">⚖️ 字体粗细</label>
+                <select id="fontWeight">
+                    <option value="normal">正常</option>
+                    <option value="bold">粗体</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-primary" onclick="applyConfig()">
+                    ⚙️ 应用配置
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-success" onclick="addTestRow()">
+                    ➕ 添加测试数据
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-warning" onclick="testValidation()">
+                    🧪 测试验证
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-info" onclick="resetTable()">
+                    🔄 重置表格
+                </button>
+            </div>
+        </div>
+
+        <!-- 提示信息 -->
+        <div style="margin-top: 16px; padding: 12px; background: #e8f5e9; border-radius: 8px; color: #388e3c;">
+            <strong>💡 操作提示：</strong>按住 <kbd>Ctrl</kbd>（Windows）或 <kbd>Cmd</kbd>（Mac）+ 点击超链接单元格可打开链接
+        </div>
+
+        <!-- 日志输出 -->
+        <div class="control-group" style="margin-top: 20px;">
+            <label>📝 操作日志</label>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #11998e; margin: 16px 0 8px;">基本操作</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>打开链接</strong>：按住 Ctrl/Cmd + 点击超链接单元格 → 在新标签页打开</li>
+                <li><strong>编辑单元格</strong>：双击单元格 → 输入 URL 或"显示文本|URL"格式</li>
+                <li><strong>切换配置</strong>：调整参数 → 点击「应用配置」→ 表格自动更新</li>
+                <li><strong>添加数据</strong>：点击「添加测试数据」→ 自动生成一行随机数据</li>
+            </ul>
+
+            <h3 style="color: #11998e; margin: 16px 0 8px;">数据格式</h3>
+            <div style="margin-left: 20px; color: #555;">
+                <p><strong>📌 纯 URL：</strong><code>https://github.com</code> → 显示为简化后的 URL</p>
+                <p><strong>📌 对象格式：</strong><code>{ url: "https://github.com", text: "GitHub" }</code> → 显示为自定义文本</p>
+                <p><strong>📌 输入格式：</strong><code>GitHub|https://github.com</code> → 解析为对象格式</p>
+            </div>
+
+            <h3 style="color: #11998e; margin: 16px 0 8px;">验证规则</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>空值</strong>：空字符串、undefined、null 均视为有效</li>
+                <li><strong>URL 格式</strong>：必须以 http:// 或 https:// 开头</li>
+                <li><strong>对象格式</strong>：必须包含有效的 url 字段</li>
+            </ul>
+
+            <h3 style="color: #11998e; margin: 16px 0 8px;">Hooks 支持</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>BEFORE_OPEN_URL</strong>：链接打开前触发，返回 false 可阻止打开</li>
+                <li><strong>AFTER_OPEN_URL</strong>：链接打开后触发，用于日志记录等</li>
+            </ul>
+
+            <h3 style="color: #11998e; margin: 16px 0 8px;">技术特性</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>安全打开</strong>：使用 noopener,noreferrer 防止安全漏洞</li>
+                <li><strong>文本截断</strong>：过长 URL 自动截断并添加省略号</li>
+                <li><strong>样式继承</strong>：用户配置的样式优先级高于默认样式</li>
+                <li><strong>与隐式检测兼容</strong>：同时支持自动检测和显式声明</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+
+    function log(message, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        container.insertBefore(entry, container.firstChild);
+
+        if (container.children.length > 50) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1200,
+                height: 550,
+
+                sheets: [{
+                    name: "超链接列演示",
+
+                    data: [
+                        ["名称", "网址", "描述", "状态"],
+                        ["GitHub", "https://github.com", "全球最大的代码托管平台", "活跃"],
+                        ["Google", { url: "https://google.com", text: "点击访问" }, "全球最大的搜索引擎", "活跃"],
+                        ["Stack Overflow", "https://stackoverflow.com", "程序员问答社区", "活跃"],
+                        ["MDN", "https://developer.mozilla.org", "Web 开发文档", "活跃"],
+                        ["Wikipedia", "https://wikipedia.org", "免费百科全书", "活跃"],
+                        ["Canvas Sheet", "https://github.com/example/canvas-sheet", "Canvas 表格实现", "开发中"],
+                        ["Node.js", "https://nodejs.org", "JavaScript 运行时", "活跃"],
+                        ["React", "https://react.dev", "UI 库", "活跃"],
+                    ],
+
+                    columns: [
+                        { type: "text", width: 120, textAlign: "center" },
+                        { type: "hyperlink", width: 250, options: { maxDisplayLength: 50 } },
+                        { type: "text", width: 200 },
+                        { type: "text", width: 100, textAlign: "center" },
+                    ],
+
+                    cell: [
+                        // 表头样式
+                        { row: 0, col: 0, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 1, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 2, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 3, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                    ],
+
+                    rowHeights: [40, 42, 42, 42, 42, 42, 42, 42, 42],
+                    textOverflowEllipsis: true,
+                    cellPadding: 8
+                }]
+            });
+
+            // 注册 URL 相关 hooks
+            workbook.addHook('beforeOpenUrl', (row, col, url, event) => {
+                log(`🔗 准备打开链接: ${url} (行: ${row}, 列: ${col})`, 'info');
+                // 返回 false 可阻止打开
+                // if (url.includes('unsafe')) {
+                //     log('❌ 链接被阻止（包含 unsafe）', 'error');
+                //     return false;
+                // }
+            });
+
+            workbook.addHook('afterOpenUrl', (row, col, url) => {
+                log(`✅ 链接已打开: ${url}`, 'success');
+            });
+
+            log('✅ Workbook 创建成功', 'info');
+
+            workbook.initRender();
+            workbook.render();
+
+            log('🎉 初始化完成！', 'success');
+            log('', 'info');
+            log('📋 功能说明：', 'info');
+            log('   ✏️ 双击单元格 → 编辑超链接', 'info');
+            log('   🎨 选择颜色 → 自定义链接样式', 'info');
+            log('   📏 设置长度 → 限制 URL 显示长度', 'info');
+            log('   🖱️ Ctrl+点击 → 打开链接', 'info');
+            log('', 'info');
+
+        } catch (error) {
+            console.error('初始化失败:', error);
+            log(`❌ 初始化失败: ${error.message}`, 'error');
+        }
+    }
+
+    function applyConfig() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        try {
+            const maxLength = parseInt(document.getElementById('maxLength').value);
+            const linkColor = document.getElementById('linkColor').value;
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            const fontWeight = document.getElementById('fontWeight').value;
+
+            const sheet = workbook.getActiveSheet();
+
+            if (sheet.columns && sheet.columns[1]) {
+                const colConfig = sheet.columns[1];
+
+                // 初始化 options 对象
+                if (!colConfig.options) {
+                    colConfig.options = {};
+                }
+
+                // 初始化 style 对象
+                if (!colConfig.style) {
+                    colConfig.style = {};
+                }
+
+                // 应用配置
+                colConfig.options.maxDisplayLength = maxLength;
+                colConfig.style.color = linkColor;
+                colConfig.style.fontSize = fontSize;
+                colConfig.style.fontWeight = fontWeight;
+
+                log(`✅ 已应用配置到超链接列`, 'success');
+                log(`   - 显示长度: ${maxLength}`, 'info');
+                log(`   - 链接颜色: ${linkColor}`, 'info');
+                log(`   - 字体大小: ${fontSize}px`, 'info');
+                log(`   - 字体粗细: ${fontWeight}`, 'info');
+
+                workbook.render();
+            } else {
+                log(`⚠️ 超链接列不存在`, 'warning');
+            }
+
+        } catch (error) {
+            log(`❌ 配置失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function addTestRow() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        try {
+            const sheet = workbook.getActiveSheet();
+            const rowIndex = sheet.data.length;
+
+            const sites = [
+                { name: 'Vue.js', url: 'https://vuejs.org', desc: '渐进式 JavaScript 框架' },
+                { name: 'TypeScript', url: 'https://typescriptlang.org', desc: 'JavaScript 的超集' },
+                { name: 'Tailwind CSS', url: 'https://tailwindcss.com', desc: '实用优先的 CSS 框架' },
+                { name: 'Vite', url: 'https://vitejs.dev', desc: '下一代前端构建工具' },
+                { name: 'npm', url: 'https://npmjs.com', desc: 'Node.js 包管理器' },
+                { name: 'Yarn', url: 'https://yarnpkg.com', desc: '快速、可靠的包管理器' },
+                { name: 'Jest', url: 'https://jestjs.io', desc: 'JavaScript 测试框架' },
+                { name: 'ESLint', url: 'https://eslint.org', desc: 'JavaScript 代码检查工具' },
+            ];
+
+            const site = sites[rowIndex % sites.length];
+            
+            // 随机选择纯 URL 或对象格式
+            const useObjectFormat = Math.random() > 0.5;
+            const urlValue = useObjectFormat ? { url: site.url, text: site.name } : site.url;
+
+            sheet.data.push([site.name, urlValue, site.desc, '活跃']);
+
+            log(`✅ 添加测试数据成功 (行 ${rowIndex + 1})`, 'success');
+            log(`   - 名称: ${site.name}`, 'info');
+            log(`   - 格式: ${useObjectFormat ? '对象格式' : '纯URL'}`, 'info');
+
+            workbook.render();
+        } catch (error) {
+            log(`❌ 添加数据失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function testValidation() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        log('🧪 开始测试超链接验证功能...', 'info');
+
+        const sheet = workbook.getActiveSheet();
+        const colIndex = 1; // 超链接列
+        const cellType = sheet.getCellTypeInstance(1, colIndex);
+        
+        if (cellType) {
+            log(`📊 当前列类型: ${cellType.name}`, 'info');
+            
+            // 测试验证
+            const testValues = [
+                { value: 'https://example.com', desc: '有效 URL' },
+                { value: 'http://example.com', desc: 'HTTP URL' },
+                { value: { url: 'https://example.com', text: '点击' }, desc: '对象格式' },
+                { value: '', desc: '空字符串' },
+                { value: null, desc: 'null' },
+                { value: 'not-a-url', desc: '无效 URL' },
+                { value: { text: '缺少 url' }, desc: '缺少 url 字段' },
+            ];
+
+            testValues.forEach(({ value, desc }) => {
+                const result = cellType.validate(value);
+                const status = result === true ? '✅ 有效' : `❌ ${result}`;
+                const logType = result === true ? 'success' : 'warning';
+                log(`   ${desc}: ${JSON.stringify(value).slice(0, 40)} → ${status}`, logType);
+            });
+
+            // 测试 parse
+            log('🔄 测试 parse() 方法:', 'info');
+            const parsed1 = cellType.parse('GitHub|https://github.com');
+            log(`   'GitHub|https://github.com' → ${JSON.stringify(parsed1)}`, 'info');
+            
+            const parsed2 = cellType.parse('https://example.com');
+            log(`   'https://example.com' → '${parsed2}'`, 'info');
+
+            // 测试 format
+            log('🎨 测试 format() 方法:', 'info');
+            const formatted1 = cellType.format('https://www.example.com/path/to/page');
+            log(`   URL → '${formatted1}'`, 'info');
+            
+            const formatted2 = cellType.format({ url: 'https://example.com', text: '自定义文本' });
+            log(`   对象 → '${formatted2}'`, 'info');
+
+            // 测试 getUrl
+            log('🔗 测试 getUrl() 方法:', 'info');
+            const url1 = cellType.getUrl('https://example.com');
+            log(`   纯 URL → '${url1}'`, 'info');
+            
+            const url2 = cellType.getUrl({ url: 'https://test.com', text: '测试' });
+            log(`   对象 → '${url2}'`, 'info');
+            
+            const url3 = cellType.getUrl('invalid');
+            log(`   无效 → ${url3}`, 'info');
+
+        } else {
+            log('⚠️ 无法获取列类型实例', 'warning');
+        }
+    }
+
+    function resetTable() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        log('🔄 正在重置表格...', 'info');
+        initWorkbook();
+    }
+
+    window.addEventListener('DOMContentLoaded', initWorkbook);
+</script>
+</body>
+</html>

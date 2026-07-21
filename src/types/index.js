@@ -279,6 +279,24 @@ import { SelectColumnType } from "./SelectColumnType.js";
  */
 import { TextareaColumnType } from "./TextareaColumnType.js";
 
+/**
+ * 超链接列类型（Hyperlink Column Type）
+ *
+ * 用于处理和显示超链接的专用列类型。
+ *
+ * 特性：
+ * - 🔗 URL 格式自动检测和验证
+ * - 📝 支持自定义显示文本
+ * - 🔒 安全打开链接（noopener,noreferrer）
+ * - 🎨 默认蓝色带下划线样式
+ *
+ * 适用场景：网站链接、文档链接、邮箱地址、社交媒体链接等
+ *
+ * @class HyperlinkColumnType
+ * @extends BaseColumnType
+ */
+import { HyperlinkColumnType } from "./HyperlinkColumnType.js";
+
 // ════════════════════════════════════════════
 // 导入渲染器类型注册表
 // ════════════════════════════════════════════
@@ -408,13 +426,14 @@ class TypeRegistry {
          * @type {Object.<string, Function>}
          */
         const builtinTypeDefinitions = {
-            // 基础数据类型（6 种）
+            // 基础数据类型（7 种）
             text: TextColumnType,
             numeric: NumericColumnType,
             date: DateColumnType,
             boolean: BooleanColumnType,
             select: SelectColumnType,
             textarea: TextareaColumnType,
+            hyperlink: HyperlinkColumnType,
 
             // 可视化渲染器类型（5 种，从渲染器注册表展开）
             ...BUILTIN_RENDERER_TYPE_REGISTRY,

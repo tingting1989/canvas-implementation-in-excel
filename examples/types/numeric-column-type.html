@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔢 数字列类型 - NumericColumnType 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #11998e;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            overflow: hidden;
+            background: #fff;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #11998e;
+            box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .log-success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .log-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .log-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #11998e;
+        }
+
+        .feature-card h3 {
+            color: #11998e;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment {
+            color: #5c6370;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-function {
+            color: #61afef;
+        }
+
+        .format-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .format-table th,
+        .format-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .format-table th {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .format-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .format-table td:first-child {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-weight: 600;
+            color: #11998e;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔢 数字列类型 - NumericColumnType 演示</h1>
+
+    <!-- 功能介绍 -->
+    <div class="demo-section">
+        <h2 class="section-title">🎯 NumericColumnType 核心功能</h2>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📊 多种格式化</h3>
+                <p>支持千分位、小数、百分比、货币、科学计数法等多种显示格式</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔍 数值验证</h3>
+                <p>自动检测无效数值，支持配置最小值和最大值范围限制</p>
+            </div>
+            <div class="feature-card">
+                <h3>📝 智能解析</h3>
+                <p>自动去除千分位逗号和空格，智能转换用户输入</p>
+            </div>
+            <div class="feature-card">
+                <h3>📈 数值排序</h3>
+                <p>支持升序/降序排序，非数字值自动排在最前</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎨 右对齐</h3>
+                <p>默认右对齐显示，符合数字阅读习惯</p>
+            </div>
+            <div class="feature-card">
+                <h3>⚙️ 灵活配置</h3>
+                <p>支持自定义格式模式、范围限制、无效值处理等选项</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3 style="color: #11998e; margin-bottom: 12px;">📋 支持的格式模式</h3>
+            <table class="format-table">
+                <thead>
+                    <tr>
+                        <th>格式模式</th>
+                        <th>描述</th>
+                        <th>示例</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>0,0.00</td><td>千分位，2位小数</td><td>1,234.56</td></tr>
+                    <tr><td>0,0.0</td><td>千分位，1位小数</td><td>1,234.6</td></tr>
+                    <tr><td>0,0</td><td>千分位，无小数</td><td>1,234</td></tr>
+                    <tr><td>0.00</td><td>2位小数</td><td>1234.56</td></tr>
+                    <tr><td>0.0</td><td>1位小数</td><td>1234.6</td></tr>
+                    <tr><td>0</td><td>整数</td><td>1234</td></tr>
+                    <tr><td>0.00%</td><td>百分比，2位小数</td><td>45.60%</td></tr>
+                    <tr><td>0.0%</td><td>百分比，1位小数</td><td>45.6%</td></tr>
+                    <tr><td>0%</td><td>百分比，无小数</td><td>46%</td></tr>
+                    <tr><td>$0,0.00</td><td>美元格式</td><td>$1,234.56</td></tr>
+                    <tr><td>€0,0.00</td><td>欧元格式</td><td>€1,234.56</td></tr>
+                    <tr><td>¥0,0.00</td><td>人民币格式</td><td>¥1,234.56</td></tr>
+                    <tr><td>0.00E+00</td><td>科学计数法</td><td>1.23E+03</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+            <span class="code-comment">// ✨ NumericColumnType 使用示例</span>
+
+            <span class="code-comment">// 创建数字列配置</span>
+            columns: [
+                { 
+                    type: "numeric", 
+                    width: 150,
+                    options: {
+                        numericFormat: { pattern: '0,0.00' },
+                        min: 0,
+                        max: 1000000,
+                        allowInvalid: false
+                    }
+                },
+                {
+                    type: "numeric",
+                    width: 180,
+                    textAlign: "left",  <span class="code-comment">// 覆盖默认右对齐</span>
+                    <span class="code-comment">// style 配置项：直接设置列样式</span>
+                    style: {
+                        backgroundColor: "#fff3e0",
+                        color: "#e65100",
+                        fontWeight: "bold",
+                        fontSize: 14,
+                        fontFamily: "Microsoft YaHei"
+                    }
+                }
+            ]
+
+            <span class="code-comment">// 支持的 options 配置项</span>
+            <span class="code-keyword">const</span> options = {
+                numericFormat: { pattern: <span class="code-string">'0,0.00'</span> },  <span class="code-comment">// 格式模式</span>
+                min: <span class="code-keyword">0</span>,                        <span class="code-comment">// 最小值限制</span>
+                max: <span class="code-keyword">100</span>,                      <span class="code-comment">// 最大值限制</span>
+                allowInvalid: <span class="code-keyword">false</span>             <span class="code-comment">// 是否允许无效值</span>
+            };
+
+            <span class="code-comment">// 支持的 style 配置项</span>
+            <span class="code-keyword">const</span> styleOptions = {
+                textAlign: <span class="code-string">"right"</span>,      <span class="code-comment">// 对齐方式: left/center/right</span>
+                backgroundColor: <span class="code-string">"#f5f5f5"</span>, <span class="code-comment">// 背景颜色</span>
+                color: <span class="code-string">"#333"</span>,        <span class="code-comment">// 文字颜色</span>
+                fontWeight: <span class="code-string">"bold"</span>,    <span class="code-comment">// 字体粗细</span>
+                fontSize: <span class="code-keyword">14</span>,          <span class="code-comment">// 字体大小</span>
+                fontFamily: <span class="code-string">"Microsoft YaHei"</span>, <span class="code-comment">// 字体</span>
+            };
+        </div>
+    </div>
+
+    <!-- Canvas 展示区域 -->
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 数字格式化表格展示</h2>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="targetColumn">📍 目标列 (0-based)</label>
+                <input type="number" id="targetColumn" value="2" min="0" max="8">
+            </div>
+
+            <div class="control-group">
+                <label for="formatPattern">🎨 格式模式</label>
+                <select id="formatPattern">
+                    <option value="0,0.00">千分位 (0,0.00)</option>
+                    <option value="0,0.0">千分位 (0,0.0)</option>
+                    <option value="0,0">千分位 (0,0)</option>
+                    <option value="0.00">小数 (0.00)</option>
+                    <option value="0.0">小数 (0.0)</option>
+                    <option value="0">整数 (0)</option>
+                    <option value="0.00%">百分比 (0.00%)</option>
+                    <option value="0.0%">百分比 (0.0%)</option>
+                    <option value="0%">百分比 (0%)</option>
+                    <option value="$0,0.00">美元 ($0,0.00)</option>
+                    <option value="¥0,0.00">人民币 (¥0,0.00)</option>
+                    <option value="€0,0.00">欧元 (€0,0.00)</option>
+                    <option value="0.00E+00">科学计数法 (0.00E+00)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="minValue">📉 最小值</label>
+                <input type="number" id="minValue" value="" placeholder="无限制">
+            </div>
+
+            <div class="control-group">
+                <label for="maxValue">📈 最大值</label>
+                <input type="number" id="maxValue" value="" placeholder="无限制">
+            </div>
+
+            <div class="control-group">
+                <label for="allowInvalid">🔄 允许无效值</label>
+                <select id="allowInvalid">
+                    <option value="false">否</option>
+                    <option value="true">是</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="textAlign">📝 对齐方式</label>
+                <select id="textAlign">
+                    <option value="right">右对齐 (默认)</option>
+                    <option value="left">左对齐</option>
+                    <option value="center">居中对齐</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="bgColor">🎨 背景颜色</label>
+                <input type="color" id="bgColor" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label for="textColor">📝 文字颜色</label>
+                <input type="color" id="textColor" value="#333333">
+            </div>
+
+            <div class="control-group">
+                <label for="fontSize">🔤 字体大小</label>
+                <input type="number" id="fontSize" value="14" min="10" max="24">
+            </div>
+
+            <div class="control-group">
+                <label for="fontWeight">⚖️ 字体粗细</label>
+                <select id="fontWeight">
+                    <option value="normal">正常</option>
+                    <option value="bold">粗体</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-primary" onclick="applyFormatConfig()">
+                    ⚙️ 应用配置
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-success" onclick="addTestRow()">
+                    ➕ 添加测试数据
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-warning" onclick="testValidation()">
+                    🧪 测试验证
+                </button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-info" onclick="resetTable()">
+                    🔄 重置表格
+                </button>
+            </div>
+        </div>
+
+        <!-- 日志输出 -->
+        <div class="control-group" style="margin-top: 20px;">
+            <label>📝 操作日志</label>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <!-- 使用说明 -->
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #11998e; margin: 16px 0 8px;">基本操作</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>编辑单元格</strong>：双击数字单元格 → 进入编辑模式 → 输入数值 → 按 Enter 确认</li>
+                <li><strong>切换格式</strong>：选择格式模式 → 点击「应用配置」→ 表格自动更新显示</li>
+                <li><strong>范围限制</strong>：设置最小值和最大值 → 超出范围会显示验证错误</li>
+                <li><strong>添加数据</strong>：点击「添加测试数据」→ 自动生成一行随机数据</li>
+            </ul>
+
+            <h3 style="color: #11998e; margin: 16px 0 8px;">格式化示例</h3>
+            <div style="margin-left: 20px; color: #555;">
+                <p><strong>原始值：</strong>12345.6789</p>
+                <p><strong>千分位 (0,0.00)：</strong>"12,345.68"</p>
+                <p><strong>百分比 (0.00%)：</strong>"1234567.89%"</p>
+                <p><strong>货币 ($0,0.00)：</strong>"$12,345.68"</p>
+                <p><strong>科学计数法 (0.00E+00)：</strong>"1.23E+04"</p>
+            </div>
+
+            <h3 style="color: #11998e; margin: 16px 0 8px;">验证规则</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>空值</strong>：空字符串、undefined、null 均视为有效</li>
+                <li><strong>非数字</strong>：根据 allowInvalid 配置决定是否允许</li>
+                <li><strong>范围检查</strong>：数值必须在 min 和 max 之间（如果配置了）</li>
+            </ul>
+
+            <h3 style="color: #11998e; margin: 16px 0 8px;">技术特性</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>智能解析</strong>：自动去除千分位逗号和空格</li>
+                <li><strong>右对齐</strong>：默认右对齐显示，符合数字阅读习惯</li>
+                <li><strong>数值排序</strong>：支持升序/降序，非数字值排在最前</li>
+                <li><strong>格式化缓存</strong>：相同格式和值的组合会被缓存优化</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+
+    function log(message, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        container.insertBefore(entry, container.firstChild);
+
+        if (container.children.length > 50) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1200,
+                height: 600,
+
+                sheets: [{
+                    name: "数字格式化演示",
+
+                    data: [
+                        ["产品名称", "类别", "销售额", "利润率", "增长率", "单价", "数量", "折扣", "金额"],
+                        ["产品A", "电子产品", 123456.789, 0.456, 0.1234, 299.99, 412, 0.08, 117696.88],
+                        ["产品B", "家居用品", 87654.321, 0.321, 0.0856, 159.50, 550, 0.12, 87225],
+                        ["产品C", "服装配饰", 54321.098, 0.285, -0.0321, 89.90, 604, 0.15, 45299.6],
+                        ["产品D", "食品饮料", 98765.432, 0.198, 0.1567, 19.99, 4940, 0.05, 94810.6],
+                        ["产品E", "图书文具", 32109.876, 0.356, 0.0987, 29.50, 1088, 0.10, 28096],
+                        ["产品F", "运动户外", 76543.210, 0.412, 0.2345, 179.99, 425, 0.06, 70296.55],
+                        ["产品G", "美妆护肤", 65432.109, 0.523, 0.1890, 89.99, 727, 0.07, 58422.37],
+                        ["产品H", "汽车配件", 43210.987, 0.267, -0.0567, 249.99, 173, 0.11, 38248.27],
+                        ["产品I", "数码配件", 56789.012, 0.389, 0.1456, 49.99, 1136, 0.09, 50664.44],
+                        ["产品J", "母婴用品", 21098.765, 0.445, 0.1123, 69.99, 301, 0.13, 17906.91]
+                    ],
+
+                    columns: [
+                        { type: "text", width: 120 },
+                        { type: "text", width: 100 },
+                        // 销售额 - 千分位格式
+                        { type: "numeric", fontWeight: "bold", width: 130, options: { numericFormat: { pattern: '0,0.00' } } },
+                        // 利润率 - 百分比格式
+                        { type: "numeric", width: 100, options: { numericFormat: { pattern: '0.00%' } } },
+                        // 增长率 - 百分比格式
+                        { type: "numeric", width: 100, options: { numericFormat: { pattern: '0.00%' } } },
+                        // 单价 - 货币格式
+                        { type: "numeric", width: 100, options: { numericFormat: { pattern: '$0,0.00' } } },
+                        // 数量 - 整数格式
+                        { type: "numeric", width: 80, options: { numericFormat: { pattern: '0' } } },
+                        // 折扣 - 百分比格式
+                        { type: "numeric", width: 80, options: { numericFormat: { pattern: '0.00%' } } },
+                        // 金额 - 千分位格式
+                        { type: "numeric", width: 130, options: { numericFormat: { pattern: '0,0.00' } } }
+                    ],
+
+                    cell: [
+                        // 表头样式
+                        { row: 0, col: 0, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 1, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 2, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 3, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 4, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 5, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 6, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 7, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } },
+                        { row: 0, col: 8, type: "text", style: { backgroundColor: "#11998e", color: "white", fontWeight: "bold", textAlign: "center" } }
+                    ],
+
+                    rowHeights: [40, 42, 42, 42, 42, 42, 42, 42, 42, 42, 42],
+                    textOverflowEllipsis: false,
+                    cellPadding: 8
+                }]
+            });
+
+            log('✅ Workbook 创建成功', 'info');
+
+            workbook.initRender();
+            workbook.render();
+
+            log('🎉 初始化完成！尝试编辑数字单元格或切换格式模式', 'success');
+            log('', 'info');
+            log('📋 功能说明：', 'info');
+            log('   ✏️ 双击单元格 → 编辑数值', 'info');
+            log('   🎨 选择格式 → 切换显示格式', 'info');
+            log('   📉 设置范围 → 限制数值范围', 'info');
+            log('   ➕ 添加数据 → 生成测试数据', 'info');
+            log('', 'info');
+
+        } catch (error) {
+            console.error('初始化失败:', error);
+            log(`❌ 初始化失败: ${error.message}`, 'error');
+        }
+    }
+
+    function applyFormatConfig() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        try {
+            const targetCol = parseInt(document.getElementById('targetColumn').value);
+            const formatPattern = document.getElementById('formatPattern').value;
+            const minValue = document.getElementById('minValue').value;
+            const maxValue = document.getElementById('maxValue').value;
+            const allowInvalid = document.getElementById('allowInvalid').value === 'true';
+            const textAlign = document.getElementById('textAlign').value;
+            const bgColor = document.getElementById('bgColor').value;
+            const textColor = document.getElementById('textColor').value;
+            const fontSize = parseInt(document.getElementById('fontSize').value);
+            const fontWeight = document.getElementById('fontWeight').value;
+
+            const sheet = workbook.getActiveSheet();
+
+            if (sheet.columns && sheet.columns[targetCol]) {
+                const colConfig = sheet.columns[targetCol];
+
+                // 初始化 options 对象
+                if (!colConfig.options) {
+                    colConfig.options = {};
+                }
+
+                // 初始化 style 对象
+                if (!colConfig.style) {
+                    colConfig.style = {};
+                }
+
+                // 应用格式配置
+                colConfig.options.numericFormat = { pattern: formatPattern };
+                
+                if (minValue !== '') {
+                    colConfig.options.min = parseFloat(minValue);
+                } else {
+                    delete colConfig.options.min;
+                }
+                
+                if (maxValue !== '') {
+                    colConfig.options.max = parseFloat(maxValue);
+                } else {
+                    delete colConfig.options.max;
+                }
+                
+                colConfig.options.allowInvalid = allowInvalid;
+
+                // 应用样式配置
+                colConfig.textAlign = textAlign;
+                colConfig.style.backgroundColor = bgColor;
+                colConfig.style.color = textColor;
+                colConfig.style.fontSize = fontSize;
+                colConfig.style.fontWeight = fontWeight;
+
+                log(`✅ 已应用配置到第 ${targetCol + 1} 列`, 'success');
+                log(`   - 格式模式: ${formatPattern}`, 'info');
+                log(`   - 最小值: ${minValue || '无限制'}`, 'info');
+                log(`   - 最大值: ${maxValue || '无限制'}`, 'info');
+                log(`   - 允许无效值: ${allowInvalid ? '是' : '否'}`, 'info');
+                log(`   - 对齐方式: ${textAlign}`, 'info');
+                log(`   - 背景颜色: ${bgColor}`, 'info');
+                log(`   - 文字颜色: ${textColor}`, 'info');
+                log(`   - 字体大小: ${fontSize}px`, 'info');
+                log(`   - 字体粗细: ${fontWeight}`, 'info');
+
+                workbook.render();
+            } else {
+                log(`⚠️ 第 ${targetCol + 1} 列不存在`, 'warning');
+            }
+
+        } catch (error) {
+            log(`❌ 配置失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function addTestRow() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        try {
+            const sheet = workbook.getActiveSheet();
+            const rowIndex = sheet.data.length;
+
+            const productName = `产品${String.fromCharCode(65 + rowIndex % 26)}${Math.floor(rowIndex / 26) > 0 ? Math.floor(rowIndex / 26) : ''}`;
+            const categories = ['电子产品', '家居用品', '服装配饰', '食品饮料', '图书文具', '运动户外', '美妆护肤', '汽车配件'];
+            const category = categories[Math.floor(Math.random() * categories.length)];
+            const sales = Math.floor(Math.random() * 100000) + 10000 + Math.random();
+            const profitRate = Math.random() * 0.5 + 0.1;
+            const growthRate = (Math.random() - 0.3) * 0.3;
+            const price = Math.floor(Math.random() * 500) + 10 + Math.random();
+            const quantity = Math.floor(Math.random() * 1000) + 50;
+            const discount = Math.random() * 0.2;
+            const amount = sales * (1 - discount);
+
+            sheet.data.push([productName, category, sales, profitRate, growthRate, price, quantity, discount, amount]);
+
+            log(`✅ 添加测试数据成功 (行 ${rowIndex + 1})`, 'success');
+            log(`   - 产品: ${productName}`, 'info');
+            log(`   - 销售额: ¥${sales.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}`, 'info');
+
+            workbook.render();
+        } catch (error) {
+            log(`❌ 添加数据失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function testValidation() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        log('🧪 开始测试数值验证功能...', 'info');
+
+        const sheet = workbook.getActiveSheet();
+        
+        // 获取数字列类型实例
+        const colIndex = 2; // 销售额列
+        const cellType = sheet.getCellTypeInstance(1, colIndex);
+        
+        if (cellType) {
+            log(`📊 当前列类型: ${cellType.name}`, 'info');
+            
+            // 测试验证
+            const testValues = [
+                { value: 100, expected: true, desc: '有效数字' },
+                { value: 'abc', expected: false, desc: '非数字字符串' },
+                { value: '', expected: true, desc: '空字符串' },
+                { value: null, expected: true, desc: 'null' },
+                { value: undefined, expected: true, desc: 'undefined' },
+                { value: '1,234.56', expected: true, desc: '带千分位的字符串' }
+            ];
+
+            testValues.forEach(({ value, desc }) => {
+                const result = cellType.validate(value);
+                const status = result === true ? '✅ 有效' : result === false ? '❌ 无效' : `⚠️ ${result}`;
+                log(`   ${desc}: ${JSON.stringify(value)} → ${status}`, result === true ? 'success' : 'warning');
+            });
+        } else {
+            log('⚠️ 无法获取列类型实例', 'warning');
+        }
+    }
+
+    function resetTable() {
+        if (!workbook) {
+            log('❌ 请先初始化 Workbook', 'error');
+            return;
+        }
+
+        log('🔄 正在重置表格...', 'info');
+        initWorkbook();
+    }
+
+    window.addEventListener('DOMContentLoaded', initWorkbook);
+</script>
+</body>
+</html>

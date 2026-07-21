@@ -2,7 +2,7 @@
 export const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 export const toDisplayString = (value) => {
-    if (value === null || value === undefined) return "";
+    if (value === null || value === undefined || value === "") return "";
     return String(value);
 };
 

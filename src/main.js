@@ -125,24 +125,24 @@ const initApp = () => {
                 name: "星级评分演示",
 
                 data: [
-                    ["产品名称", "类别", "用户评分", "专家评分", "综合评价", "推荐指数", "满意度", "性价比"],
-                    ["产品A", "电子产品", 5, 5, 5, 5, 5, 5],
-                    ["产品B", "家居用品", 4, 4, 4, 4, 4, 4],
-                    ["产品C", "服装配饰", 3, 3, 3, 3, 3, 3],
-                    ["产品D", "食品饮料", 5, 4, 5, 4, 5, 4],
-                    ["产品E", "图书文具", 4, 5, 4, 5, 4, 5],
-                    ["产品F", "运动户外", 3, 4, 3, 4, 3, 4],
-                    ["产品G", "美妆护肤", 5, 5, 5, 5, 5, 5],
-                    ["产品H", "汽车配件", 4, 3, 4, 3, 4, 3],
-                    ["产品I", "数码配件", 5, 5, 5, 5, 5, 5],
-                    ["产品J", "母婴用品", 4, 4, 4, 4, 4, 4],
-                    ["产品K", "宠物用品", 3, 3, 3, 3, 3, 3],
-                    ["产品L", "办公设备", 5, 4, 5, 4, 5, 4],
+                    // ["产品名称", "类别", "用户评分", "专家评分", "综合评价", "推荐指数", "满意度", "性价比"],
+                    // ["产品A", "电子产品", 5, 5, 5, 5, 5, 5],
+                    // ["产品B", "家居用品", 4, 4, 4, 4, 4, 4],
+                    // ["产品C", "服装配饰", 3, 3, 3, 3, 3, 3],
+                    // ["产品D", "食品饮料", 5, 4, 5, 4, 5, 4],
+                    // ["产品E", "图书文具", 4, 5, 4, 5, 4, 5],
+                    // ["产品F", "运动户外", 3, 4, 3, 4, 3, 4],
+                    // ["产品G", "美妆护肤", 5, 5, 5, 5, 5, 5],
+                    // ["产品H", "汽车配件", 4, 3, 4, 3, 4, 3],
+                    // ["产品I", "数码配件", 5, 5, 5, 5, 5, 5],
+                    // ["产品J", "母婴用品", 4, 4, 4, 4, 4, 4],
+                    // ["产品K", "宠物用品", 3, 3, 3, 3, 3, 3],
+                    // ["产品L", "办公设备", 5, 4, 5, 4, 5, 4],
                 ],
 
                 columns: [
-                    { type: "text", width: 120 },
-                    { type: "text", width: 100 },
+                    { type: "numeric", width: 120, style: { textAlign: "right" } },
+                    { type: "text", textAlign: "right", width: 100 },
                     // 用户评分
                     {
                         type: "starRating",
@@ -187,11 +187,11 @@ const initApp = () => {
 
                 cell: [
                     // 表头样式
-                    {
-                        row: 0,
-                        col: 0,
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
+                    // {
+                    //     row: 0,
+                    //     col: 0,
+                    //     style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    // },
                     {
                         row: 0,
                         col: 1,
@@ -231,7 +231,7 @@ const initApp = () => {
                     },
                 ],
 
-                rowHeights: [40, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45],
+                // rowHeights: [40, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45],
                 textOverflowEllipsis: false,
                 cellPadding: 10,
             },
@@ -670,6 +670,24 @@ const initApp = () => {
         if (!e.ctrlKey && !e.metaKey) return;
         const sheet = wb.activeSheet;
         const cell = sheet.cellStore.get(row, col);
+
+        // 优先检查是否为超链接列类型
+        const cellType = sheet.getCellTypeInstance(row, col);
+        if (cellType?.name === "hyperlink" && cell?.value) {
+            const success = cellType.openLink(cell.value, {
+                row,
+                col,
+                event: e,
+                hooks: wb.hooks,
+            });
+            if (success) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            return;
+        }
+
+        // 原有隐式检测逻辑（兼容其他类型中包含 URL 的情况）
         if (cell?.value && isUrl(cell.value)) {
             const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
             if (canOpen === false) {
