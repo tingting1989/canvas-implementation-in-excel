@@ -142,7 +142,7 @@ const initApp = () => {
 
                 columns: [
                     { type: "numeric", width: 120, style: { textAlign: "right" } },
-                    { type: "text", textAlign: "right", width: 100 },
+                    { type: "hyperlink",  width: 100 },
                     // 用户评分
                     {
                         type: "starRating",
@@ -192,18 +192,18 @@ const initApp = () => {
                     //     col: 0,
                     //     style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
                     // },
-                    {
-                        row: 0,
-                        col: 1,
-                        type: "text",
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
-                    {
-                        row: 0,
-                        col: 2,
-                        type: "text",
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
+                    // {
+                    //     row: 0,
+                    //     col: 1,
+                    //     type: "text",
+                    //     style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    // },
+                    // {
+                    //     row: 0,
+                    //     col: 2,
+                    //     type: "text",
+                    //     style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
+                    // },
                     {
                         row: 0,
                         col: 3,
@@ -666,28 +666,20 @@ const initApp = () => {
     });
 
     // sheet.operations.setGridSize(10, 5);
+    // 超链接点击处理说明：
+    // - HyperlinkColumnType 的点击由 InteractionStrategy 处理（handleClick 方法）
+    // - 隐式超链接（其他列类型中的 URL）在此 hook 中处理
     wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
-        if (!e.ctrlKey && !e.metaKey) return;
         const sheet = wb.activeSheet;
         const cell = sheet.cellStore.get(row, col);
 
-        // 优先检查是否为超链接列类型
+        // 跳过超链接列类型（已由 InteractionStrategy 处理）
         const cellType = sheet.getCellTypeInstance(row, col);
-        if (cellType?.name === "hyperlink" && cell?.value) {
-            const success = cellType.openLink(cell.value, {
-                row,
-                col,
-                event: e,
-                hooks: wb.hooks,
-            });
-            if (success) {
-                e.preventDefault();
-                e.stopPropagation();
-            }
-            return;
+        if (cellType?.name === "hyperlink") {
+            return; // 由 InteractionStrategy 处理，避免重复
         }
 
-        // 原有隐式检测逻辑（兼容其他类型中包含 URL 的情况）
+        // 隐式超链接检测：自动检测非超链接列类型中的 URL
         if (cell?.value && isUrl(cell.value)) {
             const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
             if (canOpen === false) {

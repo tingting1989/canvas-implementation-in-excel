@@ -41,6 +41,107 @@ export class HyperlinkColumnType extends BaseColumnType {
     }
 
     /**
+     * 是否可交互（会被 InteractionStrategy 处理）
+     * 设置为 false，允许双击弹出编辑器
+     * 单击事件仍会由 InteractionStrategy 处理
+     * @returns {boolean}
+     */
+    get isInteractive() {
+        return false;
+    }
+
+    /**
+     * 格式化值用于编辑器显示
+     * @param {*} rawValue - 原始值
+     * @returns {string} 格式化后的值
+     */
+    formatValueForEditor(rawValue) {
+        if (!rawValue) {
+            return "";
+        }
+        if (typeof rawValue === "object" && rawValue.url) {
+            return rawValue.text || rawValue.url;
+        }
+        return String(rawValue);
+    }
+
+    /**
+     * 自定义渲染超链接
+     * @param {CellRenderContext} context - 渲染上下文
+     */
+    render(context) {
+        const { ctx, x, y, width, height, value, displayValue, style } = context;
+        
+        const url = this.getUrl(value);
+        const displayText = displayValue || this.format(value);
+        
+        const fontSize = style.fontSize || 12;
+        const textAlign = style.textAlign || 'left';
+        const verticalAlign = style.verticalAlign || 'middle';
+        const cellPadding = style.cellPadding || 8;
+        
+        ctx.font = `${style.fontWeight || 'normal'} ${fontSize}px ${style.fontFamily || 'Microsoft YaHei'}`;
+        ctx.textBaseline = verticalAlign === 'middle' ? 'middle' : 
+                          (verticalAlign === 'bottom' ? 'bottom' : 'top');
+        
+        let textX = x + cellPadding;
+        let textY = y + height / 2;
+        
+        const textWidth = ctx.measureText(displayText).width;
+        
+        if (textAlign === 'center') {
+            textX = x + (width - textWidth) / 2;
+        } else if (textAlign === 'right') {
+            textX = x + width - textWidth - cellPadding;
+        }
+        
+        if (url) {
+
+            console.log(ctx,style)
+            ctx.fillStyle = style.color || '#1a73e8';
+            ctx.fillText(displayText, textX, textY);
+            
+            const underlineY = textY + fontSize / 2 + 2;
+            ctx.strokeStyle = style.color || '#1a73e8';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(textX, underlineY);
+            ctx.lineTo(textX + textWidth, underlineY);
+            ctx.stroke();
+        } else {
+            ctx.fillStyle = style.color || '#333';
+            ctx.fillText(displayText, textX, textY);
+        }
+    }
+
+    /**
+     * 处理点击事件（由 InteractionStrategy 调用）
+     * @param {object} context - 交互上下文
+     * @param {MouseEvent} event - 鼠标事件
+     */
+    handleClick(context, event) {
+        const { value, row, col, sheet } = context;
+        const url = this.getUrl(value);
+        
+        if (!url) return null;
+        
+        const hooks = sheet?.hooks || null;
+        
+        if (hooks && typeof hooks.runHooksUntil === 'function') {
+            const canOpen = hooks.runHooksUntil(HOOKS.BEFORE_OPEN_URL, row, col, url, event);
+            if (canOpen === false) return null;
+        }
+        
+        openUrl(url, '_blank');
+        
+        if (hooks && typeof hooks.runHooks === 'function') {
+            hooks.runHooks(HOOKS.AFTER_OPEN_URL, row, col, url);
+        }
+        
+        return null;
+    }
+
+    /**
      * 格式化值用于显示
      *
      * 根据配置，可能返回：
@@ -155,6 +256,8 @@ export class HyperlinkColumnType extends BaseColumnType {
     getDefaultStyle(baseStyle) {
         // 只设置 cursor，颜色和下划线由渲染层根据 URL 检测结果统一处理
         // 避免与 TileRenderer 中的自动链接样式冲突
+        console.log(1111)
+        // const color = baseStyle?.color ?? '#1a73e8';
         return {
             ...baseStyle,
             cursor: "pointer",

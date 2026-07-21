@@ -21,7 +21,7 @@ import { EventStrategy } from "@/editor/strategies/EventStrategy.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { isFunction } from "@/utils";
+import { isFunction, debounce } from "@/utils";
 
 export class InteractionStrategy extends EventStrategy {
     /**
@@ -32,6 +32,14 @@ export class InteractionStrategy extends EventStrategy {
 
     /** 上次悬停的单元格位置 "row,col" */
     #lastHoveredCell = null;
+
+    /** 防抖后的点击处理器（防止双击时触发单击） */
+    #debouncedHandleClick = debounce((hitInfo, event) => {
+        this.#doHandleClick(hitInfo, event);
+    }, 200);
+
+    /** 是否正在双击中 */
+    #inDoubleClick = false;
 
     /** 是否有待执行的渲染任务（用于合并重复请求） */
     #pendingRender = null;
@@ -52,6 +60,7 @@ export class InteractionStrategy extends EventStrategy {
         return {
             [DELEGATE_KEYS.CANVAS_MOUSEMOVE]: (event) => this.#handleMouseMove(event),
             [DELEGATE_KEYS.CANVAS_CLICK]: (event) => this.#handleClick(event),
+            [DELEGATE_KEYS.CANVAS_DBLCLICK]: (event) => this.#handleDoubleClick(event),
             [DELEGATE_KEYS.CANVAS_MOUSELEAVE]: () => this.#handleMouseLeave(),
         };
     }
@@ -96,6 +105,8 @@ export class InteractionStrategy extends EventStrategy {
      * 将点击事件分发给对应的单元格类型渲染器处理，
      * 并自动保存结果到单元格数据中。
      *
+     * 使用防抖机制防止双击时触发单击操作。
+     *
      * @param {MouseEvent} event - 鼠标事件对象
      * @returns {boolean} false=已处理并阻止后续策略，true=交给其他策略处理
      */
@@ -104,14 +115,63 @@ export class InteractionStrategy extends EventStrategy {
             const hitInfo = this.#getHitInfo(event);
             if (!hitInfo || !hitInfo.cellType) return true;
 
+            // 对于非交互式单元格类型（如超链接），不拦截点击事件
+            // 让 MouseStrategy 处理选择逻辑，同时使用防抖延迟执行点击动作
+            if (!hitInfo.cellType.isInteractive) {
+                // 使用防抖处理，防止双击时触发单击
+                this.#debouncedHandleClick(hitInfo, event);
+                return true; // 不阻止后续策略，让 MouseStrategy 继续处理
+            }
+
+            // 对于交互式单元格类型（如星级评分），直接处理并阻止后续策略
             const { hit, cellType } = hitInfo;
             const context = this.#buildFullContext(hit);
-
             return this.#dispatchClickEvent(cellType, context, event);
         } catch (error) {
             errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleClick 错误: ${error.message}`, { error });
             return true;
         }
+    }
+
+    /**
+     * 实际执行点击处理（由防抖调用）
+     */
+    #doHandleClick(hitInfo, event) {
+        if (this.#inDoubleClick) return;
+        
+        const { hit, cellType } = hitInfo;
+        const context = this.#buildFullContext(hit);
+        this.#dispatchClickEvent(cellType, context, event);
+    }
+
+    /**
+     * 处理双击事件
+     *
+     * 取消待执行的单击操作，让双击事件正常处理。
+     */
+    #handleDoubleClick(event) {
+        this.#inDoubleClick = true;
+        this.#debouncedHandleClick.cancel();
+        
+        // 延迟重置双击状态
+        setTimeout(() => {
+            this.#inDoubleClick = false;
+        }, 300);
+        
+        // 检查是否为交互式单元格类型
+        try {
+            const hitInfo = this.#getHitInfo(event);
+            if (hitInfo?.cellType?.isInteractive) {
+                // 交互式类型：自己处理双击
+                const { hit, cellType } = hitInfo;
+                const context = this.#buildFullContext(hit);
+                return this.#dispatchClickEvent(cellType, context, event);
+            }
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleDoubleClick 错误: ${error.message}`, { error });
+        }
+        
+        return true; // 交给其他策略处理（如 MouseStrategy 弹出编辑器）
     }
 
     /**

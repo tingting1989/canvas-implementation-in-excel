@@ -196,7 +196,6 @@ export class StarRatingType extends BaseColumnType {
      */
     handleClick(context, event) {
         const newRating = this.#detectRatingFromPosition(context, event);
-        console.log("点击评分Rating:", context);
         if (newRating !== null && newRating !== undefined) {
             const { value } = context;
             this.#startAnimation(Number(value) || 0, newRating);
