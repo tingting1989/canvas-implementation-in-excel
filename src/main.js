@@ -142,7 +142,7 @@ const initApp = () => {
 
                 columns: [
                     { type: "numeric", width: 120, style: { textAlign: "right" } },
-                    { type: "hyperlink",  width: 100 },
+                    { type: "hyperlink", width: 100 },
                     // 用户评分
                     {
                         type: "starRating",

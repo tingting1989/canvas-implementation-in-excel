@@ -71,45 +71,43 @@ export class HyperlinkColumnType extends BaseColumnType {
      */
     render(context) {
         const { ctx, x, y, width, height, value, displayValue, style } = context;
-        
+
         const url = this.getUrl(value);
         const displayText = displayValue || this.format(value);
-        
+
         const fontSize = style.fontSize || 12;
-        const textAlign = style.textAlign || 'left';
-        const verticalAlign = style.verticalAlign || 'middle';
+        const textAlign = style.textAlign || "left";
+        const verticalAlign = style.verticalAlign || "middle";
         const cellPadding = style.cellPadding || 8;
-        
-        ctx.font = `${style.fontWeight || 'normal'} ${fontSize}px ${style.fontFamily || 'Microsoft YaHei'}`;
-        ctx.textBaseline = verticalAlign === 'middle' ? 'middle' : 
-                          (verticalAlign === 'bottom' ? 'bottom' : 'top');
-        
+
+        ctx.font = `${style.fontWeight || "normal"} ${fontSize}px ${style.fontFamily || "Microsoft YaHei"}`;
+        ctx.textBaseline = verticalAlign === "middle" ? "middle" : verticalAlign === "bottom" ? "bottom" : "top";
+
         let textX = x + cellPadding;
         let textY = y + height / 2;
-        
+
         const textWidth = ctx.measureText(displayText).width;
-        
-        if (textAlign === 'center') {
+
+        if (textAlign === "center") {
             textX = x + (width - textWidth) / 2;
-        } else if (textAlign === 'right') {
+        } else if (textAlign === "right") {
             textX = x + width - textWidth - cellPadding;
         }
-        
-        if (url) {
 
-            console.log(ctx,style)
-            ctx.fillStyle = style.color || '#1a73e8';
+        if (url) {
+            console.log(ctx, style);
+            ctx.fillStyle = style.color || "#1a73e8";
             ctx.fillText(displayText, textX, textY);
-            
+
             const underlineY = textY + fontSize / 2 + 2;
-            ctx.strokeStyle = style.color || '#1a73e8';
+            ctx.strokeStyle = style.color || "#1a73e8";
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(textX, underlineY);
             ctx.lineTo(textX + textWidth, underlineY);
             ctx.stroke();
         } else {
-            ctx.fillStyle = style.color || '#333';
+            ctx.fillStyle = style.color || "#333";
             ctx.fillText(displayText, textX, textY);
         }
     }
@@ -122,22 +120,22 @@ export class HyperlinkColumnType extends BaseColumnType {
     handleClick(context, event) {
         const { value, row, col, sheet } = context;
         const url = this.getUrl(value);
-        
+
         if (!url) return null;
-        
+
         const hooks = sheet?.hooks || null;
-        
-        if (hooks && typeof hooks.runHooksUntil === 'function') {
+
+        if (hooks && typeof hooks.runHooksUntil === "function") {
             const canOpen = hooks.runHooksUntil(HOOKS.BEFORE_OPEN_URL, row, col, url, event);
             if (canOpen === false) return null;
         }
-        
-        openUrl(url, '_blank');
-        
-        if (hooks && typeof hooks.runHooks === 'function') {
+
+        openUrl(url, "_blank");
+
+        if (hooks && typeof hooks.runHooks === "function") {
             hooks.runHooks(HOOKS.AFTER_OPEN_URL, row, col, url);
         }
-        
+
         return null;
     }
 
@@ -256,7 +254,7 @@ export class HyperlinkColumnType extends BaseColumnType {
     getDefaultStyle(baseStyle) {
         // 只设置 cursor，颜色和下划线由渲染层根据 URL 检测结果统一处理
         // 避免与 TileRenderer 中的自动链接样式冲突
-        console.log(1111)
+        console.log(1111);
         // const color = baseStyle?.color ?? '#1a73e8';
         return {
             ...baseStyle,

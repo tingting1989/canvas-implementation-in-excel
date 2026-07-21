@@ -138,7 +138,7 @@ export class InteractionStrategy extends EventStrategy {
      */
     #doHandleClick(hitInfo, event) {
         if (this.#inDoubleClick) return;
-        
+
         const { hit, cellType } = hitInfo;
         const context = this.#buildFullContext(hit);
         this.#dispatchClickEvent(cellType, context, event);
@@ -152,12 +152,12 @@ export class InteractionStrategy extends EventStrategy {
     #handleDoubleClick(event) {
         this.#inDoubleClick = true;
         this.#debouncedHandleClick.cancel();
-        
+
         // 延迟重置双击状态
         setTimeout(() => {
             this.#inDoubleClick = false;
         }, 300);
-        
+
         // 检查是否为交互式单元格类型
         try {
             const hitInfo = this.#getHitInfo(event);
@@ -170,7 +170,7 @@ export class InteractionStrategy extends EventStrategy {
         } catch (error) {
             errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleDoubleClick 错误: ${error.message}`, { error });
         }
-        
+
         return true; // 交给其他策略处理（如 MouseStrategy 弹出编辑器）
     }
 

@@ -363,18 +363,18 @@ export class CellEditor extends DOMComponent {
         // 读取并格式化单元格值
         const rawValue = this.readCellValue(row, col);
         this.originalValue = rawValue;
-        
+
         let formattedValue = this.formatValueForEditor(rawValue);
         // 尝试使用单元格类型的格式化方法（如 HyperlinkColumnType）
         try {
             const cellType = this.sheet.getCellTypeInstance(row, col);
-            if (cellType && typeof cellType.formatValueForEditor === 'function') {
+            if (cellType && typeof cellType.formatValueForEditor === "function") {
                 formattedValue = cellType.formatValueForEditor(rawValue);
             }
         } catch (e) {
             // 忽略错误，使用默认格式化
         }
-        
+
         // 设置编辑器值并聚焦
         this.editor.value = formattedValue;
         this.editor.focus();
@@ -441,7 +441,7 @@ export class CellEditor extends DOMComponent {
     restoreFromScroll() {
         if (this.activeRow < 0 || !this.editor) return;
         this.#scrollHiding = false;
-        
+
         const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
         const rect = this.viewport.getCellRect(this.activeRow, this.activeCol, merge);
 
@@ -480,7 +480,7 @@ export class CellEditor extends DOMComponent {
      */
     updatePosition() {
         if (this.activeRow < 0 || !this.editor) return;
-        
+
         const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
         const rect = this.viewport.getCellRect(this.activeRow, this.activeCol, merge);
 
