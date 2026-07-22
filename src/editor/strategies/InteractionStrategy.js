@@ -298,24 +298,33 @@ export class InteractionStrategy extends EventStrategy {
      *
      * 自动将处理结果保存回单元格数据，并触发重绘。
      *
+     * 返回值语义：
+     * - undefined: 未实现处理（交给其他策略）
+     * - null: 已处理但无返回值（如超链接打开链接）
+     * - 其他值: 已处理且有返回值（需要更新单元格）
+     *
      * @param {object} cellType - 单元格类型实例
      * @param {object} context - 交互上下文
      * @param {MouseEvent} event - 鼠标事件
-     * @returns {boolean} false=已处理，true=未处理或无有效结果
+     * @returns {boolean} false=已处理，true=未处理
      */
     #dispatchClickEvent(cellType, context, event) {
         if (!isFunction(cellType.handleClick)) return true;
 
         const result = cellType.handleClick(context, event);
 
-        if (result === undefined || result === null) return true;
+        // undefined = 未处理（交给其他策略）
+        if (result === undefined) return true;
 
-        const { sheet, row, col } = context;
-        if (sheet?.setCell) {
-            sheet.setCell(row, col, result);
+        // null = 已处理但无返回值（如超链接打开链接）
+        // 其他值 = 已处理且有返回值（需要更新单元格）
+        if (result !== null) {
+            const { sheet, row, col } = context;
+            if (sheet?.setCell) {
+                sheet.setCell(row, col, result);
+            }
+            this.#scheduleRender();
         }
-
-        this.#scheduleRender();
 
         return false; // 已处理，阻止后续策略
     }

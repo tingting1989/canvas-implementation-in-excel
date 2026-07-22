@@ -1,6 +1,7 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isNumber, isString } from "../utils/helper.js";
 import { SORT_ORDER } from "../constants/enums/SortOrder.js";
+import { themeStyleProvider } from "../theme/index.js";
 
 /**
  * 日期列类型
@@ -25,10 +26,6 @@ export class DateColumnType extends BaseColumnType {
 
     get editorType() {
         return "date";
-    }
-
-    getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: "center" };
     }
 
     /**

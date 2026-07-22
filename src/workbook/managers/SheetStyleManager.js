@@ -2,6 +2,7 @@
 import { Cell } from "../../model";
 import { StyleChangeRecorder, StyleChangeCommand } from "../../model/command/StyleChangeRecorder.js";
 import { STYLE_SCOPE } from "../../constants/enums/StyleScope.js";
+import { themeStyleProvider } from "../../theme/index.js";
 
 /**
  * 工作表样式管理器
@@ -280,7 +281,7 @@ export class SheetStyleManager {
         const cell = this.#sheet.cellStore.get(r, c);
         const cellStyleId = cell?.styleId;
 
-        // 快速路径：无任何自定义样式时，直接返回默认样式
+        // 快速路径：无任何自定义样式时，返回应用了主题样式的基础样式
         if (
             !colStyleId &&
             !rowStyleId &&
@@ -290,35 +291,83 @@ export class SheetStyleManager {
             !this.#sheet.hasConditionalRules() &&
             !this.#sheet.hasDataBindings()
         ) {
-            this.#styleCache.set(key, base);
-            return base;
+            // 获取单元格类型并应用主题样式
+            const cellType = this.#sheet.getCellTypeInstance(r, c);
+            let result = base;
+
+            // 应用主题中的单元格样式
+            let themeStyle = {};
+            if (cellType?.name === "hyperlink") {
+                themeStyle = themeStyleProvider.getStyle("cell.hyperlink");
+            } else if (cellType?.name === "numeric") {
+                themeStyle = themeStyleProvider.getStyle("cell.numeric");
+            } else if (cellType?.name === "text") {
+                themeStyle = themeStyleProvider.getStyle("cell.text");
+            } else if (cellType?.name === "textarea") {
+                themeStyle = themeStyleProvider.getStyle("cell.textarea");
+            } else if (cellType?.name === "date") {
+                themeStyle = themeStyleProvider.getStyle("cell.date");
+            } else if (cellType?.name === "boolean") {
+                themeStyle = themeStyleProvider.getStyle("cell.boolean");
+            } else {
+                themeStyle = themeStyleProvider.getStyle("cell.default");
+            }
+            result = { ...result, ...themeStyle };
+
+            // 应用列类型默认样式（如数字列右对齐等）
+            if (cellType) {
+                result = cellType.getDefaultStyle(result);
+            }
+
+            this.#styleCache.set(key, result);
+            return result;
         }
 
-        // 第 2 层：列样式
-        let style = base;
+        // 获取单元格类型（用于主题样式和列类型默认样式）
+        const cellType = this.#sheet.getCellTypeInstance(r, c);
+
+        // 第 2 层：主题样式（在用户配置之前，确保用户配置可以覆盖主题）
+        let themeStyle = {};
+        if (cellType?.name === "hyperlink") {
+            themeStyle = themeStyleProvider.getStyle("cell.hyperlink");
+        } else if (cellType?.name === "numeric") {
+            themeStyle = themeStyleProvider.getStyle("cell.numeric");
+        } else if (cellType?.name === "text") {
+            themeStyle = themeStyleProvider.getStyle("cell.text");
+        } else if (cellType?.name === "textarea") {
+            themeStyle = themeStyleProvider.getStyle("cell.textarea");
+        } else if (cellType?.name === "date") {
+            themeStyle = themeStyleProvider.getStyle("cell.date");
+        } else if (cellType?.name === "boolean") {
+            themeStyle = themeStyleProvider.getStyle("cell.boolean");
+        } else {
+            themeStyle = themeStyleProvider.getStyle("cell.default");
+        }
+
+        // 第 3 层：列样式（用户配置可以覆盖主题）
+        let style = { ...base, ...themeStyle };
         if (colStyleId) style = { ...style, ...stylePool.getStyle(colStyleId) };
 
-        // 第 3 层：行样式
+        // 第 4 层：行样式
         if (rowStyleId) style = { ...style, ...stylePool.getStyle(rowStyleId) };
 
-        // 第 4 层：单元格样式
+        // 第 5 层：单元格样式
         if (cellStyleId) style = { ...style, ...stylePool.getStyle(cellStyleId) };
 
-        // 第 5 层：列类型默认样式（如数字列右对齐等）
-        const cellType = this.#sheet.getCellTypeInstance(r, c);
+        // 第 6 层：列类型默认样式（如数字列右对齐等）
         if (cellType) {
             style = cellType.getDefaultStyle(style);
         }
 
-        // 第 6 层：数据绑定属性中的样式（cells / cell 配置）
+        // 第 7 层：数据绑定属性中的样式（cells / cell 配置）
         const cellProps = this.#sheet.resolveCellProperties(r, c);
         if (cellProps?.style) style = { ...style, ...cellProps.style };
 
-        // 第 7 层：条件格式样式
+        // 第 8 层：条件格式样式
         const cfStyleId = this.#sheet.matchConditionalStyle(r, c, cell);
         if (cfStyleId) style = { ...style, ...stylePool.getStyle(cfStyleId) };
 
-        // 第 8 层：数据绑定样式（值映射）
+        // 第 9 层：数据绑定样式（值映射）
         const dbStyleId = this.#sheet.getDataBindStyle(r, c);
         if (dbStyleId) style = { ...style, ...stylePool.getStyle(dbStyleId) };
 

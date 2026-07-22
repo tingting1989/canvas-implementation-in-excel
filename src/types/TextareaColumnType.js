@@ -1,5 +1,6 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { CONFIG } from "@/constants/config";
+import { themeStyleProvider } from "../theme/index.js";
 
 /**
  * 多行文本列类型（TextareaColumnType）
@@ -103,29 +104,6 @@ export class TextareaColumnType extends BaseColumnType {
         const trimmed = input?.trim?.() ?? input;
         if (trimmed === "") return "";
         return trimmed;
-    }
-
-    /**
-     * 获取类型的默认样式
-     *
-     * 多行文本的默认样式特点：
-     * - textAlign: "left" — 左对齐（便于阅读长文本）
-     * - verticalAlign: "middle" — 垂直居中（与标准文本类型一致）
-     *
-     * 仅当 baseStyle 中未定义对应属性时才设置默认值
-     *
-     * @param {Object} baseStyle 基础样式对象
-     * @returns {Object} 合并后的样式对象
-     */
-    getDefaultStyle(baseStyle) {
-        const style = { ...baseStyle };
-        if (!style.textAlign) {
-            style.textAlign = "left";
-        }
-        if (!style.verticalAlign) {
-            style.verticalAlign = "middle";
-        }
-        return style;
     }
 
     /**

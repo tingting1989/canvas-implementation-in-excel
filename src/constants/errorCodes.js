@@ -247,6 +247,28 @@ export const ERROR_CODE = Object.freeze({
     /** 通用警告 */
     GENERIC_WARN: "GENERIC_WARN",
 
-    /** 调试信息 */
-    DEBUG_LOG: "DEBUG_LOG",
+    // ── 主题 ──
+    /** 主题 - 从 localStorage 加载失败 */
+    THEME_STORAGE_LOAD_FAILED: "THEME_STORAGE_LOAD_FAILED",
+
+    /** 主题 - 保存到 localStorage 失败 */
+    THEME_STORAGE_SAVE_FAILED: "THEME_STORAGE_SAVE_FAILED",
+
+    /** 主题 - 配置必须为对象 */
+    THEME_CONFIG_INVALID_TYPE: "THEME_CONFIG_INVALID_TYPE",
+
+    /** 主题 - 缺少 config 属性 */
+    THEME_CONFIG_MISSING_CONFIG: "THEME_CONFIG_MISSING_CONFIG",
+
+    /** 主题 - 缺少 config.cell 属性 */
+    THEME_CONFIG_MISSING_CELL: "THEME_CONFIG_MISSING_CELL",
+
+    /** 主题 - 不存在 */
+    THEME_NOT_FOUND: "THEME_NOT_FOUND",
+
+    /** 主题 - 已存在 */
+    THEME_ALREADY_EXISTS: "THEME_ALREADY_EXISTS",
+
+    /** 主题 - 不能删除当前激活的主题 */
+    THEME_CANNOT_REMOVE_ACTIVE: "THEME_CANNOT_REMOVE_ACTIVE",
 });

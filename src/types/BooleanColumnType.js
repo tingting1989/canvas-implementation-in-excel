@@ -1,6 +1,7 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isBoolean, isNumber, isString } from "../utils/helper.js";
 import { SORT_ORDER } from "../constants/enums/SortOrder.js";
+import { themeStyleProvider } from "../theme/index.js";
 
 /**
  * 布尔列类型
@@ -20,10 +21,6 @@ export class BooleanColumnType extends BaseColumnType {
 
     get editorType() {
         return "text";
-    }
-
-    getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: "center" };
     }
 
     format(value) {

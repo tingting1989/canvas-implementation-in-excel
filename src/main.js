@@ -141,7 +141,7 @@ const initApp = () => {
                 ],
 
                 columns: [
-                    { type: "numeric", width: 120, style: { textAlign: "right" } },
+                    { type: "numeric", width: 120, style: { textAlign: "center" } },
                     { type: "hyperlink", width: 100 },
                     // 用户评分
                     {

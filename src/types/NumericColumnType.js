@@ -1,6 +1,7 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isNumber } from "../utils/helper.js";
 import { SORT_ORDER } from "../constants/enums/SortOrder.js";
+import { themeStyleProvider } from "../theme/index.js";
 
 /**
  * 数字列类型
@@ -55,17 +56,6 @@ export class NumericColumnType extends BaseColumnType {
      */
     get editorType() {
         return "numeric";
-    }
-
-    /**
-     * 获取数字列的默认样式
-     * @param {object} baseStyle - 基础样式对象
-     * @returns {object} 合并后的样式对象，添加右对齐（仅当未设置时）
-     */
-    getDefaultStyle(baseStyle) {
-        // 如果 baseStyle 已经有 textAlign，则保留用户配置，不强制覆盖
-        const textAlign = baseStyle?.textAlign ?? "right";
-        return { ...baseStyle, textAlign };
     }
 
     /**

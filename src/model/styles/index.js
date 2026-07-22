@@ -100,6 +100,7 @@ export const CELL_STYLE_PROPERTIES = new Set([
     "verticalAlign",
     "textDecoration",
     "border",
+    "cursor", // 用于超链接等交互元素
 ]);
 
 export function validateStyleProperties(styleObj) {

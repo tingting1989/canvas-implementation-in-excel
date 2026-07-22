@@ -1,4 +1,5 @@
 import { BaseColumnType } from "./BaseColumnType.js";
+import { themeStyleProvider } from "../theme/index.js";
 
 /**
  * 文本列类型
@@ -7,6 +8,7 @@ import { BaseColumnType } from "./BaseColumnType.js";
  * - 默认左对齐
  * - trim 空白字符
  * - 可配置最大长度限制
+ * - 主题样式支持
  */
 export class TextColumnType extends BaseColumnType {
     get name() {
@@ -40,11 +42,5 @@ export class TextColumnType extends BaseColumnType {
         // parse() 只负责 trim 和类型转换，不做长度截断
         // 长度限制应该由 validate() 检查，或者由 UI 层处理
         return trimmed;
-    }
-
-    getDefaultStyle(baseStyle) {
-        // 文本默认左对齐
-        const textAlign = baseStyle?.textAlign ?? "left";
-        return { ...baseStyle, textAlign };
     }
 }
