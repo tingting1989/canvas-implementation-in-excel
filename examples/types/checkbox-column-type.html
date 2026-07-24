@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>☑️ 布尔复选框列类型 - BooleanCheckboxType 演示</title>
+    <title>☑️ 布尔复选框列类型 - CheckboxColumnType 演示</title>
     <style>
         * {
             margin: 0;
@@ -271,10 +271,10 @@
 </head>
 <body>
 <div class="container">
-    <h1>☑️ 布尔复选框列类型 - BooleanCheckboxType 演示</h1>
+    <h1>☑️ 布尔复选框列类型 - CheckboxColumnType 演示</h1>
 
     <div class="demo-section">
-        <h2 class="section-title">🎯 BooleanCheckboxType 核心功能</h2>
+        <h2 class="section-title">🎯 CheckboxColumnType 核心功能</h2>
 
         <div class="feature-grid">
             <div class="feature-card">
@@ -322,7 +322,7 @@
         </div>
 
         <div class="code-block" style="margin-top: 20px;">
-            <span class="code-comment">// ✨ BooleanCheckboxType 使用示例</span>
+            <span class="code-comment">// ✨ CheckboxColumnType 使用示例</span>
 
             <span class="code-comment">// ✅ 基础用法</span>
             { type: <span class="code-string">"checkbox"</span>, width: <span class="code-keyword">80</span> }
@@ -459,6 +459,7 @@
 <script src="../../dist/canvas-sheet.umd.js"></script>
 <script>
     let workbook = null;
+    let addedRowCount = 0;
 
     const originalData = [
         ["任务名称", "已完成", "已审核", "已发布", "重要"],
@@ -501,15 +502,8 @@
                     name: "任务列表",
                     data: originalData,
                     columns: defaultColumns,
-                    rowHeight: 40,
-                    headerRowHeight: 44,
                     cellPadding: 10,
                     textOverflowEllipsis: true,
-                    features: {
-                        selection: true,
-                        editing: true,
-                        contextMenu: true
-                    }
                 }]
             });
 
@@ -565,15 +559,16 @@
     function addTestRow() {
         if (!workbook) return;
         const sheet = workbook.activeSheet;
-        const row = [
-            "新任务 " + Date.now().toString().slice(-4),
-            Math.random() > 0.5,
-            Math.random() > 0.5,
-            Math.random() > 0.5,
-            Math.random() > 0.5
-        ];
-        sheet.addRow(row);
-        log(`➕ 添加测试行，当前共 ${sheet.rowCount} 行`, 'success');
+        const newRowIndex = originalData.length + addedRowCount;
+
+        sheet.setCell(newRowIndex, 0, "新任务 " + Date.now().toString().slice(-4));
+        sheet.setCell(newRowIndex, 1, Math.random() > 0.5);
+        sheet.setCell(newRowIndex, 2, Math.random() > 0.5);
+        sheet.setCell(newRowIndex, 3, Math.random() > 0.5);
+        sheet.setCell(newRowIndex, 4, Math.random() > 0.5);
+
+        addedRowCount++;
+        log(`➕ 添加测试行到第 ${newRowIndex + 1} 行，当前共 ${sheet.rowColManager.rowCount} 行`, 'success');
     }
 
     function toggleRandomCell() {
@@ -597,6 +592,7 @@
             workbook.destroy();
             workbook = null;
         }
+        addedRowCount = 0;
         initWorkbook();
         log('🔄 表格已重置', 'info');
     }

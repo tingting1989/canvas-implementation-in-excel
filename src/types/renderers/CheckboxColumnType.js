@@ -9,7 +9,7 @@
 import { BaseColumnType } from "../BaseColumnType.js";
 import { CONFIG } from "../../constants/config.js";
 
-export class BooleanCheckboxType extends BaseColumnType {
+export class CheckboxColumnType extends BaseColumnType {
     get name() {
         return "checkbox";
     }

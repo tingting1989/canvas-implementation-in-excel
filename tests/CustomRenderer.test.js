@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { CellRenderContext } from '../src/types/CellRenderContext.js';
 import { BaseColumnType } from '../src/types/BaseColumnType.js';
 import {
-    BooleanCheckboxType,
+    CheckboxColumnType,
     ProgressBarType,
     StarRatingType,
     SparklineType,
@@ -251,14 +251,14 @@ describe('BaseColumnType - render() 方法扩展', () => {
 // ============================================================
 // 第四部分：内置渲染器功能测试
 // ============================================================
-describe('内置渲染器 - BooleanCheckboxType', () => {
+describe('内置渲染器 - CheckboxColumnType', () => {
 
     let renderer;
     let mockCtx;
     let context;
 
     beforeEach(() => {
-        renderer = new BooleanCheckboxType();
+        renderer = new CheckboxColumnType();
         mockCtx = createMockCanvasContext();
     });
 

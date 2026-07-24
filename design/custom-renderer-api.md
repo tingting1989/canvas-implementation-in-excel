@@ -847,7 +847,7 @@ registerRenderer('advancedProgress', AdvancedProgressBarType);
 
 ### 5.1 BooleanCheckboxRenderer - 复选框渲染器
 
-**文件**: `src/types/renderers/BooleanCheckboxType.js`
+**文件**: `src/types/renderers/CheckboxColumnType.js`
 
 ```javascript
 import { BaseColumnType } from '../BaseColumnType.js';
@@ -862,7 +862,7 @@ import { BaseColumnType } from '../BaseColumnType.js';
  *   uncheckedColor: string - 未选中时的边框色（默认 '#999'）
  *   size: number - 复选框大小比例（0-1，默认 0.6）
  */
-export class BooleanCheckboxType extends BaseColumnType {
+export class CheckboxColumnType extends BaseColumnType {
     get name() { return 'checkbox'; }
 
     get editorType() { return 'text'; }
@@ -1423,11 +1423,11 @@ columns: [
 
 ```javascript
 import { registerRenderer } from './types/index.js';
-import { BooleanCheckboxType } from './types/renderers/BooleanCheckboxType.js';
+import { CheckboxColumnType } from './types/renderers/CheckboxColumnType.js';
 import { ProgressBarType } from './types/renderers/ProgressBarType.js';
 
 // 注册内置渲染器
-registerRenderer('checkbox', BooleanCheckboxType);
+registerRenderer('checkbox', CheckboxColumnType);
 registerRenderer('progressBar', ProgressBarType);
 ```
 
@@ -1652,8 +1652,8 @@ class ConditionalProgressType extends BaseColumnType {
 
 #### 任务清单
 
-- [ ] **2.1 BooleanCheckboxType**
-  - 文件：`src/types/renderers/BooleanCheckboxType.js`
+- [ ] **2.1 CheckboxColumnType**
+  - 文件：`src/types/renderers/CheckboxColumnType.js`
   - 功能：☑/☐ 复选框、禁用态、自定义颜色
   - 测试：真/假/空值/边界情况
 
@@ -2222,7 +2222,7 @@ src/types/
 ├── CellRenderContext.js              # 渲染上下文类
 ├── RendererRegistry.js               # 渲染器注册表
 └── renderers/                        # 内置渲染器目录
-    ├── BooleanCheckboxType.js        # 复选框
+    ├── CheckboxColumnType.js        # 复选框
     ├── ProgressBarType.js            # 进度条
     ├── StarRatingType.js             # 星级评分
     ├── SparklineType.js              # 迷你图

@@ -43,12 +43,11 @@
  * │  │  ├── text      → TextColumnType     文本类型          │   │
  * │  │  ├── numeric   → NumericColumnType  数字类型          │   │
  * │  │  ├── date      → DateColumnType     日期类型          │   │
- * │  │  ├── boolean   → CheckboxColumnType  布尔类型          │   │
  * │  │  ├── select    → SelectColumnType   下拉选择          │   │
  * │  │  ├── textarea  → TextareaColumnType 多行文本         │   │
  * │  │  │                                                    │   │
  * │  │  渲染器类型 (Renderer Types):                          │   │
- * │  │  ├── checkbox     → BooleanCheckboxType 复选框        │   │
+ * │  │  ├── checkbox     → CheckboxColumnType 复选框        │   │
  * │  │  ├── progressBar  → ProgressBarType    进度条         │   │
  * │  │  ├── starRating   → StarRatingType     星级评分       │   │
  * │  │  ├── sparkline    → SparklineType      迷你图         │   │
@@ -70,7 +69,6 @@
  * │  ├── TextColumnType.js       (文本)                         │
  * │  ├── NumericColumnType.js    (数字)                         │
  * │  ├── DateColumnType.js       (日期)                         │
- * │  ├── CheckboxColumnType.js    (布尔)                         │
  * │  ├── SelectColumnType.js     (选择)                         │
  * │  ├── TextareaColumnType.js   (多行文本)                     │
  * │  └── renderers/             (渲染器类型)                    │
@@ -222,24 +220,6 @@ import { NumericColumnType } from "./NumericColumnType.js";
  * @extends BaseColumnType
  */
 import { DateColumnType } from "./DateColumnType.js";
-
-/**
- * 布尔列类型（Boolean Column Type）
- *
- * 用于布尔值（true/false）的处理。
- *
- * 特性：
- * - ☑️ 支持 true/false / 1/0 / 是/否 等多种表示
- * - 🎨 可视化为复选框（配合 BooleanCheckboxType）
- * - ✅ 严格的布尔转换规则
- * - 🔄 统一的存储格式（boolean 类型）
- *
- * 适用场景：开关状态、是否确认、权限标记、激活状态等
- *
- * @class CheckboxColumnType
- * @extends BaseColumnType
- */
-import { CheckboxColumnType } from "./CheckboxColumnType.js";
 
 /**
  * 选择列类型（Select Column Type）
@@ -430,7 +410,6 @@ class TypeRegistry {
             text: TextColumnType,
             numeric: NumericColumnType,
             date: DateColumnType,
-            boolean: CheckboxColumnType,
             select: SelectColumnType,
             textarea: TextareaColumnType,
             hyperlink: HyperlinkColumnType,

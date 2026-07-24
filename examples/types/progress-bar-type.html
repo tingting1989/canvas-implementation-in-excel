@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 进度条列类型 - ProgressBarType 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            overflow: hidden;
+            background: #fff;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            background: #e8f4fd;
+            color: #1976d2;
+        }
+
+        .log-success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .log-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .log-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card h3 {
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment {
+            color: #5c6370;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-function {
+            color: #61afef;
+        }
+
+        .progress-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .progress-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .progress-label {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-bar-track {
+            height: 24px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-low {
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+        }
+
+        .progress-medium {
+            background: linear-gradient(90deg, #feca57, #ff9f43);
+        }
+
+        .progress-high {
+            background: linear-gradient(90deg, #10ac84, #1dd1a1);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📊 进度条列类型 - ProgressBarType 演示</h1>
+
+    <div class="demo-section">
+        <h2 class="section-title">🎯 ProgressBarType 核心功能</h2>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📊 可视化进度条</h3>
+                <p>将数值（0-100）渲染为彩色进度条，直观展示完成进度</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎨 智能颜色变化</h3>
+                <p>根据进度自动变化颜色：低进度红色，中进度黄色，高进度绿色</p>
+            </div>
+            <div class="feature-card">
+                <h3>✨ 渐变填充效果</h3>
+                <p>进度条使用渐变填充，视觉效果更加美观</p>
+            </div>
+            <div class="feature-card">
+                <h3>📝 百分比显示</h3>
+                <p>默认在进度条上显示百分比数值，支持自定义开关</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔒 数据验证</h3>
+                <p>自动验证输入值必须在 0-100 范围内，超出范围自动提示</p>
+            </div>
+            <div class="feature-card">
+                <h3>⚙️ 高度可定制</h3>
+                <p>支持自定义进度条高度、圆角、颜色等样式选项</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3 style="color: #4a5568; margin-bottom: 12px;">📋 进度条预览</h3>
+            <div class="progress-preview">
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>低进度 (20%)</span>
+                        <span style="color: #ff6b6b;">需改进</span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill progress-low" style="width: 20%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>中进度 (50%)</span>
+                        <span style="color: #ff9f43;">进行中</span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill progress-medium" style="width: 50%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>高进度 (80%)</span>
+                        <span style="color: #1dd1a1;">接近完成</span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill progress-high" style="width: 80%;"></div>
+                    </div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>完成 (100%)</span>
+                        <span style="color: #1dd1a1;">已完成</span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill progress-high" style="width: 100%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+            <span class="code-comment">// ✨ ProgressBarType 使用示例</span>
+
+            <span class="code-comment">// ✅ 基础用法</span>
+            { type: <span class="code-string">"progressBar"</span>, width: <span class="code-keyword">200</span> }
+
+            <span class="code-comment">// ✅ 自定义颜色方案</span>
+            {
+                type: <span class="code-string">"progressBar"</span>,
+                width: <span class="code-keyword">200</span>,
+                options: {
+                    colors: {
+                        low: <span class="code-string">"#ff6b6b"</span>,
+                        medium: <span class="code-string">"#feca57"</span>,
+                        high: <span class="code-string">"#10ac84"</span>
+                    }
+                }
+            }
+
+            <span class="code-comment">// ✅ 隐藏百分比文字</span>
+            {
+                type: <span class="code-string">"progressBar"</span>,
+                width: <span class="code-keyword">200</span>,
+                options: {
+                    showPercent: <span class="code-keyword">false</span>
+                }
+            }
+
+            <span class="code-comment">// ✅ 自定义高度比例</span>
+            {
+                type: <span class="code-string">"progressBar"</span>,
+                width: <span class="code-keyword">200</span>,
+                options: {
+                    heightRatio: <span class="code-keyword">0.8</span>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 进度条表格展示</h2>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="targetCol">📍 目标列 (0-based)</label>
+                <input type="number" id="targetCol" value="1" min="0" max="4">
+            </div>
+
+            <div class="control-group">
+                <label for="lowColor">🔴 低进度颜色 (&lt;30%)</label>
+                <input type="color" id="lowColor" value="#ff6b6b">
+            </div>
+
+            <div class="control-group">
+                <label for="mediumColor">🟡 中进度颜色 (30-70%)</label>
+                <input type="color" id="mediumColor" value="#feca57">
+            </div>
+
+            <div class="control-group">
+                <label for="highColor">🟢 高进度颜色 (&gt;=70%)</label>
+                <input type="color" id="highColor" value="#10ac84">
+            </div>
+
+            <div class="control-group">
+                <label for="heightRatio">📏 高度比例 (0.3-0.9)</label>
+                <input type="number" id="heightRatio" value="0.6" min="0.3" max="0.9" step="0.1">
+            </div>
+
+            <div class="control-group">
+                <label for="borderRadius">📐 圆角 (0-20)</label>
+                <input type="number" id="borderRadius" value="12" min="0" max="20">
+            </div>
+
+            <div class="control-group">
+                <label for="showPercent">✓ 显示百分比</label>
+                <select id="showPercent">
+                    <option value="true" selected>是</option>
+                    <option value="false">否</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-primary" onclick="applyConfig()">⚙️ 应用配置</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-success" onclick="addTestRow()">➕ 添加测试数据</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-warning" onclick="randomizeProgress()">🎲 随机进度</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-info" onclick="resetTable()">🔄 重置表格</button>
+            </div>
+        </div>
+
+        <div class="control-group" style="margin-top: 20px;">
+            <label>📝 操作日志</label>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">颜色阈值规则</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>低进度 (0-29%)</strong> - 显示为红色/橙色，表示进度较低</li>
+                <li><strong>中进度 (30-69%)</strong> - 显示为黄色/橙色，表示进度适中</li>
+                <li><strong>高进度 (70-100%)</strong> - 显示为绿色，表示进展良好</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">配置选项</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>heightRatio</strong> - 进度条高度相对于单元格高度的比例 (0.3-0.9)</li>
+                <li><strong>borderRadius</strong> - 进度条的圆角大小</li>
+                <li><strong>showPercent</strong> - 是否在进度条上显示百分比文字</li>
+                <li><strong>colors.low/medium/high</strong> - 不同进度阶段的颜色</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">数据验证</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>有效值</strong> - 0 到 100 之间的数字</li>
+                <li><strong>自动修正</strong> - 小于 0 视为 0，大于 100 视为 100</li>
+                <li><strong>空值处理</strong> - 空单元格显示为空白进度条</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">渲染特性</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>渐变填充</strong> - 进度条使用从深到浅的渐变效果</li>
+                <li><strong>圆角裁剪</strong> - 进度条两端使用圆角</li>
+                <li><strong>居中对齐</strong> - 百分比文字在单元格中居中显示</li>
+                <li><strong>轨道背景</strong> - 未填充部分显示为浅灰色轨道</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+    let addedRowCount = 0;
+
+    const originalData = [
+        ["项目名称", "完成进度", "代码质量", "测试覆盖", "综合评分"],
+        ["用户认证模块", 95, 88, 92, 91],
+        ["数据导入功能", 60, 75, 45, 60],
+        ["报表导出模块", 30, 60, 20, 37],
+        ["API 接口开发", 85, 92, 88, 88],
+        ["前端界面优化", 45, 70, 0, 38],
+        ["性能调优", 15, 80, 30, 42],
+        ["安全漏洞修复", 78, 95, 85, 86],
+        ["文档编写", 50, 65, 0, 38]
+    ];
+
+    const defaultColumns = [
+        { type: "text", width: 180 },
+        { type: "progressBar", width: 200 },
+        { type: "progressBar", width: 200 },
+        { type: "progressBar", width: 200 },
+        { type: "progressBar", width: 200 }
+    ];
+
+    function log(msg, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        container.insertBefore(entry, container.firstChild);
+        if (container.children.length > 50) container.removeChild(container.lastChild);
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1000,
+                height: 450,
+                sheets: [{
+                    name: "项目进度",
+                    data: originalData,
+                    columns: defaultColumns,
+                    cellPadding: 12,
+                    textOverflowEllipsis: true,
+                    cell: [
+                        // 表头样式
+                        {
+                            row: 0,
+                            col: 0,
+
+                        },
+                        {
+                            row: 0,
+                            col: 1,
+                            type: "text",
+
+                        },
+                        {
+                            row: 0,
+                            col: 2,
+                            type: "text",
+
+                        },
+                        {
+                            row: 0,
+                            col: 3,
+                            type: "text",
+
+                        },
+                        {
+                            row: 0,
+                            col: 4,
+                            type: "text",
+
+                        },
+                        {
+                            row: 0,
+                            col: 5,
+                            type: "text",
+
+                        },
+
+                    ],
+                }]
+            });
+
+            log('✅ Workbook 初始化成功', 'success');
+            log('📋 共 5 列，其中 4 列为进度条类型', 'info');
+            log('💡 提示：直接双击单元格即可编辑进度值（0-100）', 'info');
+
+        } catch (e) {
+            log('❌ 初始化失败: ' + e.message, 'error');
+            console.error(e);
+        }
+    }
+
+    function applyConfig() {
+        if (!workbook) return;
+
+        const col = parseInt(document.getElementById('targetCol').value);
+        const lowColor = document.getElementById('lowColor').value;
+        const mediumColor = document.getElementById('mediumColor').value;
+        const highColor = document.getElementById('highColor').value;
+        const heightRatio = parseFloat(document.getElementById('heightRatio').value);
+        const borderRadius = parseInt(document.getElementById('borderRadius').value);
+        const showPercent = document.getElementById('showPercent').value === 'true';
+
+        if (col < 1 || col >= defaultColumns.length) {
+            log('❌ 列索引超出范围 (1-4)', 'error');
+            return;
+        }
+
+        if (heightRatio < 0.3 || heightRatio > 0.9) {
+            log('❌ 高度比例超出范围 (0.3-0.9)', 'error');
+            return;
+        }
+
+        if (borderRadius < 0 || borderRadius > 20) {
+            log('❌ 圆角值超出范围 (0-20)', 'error');
+            return;
+        }
+
+        const columns = [...defaultColumns];
+        columns[col] = {
+            ...columns[col],
+            options: {
+                heightRatio: heightRatio,
+                borderRadius: borderRadius,
+                showPercent: showPercent,
+                colors: {
+                    low: lowColor,
+                    medium: mediumColor,
+                    high: highColor
+                }
+            }
+        };
+
+        workbook.updateSettings({ columns });
+        log(`✅ 已应用配置到列 ${col}`, 'success');
+        log(`   颜色: 低=${lowColor}, 中=${mediumColor}, 高=${highColor}`, 'info');
+        log(`   高度比例: ${heightRatio}, 圆角: ${borderRadius}, 显示百分比: ${showPercent ? '是' : '否'}`, 'info');
+    }
+
+    function addTestRow() {
+        if (!workbook) return;
+        const sheet = workbook.activeSheet;
+        const newRowIndex = originalData.length + addedRowCount;
+
+        sheet.setCell(newRowIndex, 0, "新项目 " + Date.now().toString().slice(-4));
+        sheet.setCell(newRowIndex, 1, Math.floor(Math.random() * 100));
+        sheet.setCell(newRowIndex, 2, Math.floor(Math.random() * 100));
+        sheet.setCell(newRowIndex, 3, Math.floor(Math.random() * 100));
+        sheet.setCell(newRowIndex, 4, Math.floor(Math.random() * 100));
+
+        addedRowCount++;
+        log(`➕ 添加测试行到第 ${newRowIndex + 1} 行，当前共 ${sheet.rowColManager.rowCount} 行`, 'success');
+    }
+
+    function randomizeProgress() {
+        if (!workbook) return;
+        const sheet = workbook.activeSheet;
+
+        for (let row = 1; row < sheet.rowCount; row++) {
+            for (let col = 1; col < 5; col++) {
+                if (Math.random() > 0.3) {
+                    const newValue = Math.floor(Math.random() * 100);
+                    sheet.setCell(row, col, newValue);
+                }
+            }
+        }
+
+        log('🎲 已随机更新所有进度值', 'success');
+
+        if (workbook.viewport && typeof workbook.viewport.invalidateAll === 'function') {
+            workbook.viewport.invalidateAll();
+        }
+    }
+
+    function resetTable() {
+        if (workbook) {
+            workbook.destroy();
+            workbook = null;
+        }
+        addedRowCount = 0;
+        initWorkbook();
+        log('🔄 表格已重置', 'info');
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

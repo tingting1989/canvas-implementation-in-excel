@@ -32,7 +32,7 @@
  *
  * | 渲染器名称 | 类名 | 用途描述 | 适用场景 |
  * |-----------|------|---------|---------|
- * | `checkbox` | {@link BooleanCheckboxType} | 布尔值复选框 | 任务清单、状态标记 |
+ * | `checkbox` | {@link CheckboxColumnType} | 布尔值复选框 | 任务清单、状态标记 |
  * | `progressBar` | {@link ProgressBarType} | 百分比进度条 | 完成度、加载状态、KPI |
  * | `starRating` | {@link StarRatingType} | 星级评分显示 | 产品评分、满意度调查 |
  * | `sparkline` | {@link SparklineType} | 迷你折线图 | 趋势分析、数据概览 |
@@ -47,7 +47,7 @@
  * │  ┌─────────────────────────────────────────────────────┐   │
  * │  │        BUILTIN_RENDERER_TYPE_REGISTRY (注册表)         │   │
  * │  │  {                                                    │   │
- * │  │    'checkbox':     BooleanCheckboxType,               │   │
+ * │  │    'checkbox':     CheckboxColumnType,               │   │
  * │  │    'progressBar':  ProgressBarType,                   │   │
  * │  │    'starRating':   StarRatingType,                    │   │
  * │  │    'sparkline':    SparklineType,                     │   │
@@ -61,7 +61,7 @@
  * │  - getAllBuiltinRendererNames()  → 列出所有名称             │
  * ├─────────────────────────────────────────────────────────────┤
  * │  渲染器实现类（继承 BaseColumnType）                        │
- * │  ├── BooleanCheckboxType.js   ☑️ 复选框渲染                 │
+ * │  ├── CheckboxColumnType.js   ☑️ 复选框渲染                 │
  * │  ├── ProgressBarType.js      ████████ 进度条               │
  * │  ├── StarRatingType.js       ⭐⭐⭐⭐☆ 星级评分             │
  * │  ├── SparklineType.js        📈 迷你图表                   │
@@ -84,11 +84,11 @@
  *
  * ### 基础用法：直接导入类
  * ```javascript
- * import { BooleanCheckboxType, ProgressBarType } from '@/types/renderers/index.js';
+ * import { CheckboxColumnType, ProgressBarType } from '@/types/renderers/index.js';
  *
  * // 在列定义中使用
  * const columnConfig = {
- *     type: BooleanCheckboxType,  // 或使用字符串名 'checkbox'
+ *     type: CheckboxColumnType,  // 或使用字符串名 'checkbox'
  *     options: {
  *         checkedColor: '#4CAF50',
  *         uncheckedColor: '#9E9E9E'
@@ -222,7 +222,7 @@
  *
  * 适用场景：任务清单、待办事项、状态开关、权限控制
  *
- * @class BooleanCheckboxType
+ * @class CheckboxColumnType
  * @extends BaseColumnType
  * @example
  * ```js
@@ -237,7 +237,7 @@
  * }
  * ```
  */
-import { BooleanCheckboxType } from "./BooleanCheckboxType.js";
+import { CheckboxColumnType } from "./CheckboxColumnType.js";
 
 /**
  * 进度条渲染器（Progress Bar Renderer）
@@ -348,7 +348,7 @@ import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
 // 导出渲染器类（供外部直接使用）
 // ════════════════════════════════════════════
 
-export { BooleanCheckboxType };
+export { CheckboxColumnType };
 export { ProgressBarType };
 export { StarRatingType };
 export { SparklineType };
@@ -387,7 +387,7 @@ export { ColorPreviewType };
  * - ✅ **扩展正确方式**：通过 `registerTypeClass()` 注册新类型
  *
  * @constant {Object.<string, Function>} BUILTIN_RENDERER_TYPE_REGISTRY
- * @property {Function} checkbox - 布尔复选框渲染器类 {@link BooleanCheckboxType}
+ * @property {Function} checkbox - 布尔复选框渲染器类 {@link CheckboxColumnType}
  * @property {Function} progressBar - 进度条渲染器类 {@link ProgressBarType}
  * @property {Function} starRating - 星级评分渲染器类 {@link StarRatingType}
  * @property {Function} sparkline - 迷你图渲染器类 {@link SparklineType}
@@ -399,7 +399,7 @@ export { ColorPreviewType };
  *
  * // 1. 直接访问
  * const CheckboxClass = BUILTIN_RENDERER_TYPE_REGISTRY.checkbox;
- * console.log(CheckboxClass.name);  // "BooleanCheckboxType"
+ * console.log(CheckboxClass.name);  // "CheckboxColumnType"
  *
  * // 2. 动态查找
  * const name = 'progressBar';
@@ -421,9 +421,9 @@ export { ColorPreviewType };
 export const BUILTIN_RENDERER_TYPE_REGISTRY = Object.freeze({
     /**
      * 布尔复选框渲染器
-     * @type {BooleanCheckboxType}
+     * @type {CheckboxColumnType}
      */
-    checkbox: BooleanCheckboxType,
+    checkbox: CheckboxColumnType,
 
     /**
      * 进度条渲染器

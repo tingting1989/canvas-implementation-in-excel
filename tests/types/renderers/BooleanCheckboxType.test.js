@@ -1,5 +1,5 @@
 /**
- * BooleanCheckboxType 复选框渲染器完整测试套件
+ * CheckboxColumnType 复选框渲染器完整测试套件
  *
  * 包含：
  * 1. 基础功能测试（正常使用场景）
@@ -9,19 +9,19 @@
  * 5. 集成测试
  * 6. 源码 Bug 检测
  *
- * @module tests/types/renderers/BooleanCheckboxType.test
+ * @module tests/types/renderers/CheckboxColumnType.test
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BooleanCheckboxType } from '../../../src/types/renderers/BooleanCheckboxType.js';
+import { CheckboxColumnType } from '@/types/renderers/CheckboxColumnType.js';
 import { CellRenderContext } from '../../../src/types/CellRenderContext.js';
 import { createMockCanvasContext } from '../../../tests/utils/canvas-mock.js';
 
-describe('BooleanCheckboxType - 基础功能测试', () => {
+describe('CheckboxColumnType - 基础功能测试', () => {
     let checkboxType;
 
     beforeEach(() => {
-        checkboxType = new BooleanCheckboxType();
+        checkboxType = new CheckboxColumnType();
     });
 
     describe('基本属性', () => {
@@ -84,12 +84,12 @@ describe('BooleanCheckboxType - 基础功能测试', () => {
     });
 });
 
-describe('BooleanCheckboxType - 渲染测试', () => {
+describe('CheckboxColumnType - 渲染测试', () => {
     let mockCtx, checkboxType;
 
     beforeEach(() => {
         mockCtx = createMockCanvasContext();
-        checkboxType = new BooleanCheckboxType();
+        checkboxType = new CheckboxColumnType();
     });
 
     function createContext(value, overrides = {}) {
@@ -142,27 +142,27 @@ describe('BooleanCheckboxType - 渲染测试', () => {
     });
 });
 
-describe('BooleanCheckboxType - 配置选项测试', () => {
+describe('CheckboxColumnType - 配置选项测试', () => {
     it('自定义 size 选项', () => {
-        const type = new BooleanCheckboxType({ size: 0.8 });
+        const type = new CheckboxColumnType({ size: 0.8 });
         expect(type.options.size).toBe(0.8);
     });
 
     it('自定义 checkedColor 选项', () => {
-        const type = new BooleanCheckboxType({ checkedColor: '#ff0000' });
+        const type = new CheckboxColumnType({ checkedColor: '#ff0000' });
         expect(type.options.checkedColor).toBe('#ff0000');
     });
 
     it('自定义 uncheckedColor 选项', () => {
-        const type = new BooleanCheckboxType({ uncheckedColor: '#00ff00' });
+        const type = new CheckboxColumnType({ uncheckedColor: '#00ff00' });
         expect(type.options.uncheckedColor).toBe('#00ff00');
     });
 });
 
-describe('BooleanCheckboxType - 攻击性测试', () => {
+describe('CheckboxColumnType - 攻击性测试', () => {
     describe('异常输入测试', () => {
         it('各种布尔值的 truthy/falsy 判断', () => {
-            const type = new BooleanCheckboxType();
+            const type = new CheckboxColumnType();
             const values = [0, 1, '', ' ', '0', '1', null, undefined, {}, [], NaN];
 
             values.forEach(value => {
@@ -176,7 +176,7 @@ describe('BooleanCheckboxType - 攻击性测试', () => {
         });
 
         it('极小单元格尺寸', () => {
-            const type = new BooleanCheckboxType();
+            const type = new CheckboxColumnType();
             const tinyContext = new CellRenderContext({
                 ctx: createMockCanvasContext(),
                 x: 0, y: 0, width: 1, height: 1,
@@ -188,7 +188,7 @@ describe('BooleanCheckboxType - 攻击性测试', () => {
         });
 
         it('极大单元格尺寸', () => {
-            const type = new BooleanCheckboxType();
+            const type = new CheckboxColumnType();
             const hugeContext = new CellRenderContext({
                 ctx: createMockCanvasContext(),
                 x: 0, y: 0, width: 10000, height: 10000,
@@ -202,7 +202,7 @@ describe('BooleanCheckboxType - 攻击性测试', () => {
 
     describe('性能压力测试', () => {
         it('批量渲染性能', () => {
-            const type = new BooleanCheckboxType();
+            const type = new CheckboxColumnType();
             const start = performance.now();
 
             for (let i = 0; i < 1000; i++) {
@@ -223,10 +223,10 @@ describe('BooleanCheckboxType - 攻击性测试', () => {
     });
 });
 
-describe('BooleanCheckboxType - Bug 检测', () => {
+describe('CheckboxColumnType - Bug 检测', () => {
     describe('源码问题识别', () => {
         it('Bug #1: parse() 与 CheckboxColumnType 的差异', () => {
-            const checkboxType = new BooleanCheckboxType();
+            const checkboxType = new CheckboxColumnType();
 
             const missingKeywords = ['y', 'Y', 't', 'T', 'f', 'F', '真', '假'];
             missingKeywords.forEach(keyword => {
@@ -238,7 +238,7 @@ describe('BooleanCheckboxType - Bug 检测', () => {
         });
 
         it('Bug #2: render() 中 drawRoundedRect 依赖', () => {
-            const type = new BooleanCheckboxType();
+            const type = new CheckboxColumnType();
             const contextWithoutMethod = {
                 ctx: createMockCanvasContext(),
                 x: 0, y: 0, width: 80, height: 30,
@@ -261,7 +261,7 @@ describe('BooleanCheckboxType - Bug 检测', () => {
         });
 
         it('Bug #3: isDisabled 对已禁用控件的二次处理', () => {
-            const type = new BooleanCheckboxType();
+            const type = new CheckboxColumnType();
             const ctx = createMockCanvasContext();
             const disabledContext = new CellRenderContext({
                 ctx,

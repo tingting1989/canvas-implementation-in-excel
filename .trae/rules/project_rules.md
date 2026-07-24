@@ -599,7 +599,7 @@ export const defaultThemeConfig = {
             text: { ... },
             date: { ... },
             boolean: { ... },
-            checkbox: { ... },    // ← BooleanCheckboxType
+            checkbox: { ... },    // ← CheckboxColumnType
             hyperlink: { ... },
             textarea: { ... },
         },
@@ -615,7 +615,7 @@ export const defaultThemeConfig = {
 | TextColumnType | `cell.text` | 文本类型居左对齐 |
 | DateColumnType | `cell.date` | 日期类型居中对齐 |
 | CheckboxColumnType | `cell.boolean` | 布尔类型居中对齐 |
-| BooleanCheckboxType | `cell.checkbox` | 复选框类型居中对齐 |
+| CheckboxColumnType | `cell.checkbox` | 复选框类型居中对齐 |
 | HyperlinkColumnType | `cell.hyperlink` | 超链接类型下划线 |
 | TextAreaColumnType | `cell.textarea` | 多行文本类型 |
 
