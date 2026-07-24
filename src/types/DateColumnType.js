@@ -37,7 +37,6 @@ export class DateColumnType extends BaseColumnType {
      * @returns {string}
      */
     format(value) {
-        console.log(this.options);
         if (value === undefined || value === null) return "";
 
         const date = this.#toDate(value);

@@ -225,7 +225,7 @@ describe('BooleanCheckboxType - 攻击性测试', () => {
 
 describe('BooleanCheckboxType - Bug 检测', () => {
     describe('源码问题识别', () => {
-        it('Bug #1: parse() 与 BooleanColumnType 的差异', () => {
+        it('Bug #1: parse() 与 CheckboxColumnType 的差异', () => {
             const checkboxType = new BooleanCheckboxType();
 
             const missingKeywords = ['y', 'Y', 't', 'T', 'f', 'F', '真', '假'];

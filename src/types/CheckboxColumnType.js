@@ -14,9 +14,9 @@ import { themeStyleProvider } from "../theme/index.js";
  * 配置选项：
  *   labels: { true: '✓', false: '✗' } — 自定义显示标签
  */
-export class BooleanColumnType extends BaseColumnType {
+export class CheckboxColumnType extends BaseColumnType {
     get name() {
-        return "boolean";
+        return "checkbox";
     }
 
     get editorType() {

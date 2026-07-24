@@ -1,5 +1,5 @@
 /**
- * BooleanColumnType 布尔列类型完整测试套件
+ * CheckboxColumnType 布尔列类型完整测试套件
  *
  * 包含：
  * 1. 基础功能测试（正常使用场景）
@@ -8,17 +8,17 @@
  * 4. 集成测试
  * 5. 源码 Bug 检测
  *
- * @module tests/types/BooleanColumnType.test
+ * @module tests/types/CheckboxColumnType.test
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BooleanColumnType } from '../../src/types/BooleanColumnType.js';
+import { CheckboxColumnType } from '@/types/CheckboxColumnType.js';
 
-describe('BooleanColumnType - 基础功能测试', () => {
+describe('CheckboxColumnType - 基础功能测试', () => {
     let boolType;
 
     beforeEach(() => {
-        boolType = new BooleanColumnType();
+        boolType = new CheckboxColumnType();
     });
 
     describe('基本属性', () => {
@@ -135,9 +135,9 @@ describe('BooleanColumnType - 基础功能测试', () => {
     });
 });
 
-describe('BooleanColumnType - 自定义标签配置测试', () => {
+describe('CheckboxColumnType - 自定义标签配置测试', () => {
     it('自定义 labels 配置', () => {
-        const type = new BooleanColumnType({
+        const type = new CheckboxColumnType({
             labels: { true: '✓', false: '✗' }
         });
 
@@ -146,7 +146,7 @@ describe('BooleanColumnType - 自定义标签配置测试', () => {
     });
 
     it('部分自定义 labels', () => {
-        const type = new BooleanColumnType({
+        const type = new CheckboxColumnType({
             labels: { true: '是' }
         });
 
@@ -155,17 +155,17 @@ describe('BooleanColumnType - 自定义标签配置测试', () => {
     });
 
     it('labels 为 null 时使用默认值', () => {
-        const type = new BooleanColumnType({ labels: null });
+        const type = new CheckboxColumnType({ labels: null });
 
         expect(type.format(true)).toBe('TRUE');
         expect(type.format(false)).toBe('FALSE');
     });
 });
 
-describe('BooleanColumnType - 攻击性测试', () => {
+describe('CheckboxColumnType - 攻击性测试', () => {
     describe('异常输入测试', () => {
         it('各种大小写组合', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
             const variations = [
                 'True', 'TRUE', 'tRuE', 'tRUE',
                 'False', 'FALSE', 'fAlSe', 'fALSE',
@@ -183,7 +183,7 @@ describe('BooleanColumnType - 攻击性测试', () => {
         });
 
         it('带空白字符的输入', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
 
             expect(type.parse('  true  ')).toBe(true);
             expect(type.parse('\tfalse\t')).toBe(false);
@@ -191,7 +191,7 @@ describe('BooleanColumnType - 攻击性测试', () => {
         });
 
         it('特殊 Unicode 字符', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
             const specialChars = [
                 '是', '否', '真', '假',
                 'Ｔｒｕｅ',  // 全角字符
@@ -205,7 +205,7 @@ describe('BooleanColumnType - 攻击性测试', () => {
         });
 
         it('数字边界值', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
             const numbers = [0, 1, -1, 2, 0.5, 1.5, NaN, Infinity];
 
             numbers.forEach(num => {
@@ -218,7 +218,7 @@ describe('BooleanColumnType - 攻击性测试', () => {
 
     describe('性能压力测试', () => {
         it('高频 parse 调用', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
             const start = performance.now();
 
             for (let i = 0; i < 50000; i++) {
@@ -230,7 +230,7 @@ describe('BooleanColumnType - 攻击性测试', () => {
         });
 
         it('高频 format 调用', () => {
-            const type = new BooleanColumnType({
+            const type = new CheckboxColumnType({
                 labels: { true: '✓', false: '✗' }
             });
             const start = performance.now();
@@ -245,9 +245,9 @@ describe('BooleanColumnType - 攻击性测试', () => {
     });
 });
 
-describe('BooleanColumnType - 集成测试', () => {
+describe('CheckboxColumnType - 集成测试', () => {
     it('与 BaseColumnType 接口兼容', () => {
-        const type = new BooleanColumnType();
+        const type = new CheckboxColumnType();
 
         expect(typeof type.format).toBe('function');
         expect(typeof type.validate).toBe('function');
@@ -259,7 +259,7 @@ describe('BooleanColumnType - 集成测试', () => {
     });
 
     it('parse 和 format 的往返一致性', () => {
-        const type = new BooleanColumnType();
+        const type = new CheckboxColumnType();
 
         const inputs = ['true', 'false', 'yes', 'no', '1', '0'];
         inputs.forEach(input => {
@@ -272,7 +272,7 @@ describe('BooleanColumnType - 集成测试', () => {
     });
 
     it('validate 通过后可以正确格式化', () => {
-        const type = new BooleanColumnType();
+        const type = new CheckboxColumnType();
 
         const validValues = [true, false, 0, 1, 'true', 'false'];
         validValues.forEach(val => {
@@ -283,10 +283,10 @@ describe('BooleanColumnType - 集成测试', () => {
     });
 });
 
-describe('BooleanColumnType - Bug 检测', () => {
+describe('CheckboxColumnType - Bug 检测', () => {
     describe('源码问题识别', () => {
         it('Bug #1: 数字 2 的处理（不是 0 或 1）', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
 
             const result = type.parse(2);
             console.log(`parse(2): ${result} (${typeof result})`);
@@ -298,7 +298,7 @@ describe('BooleanColumnType - Bug 检测', () => {
         });
 
         it('Bug #2: 空字符串和字符串 "null" 的区别', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
 
             expect(type.parse('')).toBe('');
             expect(type.parse('null')).toBe('null');
@@ -308,7 +308,7 @@ describe('BooleanColumnType - Bug 检测', () => {
         });
 
         it('Bug #3: 布尔对象 vs 基本布尔值', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
 
             expect(type.format(new Boolean(true))).toBe('TRUE');
             expect(type.parse(new Boolean(false))).toBe(false);
@@ -317,7 +317,7 @@ describe('BooleanColumnType - Bug 检测', () => {
         });
 
         it('Bug #4: 自定义 labels 不影响 parse 逻辑', () => {
-            const type = new BooleanColumnType({
+            const type = new CheckboxColumnType({
                 labels: { true: '是', false: '否' }
             });
 
@@ -330,7 +330,7 @@ describe('BooleanColumnType - Bug 检测', () => {
 
     describe('边缘行为分析', () => {
         it('toBoolean 私有方法的边界情况', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
 
             const edgeCases = [
                 { input: '', expected: null },
@@ -350,7 +350,7 @@ describe('BooleanColumnType - Bug 检测', () => {
         });
 
         it('compare() 中无效值的排序稳定性', () => {
-            const type = new BooleanColumnType();
+            const type = new CheckboxColumnType();
 
             const invalidValues = ['a', 'b', 'c', 'x', 'y', 'z'];
             const sorted = [...invalidValues].sort((a, b) => type.compare(a, b));

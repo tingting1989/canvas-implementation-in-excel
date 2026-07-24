@@ -32,13 +32,6 @@ describe('DateColumnType - 基础功能测试', () => {
         });
     });
 
-    describe('getDefaultStyle() 方法', () => {
-        it('默认居中对齐', () => {
-            const style = dateType.getDefaultStyle({});
-            expect(style.textAlign).toBe('center');
-        });
-    });
-
     describe('format() 方法', () => {
         it('undefined/null 返回空字符串', () => {
             expect(dateType.format(undefined)).toBe('');

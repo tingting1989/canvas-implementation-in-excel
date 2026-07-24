@@ -27,7 +27,7 @@ BaseColumnType 实例直接作为运行时类型对象使用，包含完整的 `
 | `text` | `TextColumnType` | `TextEditor` | 左对齐 |
 | `numeric` | `NumericColumnType` | `NumericEditor` | 右对齐 |
 | `date` | `DateColumnType` | `DateEditor` | 居中 |
-| `boolean` | `BooleanColumnType` | `TextEditor` | 居中 |
+| `boolean` | `CheckboxColumnType` | `TextEditor` | 居中 |
 | `select` | `SelectColumnType` | `SelectEditor` | 左对齐 |
 
 ## 使用方式

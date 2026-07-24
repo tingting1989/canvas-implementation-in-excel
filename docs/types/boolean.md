@@ -1,4 +1,4 @@
-# BooleanColumnType — 布尔类型
+# CheckboxColumnType — 布尔类型
 
 ## 概述
 

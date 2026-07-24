@@ -43,7 +43,7 @@
  * │  │  ├── text      → TextColumnType     文本类型          │   │
  * │  │  ├── numeric   → NumericColumnType  数字类型          │   │
  * │  │  ├── date      → DateColumnType     日期类型          │   │
- * │  │  ├── boolean   → BooleanColumnType  布尔类型          │   │
+ * │  │  ├── boolean   → CheckboxColumnType  布尔类型          │   │
  * │  │  ├── select    → SelectColumnType   下拉选择          │   │
  * │  │  ├── textarea  → TextareaColumnType 多行文本         │   │
  * │  │  │                                                    │   │
@@ -70,7 +70,7 @@
  * │  ├── TextColumnType.js       (文本)                         │
  * │  ├── NumericColumnType.js    (数字)                         │
  * │  ├── DateColumnType.js       (日期)                         │
- * │  ├── BooleanColumnType.js    (布尔)                         │
+ * │  ├── CheckboxColumnType.js    (布尔)                         │
  * │  ├── SelectColumnType.js     (选择)                         │
  * │  ├── TextareaColumnType.js   (多行文本)                     │
  * │  └── renderers/             (渲染器类型)                    │
@@ -236,10 +236,10 @@ import { DateColumnType } from "./DateColumnType.js";
  *
  * 适用场景：开关状态、是否确认、权限标记、激活状态等
  *
- * @class BooleanColumnType
+ * @class CheckboxColumnType
  * @extends BaseColumnType
  */
-import { BooleanColumnType } from "./BooleanColumnType.js";
+import { CheckboxColumnType } from "./CheckboxColumnType.js";
 
 /**
  * 选择列类型（Select Column Type）
@@ -430,7 +430,7 @@ class TypeRegistry {
             text: TextColumnType,
             numeric: NumericColumnType,
             date: DateColumnType,
-            boolean: BooleanColumnType,
+            boolean: CheckboxColumnType,
             select: SelectColumnType,
             textarea: TextareaColumnType,
             hyperlink: HyperlinkColumnType,

@@ -572,8 +572,122 @@ import { LAYER_Z_INDEX } from "@/constants/layerZIndex.js";
 // 使用示例
 const rendererConfig = {
     backgroundZIndex: LAYER_Z_INDEX.TILE,           // = 100
-    selectionZIndex: LAYER_Z_INDEX.SELECTION,       // = 200  
+    selectionZIndex: LAYER_Z_INDEX.SELECTION,       // = 200
     chartZIndex: LAYER_Z_INDEX.CHART,               // = 400
     overlayZIndex: LAYER_Z_INDEX.HEADER + 100,      // = 700（自定义扩展）
 };
 ```
+
+## 17. 列类型默认样式（Column Type Default Styles）
+
+- 列类型的**默认样式必须在主题配置中定义**，**禁止**在 Column Type 类中使用 `getDefaultStyle()` 方法
+- 主题配置文件：`src/theme/config.js` 中的 `defaultThemeConfig.config.cell`
+- **原因**：主题配置集中管理所有单元格类型的默认样式，便于统一修改和切换主题
+
+### 主题配置结构
+
+```javascript
+// src/theme/config.js
+export const defaultThemeConfig = {
+    name: "default",
+    config: {
+        cell: {
+            // 默认样式
+            default: { ... },
+            // 各类型样式（必须为每个 Column Type 定义）
+            numeric: { ... },
+            text: { ... },
+            date: { ... },
+            boolean: { ... },
+            checkbox: { ... },    // ← BooleanCheckboxType
+            hyperlink: { ... },
+            textarea: { ... },
+        },
+    },
+};
+```
+
+### 列类型与主题样式映射
+
+| Column Type 类 | 主题样式键 | 说明 |
+|---------------|-----------|------|
+| NumericColumnType | `cell.numeric` | 数字类型居右对齐 |
+| TextColumnType | `cell.text` | 文本类型居左对齐 |
+| DateColumnType | `cell.date` | 日期类型居中对齐 |
+| CheckboxColumnType | `cell.boolean` | 布尔类型居中对齐 |
+| BooleanCheckboxType | `cell.checkbox` | 复选框类型居中对齐 |
+| HyperlinkColumnType | `cell.hyperlink` | 超链接类型下划线 |
+| TextAreaColumnType | `cell.textarea` | 多行文本类型 |
+
+### 添加新 Column Type 的样式配置
+
+#### 步骤 1: 在 `src/theme/config.js` 中添加主题样式
+
+```javascript
+// defaultThemeConfig.config.cell 中添加
+export const defaultThemeConfig = {
+    config: {
+        cell: {
+            // ... 其他类型
+            myNewType: {
+                fontFamily: "Microsoft YaHei",
+                fontSize: 14,
+                fontWeight: "normal",
+                color: "#333",
+                backgroundColor: "transparent",
+                textAlign: "center",      // ← 根据需求设置对齐方式
+                verticalAlign: "middle",
+                textDecoration: "none",
+            },
+        },
+    },
+};
+```
+
+#### 步骤 2: 在 `ThemeStyleProvider.js` 中注册映射
+
+```javascript
+// src/theme/ThemeStyleProvider.js
+const typeToStyleMap = {
+    // ... 其他类型
+    myNewType: "cell.myNewType",
+};
+```
+
+#### 步骤 3: 创建 Column Type 类（**不要**实现 `getDefaultStyle()`）
+
+```javascript
+// src/types/MyNewColumnType.js
+export class MyNewColumnType extends BaseColumnType {
+    get name() { return "myNewType"; }
+    get editorType() { return "text"; }
+
+    // ✅ 正确：不实现 getDefaultStyle()
+    // ✅ 正确：不在这里定义默认样式
+
+    format(value) { ... }
+    parse(input) { ... }
+    validate(value) { ... }
+}
+```
+
+### ❌ 错误示例
+
+```javascript
+// ❌ 禁止：在 Column Type 中使用 getDefaultStyle()
+export class BadColumnType extends BaseColumnType {
+    get name() { return "bad"; }
+
+    // ❌ 错误：应该在主题配置中定义
+    getDefaultStyle(baseStyle) {
+        return { ...baseStyle, textAlign: "center" };
+    }
+}
+```
+
+### 设计原则总结
+
+1. **样式集中管理**：所有单元格类型的默认样式在主题配置中统一定义
+2. **主题一致性**：切换主题时自动应用新主题的样式定义
+3. **易于维护**：修改样式只需改一处，无需修改多个 Column Type 类
+4. **扩展性强**：支持自定义主题覆盖默认样式

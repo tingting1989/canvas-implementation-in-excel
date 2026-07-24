@@ -98,6 +98,16 @@ export const defaultThemeConfig = {
                 verticalAlign: "middle",
                 textDecoration: "none",
             },
+            checkbox: {
+                fontFamily: "Microsoft YaHei",
+                fontSize: 14,
+                fontWeight: "normal",
+                color: "#667eea",
+                backgroundColor: "transparent",
+                textAlign: "center",
+                verticalAlign: "middle",
+                textDecoration: "none",
+            },
         },
         font: {
             family: "Microsoft YaHei",
