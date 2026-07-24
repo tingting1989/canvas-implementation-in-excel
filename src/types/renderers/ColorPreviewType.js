@@ -1,13 +1,14 @@
-/**
+﻿/**
  * 颜色预览渲染器
  *
- * 将颜色值（hex/rgb/rgba）渲染为可视化的颜色块。
+ * 将颜色值（hex/rgb/rgba/hsl/hsla）渲染为可视化的颜色块。
  *
  * @module types/renderers/ColorPreviewType
  */
 
 import { BaseColumnType } from "../BaseColumnType.js";
 import { CONFIG } from "../../constants/config.js";
+import { toArgb, fromArgb } from "../../shared/StyleConverter.js";
 
 export class ColorPreviewType extends BaseColumnType {
     get name() {
@@ -60,73 +61,55 @@ export class ColorPreviewType extends BaseColumnType {
     }
 
     /**
-     * 验证颜色值是否有效（跨平台兼容）
+     * 验证颜色值是否有效（使用 StyleConverter 的颜色解析能力）
      */
     #isValidColor(color) {
-        if (!color) return false;
+        if (!color || typeof color !== "string") return false;
+        const trimmedColor = color.trim();
+        if (trimmedColor === "") return false;
 
-        // 方法1: 尝试使用浏览器 API（如果可用）
+        // 尝试使用 ARGB 转换来验证颜色有效性
+        // toArgb 内部会使用浏览器 API 或正则验证颜色
         try {
-            const s = new Option().style;
-            s.color = color;
-            if (s.color !== "") return true;
+            const argb = toArgb(trimmedColor);
+            // 如果转换成功（返回有效的 ARGB 值），颜色有效
+            if (argb && argb.length === 8) return true;
         } catch {
-            // Node.js 环境下 Option 可能不可用，继续使用正则表达式
+            // 转换失败，返回 false
         }
 
-        // 方法2: 正则表达式验证（备选方案）
-        const hexPattern = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-        const rgbPattern = /^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/;
-        const rgbaPattern = /^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*[\d.]+\s*\)$/;
-        const hslPattern = /^hsl\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*\)$/;
-        const hslaPattern = /^hsla\(\s*\d+\s*,\s*\d+%\s*,\s*\d+%\s*,\s*[\d.]+\s*\)$/;
-
-        // CSS 预定义颜色名称
-        const namedColors = [
-            "red",
-            "green",
-            "blue",
-            "yellow",
-            "cyan",
-            "magenta",
-            "white",
-            "black",
-            "gray",
-            "grey",
-            "orange",
-            "purple",
-            "pink",
-            "brown",
-            "transparent",
-            "inherit",
-            "initial",
-        ];
-
-        return (
-            hexPattern.test(color) ||
-            rgbPattern.test(color) ||
-            rgbaPattern.test(color) ||
-            hslPattern.test(color) ||
-            hslaPattern.test(color) ||
-            namedColors.includes(color.toLowerCase())
-        );
+        return false;
     }
 
     /**
      * 标准化颜色值（确保返回有效颜色或 transparent）
+     * 使用 StyleConverter 的 fromArgb 确保输出标准格式
      */
     #normalizeColor(color) {
         if (!color || color.trim() === "") return "transparent";
 
         const trimmedColor = color.trim();
 
-        // 如果是有效的颜色值，直接返回
-        if (this.#isValidColor(trimmedColor)) return trimmedColor;
+        try {
+            // 转换为 ARGB 再转回标准格式，确保一致性
+            const argb = toArgb(trimmedColor);
+            if (argb && argb.length === 8) {
+                return fromArgb(argb);
+            }
+        } catch {
+            // 转换失败，尝试其他方式
+        }
 
-        // 尝试添加 # 前缀（处理缺少 # 的 hex 颜色）
+        // 备选：尝试添加 # 前缀（处理缺少 # 的 hex 颜色）
         if (/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(trimmedColor)) {
-            const withHash = `#${trimmedColor}`;
-            if (this.#isValidColor(withHash)) return withHash;
+            try {
+                const argb = toArgb(`#${trimmedColor}`);
+                if (argb && argb.length === 8) {
+                    return fromArgb(argb);
+                }
+            } catch {
+                // 继续
+            }
         }
 
         // 所有尝试都失败，返回 transparent 作为安全回退

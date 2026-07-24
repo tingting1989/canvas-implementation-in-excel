@@ -1,0 +1,667 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 颜色预览列类型 - ColorPreviewType 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            overflow: hidden;
+            background: #fff;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #11998e;
+            box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            background: #e8f4fd;
+            color: #1976d2;
+        }
+
+        .log-success {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .log-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .log-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #11998e;
+        }
+
+        .feature-card h3 {
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment {
+            color: #5c6370;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-function {
+            color: #61afef;
+        }
+
+        .color-preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .color-preview-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: 2px solid #e0e0e0;
+        }
+
+        .color-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎨 颜色预览列类型 - ColorPreviewType 演示</h1>
+
+    <div class="demo-section">
+        <h2 class="section-title">🎯 ColorPreviewType 核心功能</h2>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🎨 可视化颜色预览</h3>
+                <p>将颜色值（hex/rgb/rgba）渲染为可视化的颜色块</p>
+            </div>
+            <div class="feature-card">
+                <h3>📦 多格式支持</h3>
+                <p>支持 HEX、RGB、RGBA、HSL、HSLA 以及 CSS 颜色名称</p>
+            </div>
+            <div class="feature-card">
+                <h3>🖼️ 可选边框</h3>
+                <p>颜色块可配置是否显示边框，便于在浅色背景上识别</p>
+            </div>
+            <div class="feature-card">
+                <h3>📐 圆角定制</h3>
+                <p>支持自定义圆角大小，打造不同风格的颜色块</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔒 数据验证</h3>
+                <p>自动验证颜色值格式，无效颜色会显示错误提示</p>
+            </div>
+            <div class="feature-card">
+                <h3>✨ 安全回退</h3>
+                <p>无效颜色值会显示为 transparent，确保渲染安全</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3 style="color: #4a5568; margin-bottom: 12px;">🎨 颜色格式预览</h3>
+            <div class="color-preview-grid">
+                <div class="color-preview-item">
+                    <div class="color-swatch" style="background-color: #ff0000;"></div>
+                    <span class="color-label">#ff0000</span>
+                </div>
+                <div class="color-preview-item">
+                    <div class="color-swatch" style="background-color: rgb(0, 255, 0);"></div>
+                    <span class="color-label">rgb(0, 255, 0)</span>
+                </div>
+                <div class="color-preview-item">
+                    <div class="color-swatch" style="background-color: rgba(0, 0, 255, 0.5);"></div>
+                    <span class="color-label">rgba(0, 0, 255, 0.5)</span>
+                </div>
+                <div class="color-preview-item">
+                    <div class="color-swatch" style="background-color: hsl(60, 100%, 50%);"></div>
+                    <span class="color-label">hsl(60, 100%, 50%)</span>
+                </div>
+                <div class="color-preview-item">
+                    <div class="color-swatch" style="background-color: red;"></div>
+                    <span class="color-label">red (CSS名称)</span>
+                </div>
+                <div class="color-preview-item">
+                    <div class="color-swatch" style="background-color: #3498db;"></div>
+                    <span class="color-label">#3498db</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+            <span class="code-comment">// ✨ ColorPreviewType 使用示例</span>
+
+            <span class="code-comment">// ✅ 基础用法</span>
+            { type: <span class="code-string">"colorPreview"</span>, width: <span class="code-keyword">120</span> }
+
+            <span class="code-comment">// ✅ 自定义圆角</span>
+            {
+                type: <span class="code-string">"colorPreview"</span>,
+                width: <span class="code-keyword">120</span>,
+                options: {
+                    borderRadius: <span class="code-keyword">8</span>
+                }
+            }
+
+            <span class="code-comment">// ✅ 无边框样式</span>
+            {
+                type: <span class="code-string">"colorPreview"</span>,
+                width: <span class="code-keyword">120</span>,
+                options: {
+                    showBorder: <span class="code-keyword">false</span>
+                }
+            }
+
+            <span class="code-comment">// ✅ 组合配置</span>
+            {
+                type: <span class="code-string">"colorPreview"</span>,
+                width: <span class="code-keyword">120</span>,
+                options: {
+                    borderRadius: <span class="code-keyword">4</span>,
+                    showBorder: <span class="code-keyword">true</span>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 颜色预览表格展示</h2>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="targetCol">📍 目标列 (0-based)</label>
+                    <input type="number" id="targetCol" value="1" min="0" max="3">
+            </div>
+
+            <div class="control-group">
+                <label for="borderRadius">📐 圆角 (0-20)</label>
+                <input type="number" id="borderRadius" value="6" min="0" max="20">
+            </div>
+
+            <div class="control-group">
+                <label for="showBorder">🖼️ 显示边框</label>
+                <select id="showBorder">
+                    <option value="true" selected>是</option>
+                    <option value="false">否</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-primary" onclick="applyConfig()">⚙️ 应用配置</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-success" onclick="addTestRow()">➕ 添加数据</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-warning" onclick="randomizeColors()">🎲 随机颜色</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-info" onclick="resetTable()">🔄 重置表格</button>
+            </div>
+        </div>
+
+        <div class="control-group" style="margin-top: 20px;">
+            <label for="newColor">🎨 输入新颜色值</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                第几行
+                <input type="number" id="targetRow" value="1" min="1" style="width: 60px;" placeholder="行">
+                第几列
+                <input type="number" id="targetCol" value="1" min="1" max="3" style="width: 60px;" placeholder="列">
+                颜色值
+                <input type="text" id="newColor" placeholder="#ff0000 或 rgb(255,0,0)" style="flex: 1;">
+                <input type="color" id="colorPicker" value="#ff0000" style="width: 50px;">
+                <button class="btn-primary" onclick="applyNewColor()">✅ 应用</button>
+            </div>
+        </div>
+
+        <div class="control-group" style="margin-top: 20px;">
+            <label>📝 操作日志</label>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">支持的颜色格式</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>HEX</strong> - #fff, #ff0000, #FF0000, #abcdef</li>
+                <li><strong>RGB</strong> - rgb(255, 0, 0)</li>
+                <li><strong>RGBA</strong> - rgba(255, 0, 0, 0.5)</li>
+                <li><strong>HSL</strong> - hsl(0, 100%, 50%)</li>
+                <li><strong>HSLA</strong> - hsla(0, 100%, 50%, 0.8)</li>
+                <li><strong>CSS 颜色名称</strong> - red, green, blue, transparent 等</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">配置选项</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>borderRadius</strong> - 颜色块的圆角大小 (默认: 4)</li>
+                <li><strong>showBorder</strong> - 是否显示边框 (默认: true)</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">数据验证</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>有效值</strong> - 符合上述格式的颜色值</li>
+                <li><strong>空值处理</strong> - 空单元格显示为空白</li>
+                <li><strong>无效回退</strong> - 无效颜色显示为 transparent</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">渲染特性</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>居中显示</strong> - 颜色块在单元格中居中</li>
+                <li><strong>自适应大小</strong> - 颜色块大小根据单元格尺寸自适应</li>
+                <li><strong>圆角裁剪</strong> - 使用圆角矩形绘制</li>
+                <li><strong>边框高亮</strong> - 可选的边框便于识别边界</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">适用场景</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li>🎨 设计系统 - 展示主题色、品牌色</li>
+                <li>🖌️ 调色板 - 可视化颜色集合</li>
+                <li>📋 样式配置 - 显示文本颜色、背景色</li>
+                <li>🏷️ 标签管理 - 不同状态对应不同颜色</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+    let addedRowCount = 0;
+
+    const colorPalette = [
+        '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff',
+        '#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1', '#ff9ff3', '#f8b739',
+        '#5f27cd', '#222f3e', '#8395a7', '#c8d6e5', '#576574', '#000000',
+        'rgb(255, 128, 0)', 'rgba(0, 255, 0, 0.5)', 'hsl(200, 100%, 50%)',
+        'red', 'green', 'blue', 'orange', 'purple', 'pink', 'brown'
+    ];
+
+    const originalData = [
+        ["颜色名称", "主题色", "强调色", "背景色"],
+        ["品牌主色", "#3498db", "#2980b9", "#ecf0f1"],
+        ["警告色", "#e74c3c", "#c0392b", "#fadbd8"],
+        ["成功色", "#2ecc71", "#27ae60", "#d5f5e3"],
+        ["信息色", "#9b59b6", "#8e44ad", "#e8daef"],
+        ["文字色", "#34495e", "#2c3e50", "#d5d8dc"]
+    ];
+
+    const defaultColumns = [
+        { type: "text", width: 120 },
+        { type: "colorPreview", width: 120 },
+        { type: "colorPreview", width: 120 },
+        { type: "colorPreview", width: 120 }
+    ];
+
+    function log(msg, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        container.insertBefore(entry, container.firstChild);
+        if (container.children.length > 50) container.removeChild(container.lastChild);
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 900,
+                height: 400,
+                sheets: [{
+                    name: "颜色预览",
+                    data: originalData,
+                    columns: defaultColumns,
+                    cellPadding: 12,
+                    textOverflowEllipsis: true,
+                    cell: [
+                        { row: 0, col: 0, type: "text" },
+                        { row: 0, col: 1, type: "text" },
+                        { row: 0, col: 2, type: "text" },
+                        { row: 0, col: 3, type: "text" }
+                    ],
+                }]
+            });
+
+            log('✅ Workbook 初始化成功', 'success');
+            log('📋 共 4 列，其中 3 列为颜色预览类型', 'info');
+            log('💡 提示：直接双击单元格即可编辑颜色值', 'info');
+
+        } catch (e) {
+            log('❌ 初始化失败: ' + e.message, 'error');
+            console.error(e);
+        }
+    }
+
+    function applyConfig() {
+        if (!workbook) return;
+
+        const targetRow = parseInt(document.getElementById("targetRow").value);
+        const col = parseInt(document.getElementById("targetCol").value);
+        const borderRadius = parseInt(document.getElementById('borderRadius').value);
+        const showBorder = document.getElementById('showBorder').value === 'true';
+
+        if (col < 1 || col >= defaultColumns.length) {
+            log('❌ 列索引超出范围 (1-3)', 'error');
+            return;
+        }
+
+        if (borderRadius < 0 || borderRadius > 20) {
+            log('❌ 圆角值超出范围 (0-20)', 'error');
+            return;
+        }
+
+        const columns = [...defaultColumns];
+        columns[col] = {
+            ...columns[col],
+            options: {
+                borderRadius: borderRadius,
+                showBorder: showBorder
+            }
+        };
+
+        workbook.updateSettings({ columns });
+        log(`✅ 已应用配置到列 ${col}`, 'success');
+        log(`   圆角: ${borderRadius}px, 显示边框: ${showBorder ? '是' : '否'}`, 'info');
+    }
+
+    function addTestRow() {
+        if (!workbook) return;
+        const sheet = workbook.activeSheet;
+        if (targetRow < 1 || targetRow >= sheet.rowCount) {
+            log('❌ 行索引超出范围 (1-' + (sheet.rowCount - 1) + ')', 'error');
+            return;
+        }
+        const newRowIndex = originalData.length + addedRowCount;
+        const color1 = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        const color2 = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+        const color3 = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+
+        sheet.setCell(newRowIndex, 0, "自定义颜色 " + Date.now().toString().slice(-4));
+        sheet.setCell(newRowIndex, 1, color1);
+        sheet.setCell(newRowIndex, 2, color2);
+        sheet.setCell(newRowIndex, 3, color3);
+
+        addedRowCount++;
+        log(`➕ 添加测试行到第 ${newRowIndex + 1} 行，当前共 ${sheet.rowColManager.rowCount} 行`, 'success');
+    }
+
+    function randomizeColors() {
+        if (!workbook) return;
+        const sheet = workbook.activeSheet;
+        if (targetRow < 1 || targetRow >= sheet.rowCount) {
+            log('❌ 行索引超出范围 (1-' + (sheet.rowCount - 1) + ')', 'error');
+            return;
+        }
+
+        for (let row = 1; row < sheet.rowCount; row++) {
+            for (let col = 1; col < 4; col++) {
+                if (Math.random() > 0.2) {
+                    const newColor = colorPalette[Math.floor(Math.random() * colorPalette.length)];
+                    sheet.setCell(targetRow, col, newColor);
+                }
+            }
+        }
+
+        log('🎲 已随机更新所有颜色值', 'success');
+    }
+
+    function applyNewColor() {
+        if (!workbook) return;
+        const newColor = document.getElementById('newColor').value.trim();
+        const targetRow = parseInt(document.getElementById("targetRow").value);
+        const col = parseInt(document.getElementById("targetCol").value);
+
+        if (col < 1 || col >= defaultColumns.length) {
+            log('❌ 请选择有效的颜色列 (1-3)', 'error');
+            return;
+        }
+
+        if (!newColor) {
+            log('❌ 请输入颜色值', 'error');
+            return;
+        }
+
+        const sheet = workbook.activeSheet;
+        if (targetRow < 1 || targetRow >= sheet.rowCount) {
+            log('❌ 行索引超出范围 (1-' + (sheet.rowCount - 1) + ')', 'error');
+            return;
+        }
+        
+
+        sheet.setCell(targetRow, col, newColor);
+
+        log(`✅ 已将颜色 "${newColor}" 应用到第 ${targetRow} 行 第 ${col + 1} 列`, "success");
+    }
+
+    document.getElementById('colorPicker').addEventListener('input', function(e) {
+        document.getElementById('newColor').value = e.target.value;
+    });
+
+    function resetTable() {
+        if (workbook) {
+            workbook.destroy();
+            workbook = null;
+        }
+        addedRowCount = 0;
+        initWorkbook();
+        log('🔄 表格已重置', 'info');
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>
+
+
+
+
+
