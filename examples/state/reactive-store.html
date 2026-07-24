@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ 响应式状态管理 - ReactiveStore 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .feature-card h3 {
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .state-display {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+        }
+
+        .state-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            transition: background 0.3s ease;
+        }
+
+        .state-item:hover {
+            background: #e8f4fd;
+        }
+
+        .state-item.changed {
+            background: #e8f5e9;
+            animation: flash 0.5s ease;
+        }
+
+        @keyframes flash {
+            0%, 100% { background: #e8f5e9; }
+            50% { background: #c8e6c9; }
+        }
+
+        .state-key {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .state-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info { background: #e8f4fd; color: #1976d2; }
+        .log-success { background: #e8f5e9; color: #388e3c; }
+        .log-warning { background: #fff3e0; color: #f57c00; }
+        .log-error { background: #ffebee; color: #d32f2f; }
+
+        .watcher-list {
+            margin-top: 16px;
+            padding: 16px;
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        .watcher-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #667eea;
+        }
+
+        .watcher-path {
+            font-family: 'Consolas', monospace;
+            font-weight: 600;
+            color: #667eea;
+            min-width: 120px;
+        }
+
+        .watcher-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .watcher-status.active {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .watcher-status.inactive {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .batch-demo {
+            background: #fff3e0;
+            border: 2px solid #ffb74d;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+
+        .batch-demo h4 {
+            color: #f57c00;
+            margin-bottom: 12px;
+        }
+
+        .computed-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .computed-value {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .computed-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment { color: #5c6370; }
+        .code-keyword { color: #c678dd; }
+        .code-string { color: #98c379; }
+        .code-function { color: #61afef; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚡ 响应式状态管理 - ReactiveStore 演示</h1>
+
+    <div class="demo-section">
+        <h2 class="section-title">🎯 ReactiveStore 核心功能</h2>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>🔄 响应式 Proxy</h3>
+                <p>基于 Proxy 实现深层嵌套对象的响应式追踪，自动收集依赖</p>
+            </div>
+            <div class="feature-card">
+                <h3>👁️ 路径监听</h3>
+                <p>支持精确路径监听（深浅路径匹配），灵活订阅状态变化</p>
+            </div>
+            <div class="feature-card">
+                <h3>📦 批量更新</h3>
+                <p>batch() API 合并多次修改为一次通知，避免重复渲染</p>
+            </div>
+            <div class="feature-card">
+                <h3>🧮 计算属性</h3>
+                <p>computed() 自动缓存结果，仅在依赖变化时重新计算</p>
+            </div>
+            <div class="feature-card">
+                <h3>⏰ 调度器</h3>
+                <p>支持自定义调度器，控制异步 watcher 执行时机</p>
+            </div>
+            <div class="feature-card">
+                <h3>📸 状态快照</h3>
+                <p>getStateSnapshot() 获取包含所有计算属性的完整状态</p>
+            </div>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+<span class="code-comment">// ✨ ReactiveStore 基础使用</span>
+
+<span class="code-keyword">import</span> { ReactiveStore } <span class="code-keyword">from</span> <span class="code-string">'./src/state/ReactiveStore.js'</span>;
+
+<span class="code-keyword">const</span> store = <span class="code-keyword">new</span> ReactiveStore({
+    user: { name: <span class="code-string">'张三'</span>, age: <span class="code-keyword">25</span> },
+    settings: { theme: <span class="code-string">'dark'</span>, lang: <span class="code-string">'zh-CN'</span> }
+});
+
+<span class="code-comment">// 直接修改（自动触发监听器）</span>
+store.state.user.name = <span class="code-string">'李四'</span>;
+
+<span class="code-comment">// 监听变化</span>
+store.watch(<span class="code-string">'user.name'</span>, (newVal, oldVal) => {
+    console.log(<span class="code-string">`用户名: ${oldVal} → ${newVal}`</span>);
+});
+
+<span class="code-comment">// 计算属性</span>
+store.computed(<span class="code-string">'user.isAdult'</span>, (state) => state.user.age >= <span class="code-keyword">18</span>);
+
+<span class="code-comment">// 批量更新</span>
+store.batch(() => {
+    store.state.user.name = <span class="code-string">'王五'</span>;
+    store.state.user.age = <span class="code-keyword">30</span>;
+    store.state.settings.theme = <span class="code-string">'light'</span>;
+});
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 交互式演示</h2>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="userName">👤 用户名</label>
+                <input type="text" id="userName" value="张三" placeholder="输入用户名">
+            </div>
+
+            <div class="control-group">
+                <label for="userAge">🎂 年龄</label>
+                <input type="number" id="userAge" value="25" min="0" max="150" placeholder="输入年龄">
+            </div>
+
+            <div class="control-group">
+                <label for="theme">🎨 主题</label>
+                <select id="theme">
+                    <option value="light">浅色</option>
+                    <option value="dark">深色</option>
+                    <option value="auto">自动</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="score">📊 积分</label>
+                <input type="number" id="score" value="100" min="0" placeholder="输入积分">
+            </div>
+
+            <div class="control-group">
+                <label>&nbsp;</label>
+                <button class="btn-primary" onclick="applyChanges()">✅ 应用修改</button>
+            </div>
+
+            <div class="control-group">
+                <label>&nbsp;</label>
+                <button class="btn-warning" onclick="triggerBatch()">📦 批量更新</button>
+            </div>
+
+            <div class="control-group">
+                <label>&nbsp;</label>
+                <button class="btn-info" onclick="resetState()">🔄 重置状态</button>
+            </div>
+
+            <div class="control-group">
+                <label>&nbsp;</label>
+                <button class="btn-success" onclick="randomizeAll()">🎲 随机全部</button>
+            </div>
+        </div>
+
+        <div class="batch-demo">
+            <h4>📦 批量更新演示</h4>
+            <p style="margin-bottom: 12px; color: #666;">点击"批量更新"将同时修改用户名、年龄、主题和积分，观察监听器触发次数：</p>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <button class="btn-primary" onclick="batchUpdate()">📦 批量更新（合并为1次）</button>
+                <button class="btn-warning" onclick="individualUpdate()">🔄 单独更新（触发4次）</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📊 状态监控面板</h2>
+
+        <div class="state-display" id="stateDisplay">
+            <div style="text-align: center; color: #999;">加载中...</div>
+        </div>
+
+        <div class="watcher-list">
+            <h4 style="margin-bottom: 12px;">👁️ 活动监听器</h4>
+            <div id="watcherList">
+                <div style="text-align: center; color: #999; padding: 20px;">暂无监听器</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">🧮 计算属性演示</h2>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="computed-display">
+                <div class="computed-label">是否成年 (isAdult)</div>
+                <div class="computed-value" id="computedIsAdult">-</div>
+            </div>
+
+            <div class="computed-display">
+                <div class="computed-label">成年状态描述</div>
+                <div class="computed-value" id="computedAdultDesc">-</div>
+            </div>
+
+            <div class="computed-display">
+                <div class="computed-label">积分等级</div>
+                <div class="computed-value" id="computedScoreLevel">-</div>
+            </div>
+
+            <div class="computed-display">
+                <div class="computed-label">状态摘要</div>
+                <div class="computed-value" id="computedSummary">-</div>
+            </div>
+        </div>
+
+        <button class="btn-info" onclick="logSnapshot()" style="margin-top: 16px;">📸 获取状态快照</button>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📝 操作日志</h2>
+        <div class="log-container" id="logContainer"></div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">核心 API</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>state</strong> - 响应式状态代理，通过 Proxy 自动追踪读写</li>
+                <li><strong>watch(path, fn)</strong> - 监听路径变化，返回取消监听函数</li>
+                <li><strong>computed(path, getter)</strong> - 创建计算属性，自动缓存并追踪依赖</li>
+                <li><strong>batch(fn)</strong> - 批量更新，合并多次修改为一次通知</li>
+                <li><strong>flush()</strong> - 立即刷出所有异步任务</li>
+                <li><strong>nextTick()</strong> - 返回 Promise，等待下一个调度周期</li>
+                <li><strong>getStateSnapshot()</strong> - 获取包含所有计算属性的状态快照</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">路径匹配规则</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>精确匹配</strong> - <code>"user.name"</code> 只监听 user.name 变化</li>
+                <li><strong>父路径</strong> - <code>"user"</code> 监听 user 下所有属性变化</li>
+                <li><strong>子路径</strong> - <code>"user.name.first"</code> 监听 user.name.first 及更深路径</li>
+            </ul>
+
+            <h3 style="color: #4a5568; margin: 16px 0 8px;">适用场景</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li>📊 电子表格状态管理 - 单元格数据、选区、滚动位置</li>
+                <li>🎨 表单状态管理 - 多字段联动、验证状态</li>
+                <li>🎮 游戏状态 - 分数、道具、角色属性</li>
+                <li>📈 仪表盘 - 多个指标联动、实时数据更新</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let store = null;
+    const watchers = [];
+    const unwatchers = [];
+    let changeCount = 0;
+
+    function log(msg, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        container.insertBefore(entry, container.firstChild);
+        if (container.children.length > 100) container.removeChild(container.lastChild);
+    }
+
+    function initStore() {
+        if (store) {
+            unwatchers.forEach(u => u());
+            unwatchers.length = 0;
+            watchers.length = 0;
+        }
+
+        store = new CanvasSheet.ReactiveStore({
+            user: { name: '张三', age: 25 },
+            settings: { theme: 'light', language: 'zh-CN' },
+            score: 100,
+            notifications: { email: true, sms: false }
+        });
+
+        log('🚀 ReactiveStore 初始化完成', 'success');
+
+        registerWatchers();
+        updateStateDisplay();
+        updateComputedDisplay();
+    }
+
+    function registerWatchers() {
+        const paths = [
+            'user.name',
+            'user.age',
+            'settings.theme',
+            'score'
+        ];
+
+        paths.forEach(path => {
+            const unwatch = store.watch(path, (newVal, oldVal) => {
+                changeCount++;
+                log(`👁️ [${path}] ${JSON.stringify(oldVal)} → ${JSON.stringify(newVal)}`, 'info');
+                updateStateDisplay();
+                updateComputedDisplay();
+                highlightStateItem(path);
+            });
+            unwatchers.push(unwatch);
+            watchers.push({ path, active: true });
+        });
+
+        log(`👁️ 已注册 ${watchers.length} 个监听器`, 'success');
+    }
+
+    function highlightStateItem(path) {
+        const items = document.querySelectorAll('.state-item');
+        items.forEach(item => {
+            const keySpan = item.querySelector('.state-key');
+            if (keySpan && keySpan.textContent === path) {
+                item.classList.add('changed');
+                setTimeout(() => item.classList.remove('changed'), 500);
+            }
+        });
+    }
+
+    function updateStateDisplay() {
+        const state = store.state;
+        const html = `
+            <div class="state-item">
+                <span class="state-key">user.name</span>
+                <span class="state-value">"${state.user.name}"</span>
+            </div>
+            <div class="state-item">
+                <span class="state-key">user.age</span>
+                <span class="state-value">${state.user.age}</span>
+            </div>
+            <div class="state-item">
+                <span class="state-key">settings.theme</span>
+                <span class="state-value">"${state.settings.theme}"</span>
+            </div>
+            <div class="state-item">
+                <span class="state-key">score</span>
+                <span class="state-value">${state.score}</span>
+            </div>
+            <div class="state-item" style="background: #fff3e0; margin-top: 12px; padding: 8px 12px; border-radius: 4px;">
+                <span class="state-key">变更计数</span>
+                <span class="state-value" style="color: #f57c00; font-weight: bold;">${changeCount} 次</span>
+            </div>
+        `;
+        document.getElementById('stateDisplay').innerHTML = html;
+    }
+
+    function updateComputedDisplay() {
+        if (!store.computed) {
+            log('⚠️ computed 功能未集成', 'warning');
+            return;
+        }
+
+        const state = store.state;
+        const isAdult = state.user.age >= 18;
+        const adultDesc = isAdult ? '成年人' : '未成年人';
+        const scoreLevel = state.score >= 1000 ? '钻石' :
+                          state.score >= 500 ? '金牌' :
+                          state.score >= 100 ? '银牌' : '普通用户';
+        const summary = `${state.user.name}, ${adultDesc}, ${scoreLevel}`;
+
+        document.getElementById('computedIsAdult').textContent = isAdult ? '✅ 是' : '❌ 否';
+        document.getElementById('computedAdultDesc').textContent = adultDesc;
+        document.getElementById('computedScoreLevel').textContent = scoreLevel;
+        document.getElementById('computedSummary').textContent = summary;
+    }
+
+    function updateWatcherList() {
+        const list = document.getElementById('watcherList');
+        if (watchers.length === 0) {
+            list.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">暂无监听器</div>';
+            return;
+        }
+
+        list.innerHTML = watchers.map(w => `
+            <div class="watcher-item">
+                <span class="watcher-path">${w.path}</span>
+                <span class="watcher-status ${w.active ? 'active' : 'inactive'}">
+                    ${w.active ? '● 监听中' : '○ 已取消'}
+                </span>
+            </div>
+        `).join('');
+    }
+
+    function applyChanges() {
+        const name = document.getElementById('userName').value.trim();
+        const age = parseInt(document.getElementById('userAge').value) || 0;
+        const theme = document.getElementById('theme').value;
+        const score = parseInt(document.getElementById('score').value) || 0;
+
+        if (name) store.state.user.name = name;
+        store.state.user.age = age;
+        store.state.settings.theme = theme;
+        store.state.score = score;
+
+        log(`✅ 已应用修改`, 'success');
+    }
+
+    function triggerBatch() {
+        log('📦 批量更新模式：先修改，再统一通知', 'warning');
+    }
+
+    function batchUpdate() {
+        changeCount = 0;
+        const oldCount = changeCount;
+
+        store.batch(() => {
+            store.state.user.name = '批量用户_' + Date.now().toString().slice(-4);
+            store.state.user.age = Math.floor(Math.random() * 50) + 18;
+            store.state.settings.theme = ['light', 'dark', 'auto'][Math.floor(Math.random() * 3)];
+            store.state.score = Math.floor(Math.random() * 1000);
+        });
+
+        setTimeout(() => {
+            log(`📦 批量更新完成！变更计数: ${changeCount} 次（应为 1 次）`, changeCount === 1 ? 'success' : 'warning');
+        }, 100);
+    }
+
+    function individualUpdate() {
+        changeCount = 0;
+
+        store.state.user.name = '单独用户_' + Date.now().toString().slice(-4);
+        store.state.user.age = Math.floor(Math.random() * 50) + 18;
+        store.state.settings.theme = ['light', 'dark', 'auto'][Math.floor(Math.random() * 3)];
+        store.state.score = Math.floor(Math.random() * 1000);
+
+        setTimeout(() => {
+            log(`🔄 单独更新完成！变更计数: ${changeCount} 次（应为 4 次）`, changeCount === 4 ? 'success' : 'warning');
+        }, 100);
+    }
+
+    function resetState() {
+        store.state.user.name = '张三';
+        store.state.user.age = 25;
+        store.state.settings.theme = 'light';
+        store.state.score = 100;
+        changeCount = 0;
+
+        log('🔄 状态已重置', 'info');
+    }
+
+    function randomizeAll() {
+        const names = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十'];
+        const themes = ['light', 'dark', 'auto'];
+
+        store.state.user.name = names[Math.floor(Math.random() * names.length)];
+        store.state.user.age = Math.floor(Math.random() * 50) + 18;
+        store.state.settings.theme = themes[Math.floor(Math.random() * themes.length)];
+        store.state.score = Math.floor(Math.random() * 1000);
+
+        log('🎲 已随机更新所有状态', 'success');
+    }
+
+    async function logSnapshot() {
+        if (!store.getStateSnapshot) {
+            log('⚠️ getStateSnapshot 功能未集成', 'warning');
+            return;
+        }
+
+        const snapshot = store.getStateSnapshot();
+        log(`📸 状态快照: ${JSON.stringify(snapshot).slice(0, 100)}...`, 'info');
+
+        console.log('完整快照:', snapshot);
+    }
+
+    initStore();
+</script>
+</body>
+</html>

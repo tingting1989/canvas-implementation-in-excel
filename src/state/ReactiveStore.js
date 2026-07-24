@@ -81,6 +81,7 @@ export class ReactiveStore {
         this._watchers = new Map();
         this._batchDepth = 0;
         this._batchedPaths = new Set();
+        this._batchedOldValues = new Map();
         this._activeEffect = null;
         this._computeds = new Map();
         this._proxyMap = new WeakMap();
@@ -136,6 +137,7 @@ export class ReactiveStore {
 
                 if (self._batchDepth > 0) {
                     self._batchedPaths.add(path);
+                    self._batchedOldValues.set(path, old);
                 } else {
                     self._trigger(path, value, old);
                 }
@@ -263,17 +265,22 @@ export class ReactiveStore {
 
     batch(fn) {
         this._batchDepth++;
+        console.log("[batch] depth:", this._batchDepth);
         try {
             fn();
         } finally {
             this._batchDepth--;
+
             if (this._batchDepth === 0 && this._batchedPaths.size > 0) {
                 const paths = Array.from(this._batchedPaths);
-                this._batchedPaths.clear();
                 for (const p of paths) {
+                    const oldVal = this._batchedOldValues.get(p);
                     const val = this._getValueByPath(this.state, p);
-                    this._trigger(p, val, undefined);
+                    this._trigger(p, val, oldVal);
                 }
+                this._scheduler.flush();
+                this._batchedPaths.clear();
+                this._batchedOldValues.clear();
             }
         }
     }
@@ -328,7 +335,7 @@ export class ReactiveStore {
         }
         this._computeds.clear();
         this._watchers.clear();
-        this._batchedPaths.clear();
+
         this._activeEffect = null;
         this._proxyMap = new WeakMap();
     }
