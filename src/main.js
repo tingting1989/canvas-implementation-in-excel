@@ -81,6 +81,7 @@ const initApp = () => {
                             { value: "2", label: "差" },
                         ],
                     },
+                    { type: "date", width: 120, style: { textAlign: "center" },options: {min:"2025-12-11",max:'2026-01-01',allowInvalid: false, dateFormat: { pattern: "YYYY-MM-DD" }} },
                     // // 推荐指数
                     // {
                     //     type: "starRating",

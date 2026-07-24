@@ -115,7 +115,7 @@ export class KeyboardStrategy extends EventStrategy {
             return this.#lastCheckResult;
         }
 
-        let result = this.#performFullCheck(activeElement);
+        const result = this.#performFullCheck(activeElement);
 
         // 缓存结果（下次同一元素直接返回）
         this.#lastCheckedElement = activeElement;

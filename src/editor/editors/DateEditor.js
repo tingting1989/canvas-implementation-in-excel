@@ -8,18 +8,19 @@ export class DateEditor extends CellEditor {
     }
 
     afterCreateEditor() {
-        this.#useNativePicker = this.#supportsDateInput();
-        this.editor.type = this.#useNativePicker ? "date" : "text";
+        this.editor.type = "text";
     }
 
     formatValueForEditor(rawValue) {
+        // 直接返回原始字符串值
+        if (typeof rawValue === 'string' && rawValue) {
+            return rawValue;
+        }
+        // 如果是 Date 对象，转换为 YYYY-MM-DD 格式
         if (rawValue instanceof Date) {
             return this.#toDateString(rawValue);
         }
-        if (this.#useNativePicker) {
-            const parsed = this.#parseDateString(String(rawValue));
-            return parsed ? this.#toDateString(parsed) : "";
-        }
+        // 其他类型转为字符串
         return String(rawValue ?? "");
     }
 
@@ -29,7 +30,8 @@ export class DateEditor extends CellEditor {
     }
 
     validateBeforeCommit(newValue) {
-        return this.sheet.validateCellValue(this.activeRow, this.activeCol, newValue) !== false;
+        const result = this.sheet.validateCellValue(this.activeRow, this.activeCol, newValue);
+        return result === true || result === "invalid";
     }
 
     areValuesEqual(oldValue, newValue) {
@@ -37,40 +39,6 @@ export class DateEditor extends CellEditor {
         const newMs = newValue instanceof Date ? newValue.getTime() : newValue;
         if (oldMs !== oldMs && newMs !== newMs) return true;
         return oldMs === newMs;
-    }
-
-    #supportsDateInput() {
-        const input = document.createElement("input");
-        input.setAttribute("type", "date");
-        return input.type === "date";
-    }
-
-    #parseDateString(str) {
-        if (!str || !str.trim()) return null;
-
-        const isoMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
-        if (isoMatch) {
-            const y = parseInt(isoMatch[1], 10);
-            const m = parseInt(isoMatch[2], 10) - 1;
-            const d = parseInt(isoMatch[3], 10);
-            const date = new Date(y, m, d);
-            return isNaN(date.getTime()) ? null : date;
-        }
-
-        const slashMatch = str.match(/^(\d{1,2})[\/](\d{1,2})[\/](\d{4})$/);
-        if (slashMatch) {
-            const a = parseInt(slashMatch[1], 10);
-            const b = parseInt(slashMatch[2], 10);
-            const y = parseInt(slashMatch[3], 10);
-            let date = new Date(y, b - 1, a);
-            if (isNaN(date.getTime())) {
-                date = new Date(y, a - 1, b);
-            }
-            return isNaN(date.getTime()) ? null : date;
-        }
-
-        const date = new Date(str);
-        return isNaN(date.getTime()) ? null : date;
     }
 
     #toDateString(date) {

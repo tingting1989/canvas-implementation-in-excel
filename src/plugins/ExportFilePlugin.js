@@ -1982,7 +1982,7 @@ export class ExportFilePlugin extends BasePlugin {
                         rebuildHighQuality,
                     });
 
-                    let rawName = chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`;
+                    const rawName = chart.title || chart.style?.title || `chart_${chart.id.substring(0, 8)}`;
 
                     const chartName = rawName
                         .trim()

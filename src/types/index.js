@@ -1196,7 +1196,7 @@ export function extractColumnTypeOptions(columnConfig) {
         }).filter(([, value]) => value !== undefined),
     );
 
-    let typeSpecificOptions = {};
+    const typeSpecificOptions = {};
 
     if (options && typeof options === "object" && !Array.isArray(options)) {
         Object.assign(typeSpecificOptions, options);

@@ -92,22 +92,26 @@ describe('DateColumnType - 基础功能测试', () => {
     describe('parse() 方法', () => {
         it('YYYY-MM-DD 格式', () => {
             const result = dateType.parse('2024-01-15');
-            expect(result).toBeInstanceOf(Date);
+            expect(typeof result).toBe('string');
+            expect(result).toBe('2024-01-15');
         });
 
         it('DD/MM/YYYY 格式', () => {
             const result = dateType.parse('15/01/2024');
-            expect(result).toBeInstanceOf(Date);
+            expect(typeof result).toBe('string');
+            expect(result).toBe('2024-01-15');
         });
 
         it('MM/DD/YYYY 格式', () => {
             const result = dateType.parse('01/15/2024');
-            expect(result).toBeInstanceOf(Date);
+            expect(typeof result).toBe('string');
+            expect(result).toBe('2024-01-15');
         });
 
         it('中文日期格式', () => {
             const result = dateType.parse('2024年1月15日');
-            expect(result).toBeInstanceOf(Date);
+            expect(typeof result).toBe('string');
+            expect(result).toBe('2024-01-15');
         });
 
         it('空值返回空字符串', () => {

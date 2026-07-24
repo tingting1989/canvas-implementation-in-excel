@@ -44,7 +44,7 @@ export class HyperlinkColumnType extends BaseColumnType {
         ctx.textAlign = textAlign;
 
         let textX = x + cellPadding;
-        let textY = y + height / 2;
+        const textY = y + height / 2;
 
         if (textAlign === "center") {
             textX = x + width / 2;

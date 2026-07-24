@@ -24,13 +24,11 @@ export class DateColumnType extends BaseColumnType {
 
     /**
      * 根据 pattern 动态选择编辑器
-     * - 纯日期 pattern → 原生日期选择器（体验最佳）
-     * - 含时间 token → 文本编辑器
+     * 返回 "date" 以便 EditorManager 正确路由到 DateEditor
+     * DateEditor 内部统一使用文本编辑器，确保所有模式都存储字符串格式
      */
     get editorType() {
-        const pattern = this.options?.dateFormat?.pattern || "YYYY-MM-DD";
-        const hasTimeTokens = /[Hhms]/.test(pattern);
-        return hasTimeTokens ? "text" : "date";
+        return "date";
     }
 
     /**
@@ -39,6 +37,7 @@ export class DateColumnType extends BaseColumnType {
      * @returns {string}
      */
     format(value) {
+        console.log(this.options)
         if (value === undefined || value === null) return "";
 
         const date = this.#toDate(value);
@@ -52,15 +51,53 @@ export class DateColumnType extends BaseColumnType {
     validate(value) {
         if (value === "" || value === undefined || value === null) return true;
 
+        const pattern = this.options?.dateFormat?.pattern || "YYYY-MM-DD";
+        const isTimeOnly = /^[Hhms: ]+$/.test(pattern);
+        const hasTimePart = /[Hhms]/.test(pattern);
+        const min = this.options?.min;
+        const max = this.options?.max;
+
+        // 如果是字符串输入，检查格式完整性
+        if (typeof value === "string" && value.trim()) {
+            const trimmed = value.trim();
+
+            // 纯日期模式：只接受完整的 YYYY-MM-DD 格式
+            if (!isTimeOnly && !hasTimePart) {
+                // 检查是否匹配完整日期格式（YYYY-MM-DD 或 YYYY/MM/DD）
+                const isCompleteDate = /^\d{4}[-\/]\d{2}[-\/]\d{2}$/.test(trimmed);
+                if (!isCompleteDate) {
+                    return this.options?.allowInvalid ? "invalid" : false;
+                }
+            }
+
+            // 纯时间模式：只接受完整的 HH:mm:ss 格式
+            if (isTimeOnly) {
+                const isCompleteTime = /^\d{2}:\d{2}:\d{2}$/.test(trimmed);
+                if (!isCompleteTime) {
+                    return this.options?.allowInvalid ? "invalid" : false;
+                }
+            }
+
+            // 日期时间模式：检查日期和时间部分的完整性
+            if (hasTimePart) {
+                const parts = trimmed.split(" ");
+                if (parts.length !== 2) {
+                    return this.options?.allowInvalid ? "invalid" : false;
+                }
+                const datePart = parts[0];
+                const timePart = parts[1];
+                const isCompleteDate = /^\d{4}[-\/]\d{2}[-\/]\d{2}$/.test(datePart);
+                const isCompleteTime = /^\d{2}:\d{2}:\d{2}$/.test(timePart);
+                if (!isCompleteDate || !isCompleteTime) {
+                    return this.options?.allowInvalid ? "invalid" : false;
+                }
+            }
+        }
+
         const date = this.#toDate(value);
         if (!date || isNaN(date.getTime())) {
             return this.options?.allowInvalid ? "invalid" : false;
         }
-
-        const min = this.options?.min;
-        const max = this.options?.max;
-        const pattern = this.options?.dateFormat?.pattern || "YYYY-MM-DD";
-        const isTimeOnly = /^[Hhms: ]+$/.test(pattern);
 
         if (min) {
             const minDate = this.#parseToDate(min);
@@ -92,28 +129,56 @@ export class DateColumnType extends BaseColumnType {
 
     /**
      * 解析用户输入
-     * 支持：纯日期、纯时间、日期时间格式
+     * 支持：Date对象、纯日期、纯时间、日期时间格式
+     * 
+     * 注意：所有模式都返回字符串格式，确保数据存储一致性
+     * 验证时内部会解析字符串为 Date 对象进行比较
      */
     parse(input) {
+        // 处理 Date 对象
+        if (input instanceof Date) {
+            const pattern = this.options?.dateFormat?.pattern || "YYYY-MM-DD";
+            const isTimeOnly = /^[Hhms: ]+$/.test(pattern);
+            const hasTimePart = /[Hhms]/.test(pattern);
+
+            if (isTimeOnly) {
+                return this.#formatDate(input, pattern);
+            } else if (hasTimePart) {
+                return this.#formatDate(input, pattern);
+            } else {
+                return this.#formatDate(input, "YYYY-MM-DD");
+            }
+        }
+
         if (!input || !input.trim()) return "";
         const trimmed = input.trim();
 
-        // 尝试日期时间格式（含时间部分）
-        const dtResult = this.#parseDateTimeString(trimmed);
-        if (dtResult instanceof Date && !isNaN(dtResult.getTime())) return dtResult;
+        const pattern = this.options?.dateFormat?.pattern || "YYYY-MM-DD";
+        const isTimeOnly = /^[Hhms: ]+$/.test(pattern);
+        const hasTimePart = /[Hhms]/.test(pattern);
 
-        // 尝试纯日期格式
+        // 纯时间模式：验证并保留字符串格式
+        if (isTimeOnly) {
+            const tResult = this.#parseTimeString(trimmed);
+            if (tResult instanceof Date && !isNaN(tResult.getTime())) return trimmed;
+            return input;
+        }
+
+        // 日期时间模式：验证并保留字符串格式
+        if (hasTimePart) {
+            const dtResult = this.#parseDateTimeString(trimmed);
+            if (dtResult instanceof Date && !isNaN(dtResult.getTime())) return trimmed;
+            const date = new Date(trimmed);
+            if (!isNaN(date.getTime())) return trimmed;
+            return input;
+        }
+
+        // 纯日期模式：验证并保留字符串格式（统一为 YYYY-MM-DD）
         const dResult = this.#parseDateString(trimmed);
-        if (dResult instanceof Date && !isNaN(dResult.getTime())) return dResult;
-
-        // 尝试纯时间格式
-        const tResult = this.#parseTimeString(trimmed);
-        if (tResult instanceof Date && !isNaN(tResult.getTime())) return tResult;
-
-        // 尝试直接用 Date 解析
-        const date = new Date(trimmed);
-        if (!isNaN(date.getTime())) return date;
-
+        if (dResult instanceof Date && !isNaN(dResult.getTime())) {
+            return this.#formatDate(dResult, "YYYY-MM-DD");
+        }
+        // 不完整的日期（如 "11"）不应该被自动补全，拒绝并保留原值
         return input;
     }
 
@@ -125,25 +190,32 @@ export class DateColumnType extends BaseColumnType {
         return order === SORT_ORDER.ASC ? ta - tb : tb - ta;
     }
 
-    getDefaultStyle(baseStyle) {
-        const textAlign = baseStyle?.textAlign ?? "center";
-        return { ...baseStyle, textAlign };
-    }
-
     // ──────────────────────────────────────
     // 私有方法
     // ──────────────────────────────────────
 
     /**
-     * 将值转为 Date 对象
+     * 将值转为 Date 对象（内部使用，用于验证和比较）
+     * 对于字符串值，尝试解析为 Date 而不调用 parse()（因为 parse() 可能返回字符串）
      * @private
      */
     #toDate(value) {
         if (value instanceof Date) return value;
         if (isNumber(value)) return new Date(value);
         if (isString(value)) {
-            const parsed = this.parse(value);
-            if (parsed instanceof Date && !isNaN(parsed.getTime())) return parsed;
+            // 尝试解析时间格式
+            const timeResult = this.#parseTimeString(value);
+            if (timeResult instanceof Date && !isNaN(timeResult.getTime())) return timeResult;
+            
+            // 尝试解析日期格式
+            const dateResult = this.#parseDateString(value);
+            if (dateResult instanceof Date && !isNaN(dateResult.getTime())) return dateResult;
+            
+            // 尝试解析日期时间格式
+            const dtResult = this.#parseDateTimeString(value);
+            if (dtResult instanceof Date && !isNaN(dtResult.getTime())) return dtResult;
+            
+            // 尝试直接用 Date 解析
             const d = new Date(value);
             return isNaN(d.getTime()) ? null : d;
         }
@@ -157,8 +229,24 @@ export class DateColumnType extends BaseColumnType {
     #parseToDate(value) {
         if (value instanceof Date) return value;
         if (isString(value)) {
-            const parsed = this.parse(value);
-            if (parsed instanceof Date && !isNaN(parsed.getTime())) return parsed;
+            const pattern = this.options?.dateFormat?.pattern || "YYYY-MM-DD";
+            const isTimeOnly = /^[Hhms: ]+$/.test(pattern);
+            const hasTimePart = /[Hhms]/.test(pattern);
+
+            if (isTimeOnly) {
+                const tResult = this.#parseTimeString(value);
+                if (tResult instanceof Date && !isNaN(tResult.getTime())) return tResult;
+            } else if (hasTimePart) {
+                const dtResult = this.#parseDateTimeString(value);
+                if (dtResult instanceof Date && !isNaN(dtResult.getTime())) return dtResult;
+                const d = new Date(value);
+                return isNaN(d.getTime()) ? null : d;
+            } else {
+                const dResult = this.#parseDateString(value);
+                if (dResult instanceof Date && !isNaN(dResult.getTime())) return dResult;
+                const d = new Date(value);
+                return isNaN(d.getTime()) ? null : d;
+            }
         }
         return null;
     }
