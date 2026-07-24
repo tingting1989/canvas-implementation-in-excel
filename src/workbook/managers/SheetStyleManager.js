@@ -14,7 +14,7 @@ import { themeStyleProvider } from "../../theme/index.js";
  * - 单元格样式（cell.styleId）：单个单元格的样式
  *
  * 样式优先级（从低到高）：
- *   defaultStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style → conditionalFormat → dataBinding
+ *   defaultStyle → themeStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style → conditionalFormat → dataBinding
  *
  * 内部维护一个带版本号的缓存机制（#styleCache + #styleCacheVersion），
  * 任何样式变更都会递增版本号，resolveStyle 时检测版本不一致则清空缓存，
@@ -250,7 +250,7 @@ export class SheetStyleManager {
      * 解析单元格的最终合并样式
      *
      * 按优先级从低到高逐层合并：
-     *   defaultStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style → conditionalFormat → dataBinding
+     *   defaultStyle → themeStyle → colStyle → rowStyle → cellStyle → cellType默认样式 → cellProps.style → conditionalFormat → dataBinding
      *
      * 使用版本号缓存机制：
      * - 若当前帧版本号（#styleCacheFrameVersion）与最新版本号（#styleCacheVersion）一致，

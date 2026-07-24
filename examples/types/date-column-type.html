@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 日期列类型 - DateColumnType 演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #2E7D32;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            overflow: hidden;
+            background: #fff;
+            position: relative;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            padding: 10px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #2E7D32;
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2E7D32 0%, #66BB6A 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #1565C0 0%, #42A5F5 100%);
+            color: white;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #F57C00 0%, #FFB74D 100%);
+            color: white;
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #7B1FA2 0%, #BA68C8 100%);
+            color: white;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #f8f9fa;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .log-info {
+            background: #e8f5e9;
+            color: #2E7D32;
+        }
+
+        .log-success {
+            background: #e3f2fd;
+            color: #1565C0;
+        }
+
+        .log-warning {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .log-error {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #f1f8e9 0%, #c8e6c9 100%);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid #2E7D32;
+        }
+
+        .feature-card h3 {
+            color: #2E7D32;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .feature-card p {
+            color: #555;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .code-block {
+            background: #282c34;
+            color: #abb2bf;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin-top: 12px;
+            line-height: 1.5;
+        }
+
+        .code-comment {
+            color: #5c6370;
+        }
+
+        .code-keyword {
+            color: #c678dd;
+        }
+
+        .code-string {
+            color: #98c379;
+        }
+
+        .code-function {
+            color: #61afef;
+        }
+
+        .format-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .format-table th,
+        .format-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .format-table th {
+            background: linear-gradient(135deg, #2E7D32 0%, #66BB6A 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .format-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .format-table td:first-child {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-weight: 600;
+            color: #2E7D32;
+        }
+
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .mode-tab {
+            padding: 8px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .mode-tab:hover {
+            border-color: #2E7D32;
+            background: #f1f8e9;
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(135deg, #2E7D32 0%, #66BB6A 100%);
+            color: white;
+            border-color: #2E7D32;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📅 日期列类型 - DateColumnType 演示</h1>
+
+    <div class="demo-section">
+        <h2 class="section-title">🎯 DateColumnType 核心功能</h2>
+
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h3>📅 三合一类型</h3>
+                <p>统一使用 type: "date"，通过 pattern 自动切换日期/时间/日期时间模式</p>
+            </div>
+            <div class="feature-card">
+                <h3>📝 智能编辑器</h3>
+                <p>纯日期使用原生日期选择器，带时间自动切换为文本编辑器</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔍 灵活解析</h3>
+                <p>支持 YYYY-MM-DD、DD/MM/YYYY、HH:mm:ss、YYYY-MM-DD HH:mm:ss 等多种格式</p>
+            </div>
+            <div class="feature-card">
+                <h3>✅ 范围验证</h3>
+                <p>支持 min/max 配置，自动验证日期/时间是否在指定范围内</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎨 居中对齐</h3>
+                <p>默认居中对齐，符合日期时间的阅读习惯</p>
+            </div>
+            <div class="feature-card">
+                <h3>🔄 格式多样</h3>
+                <p>支持 24h/12h 制、中英文月名、AM/PM 等丰富格式</p>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3 style="color: #2E7D32; margin-bottom: 12px;">📋 支持的格式模式</h3>
+            <table class="format-table">
+                <thead>
+                    <tr>
+                        <th>格式模式</th>
+                        <th>类型</th>
+                        <th>示例</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>YYYY-MM-DD</td><td>日期</td><td>2026-07-22</td></tr>
+                    <tr><td>YYYY/MM/DD</td><td>日期</td><td>2026/07/22</td></tr>
+                    <tr><td>DD/MM/YYYY</td><td>日期</td><td>22/07/2026</td></tr>
+                    <tr><td>MM/DD/YYYY</td><td>日期</td><td>07/22/2026</td></tr>
+                    <tr><td>YYYY年MM月DD日</td><td>日期</td><td>2026年07月22日</td></tr>
+                    <tr><td>Mon DD, YYYY</td><td>日期</td><td>Jul 22, 2026</td></tr>
+                    <tr><td>HH:mm:ss</td><td>时间</td><td>14:30:00</td></tr>
+                    <tr><td>HH:mm</td><td>时间</td><td>14:30</td></tr>
+                    <tr><td>h:mm A</td><td>时间</td><td>2:30 PM</td></tr>
+                    <tr><td>hh:mm:ss A</td><td>时间</td><td>02:30:00 PM</td></tr>
+                    <tr><td>YYYY-MM-DD HH:mm:ss</td><td>日期时间</td><td>2026-07-22 14:30:00</td></tr>
+                    <tr><td>YYYY-MM-DD HH:mm</td><td>日期时间</td><td>2026-07-22 14:30</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="code-block" style="margin-top: 20px;">
+            <span class="code-comment">// ✨ DateColumnType 使用示例</span>
+
+            <span class="code-comment">// 📅 纯日期 - 使用原生日期选择器</span>
+            { type: <span class="code-string">"date"</span>, width: <span class="code-keyword">130</span> }
+
+            <span class="code-comment">// 📅 纯日期 - 自定义格式</span>
+            { type: <span class="code-string">"date"</span>, width: <span class="code-keyword">140</span>, dateFormat: { pattern: <span class="code-string">"YYYY/MM/DD"</span> } }
+
+            <span class="code-comment">// 🕐 纯时间 - 文本编辑器</span>
+            { type: <span class="code-string">"date"</span>, width: <span class="code-keyword">120</span>, dateFormat: { pattern: <span class="code-string">"HH:mm:ss"</span> } }
+
+            <span class="code-comment">// 📅🕐 日期时间 - 文本编辑器</span>
+            { type: <span class="code-string">"date"</span>, width: <span class="code-keyword">180</span>, dateFormat: { pattern: <span class="code-string">"YYYY-MM-DD HH:mm:ss"</span> } }
+
+            <span class="code-comment">// 🕐 12小时制时间</span>
+            { type: <span class="code-string">"date"</span>, width: <span class="code-keyword">120</span>, dateFormat: { pattern: <span class="code-string">"h:mm A"</span> } }
+
+            <span class="code-comment">// 配置 min/max 范围验证</span>
+            {
+                type: <span class="code-string">"date"</span>,
+                dateFormat: { pattern: <span class="code-string">"HH:mm:ss"</span> },
+                min: <span class="code-string">"08:00:00"</span>,
+                max: <span class="code-string">"18:00:00"</span>
+            }
+
+            <span class="code-comment">// style 配置：自定义样式</span>
+            {
+                type: <span class="code-string">"date"</span>,
+                style: {
+                    backgroundColor: <span class="code-string">"#e8f5e9"</span>,
+                    color: <span class="code-string">"#2E7D32"</span>,
+                    fontWeight: <span class="code-string">"bold"</span>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">🖥️ 日期格式表格展示</h2>
+        <div class="mode-tabs">
+            <div class="mode-tab active" onclick="switchMode('date')">📅 纯日期模式</div>
+            <div class="mode-tab" onclick="switchMode('time')">🕐 纯时间模式</div>
+            <div class="mode-tab" onclick="switchMode('datetime')">📅🕐 日期时间模式</div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+
+        <div class="controls">
+
+
+            <div class="control-group">
+                <label for="targetCol">📍 目标列 (0-based)</label>
+                <input type="number" id="targetCol" value="1" min="0" max="6">
+            </div>
+
+            <div class="control-group">
+                <label for="pattern">🎨 格式模式</label>
+                <select id="pattern">
+                    <optgroup label="📅 日期格式">
+                        <option value="YYYY-MM-DD" selected>YYYY-MM-DD</option>
+                        <option value="YYYY/MM/DD">YYYY/MM/DD</option>
+                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        <option value="YYYY年MM月DD日">YYYY年MM月DD日 (2026年07月22日)</option>
+                        <option value="YYYY年M月D日">YYYY年M月D日 (2026年7月22日)</option>
+                        <option value="Mon DD, YYYY">Mon DD, YYYY</option>
+                    </optgroup>
+                    <optgroup label="🕐 时间格式">
+                        <option value="HH:mm:ss">HH:mm:ss (24小时)</option>
+                        <option value="HH:mm">HH:mm (24小时)</option>
+                        <option value="h:mm A">h:mm A (12小时)</option>
+                        <option value="hh:mm:ss A">hh:mm:ss A (12小时)</option>
+                    </optgroup>
+                    <optgroup label="📅🕐 日期时间格式">
+                        <option value="YYYY-MM-DD HH:mm:ss">YYYY-MM-DD HH:mm:ss</option>
+                        <option value="YYYY-MM-DD HH:mm">YYYY-MM-DD HH:mm</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="minVal">📉 最小值</label>
+                <input type="text" id="minVal" placeholder="如: 08:00:00">
+            </div>
+
+            <div class="control-group">
+                <label for="maxVal">📈 最大值</label>
+                <input type="text" id="maxVal" placeholder="如: 18:00:00">
+            </div>
+
+            <div class="control-group">
+                <label for="allowInv">🔄 允许无效值</label>
+                <select id="allowInv">
+                    <option value="false">否</option>
+                    <option value="true">是</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="textAlign">📝 对齐方式</label>
+                <select id="textAlign">
+                    <option value="center">居中 (默认)</option>
+                    <option value="left">左对齐</option>
+                    <option value="right">右对齐</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="bgColor">🎨 背景颜色</label>
+                <input type="color" id="bgColor" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label for="txtColor">📝 文字颜色</label>
+                <input type="color" id="txtColor" value="#2E7D32">
+            </div>
+
+            <div class="control-group">
+                <label for="fontSize">🔤 字体大小</label>
+                <input type="number" id="fontSize" value="14" min="10" max="24">
+            </div>
+
+            <div class="control-group">
+                <label for="fontWeight">⚖️ 字体粗细</label>
+                <select id="fontWeight">
+                    <option value="normal">正常</option>
+                    <option value="bold">粗体</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-primary" onclick="applyConfig()">⚙️ 应用配置</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-success" onclick="addTestRow()">➕ 添加测试数据</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-warning" onclick="testValidation()">🧪 测试验证</button>
+            </div>
+
+            <div class="control-group">
+                <button class="btn-info" onclick="resetTable()">🔄 重置表格</button>
+            </div>
+        </div>
+
+        <div class="control-group" style="margin-top: 20px;">
+            <label>📝 操作日志</label>
+            <div class="log-container" id="logContainer"></div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📖 使用说明</h2>
+        <div style="line-height: 1.8;">
+            <h3 style="color: #2E7D32; margin: 16px 0 8px;">编辑器说明</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>纯日期（YYYY-MM-DD）</strong>：双击后弹出原生日期选择器，体验最佳</li>
+                <li><strong>带时间（HH:mm:ss）</strong>：双击后弹出文本编辑器，手动输入时间</li>
+                <li><strong>日期时间</strong>：双击后弹出文本编辑器，输入完整日期时间</li>
+            </ul>
+
+            <h3 style="color: #2E7D32; margin: 16px 0 8px;">输入格式示例</h3>
+            <div style="margin-left: 20px; color: #555;">
+                <p><strong>日期：</strong>2026-07-22、2026/07/22、22/07/2026、2026年07月22日</p>
+                <p><strong>时间：</strong>14:30:00、14:30、2:30 PM、02:30:00 PM</p>
+                <p><strong>日期时间：</strong>2026-07-22 14:30:00、2026/07/22 14:30</p>
+            </div>
+
+            <h3 style="color: #2E7D32; margin: 16px 0 8px;">验证规则</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>空值</strong>：空字符串、undefined、null 均视为有效</li>
+                <li><strong>无效日期</strong>：根据 allowInvalid 配置决定是否允许显示</li>
+                <li><strong>范围检查</strong>：时间模式下比较当日时间点，日期模式下比较完整日期</li>
+            </ul>
+
+            <h3 style="color: #2E7D32; margin: 16px 0 8px;">技术特性</h3>
+            <ul style="margin-left: 20px; color: #555;">
+                <li><strong>智能解析</strong>：自动识别多种常见日期时间格式</li>
+                <li><strong>居中对齐</strong>：默认居中对齐，符合日期时间的阅读习惯</li>
+                <li><strong>格式多样</strong>：支持 24h/12h 制、中英文月名、AM/PM 等</li>
+                <li><strong>类型统一</strong>：纯日期、纯时间、日期时间统一为 type: "date"</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+    let currentMode = 'date';
+    const originalData = [
+        ["创建日期", "销售日期", "上班时间", "下班时间", "最后登录", "有效期至", "记录时间"],
+        [
+            new Date(2026, 0, 15),
+            new Date(2026, 6, 22),
+            new Date(2026, 0, 1, 9, 0, 0),
+            new Date(2026, 0, 1, 18, 30, 0),
+            new Date(2026, 6, 22, 14, 25, 30),
+            new Date(2026, 11, 31),
+            new Date(2026, 6, 22, 8, 15, 45)
+        ],
+        [
+            new Date(2026, 1, 10),
+            new Date(2026, 3, 5),
+            new Date(2026, 0, 1, 8, 30, 0),
+            new Date(2026, 0, 1, 17, 45, 0),
+            new Date(2026, 5, 18, 9, 10, 0),
+            new Date(2026, 8, 15),
+            new Date(2026, 2, 15, 16, 30, 0)
+        ],
+        [
+            new Date(2026, 2, 20),
+            new Date(2026, 5, 30),
+            new Date(2026, 0, 1, 10, 15, 0),
+            new Date(2026, 0, 1, 19, 0, 0),
+            new Date(2026, 4, 25, 23, 59, 59),
+            new Date(2027, 0, 1),
+            new Date(2026, 1, 28, 12, 0, 0)
+        ]
+    ];
+
+    const defaultColumns = [
+        { type: "date", width: 140, dateFormat: { pattern: "YYYY-MM-DD" } },
+        { type: "date", width: 140, dateFormat: { pattern: "YYYY/MM/DD" } },
+        { type: "date", width: 130, dateFormat: { pattern: "HH:mm:ss" } },
+        { type: "date", width: 130, dateFormat: { pattern: "HH:mm" } },
+        { type: "date", width: 180, dateFormat: { pattern: "YYYY-MM-DD HH:mm:ss" } },
+        { type: "date", width: 150, dateFormat: { pattern: "YYYY年MM月DD日" } },
+        { type: "date", width: 140, dateFormat: { pattern: "h:mm A" } }
+    ];
+
+    function log(msg, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        container.insertBefore(entry, container.firstChild);
+        if (container.children.length > 50) container.removeChild(container.lastChild);
+    }
+
+    function switchMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.mode-tab').forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+        resetTable();
+        log(`切换模式: ${mode}`, 'info');
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+
+            const columns = getColumnsForMode();
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1200,
+                height: 400,
+                sheets: [{
+                    name: "日期格式演示",
+                    data: originalData,
+                    columns: columns,
+                    rowHeight: 36,
+                    headerRowHeight: 40,
+                    cellPadding: 10,
+                    textOverflowEllipsis: true,
+                    features: {
+                        selection: true,
+                        editing: true,
+                        contextMenu: true
+                    }
+                }]
+            });
+
+            log('✅ Workbook 初始化成功', 'success');
+            log(`📋 当前模式: ${currentMode}，共 ${columns.length} 列`, 'info');
+
+        } catch (e) {
+            log('❌ 初始化失败: ' + e.message, 'error');
+            console.error(e);
+        }
+    }
+
+    function getColumnsForMode() {
+        if (currentMode === 'date') {
+            return [
+                { type: "date", width: 140, dateFormat: { pattern: "YYYY-MM-DD" } },
+                { type: "date", width: 140, dateFormat: { pattern: "YYYY/MM/DD" } },
+                { type: "date", width: 150, dateFormat: { pattern: "DD/MM/YYYY" } },
+                { type: "date", width: 150, dateFormat: { pattern: "MM/DD/YYYY" } },
+                { type: "date", width: 170, dateFormat: { pattern: "YYYY年MM月DD日" } },
+                { type: "date", width: 160, dateFormat: { pattern: "YYYY年M月D日" } },
+                { type: "date", width: 140, dateFormat: { pattern: "Mon DD, YYYY" } }
+            ];
+        } else if (currentMode === 'time') {
+            return [
+                { type: "date", width: 130, dateFormat: { pattern: "HH:mm:ss" } },
+                { type: "date", width: 110, dateFormat: { pattern: "HH:mm" } },
+                { type: "date", width: 120, dateFormat: { pattern: "h:mm A" } },
+                { type: "date", width: 150, dateFormat: { pattern: "hh:mm:ss A" } },
+                { type: "date", width: 100, dateFormat: { pattern: "mm:ss" } }
+            ];
+        } else {
+            return [
+                { type: "date", width: 200, dateFormat: { pattern: "YYYY-MM-DD HH:mm:ss" } },
+                { type: "date", width: 170, dateFormat: { pattern: "YYYY-MM-DD HH:mm" } },
+                { type: "date", width: 180, dateFormat: { pattern: "DD/MM/YYYY HH:mm:ss" } },
+                { type: "date", width: 160, dateFormat: { pattern: "YYYY/MM/DD HH:mm" } },
+                { type: "date", width: 150, dateFormat: { pattern: "h:mm A - YYYY-MM-DD" } }
+            ];
+        }
+    }
+
+    function applyConfig() {
+        if (!workbook) return;
+
+        const col = parseInt(document.getElementById('targetCol').value);
+        const pattern = document.getElementById('pattern').value;
+        const minVal = document.getElementById('minVal').value.trim();
+        const maxVal = document.getElementById('maxVal').value.trim();
+        const allowInv = document.getElementById('allowInv').value === 'true';
+        const textAlign = document.getElementById('textAlign').value;
+        const bgColor = document.getElementById('bgColor').value;
+        const txtColor = document.getElementById('txtColor').value;
+        const fontSize = document.getElementById('fontSize').value;
+        const fontWeight = document.getElementById('fontWeight').value;
+
+        const columns = getColumnsForMode();
+        if (col < 0 || col >= columns.length) {
+            log('❌ 列索引超出范围', 'error');
+            return;
+        }
+
+        const options = { dateFormat: { pattern: pattern } };
+        if (minVal) options.min = minVal;
+        if (maxVal) options.max = maxVal;
+        if (allowInv) options.allowInvalid = true;
+
+        const style = {
+            backgroundColor: bgColor,
+            color: txtColor,
+            fontSize: parseInt(fontSize),
+            fontWeight: fontWeight,
+            textAlign: textAlign
+        };
+
+        columns[col] = {
+            ...columns[col],
+            options: options,
+            style: style
+        };
+        workbook.updateSettings({ columns });
+        // workbook.activeSheet._invalidateAll();
+        log(`✅ 已应用配置到列 ${col}: ${pattern}`, 'success');
+    }
+
+    function addTestRow() {
+        if (!workbook) return;
+        const sheet = workbook.activeSheet;
+        const now = new Date();
+        const row = [
+            now,
+            new Date(now.getTime() - 86400000 * 7),
+            new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8 + Math.floor(Math.random() * 3), 30, 0),
+            new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17 + Math.floor(Math.random() * 3), 0, 0),
+            now,
+            new Date(now.getTime() + 86400000 * 30),
+            new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), 0)
+        ];
+        sheet.addRow(row);
+        log(`➕ 添加测试行，当前共 ${sheet.rowCount} 行`, 'success');
+    }
+
+    function testValidation() {
+        if (!workbook) return;
+        const sheet = workbook.activeSheet;
+        const type = sheet.getCellTypeInstance(1, 0);
+
+        const testCases = [
+            '2026-07-22',
+            '2026/07/22',
+            '14:30:00',
+            '2:30 PM',
+            '2026-07-22 14:30:00',
+            'invalid-date',
+            '',
+            null
+        ];
+
+        log('🧪 开始验证测试:', 'info');
+        testCases.forEach(val => {
+            const result = type.validate(val);
+            const status = result === true ? '✅' : (result ? '⚠️ ' : '❌ ');
+            log(`   ${status} validate(${JSON.stringify(val)}) => ${JSON.stringify(result)}`, result === true ? 'success' : (result ? 'warning' : 'error'));
+        });
+    }
+
+    function resetTable() {
+        if (workbook) {
+            workbook.destroy();
+            workbook = null;
+        }
+        initWorkbook();
+        log('🔄 表格已重置', 'info');
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

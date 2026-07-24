@@ -35,44 +35,93 @@ export class HyperlinkColumnType extends BaseColumnType {
         const fontSize = style.fontSize || 12;
         const textAlign = style.textAlign || "left";
         const cellPadding = sheet?.cellPadding ?? 8;
+        const textOverflowEllipsis = sheet?.textOverflowEllipsis ?? true;
 
-        ctx.font = `${style.fontWeight || "normal"} ${fontSize}px ${style.fontFamily || "Microsoft YaHei"}`;
+        const fontFamily = style.fontFamily || "Microsoft YaHei";
+        const fontWeight = style.fontWeight || "normal";
+        ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
         ctx.textBaseline = "middle";
+        ctx.textAlign = textAlign;
 
         let textX = x + cellPadding;
         let textY = y + height / 2;
-        const textWidth = ctx.measureText(text).width;
 
         if (textAlign === "center") {
-            textX = x + (width - textWidth) / 2;
+            textX = x + width / 2;
         } else if (textAlign === "right") {
-            textX = x + width - textWidth - cellPadding;
+            textX = x + width - cellPadding;
         }
+
+        const effectiveW = width;
+        const maxTextWidth = effectiveW - cellPadding * 2;
+        let renderedText = text;
+
+        if (maxTextWidth > 0) {
+            const fullWidth = ctx.measureText(text).width;
+            if (fullWidth > maxTextWidth) {
+                const suffix = textOverflowEllipsis ? "..." : "";
+                let lo = 0;
+                let hi = text.length;
+                while (lo < hi) {
+                    const mid = Math.ceil((lo + hi) / 2);
+                    if (ctx.measureText(text.slice(0, mid) + suffix).width > maxTextWidth) {
+                        hi = mid - 1;
+                    } else {
+                        lo = mid;
+                    }
+                }
+                renderedText = text.slice(0, lo) + suffix;
+            }
+        }
+
+        const textWidth = ctx.measureText(renderedText).width;
 
         if (url) {
             const hyperlinkStyle = themeStyleProvider.getStyle("cell.hyperlink");
             const linkColor = style.color || hyperlinkStyle.color || "#1a73e8";
 
-            ctx.save();
-            ctx.beginPath();
-            ctx.rect(x, y, width, height);
-            ctx.clip();
+            if (renderedText !== text) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(x, y, width, height);
+                ctx.clip();
+            }
 
             ctx.fillStyle = linkColor;
-            ctx.fillText(text, textX, textY);
+            ctx.fillText(renderedText, textX, textY);
+
+            let underlineX = textX;
+            if (textAlign === "center") {
+                underlineX = textX - textWidth / 2;
+            } else if (textAlign === "right") {
+                underlineX = textX - textWidth;
+            }
 
             const underlineY = textY + fontSize / 2 + 2;
             ctx.strokeStyle = linkColor;
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(textX, underlineY);
-            ctx.lineTo(textX + textWidth, underlineY);
+            ctx.moveTo(underlineX, underlineY);
+            ctx.lineTo(underlineX + textWidth, underlineY);
             ctx.stroke();
 
-            ctx.restore();
+            if (renderedText !== text) {
+                ctx.restore();
+            }
         } else {
+            if (renderedText !== text) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(x, y, width, height);
+                ctx.clip();
+            }
+
             ctx.fillStyle = style.color || "#333";
-            ctx.fillText(text, textX, textY);
+            ctx.fillText(renderedText, textX, textY);
+
+            if (renderedText !== text) {
+                ctx.restore();
+            }
         }
     }
 

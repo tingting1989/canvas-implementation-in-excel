@@ -24,90 +24,6 @@ import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
 import { registerColumnTypeClass } from "@/types";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
 
-class TrafficLightType extends BaseColumnType {
-    get name() {
-        return "trafficLight";
-    }
-
-    get editorType() {
-        return "select";
-    }
-
-    getEditorOptions() {
-        return {
-            source: [
-                { value: "green", label: "🟢 正常" },
-                { value: "yellow", label: "🟡 警告" },
-                { value: "red", label: "🔴 危险" },
-            ],
-        };
-    }
-
-    format(value) {
-        const map = { green: "正常", yellow: "警告", red: "危险" };
-        return map[value] || String(value);
-    }
-
-    render(context) {
-        const { ctx, x, y, width, height, value, displayValue, style } = context;
-
-        const indicatorSize = Math.min(width, height) * 0.35;
-        const indicatorRadius = indicatorSize / 2;
-        const indicatorCy = context.getCenterY();
-        const gap = 6;
-        const padding = context.getPadding(context.sheet);
-
-        const colors = {
-            green: "#4caf50",
-            yellow: "#ff9800",
-            red: "#f44336",
-        };
-
-        const fontSize = style?.fontSize || 14;
-        const fontFamily = style?.fontFamily || "Microsoft YaHei";
-        const textColor = style?.color || "#000";
-        const textAlign = style?.textAlign || "left";
-
-        ctx.font = `${fontSize}px ${fontFamily}`;
-        const textWidth = displayValue ? ctx.measureText(displayValue).width : 0;
-        const totalWidth = indicatorSize + gap + textWidth;
-
-        let startX;
-        if (textAlign === "right") {
-            startX = x + width - totalWidth - padding;
-        } else if (textAlign === "center") {
-            startX = x + (width - totalWidth) / 2;
-        } else {
-            startX = x + padding;
-        }
-
-        const indicatorCx = startX + indicatorRadius;
-        const textX = startX + indicatorSize + gap;
-
-        ctx.fillStyle = colors[value] || "#ccc";
-        ctx.beginPath();
-        ctx.arc(indicatorCx, indicatorCy, indicatorRadius, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (context.isSelected) {
-            ctx.strokeStyle = colors[value] || "#999";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(indicatorCx, indicatorCy, indicatorRadius + 3, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-
-        if (displayValue) {
-            ctx.fillStyle = textColor;
-            ctx.textAlign = "left";
-            ctx.textBaseline = "middle";
-            ctx.fillText(displayValue, textX, indicatorCy);
-        }
-    }
-}
-
-// 注册自定义类型
-registerColumnTypeClass("trafficLight", TrafficLightType);
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 
@@ -664,7 +580,8 @@ const initApp = () => {
             },
         ],
     });
-
+    // wb.initRender();
+    // wb.render();
     // sheet.operations.setGridSize(10, 5);
     // 超链接点击处理说明：
     // - HyperlinkColumnType 的点击由 InteractionStrategy 处理（handleClick 方法）

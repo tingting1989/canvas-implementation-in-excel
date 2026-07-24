@@ -92,6 +92,11 @@ export class FormulaPlugin extends BasePlugin {
         this.#engine = new FormulaEngine(this.workbook);
         this.workbook.formulaEngine = this.#engine;
 
+        // 对所有 sheet 执行初始公式计算（修复 autoInit: true 时公式未计算的问题）
+        for (const sheet of this.workbook.sheets.values()) {
+            this.#engine.recalculateAll(sheet);
+        }
+
         if (showFormulaBar) {
             const container = this.workbook.renderEngine?.outerWrap;
             this.#bar = new FormulaBarManager(this.workbook, container);

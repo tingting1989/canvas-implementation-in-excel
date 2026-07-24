@@ -112,16 +112,16 @@ export class Workbook {
         this.#initOptions = options;
 
         const autoInit = options.autoInit !== false;
-        if (autoInit) {
-            this.initRender();
-            this.render();
-        }
 
         /** @type {import("../formula/FormulaEngine.js").FormulaEngine|null} 公式引擎（由 FormulaPlugin 注入） */
         this.formulaEngine = null;
 
         /** @type {import("../ui/formulaBar/FormulaBarManager.js").FormulaBarManager|null} 公式栏管理器（由 FormulaPlugin 注入） */
         this.formulaBar = null;
+        if (autoInit) {
+            this.initRender();
+            this.render();
+        }
     }
 
     // ============================================================
