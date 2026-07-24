@@ -13,7 +13,7 @@ export class DateEditor extends CellEditor {
 
     formatValueForEditor(rawValue) {
         // 直接返回原始字符串值
-        if (typeof rawValue === 'string' && rawValue) {
+        if (typeof rawValue === "string" && rawValue) {
             return rawValue;
         }
         // 如果是 Date 对象，转换为 YYYY-MM-DD 格式

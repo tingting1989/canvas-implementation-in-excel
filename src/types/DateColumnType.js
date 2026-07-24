@@ -37,7 +37,7 @@ export class DateColumnType extends BaseColumnType {
      * @returns {string}
      */
     format(value) {
-        console.log(this.options)
+        console.log(this.options);
         if (value === undefined || value === null) return "";
 
         const date = this.#toDate(value);
@@ -130,7 +130,7 @@ export class DateColumnType extends BaseColumnType {
     /**
      * 解析用户输入
      * 支持：Date对象、纯日期、纯时间、日期时间格式
-     * 
+     *
      * 注意：所有模式都返回字符串格式，确保数据存储一致性
      * 验证时内部会解析字符串为 Date 对象进行比较
      */
@@ -206,15 +206,15 @@ export class DateColumnType extends BaseColumnType {
             // 尝试解析时间格式
             const timeResult = this.#parseTimeString(value);
             if (timeResult instanceof Date && !isNaN(timeResult.getTime())) return timeResult;
-            
+
             // 尝试解析日期格式
             const dateResult = this.#parseDateString(value);
             if (dateResult instanceof Date && !isNaN(dateResult.getTime())) return dateResult;
-            
+
             // 尝试解析日期时间格式
             const dtResult = this.#parseDateTimeString(value);
             if (dtResult instanceof Date && !isNaN(dtResult.getTime())) return dtResult;
-            
+
             // 尝试直接用 Date 解析
             const d = new Date(value);
             return isNaN(d.getTime()) ? null : d;
