@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 自定义公式演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a {
+            display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none;
+            font-weight: 600; transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .demo-section {
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
+        .code-block {
+            background: #282c34; color: #abb2bf; padding: 16px; border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 14px; line-height: 1.6;
+            overflow-x: auto; margin: 12px 0;
+        }
+        .code-block .keyword { color: #c678dd; }
+        .code-block .string { color: #98c379; }
+        .code-block .comment { color: #5c6370; font-style: italic; }
+        .code-block .function { color: #61afef; }
+        .code-block .number { color: #d19a66; }
+        .steps { counter-reset: step-counter; }
+        .step {
+            counter-increment: step-counter;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 20px; border-radius: 12px; margin-bottom: 16px;
+            border-left: 4px solid #11998e; position: relative;
+        }
+        .step::before {
+            content: counter(step-counter);
+            position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
+            width: 24px; height: 24px; background: #11998e; color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 12px;
+        }
+        .step-title { font-size: 1.2em; font-weight: 700; color: #11998e; margin-bottom: 12px; }
+        .step-desc { color: #666; line-height: 1.6; margin-bottom: 12px; }
+        .formula-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #11998e;
+            margin-bottom: 12px;
+        }
+        .formula-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 8px; }
+        .formula-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #11998e;
+            background: rgba(17,153,142,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .formula-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .log-container {
+            max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔧 自定义公式演示</h1>
+    <div class="nav">
+        <a href="formula-demo-umd.html">🏠 总览</a>
+        <a href="math-functions-demo.html">📐 数学</a>
+        <a href="statistical-functions-demo.html">📈 统计</a>
+        <a href="logical-functions-demo.html">🔀 逻辑</a>
+        <a href="text-functions-demo.html">📝 文本</a>
+        <a href="conditional-functions-demo.html">🎯 条件</a>
+        <a href="lookup-functions-demo.html">🔍 查找</a>
+        <a href="custom-formula-demo.html" class="active">🔧 自定义</a>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 自定义公式演示表格</h2>
+        <p style="color: #666; margin-bottom: 16px;">下方表格展示了已注册的自定义公式。双击单元格可查看公式内容。</p>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📖</span> 如何自定义公式</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-title">第一步：导入注册表</div>
+                <div class="step-desc">从公式模块导入函数注册表</div>
+                <div class="code-block">
+<span class="keyword">import</span> { functionRegistry } <span class="keyword">from</span> <span class="string">'@canvas-sheet/core'</span>;
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-title">第二步：注册自定义函数</div>
+                <div class="step-desc">使用 <code>registry.register(函数名, 实现函数)</code> 注册</div>
+                <div class="code-block">
+<span class="comment">// 简单函数：计算平方</span>
+registry.<span class="function">register</span>(<span class="string">'SQUARE'</span>, (args) => {
+    <span class="keyword">const</span> num = args[<span class="number">0</span>];
+    <span class="keyword">return</span> num * num;
+});
+
+<span class="comment">// 带上下文的函数：可访问其他工作表数据</span>
+registry.<span class="function">register</span>(<span class="string">'CROSS_SHEET_SUM'</span>, (args, ctx) => {
+    <span class="keyword">const</span> otherSheet = ctx.workbook.sheets.<span class="function">get</span>(<span class="string">'Sheet2'</span>);
+    <span class="keyword">return</span> args[<span class="number">0</span>] + <span class="number">100</span>;
+});
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-title">第三步：在单元格中使用</div>
+                <div class="step-desc">在单元格中输入以 <code>=</code> 开头的公式即可调用</div>
+                <div class="code-block">
+<span class="comment">// 在单元格中输入</span>
+=DOUBLE(A1)
+=SQUARE(B2)
+=CUSTOM_ADD(A1, B1)
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-title">第四步：查询和管理函数</div>
+                <div class="step-desc">可以使用以下方法查询和管理已注册的函数</div>
+                <div class="code-block">
+registry.<span class="function">has</span>(<span class="string">'DOUBLE'</span>);      <span class="comment">// 检查函数是否存在</span>
+registry.<span class="function">get</span>(<span class="string">'DOUBLE'</span>);       <span class="comment">// 获取函数实现</span>
+registry.<span class="function">list</span>();                <span class="comment">// 列出所有函数</span>
+registry.<span class="function">getStats</span>();            <span class="comment">// 获取统计信息</span>
+registry.<span class="function">unregister</span>(<span class="string">'DOUBLE'</span>);    <span class="comment">// 注销自定义函数</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>💡</span> 内置自定义函数</h2>
+        <p style="color: #666; margin-bottom: 16px;">以下是本演示页面预注册的自定义函数，可以在表格中使用：</p>
+        <div class="two-col">
+            <div>
+                <div class="formula-card">
+                    <div class="name">DOUBLE - 两倍数值</div>
+                    <div class="syntax">=DOUBLE(number)</div>
+                    <div class="desc">返回输入数值的两倍。简单的数学运算示例。</div>
+                </div>
+                <div class="formula-card">
+                    <div class="name">SQUARE - 平方</div>
+                    <div class="syntax">=SQUARE(number)</div>
+                    <div class="desc">返回输入数值的平方。演示如何创建数学运算自定义函数。</div>
+                </div>
+                <div class="formula-card">
+                    <div class="name">CUSTOM_ADD - 加法</div>
+                    <div class="syntax">=CUSTOM_ADD(a, b)</div>
+                    <div class="desc">返回两个数值的和。演示如何处理多个参数。</div>
+                </div>
+            </div>
+            <div>
+                <div class="formula-card">
+                    <div class="name">IS_POSITIVE - 判断正数</div>
+                    <div class="syntax">=IS_POSITIVE(number)</div>
+                    <div class="desc">返回 TRUE 如果数值大于 0，否则返回 FALSE。演示条件判断。</div>
+                </div>
+                <div class="formula-card">
+                    <div class="name">PERCENTAGE - 百分比</div>
+                    <div class="syntax">=PERCENTAGE(value, total)</div>
+                    <div class="desc">计算 value 占 total 的百分比。演示商务场景应用。</div>
+                </div>
+                <div class="formula-card">
+                    <div class="name">CONCAT_3 - 连接三个文本</div>
+                    <div class="syntax">=CONCAT_3(text1, text2, text3)</div>
+                    <div class="desc">将三个文本连接成一个字符串。演示文本处理自定义函数。</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
+        <div class="log-container" id="logContainer"></div>
+    </div>
+</div>
+
+<script type="module">
+    import { CanvasSheet } from './index.js';
+    import { FormulaEngine } from '../src/formula/FormulaEngine.js';
+    import { registry } from '../src/formula/functions/index.js';
+
+    const logContainer = document.getElementById('logContainer');
+
+    function log(message, type = 'info') {
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        logContainer.appendChild(entry);
+        logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    const canvas = document.getElementById('sheet');
+    const container = canvas.parentElement;
+
+    const canvasSheet = new CanvasSheet(canvas);
+    canvasSheet.createSheet('Demo', 12, 8);
+    canvasSheet.setActiveSheet('Demo');
+
+    const sheet = canvasSheet.getActiveSheet();
+    const engine = new FormulaEngine(canvasSheet.workbook);
+
+    registry.register('DOUBLE', (args) => {
+        const num = args[0];
+        return typeof num === 'number' ? num * 2 : 0;
+    });
+    registry.register('SQUARE', (args) => {
+        const num = args[0];
+        return typeof num === 'number' ? num * num : 0;
+    });
+    registry.register('CUSTOM_ADD', (args) => {
+        return (args[0] || 0) + (args[1] || 0);
+    });
+    registry.register('IS_POSITIVE', (args) => {
+        return (args[0] || 0) > 0;
+    });
+    registry.register('PERCENTAGE', (args) => {
+        const value = args[0] || 0;
+        const total = args[1] || 1;
+        return (value / total * 100).toFixed(2) + '%';
+    });
+    registry.register('CONCAT_3', (args) => {
+        return String(args[0] || '') + String(args[1] || '') + String(args[2] || '');
+    });
+
+    log('已注册 6 个自定义函数', 'success');
+    log(`函数统计: ${JSON.stringify(registry.getStats())}`, 'info');
+
+    sheet.cellStore.set(0, 0, { value: '数值A' });
+    sheet.cellStore.set(0, 1, { value: '数值B' });
+    sheet.cellStore.set(0, 2, { value: 'DOUBLE' });
+    sheet.cellStore.set(0, 3, { value: 'SQUARE' });
+    sheet.cellStore.set(0, 4, { value: 'ADD' });
+    sheet.cellStore.set(0, 5, { value: 'IS_POS' });
+    sheet.cellStore.set(0, 6, { value: '百分比' });
+    sheet.cellStore.set(0, 7, { value: '连接' });
+
+    sheet.cellStore.set(1, 0, { value: 5 });
+    sheet.cellStore.set(1, 1, { value: 3 });
+    sheet.cellStore.set(1, 2, { value: engine.setFormula(sheet, 1, 2, '=DOUBLE(A2)') });
+    sheet.cellStore.set(1, 3, { value: engine.setFormula(sheet, 1, 3, '=SQUARE(A2)') });
+    sheet.cellStore.set(1, 4, { value: engine.setFormula(sheet, 1, 4, '=CUSTOM_ADD(A2,B2)') });
+    sheet.cellStore.set(1, 5, { value: engine.setFormula(sheet, 1, 5, '=IS_POSITIVE(A2)') });
+    sheet.cellStore.set(1, 6, { value: engine.setFormula(sheet, 1, 6, '=PERCENTAGE(A2,20)') });
+    sheet.cellStore.set(1, 7, { value: engine.setFormula(sheet, 1, 7, '=CONCAT_3("张","三","李")') });
+
+    sheet.cellStore.set(2, 0, { value: 10 });
+    sheet.cellStore.set(2, 1, { value: 7 });
+    sheet.cellStore.set(2, 2, { value: engine.setFormula(sheet, 2, 2, '=DOUBLE(A3)') });
+    sheet.cellStore.set(2, 3, { value: engine.setFormula(sheet, 2, 3, '=SQUARE(A3)') });
+    sheet.cellStore.set(2, 4, { value: engine.setFormula(sheet, 2, 4, '=CUSTOM_ADD(A3,B3)') });
+    sheet.cellStore.set(2, 5, { value: engine.setFormula(sheet, 2, 5, '=IS_POSITIVE(A3)') });
+    sheet.cellStore.set(2, 6, { value: engine.setFormula(sheet, 2, 6, '=PERCENTAGE(A3,20)') });
+    sheet.cellStore.set(2, 7, { value: engine.setFormula(sheet, 2, 7, '=CONCAT_3("HELLO","-","WORLD")') });
+
+    sheet.cellStore.set(3, 0, { value: -5 });
+    sheet.cellStore.set(3, 1, { value: 2 });
+    sheet.cellStore.set(3, 2, { value: engine.setFormula(sheet, 3, 2, '=DOUBLE(A4)') });
+    sheet.cellStore.set(3, 3, { value: engine.setFormula(sheet, 3, 3, '=SQUARE(A4)') });
+    sheet.cellStore.set(3, 4, { value: engine.setFormula(sheet, 3, 4, '=CUSTOM_ADD(A4,B4)') });
+    sheet.cellStore.set(3, 5, { value: engine.setFormula(sheet, 3, 5, '=IS_POSITIVE(A4)') });
+    sheet.cellStore.set(3, 6, { value: engine.setFormula(sheet, 3, 6, '=PERCENTAGE(A4,20)') });
+    sheet.cellStore.set(3, 7, { value: engine.setFormula(sheet, 3, 7, '=CONCAT_3("合","计:","¥100")') });
+
+    log('演示数据已填充，包含自定义公式结果', 'success');
+    log('A列/B列为原始数据，C-H列为自定义公式计算结果', 'info');
+
+    const viewport = canvasSheet.getViewport();
+    viewport.resize(canvas.parentElement.clientWidth - 4, 400);
+    canvasSheet.render();
+
+    log('表格渲染完成', 'success');
+</script>
+</body>
+</html>

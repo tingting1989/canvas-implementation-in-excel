@@ -151,12 +151,38 @@ export class FormulaEngine {
      * @returns {Array<{sheetName: string, row: number, col: number, newValue: *}>} 受影响的重算结果
      */
     onCellChanged(sheet, row, col) {
-        const key = this.#cellKey(sheet.name, row, col);
-        const depSet = this.dependents.get(key);
-        if (!depSet || depSet.size === 0) return [];
+        const cellKey = this.#cellKey(sheet.name, row, col);
 
         this.dirtyCells = new Set();
-        this.#collectDirty(key, new Set());
+        const visitedFormulas = new Set();
+
+        const cellDepSet = this.dependents.get(cellKey);
+        if (cellDepSet && cellDepSet.size > 0) {
+            for (const formulaKey of cellDepSet) {
+                if (!visitedFormulas.has(formulaKey)) {
+                    visitedFormulas.add(formulaKey);
+                    this.dirtyCells.add(formulaKey);
+                    this.#collectDirty(formulaKey, visitedFormulas);
+                }
+            }
+        }
+
+        for (const [depKey, formulaKeys] of this.dependents) {
+            if (this.#isRangeKey(depKey)) {
+                if (this.#isCellInRange(sheet.name, row, col, depKey)) {
+                    for (const formulaKey of formulaKeys) {
+                        if (!visitedFormulas.has(formulaKey)) {
+                            visitedFormulas.add(formulaKey);
+                            this.dirtyCells.add(formulaKey);
+                            this.#collectDirty(formulaKey, visitedFormulas);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (this.dirtyCells.size === 0) return [];
+
         const results = this.#recalculate(sheet);
 
         for (const { sheetName, row: r, col: c } of results) {
@@ -185,11 +211,22 @@ export class FormulaEngine {
 
         for (const key of this.dependsOn.keys()) {
             if (!key.startsWith(prefix)) continue;
-            const [, r, c] = this.#parseKey(key);
-            if (row > 0 && r >= row) {
-                keysToRemove.push(key);
-            } else if (col > 0 && c >= col) {
-                keysToRemove.push(key);
+
+            if (this.#isRangeKey(key)) {
+                const range = this.#parseRangeKey(key);
+                if (range) {
+                    const overlaps = this.#rangeOverlapsWithPoint(range, row, col);
+                    if (overlaps) {
+                        keysToRemove.push(key);
+                    }
+                }
+            } else {
+                const [, r, c] = this.#parseKey(key);
+                if (row > 0 && r >= row) {
+                    keysToRemove.push(key);
+                } else if (col > 0 && c >= col) {
+                    keysToRemove.push(key);
+                }
             }
         }
 
@@ -197,6 +234,10 @@ export class FormulaEngine {
             this.#removeDependencies(key);
             this.astCache.delete(key);
         }
+    }
+
+    #rangeOverlapsWithPoint(range, row, col) {
+        return row >= range.topRow && row <= range.bottomRow && col >= range.topCol && col <= range.bottomCol;
     }
 
     /**
@@ -354,6 +395,29 @@ export class FormulaEngine {
         const match = key.match(/^(.+)!(\d+),(\d+)$/);
         if (!match) return ["", 0, 0];
         return [match[1], parseInt(match[2], 10), parseInt(match[3], 10)];
+    }
+
+    #parseRangeKey(key) {
+        const match = key.match(/^(.+)!(\d+),(\d+):(\d+),(\d+)$/);
+        if (!match) return null;
+        return {
+            sheetName: match[1],
+            topRow: parseInt(match[2], 10),
+            topCol: parseInt(match[3], 10),
+            bottomRow: parseInt(match[4], 10),
+            bottomCol: parseInt(match[5], 10),
+        };
+    }
+
+    #isCellInRange(sheetName, row, col, rangeKey) {
+        const range = this.#parseRangeKey(rangeKey);
+        if (!range) return false;
+        if (range.sheetName !== sheetName) return false;
+        return row >= range.topRow && row <= range.bottomRow && col >= range.topCol && col <= range.bottomCol;
+    }
+
+    #isRangeKey(key) {
+        return key.includes(":");
     }
 
     #updateDependencies(formulaKey, newDeps) {

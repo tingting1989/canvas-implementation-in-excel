@@ -83,6 +83,14 @@ class Parser {
     }
 
     parseExpression(minPrec = -2) {
+        const token = this.peek();
+
+        if (token.type === TOKEN.OPERATOR && token.value === "-") {
+            this.consume();
+            const operand = this.parseExpression(-1);
+            return { type: "unaryOp", operator: "-", operand };
+        }
+
         let left = this.parsePrimary();
 
         while (this.pos < this.tokens.length) {
@@ -151,12 +159,6 @@ class Parser {
             const expr = this.parseExpression();
             this.consume(TOKEN.RPAREN);
             return expr;
-        }
-
-        if (token.value === "-" && this.pos === 0) {
-            this.consume();
-            const operand = this.parsePrimary();
-            return { type: "unaryOp", operator: "-", operand };
         }
 
         throw new Error(`Unexpected token: ${token.type} "${token.value}" at position ${this.pos}`);

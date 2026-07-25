@@ -137,13 +137,14 @@ export class FormulaEvaluator {
         const accessor = targetSheet.cellDataAccessor;
         const matrix = accessor.getValueMatrix(node.topRow, node.topCol, node.bottomRow, node.bottomCol);
 
-        for (let r = node.topRow; r <= node.bottomRow; r++) {
-            for (let c = node.topCol; c <= node.bottomCol; c++) {
-                const key = this.#cellKey(targetSheet.name, r, c);
-                this.dependencies.add(key);
-            }
-        }
+        const rangeKey = this.#rangeKey(targetSheet.name, node.topRow, node.topCol, node.bottomRow, node.bottomCol);
+        this.dependencies.add(rangeKey);
+
         return matrix;
+    }
+
+    #rangeKey(sheetName, topRow, topCol, bottomRow, bottomCol) {
+        return `${sheetName}!${topRow},${topCol}:${bottomRow},${bottomCol}`;
     }
 
     #evalFunction(node, sheet) {
