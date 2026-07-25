@@ -247,6 +247,26 @@ export class SheetStyleManager {
     }
 
     /**
+     * 根据单元格类型获取对应的主题样式
+     * @private
+     * @param {Object} cellType - 单元格类型实例
+     * @returns {Object} 主题样式对象
+     */
+    #getThemeStyleByCellType(cellType) {
+        const typeToStyleMap = {
+            hyperlink: "cell.hyperlink",
+            numeric: "cell.numeric",
+            text: "cell.text",
+            textarea: "cell.textarea",
+            date: "cell.date",
+            checkbox: "cell.checkbox",
+            selected: "cell.selected",
+        };
+        const styleType = typeToStyleMap[cellType?.name] || "cell.default";
+        return themeStyleProvider.getStyle(styleType);
+    }
+
+    /**
      * 解析单元格的最终合并样式
      *
      * 按优先级从低到高逐层合并：
@@ -291,30 +311,10 @@ export class SheetStyleManager {
             !this.#sheet.hasConditionalRules() &&
             !this.#sheet.hasDataBindings()
         ) {
-            // 获取单元格类型并应用主题样式
             const cellType = this.#sheet.getCellTypeInstance(r, c);
-            let result = base;
+            const themeStyle = this.#getThemeStyleByCellType(cellType);
+            let result = { ...base, ...themeStyle };
 
-            // 应用主题中的单元格样式
-            let themeStyle = {};
-            if (cellType?.name === "hyperlink") {
-                themeStyle = themeStyleProvider.getStyle("cell.hyperlink");
-            } else if (cellType?.name === "numeric") {
-                themeStyle = themeStyleProvider.getStyle("cell.numeric");
-            } else if (cellType?.name === "text") {
-                themeStyle = themeStyleProvider.getStyle("cell.text");
-            } else if (cellType?.name === "textarea") {
-                themeStyle = themeStyleProvider.getStyle("cell.textarea");
-            } else if (cellType?.name === "date") {
-                themeStyle = themeStyleProvider.getStyle("cell.date");
-            } else if (cellType?.name === "checkbox") {
-                themeStyle = themeStyleProvider.getStyle("cell.checkbox");
-            } else {
-                themeStyle = themeStyleProvider.getStyle("cell.default");
-            }
-            result = { ...result, ...themeStyle };
-
-            // 应用列类型默认样式（如数字列右对齐等）
             if (cellType) {
                 result = cellType.getDefaultStyle(result);
             }
@@ -327,22 +327,7 @@ export class SheetStyleManager {
         const cellType = this.#sheet.getCellTypeInstance(r, c);
 
         // 第 2 层：主题样式（在用户配置之前，确保用户配置可以覆盖主题）
-        let themeStyle = {};
-        if (cellType?.name === "hyperlink") {
-            themeStyle = themeStyleProvider.getStyle("cell.hyperlink");
-        } else if (cellType?.name === "numeric") {
-            themeStyle = themeStyleProvider.getStyle("cell.numeric");
-        } else if (cellType?.name === "text") {
-            themeStyle = themeStyleProvider.getStyle("cell.text");
-        } else if (cellType?.name === "textarea") {
-            themeStyle = themeStyleProvider.getStyle("cell.textarea");
-        } else if (cellType?.name === "date") {
-            themeStyle = themeStyleProvider.getStyle("cell.date");
-        } else if (cellType?.name === "checkbox") {
-            themeStyle = themeStyleProvider.getStyle("cell.checkbox");
-        } else {
-            themeStyle = themeStyleProvider.getStyle("cell.default");
-        }
+        const themeStyle = this.#getThemeStyleByCellType(cellType);
 
         // 第 3 层：列样式（用户配置可以覆盖主题）
         let style = { ...base, ...themeStyle };

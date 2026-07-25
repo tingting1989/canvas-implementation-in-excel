@@ -236,7 +236,6 @@ export const darkThemeConfig = {
     },
 };
 
-
 export const styleTypes = [
     "cell.default",
     "cell.numeric",
