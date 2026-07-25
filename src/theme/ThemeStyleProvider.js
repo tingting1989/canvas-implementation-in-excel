@@ -19,12 +19,33 @@ const typeToStyleMap = {
  * @class ThemeStyleProvider
  */
 export class ThemeStyleProvider {
+    /** 订阅者集合（用于主题切换时通知所有 SheetStyleManager） */
+    #subscribers = new Set();
+
     constructor() {
         /**
          * 主题管理器实例
          * @type {ThemeManager}
          */
         this.themeManager = new ThemeManager();
+    }
+
+    /**
+     * 订阅主题变化
+     * @param {Function} callback - 主题变化时的回调函数
+     * @returns {Function} 取消订阅的函数
+     */
+    subscribe(callback) {
+        this.#subscribers.add(callback);
+        return () => this.#subscribers.delete(callback);
+    }
+
+    /**
+     * 通知所有订阅者主题已切换
+     * @private
+     */
+    #notifySubscribers() {
+        this.#subscribers.forEach((callback) => callback());
     }
 
     /**
@@ -97,7 +118,11 @@ export class ThemeStyleProvider {
      * @returns {boolean} 是否切换成功
      */
     setTheme(themeName) {
-        return this.themeManager.setTheme(themeName);
+        const result = this.themeManager.setTheme(themeName);
+        if (result) {
+            this.#notifySubscribers();
+        }
+        return result;
     }
 
     /**

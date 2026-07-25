@@ -45,11 +45,30 @@ export class SheetStyleManager {
     /** 样式变更记录器，用于 Command 化撤销/重做 */
     #recorder = new StyleChangeRecorder();
 
+    /** 主题变化取消订阅函数 */
+    #unsubscribeTheme = null;
+
     /**
      * @param {import("../Sheet.js").Sheet} sheet - 所属工作表实例
      */
     constructor(sheet) {
         this.#sheet = sheet;
+
+        // 订阅主题变化，主题切换时自动失效缓存
+        this.#unsubscribeTheme = themeStyleProvider.subscribe(() => {
+            this.invalidateCache();
+        });
+    }
+
+    /**
+     * 销毁方法，清理订阅等资源
+     * 在 Sheet 被销毁时应调用此方法
+     */
+    destroy() {
+        if (this.#unsubscribeTheme) {
+            this.#unsubscribeTheme();
+            this.#unsubscribeTheme = null;
+        }
     }
 
     /** 行级样式 Map（供 RowColSync 等内部模块访问） */

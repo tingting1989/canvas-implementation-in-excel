@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 主题切换演示 - Canvas-Sheet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-buttons {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .theme-btn {
+            flex: 1;
+            min-width: 200px;
+            padding: 20px 24px;
+            border: 3px solid transparent;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .theme-btn .icon {
+            font-size: 32px;
+        }
+
+        .theme-btn .name {
+            font-size: 16px;
+        }
+
+        .theme-btn.default {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            border-color: #dee2e6;
+            color: #333;
+        }
+
+        .theme-btn.default:hover,
+        .theme-btn.default.active {
+            border-color: #667eea;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .theme-btn.dark {
+            background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+            border-color: #444;
+            color: white;
+        }
+
+        .theme-btn.dark:hover,
+        .theme-btn.dark.active {
+            border-color: #64B5F6;
+            box-shadow: 0 0 20px rgba(100, 181, 246, 0.4);
+        }
+
+        .theme-btn.active {
+            transform: translateY(-3px);
+        }
+
+        .canvas-container {
+            overflow: auto;
+            background: #fff;
+            position: relative;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-card h4 {
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .info-card p {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .cell-type-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .cell-type-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .cell-type-item .type-name {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .cell-type-item .type-desc {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .style-priority {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .style-priority h4 {
+            color: #4a5568;
+            margin-bottom: 12px;
+        }
+
+        .priority-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .priority-item {
+            padding: 6px 12px;
+            background: white;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #667eea;
+            border: 1px solid #e0e0e0;
+        }
+
+        .current-status {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+        }
+
+        .current-status .label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .current-status .theme-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 8px;
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #282c34;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            color: #abb2bf;
+        }
+
+        .log-entry.log-success {
+            background: rgba(56, 239, 125, 0.1);
+            color: #38ef7d;
+        }
+
+        .log-entry.log-info {
+            background: rgba(79, 172, 254, 0.1);
+            color: #4facfe;
+        }
+
+        .log-entry.log-warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+
+        .log-entry.log-error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        .theme-preview {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .preview-card {
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .preview-card.default {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+        }
+
+        .preview-card.dark {
+            background: linear-gradient(135deg, #333 0%, #1a1a1a 100%);
+            border: 1px solid #444;
+            color: white;
+        }
+
+        .preview-card .preview-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .preview-colors {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .preview-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎨 主题切换演示 - Canvas-Sheet</h1>
+
+    <div class="demo-section">
+        <h2 class="section-title">🖌️ 选择主题</h2>
+
+        <div class="theme-buttons">
+            <button class="theme-btn default active" onclick="switchTheme('default')">
+                <span class="icon">☀️</span>
+                <span class="name">默认主题 (Default)</span>
+            </button>
+            <button class="theme-btn dark" onclick="switchTheme('dark')">
+                <span class="icon">🌙</span>
+                <span class="name">暗色主题 (Dark)</span>
+            </button>
+        </div>
+
+        <div class="current-status">
+            <div class="label">当前使用主题</div>
+            <div class="theme-name" id="currentThemeName">默认主题</div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📊 单元格类型展示</h2>
+
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📋 单元格类型说明</h2>
+
+        <div class="cell-type-grid">
+            <div class="cell-type-item">
+                <div class="type-name">default</div>
+                <div class="type-desc">默认单元格样式</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">numeric</div>
+                <div class="type-desc">数字类型（右对齐）</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">text</div>
+                <div class="type-desc">文本类型</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">hyperlink</div>
+                <div class="type-desc">超链接（下划线+蓝色）</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">date</div>
+                <div class="type-desc">日期类型（绿色）</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">checkbox</div>
+                <div class="type-desc">复选框样式</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">textarea</div>
+                <div class="type-desc">多行文本</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">header</div>
+                <div class="type-desc">表头样式</div>
+            </div>
+            <div class="cell-type-item">
+                <div class="type-name">selected</div>
+                <div class="type-desc">选中状态样式</div>
+            </div>
+        </div>
+
+        <div class="style-priority">
+            <h4>🎯 样式优先级（从低到高）</h4>
+            <div class="priority-list">
+                <span class="priority-item">1. defaultStyle</span>
+                <span class="priority-item">2. themeStyle</span>
+                <span class="priority-item">3. colStyle</span>
+                <span class="priority-item">4. rowStyle</span>
+                <span class="priority-item">5. cellStyle</span>
+                <span class="priority-item">6. cellType</span>
+                <span class="priority-item">7. cellProps</span>
+                <span class="priority-item">8. conditionalFormat</span>
+                <span class="priority-item">9. dataBinding</span>
+            </div>
+        </div>
+
+        <div class="theme-preview">
+            <div class="preview-card default">
+                <div class="preview-title">默认主题配色</div>
+                <div class="preview-colors">
+                    <div class="preview-color" style="background: #1a73e8;" title="Primary"></div>
+                    <div class="preview-color" style="background: #4CAF50;" title="Success"></div>
+                    <div class="preview-color" style="background: #ff9800;" title="Warning"></div>
+                    <div class="preview-color" style="background: #f44336;" title="Error"></div>
+                    <div class="preview-color" style="background: #2196F3;" title="Info"></div>
+                </div>
+            </div>
+            <div class="preview-card dark">
+                <div class="preview-title">暗色主题配色</div>
+                <div class="preview-colors">
+                    <div class="preview-color" style="background: #64B5F6;" title="Primary"></div>
+                    <div class="preview-color" style="background: #66BB6A;" title="Success"></div>
+                    <div class="preview-color" style="background: #FFA726;" title="Warning"></div>
+                    <div class="preview-color" style="background: #EF5350;" title="Error"></div>
+                    <div class="preview-color" style="background: #42A5F5;" title="Info"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title">📝 事件日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">等待主题切换...</div>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+    let sheet = null;
+    let currentTheme = 'default';
+
+    const cellTypeData = [
+        ['单元格类型', '样式示例', '颜色值', '对齐方式', '说明'],
+        ['default', '普通文本', '#000000', '左对齐', '默认单元格样式'],
+        ['numeric', '123456', '#333333', '右对齐', '数字类型单元格'],
+        ['text', 'Hello World', '#000000', '左对齐', '文本类型单元格'],
+        ['hyperlink', '点击访问', '#1a73e8', '左对齐', '超链接样式'],
+        ['date', '2024-01-15', '#2E7D32', '居中', '日期类型单元格'],
+        ['checkbox', '☐ / ☑️', '#667eea', '居中', '复选框样式'],
+        ['textarea', '多行文本内容...', '#000000', '左对齐', '多行文本区域'],
+        ['selected', '选中状态', '#1a73e8', '-', '选中状态样式'],
+    ];
+
+    const columns = [
+        {type: 'text', width: 120},
+        {type: 'text', width: 140},
+        {type: 'color', width: 100},
+        {type: 'text', width: 100},
+        {type: 'text', width: 150},
+    ];
+
+    function log(msg, type = 'info') {
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = `log-entry log-${type}`;
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        container.insertBefore(entry, container.firstChild);
+        if (container.children.length > 50) container.removeChild(container.lastChild);
+    }
+
+    function updateThemeUI(themeName) {
+        const themeDisplayName = themeName === 'default' ? '默认主题' : '暗色主题';
+        document.getElementById('currentThemeName').textContent = themeDisplayName;
+
+        document.querySelectorAll('.theme-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.classList.contains(themeName));
+        });
+    }
+
+    function switchTheme(themeName) {
+        if (currentTheme === themeName) return;
+
+        log(`正在切换主题: ${themeName}...`, 'info');
+
+        try {
+            const result = CanvasSheet.themeStyleProvider.setTheme(themeName);
+
+            if (result) {
+                currentTheme = themeName;
+                updateThemeUI(themeName);
+
+                // 重新渲染工作表以应用新主题
+                workbook.render();
+
+                log(`✅ 主题切换成功: ${themeName}`, 'success');
+            } else {
+                log(`❌ 主题切换失败`, 'error');
+            }
+        } catch (error) {
+            log(`❌ 主题切换错误: ${error.message}`, 'error');
+        }
+    }
+
+    async function initWorkbook() {
+        try {
+            log('🚀 初始化 Workbook...', 'info');
+
+            const container = document.getElementById('sheet');
+            container.width = 800;
+            container.height = 450;
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1400,
+                height: 450,
+                sheets: [{
+                    name: '主题演示',
+                    data: cellTypeData,
+                    columns: columns,
+                    cellPadding: 10,
+                    cell: [
+                        {
+                            row: 0,
+                            col: 0,
+                            type: 'text',
+                            style: {
+                                textAlign: 'center',
+                            }
+                        },
+                        {
+                            row: 0,
+                            col: 1,
+                            type: 'text',
+                            style: {
+                                textAlign: 'center',
+                            }
+                        },
+                        {
+                            row: 0,
+                            col: 2,
+                            type: 'text',
+                            style: {
+                                textAlign: 'center',
+                            }
+                        },
+                        {
+                            row: 0,
+                            col: 3,
+                            type: 'text',
+                            style: {
+                                textAlign: 'center',
+                            }
+                        },
+                        {
+                            row: 0,
+                            col: 4,
+                            type: 'text',
+                            style: {
+                                textAlign: 'center',
+                            }
+                        }
+                    ]
+                }]
+            });
+
+            sheet = workbook.activeSheet;
+
+            log('✅ Workbook 初始化成功', 'success');
+            log('📋 主题配置已就绪，可以切换主题查看效果', 'info');
+
+        } catch (e) {
+            log('❌ 初始化失败: ' + e.message, 'error');
+            console.error(e);
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

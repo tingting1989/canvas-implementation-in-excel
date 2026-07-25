@@ -265,7 +265,6 @@ export class ReactiveStore {
 
     batch(fn) {
         this._batchDepth++;
-        console.log("[batch] depth:", this._batchDepth);
         try {
             fn();
         } finally {
