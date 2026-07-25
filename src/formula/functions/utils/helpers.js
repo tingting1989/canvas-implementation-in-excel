@@ -101,3 +101,59 @@ export function _toNum(v) {
 export function _isBlank(value) {
     return value === "" || value === null || value === undefined;
 }
+
+/**
+ * 惰性遍历公式参数（不创建中间数组）
+ *
+ * 公式函数接收的 args 可能是：
+ * - 标量值: 42
+ * - 一维数组: [1, 2, 3]（单行范围）
+ * - 二维数组: [[1,2],[3,4]]（多行范围）
+ *
+ * 此函数直接遍历所有叶子值，调用 callback(value)，
+ * 避免 _flatten() 创建中间数组带来的内存和 GC 开销。
+ *
+ * @param {Array} args - 公式函数的参数数组
+ * @param {function(*): void} callback - 对每个叶子值调用的回调
+ *
+ * @example
+ * // 替代: const flat = _flatten(args); for (const v of flat) { ... }
+ * _forEachLeaf(args, (v) => { const n = _toNum(v); if (!isNaN(n)) sum += n; });
+ */
+export function _forEachLeaf(args, callback) {
+    for (let i = 0; i < args.length; i++) {
+        const item = args[i];
+        if (Array.isArray(item)) {
+            for (let j = 0; j < item.length; j++) {
+                const row = item[j];
+                if (Array.isArray(row)) {
+                    for (let k = 0; k < row.length; k++) {
+                        callback(row[k]);
+                    }
+                } else {
+                    callback(row);
+                }
+            }
+        } else {
+            callback(item);
+        }
+    }
+}
+
+/**
+ * 惰性收集数值（不创建中间数组）
+ *
+ * 遍历所有叶子值，将有效数值直接收集到输出数组。
+ * 比 _flatten(args).map(_toNum).filter(v => !isNaN(v)) 减少 2 次中间数组创建。
+ *
+ * @param {Array} args - 公式函数的参数数组
+ * @returns {number[]} 有效数值数组
+ */
+export function _collectNums(args) {
+    const nums = [];
+    _forEachLeaf(args, (v) => {
+        const n = _toNum(v);
+        if (!isNaN(n)) nums.push(n);
+    });
+    return nums;
+}

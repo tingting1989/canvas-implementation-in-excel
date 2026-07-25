@@ -59,6 +59,17 @@ export class FormulaEngine {
         this.rangeDependents = new Map();
 
         /**
+         * 范围空间索引：按行分桶，快速查找包含指定单元格的范围
+         * 结构: Map<sheetName:rowBucket, Map<rangeKey, {topRow, bottomRow, topCol, bottomCol}>>
+         * 桶大小 256 行，单元格变化时只查对应桶，O(k) 而非 O(R)
+         * @type {Map<string, Map<string, {topRow:number,bottomRow:number,topCol:number,bottomCol:number}>>}
+         */
+        this.rangeSpatialIndex = new Map();
+
+        /** 空间索引桶大小（行数） */
+        this._spatialBucketSize = 256;
+
+        /**
          * 每个公式单元格的 AST 缓存
          * @type {Map<string, object>}
          */
@@ -290,17 +301,7 @@ export class FormulaEngine {
             }
         }
 
-        for (const [rangeKey, formulaKeys] of this.rangeDependents) {
-            if (this.#isCellInRange(sheet.name, row, col, rangeKey)) {
-                for (const formulaKey of formulaKeys) {
-                    if (!visitedFormulas.has(formulaKey)) {
-                        visitedFormulas.add(formulaKey);
-                        this.dirtyCells.add(formulaKey);
-                        this.#collectDirty(formulaKey, visitedFormulas);
-                    }
-                }
-            }
-        }
+        this.#findRangeDependents(sheet.name, row, col, visitedFormulas);
 
         if (this.dirtyCells.size === 0) {
             return [];
@@ -381,9 +382,11 @@ export class FormulaEngine {
 
         if (formulaKeys.length === 0) return;
 
+        const sortedKeys = this.#topologicalSort(formulaKeys);
+
         let evalCount = 0;
 
-        for (const key of formulaKeys) {
+        for (const key of sortedKeys) {
             const ast = this.astCache.get(key);
             if (!ast) continue;
 
@@ -505,6 +508,7 @@ export class FormulaEngine {
         this.dependents.clear();
         this.dependsOn.clear();
         this.rangeDependents.clear();
+        this.rangeSpatialIndex.clear();
         this.astCache.clear();
         this.resultCache.clear();
         this.dirtyCells.clear();
@@ -520,14 +524,17 @@ export class FormulaEngine {
         return `${sheetName}!${row},${col}`;
     }
 
+    static #CELL_KEY_RE = /^(.+)!(\d+),(\d+)$/;
+    static #RANGE_KEY_RE = /^(.+)!(\d+),(\d+):(\d+),(\d+)$/;
+
     #parseKey(key) {
-        const match = key.match(/^(.+)!(\d+),(\d+)$/);
+        const match = key.match(FormulaEngine.#CELL_KEY_RE);
         if (!match) return ["", 0, 0];
         return [match[1], parseInt(match[2], 10), parseInt(match[3], 10)];
     }
 
     #parseRangeKey(key) {
-        const match = key.match(/^(.+)!(\d+),(\d+):(\d+),(\d+)$/);
+        const match = key.match(FormulaEngine.#RANGE_KEY_RE);
         if (!match) return null;
         return {
             sheetName: match[1],
@@ -549,6 +556,116 @@ export class FormulaEngine {
         return key.includes(":");
     }
 
+    #addToSpatialIndex(rangeKey, range) {
+        const { sheetName, topRow, bottomRow, topCol, bottomCol } = range;
+        const bucketSize = this._spatialBucketSize;
+        const startBucket = Math.floor(topRow / bucketSize);
+        const endBucket = Math.floor(bottomRow / bucketSize);
+
+        for (let b = startBucket; b <= endBucket; b++) {
+            const bucketKey = `${sheetName}:${b}`;
+            let bucket = this.rangeSpatialIndex.get(bucketKey);
+            if (!bucket) {
+                bucket = new Map();
+                this.rangeSpatialIndex.set(bucketKey, bucket);
+            }
+            bucket.set(rangeKey, { topRow, bottomRow, topCol, bottomCol });
+        }
+    }
+
+    #removeFromSpatialIndex(rangeKey, range) {
+        if (!range) return;
+        const { sheetName, topRow, bottomRow } = range;
+        const bucketSize = this._spatialBucketSize;
+        const startBucket = Math.floor(topRow / bucketSize);
+        const endBucket = Math.floor(bottomRow / bucketSize);
+
+        for (let b = startBucket; b <= endBucket; b++) {
+            const bucketKey = `${sheetName}:${b}`;
+            const bucket = this.rangeSpatialIndex.get(bucketKey);
+            if (bucket) {
+                bucket.delete(rangeKey);
+                if (bucket.size === 0) {
+                    this.rangeSpatialIndex.delete(bucketKey);
+                }
+            }
+        }
+    }
+
+    #findRangeDependents(sheetName, row, col, visitedFormulas) {
+        const bucketSize = this._spatialBucketSize;
+        const bucketIndex = Math.floor(row / bucketSize);
+        const bucketKey = `${sheetName}:${bucketIndex}`;
+        const bucket = this.rangeSpatialIndex.get(bucketKey);
+
+        if (!bucket) return;
+
+        for (const [rangeKey, rangeInfo] of bucket) {
+            if (row >= rangeInfo.topRow && row <= rangeInfo.bottomRow && col >= rangeInfo.topCol && col <= rangeInfo.bottomCol) {
+                const formulaKeys = this.rangeDependents.get(rangeKey);
+                if (formulaKeys) {
+                    for (const formulaKey of formulaKeys) {
+                        if (!visitedFormulas.has(formulaKey)) {
+                            visitedFormulas.add(formulaKey);
+                            this.dirtyCells.add(formulaKey);
+                            this.#collectDirty(formulaKey, visitedFormulas);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #topologicalSort(formulaKeys) {
+        const keySet = new Set(formulaKeys);
+        const inDegree = new Map();
+        const adj = new Map();
+
+        for (const key of formulaKeys) {
+            inDegree.set(key, 0);
+            adj.set(key, []);
+        }
+
+        for (const key of formulaKeys) {
+            const deps = this.dependsOn.get(key);
+            if (!deps) continue;
+
+            for (const dep of deps) {
+                if (!this.#isRangeKey(dep) && keySet.has(dep)) {
+                    inDegree.set(key, inDegree.get(key) + 1);
+                    adj.get(dep).push(key);
+                }
+            }
+        }
+
+        const queue = [];
+        for (const [key, degree] of inDegree) {
+            if (degree === 0) queue.push(key);
+        }
+
+        const sorted = [];
+        while (queue.length > 0) {
+            const key = queue.shift();
+            sorted.push(key);
+
+            for (const dependent of adj.get(key)) {
+                const newDegree = inDegree.get(dependent) - 1;
+                inDegree.set(dependent, newDegree);
+                if (newDegree === 0) {
+                    queue.push(dependent);
+                }
+            }
+        }
+
+        for (const key of formulaKeys) {
+            if (!sorted.includes(key)) {
+                sorted.push(key);
+            }
+        }
+
+        return sorted;
+    }
+
     #updateDependencies(formulaKey, newDeps) {
         const oldDeps = this.dependsOn.get(formulaKey);
         if (oldDeps) {
@@ -562,7 +679,11 @@ export class FormulaEngine {
                     const rangeSet = this.rangeDependents.get(dep);
                     if (rangeSet) {
                         rangeSet.delete(formulaKey);
-                        if (rangeSet.size === 0) this.rangeDependents.delete(dep);
+                        if (rangeSet.size === 0) {
+                            this.rangeDependents.delete(dep);
+                            const range = this.#parseRangeKey(dep);
+                            this.#removeFromSpatialIndex(dep, range);
+                        }
                     }
                 }
             }
@@ -578,6 +699,8 @@ export class FormulaEngine {
             if (this.#isRangeKey(dep)) {
                 if (!this.rangeDependents.has(dep)) {
                     this.rangeDependents.set(dep, new Set());
+                    const range = this.#parseRangeKey(dep);
+                    if (range) this.#addToSpatialIndex(dep, range);
                 }
                 this.rangeDependents.get(dep).add(formulaKey);
             }
@@ -621,7 +744,11 @@ export class FormulaEngine {
                     const rangeSet = this.rangeDependents.get(dep);
                     if (rangeSet) {
                         rangeSet.delete(formulaKey);
-                        if (rangeSet.size === 0) this.rangeDependents.delete(dep);
+                        if (rangeSet.size === 0) {
+                            this.rangeDependents.delete(dep);
+                            const range = this.#parseRangeKey(dep);
+                            this.#removeFromSpatialIndex(dep, range);
+                        }
                     }
                 }
             }

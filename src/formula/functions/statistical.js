@@ -17,7 +17,7 @@
 
 import { isNumber } from "../../utils/helper.js";
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { _flatten, _isBlank, _toNum, _validateArgs } from "./utils/index.js";
+import { _flatten, _isBlank, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils/index.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）
@@ -40,7 +40,11 @@ export const statisticalFunctions = {
     COUNT: (args) => {
         if (!_validateArgs(args, 1, Infinity, "COUNT")) return "#VALUE!";
 
-        return _flatten(args).filter((v) => isNumber(v)).length;
+        let count = 0;
+        _forEachLeaf(args, (v) => {
+            if (isNumber(v)) count++;
+        });
+        return count;
     },
 
     /**
@@ -61,18 +65,9 @@ export const statisticalFunctions = {
         if (!_validateArgs(args, 1, Infinity, "COUNTA")) return "#VALUE!";
 
         let count = 0;
-        for (const item of args) {
-            if (Array.isArray(item)) {
-                const flattened = _flatten(item);
-                if (flattened.length === 0) {
-                    count++;
-                } else {
-                    count += flattened.filter((v) => !_isBlank(v)).length;
-                }
-            } else if (!_isBlank(item)) {
-                count++;
-            }
-        }
+        _forEachLeaf(args, (v) => {
+            if (!_isBlank(v)) count++;
+        });
         return count;
     },
 
@@ -98,15 +93,10 @@ export const statisticalFunctions = {
     COUNTBLANK: (args) => {
         if (!_validateArgs(args, 1, Infinity, "COUNTBLANK")) return "#VALUE!";
 
-        const flatRange = _flatten(args);
-
         let blankCount = 0;
-        for (const value of flatRange) {
-            if (_isBlank(value)) {
-                blankCount++;
-            }
-        }
-
+        _forEachLeaf(args, (v) => {
+            if (_isBlank(v)) blankCount++;
+        });
         return blankCount;
     },
 
@@ -127,9 +117,7 @@ export const statisticalFunctions = {
     STDEV: (args) => {
         if (!_validateArgs(args, 1, Infinity, "STDEV")) return "#VALUE!";
 
-        const nums = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        const nums = _collectNums(args);
         if (nums.length < 2) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "STDEV: 样本至少需要2个数据", { count: nums.length, functionName: "STDEV" });
             return "#DIV/0!";
@@ -157,9 +145,7 @@ export const statisticalFunctions = {
     STDEVP: (args) => {
         if (!_validateArgs(args, 1, Infinity, "STDEVP")) return "#VALUE!";
 
-        const nums = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        const nums = _collectNums(args);
         if (nums.length < 1) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "STDEVP: 至少需要1个数据", { count: nums.length, functionName: "STDEVP" });
             return "#DIV/0!";
@@ -187,9 +173,7 @@ export const statisticalFunctions = {
     VAR: (args) => {
         if (!_validateArgs(args, 1, Infinity, "VAR")) return "#VALUE!";
 
-        const nums = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        const nums = _collectNums(args);
         if (nums.length < 2) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "VAR: 样本至少需要2个数据", { count: nums.length, functionName: "VAR" });
             return "#DIV/0!";
@@ -217,9 +201,7 @@ export const statisticalFunctions = {
     VARP: (args) => {
         if (!_validateArgs(args, 1, Infinity, "VARP")) return "#VALUE!";
 
-        const nums = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        const nums = _collectNums(args);
         if (nums.length < 1) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "VARP: 至少需要1个数据", { count: nums.length, functionName: "VARP" });
             return "#DIV/0!";
@@ -248,9 +230,7 @@ export const statisticalFunctions = {
     MEDIAN: (args) => {
         if (!_validateArgs(args, 1, Infinity, "MEDIAN")) return "#VALUE!";
 
-        const nums = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        const nums = _collectNums(args);
         if (nums.length === 0) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "MEDIAN: 无有效数据", { functionName: "MEDIAN" });
             return "#NUM!";

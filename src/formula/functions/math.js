@@ -20,7 +20,7 @@
  */
 
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { _flatten, _toNum, _validateArgs } from "./utils/index.js";
+import { _flatten, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils/index.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）
@@ -44,12 +44,11 @@ export const mathFunctions = {
     SUM: (args) => {
         if (!_validateArgs(args, 1, Infinity, "SUM")) return "#VALUE!";
 
-        const flat = _flatten(args);
         let sum = 0;
-        for (const v of flat) {
+        _forEachLeaf(args, (v) => {
             const n = _toNum(v);
             if (!isNaN(n)) sum += n;
-        }
+        });
         return sum;
     },
 
@@ -70,16 +69,22 @@ export const mathFunctions = {
     AVERAGE: (args) => {
         if (!_validateArgs(args, 1, Infinity, "AVERAGE")) return "#VALUE!";
 
-        const flat = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        let sum = 0;
+        let count = 0;
+        _forEachLeaf(args, (v) => {
+            const n = _toNum(v);
+            if (!isNaN(n)) {
+                sum += n;
+                count++;
+            }
+        });
 
-        if (flat.length === 0) {
+        if (count === 0) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "AVERAGE: 没有有效的数值可计算", { functionName: "AVERAGE" });
             return "#DIV/0!";
         }
 
-        return flat.reduce((acc, v) => acc + v, 0) / flat.length;
+        return sum / count;
     },
 
     /**
@@ -99,16 +104,22 @@ export const mathFunctions = {
     MAX: (args) => {
         if (!_validateArgs(args, 1, Infinity, "MAX")) return "#VALUE!";
 
-        const nums = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        let max = -Infinity;
+        let found = false;
+        _forEachLeaf(args, (v) => {
+            const n = _toNum(v);
+            if (!isNaN(n)) {
+                if (n > max) max = n;
+                found = true;
+            }
+        });
 
-        if (nums.length === 0) {
+        if (!found) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "MAX: 没有有效的数值", { functionName: "MAX" });
-            return 0; // Excel 行为：无有效数值返回 0
+            return 0;
         }
 
-        return Math.max(...nums);
+        return max;
     },
 
     /**
@@ -128,16 +139,22 @@ export const mathFunctions = {
     MIN: (args) => {
         if (!_validateArgs(args, 1, Infinity, "MIN")) return "#VALUE!";
 
-        const nums = _flatten(args)
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        let min = Infinity;
+        let found = false;
+        _forEachLeaf(args, (v) => {
+            const n = _toNum(v);
+            if (!isNaN(n)) {
+                if (n < min) min = n;
+                found = true;
+            }
+        });
 
-        if (nums.length === 0) {
+        if (!found) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "MIN: 没有有效的数值", { functionName: "MIN" });
-            return 0; // Excel 行为：无有效数值返回 0
+            return 0;
         }
 
-        return Math.min(...nums);
+        return min;
     },
 
     /**
@@ -445,35 +462,32 @@ export const mathFunctions = {
             return "#VALUE!";
         }
 
-        const flat = _flatten(args.slice(1))
-            .map(_toNum)
-            .filter((v) => !isNaN(v));
+        const nums = _collectNums(args.slice(1));
 
-        if (flat.length === 0) return 0;
+        if (nums.length === 0) return 0;
 
         switch (funcNum) {
             case 1:
-                return flat.reduce((a, b) => a + b, 0) / flat.length;
+                return nums.reduce((a, b) => a + b, 0) / nums.length;
             case 2:
-                return flat.reduce((a, b) => a + b, 0);
-            case 3:
-                return flat.length;
-            case 4:
-                return Math.max(...flat);
-            case 5:
-                return Math.min(...flat);
-            case 6:
-                return flat.reduce((a, b) => a * b, 1);
-            case 7:
-                return _stdev(flat, true);
-            case 8:
-                return _stdev(flat);
             case 9:
-                return flat.reduce((a, b) => a + b, 0);
+                return nums.reduce((a, b) => a + b, 0);
+            case 3:
+                return nums.length;
+            case 4:
+                return Math.max(...nums);
+            case 5:
+                return Math.min(...nums);
+            case 6:
+                return nums.reduce((a, b) => a * b, 1);
+            case 7:
+                return _stdev(nums, true);
+            case 8:
+                return _stdev(nums);
             case 10:
-                return _variance(flat, true);
+                return _variance(nums, true);
             case 11:
-                return _variance(flat);
+                return _variance(nums);
             default:
                 return "#VALUE!";
         }
