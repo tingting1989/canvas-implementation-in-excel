@@ -192,8 +192,9 @@ describe("Math Functions - ROUND", () => {
         expect(ROUND(["abc", 0])).toBe("#VALUE!");
     });
 
-    it("should return #VALUE! for negative digits", () => {
-        expect(ROUND([1234, -2])).toBe("#VALUE!");
+    it("should support negative digits (round to 10s, 100s, etc.)", () => {
+        expect(ROUND([1234, -2])).toBe(1200);
+        expect(ROUND([1250, -2])).toBe(1300);
     });
 
     it("should return #VALUE! for no args", () => {

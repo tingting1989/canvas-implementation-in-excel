@@ -6,15 +6,14 @@
  * - SUMIFS: 多条件求和
  * - COUNTIF: 单条件计数
  * - COUNTIFS: 多条件计数
- *
- * TODO: 计划添加
- * - AVERAGEIF/AVERAGEIFS: 条件平均值
- * - MAXIFS/MINIFS: 条件极值
+ * - IFERROR: 错误处理
+ * - IFNA: N/A 值处理
  *
  * @module formula/functions/conditional
  */
 
 import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { isString } from "../../utils/helper.js";
 import { _flatten, _toNum, _validateArgs, _matchCriteria, _matchWildcard } from "./utils/index.js";
 
 /**
@@ -325,5 +324,59 @@ export const conditionalFunctions = {
         }
 
         return count;
+    },
+
+    /**
+     * IFERROR - 错误处理函数
+     *
+     * 如果公式计算结果为错误，则返回指定值；否则返回公式结果
+     *
+     * 语法: IFERROR(value, value_if_error)
+     *
+     * @param {Array} args - [计算值, 错误时的替代值]
+     * @returns {*} 正常结果或错误替代值
+     *
+     * @example
+     * =IFERROR(A1/B1, 0)            // 除零时返回 0
+     * =IFERROR(VLOOKUP(...), "未找到")  // 查找失败时返回"未找到"
+     */
+    IFERROR: (args) => {
+        if (!_validateArgs(args, 2, 2, "IFERROR")) return "#VALUE!";
+
+        const value = args[0];
+        const valueIfError = args[1];
+
+        if (isString(value) && value.startsWith("#")) {
+            return valueIfError;
+        }
+
+        return value;
+    },
+
+    /**
+     * IFNA - N/A 值处理函数
+     *
+     * 如果公式计算结果为 #N/A，则返回指定值；否则返回公式结果
+     *
+     * 语法: IFNA(value, value_if_na)
+     *
+     * @param {Array} args - [计算值, N/A时的替代值]
+     * @returns {*} 正常结果或 N/A 替代值
+     *
+     * @example
+     * =IFNA(VLOOKUP(...), "不存在")   // 查找返回 #N/A 时显示"不存在"
+     * =IFNA(MATCH(...), 0)            // 未匹配到时返回 0
+     */
+    IFNA: (args) => {
+        if (!_validateArgs(args, 2, 2, "IFNA")) return "#VALUE!";
+
+        const value = args[0];
+        const valueIfNA = args[1];
+
+        if (value === "#N/A") {
+            return valueIfNA;
+        }
+
+        return value;
     },
 };
