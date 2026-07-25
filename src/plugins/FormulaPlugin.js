@@ -92,7 +92,13 @@ export class FormulaPlugin extends BasePlugin {
         this.#engine = new FormulaEngine(this.workbook);
         this.workbook.formulaEngine = this.#engine;
 
-        // 对所有 sheet 执行初始公式计算（修复 autoInit: true 时公式未计算的问题）
+        // 修复初始化顺序问题：先注册所有公式到 astCache，再执行重算
+        // 原因：loadData 时 FormulaEngine 尚未创建，FORMULA_SET 事件无人监听
+        for (const sheet of this.workbook.sheets.values()) {
+            this.#registerFormulasFromSheet(sheet);
+        }
+
+        // 对所有 sheet 执行初始公式计算
         for (const sheet of this.workbook.sheets.values()) {
             this.#engine.recalculateAll(sheet);
         }
@@ -107,6 +113,25 @@ export class FormulaPlugin extends BasePlugin {
         this.#active = true;
         this.renderEngine?.invalidateAll();
         this.render();
+    }
+
+    /**
+     * 从 Sheet 中扫描并注册所有公式单元格
+     * 修复 loadData 在 FormulaEngine 创建之前执行导致的公式丢失问题
+     * 使用 Chunk 迭代器仅遍历非空单元格，避免全量扫描
+     * @private
+     */
+    #registerFormulasFromSheet(sheet) {
+        const cellStore = sheet.cellStore;
+        if (!cellStore) return;
+
+        for (const [, chunk] of cellStore.chunks) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (cell?.formula && typeof cell.formula === "string" && cell.formula.startsWith("=")) {
+                    this.#engine.setFormula(sheet, row, col, cell.formula);
+                }
+            }
+        }
     }
 
     /**

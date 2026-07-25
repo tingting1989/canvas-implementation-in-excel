@@ -425,7 +425,7 @@ export class FormulaEngine {
             this.#updateDependencies(key, this.evaluator.dependencies);
 
             const cell = targetSheet.cellStore.get(row, col);
-            if (cell && cell.formula === `=${this.#astToRaw(ast)}`) {
+            if (cell && cell.formula) {
                 targetSheet.cellStore.set(row, col, new cell.constructor(result, cell.styleId, cell.disabled, cell.formula));
             }
 
@@ -439,8 +439,11 @@ export class FormulaEngine {
     #astToRaw(ast) {
         if (!ast) return "";
         switch (ast.type) {
-            case "literal":
-                return String(ast.value);
+            case "literal": {
+                const v = ast.value;
+                if (typeof v === "string") return `"${v}"`;
+                return String(v);
+            }
             case "cellRef":
                 return `${ast.sheet ? ast.sheet + "!" : ""}${indexToCol(ast.col)}${ast.row + 1}`;
             case "rangeRef":

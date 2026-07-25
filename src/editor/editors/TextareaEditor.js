@@ -34,6 +34,7 @@ export class TextareaEditor extends CellEditor {
 
     readCellValue(row, col) {
         const cell = this.sheet.cellStore.get(row, col);
+        if (cell?.formula) return cell.formula;
         return cell?.value ?? "";
     }
 
