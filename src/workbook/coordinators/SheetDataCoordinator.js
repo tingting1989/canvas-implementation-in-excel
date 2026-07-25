@@ -88,7 +88,9 @@ export class SheetDataCoordinator {
 
         if (typeof value === "string" && value.startsWith("=")) {
             formula = value;
+
             const results = this.#sheet.bus.emit(SHEET_EVENTS.FORMULA_SET, { r, c, formula: value });
+
             cellValue = results !== undefined ? results : value;
         } else if (old?.formula) {
             this.#sheet.bus.emit(SHEET_EVENTS.FORMULA_REMOVE, { r, c });

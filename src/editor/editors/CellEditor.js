@@ -59,6 +59,12 @@ export class CellEditor extends DOMComponent {
     #scrollHiding = false;
 
     /**
+     * 提交锁：防止 #commitAndMoveNext 提交后 blur 事件重复提交
+     * @type {boolean}
+     */
+    #commitLock = false;
+
+    /**
      * 创建单元格编辑器实例
      *
      * @param {import("../../render/RenderEngine.js").RenderEngine} renderEngine - 渲染引擎
@@ -522,36 +528,38 @@ export class CellEditor extends DOMComponent {
      * 6. 触发重绘
      */
     #onBlur() {
-        // 忽略滚动隐藏状态和中文输入状态
         if (this.#scrollHiding) return;
         if (this.composing) return;
         if (this.activeRow < 0 || !this.sheet) return;
 
-        // ✅ 通过 EventBus 发射"即将提交编辑"事件（指定 source 为 CellEditor）
-        // EventHandler 会订阅此事件并触发 BEFORE_FINISH_EDITING hook
+        if (this.#commitLock) {
+            this.hide();
+            return;
+        }
+
         const canFinish = this.sheet.bus?.emit(SHEET_EVENTS.EDITOR_BEFORE_FINISH, [this.activeRow, this.activeCol], { source: "CellEditor" });
-        if (canFinish === false) return;
+        if (canFinish === false) {
+            this.hide();
+            this.#render();
+            return;
+        }
 
         let newValue = this.getEditorValue();
         const batchRange = this.sheet._batchFillRange;
 
-        // 批量填充模式
         if (batchRange) {
             this.#batchFill(batchRange, newValue);
             delete this.sheet._batchFillRange;
         } else {
-            // 普通编辑模式
-            // 解析用户输入
             newValue = this.sheet.parseCellValue(this.activeRow, this.activeCol, newValue);
 
-            // 验证新值
             if (!this.validateBeforeCommit(newValue)) {
                 this.editor.value = this.formatValueForEditor(this.originalValue);
-                this.editor.focus();
+                this.hide();
+                this.#render();
                 return;
             }
 
-            // 处理合并单元格（值只存储在合并区域的左上角）
             let targetRow = this.activeRow;
             let targetCol = this.activeCol;
             const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
@@ -560,7 +568,6 @@ export class CellEditor extends DOMComponent {
                 targetCol = merge.topCol;
             }
 
-            // 比较新旧值
             const oldCell = this.sheet.cellStore.get(targetRow, targetCol);
             if (this.areValuesEqual(oldCell?.value, newValue)) {
                 this.hide();
@@ -568,31 +575,26 @@ export class CellEditor extends DOMComponent {
                 return;
             }
 
-            // ✅ 通过 EventBus 发射 BEFORE_CHANGE 事件（值变更前，指定 source 为 CellEditor）
             const changeData = [{ row: targetRow, col: targetCol, oldValue: oldCell?.value, newValue }];
             const canChange = this.sheet.bus?.emit(SHEET_EVENTS.BEFORE_CHANGE, [changeData], { source: "CellEditor" });
             if (canChange === false) {
                 this.editor.value = this.formatValueForEditor(this.originalValue);
-                this.editor.focus();
+                this.hide();
+                this.#render();
+
                 return;
             }
 
-            // 保存新值
             this.sheet.setCell(targetRow, targetCol, newValue, oldCell?.styleId || 0);
-
-            // ✅ 通过 EventBus 发射 AFTER_CHANGE 事件（值变更后，指定 source 为 CellEditor）
             this.sheet.bus?.emit(SHEET_EVENTS.AFTER_CHANGE, [changeData], { source: "CellEditor" });
         }
 
-        // 隐藏编辑器
         this.hide();
 
-        // ✅ 通过 EventBus 发射"已完成编辑"事件（指定 source 为 CellEditor）
         this.sheet.bus?.emit(SHEET_EVENTS.EDITOR_AFTER_FINISH, [this.activeRow, this.activeCol, this.originalValue, newValue], {
             source: "CellEditor",
         });
 
-        // 触发重绘
         if (this.viewport && isFunction(this.viewport.invalidateAll)) {
             this.viewport.invalidateAll();
         }
@@ -671,11 +673,13 @@ export class CellEditor extends DOMComponent {
         switch (e.key) {
             case "Enter":
                 e.preventDefault();
+
                 if (e.ctrlKey || e.metaKey) {
                     this.#commitAndFillSelection();
                 } else {
                     this.#commitAndMoveNext("enter");
                 }
+
                 break;
             case "Escape":
                 e.preventDefault();
@@ -708,7 +712,12 @@ export class CellEditor extends DOMComponent {
     #commitAndMoveNext(direction, shiftKey = false) {
         const currentRow = this.activeRow;
         const currentCol = this.activeCol;
-        this.editor.blur();
+
+        this.#commitLock = true;
+
+        this.#commitWithoutBlur();
+
+        this.hide();
 
         if (direction === "enter") {
             let nextRow = currentRow + 1;
@@ -748,6 +757,14 @@ export class CellEditor extends DOMComponent {
         }
 
         this.#render();
+
+        if (this.editor) {
+            this.editor.blur();
+        }
+
+        this.hide();
+
+        this.#commitLock = false;
     }
 
     #getTopLeft(row, col) {
@@ -756,6 +773,72 @@ export class CellEditor extends DOMComponent {
             return { row: merge.topRow, col: merge.topCol };
         }
         return { row, col };
+    }
+
+    /**
+     * 提交编辑器值但不通过 blur 事件触发
+     * 用于 #commitAndMoveNext 中，避免 blur → onblur → setCell → 公式重算的同步阻塞
+     * 直接提交值，然后 hide 编辑器
+     */
+    #commitWithoutBlur() {
+        if (this.activeRow < 0 || !this.sheet) return;
+
+        const canFinish = this.sheet.bus?.emit(SHEET_EVENTS.EDITOR_BEFORE_FINISH, [this.activeRow, this.activeCol], { source: "CellEditor" });
+        if (canFinish === false) {
+            this.hide();
+            return;
+        }
+
+        let newValue = this.getEditorValue();
+        const batchRange = this.sheet._batchFillRange;
+
+        if (batchRange) {
+            this.#batchFill(batchRange, newValue);
+            delete this.sheet._batchFillRange;
+        } else {
+            newValue = this.sheet.parseCellValue(this.activeRow, this.activeCol, newValue);
+
+            if (!this.validateBeforeCommit(newValue)) {
+                this.editor.value = this.formatValueForEditor(this.originalValue);
+                this.hide();
+                return;
+            }
+
+            let targetRow = this.activeRow;
+            let targetCol = this.activeCol;
+            const merge = this.sheet.getMerge(this.activeRow, this.activeCol);
+            if (merge) {
+                targetRow = merge.topRow;
+                targetCol = merge.topCol;
+            }
+
+            const oldCell = this.sheet.cellStore.get(targetRow, targetCol);
+            if (this.areValuesEqual(oldCell?.value, newValue)) {
+                this.hide();
+                return;
+            }
+
+            const changeData = [{ row: targetRow, col: targetCol, oldValue: oldCell?.value, newValue }];
+            const canChange = this.sheet.bus?.emit(SHEET_EVENTS.BEFORE_CHANGE, [changeData], { source: "CellEditor" });
+            if (canChange === false) {
+                this.editor.value = this.formatValueForEditor(this.originalValue);
+                this.hide();
+                return;
+            }
+
+            this.sheet.setCell(targetRow, targetCol, newValue, oldCell?.styleId || 0);
+            this.sheet.bus?.emit(SHEET_EVENTS.AFTER_CHANGE, [changeData], { source: "CellEditor" });
+        }
+
+        this.hide();
+
+        this.sheet.bus?.emit(SHEET_EVENTS.EDITOR_AFTER_FINISH, [this.activeRow, this.activeCol, this.originalValue, newValue], {
+            source: "CellEditor",
+        });
+
+        if (this.viewport && isFunction(this.viewport.invalidateAll)) {
+            this.viewport.invalidateAll();
+        }
     }
 
     #render() {

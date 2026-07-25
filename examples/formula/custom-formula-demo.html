@@ -194,11 +194,9 @@ registry.<span class="function">unregister</span>(<span class="string">'DOUBLE'<
         <div class="log-container" id="logContainer"></div>
     </div>
 </div>
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script >
 
-<script type="module">
-    import { CanvasSheet } from './index.js';
-    import { FormulaEngine } from '../src/formula/FormulaEngine.js';
-    import { registry } from '../src/formula/functions/index.js';
 
     const logContainer = document.getElementById('logContainer');
 
@@ -213,38 +211,37 @@ registry.<span class="function">unregister</span>(<span class="string">'DOUBLE'<
     const canvas = document.getElementById('sheet');
     const container = canvas.parentElement;
 
-    const canvasSheet = new CanvasSheet(canvas);
-    canvasSheet.createSheet('Demo', 12, 8);
-    canvasSheet.setActiveSheet('Demo');
+    const canvasSheet = new CanvasSheet.Workbook(canvas,{
+        width: 800,
+        height: 600,
+    });
 
-    const sheet = canvasSheet.getActiveSheet();
-    const engine = new FormulaEngine(canvasSheet.workbook);
 
-    registry.register('DOUBLE', (args) => {
+    CanvasSheet.functionRegistry('DOUBLE', (args) => {
         const num = args[0];
         return typeof num === 'number' ? num * 2 : 0;
     });
-    registry.register('SQUARE', (args) => {
+    CanvasSheet.functionRegistry('SQUARE', (args) => {
         const num = args[0];
         return typeof num === 'number' ? num * num : 0;
     });
-    registry.register('CUSTOM_ADD', (args) => {
+    CanvasSheet.functionRegistry('CUSTOM_ADD', (args) => {
         return (args[0] || 0) + (args[1] || 0);
     });
-    registry.register('IS_POSITIVE', (args) => {
+    CanvasSheet.functionRegistry('IS_POSITIVE', (args) => {
         return (args[0] || 0) > 0;
     });
-    registry.register('PERCENTAGE', (args) => {
+    CanvasSheet.functionRegistry('PERCENTAGE', (args) => {
         const value = args[0] || 0;
         const total = args[1] || 1;
         return (value / total * 100).toFixed(2) + '%';
     });
-    registry.register('CONCAT_3', (args) => {
+    CanvasSheet.functionRegistry('CONCAT_3', (args) => {
         return String(args[0] || '') + String(args[1] || '') + String(args[2] || '');
     });
 
     log('已注册 6 个自定义函数', 'success');
-    log(`函数统计: ${JSON.stringify(registry.getStats())}`, 'info');
+    log(`函数统计: ${JSON.stringify(CanvasSheet.functionRegistry.getStats())}`, 'info');
 
     sheet.cellStore.set(0, 0, { value: '数值A' });
     sheet.cellStore.set(0, 1, { value: '数值B' });
@@ -261,7 +258,7 @@ registry.<span class="function">unregister</span>(<span class="string">'DOUBLE'<
     sheet.cellStore.set(1, 3, { value: engine.setFormula(sheet, 1, 3, '=SQUARE(A2)') });
     sheet.cellStore.set(1, 4, { value: engine.setFormula(sheet, 1, 4, '=CUSTOM_ADD(A2,B2)') });
     sheet.cellStore.set(1, 5, { value: engine.setFormula(sheet, 1, 5, '=IS_POSITIVE(A2)') });
-    sheet.cellStore.set(1, 6, { value: engine.setFormula(sheet, 1, 6, '=PERCENTAGE(A2,20)') });
+    sheet.cellStore.set(1, 6, { value: engine.setFormula(sheet, 1, 6, '=PERCE NTAGE(A2,20)') });
     sheet.cellStore.set(1, 7, { value: engine.setFormula(sheet, 1, 7, '=CONCAT_3("张","三","李")') });
 
     sheet.cellStore.set(2, 0, { value: 10 });

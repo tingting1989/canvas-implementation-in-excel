@@ -52,10 +52,23 @@ export class FormulaEngine {
         this.dependsOn = new Map();
 
         /**
+         * 范围依赖索引：仅存储范围类型的依赖 key
+         * 用于 onCellChanged 时快速查找，避免遍历所有 dependents
+         * @type {Map<string, Set<string>>}
+         */
+        this.rangeDependents = new Map();
+
+        /**
          * 每个公式单元格的 AST 缓存
          * @type {Map<string, object>}
          */
         this.astCache = new Map();
+
+        /**
+         * 求值结果缓存：避免重算时重复更新未变化的依赖
+         * @type {Map<string, *>}
+         */
+        this.resultCache = new Map();
 
         /**
          * 重算队列（避免重复计算）
@@ -128,6 +141,116 @@ export class FormulaEngine {
     }
 
     /**
+     * 批量注册公式（仅解析和建立依赖，不求值）
+     * 用于初始化时避免重复求值
+     *
+     * @param {object} sheet - Sheet 实例
+     */
+    registerFormulasBatch(sheet) {
+        const cellStore = sheet.cellStore;
+        if (!cellStore) return;
+
+        let count = 0;
+        for (const [, chunk] of cellStore.chunks) {
+            for (const { row, col, cell } of chunk.iterate()) {
+                if (cell?.formula && typeof cell.formula === "string" && cell.formula.startsWith("=")) {
+                    this.#registerFormulaOnly(sheet, row, col, cell.formula);
+                    count++;
+                }
+            }
+        }
+    }
+
+    /**
+     * 仅注册公式（解析并建立依赖关系，不求值）
+     * 用于批量初始化
+     *
+     * @param {object} sheet - Sheet 实例
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {string} formulaStr - 公式字符串
+     */
+    #registerFormulaOnly(sheet, row, col, formulaStr) {
+        const key = this.#cellKey(sheet.name, row, col);
+
+        this.#removeDependencies(key);
+        this.astCache.delete(key);
+
+        const raw = formulaStr.startsWith("=") ? formulaStr.substring(1) : formulaStr;
+
+        let ast;
+        try {
+            ast = parseFormula(raw);
+        } catch (parseError) {
+            errorHandler.handle(ERROR_CODE.FORMULA_PARSE_ERROR, `公式解析失败: ${formulaStr}`, {
+                formulaStr,
+                sheetName: sheet.name,
+                row,
+                col,
+                error: parseError,
+            });
+            return;
+        }
+
+        this.astCache.set(key, ast);
+
+        this.evaluator.dependencies = new Set();
+        this.#evalNodeForDeps(ast, sheet);
+
+        this.#updateDependencies(key, this.evaluator.dependencies);
+    }
+
+    /**
+     * 仅遍历 AST 收集依赖关系，不计算值
+     * @param {object} node - AST 节点
+     * @param {object} sheet - 当前 Sheet
+     */
+    #evalNodeForDeps(node, sheet) {
+        if (!node) return;
+
+        switch (node.type) {
+            case "cellRef": {
+                let targetSheet;
+                if (node.sheet) {
+                    targetSheet = this.workbook?.sheets.get(node.sheet);
+                } else {
+                    targetSheet = sheet;
+                }
+                if (targetSheet) {
+                    const key = this.#cellKey(targetSheet.name, node.row, node.col);
+                    this.evaluator.dependencies.add(key);
+                }
+                break;
+            }
+            case "rangeRef": {
+                let targetSheet;
+                if (node.sheet) {
+                    targetSheet = this.workbook?.sheets.get(node.sheet);
+                } else {
+                    targetSheet = sheet;
+                }
+                if (targetSheet) {
+                    const rangeKey = `${targetSheet.name}!${node.topRow},${node.topCol}:${node.bottomRow},${node.bottomCol}`;
+                    this.evaluator.dependencies.add(rangeKey);
+                }
+                break;
+            }
+            case "function":
+                for (const arg of node.args) {
+                    this.#evalNodeForDeps(arg, sheet);
+                }
+                break;
+            case "binaryOp":
+                this.#evalNodeForDeps(node.left, sheet);
+                this.#evalNodeForDeps(node.right, sheet);
+                break;
+            case "unaryOp":
+                this.#evalNodeForDeps(node.operand, sheet);
+                break;
+        }
+    }
+
+    /**
      * 移除单元格的公式及其所有依赖关系
      * 当公式被删除或改为非公式值时调用
      *
@@ -167,21 +290,21 @@ export class FormulaEngine {
             }
         }
 
-        for (const [depKey, formulaKeys] of this.dependents) {
-            if (this.#isRangeKey(depKey)) {
-                if (this.#isCellInRange(sheet.name, row, col, depKey)) {
-                    for (const formulaKey of formulaKeys) {
-                        if (!visitedFormulas.has(formulaKey)) {
-                            visitedFormulas.add(formulaKey);
-                            this.dirtyCells.add(formulaKey);
-                            this.#collectDirty(formulaKey, visitedFormulas);
-                        }
+        for (const [rangeKey, formulaKeys] of this.rangeDependents) {
+            if (this.#isCellInRange(sheet.name, row, col, rangeKey)) {
+                for (const formulaKey of formulaKeys) {
+                    if (!visitedFormulas.has(formulaKey)) {
+                        visitedFormulas.add(formulaKey);
+                        this.dirtyCells.add(formulaKey);
+                        this.#collectDirty(formulaKey, visitedFormulas);
                     }
                 }
             }
         }
 
-        if (this.dirtyCells.size === 0) return [];
+        if (this.dirtyCells.size === 0) {
+            return [];
+        }
 
         const results = this.#recalculate(sheet);
 
@@ -258,6 +381,8 @@ export class FormulaEngine {
 
         if (formulaKeys.length === 0) return;
 
+        let evalCount = 0;
+
         for (const key of formulaKeys) {
             const ast = this.astCache.get(key);
             if (!ast) continue;
@@ -268,7 +393,8 @@ export class FormulaEngine {
             let result;
             try {
                 result = this.evaluator.evaluate(ast, sheet, key);
-            } catch {
+                evalCount++;
+            } catch (e) {
                 result = "#VALUE!";
             }
 
@@ -277,6 +403,7 @@ export class FormulaEngine {
             const cell = sheet.cellStore.get(row, col);
             if (cell) {
                 sheet.cellStore.set(row, col, new cell.constructor(result, cell.styleId, cell.disabled, cell.formula));
+                this.resultCache.set(key, result);
             }
         }
     }
@@ -377,7 +504,9 @@ export class FormulaEngine {
     destroy() {
         this.dependents.clear();
         this.dependsOn.clear();
+        this.rangeDependents.clear();
         this.astCache.clear();
+        this.resultCache.clear();
         this.dirtyCells.clear();
         this.workbook = null;
         this.evaluator = null;
@@ -429,6 +558,13 @@ export class FormulaEngine {
                     depSet.delete(formulaKey);
                     if (depSet.size === 0) this.dependents.delete(dep);
                 }
+                if (this.#isRangeKey(dep)) {
+                    const rangeSet = this.rangeDependents.get(dep);
+                    if (rangeSet) {
+                        rangeSet.delete(formulaKey);
+                        if (rangeSet.size === 0) this.rangeDependents.delete(dep);
+                    }
+                }
             }
         }
 
@@ -438,7 +574,38 @@ export class FormulaEngine {
                 this.dependents.set(dep, new Set());
             }
             this.dependents.get(dep).add(formulaKey);
+
+            if (this.#isRangeKey(dep)) {
+                if (!this.rangeDependents.has(dep)) {
+                    this.rangeDependents.set(dep, new Set());
+                }
+                this.rangeDependents.get(dep).add(formulaKey);
+            }
         }
+    }
+
+    /**
+     * 仅在依赖关系发生变化时才更新，返回是否变化
+     * @param {string} formulaKey
+     * @param {Set<string>} newDeps
+     * @returns {boolean} 依赖是否变化
+     */
+    #updateDependenciesIfChanged(formulaKey, newDeps) {
+        const oldDeps = this.dependsOn.get(formulaKey);
+
+        if (oldDeps && oldDeps.size === newDeps.size) {
+            let changed = false;
+            for (const dep of newDeps) {
+                if (!oldDeps.has(dep)) {
+                    changed = true;
+                    break;
+                }
+            }
+            if (!changed) return false;
+        }
+
+        this.#updateDependencies(formulaKey, newDeps);
+        return true;
     }
 
     #removeDependencies(formulaKey) {
@@ -450,9 +617,17 @@ export class FormulaEngine {
                     depSet.delete(formulaKey);
                     if (depSet.size === 0) this.dependents.delete(dep);
                 }
+                if (this.#isRangeKey(dep)) {
+                    const rangeSet = this.rangeDependents.get(dep);
+                    if (rangeSet) {
+                        rangeSet.delete(formulaKey);
+                        if (rangeSet.size === 0) this.rangeDependents.delete(dep);
+                    }
+                }
             }
         }
         this.dependsOn.delete(formulaKey);
+        this.resultCache.delete(formulaKey);
     }
 
     #collectDirty(key, visited) {
@@ -482,21 +657,27 @@ export class FormulaEngine {
             let result;
             try {
                 result = this.evaluator.evaluate(ast, targetSheet, key);
-            } catch {
+            } catch (e) {
                 result = "#VALUE!";
             }
 
-            this.#updateDependencies(key, this.evaluator.dependencies);
+            const depsChanged = this.#updateDependenciesIfChanged(key, this.evaluator.dependencies);
 
             const cell = targetSheet.cellStore.get(row, col);
             if (cell && cell.formula) {
-                targetSheet.cellStore.set(row, col, new cell.constructor(result, cell.styleId, cell.disabled, cell.formula));
-            }
+                const oldValue = this.resultCache.get(key);
+                const valueChanged = oldValue === undefined || oldValue !== result;
 
-            results.push({ sheetName, row, col, newValue: result });
+                if (valueChanged || depsChanged) {
+                    targetSheet.cellStore.set(row, col, new cell.constructor(result, cell.styleId, cell.disabled, cell.formula));
+                    this.resultCache.set(key, result);
+                    results.push({ sheetName, row, col, newValue: result });
+                }
+            }
         }
 
         this.dirtyCells.clear();
+
         return results;
     }
 

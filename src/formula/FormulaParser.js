@@ -31,7 +31,21 @@ const TOKEN = {
     COMMA: "COMMA",
     COLON: "COLON",
     SHEET_REF: "SHEET_REF",
+    ERROR: "ERROR",
     EOF: "EOF",
+};
+
+const EXCEL_ERRORS = {
+    "#N/A": "#N/A",
+    "#NA": "#N/A",
+    "#VALUE!": "#VALUE!",
+    "#REF!": "#REF!",
+    "#DIV/0!": "#DIV/0!",
+    "#NUM!": "#NUM!",
+    "#NAME?": "#NAME?",
+    "#NULL!": "#NULL!",
+    "#NULL?": "#NULL!",
+    "#GETTING_DATA": "#GETTING_DATA",
 };
 
 const OPERATORS = {
@@ -125,6 +139,11 @@ class Parser {
         }
 
         if (token.type === TOKEN.STRING) {
+            this.consume();
+            return { type: "literal", value: token.value };
+        }
+
+        if (token.type === TOKEN.ERROR) {
             this.consume();
             return { type: "literal", value: token.value };
         }
@@ -275,6 +294,24 @@ function tokenize(formula) {
             }
             i++; // skip closing quote
             tokens.push({ type: TOKEN.STRING, value: str });
+            continue;
+        }
+
+        if (ch === "#") {
+            let errorStr = "#";
+            i++;
+            while (i < formula.length && formula[i] !== "," && formula[i] !== ")" && formula[i] !== " " && formula[i] !== "\t") {
+                errorStr += formula[i];
+                i++;
+            }
+            const upper = errorStr.toUpperCase();
+            if (EXCEL_ERRORS[upper] !== undefined) {
+                tokens.push({ type: TOKEN.ERROR, value: EXCEL_ERRORS[upper] });
+            } else if (EXCEL_ERRORS[errorStr] !== undefined) {
+                tokens.push({ type: TOKEN.ERROR, value: EXCEL_ERRORS[errorStr] });
+            } else {
+                throw new Error(`Unknown error constant: "${errorStr}" at position ${i - errorStr.length}`);
+            }
             continue;
         }
 

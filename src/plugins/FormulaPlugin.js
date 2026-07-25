@@ -92,13 +92,10 @@ export class FormulaPlugin extends BasePlugin {
         this.#engine = new FormulaEngine(this.workbook);
         this.workbook.formulaEngine = this.#engine;
 
-        // 修复初始化顺序问题：先注册所有公式到 astCache，再执行重算
-        // 原因：loadData 时 FormulaEngine 尚未创建，FORMULA_SET 事件无人监听
         for (const sheet of this.workbook.sheets.values()) {
-            this.#registerFormulasFromSheet(sheet);
+            this.#engine.registerFormulasBatch(sheet);
         }
 
-        // 对所有 sheet 执行初始公式计算
         for (const sheet of this.workbook.sheets.values()) {
             this.#engine.recalculateAll(sheet);
         }

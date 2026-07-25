@@ -1,6 +1,6 @@
 ﻿import { registry } from "./functions/index.js";
 import { isNumber, isString } from "../utils/helper.js";
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { ERROR_CODE, errorHandler } from "../core/ErrorHandler.js";
 
 /**
  * 公式求值器
