@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📝 文本函数演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a {
+            display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none;
+            font-weight: 600; transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .demo-section {
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
+        .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+        .formula-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #4facfe; transition: transform 0.2s ease;
+        }
+        .formula-card:hover { transform: translateY(-2px); }
+        .formula-card .category { font-size: 12px; font-weight: 600; color: #4facfe; margin-bottom: 8px; }
+        .formula-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .formula-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .formula-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .formula-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e;
+        }
+        .log-container {
+            margin-top: 20px; max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📝 文本函数演示</h1>
+    <div class="nav">
+        <a href="formula-demo-umd.html">🏠 总览</a>
+        <a href="math-functions-demo.html">📐 数学</a>
+        <a href="statistical-functions-demo.html">📈 统计</a>
+        <a href="logical-functions-demo.html">🔀 逻辑</a>
+        <a href="text-functions-demo.html" class="active">📝 文本</a>
+        <a href="conditional-functions-demo.html">🎯 条件</a>
+        <a href="lookup-functions-demo.html">🔍 查找</a>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 文本函数演示表格</h2>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📖</span> 函数详细说明</h2>
+        <div class="formula-grid">
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">UPPER - 转大写</div>
+                <div class="syntax">=UPPER(text)</div>
+                <div class="desc">将文本字符串中所有的小写字母转换为大写形式。</div>
+                <div class="example">=UPPER("hello") 返回 "HELLO"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">LOWER - 转小写</div>
+                <div class="syntax">=LOWER(text)</div>
+                <div class="desc">将文本字符串中所有的大写字母转换为小写形式。</div>
+                <div class="example">=LOWER("HELLO") 返回 "hello"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">CONCAT / CONCATENATE - 文本连接</div>
+                <div class="syntax">=CONCAT(text1, [text2], ...)</div>
+                <div class="desc">将多个文本字符串连接为一个连续字符串。</div>
+                <div class="example">=CONCAT("Hello"," ","World") 返回 "Hello World"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">LEFT - 从左侧截取</div>
+                <div class="syntax">=LEFT(text, [num_chars])</div>
+                <div class="desc">返回文本字符串最左边的字符。</div>
+                <div class="example">=LEFT("Hello World", 5) 返回 "Hello"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">RIGHT - 从右侧截取</div>
+                <div class="syntax">=RIGHT(text, [num_chars])</div>
+                <div class="desc">返回文本字符串最右边的字符。</div>
+                <div class="example">=RIGHT("Hello World", 5) 返回 "World"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">MID - 从中间截取</div>
+                <div class="syntax">=MID(text, start_num, num_chars)</div>
+                <div class="desc">返回文本字符串中从指定位置开始的特定数目的字符。</div>
+                <div class="example">=MID("Hello World", 7, 5) 返回 "World"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">LEN - 字符串长度</div>
+                <div class="syntax">=LEN(text)</div>
+                <div class="desc">返回文本字符串中的字符个数。</div>
+                <div class="example">=LEN("Hello") 返回 5</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">TRIM - 去除首尾空格</div>
+                <div class="syntax">=TRIM(text)</div>
+                <div class="desc">删除文本字符串的首尾空格。</div>
+                <div class="example">=TRIM("  Hello  ") 返回 "Hello"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">FIND - 查找子串(区分大小写)</div>
+                <div class="syntax">=FIND(find_text, within_text, [start_num])</div>
+                <div class="desc">在文本中查找子串，返回其起始位置（从1开始）。</div>
+                <div class="example">=FIND("World", "Hello World") 返回 7</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">SEARCH - 查找子串(不区分大小写)</div>
+                <div class="syntax">=SEARCH(find_text, within_text, [start_num])</div>
+                <div class="desc">在文本中查找子串，不区分大小写。</div>
+                <div class="example">=SEARCH("world", "Hello World") 返回 7</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">SUBSTITUTE - 替换文本</div>
+                <div class="syntax">=SUBSTITUTE(text, old_text, new_text, [instance_num])</div>
+                <div class="desc">将文本中的旧文本替换为新文本，可指定替换第几次出现。</div>
+                <div class="example">=SUBSTITUTE("2024-01-01","-","/") 返回 "2024/01/01"<br>=SUBSTITUTE("a-b-c","-","/",2) 返回 "a-b/c"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">文本函数</div>
+                <div class="name">TEXT - 格式化数值</div>
+                <div class="syntax">=TEXT(value, [format_text])</div>
+                <div class="desc">将数值按指定格式转换为文本字符串。</div>
+                <div class="example">=TEXT(1234.567,"#,##0.00") 返回 "1,234.57"<br>=TEXT(0.15,"0%") 返回 "15%"</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">文本函数演示初始化完成</div>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    const sampleData = [
+        ["原文本", "UPPER", "LOWER", "LEFT(5)", "RIGHT(5)", "MID(7,5)", "LEN", "TRIM"],
+        ["Hello World", "=UPPER(A2)", "=LOWER(A2)", "=LEFT(A2,5)", "=RIGHT(A2,5)", "=MID(A2,7,5)", "=LEN(A2)", "=TRIM(\"  Hello  \")"],
+        ["  Spaces  ", "=UPPER(A3)", "=LOWER(A3)", "=LEFT(A3,5)", "=RIGHT(A3,5)", "=MID(A3,3,6)", "=LEN(A3)", "=TRIM(A3)"],
+        ["", "", "", "", "", "", "", ""],
+        ["FIND/SEARCH", "SUBSTITUTE", "TEXT格式化", "CONCAT", "", "", "", ""],
+        ["=FIND(\"World\",A2)", "=SUBSTITUTE(\"2024-01-01\",\"-\",\"/\")", "=TEXT(1234.567,\"#,##0.00\")", "=CONCAT(A2,\"!\")", "", "", "", ""],
+        ["=SEARCH(\"world\",A2)", "=SUBSTITUTE(\"a-b-c\",\"-\",\"/\",2)", "=TEXT(0.15,\"0%\")", "=CONCATENATE(\"Hello\",\" \",\"World\")", "", "", "", ""],
+    ];
+
+    const columns = [
+        { type: 'text', width: 120 },
+        { type: 'text', width: 130 },
+        { type: 'text', width: 130 },
+        { type: 'text', width: 130 },
+        { type: 'text', width: 130 },
+        { type: 'text', width: 130 },
+        { type: 'numeric', width: 80 },
+        { type: 'text', width: 120 },
+    ];
+
+    function log(msg, type) {
+        type = type || 'info';
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    async function initWorkbook() {
+        try {
+            log('初始化文本函数演示...', 'info');
+            const container = document.getElementById('sheet');
+            container.width = 800;
+            container.height = 350;
+
+            new CanvasSheet.Workbook(container, {
+                width: 1200, height: 350,
+                sheets: [{ name: '文本函数', data: sampleData, columns: columns, cellPadding: 8 }],
+                plugins: ["autoFill", "contextMenu", "copyPaste", "formula"],
+            });
+
+            log('文本函数演示初始化成功', 'success');
+        } catch (e) {
+            log('初始化失败: ' + e.message, 'error');
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

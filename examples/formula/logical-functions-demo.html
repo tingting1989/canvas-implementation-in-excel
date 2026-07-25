@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔀 逻辑函数演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a {
+            display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none;
+            font-weight: 600; transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .demo-section {
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
+        .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+        .formula-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #a18cd1; transition: transform 0.2s ease;
+        }
+        .formula-card:hover { transform: translateY(-2px); }
+        .formula-card .category { font-size: 12px; font-weight: 600; color: #a18cd1; margin-bottom: 8px; }
+        .formula-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .formula-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .formula-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .formula-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e;
+        }
+        .log-container {
+            margin-top: 20px; max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔀 逻辑函数演示</h1>
+    <div class="nav">
+        <a href="formula-demo-umd.html">🏠 总览</a>
+        <a href="math-functions-demo.html">📐 数学</a>
+        <a href="statistical-functions-demo.html">📈 统计</a>
+        <a href="logical-functions-demo.html" class="active">🔀 逻辑</a>
+        <a href="text-functions-demo.html">📝 文本</a>
+        <a href="conditional-functions-demo.html">🎯 条件</a>
+        <a href="lookup-functions-demo.html">🔍 查找</a>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 逻辑函数演示表格</h2>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📖</span> 函数详细说明</h2>
+        <div class="formula-grid">
+            <div class="formula-card">
+                <div class="category">逻辑函数</div>
+                <div class="name">IF - 条件判断</div>
+                <div class="syntax">=IF(logical_test, value_if_true, [value_if_false])</div>
+                <div class="desc">根据条件是否成立返回不同的值，可嵌套使用实现复杂逻辑。</div>
+                <div class="example">=IF(A1>100,"优秀","一般")<br>=IF(A1="","未填写",A1)</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">逻辑函数</div>
+                <div class="name">AND - 逻辑与</div>
+                <div class="syntax">=AND(logical1, [logical2], ...)</div>
+                <div class="desc">所有条件都为 TRUE 时返回 TRUE，任一条件为 FALSE 时返回 FALSE。</div>
+                <div class="example">=AND(TRUE,TRUE) 返回 TRUE<br>=AND(A1>0,B1<100) A1>0 且 B1<100</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">逻辑函数</div>
+                <div class="name">OR - 逻辑或</div>
+                <div class="syntax">=OR(logical1, [logical2], ...)</div>
+                <div class="desc">任一条件为 TRUE 时返回 TRUE，所有条件都为 FALSE 时返回 FALSE。</div>
+                <div class="example">=OR(FALSE,FALSE,FALSE) 返回 FALSE<br>=OR(A1<0,B1>100) A1<0 或 B1>100</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">逻辑函数</div>
+                <div class="name">NOT - 逻辑非</div>
+                <div class="syntax">=NOT(logical)</div>
+                <div class="desc">反转参数的逻辑值：TRUE 变为 FALSE，FALSE 变为 TRUE。</div>
+                <div class="example">=NOT(TRUE) 返回 FALSE<br>=NOT(AND(A1>0,B1<50))</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">逻辑函数演示初始化完成</div>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    const sampleData = [
+        ["分数", "是否及格", "等级", "AND示例", "OR示例", "NOT示例"],
+        [85, "=IF(A2>=60,\"及格\",\"不及格\")", "=IF(A2>=90,\"优秀\",IF(A2>=80,\"良好\",IF(A2>=60,\"及格\",\"不及格\")))", "=AND(A2>=60,A2<=100)", "=OR(A2<60,A2>90)", "=NOT(A2>=60)"],
+        [45, "=IF(A3>=60,\"及格\",\"不及格\")", "=IF(A3>=90,\"优秀\",IF(A3>=80,\"良好\",IF(A3>=60,\"及格\",\"不及格\")))", "=AND(A3>=60,A3<=100)", "=OR(A3<60,A3>90)", "=NOT(A3>=60)"],
+        [95, "=IF(A4>=60,\"及格\",\"不及格\")", "=IF(A4>=90,\"优秀\",IF(A4>=80,\"良好\",IF(A4>=60,\"及格\",\"不及格\")))", "=AND(A4>=60,A4<=100)", "=OR(A4<60,A4>90)", "=NOT(A4>=60)"],
+        [72, "=IF(A5>=60,\"及格\",\"不及格\")", "=IF(A5>=90,\"优秀\",IF(A5>=80,\"良好\",IF(A5>=60,\"及格\",\"不及格\")))", "=AND(A5>=60,A5<=100)", "=OR(A5<60,A5>90)", "=NOT(A5>=60)"],
+        [30, "=IF(A6>=60,\"及格\",\"不及格\")", "=IF(A6>=90,\"优秀\",IF(A6>=80,\"良好\",IF(A6>=60,\"及格\",\"不及格\")))", "=AND(A6>=60,A6<=100)", "=OR(A6<60,A6>90)", "=NOT(A6>=60)"],
+    ];
+
+    const columns = [
+        { type: 'numeric', width: 80 },
+        { type: 'text', width: 100 },
+        { type: 'text', width: 100 },
+        { type: 'text', width: 120 },
+        { type: 'text', width: 120 },
+        { type: 'text', width: 120 },
+    ];
+
+    function log(msg, type) {
+        type = type || 'info';
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    async function initWorkbook() {
+        try {
+            log('初始化逻辑函数演示...', 'info');
+            const container = document.getElementById('sheet');
+            container.width = 800;
+            container.height = 300;
+
+            new CanvasSheet.Workbook(container, {
+                width: 1200, height: 300,
+                sheets: [{ name: '逻辑函数', data: sampleData, columns: columns, cellPadding: 8 }],
+                plugins: ["autoFill", "contextMenu", "copyPaste", "formula"],
+            });
+
+            log('逻辑函数演示初始化成功', 'success');
+        } catch (e) {
+            log('初始化失败: ' + e.message, 'error');
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

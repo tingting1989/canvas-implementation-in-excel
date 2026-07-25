@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 查找函数演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a {
+            display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none;
+            font-weight: 600; transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .demo-section {
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
+        .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+        .formula-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #43e97b; transition: transform 0.2s ease;
+        }
+        .formula-card:hover { transform: translateY(-2px); }
+        .formula-card .category { font-size: 12px; font-weight: 600; color: #43e97b; margin-bottom: 8px; }
+        .formula-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .formula-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .formula-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .formula-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e;
+        }
+        .log-container {
+            margin-top: 20px; max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔍 查找函数演示</h1>
+    <div class="nav">
+        <a href="formula-demo-umd.html">🏠 总览</a>
+        <a href="math-functions-demo.html">📐 数学</a>
+        <a href="statistical-functions-demo.html">📈 统计</a>
+        <a href="logical-functions-demo.html">🔀 逻辑</a>
+        <a href="text-functions-demo.html">📝 文本</a>
+        <a href="conditional-functions-demo.html">🎯 条件</a>
+        <a href="lookup-functions-demo.html" class="active">🔍 查找</a>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 查找函数演示表格</h2>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📖</span> 函数详细说明</h2>
+        <div class="formula-grid">
+            <div class="formula-card">
+                <div class="category">查找函数</div>
+                <div class="name">VLOOKUP - 垂直查找</div>
+                <div class="syntax">=VLOOKUP(lookup_value, table_array, col_index_num, [range_lookup])</div>
+                <div class="desc">在表格第一列中查找值，返回同一行指定列的值。range_lookup: FALSE=精确, TRUE=近似。</div>
+                <div class="example">=VLOOKUP("苹果",A1:D10,3,FALSE) 精确查找<br>=VLOOKUP(100,A1:E20,2,TRUE) 近似匹配</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">查找函数</div>
+                <div class="name">HLOOKUP - 水平查找</div>
+                <div class="syntax">=HLOOKUP(lookup_value, table_array, row_index_num, [range_lookup])</div>
+                <div class="desc">在表格第一行中查找值，返回该列中指定行的值。</div>
+                <div class="example">=HLOOKUP("Q2",A1:E5,3,FALSE) 精确匹配查找"Q2"</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">查找函数</div>
+                <div class="name">INDEX - 按索引取值</div>
+                <div class="syntax">=INDEX(array, row_num, [column_num])</div>
+                <div class="desc">返回表格或数组中指定行列交叉处的值。</div>
+                <div class="example">=INDEX(A1:C5, 2, 3) 返回第2行第3列的值<br>=INDEX(A1:A5, 3) 返回一维数组第3个元素</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">查找函数</div>
+                <div class="name">MATCH - 查找位置</div>
+                <div class="syntax">=MATCH(lookup_value, lookup_array, [match_type])</div>
+                <div class="desc">在数组中查找值，返回其相对位置。match_type: 0=精确, 1=升序近似(默认), -1=降序近似。</div>
+                <div class="example">=MATCH("苹果",A1:A10,0) 精确匹配<br>=MATCH(50,B1:B10,1) 近似匹配</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">查找函数演示初始化完成</div>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    const sampleData = [
+        ["商品ID", "商品名称", "单价", "数量", "查找结果", "位置"],
+        [1001, "苹果", 5.5, 100, "", ""],
+        [1002, "香蕉", 3.2, 150, "", ""],
+        [1003, "西红柿", 4.8, 80, "", ""],
+        [1004, "鸡蛋", 12.0, 50, "", ""],
+        [1005, "牛奶", 6.5, 120, "", ""],
+        ["", "", "", "", "", ""],
+        ["VLOOKUP示例", "", "", "", "", ""],
+        ["查找ID=1003的单价", "=VLOOKUP(1003,A2:C6,3,FALSE)", "", "", "", ""],
+        ["查找\"鸡蛋\"的数量", "=VLOOKUP(\"鸡蛋\",B2:D6,3,FALSE)", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["MATCH示例", "", "", "", "", ""],
+        ["\"香蕉\"的位置(精确)", "=MATCH(\"香蕉\",B2:B6,0)", "", "", "", ""],
+        ["12在单价中的位置(升序)", "=MATCH(12,C2:C6,1)", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["INDEX示例", "", "", "", "", ""],
+        ["第3行第2列", "=INDEX(A2:C6,3,2)", "", "", "", ""],
+        ["单价列第4个", "=INDEX(C2:C6,4)", "", "", "", ""],
+    ];
+
+    const columns = [
+        { type: 'text', width: 150 },
+        { type: 'text', width: 120 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'text', width: 120 },
+        { type: 'text', width: 120 },
+    ];
+
+    function log(msg, type) {
+        type = type || 'info';
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    async function initWorkbook() {
+        try {
+            log('初始化查找函数演示...', 'info');
+            const container = document.getElementById('sheet');
+            container.width = 800;
+            container.height = 500;
+
+            new CanvasSheet.Workbook(container, {
+                width: 1200, height: 500,
+                sheets: [{ name: '查找函数', data: sampleData, columns: columns, cellPadding: 8 }],
+                plugins: ["autoFill", "contextMenu", "copyPaste", "formula"],
+            });
+
+            log('查找函数演示初始化成功', 'success');
+        } catch (e) {
+            log('初始化失败: ' + e.message, 'error');
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

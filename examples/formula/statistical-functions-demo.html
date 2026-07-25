@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 统计函数演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a {
+            display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none;
+            font-weight: 600; transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .demo-section {
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
+        .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+        .formula-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #f5576c; transition: transform 0.2s ease;
+        }
+        .formula-card:hover { transform: translateY(-2px); }
+        .formula-card .category { font-size: 12px; font-weight: 600; color: #f5576c; margin-bottom: 8px; }
+        .formula-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .formula-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .formula-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .formula-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e;
+        }
+        .log-container {
+            margin-top: 20px; max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📈 统计函数演示</h1>
+    <div class="nav">
+        <a href="formula-demo-umd.html">🏠 总览</a>
+        <a href="math-functions-demo.html">📐 数学</a>
+        <a href="statistical-functions-demo.html" class="active">📈 统计</a>
+        <a href="logical-functions-demo.html">🔀 逻辑</a>
+        <a href="text-functions-demo.html">📝 文本</a>
+        <a href="conditional-functions-demo.html">🎯 条件</a>
+        <a href="lookup-functions-demo.html">🔍 查找</a>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 统计函数演示表格</h2>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📖</span> 函数详细说明</h2>
+        <div class="formula-grid">
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">COUNT - 统计数值个数</div>
+                <div class="syntax">=COUNT(value1, [value2], ...)</div>
+                <div class="desc">计算范围内包含数值的单元格数量，只统计数字类型。</div>
+                <div class="example">=COUNT(1,"a",3,"",5) 返回 3<br>=COUNT(A1:A100) 统计 A 列中的数值个数</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">COUNTA - 统计非空单元格</div>
+                <div class="syntax">=COUNTA(value1, [value2], ...)</div>
+                <div class="desc">计算范围内非空单元格的数量，包括文本、数值、错误值等。</div>
+                <div class="example">=COUNTA(1,"","text",null) 返回 2<br>=COUNTA(A1:D10) 统计非空单元格数</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">COUNTBLANK - 统计空单元格</div>
+                <div class="syntax">=COUNTBLANK(range)</div>
+                <div class="desc">计算范围内空单元格的数量，包括空字符串、null、undefined。</div>
+                <div class="example">=COUNTBLANK(A1:A10) 返回空单元格数</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">STDEV - 样本标准差</div>
+                <div class="syntax">=STDEV(number1, [number2], ...)</div>
+                <div class="desc">基于样本估算标准差（分母为 n-1）。</div>
+                <div class="example">=STDEV(2,4,4,4,5,5,7,9) 返回约 2.138<br>=STDEV(A1:A10) A1:A10 的样本标准差</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">STDEVP - 总体标准差</div>
+                <div class="syntax">=STDEVP(number1, [number2], ...)</div>
+                <div class="desc">基于整个总体计算标准差（分母为 n）。</div>
+                <div class="example">=STDEVP(2,4,4,4,5,5,7,9) 返回约 1.987</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">VAR - 样本方差</div>
+                <div class="syntax">=VAR(number1, [number2], ...)</div>
+                <div class="desc">基于样本估算方差（分母为 n-1）。</div>
+                <div class="example">=VAR(1,2,3,4,5) 返回 2.5</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">VARP - 总体方差</div>
+                <div class="syntax">=VARP(number1, [number2], ...)</div>
+                <div class="desc">基于整个总体计算方差（分母为 n）。</div>
+                <div class="example">=VARP(1,2,3,4,5) 返回 2</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">MEDIAN - 中位数</div>
+                <div class="syntax">=MEDIAN(number1, [number2], ...)</div>
+                <div class="desc">返回一组数值的中位数。</div>
+                <div class="example">=MEDIAN(1,2,3,4,5) 返回 3<br>=MEDIAN(1,2,3,4) 返回 2.5</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">统计函数</div>
+                <div class="name">RANK - 排名</div>
+                <div class="syntax">=RANK(number, ref, [order])</div>
+                <div class="desc">返回数值在数据集中的排名。order: 0=降序(默认), 1=升序。</div>
+                <div class="example">=RANK(5, A1:A10) 降序排名<br>=RANK(5, A1:A10, 1) 升序排名</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">统计函数演示初始化完成</div>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    const sampleData = [
+        ["数据集", "", "", "", "", "", "", ""],
+        [2, 4, 4, 4, 5, 5, 7, 9],
+        ["", "", "", "", "", "", "", ""],
+        ["统计指标", "值", "", "", "", "", "", ""],
+        ["COUNT", "=COUNT(A2:H2)", "", "", "", "", "", ""],
+        ["COUNTA", "=COUNTA(A2:H2)", "", "", "", "", "", ""],
+        ["STDEV(样本)", "=STDEV(A2:H2)", "", "", "", "", "", ""],
+        ["STDEVP(总体)", "=STDEVP(A2:H2)", "", "", "", "", "", ""],
+        ["VAR(样本)", "=VAR(A2:H2)", "", "", "", "", "", ""],
+        ["VARP(总体)", "=VARP(A2:H2)", "", "", "", "", "", ""],
+        ["MEDIAN", "=MEDIAN(A2:H2)", "", "", "", "", "", ""],
+        ["RANK(5,降序)", "=RANK(5,A2:H2)", "", "", "", "", "", ""],
+        ["RANK(5,升序)", "=RANK(5,A2:H2,1)", "", "", "", "", "", ""],
+    ];
+
+    const columns = [
+        { type: 'numeric', width: 120 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 80 },
+        { type: 'numeric', width: 80 },
+        { type: 'numeric', width: 80 },
+        { type: 'numeric', width: 80 },
+        { type: 'numeric', width: 80 },
+        { type: 'numeric', width: 80 },
+    ];
+
+    function log(msg, type) {
+        type = type || 'info';
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    async function initWorkbook() {
+        try {
+            log('初始化统计函数演示...', 'info');
+            const container = document.getElementById('sheet');
+            container.width = 800;
+            container.height = 400;
+
+            new CanvasSheet.Workbook(container, {
+                width: 1200, height: 400,
+                sheets: [{ name: '统计函数', data: sampleData, columns: columns, cellPadding: 8 }],
+                plugins: ["autoFill", "contextMenu", "copyPaste", "formula"],
+            });
+
+            log('统计函数演示初始化成功', 'success');
+        } catch (e) {
+            log('初始化失败: ' + e.message, 'error');
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

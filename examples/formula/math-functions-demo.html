@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📐 数学函数演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a {
+            display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none;
+            font-weight: 600; transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+        .demo-section {
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
+        .formula-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+        .formula-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #667eea; transition: transform 0.2s ease;
+        }
+        .formula-card:hover { transform: translateY(-2px); }
+        .formula-card .category { font-size: 12px; font-weight: 600; color: #667eea; margin-bottom: 8px; }
+        .formula-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .formula-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .formula-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .formula-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e;
+        }
+        .log-container {
+            margin-top: 20px; max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>📐 数学函数演示</h1>
+    <div class="nav">
+        <a href="formula-demo-umd.html">🏠 总览</a>
+        <a href="math-functions-demo.html" class="active">📐 数学</a>
+        <a href="statistical-functions-demo.html">📈 统计</a>
+        <a href="logical-functions-demo.html">🔀 逻辑</a>
+        <a href="text-functions-demo.html">📝 文本</a>
+        <a href="conditional-functions-demo.html">🎯 条件</a>
+        <a href="lookup-functions-demo.html">🔍 查找</a>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 数学函数演示表格</h2>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📖</span> 函数详细说明</h2>
+        <div class="formula-grid">
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">SUM - 求和</div>
+                <div class="syntax">=SUM(number1, [number2], ...)</div>
+                <div class="desc">对所有数值参数求和，忽略非数值项。支持范围引用和多范围求和。</div>
+                <div class="example">=SUM(A1:A10) 返回 A1 到 A10 的总和<br>=SUM(1,2,3) 返回 6</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">AVERAGE - 平均值</div>
+                <div class="syntax">=AVERAGE(number1, [number2], ...)</div>
+                <div class="desc">计算所有数值参数的算术平均数，无有效数值时返回 #DIV/0!。</div>
+                <div class="example">=AVERAGE(1,2,3,4,5) 返回 3<br>=AVERAGE(A1:A10) 返回平均值</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">MAX - 最大值</div>
+                <div class="syntax">=MAX(number1, [number2], ...)</div>
+                <div class="desc">返回一组数值中的最大值，忽略非数值项，无有效数值时返回 0。</div>
+                <div class="example">=MAX(1,5,3,9,2) 返回 9<br>=MAX(A1:D10) 返回区域最大值</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">MIN - 最小值</div>
+                <div class="syntax">=MIN(number1, [number2], ...)</div>
+                <div class="desc">返回一组数值中的最小值，忽略非数值项，无有效数值时返回 0。</div>
+                <div class="example">=MIN(1,5,3,9,2) 返回 1<br>=MIN(A1:D10) 返回区域最小值</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">ABS - 绝对值</div>
+                <div class="syntax">=ABS(number)</div>
+                <div class="desc">返回数值的绝对值（不带符号的数值）。</div>
+                <div class="example">=ABS(-100) 返回 100<br>=ABS(50) 返回 50</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">ROUND - 四舍五入</div>
+                <div class="syntax">=ROUND(number, num_digits)</div>
+                <div class="desc">将数值四舍五入到指定位数。num_digits 为负数时表示小数点左侧。</div>
+                <div class="example">=ROUND(3.14159, 2) 返回 3.14<br>=ROUND(1234.5678, -2) 返回 1200</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">ROUNDUP - 向上舍入</div>
+                <div class="syntax">=ROUNDUP(number, num_digits)</div>
+                <div class="desc">将数值向上（远离零方向）舍入到指定位数。</div>
+                <div class="example">=ROUNDUP(3.14159, 2) 返回 3.15<br>=ROUNDUP(-3.14159, 2) 返回 -3.15</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">ROUNDDOWN - 向下舍入</div>
+                <div class="syntax">=ROUNDDOWN(number, num_digits)</div>
+                <div class="desc">将数值向下（趋向零方向）舍入到指定位数。</div>
+                <div class="example">=ROUNDDOWN(3.14159, 2) 返回 3.14<br>=ROUNDDOWN(-3.14159, 2) 返回 -3.14</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">INT - 向下取整</div>
+                <div class="syntax">=INT(number)</div>
+                <div class="desc">将数值向下取整为最接近的整数。</div>
+                <div class="example">=INT(8.9) 返回 8<br>=INT(-8.9) 返回 -9</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">MOD - 取模运算</div>
+                <div class="syntax">=MOD(number, divisor)</div>
+                <div class="desc">返回两数相除的余数，结果符号与除数相同。</div>
+                <div class="example">=MOD(7, 3) 返回 1<br>=MOD(-7, 3) 返回 2</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">POWER - 幂运算</div>
+                <div class="syntax">=POWER(base, exponent)</div>
+                <div class="desc">返回底数按指定指数乘幂后的结果。</div>
+                <div class="example">=POWER(2, 10) 返回 1024<br>=POWER(5, 0.5) 返回 2.236...</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">SUMPRODUCT - 数组乘积求和</div>
+                <div class="syntax">=SUMPRODUCT(array1, [array2], ...)</div>
+                <div class="desc">将多个数组对应元素相乘后求和。</div>
+                <div class="example">=SUMPRODUCT({1,2},{3,4}) 返回 11 (1*3+2*4)<br>=SUMPRODUCT(A1:B3,C1:D3) 两区域乘积求和</div>
+            </div>
+            <div class="formula-card">
+                <div class="category">数学函数</div>
+                <div class="name">SUBTOTAL - 分类汇总</div>
+                <div class="syntax">=SUBTOTAL(function_num, ref1, ...)</div>
+                <div class="desc">返回列表的分类汇总。function_num: 1=AVERAGE, 2/9=SUM, 3=COUNT, 4=MAX, 5=MIN, 6=PRODUCT, 7=STDEV, 8=STDEVP, 10=VAR, 11=VARP</div>
+                <div class="example">=SUBTOTAL(9, A1:A10) 对 A1:A10 求和<br>=SUBTOTAL(1, B1:B20) 对 B1:B20 求平均值</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">数学函数演示初始化完成</div>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    const sampleData = [
+        ["数值A", "数值B", "SUM", "AVERAGE", "MAX", "MIN", "ABS", "ROUND", "ROUNDUP", "ROUNDDOWN"],
+        [3.14159, 2.71828, "=SUM(A2,B2)", "=AVERAGE(A2,B2)", "=MAX(A2,B2)", "=MIN(A2,B2)", "=ABS(A2)", "=ROUND(A2,2)", "=ROUNDUP(A2,2)", "=ROUNDDOWN(A2,2)"],
+        [-8.9, 4, "=SUM(A3,B3)", "=AVERAGE(A3,B3)", "=MAX(A3,B3)", "=MIN(A3,B3)", "=ABS(A3)", "=ROUND(A3,0)", "=ROUNDUP(A3,0)", "=ROUNDDOWN(A3,0)"],
+        [1234.567, -3, "=SUM(A4,B4)", "=AVERAGE(A4,B4)", "=MAX(A4,B4)", "=MIN(A4,B4)", "=ABS(B4)", "=ROUND(A4,-2)", "=ROUNDUP(A4,-2)", "=ROUNDDOWN(A4,-2)"],
+        ["", "", "", "", "", "", "", "", "", ""],
+        ["INT", "MOD", "POWER", "SUMPRODUCT", "SUBTOTAL", "", "", "", "", ""],
+        ["=INT(A2)", "=MOD(7,3)", "=POWER(2,10)", "=SUMPRODUCT(A2:B4)", "=SUBTOTAL(9,A2:A4)", "", "", "", "", ""],
+        ["=INT(A3)", "=MOD(-7,3)", "=POWER(5,0.5)", "", "=SUBTOTAL(1,A2:A4)", "", "", "", "", ""],
+        ["=INT(A4)", "=MOD(7,-3)", "=POWER(3,3)", "", "=SUBTOTAL(4,A2:A4)", "", "", "", "", ""],
+    ];
+
+    const columns = [
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 100 },
+        { type: 'numeric', width: 110 },
+    ];
+
+    function log(msg, type) {
+        type = type || 'info';
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    async function initWorkbook() {
+        try {
+            log('初始化数学函数演示...', 'info');
+            const container = document.getElementById('sheet');
+            container.width = 800;
+            container.height = 400;
+
+            new CanvasSheet.Workbook(container, {
+                width: 1200, height: 400,
+                sheets: [{ name: '数学函数', data: sampleData, columns: columns, cellPadding: 8 }],
+                plugins: ["autoFill", "contextMenu", "copyPaste", "formula"],
+            });
+
+            log('数学函数演示初始化成功', 'success');
+        } catch (e) {
+            log('初始化失败: ' + e.message, 'error');
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

@@ -5,636 +5,159 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🔣 公式函数演示 - Canvas-Sheet</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: #333;
+            min-height: 100vh; padding: 20px; color: #333;
         }
-
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .subtitle { text-align: center; color: rgba(255,255,255,0.9); margin-bottom: 40px; font-size: 1.1em; }
+        .category-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 24px; margin-bottom: 40px;
         }
-
-        h1 {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            font-size: 2.5em;
+        .category-card {
+            background: white; border-radius: 16px; padding: 28px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none; color: inherit; display: block;
         }
-
+        .category-card:hover {
+            transform: translateY(-6px); box-shadow: 0 16px 50px rgba(0,0,0,0.3);
+        }
+        .category-card .icon { font-size: 2.5em; margin-bottom: 12px; }
+        .category-card .title { font-size: 1.4em; font-weight: 700; color: #4a5568; margin-bottom: 8px; }
+        .category-card .desc { font-size: 14px; color: #718096; line-height: 1.6; margin-bottom: 16px; }
+        .category-card .function-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .category-card .tag {
+            background: rgba(102,126,234,0.1); color: #667eea; padding: 4px 12px;
+            border-radius: 16px; font-size: 13px; font-weight: 600;
+            border: 1px solid rgba(102,126,234,0.2);
+        }
+        .category-card .count {
+            display: inline-block; background: #f5576c; color: white;
+            padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+            margin-left: 8px; vertical-align: middle;
+        }
+        .category-card.math { border-top: 4px solid #667eea; }
+        .category-card.statistical { border-top: 4px solid #f5576c; }
+        .category-card.logical { border-top: 4px solid #a18cd1; }
+        .category-card.text { border-top: 4px solid #4facfe; }
+        .category-card.conditional { border-top: 4px solid #fa709a; }
+        .category-card.lookup { border-top: 4px solid #43e97b; }
         .demo-section {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
         }
-
-        .section-title {
-            font-size: 1.5em;
-            color: #4a5568;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .section-title .icon {
-            font-size: 1.2em;
-        }
-
-        .canvas-container {
-            overflow: auto;
-            background: #fff;
-            position: relative;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-        }
-
-        canvas {
-            display: block;
-        }
-
-        .formula-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .formula-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-            padding: 16px;
-            border-radius: 12px;
-            border-left: 4px solid #f5576c;
-            transition: transform 0.2s ease;
-        }
-
-        .formula-card:hover {
-            transform: translateY(-2px);
-        }
-
-        .formula-card .category {
-            font-size: 12px;
-            font-weight: 600;
-            color: #f5576c;
-            margin-bottom: 8px;
-        }
-
-        .formula-card .name {
-            font-size: 16px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 4px;
-        }
-
-        .formula-card .syntax {
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 13px;
-            color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-            padding: 6px 10px;
-            border-radius: 4px;
-            margin-bottom: 8px;
-        }
-
-        .formula-card .desc {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .formula-card .example {
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 12px;
-            color: #11998e;
-            background: rgba(17, 153, 142, 0.08);
-            padding: 8px 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-            line-height: 1.6;
-            border-left: 3px solid #11998e;
-        }
-
-        .controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        label {
-            font-weight: 600;
-            color: #555;
-            font-size: 14px;
-        }
-
-        input[type="text"],
-        input[type="number"],
-        select {
-            padding: 10px 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        input:focus,
-        select:focus {
-            outline: none;
-            border-color: #f5576c;
-            box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
-        }
-
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            color: #333;
-        }
-
-        .btn-info {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-        }
-
-        .log-container {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 12px;
-            background: #282c34;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 13px;
-        }
-
-        .log-entry {
-            padding: 4px 8px;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            color: #abb2bf;
-        }
-
-        .log-entry.log-success {
-            background: rgba(56, 239, 125, 0.1);
-            color: #38ef7d;
-        }
-
-        .log-entry.log-info {
-            background: rgba(79, 172, 254, 0.1);
-            color: #4facfe;
-        }
-
-        .log-entry.log-warning {
-            background: rgba(255, 193, 7, 0.1);
-            color: #ffc107;
-        }
-
-        .log-entry.log-error {
-            background: rgba(255, 107, 107, 0.1);
-            color: #ff6b6b;
-        }
-
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin-top: 20px;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px; margin-top: 20px;
         }
-
         .stat-card {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
+            color: white; padding: 20px; border-radius: 12px; text-align: center;
         }
-
-        .stat-card .value {
-            font-size: 32px;
-            font-weight: 700;
+        .stat-card .value { font-size: 32px; font-weight: 700; }
+        .stat-card .label { font-size: 14px; opacity: 0.9; margin-top: 4px; }
+        .log-container {
+            margin-top: 20px; max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
         }
-
-        .stat-card .label {
-            font-size: 14px;
-            opacity: 0.9;
-            margin-top: 4px;
-        }
-
-        .category-section {
-            margin-top: 24px;
-        }
-
-        .category-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 16px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        .category-header h3 {
-            color: #4a5568;
-            font-size: 1.2em;
-        }
-
-        .category-header .count {
-            background: #f5576c;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .function-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .function-tag {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
-            border: 1px solid rgba(102, 126, 234, 0.2);
-        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
     </style>
 </head>
 <body>
 <div class="container">
     <h1>🔣 公式函数演示 - Canvas-Sheet</h1>
+    <p class="subtitle">点击下方分类卡片查看各类函数的详细演示</p>
+
+    <div class="category-grid">
+        <a href="math-functions-demo.html" class="category-card math">
+            <div class="icon">📐</div>
+            <div class="title">数学函数 <span class="count">13</span></div>
+            <div class="desc">提供基础数学运算功能：求和、平均、极值、舍入、幂运算、数组乘积求和等。</div>
+            <div class="function-tags">
+                <span class="tag">SUM</span><span class="tag">AVERAGE</span><span class="tag">MAX</span><span class="tag">MIN</span>
+                <span class="tag">ABS</span><span class="tag">ROUND</span><span class="tag">ROUNDUP</span><span class="tag">ROUNDDOWN</span>
+                <span class="tag">INT</span><span class="tag">MOD</span><span class="tag">POWER</span><span class="tag">SUMPRODUCT</span><span class="tag">SUBTOTAL</span>
+            </div>
+        </a>
+
+        <a href="statistical-functions-demo.html" class="category-card statistical">
+            <div class="icon">📈</div>
+            <div class="title">统计函数 <span class="count">9</span></div>
+            <div class="desc">提供数据统计分析功能：计数、标准差、方差、中位数、排名等。</div>
+            <div class="function-tags">
+                <span class="tag">COUNT</span><span class="tag">COUNTA</span><span class="tag">COUNTBLANK</span>
+                <span class="tag">STDEV</span><span class="tag">STDEVP</span><span class="tag">VAR</span><span class="tag">VARP</span>
+                <span class="tag">MEDIAN</span><span class="tag">RANK</span>
+            </div>
+        </a>
+
+        <a href="logical-functions-demo.html" class="category-card logical">
+            <div class="icon">🔀</div>
+            <div class="title">逻辑函数 <span class="count">4</span></div>
+            <div class="desc">提供条件判断和逻辑运算功能：IF 条件分支、AND/OR 逻辑组合、NOT 取反。</div>
+            <div class="function-tags">
+                <span class="tag">IF</span><span class="tag">AND</span><span class="tag">OR</span><span class="tag">NOT</span>
+            </div>
+        </a>
+
+        <a href="text-functions-demo.html" class="category-card text">
+            <div class="icon">📝</div>
+            <div class="title">文本函数 <span class="count">12</span></div>
+            <div class="desc">提供字符串操作和转换功能：大小写转换、截取、查找、替换、格式化等。</div>
+            <div class="function-tags">
+                <span class="tag">UPPER</span><span class="tag">LOWER</span><span class="tag">CONCAT</span><span class="tag">CONCATENATE</span>
+                <span class="tag">LEFT</span><span class="tag">RIGHT</span><span class="tag">MID</span><span class="tag">LEN</span>
+                <span class="tag">TRIM</span><span class="tag">FIND</span><span class="tag">SEARCH</span><span class="tag">SUBSTITUTE</span><span class="tag">TEXT</span>
+            </div>
+        </a>
+
+        <a href="conditional-functions-demo.html" class="category-card conditional">
+            <div class="icon">🎯</div>
+            <div class="title">条件函数 <span class="count">6</span></div>
+            <div class="desc">提供条件筛选和错误处理功能：条件求和/计数、多条件组合、错误捕获。</div>
+            <div class="function-tags">
+                <span class="tag">SUMIF</span><span class="tag">SUMIFS</span><span class="tag">COUNTIF</span><span class="tag">COUNTIFS</span>
+                <span class="tag">IFERROR</span><span class="tag">IFNA</span>
+            </div>
+        </a>
+
+        <a href="lookup-functions-demo.html" class="category-card lookup">
+            <div class="icon">🔍</div>
+            <div class="title">查找函数 <span class="count">4</span></div>
+            <div class="desc">提供数据查找和引用功能：垂直/水平查找、按索引取值、位置匹配。</div>
+            <div class="function-tags">
+                <span class="tag">VLOOKUP</span><span class="tag">HLOOKUP</span><span class="tag">INDEX</span><span class="tag">MATCH</span>
+            </div>
+        </a>
+    </div>
 
     <div class="demo-section">
-        <h2 class="section-title">
-            <span class="icon">📊</span>
-            公式演示表格
-        </h2>
-
-        <div class="canvas-container">
-            <canvas id="sheet"></canvas>
-        </div>
-
+        <h2 class="section-title"><span>📊</span> 综合演示表格</h2>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
         <div class="stats-grid">
-            <div class="stat-card">
-                <div class="value" id="totalFunctions">0</div>
-                <div class="label">函数总数</div>
-            </div>
-            <div class="stat-card">
-                <div class="value" id="mathCount">0</div>
-                <div class="label">数学函数</div>
-            </div>
-            <div class="stat-card">
-                <div class="value" id="statCount">0</div>
-                <div class="label">统计函数</div>
-            </div>
-            <div class="stat-card">
-                <div class="value" id="logicalCount">0</div>
-                <div class="label">逻辑函数</div>
-            </div>
-            <div class="stat-card">
-                <div class="value" id="textCount">0</div>
-                <div class="label">文本函数</div>
-            </div>
-            <div class="stat-card">
-                <div class="value" id="conditionalCount">0</div>
-                <div class="label">条件函数</div>
-            </div>
-            <div class="stat-card">
-                <div class="value" id="lookupCount">0</div>
-                <div class="label">查找函数</div>
-            </div>
+            <div class="stat-card"><div class="value">48</div><div class="label">函数总数</div></div>
+            <div class="stat-card"><div class="value">13</div><div class="label">数学函数</div></div>
+            <div class="stat-card"><div class="value">9</div><div class="label">统计函数</div></div>
+            <div class="stat-card"><div class="value">4</div><div class="label">逻辑函数</div></div>
+            <div class="stat-card"><div class="value">12</div><div class="label">文本函数</div></div>
+            <div class="stat-card"><div class="value">6</div><div class="label">条件函数</div></div>
+            <div class="stat-card"><div class="value">4</div><div class="label">查找函数</div></div>
         </div>
     </div>
 
     <div class="demo-section">
-        <h2 class="section-title">
-            <span class="icon">🧮</span>
-            函数分类索引
-        </h2>
-
-        <div class="category-section">
-            <div class="category-header">
-                <h3>📐 数学函数 (Math)</h3>
-                <span class="count" id="mathFunctionsCount">6</span>
-            </div>
-            <div class="function-list">
-                <span class="function-tag">SUM</span>
-                <span class="function-tag">AVERAGE</span>
-                <span class="function-tag">MAX</span>
-                <span class="function-tag">MIN</span>
-                <span class="function-tag">ABS</span>
-                <span class="function-tag">ROUND</span>
-            </div>
-        </div>
-
-        <div class="category-section">
-            <div class="category-header">
-                <h3>📈 统计函数 (Statistical)</h3>
-                <span class="count">3</span>
-            </div>
-            <div class="function-list">
-                <span class="function-tag">COUNT</span>
-                <span class="function-tag">COUNTA</span>
-                <span class="function-tag">COUNTBLANK</span>
-            </div>
-        </div>
-
-        <div class="category-section">
-            <div class="category-header">
-                <h3>🔀 逻辑函数 (Logical)</h3>
-                <span class="count">4</span>
-            </div>
-            <div class="function-list">
-                <span class="function-tag">IF</span>
-                <span class="function-tag">AND</span>
-                <span class="function-tag">OR</span>
-                <span class="function-tag">NOT</span>
-            </div>
-        </div>
-
-        <div class="category-section">
-            <div class="category-header">
-                <h3>📝 文本函数 (Text)</h3>
-                <span class="count">4</span>
-            </div>
-            <div class="function-list">
-                <span class="function-tag">UPPER</span>
-                <span class="function-tag">LOWER</span>
-                <span class="function-tag">CONCAT</span>
-                <span class="function-tag">CONCATENATE</span>
-            </div>
-        </div>
-
-        <div class="category-section">
-            <div class="category-header">
-                <h3>🎯 条件函数 (Conditional)</h3>
-                <span class="count">4</span>
-            </div>
-            <div class="function-list">
-                <span class="function-tag">SUMIF</span>
-                <span class="function-tag">SUMIFS</span>
-                <span class="function-tag">COUNTIF</span>
-                <span class="function-tag">COUNTIFS</span>
-            </div>
-        </div>
-
-        <div class="category-section">
-            <div class="category-header">
-                <h3>🔍 查找函数 (Lookup)</h3>
-                <span class="count">1</span>
-            </div>
-            <div class="function-list">
-                <span class="function-tag">VLOOKUP</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="demo-section">
-        <h2 class="section-title">
-            <span class="icon">📖</span>
-            函数详细说明
-        </h2>
-
-        <div class="formula-grid">
-            <!-- 数学函数 -->
-            <div class="formula-card">
-                <div class="category">数学函数</div>
-                <div class="name">SUM - 求和</div>
-                <div class="syntax">=SUM(number1, [number2], ...)</div>
-                <div class="desc">对所有数值参数求和，忽略非数值项。支持范围引用和多范围求和。</div>
-                <div class="example">示例: =SUM(A1:A10) 返回 A1 到 A10 的总和<br>=SUM(1,2,3) 返回 6</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">数学函数</div>
-                <div class="name">AVERAGE - 平均值</div>
-                <div class="syntax">=AVERAGE(number1, [number2], ...)</div>
-                <div class="desc">计算所有数值参数的算术平均数，无有效数值时返回 #DIV/0! 错误。</div>
-                <div class="example">示例: =AVERAGE(1,2,3,4,5) 返回 3<br>=AVERAGE(A1:A10) 返回 A1:A10 的平均值</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">数学函数</div>
-                <div class="name">MAX - 最大值</div>
-                <div class="syntax">=MAX(number1, [number2], ...)</div>
-                <div class="desc">返回一组数值中的最大值，忽略非数值项，无有效数值时返回 0。</div>
-                <div class="example">示例: =MAX(1,5,3,9,2) 返回 9<br>=MAX(A1:D10) 返回区域中的最大值</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">数学函数</div>
-                <div class="name">MIN - 最小值</div>
-                <div class="syntax">=MIN(number1, [number2], ...)</div>
-                <div class="desc">返回一组数值中的最小值，忽略非数值项，无有效数值时返回 0。</div>
-                <div class="example">示例: =MIN(1,5,3,9,2) 返回 1<br>=MIN(A1:D10) 返回区域中的最小值</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">数学函数</div>
-                <div class="name">ABS - 绝对值</div>
-                <div class="syntax">=ABS(number)</div>
-                <div class="desc">返回数值的绝对值（不带符号的数值），用于消除负数的符号。</div>
-                <div class="example">示例: =ABS(-100) 返回 100<br>=ABS(50) 返回 50</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">数学函数</div>
-                <div class="name">ROUND - 四舍五入</div>
-                <div class="syntax">=ROUND(number, num_digits)</div>
-                <div class="desc">将数值四舍五入到指定位数的小数。num_digits 为负数时表示小数点左侧。</div>
-                <div class="example">示例: =ROUND(3.14159, 2) 返回 3.14<br>=ROUND(1234.5678, -2) 返回 1200</div>
-            </div>
-
-            <!-- 统计函数 -->
-            <div class="formula-card">
-                <div class="category">统计函数</div>
-                <div class="name">COUNT - 统计数值个数</div>
-                <div class="syntax">=COUNT(value1, [value2], ...)</div>
-                <div class="desc">计算范围内包含数值的单元格数量，只统计数字类型。</div>
-                <div class="example">示例: =COUNT(1,"a",3,"",5) 返回 3<br>=COUNT(A1:A100) 统计 A 列中的数值个数</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">统计函数</div>
-                <div class="name">COUNTA - 统计非空单元格</div>
-                <div class="syntax">=COUNTA(value1, [value2], ...)</div>
-                <div class="desc">计算范围内非空单元格的数量，包括文本、数值、错误值等。</div>
-                <div class="example">示例: =COUNTA(1,"","text",null) 返回 2<br>=COUNTA(A1:D10) 统计非空单元格数</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">统计函数</div>
-                <div class="name">COUNTBLANK - 统计空单元格</div>
-                <div class="syntax">=COUNTBLANK(range)</div>
-                <div class="desc">计算范围内空单元格的数量，包括空字符串、null、undefined。</div>
-                <div class="example">示例: =COUNTBLANK(A1:A10) 返回空单元格数<br>=COUNTBLANK(A1:D10) 统计区域中的空单元格</div>
-            </div>
-
-            <!-- 逻辑函数 -->
-            <div class="formula-card">
-                <div class="category">逻辑函数</div>
-                <div class="name">IF - 条件判断</div>
-                <div class="syntax">=IF(logical_test, value_if_true, [value_if_false])</div>
-                <div class="desc">根据条件是否成立返回不同的值，可嵌套使用实现复杂逻辑。</div>
-                <div class="example">示例: =IF(A1>100,"优秀","一般")<br>=IF(A1="","未填写",A1)</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">逻辑函数</div>
-                <div class="name">AND - 逻辑与</div>
-                <div class="syntax">=AND(logical1, [logical2], ...)</div>
-                <div class="desc">所有条件都为 TRUE 时返回 TRUE，任一条件为 FALSE 时返回 FALSE。支持短路求值。</div>
-                <div class="example">示例: =AND(TRUE,TRUE) 返回 TRUE<br>=AND(A1>0,B1<100) A1>0 且 B1<100</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">逻辑函数</div>
-                <div class="name">OR - 逻辑或</div>
-                <div class="syntax">=OR(logical1, [logical2], ...)</div>
-                <div class="desc">任一条件为 TRUE 时返回 TRUE，所有条件都为 FALSE 时返回 FALSE。支持短路求值。</div>
-                <div class="example">示例: =OR(FALSE,FALSE,FALSE) 返回 FALSE<br>=OR(A1<0,B1>100) A1<0 或 B1>100</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">逻辑函数</div>
-                <div class="name">NOT - 逻辑非</div>
-                <div class="syntax">=NOT(logical)</div>
-                <div class="desc">反转参数的逻辑值：TRUE 变为 FALSE，FALSE 变为 TRUE。</div>
-                <div class="example">示例: =NOT(TRUE) 返回 FALSE<br>=NOT(AND(A1>0,B1<50)) 非(A1>0 且 B1<50)</div>
-            </div>
-
-            <!-- 文本函数 -->
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">UPPER - 转大写</div>
-                <div class="syntax">=UPPER(text)</div>
-                <div class="desc">将文本字符串中所有的小写字母转换为大写形式。</div>
-                <div class="example">示例: =UPPER("hello") 返回 "HELLO"<br>=UPPER(A1) 将 A1 内容转大写</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">LOWER - 转小写</div>
-                <div class="syntax">=LOWER(text)</div>
-                <div class="desc">将文本字符串中所有的大写字母转换为小写形式。</div>
-                <div class="example">示例: =LOWER("HELLO") 返回 "hello"<br>=LOWER(A1) 将 A1 内容转小写</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">CONCAT - 文本连接</div>
-                <div class="syntax">=CONCAT(text1, [text2], ...)</div>
-                <div class="desc">将多个文本字符串连接为一个连续字符串，支持范围引用。</div>
-                <div class="example">示例: =CONCAT("Hello"," ","World") 返回 "Hello World"<br>=CONCAT(A1:C1) 连接三个单元格</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">CONCATENATE - 文本连接(兼容)</div>
-                <div class="syntax">=CONCATENATE(text1, [text2], ...)</div>
-                <div class="desc">CONCAT 的别名，用于兼容旧版 Excel。其他同 CONCAT。</div>
-                <div class="example">示例: =CONCATENATE("A","-","B") 返回 "A-B"<br>=CONCATENATE(A1,"-",B1)</div>
-            </div>
-
-            <!-- 条件函数 -->
-            <div class="formula-card">
-                <div class="category">条件函数</div>
-                <div class="name">SUMIF - 单条件求和</div>
-                <div class="syntax">=SUMIF(range, criteria, [sum_range])</div>
-                <div class="desc">对满足条件的单元格求和。支持数值比较、文本匹配、通配符。</div>
-                <div class="example">示例: =SUMIF(A1:A10,">100") A列大于100的和<br>=SUMIF(B1:B10,"苹果",C1:C10) B列是"苹果"时C列求和</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">条件函数</div>
-                <div class="name">SUMIFS - 多条件求和</div>
-                <div class="syntax">=SUMIFS(sum_range, criteria_range1, criteria1, ...)</div>
-                <div class="desc">对同时满足多个条件的单元格求和，条件之间是 AND 关系。</div>
-                <div class="example">示例: =SUMIFS(C2:C100,B2:B100,"北京",D2:D100,">10000") 北京且大于10000</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">条件函数</div>
-                <div class="name">COUNTIF - 单条件计数</div>
-                <div class="syntax">=COUNTIF(range, criteria)</div>
-                <div class="desc">统计满足条件的单元格数量，支持通配符 * 和 ?。</div>
-                <div class="example">示例: =COUNTIF(A1:A10,">5") 统计大于5的个数<br>=COUNTIF(B1:B10,"*张*") 包含"张"字的</div>
-            </div>
-
-            <div class="formula-card">
-                <div class="category">条件函数</div>
-                <div class="name">COUNTIFS - 多条件计数</div>
-                <div class="syntax">=COUNTIFS(criteria_range1, criteria1, ...)</div>
-                <div class="desc">统计同时满足多个条件的单元格数量，条件之间是 AND 关系。</div>
-                <div class="example">示例: =COUNTIFS(A1:A10,">5",B1:B10,"是") 同时满足两个条件</div>
-            </div>
-
-            <!-- 查找函数 -->
-            <div class="formula-card">
-                <div class="category">查找函数</div>
-                <div class="name">VLOOKUP - 垂直查找</div>
-                <div class="syntax">=VLOOKUP(lookup_value, table_array, col_index_num, [range_lookup])</div>
-                <div class="desc">在表格第一列中查找值，返回同一行指定列的值。range_lookup: FALSE=精确, TRUE=近似。</div>
-                <div class="example">示例: =VLOOKUP("苹果",A1:D10,3,FALSE) 精确查找"苹果"的第3列<br>=VLOOKUP(100,A1:E20,2,TRUE) 近似匹配</div>
-            </div>
-        </div>
-    </div>
-
-    <div class="demo-section">
-        <h2 class="section-title">
-            <span class="icon">💡</span>
-            使用说明
-        </h2>
+        <h2 class="section-title"><span>💡</span> 使用说明</h2>
         <div style="line-height: 1.8; color: #555;">
             <h3 style="color: #4a5568; margin: 16px 0 8px;">公式输入</h3>
             <ul style="margin-left: 20px;">
@@ -642,14 +165,12 @@
                 <li>例如: <code>=SUM(A1:A10)</code>, <code>=IF(A1>100, "优秀", "一般")</code></li>
                 <li>函数名不区分大小写</li>
             </ul>
-
             <h3 style="color: #4a5568; margin: 16px 0 8px;">支持的运算符</h3>
             <ul style="margin-left: 20px;">
                 <li><strong>算术运算符</strong>: + (加), - (减), * (乘), / (除), ^ (幂)</li>
-                <li><strong>比较运算符</strong>: = (等于), <> (不等于), > (大于), < (小于), >= (大于等于), <= (小于等于)</li>
-                <li><strong>文本连接</strong>: & (连接文本)</li>
+                <li><strong>比较运算符</strong>: = (等于), &lt;&gt; (不等于), &gt; (大于), &lt; (小于), &gt;= (大于等于), &lt;= (小于等于)</li>
+                <li><strong>文本连接</strong>: &amp; (连接文本)</li>
             </ul>
-
             <h3 style="color: #4a5568; margin: 16px 0 8px;">范围引用</h3>
             <ul style="margin-left: 20px;">
                 <li><strong>单个单元格</strong>: A1</li>
@@ -660,21 +181,15 @@
     </div>
 
     <div class="demo-section">
-        <h2 class="section-title">
-            <span class="icon">📝</span>
-            操作日志
-        </h2>
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
         <div class="log-container" id="logContainer">
-            <div class="log-entry log-info">公式引擎初始化完成，共加载 22 个内置函数</div>
+            <div class="log-entry log-info">公式引擎初始化完成，共加载 48 个内置函数</div>
         </div>
     </div>
 </div>
 
 <script src="../../dist/canvas-sheet.umd.js"></script>
 <script>
-    let workbook = null;
-    let sheet = null;
-
     const sampleData = [
         ["商品名称", "类别", "单价", "数量", "销售额", "备注"],
         ["苹果", "水果", 5.5, 100, "=C2*D2", ""],
@@ -686,7 +201,6 @@
         ["", "", "", "", "", ""],
         ["统计信息", "", "", "", "", ""],
         ["水果销售额", "=SUMIF(B2:B6,\"水果\",E2:E6)", "", "", "", ""],
-        ["食品销售额", "=SUMIF(B2:B6,\"食品\",E2:E6)", "", "", "", ""],
         ["平均单价", "=AVERAGE(C2:C6)", "", "", "", ""],
         ["最高单价", "=MAX(C2:C6)", "", "", "", ""],
         ["最低单价", "=MIN(C2:C6)", "", "", "", ""],
@@ -701,7 +215,6 @@
         ["逻辑函数示例", "", "", "", "", ""],
         ["条件判断", "=IF(C2>5,\"高价\",\"低价\")", "", "", "", ""],
         ["复合条件", "=IF(AND(C2>5,D2>100),\"热销\",\"普通\")", "", "", "", ""],
-        ["多条件", "=IF(OR(C2>10,C2<4),\"特殊价格\",\"正常价格\")", "", "", "", ""],
     ];
 
     const columns = [
@@ -713,79 +226,36 @@
         { type: 'text', width: 120 },
     ];
 
-    function log(msg, type = 'info') {
+    function log(msg, type) {
+        type = type || 'info';
         const container = document.getElementById('logContainer');
         const entry = document.createElement('div');
-        entry.className = `log-entry log-${type}`;
-        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
         container.insertBefore(entry, container.firstChild);
-        if (container.children.length > 50) container.removeChild(container.lastChild);
-    }
-
-    function updateStats() {
-        const totalFunctions = 6 + 3 + 4 + 4 + 4 + 1;
-        document.getElementById('totalFunctions').textContent = totalFunctions;
-        document.getElementById('mathCount').textContent = 6;
-        document.getElementById('statCount').textContent = 3;
-        document.getElementById('logicalCount').textContent = 4;
-        document.getElementById('textCount').textContent = 4;
-        document.getElementById('conditionalCount').textContent = 4;
-        document.getElementById('lookupCount').textContent = 1;
     }
 
     async function initWorkbook() {
         try {
-            log('🚀 初始化 Workbook...', 'info');
-
+            log('初始化 Workbook...', 'info');
             const container = document.getElementById('sheet');
             container.width = 800;
             container.height = 600;
 
-            workbook = new CanvasSheet.Workbook(container, {
-                width: 1200,
-                height: 600,
-                sheets: [{
-                    name: '公式演示',
-                    data: sampleData,
-                    columns: columns,
-                    cellPadding: 8,
-                }],
+            new CanvasSheet.Workbook(container, {
+                width: 1200, height: 600,
+                sheets: [{ name: '公式演示', data: sampleData, columns: columns, cellPadding: 8 }],
                 plugins: [
-                    "autoFill",
-                    "contextMenu",
-                    "columnMove",
-                    "copyPaste",
-
-                    "exportFile",
-                    "importFile",
-                    "hiddenColumns",
-                    "hiddenRows",
-                    "rowMove",
-                    "freeze",
-                    "formula",
-
-                    // "sort",
-                    "dataValidation",
-                    "chart",
-                    // "interaction"
-                    // "filter",
+                    "autoFill", "contextMenu", "columnMove", "copyPaste",
+                    "exportFile", "importFile", "hiddenColumns", "hiddenRows",
+                    "rowMove", "freeze", "formula", "dataValidation", "chart",
                 ],
             });
 
-            sheet = workbook.activeSheet;
-
-            log('✅ Workbook 初始化成功', 'success');
-            log('📋 公式示例已填充，包括:', 'info');
-            log('   - 数学函数: SUM, AVERAGE, MAX, MIN', 'info');
-            log('   - 条件函数: SUMIF, COUNTIF', 'info');
-            log('   - 文本函数: UPPER, LOWER, CONCAT', 'info');
-            log('   - 逻辑函数: IF, AND, OR', 'info');
-
-            updateStats();
-
+            log('Workbook 初始化成功', 'success');
+            log('公式示例已填充，包括数学、条件、文本、逻辑函数', 'info');
         } catch (e) {
-            log('❌ 初始化失败: ' + e.message, 'error');
-            console.error(e);
+            log('初始化失败: ' + e.message, 'error');
         }
     }
 
