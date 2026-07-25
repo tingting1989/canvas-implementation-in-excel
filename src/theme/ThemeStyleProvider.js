@@ -1,6 +1,15 @@
 import { ThemeManager } from "./ThemeManager.js";
 import { stylePool } from "../model/styles/index.js";
-
+const typeToStyleMap = {
+    numeric: "cell.numeric",
+    text: "cell.text",
+    hyperlink: "cell.hyperlink",
+    date: "cell.date",
+    checkbox: "cell.checkbox",
+    textarea: "cell.textarea",
+    header: "cell.header",
+    selected: "cell.selected",
+};
 /**
  * 主题样式提供者
  *
@@ -28,15 +37,6 @@ export class ThemeStyleProvider {
      */
     getCellStyleId(row, col, cellType) {
         // 根据单元格类型获取对应的样式类型
-        const typeToStyleMap = {
-            numeric: "cell.numeric",
-            text: "cell.text",
-            hyperlink: "cell.hyperlink",
-            date: "cell.date",
-            boolean: "cell.boolean",
-            textarea: "cell.textarea",
-        };
-
         const styleType = typeToStyleMap[cellType] || "cell.default";
         return this.themeManager.getStyleId(styleType);
     }
@@ -51,17 +51,7 @@ export class ThemeStyleProvider {
      */
     getCellStyle(row, col, cellType) {
         // 根据单元格类型获取对应的样式类型
-        const typeToStyleMap = {
-            numeric: "cell.numeric",
-            text: "cell.text",
-            hyperlink: "cell.hyperlink",
-            date: "cell.date",
-            boolean: "cell.boolean",
-            textarea: "cell.textarea",
-        };
-
         const styleType = typeToStyleMap[cellType] || "cell.default";
-
         const styleId = this.themeManager.getStyleId(styleType);
         if (styleId) {
             return stylePool.getStyle(styleId);

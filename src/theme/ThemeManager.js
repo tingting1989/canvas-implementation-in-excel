@@ -1,7 +1,6 @@
-import { stylePool } from "../model/styles/index.js";
-import { defaultThemeConfig, darkThemeConfig } from "./config.js";
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
-
+import {stylePool} from "../model/styles/index.js";
+import {darkThemeConfig, defaultThemeConfig,styleTypes} from "./config.js";
+import {ERROR_CODE, errorHandler} from "../core/ErrorHandler.js";
 /**
  * 主题管理器类
  *
@@ -142,23 +141,10 @@ export class ThemeManager {
      * @private
      */
     #preRegisterStyles(themeName, config) {
-        const styleTypes = [
-            "cell.default",
-            "cell.numeric",
-            "cell.text",
-            "cell.hyperlink",
-            "cell.date",
-            "cell.boolean",
-            "cell.textarea",
-            "cell.header",
-            "cell.selected",
-        ];
-
         styleTypes.forEach((type) => {
             const style = this.#getStyleFromConfig(config, type);
             if (style && Object.keys(style).length > 0) {
-                const styleId = stylePool.getStyleId(style);
-                this.styleIds[`${themeName}.${type}`] = styleId;
+                this.styleIds[`${themeName}.${type}`] = stylePool.getStyleId(style);
             }
         });
     }

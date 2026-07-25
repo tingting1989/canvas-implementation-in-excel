@@ -307,8 +307,8 @@ export class SheetStyleManager {
                 themeStyle = themeStyleProvider.getStyle("cell.textarea");
             } else if (cellType?.name === "date") {
                 themeStyle = themeStyleProvider.getStyle("cell.date");
-            } else if (cellType?.name === "boolean") {
-                themeStyle = themeStyleProvider.getStyle("cell.boolean");
+            } else if (cellType?.name === "checkbox") {
+                themeStyle = themeStyleProvider.getStyle("cell.checkbox");
             } else {
                 themeStyle = themeStyleProvider.getStyle("cell.default");
             }
@@ -338,8 +338,8 @@ export class SheetStyleManager {
             themeStyle = themeStyleProvider.getStyle("cell.textarea");
         } else if (cellType?.name === "date") {
             themeStyle = themeStyleProvider.getStyle("cell.date");
-        } else if (cellType?.name === "boolean") {
-            themeStyle = themeStyleProvider.getStyle("cell.boolean");
+        } else if (cellType?.name === "checkbox") {
+            themeStyle = themeStyleProvider.getStyle("cell.checkbox");
         } else {
             themeStyle = themeStyleProvider.getStyle("cell.default");
         }

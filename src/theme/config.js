@@ -88,16 +88,6 @@ export const defaultThemeConfig = {
                 verticalAlign: "middle",
                 textDecoration: "none",
             },
-            boolean: {
-                fontFamily: "Microsoft YaHei",
-                fontSize: 14,
-                fontWeight: "bold",
-                color: "#1565C0",
-                backgroundColor: "transparent",
-                textAlign: "center",
-                verticalAlign: "middle",
-                textDecoration: "none",
-            },
             checkbox: {
                 fontFamily: "Microsoft YaHei",
                 fontSize: 14,
@@ -217,12 +207,12 @@ export const darkThemeConfig = {
                 verticalAlign: "middle",
                 textDecoration: "none",
             },
-            boolean: {
+            checkbox: {
                 fontFamily: "Microsoft YaHei",
                 fontSize: 14,
-                fontWeight: "bold",
-                color: "#64B5F6",
-                backgroundColor: "#333",
+                fontWeight: "normal",
+                color: "#667eea",
+                backgroundColor: "transparent",
                 textAlign: "center",
                 verticalAlign: "middle",
                 textDecoration: "none",
@@ -245,3 +235,16 @@ export const darkThemeConfig = {
         },
     },
 };
+
+
+export const styleTypes = [
+    "cell.default",
+    "cell.numeric",
+    "cell.text",
+    "cell.hyperlink",
+    "cell.date",
+    "cell.checkbox",
+    "cell.textarea",
+    "cell.header",
+    "cell.selected",
+];
