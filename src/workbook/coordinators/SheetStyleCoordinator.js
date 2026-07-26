@@ -274,13 +274,30 @@ export class SheetStyleCoordinator {
     /**
      * 绑定数据到样式映射
      *
-     * 将某列的值映射为不同的样式（如：正数绿色、负数红色）
+     * 将某列的单元格值映射为不同的样式，在 resolveStyle 中作为第 9 层（最高优先级）合并。
+     * 绑定后，该列所有行在渲染时都会经过 mapperFn 计算样式；同一列重复绑定会覆盖。
      *
-     * @param {number} col - 列号
-     * @param {function(value: *): number} mapperFn - 值→样式ID 的映射函数
+     * mapperFn 调用时机：每次 resolveStyle(r, c) 解析到第 9 层时调用，不是绑定时执行。
+     * mapperFn 接收的 value 即 cell.value，空单元格为 undefined，需在函数中处理。
+     * mapperFn 返回样式对象（如 { color: "#00ff00" }），内部自动通过 stylePool 转换为 styleId；
+     * 返回 null/undefined 则该层不生效。
+     *
+     * 典型用法：
+     * - 正数绿色、负数红色：`sheet.bindDataStyle(2, v => v >= 0 ? { color: "#00aa00" } : { color: "#cc0000" })`
+     * - 状态映射：`sheet.bindDataStyle(3, v => ({ active: { color: "green" }, closed: { color: "gray" } }[v]))`
+     * - 阈值分段：`sheet.bindDataStyle(4, v => v >= 80 ? { color: "#00aa00" } : v >= 60 ? { color: "#cc8800" } : { color: "#cc0000" })`
+     * - 处理空值：`sheet.bindDataStyle(5, v => v == null ? { color: "#999" } : v > 0 ? { color: "#00aa00" } : { color: "#cc0000" })`
+     *
+     * @param {number} col - 列号（0-based），该列所有行的单元格都会应用此映射
+     * @param {function(value: *): Object|null} mapperFn - 值→样式对象的映射函数
+     *   - @param {*} value - 单元格的值（cell.value），空单元格为 undefined
+     *   - @returns {Object|null} 样式对象（如 { color: "#00aa00", fontWeight: "bold" }），返回 null/undefined 则该层不生效
      */
     bindDataStyle(col, mapperFn) {
-        this.#conditionalFormat.bind(col, mapperFn);
+        this.#conditionalFormat.bind(col, (value) => {
+            const styleObj = mapperFn(value);
+            return styleObj ? stylePool.getStyleId(styleObj) : 0;
+        });
     }
 
     /**

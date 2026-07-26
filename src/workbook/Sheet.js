@@ -706,8 +706,8 @@ export class Sheet extends ISheet {
     }
     /**
      * 绑定数据到样式映射（将某列的值映射为不同的样式）
-     * @param {number} col - 列号
-     * @param {function(value: *): number} mapperFn - 值→样式ID 的映射函数
+     * @param {number} col - 列号（0-based）
+     * @param {function(value: *): Object|null} mapperFn - 值→样式对象的映射函数，返回 null 则该层不生效
      */
     bindDataStyle(...args) {
         return this.styles.bindDataStyle(...args);
