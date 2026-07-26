@@ -8,6 +8,7 @@ import { DateValidator } from "./validators/DateValidator.js";
 import { TimeValidator } from "./validators/TimeValidator.js";
 import { RegexValidator } from "./validators/RegexValidator.js";
 import { ValidationResult } from "./ValidationResult.js";
+import { ListSourceResolver } from "./ListSourceResolver.js";
 
 /**
  * 数据验证引擎
@@ -34,6 +35,9 @@ export class ValidationEngine {
     /** @type {Map<string, import('./ValidationRule.js').ValidationRule>} 规则存储 */
     #rules = new Map();
 
+    /** @type {boolean} 是否已销毁 */
+    #destroyed = false;
+
     /** @type {Object} CellStore 实例 */
     #cellStore;
 
@@ -45,6 +49,9 @@ export class ValidationEngine {
 
     /** @type {string} 规则冲突解决策略：short-circuit|priority|aggregate */
     #conflictStrategy = "short-circuit";
+
+    /** @type {ListSourceResolver|null} 动态数据源解析器 */
+    #sourceResolver = null;
 
     /**
      * 构造验证引擎
@@ -58,11 +65,18 @@ export class ValidationEngine {
      * 初始化引擎（注册所有内置验证器）
      * 内置验证器类型：number、text、list、unique、custom、date、time、regex
      * @param {Object|null} [formulaEngine=null] - 公式引擎实例，custom 类型验证器需要
+     * @param {Object|null} [sheetManager=null] - SheetManager 实例，动态区域引用需要
      */
-    async init(formulaEngine = null) {
+    async init(formulaEngine = null, sheetManager = null) {
+        this.#sourceResolver = new ListSourceResolver(this.#cellStore, sheetManager);
+
         this.registerValidator("number", new NumberValidator());
         this.registerValidator("text", new TextLengthValidator());
-        this.registerValidator("list", new ListValidator());
+
+        const listValidator = new ListValidator();
+        listValidator.setSourceResolver(this.#sourceResolver);
+        this.registerValidator("list", listValidator);
+
         this.registerValidator("unique", new UniqueValidatorV3(this.#cellStore));
         this.registerValidator("custom", new FormulaValidator(formulaEngine));
         this.registerValidator("date", new DateValidator());
@@ -550,13 +564,24 @@ export class ValidationEngine {
         return this.#conflictStrategy;
     }
 
+    /** @returns {ListSourceResolver|null} 动态数据源解析器 */
+    get sourceResolver() {
+        return this.#sourceResolver;
+    }
+
     /**
      * 销毁引擎，清空验证器注册表、规则存储和缓存
      */
     destroy() {
+        if (this.#destroyed) return;
+        this.#destroyed = true;
+
         this.#validators.clear();
         this.#rules.clear();
         this.#cache.clear();
+        this.#sourceResolver?.destroy();
+        this.#sourceResolver = null;
+        this.#cellStore = null;
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 已销毁");
     }
 }

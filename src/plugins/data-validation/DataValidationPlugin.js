@@ -2,6 +2,9 @@
 import { BasePlugin } from "../BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
+import { ValidationUIController } from "./ValidationUIController.js";
+import { ValidationDirtyFlagManager } from "./ValidationDirtyFlagManager.js";
+import { CopyPasteHandler, PASTE_OPTIONS } from "./CopyPasteHandler.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
@@ -74,8 +77,14 @@ export class DataValidationPlugin extends BasePlugin {
     /** @type {ValidationEngine|null} 验证引擎实例 */
     #engine = null;
 
-    /** @type {Object|null} Portal UI 管理器实例（Phase 2 实现） */
+    /** @type {ValidationUIController|null} UI 控制器实例 */
     #portalUI = null;
+
+    /** @type {ValidationDirtyFlagManager|null} 脏标记管理器 */
+    #dirtyFlagManager = null;
+
+    /** @type {CopyPasteHandler|null} 复制/粘贴处理器 */
+    #copyPasteHandler = null;
 
     /** @type {Array} 初始规则配置（用于新 Sheet 自动加载） */
     #initialRules = [];
@@ -118,6 +127,9 @@ export class DataValidationPlugin extends BasePlugin {
 
             this.registerHooks();
             this.#bindSheetSwitchListener();
+            this.#initUIController();
+            this.#dirtyFlagManager = new ValidationDirtyFlagManager();
+            this.#copyPasteHandler = new CopyPasteHandler(this);
             this.#active = true;
         } catch (error) {
             throw error;
@@ -132,6 +144,21 @@ export class DataValidationPlugin extends BasePlugin {
     /** @returns {ValidationEngine|null} 验证引擎实例 */
     get engine() {
         return this.#engine;
+    }
+
+    /** @returns {ValidationUIController|null} UI 控制器实例 */
+    get uiController() {
+        return this.#portalUI;
+    }
+
+    /** @returns {ValidationDirtyFlagManager|null} 脏标记管理器 */
+    get dirtyFlagManager() {
+        return this.#dirtyFlagManager;
+    }
+
+    /** @returns {CopyPasteHandler|null} 复制/粘贴处理器 */
+    get copyPasteHandler() {
+        return this.#copyPasteHandler;
     }
 
     /**
@@ -172,6 +199,8 @@ export class DataValidationPlugin extends BasePlugin {
         if (!result.valid) {
             this.hooks?.runHooks(HOOKS.VALIDATION_FAILED, row, col, value, result);
 
+            this.#portalUI?.showErrorTooltip(row, col, result.message || "输入值无效", result.errorStyle || "stop");
+
             if (result.errorStyle === ERROR_STYLE.STOP) {
                 return false;
             }
@@ -182,7 +211,7 @@ export class DataValidationPlugin extends BasePlugin {
 
     /**
      * 单元格赋值后的处理
-     * 触发 AFTER_VALIDATE 钩子通知验证完成
+     * 标记为脏，触发 AFTER_VALIDATE 钩子通知验证完成
      * @param {number} row - 行号
      * @param {number} col - 列号
      * @param {*} value - 赋值后的新值
@@ -190,15 +219,34 @@ export class DataValidationPlugin extends BasePlugin {
     handleAfterSetValue(row, col, value) {
         if (!this.#active || !this.#engine) return;
 
+        this.#dirtyFlagManager?.markDirty(row, col, "user_edit");
         this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, row, col, value);
     }
 
     /**
-     * 拦截粘贴操作前的验证（Phase 2 预留）
+     * 拦截粘贴操作前的验证
+     * 根据粘贴选项决定是否携带验证规则，并处理规则冲突
      * @param {object} data - 粘贴数据
+     * @param {number} [data.sourceRow] - 源行号
+     * @param {number} [data.sourceCol] - 源列号
+     * @param {number} [data.targetRow] - 目标行号
+     * @param {number} [data.targetCol] - 目标列号
+     * @param {string} [data.pasteOption='all'] - 粘贴选项
      * @returns {boolean} true 允许粘贴，false 阻止粘贴
      */
     interceptBeforePaste(data) {
+        if (!this.#active || !this.#copyPasteHandler) return true;
+
+        if (data?.sourceRow !== undefined && data?.targetRow !== undefined) {
+            this.#copyPasteHandler.pasteWithRules(
+                data.sourceRow,
+                data.sourceCol,
+                data.targetRow,
+                data.targetCol,
+                data.pasteOption || PASTE_OPTIONS.ALL,
+            );
+        }
+
         return true;
     }
 
@@ -230,6 +278,21 @@ export class DataValidationPlugin extends BasePlugin {
         if (this.#sheetSwitchUnsubscribe) {
             this.#sheetSwitchUnsubscribe();
             this.#sheetSwitchUnsubscribe = null;
+        }
+    }
+
+    /**
+     * 初始化 UI 控制器
+     * @private
+     */
+    #initUIController() {
+        try {
+            const portalManager = this.workbook?.validationPortalManager || null;
+            this.#portalUI = new ValidationUIController(this.sheet, portalManager, this, this.renderEngine);
+            this.#portalUI.init();
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[DataValidation] UI 控制器初始化失败:", error);
+            this.#portalUI = null;
         }
     }
 
@@ -278,6 +341,7 @@ export class DataValidationPlugin extends BasePlugin {
 
         this.hooks?.runHooks(HOOKS.AFTER_VALIDATION_RULE_CHANGE, rule, null);
 
+        this.#portalUI?.onRuleChanged(rule, false);
         this.renderEngine?.invalidateAll();
         this.render();
 
@@ -304,6 +368,7 @@ export class DataValidationPlugin extends BasePlugin {
 
         if (success) {
             this.hooks?.runHooks(HOOKS.AFTER_VALIDATION_RULE_CHANGE, null, rule);
+            this.#portalUI?.onRuleChanged(rule, true);
             this.renderEngine?.invalidateAll();
             this.render();
         }
@@ -400,7 +465,7 @@ export class DataValidationPlugin extends BasePlugin {
     }
 
     /**
-     * 销毁插件，释放验证引擎、Portal UI 和事件监听等所有资源
+     * 销毁插件，释放验证引擎、Portal UI、脏标记管理器和事件监听等所有资源
      */
     destroy() {
         this.disable();
@@ -415,6 +480,16 @@ export class DataValidationPlugin extends BasePlugin {
         if (this.#portalUI) {
             this.#portalUI.destroy();
             this.#portalUI = null;
+        }
+
+        if (this.#dirtyFlagManager) {
+            this.#dirtyFlagManager.destroy();
+            this.#dirtyFlagManager = null;
+        }
+
+        if (this.#copyPasteHandler) {
+            this.#copyPasteHandler.destroy();
+            this.#copyPasteHandler = null;
         }
 
         super.destroy();

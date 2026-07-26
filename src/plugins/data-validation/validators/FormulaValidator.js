@@ -1,6 +1,7 @@
 ﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
+import { ShadowEvaluator } from "../ShadowEvaluator.js";
 
 /**
  * 自定义公式验证器（沙箱隔离版本）
@@ -92,12 +93,9 @@ export class FormulaValidator extends BaseValidator {
     /**
      * 在隔离沙箱中执行公式求值（零副作用）
      *
-     * 实现设计文档中的 evaluateForValidation 接口：
-     * - 创建临时 AST（不进入主缓存）
-     * - 创建"影子 Evaluator"（与主 Evaluator 完全隔离）
-     * - 设置只读上下文（不修改任何全局状态）
-     * - 执行求值（保证零副作用）
-     * - 销毁影子实例（释放内存，防止泄漏）
+     * 优先使用 FormulaEngine.evaluateForValidation 接口；
+     * 若不可用，则创建 ShadowEvaluator 实例进行隔离求值；
+     * 两者均不可用时抛出明确错误（不再使用有副作用的降级方案）。
      *
      * @private
      * @param {*} value - 当前值
@@ -106,11 +104,6 @@ export class FormulaValidator extends BaseValidator {
      * @returns {Promise<boolean>}
      */
     async evaluateInSandbox(value, rule, context) {
-        if (!this.#formulaEngine?.evaluateForValidation) {
-            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] FormulaEngine 未实现 evaluateForValidation 接口，使用降级方案");
-            return this.fallbackEvaluation(value, rule, context);
-        }
-
         const validationContext = {
             row: context.row ?? 0,
             col: context.col ?? 0,
@@ -118,40 +111,21 @@ export class FormulaValidator extends BaseValidator {
             sheet: context.sheet || "Sheet1",
         };
 
-        const result = await this.#formulaEngine.evaluateForValidation(rule.formula, validationContext);
-
-        return !!result;
-    }
-
-    /**
-     * 降级求值方案（当 FormulaEngine 不支持沙箱时使用）
-     * ⚠️ 注意：此方法可能产生副作用，仅作为兼容性降级
-     *
-     * @private
-     * @param {*} value - 当前值
-     * @param {import('../ValidationRule.js').ValidationRule} rule - 规则
-     * @param {Object} context - 上下文
-     * @returns {boolean}
-     */
-    fallbackEvaluation(value, rule, context) {
-        try {
-            if (!this.#formulaEngine?.evaluateFormula) {
-                throw new Error("FormulaEngine 缺少必要的求值方法");
-            }
-
-            const row = context.row ?? 0;
-            const col = context.col ?? 0;
-
-            const result = this.#formulaEngine.evaluateFormula(rule.formula, {
-                currentCell: { row, col, value },
-                sheet: context.sheet || "Sheet1",
-                mode: "validation",
-            });
-
+        if (this.#formulaEngine?.evaluateForValidation) {
+            const result = await this.#formulaEngine.evaluateForValidation(rule.formula, validationContext);
             return !!result;
-        } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 降级求值失败:", error);
-            throw error;
         }
+
+        if (this.#formulaEngine) {
+            const shadow = new ShadowEvaluator(this.#formulaEngine, validationContext);
+            try {
+                const result = await shadow.evaluate(rule.formula);
+                return !!result;
+            } finally {
+                shadow.destroy();
+            }
+        }
+
+        throw new Error("[FormulaValidator] FormulaEngine 未初始化，无法执行沙箱求值。请确保 FormulaEngine 实例已正确传入。");
     }
 }

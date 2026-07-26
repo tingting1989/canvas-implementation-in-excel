@@ -1,6 +1,7 @@
 ﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
+import { ListSourceResolver } from "../ListSourceResolver.js";
 
 /**
  * 下拉列表验证器
@@ -23,6 +24,9 @@ export class ListValidator extends BaseValidator {
     static get TYPE() {
         return "list";
     }
+
+    /** @type {ListSourceResolver|null} 动态数据源解析器 */
+    #sourceResolver = null;
 
     /**
      * 验证列表选项
@@ -90,16 +94,48 @@ export class ListValidator extends BaseValidator {
     }
 
     /**
-     * 解析动态数据源（Phase 2 实现）
+     * 解析动态数据源
+     *
+     * 委托给 ListSourceResolver 进行解析。
+     * 若未设置 resolver，则返回空数组并输出警告。
+     *
      * @private
      * @param {string} sourceRef - 区域引用（如 '=Sheet1!$A$1:$A$10'）
      * @param {Object} context - 上下文
      * @returns {Promise<string[]>}
      */
     async resolveDynamicSource(sourceRef, context) {
-        // TODO Phase 2: 实现动态区域引用解析
-        errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] 动态区域引用尚未实现，返回空数组");
-        return [];
+        if (!this.#sourceResolver) {
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] ListSourceResolver 未设置，动态区域引用不可用，返回空数组");
+            return [];
+        }
+
+        try {
+            return await this.#sourceResolver.resolve(sourceRef, {
+                currentSheet: context.sheet || undefined,
+            });
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] 动态数据源解析失败:", error);
+            return [];
+        }
+    }
+
+    /**
+     * 设置动态数据源解析器
+     *
+     * @param {ListSourceResolver} resolver - 解析器实例
+     */
+    setSourceResolver(resolver) {
+        this.#sourceResolver = resolver;
+    }
+
+    /**
+     * 获取当前数据源解析器
+     *
+     * @returns {ListSourceResolver|null}
+     */
+    get sourceResolver() {
+        return this.#sourceResolver;
     }
 
     /**

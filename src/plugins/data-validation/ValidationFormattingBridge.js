@@ -110,6 +110,35 @@ export class ValidationFormattingBridge {
     };
 
     /**
+     * 按 errorStyle 差异化的样式模板
+     *
+     * stop: 红色背景 + 删除线 + 加粗（阻止输入）
+     * warning: 黄色背景 + 斜体（允许但警告）
+     * information: 蓝色虚线边框（仅提示）
+     */
+    static ERROR_STYLE_TEMPLATES = Object.freeze({
+        stop: {
+            backgroundColor: "#FFCDD2",
+            color: "#C62828",
+            textDecoration: "line-through",
+            fontWeight: "bold",
+            icon: "❌",
+        },
+        warning: {
+            backgroundColor: "#FFF9C4",
+            color: "#F57F17",
+            fontStyle: "italic",
+            icon: "⚠️",
+        },
+        information: {
+            borderColor: "#2196F3",
+            borderWidth: "2px",
+            borderStyle: "dashed",
+            icon: "ℹ️",
+        },
+    });
+
+    /**
      * 构造桥接器
      * @param {Object} conditionalFormatPlugin - 条件格式插件实例
      * @param {Object} validationPlugin - 数据验证插件实例
@@ -168,16 +197,31 @@ export class ValidationFormattingBridge {
             return;
         }
 
-        const formatKey = this.#getFormatTemplateKey(rule.type);
-        const template = ValidationFormattingBridge.FORMAT_TEMPLATES[formatKey];
+        const errorStyle = rule.errorStyle || result.errorStyle || "stop";
+        const styleTemplate = ValidationFormattingBridge.ERROR_STYLE_TEMPLATES[errorStyle] || ValidationFormattingBridge.ERROR_STYLE_TEMPLATES.stop;
 
-        if (!template) {
-            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 未找到类型 ${rule.type} 的格式模板`);
-            return;
-        }
+        const typeKey = this.#getFormatTemplateKey(rule.type);
+        const typeTemplate = ValidationFormattingBridge.FORMAT_TEMPLATES[typeKey];
 
         try {
-            const format = { ...template.style };
+            let format;
+
+            if (typeTemplate?.style) {
+                format = { ...typeTemplate.style };
+                if (errorStyle === "stop") {
+                    format.textDecoration = styleTemplate.textDecoration;
+                    format.fontWeight = styleTemplate.fontWeight;
+                } else if (errorStyle === "warning") {
+                    format.fontStyle = styleTemplate.fontStyle;
+                } else if (errorStyle === "information") {
+                    format.borderColor = styleTemplate.borderColor;
+                    format.borderWidth = styleTemplate.borderWidth;
+                    format.borderStyle = styleTemplate.borderStyle;
+                }
+            } else {
+                format = { ...styleTemplate };
+                delete format.icon;
+            }
 
             if (result.message) {
                 format.tooltip = result.message;
@@ -191,7 +235,10 @@ export class ValidationFormattingBridge {
 
             this.#formatMap.set(`${row},${col}`, rule.id);
 
-            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationFormattingBridge] 应用错误格式 (${row},${col}) [${rule.type}]`);
+            errorHandler.debug(
+                ERROR_CODE.VALIDATION_DEBUG_LOG,
+                `[ValidationFormattingBridge] 应用错误格式 (${row},${col}) [${rule.type}] errorStyle=${errorStyle}`,
+            );
         } catch (error) {
             errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 应用格式失败 (${row},${col}):`, error);
         }
