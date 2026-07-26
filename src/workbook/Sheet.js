@@ -1,7 +1,7 @@
 ﻿import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { EventBus } from "../core/EventBus.js";
 
-import { ChunkedCellStore, SelectionManager, HistoryStack, MergeManager, Cell } from "@/model";
+import { ChunkedCellStore, SelectionManager, HistoryStack, MergeManager } from "@/model";
 import { RowColManager } from "../model/grid/RowColManager.js";
 import { RowColSync } from "../model/grid/RowColSync.js";
 import { CONFIG } from "../constants/config";
@@ -12,35 +12,44 @@ import { ConditionalFormatManager } from "./managers/ConditionalFormatManager.js
 import { BatchOperationManager } from "./managers/BatchOperationManager.js";
 import { ChartManager } from "../model/chart/ChartManager.js";
 
-// 导入协调者（Coordinator）
 import { SheetDataCoordinator } from "./coordinators/SheetDataCoordinator.js";
 import { SheetStyleCoordinator } from "./coordinators/SheetStyleCoordinator.js";
 import { SheetMergeCoordinator } from "./coordinators/SheetMergeCoordinator.js";
 import { SheetOperationCoordinator } from "./coordinators/SheetOperationCoordinator.js";
 import { SheetMetaCoordinator } from "./coordinators/SheetMetaCoordinator.js";
 
-// 导入接口定义
 import { ISheet } from "./interfaces/ISheet.js";
 
 /**
- * 工作表（重构后）
+ * 工作表实现类（Coordinator 架构重构版）
  *
  * 职责：
- * - 协调各 Coordinator 子系统
- * - 管理共享状态（冻结、只读等）
- * - 提供 100% 向后兼容的 API
- * - 作为外部调用的唯一入口点
+ * - 协调各 Coordinator 子系统（数据、样式、合并、操作、元数据）
+ * - 管理共享状态（冻结行列、只读模式、缓存版本号）
+ * - 提供 100% 向后兼容的 API（薄代理模式）
+ * - 作为外部调用的唯一入口点（Facade 模式）
  *
  * 设计理念：
- * - 本身不包含业务逻辑，仅做薄代理
+ * - 本身不包含业务逻辑，仅做薄代理（Thin Proxy）
  * - 所有具体实现委托给对应的 Coordinator
- * - 通过懒初始化延迟创建 Coordinator 实例
- */
-/**
- * 工作表实现类
+ * - 通过懒初始化（Lazy Init）延迟创建 Coordinator 实例，避免构造时开销
+ * - 公开属性供子系统和外部代码直接访问，减少 getter 开销
  *
- * 实现 ISheet 接口，作为外部代码的唯一入口点。
- * 通过 Coordinator 模式将职责委派给专职的协调者类。
+ * 架构层次：
+ * ┌─────────────────────────────────────────────┐
+ * │              Sheet（Facade）                 │
+ * │  ┌──────────┐ ┌──────────┐ ┌──────────┐    │
+ * │  │ Data     │ │ Style    │ │ Merge    │    │
+ * │  │ Coord.   │ │ Coord.   │ │ Coord.   │    │
+ * │  └────┬─────┘ └────┬─────┘ └────┬─────┘    │
+ * │  ┌──────────┐ ┌──────────┐                   │
+ * │  │ Operation│ │ Meta     │                   │
+ * │  │ Coord.   │ │ Coord.   │                   │
+ * │  └──────────┘ └──────────┘                   │
+ * │  ┌──────────────────────────────────────┐    │
+ * │  │ Managers: Style, Type, Header, ...   │    │
+ * │  └──────────────────────────────────────┘    │
+ * └─────────────────────────────────────────────┘
  *
  * @implements {ISheet}
  */
@@ -49,110 +58,130 @@ export class Sheet extends ISheet {
     // 公开属性（供所有子系统和外部代码访问）
     // ============================================================
 
-    /** 事件总线 */
+    /** @type {EventBus} 事件总线 - 用于 Sheet 内部组件间通信 */
     bus;
 
-    /** 工作表名称 */
+    /** @type {string} 工作表名称（如 "Sheet1"） */
     name;
 
-    /** 是否可见 */
+    /** @type {boolean} 工作表是否可见（隐藏的工作表不渲染） */
     visible = true;
 
-    /** 单元格数据存储 */
+    /** @type {ChunkedCellStore} 单元格数据存储 - 基于分块索引的高性能存储 */
     cellStore;
 
-    /** 选区管理器 */
+    /** @type {SelectionManager} 选区管理器 - 管理当前选中区域和活动单元格 */
     selection;
 
-    /** 操作历史栈 */
+    /** @type {HistoryStack} 操作历史栈 - 支持撤销/重做 */
     history;
 
-    /** 合并单元格管理器 */
+    /** @type {MergeManager} 合并单元格管理器 - 管理合并区域信息 */
     mergeManager;
 
-    /** 行列尺寸与坐标计算管理器 */
+    /** @type {RowColManager} 行列尺寸与坐标计算管理器 - O(1) 坐标查询 */
     rowColManager;
 
-    /** 批量操作管理器 */
+    /** @type {BatchOperationManager} 批量操作管理器 - 合并多次修改为单次提交 */
     batchOp;
 
-    /** 图表管理器 */
+    /** @type {ChartManager|null} 图表管理器 - 延迟初始化或由外部注入 */
     chartManager;
 
-    /** 单元格静态配置 */
+    /** @type {Array<Object>} 单元格静态配置 - 列类型、格式等固定配置 */
     cellConfig = [];
 
-    /** 单元格动态配置函数 */
+    /** @type {Function|null} 单元格动态配置函数 - 根据行列动态返回配置 */
     cellsFn = null;
 
-    /** 单元格内边距（px） */
+    /** @type {number} 单元格内边距（px） */
     cellPadding = CONFIG.CELL_PADDING;
 
-    /** 文本溢出省略号 */
+    /** @type {boolean} 文本溢出时是否显示省略号 */
     textOverflowEllipsis = CONFIG.TEXT_OVERFLOW_ELLIPSIS;
 
     // ============================================================
     // 子系统管理器（供协调者直接访问）
     // ============================================================
 
-    /** 样式管理器 */
+    /** @type {SheetStyleManager} 样式管理器 - 管理单元格/行/列/默认样式 */
     styleManager;
 
-    /** 列类型管理器 */
+    /** @type {ColumnTypeManager} 列类型管理器 - 管理列的数据类型和渲染器 */
     typeManager;
 
-    /** 表头标签管理器 */
+    /** @type {HeaderLabelManager} 表头标签管理器 - 管理自定义表头文本 */
     headerLabels;
 
-    /** 条件格式管理器 */
+    /** @type {ConditionalFormatManager} 条件格式管理器 - 管理条件样式规则 */
     conditionalFormat;
 
-    /** 行同步器 */
+    /** @type {RowColSync} 行同步器 - 监听行变更并同步到 RowColManager */
     rowSync;
 
-    /** 列同步器 */
+    /** @type {RowColSync} 列同步器 - 监听列变更并同步到 RowColManager */
     colSync;
 
     // ============================================================
     // 私有状态（仅限内部使用）
     // ============================================================
 
-    /** @private */ #bus;
-    /** @private */ #cachedFrozenRowsHeight = -1;
-    /** @private */ #cachedFrozenColsWidth = -1;
-    /** @private */ #fixedRowsTop = 0;
-    /** @private */ #fixedColumnsStart = 0;
-    /** @private */ #readOnly = false;
-    /** @private */ #styleCacheVersion = 0;
+    /** @private 事件总线私有引用（与公开 bus 指向同一实例） */
+    #bus;
+    /** @private 冻结行区域高度缓存（-1 表示缓存失效，需重新计算） */
+    #cachedFrozenRowsHeight = -1;
+    /** @private 冻结列区域宽度缓存（-1 表示缓存失效，需重新计算） */
+    #cachedFrozenColsWidth = -1;
+    /** @private 顶部冻结行数 */
+    #fixedRowsTop = 0;
+    /** @private 左侧冻结列数 */
+    #fixedColumnsStart = 0;
+    /** @private 是否只读模式（禁止编辑单元格） */
+    #readOnly = false;
+    /** @private 样式缓存版本号（每次样式变更递增，用于脏检查） */
+    #styleCacheVersion = 0;
 
     // ============================================================
     // 协调者实例（懒初始化）
     // ============================================================
 
-    /** @private */ #dataCoordinator;
-    /** @private */ #styleCoordinator;
-    /** @private */ #mergeCoordinator;
-    /** @private */ #operationCoordinator;
-    /** @private */ #metaCoordinator;
-    /** @private */ #cellDataAccessor;
+    /** @private 数据操作协调者 - 管理单元格读写、数据加载 */
+    #dataCoordinator;
+    /** @private 样式管理协调者 - 管理样式设置、条件格式、数据绑定 */
+    #styleCoordinator;
+    /** @private 合并单元格协调者 - 管理合并/取消合并、合并区域查询 */
+    #mergeCoordinator;
+    /** @private 操作执行协调者 - 管理批量操作、撤销重做、行列增删 */
+    #operationCoordinator;
+    /** @private 元数据协调者 - 管理表头标签、列类型、单元格配置 */
+    #metaCoordinator;
+    /** @private 单元格数据访问器缓存（由 DataCoordinator 创建） */
+    #cellDataAccessor;
 
     // ============================================================
     // 构造函数
     // ============================================================
 
     /**
-     * @param {string} name - 工作表名称
+     * 创建工作表实例
+     *
+     * 初始化流程：
+     * 1. 调用父类 ISheet 构造函数
+     * 2. 创建事件总线（strict 模式：未注册事件会抛错）
+     * 3. 创建核心子系统（数据存储、选区、历史栈、合并、行列管理、批量操作）
+     * 4. 创建子管理器（样式、列类型、表头、条件格式、行列同步）
+     * 5. 图表管理器延迟初始化（由外部注入）
+     *
+     * @param {string} name - 工作表名称（如 "Sheet1"）
      */
     constructor(name) {
-        super(); // 必须首先调用父类构造函数（ISheet）
+        super();
 
         this.name = name;
 
-        // 创建事件总线
         this.#bus = new EventBus("Sheet", name, { strict: true });
-        this.bus = this.#bus; // 公开访问
+        this.bus = this.#bus;
 
-        // 创建核心子系统
         this.cellStore = new ChunkedCellStore();
         this.selection = new SelectionManager();
         this.history = new HistoryStack();
@@ -160,7 +189,6 @@ export class Sheet extends ISheet {
         this.rowColManager = new RowColManager();
         this.batchOp = new BatchOperationManager();
 
-        // 创建子管理器（公开属性，供协调者直接访问）
         this.styleManager = new SheetStyleManager(this);
         this.typeManager = new ColumnTypeManager(this);
         this.headerLabels = new HeaderLabelManager(this);
@@ -168,16 +196,21 @@ export class Sheet extends ISheet {
         this.rowSync = new RowColSync(this, CONFIG.AXIS_ROW);
         this.colSync = new RowColSync(this, CONFIG.AXIS_COL);
 
-        /** 图表管理器（延迟初始化或由外部注入） */
         this.chartManager = null;
     }
 
     // ============================================================
     // 协调者 Getter（懒初始化 + 缓存）
+    //
+    // 首次访问时创建 Coordinator 实例，后续访问直接返回缓存。
+    // 优点：避免构造时创建所有协调者，减少初始化开销。
     // ============================================================
 
     /**
      * 数据操作协调者
+     *
+     * 负责单元格读写、数据加载、清空等数据层操作。
+     *
      * @returns {SheetDataCoordinator}
      */
     get data() {
@@ -189,6 +222,9 @@ export class Sheet extends ISheet {
 
     /**
      * 样式管理协调者
+     *
+     * 负责单元格/行/列/默认样式设置、条件格式、数据绑定样式。
+     *
      * @returns {SheetStyleCoordinator}
      */
     get styles() {
@@ -200,6 +236,9 @@ export class Sheet extends ISheet {
 
     /**
      * 合并单元格协调者
+     *
+     * 负责合并/取消合并单元格、查询合并区域信息。
+     *
      * @returns {SheetMergeCoordinator}
      */
     get merges() {
@@ -211,6 +250,9 @@ export class Sheet extends ISheet {
 
     /**
      * 操作执行协调者
+     *
+     * 负责批量操作、撤销/重做、行列增删移动、渲染触发。
+     *
      * @returns {SheetOperationCoordinator}
      */
     get operations() {
@@ -222,6 +264,9 @@ export class Sheet extends ISheet {
 
     /**
      * 元数据协调者
+     *
+     * 负责表头标签、列类型配置、单元格属性、格式化/校验。
+     *
      * @returns {SheetMetaCoordinator}
      */
     get meta() {
@@ -233,7 +278,10 @@ export class Sheet extends ISheet {
 
     /**
      * 检查工作表是否可写
-     * @returns {boolean}
+     *
+     * 只读模式下禁止编辑操作，由 Coordinator 在执行写操作前调用。
+     *
+     * @returns {boolean} true=可写，false=只读
      */
     _ensureWritable() {
         return !this.#readOnly;
@@ -241,6 +289,10 @@ export class Sheet extends ISheet {
 
     /**
      * 标记整个视图需要重绘
+     *
+     * 递增样式缓存版本号并清除样式缓存，然后发出 INVALIDATE_ALL 事件。
+     * 渲染引擎监听此事件后会在下一帧重新绘制整个视图。
+     *
      * @private
      */
     _invalidateAll() {
@@ -251,8 +303,12 @@ export class Sheet extends ISheet {
 
     /**
      * 标记单个单元格需要重绘
-     * @param {number} r - 行号
-     * @param {number} c - 列号
+     *
+     * 清除样式缓存并发出 INVALIDATE_CELL 事件，携带行列信息。
+     * 渲染引擎可据此仅重绘受影响的单元格，避免全量重绘。
+     *
+     * @param {number} r - 行号（0-based）
+     * @param {number} c - 列号（0-based）
      */
     _invalidateCell(r, c) {
         this.styleManager.invalidateCache();
@@ -261,8 +317,13 @@ export class Sheet extends ISheet {
 
     // ============================================================
     // 冻结状态（getter/setter 维护缓存）
+    //
+    // 冻结行列的尺寸（frozenRowsHeight / frozenColsWidth）通过缓存
+    // 避免每次渲染时重复计算。setter 在值变化时将缓存标记为失效（-1），
+    // getter 在缓存失效时触发重新计算。
     // ============================================================
 
+    /** @type {number} 顶部冻结行数 */
     get fixedRowsTop() {
         return this.#fixedRowsTop;
     }
@@ -270,10 +331,11 @@ export class Sheet extends ISheet {
     set fixedRowsTop(v) {
         if (this.#fixedRowsTop !== v) {
             this.#fixedRowsTop = v;
-            this.#cachedFrozenRowsHeight = -1; // 仅在值变化时使缓存失效
+            this.#cachedFrozenRowsHeight = -1;
         }
     }
 
+    /** @type {number} 左侧冻结列数 */
     get fixedColumnsStart() {
         return this.#fixedColumnsStart;
     }
@@ -281,18 +343,20 @@ export class Sheet extends ISheet {
     set fixedColumnsStart(v) {
         if (this.#fixedColumnsStart !== v) {
             this.#fixedColumnsStart = v;
-            this.#cachedFrozenColsWidth = -1; // 仅在值变化时使缓存失效
+            this.#cachedFrozenColsWidth = -1;
         }
     }
 
+    /** @type {boolean} 是否只读模式 */
     get readOnly() {
         return this.#readOnly;
     }
 
     set readOnly(v) {
-        this.#readOnly = !!v; // 强制转换为布尔值，确保类型安全
+        this.#readOnly = !!v;
     }
 
+    /** @type {number} 冻结行区域总高度（px，带缓存） */
     get frozenRowsHeight() {
         if (this.#cachedFrozenRowsHeight < 0) {
             this.#cachedFrozenRowsHeight = this.#calculateFrozenRowsHeight();
@@ -300,6 +364,7 @@ export class Sheet extends ISheet {
         return this.#cachedFrozenRowsHeight;
     }
 
+    /** @type {number} 冻结列区域总宽度（px，带缓存） */
     get frozenColsWidth() {
         if (this.#cachedFrozenColsWidth < 0) {
             this.#cachedFrozenColsWidth = this.#calculateFrozenColsWidth();
@@ -325,27 +390,76 @@ export class Sheet extends ISheet {
 
     // ============================================================
     // 向后兼容的 API 代理（保持所有现有调用方式不变）
+    //
+    // 以下方法均为薄代理（Thin Proxy），直接转发到对应的 Coordinator。
+    // 不包含任何业务逻辑，仅保证外部调用接口不变。
+    //
+    // 代理映射关系：
+    //   setCell / disableCell / enableCell / isDisabled / loadData → DataCoordinator
+    //   setCellStyle / setRowStyle / setColStyle / ...             → StyleCoordinator
+    //   mergeCells / unmergeCells / getMerge / ...                 → MergeCoordinator
+    //   beginBatch / endBatch / undo / redo / insertRow / ...      → OperationCoordinator
+    //   getColHeader / getColumnType / formatCellValue / ...        → MetaCoordinator
     // ============================================================
 
     // ---- DataCoordinator 代理 ----
 
-    /** @returns {import("../model/grid/CellDataAccessor.js").CellDataAccessor} */
+    /**
+     * 获取单元格数据访问器
+     *
+     * CellDataAccessor 提供对单元格值的统一读写接口，
+     * 支持静态配置（cellConfig）和动态配置（cellsFn）的合并解析。
+     *
+     * @returns {import("../model/grid/CellDataAccessor.js").CellDataAccessor}
+     */
     get cellDataAccessor() {
         return this.data.dataAccessor;
     }
 
+    /**
+     * 设置单元格值
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} value - 新值
+     * @param {number} [styleId] - 样式 ID
+     * @returns {*} 操作结果
+     */
     setCell(...args) {
         return this.data.setCell(...args);
     }
+
+    /**
+     * 禁用单元格（不可编辑）
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     */
     disableCell(...args) {
         return this.data.disableCell(...args);
     }
+
+    /**
+     * 启用单元格（可编辑）
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     */
     enableCell(...args) {
         return this.data.enableCell(...args);
     }
+
+    /**
+     * 检查单元格是否被禁用
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {boolean}
+     */
     isDisabled(...args) {
         return this.data.isDisabled(...args);
     }
+
+    /**
+     * 批量加载数据（二维数组）
+     * @param {Array<Array<*>>} data - 二维数据数组
+     */
     loadData(...args) {
         return this.data.loadData(...args);
     }
@@ -439,274 +553,394 @@ export class Sheet extends ISheet {
 
     // ---- StyleCoordinator 代理 ----
 
+    /** @type {Object} 行样式集合 */
     get rowStyles() {
         return this.styleManager.rowStyles;
     }
+    /** @type {Object} 列样式集合 */
     get colStyles() {
         return this.styleManager.colStyles;
     }
+
+    /** 设置行样式 */
     setRowStyle(...args) {
         return this.styles.setRowStyle(...args);
     }
+    /** 设置列样式 */
     setColStyle(...args) {
         return this.styles.setColStyle(...args);
     }
+    /** 设置默认样式（全局回退样式） */
     setDefaultStyle(...args) {
         return this.styles.setDefaultStyle(...args);
     }
+    /** 获取默认样式 */
     getDefaultStyle(...args) {
         return this.styles.getDefaultStyle(...args);
     }
+    /** 设置单元格样式 */
     setCellStyle(...args) {
         return this.styles.setCellStyle(...args);
     }
+    /** 清除单元格样式 */
     clearCellStyle(...args) {
         return this.styles.clearCellStyle(...args);
     }
+    /** 清除行样式 */
     clearRowStyle(...args) {
         return this.styles.clearRowStyle(...args);
     }
+    /** 清除列样式 */
     clearColStyle(...args) {
         return this.styles.clearColStyle(...args);
     }
+    /** 设置区域样式（批量设置矩形范围内所有单元格的样式） */
     setRangeStyle(...args) {
         return this.styles.setRangeStyle(...args);
     }
+    /** 清除区域样式 */
     clearRangeStyle(...args) {
         return this.styles.clearRangeStyle(...args);
     }
+    /** 批量样式更新（合并多次样式修改为单次提交） */
     batchStyleUpdate(...args) {
         return this.styles.batchStyleUpdate(...args);
     }
+    /** 获取单元格样式（合并行/列/单元格层级后的最终样式） */
     getCellStyle(...args) {
         return this.styles.getCellStyle(...args);
     }
+    /** 解析样式（将样式 ID 解析为样式对象） */
     resolveStyle(...args) {
         return this.styles.resolveStyle(...args);
     }
 
+    /** 添加条件格式规则 */
     addConditionalRule(...args) {
         return this.styles.addConditionalRule(...args);
     }
+    /** 检查是否存在条件格式规则 */
     hasConditionalRules(...args) {
         return this.styles.hasConditionalRules(...args);
     }
+    /** 检查是否存在数据绑定 */
     hasDataBindings(...args) {
         return this.styles.hasDataBindings(...args);
     }
+    /** 匹配条件格式样式（根据单元格值返回匹配的条件样式） */
     matchConditionalStyle(...args) {
         return this.styles.matchConditionalStyle(...args);
     }
+    /** 绑定数据样式（将样式与数据条件关联） */
     bindDataStyle(...args) {
         return this.styles.bindDataStyle(...args);
     }
+    /** 获取数据绑定样式 */
     getDataBindStyle(...args) {
         return this.styles.getDataBindStyle(...args);
     }
+    /** @type {Object} 数据绑定样式集合 */
     get dataBindings() {
         return this.styles.dataBindings;
     }
 
     // ---- MetaCoordinator 代理 ----
 
+    /** @type {Array<Object>} 列配置列表（类型、宽度、格式等） */
     get columnsConfig() {
         return this.meta.columnsConfig;
     }
+    /** @type {Object} 单元格类型映射（列号 → 类型名称） */
     get cellTypes() {
         return this.meta.cellTypes;
     }
+    /** @type {Array<string>|Object} 自定义列头标签 */
     get colHeaders() {
         return this.meta.colHeaders;
     }
     set colHeaders(v) {
         this.meta.colHeaders = v;
     }
+    /** @type {Array<string>|Object} 自定义行头标签 */
     get rowHeaders() {
         return this.meta.rowHeaders;
     }
     set rowHeaders(v) {
         this.meta.rowHeaders = v;
     }
+    /** @type {Array<Object>} 嵌套表头配置 */
     get nestedHeaders() {
         return this.meta.nestedHeaders;
     }
     set nestedHeaders(v) {
         this.meta.nestedHeaders = v;
     }
+    /** @type {number} 行头宽度（px） */
     get rowHeaderWidth() {
         return this.meta.rowHeaderWidth;
     }
     set rowHeaderWidth(v) {
         this.meta.rowHeaderWidth = v;
     }
+    /** 获取指定列的表头文本 */
     getColHeader(...args) {
         return this.meta.getColHeader(...args);
     }
+    /** 获取指定列的表头样式 */
     getColHeaderStyle(...args) {
         return this.meta.getColHeaderStyle(...args);
     }
+    /** 获取指定行的表头文本 */
     getRowHeader(...args) {
         return this.meta.getRowHeader(...args);
     }
+    /** 获取指定行的表头样式 */
     getRowHeaderStyle(...args) {
         return this.meta.getRowHeaderStyle(...args);
     }
+    /** 获取嵌套表头的行数 */
     getNestedHeaderRowCount(...args) {
         return this.meta.getNestedHeaderRowCount(...args);
     }
+    /** 获取嵌套列头配置 */
     getNestedColHeader(...args) {
         return this.meta.getNestedColHeader(...args);
     }
+    /** @type {number} 表头总高度（px） */
     get headerHeight() {
         return this.meta.headerHeight;
     }
     set headerHeight(v) {
         this.meta.headerHeight = v;
     }
+    /** 计算表头区域高度 */
     getHeaderHeight(...args) {
         return this.meta.getHeaderHeight(...args);
     }
+    /** 计算表头区域宽度 */
     getHeaderWidth(...args) {
         return this.meta.getHeaderWidth(...args);
     }
 
+    /** 获取指定列的配置对象 */
     getColumnConfig(...args) {
         return this.meta.getColumnConfig(...args);
     }
+    /** 获取指定列的数据类型名称 */
     getColumnType(...args) {
         return this.meta.getColumnType(...args);
     }
+    /** 检查列类型一致性（调试用） */
     _checkColumnTypeConsistency(...args) {
         return this.meta._checkColumnTypeConsistency(...args);
     }
+    /** 获取指定列的类型实例（含渲染器和编辑器） */
     getColumnTypeInstance(...args) {
         return this.meta.getColumnTypeInstance(...args);
     }
+    /** 获取指定单元格的类型实例（优先单元格级 > 列级 > 默认） */
     getCellTypeInstance(...args) {
         return this.meta.getCellTypeInstance(...args);
     }
+    /** 应用列配置（批量设置列类型、宽度等） */
     applyColumnsConfig(...args) {
         return this.meta.applyColumnsConfig(...args);
     }
 
+    /** 格式化单元格值为显示文本 */
     formatCellValue(...args) {
         return this.meta.formatCellValue(...args);
     }
+    /** 校验单元格值是否合法 */
     validateCellValue(...args) {
         return this.meta.validateCellValue(...args);
     }
+    /** 将输入文本解析为单元格值 */
     parseCellValue(...args) {
         return this.meta.parseCellValue(...args);
     }
 
+    /** 应用单元格配置（静态 cellConfig） */
     applyCellConfig(...args) {
         return this.meta.applyCellConfig(...args);
     }
+    /** 解析单元格属性（合并静态配置和动态 cellsFn） */
     resolveCellProperties(...args) {
         return this.meta.resolveCellProperties(...args);
     }
 
     // ---- MergeCoordinator 代理 ----
 
+    /** 合并指定区域的单元格 */
     mergeCells(...args) {
         return this.merges.mergeCells(...args);
     }
+    /** 取消指定区域的合并 */
     unmergeCells(...args) {
         return this.merges.unmergeCells(...args);
     }
+    /** 获取指定位置的合并区域信息 */
     getMerge(...args) {
         return this.merges.getMerge(...args);
     }
+    /** 检查指定单元格是否为合并区域的左上角 */
     isMergeTopLeft(...args) {
         return this.merges.isMergeTopLeft(...args);
     }
+    /** 检查指定单元格是否属于某个合并区域 */
     isMergedCell(...args) {
         return this.merges.isMergedCell(...args);
     }
+    /** 获取所有合并区域信息 */
     getAllMerges(...args) {
         return this.merges.getAllMerges(...args);
     }
 
     // ---- OperationCoordinator 代理 ----
 
+    /** 开始批量操作（暂停事件派发和渲染更新） */
     beginBatch(...args) {
         return this.operations.beginBatch(...args);
     }
+    /** 结束批量操作（提交所有变更并触发渲染） */
     endBatch(...args) {
         return this.operations.endBatch(...args);
     }
+    /** 触发渲染更新 */
     render(...args) {
         return this.operations.render(...args);
     }
+    /** 撤销上一步操作 */
     undo(...args) {
         return this.operations.undo(...args);
     }
+    /** 重做已撤销的操作 */
     redo(...args) {
         return this.operations.redo(...args);
     }
+    /** 在指定位置插入行 */
     insertRow(...args) {
         return this.operations.insertRow(...args);
     }
+    /** 在指定位置插入列 */
     insertCol(...args) {
         return this.operations.insertCol(...args);
     }
+    /** 删除指定行 */
     deleteRow(...args) {
         return this.operations.deleteRow(...args);
     }
+    /** 删除指定列 */
     deleteCol(...args) {
         return this.operations.deleteCol(...args);
     }
+    /** 移动列（拖拽排序） */
     moveCol(...args) {
         return this.operations.moveCol(...args);
     }
+    /** 移动行（拖拽排序） */
     moveRow(...args) {
         return this.operations.moveRow(...args);
     }
+    /** 设置行数（调整表格行数） */
     setRowCount(...args) {
         return this.operations.setRowCount(...args);
     }
+    /** 设置列数（调整表格列数） */
     setColCount(...args) {
         return this.operations.setColCount(...args);
     }
+    /** 设置网格尺寸（同时调整行数和列数） */
     setGridSize(...args) {
         return this.operations.setGridSize(...args);
     }
 
     // ---- 兼容性工具方法 ----
 
+    /**
+     * 可见列号 → 真实列号
+     *
+     * 当前实现为恒等映射（未实现列隐藏功能）。
+     * 未来支持列隐藏后，此方法将跳过隐藏列进行映射。
+     *
+     * @param {number} visibleCol - 可见列索引
+     * @returns {number} 真实列索引
+     */
     toRealCol(visibleCol) {
         return visibleCol;
     }
+
+    /**
+     * 真实列号 → 可见列号
+     *
+     * 当前实现为恒等映射（未实现列隐藏功能）。
+     * 与 toRealCol 互为逆操作。
+     *
+     * @param {number} realCol - 真实列索引
+     * @returns {number} 可见列索引
+     */
     toVisibleCol(realCol) {
         return realCol;
     }
 
+    /**
+     * 标记整个视图需要重绘（公开版本）
+     *
+     * 外部代码应调用此方法而非 _invalidateAll()。
+     */
     invalidateAll() {
         this._invalidateAll();
     }
+
+    /**
+     * 标记单个单元格需要重绘（内部版本）
+     *
+     * 供 Coordinator 内部调用，外部代码应使用 invalidateAll()。
+     *
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     */
     _invalidateCellInternal(r, c) {
         this._invalidateCell(r, c);
     }
 
     // ---- 内部计算方法（冻结尺寸）----
 
+    /**
+     * 计算冻结行区域的总高度
+     *
+     * 从第 0 行累加到第 (fixedRowsTop - 1) 行的高度。
+     * 利用 RowColManager 的缓存坐标实现 O(1) 时间复杂度：
+     *   总高度 = 最后一冻结行的 Y 坐标 + 最后一冻结行的高度
+     *
+     * @private
+     * @returns {number} 冻结行区域总高度（px），无冻结行时返回 0
+     */
     #calculateFrozenRowsHeight() {
         if (this.#fixedRowsTop <= 0) return 0;
 
         const rc = this.rowColManager;
         const lastFrozenRow = this.#fixedRowsTop - 1;
 
-        // 使用 RowColManager 的缓存坐标，O(1) 时间复杂度
         return rc.getRowY(lastFrozenRow) + rc.getRowHeight(lastFrozenRow);
     }
 
+    /**
+     * 计算冻结列区域的总宽度
+     *
+     * 从第 0 列累加到第 (fixedColumnsStart - 1) 列的宽度。
+     * 利用 RowColManager 的缓存坐标实现 O(1) 时间复杂度：
+     *   总宽度 = 最后一冻结列的 X 坐标 + 最后一冻结列的宽度
+     *
+     * @private
+     * @returns {number} 冻结列区域总宽度（px），无冻结列时返回 0
+     */
     #calculateFrozenColsWidth() {
         if (this.#fixedColumnsStart <= 0) return 0;
 
         const rc = this.rowColManager;
         const lastFrozenCol = this.#fixedColumnsStart - 1;
 
-        // 使用 RowColManager 的缓存坐标，O(1) 时间复杂度
         return rc.getColX(lastFrozenCol) + rc.getColWidth(lastFrozenCol);
     }
 }

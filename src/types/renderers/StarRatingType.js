@@ -108,7 +108,7 @@ export class StarRatingType extends BaseColumnType {
     }
 
     getDefaultStyle(baseStyle) {
-        return { ...baseStyle, textAlign: "left", cursor: "pointer" };
+        return { ...baseStyle, textAlign: "left" };
     }
 
     format(value) {
