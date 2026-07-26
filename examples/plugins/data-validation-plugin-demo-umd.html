@@ -1,0 +1,837 @@
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ 数据验证演示 - Canvas-Sheet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 2.5em;
+        }
+
+        .nav {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .nav a {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 4px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .nav a:hover, .nav a.active {
+            background: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .demo-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .canvas-container {
+            overflow: auto;
+            background: #fff;
+            position: relative;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .api-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s ease;
+        }
+
+        .api-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .api-card .category {
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .api-card .name {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .api-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 6px 10px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .api-card .desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .api-card .example {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            color: #11998e;
+            background: rgba(17, 153, 142, 0.08);
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            line-height: 1.6;
+            border-left: 3px solid #11998e;
+            white-space: pre;
+        }
+
+        .validator-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .validator-card {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            padding: 16px;
+            border-radius: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .validator-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .validator-card .type {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e65100;
+            margin-bottom: 6px;
+        }
+
+        .validator-card .name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .validator-card .desc {
+            font-size: 13px;
+            color: #555;
+            line-height: 1.4;
+        }
+
+        .validator-card .ops {
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            color: #bf360c;
+            background: rgba(191, 54, 12, 0.08);
+            padding: 4px 8px;
+            border-radius: 3px;
+            margin-top: 6px;
+        }
+
+        .control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .control-bar label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .control-bar select, .control-bar input[type="text"], .control-bar input[type="number"] {
+            padding: 6px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 13px;
+            min-width: 120px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: #fc5c65;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #eb3b5a;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: #26de81;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #20bf6b;
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: #fed330;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #f7b731;
+            transform: translateY(-1px);
+        }
+
+        .log-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            background: #282c34;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+        }
+
+        .log-entry {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            color: #abb2bf;
+        }
+
+        .log-entry.log-success {
+            background: rgba(56, 239, 125, 0.1);
+            color: #38ef7d;
+        }
+
+        .log-entry.log-info {
+            background: rgba(79, 172, 254, 0.1);
+            color: #4facfe;
+        }
+
+        .log-entry.log-error {
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+        }
+
+        .log-entry.log-warn {
+            background: rgba(254, 211, 48, 0.1);
+            color: #fed330;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #718096;
+        }
+
+        .status-bar .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-active {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .badge-inactive {
+            background: #fed7d7;
+            color: #822727;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>✅ 数据验证演示</h1>
+    <!-- ═══ 演示表格 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 数据验证演示表格</h2>
+        <div class="control-bar">
+            <label>验证类型:</label>
+            <select id="ruleType">
+                <option value="number">数值范围</option>
+                <option value="text">文本长度</option>
+                <option value="list">下拉列表</option>
+                <option value="date">日期范围</option>
+                <option value="regex">正则表达式</option>
+                <option value="unique">唯一性</option>
+            </select>
+            <label>范围:</label>
+            <input type="text" id="ruleRange" value="A2:A20" style="width:100px">
+            <label>错误样式:</label>
+            <select id="errorStyle">
+                <option value="stop">阻止 (stop)</option>
+                <option value="warning">警告 (warning)</option>
+                <option value="information">提示 (information)</option>
+            </select>
+            <button class="btn btn-primary" onclick="addRule()">添加规则</button>
+            <button class="btn btn-success" onclick="validateAll()">批量验证</button>
+            <button class="btn btn-warning" onclick="exportRules()">导出规则</button>
+            <button class="btn btn-danger" onclick="clearAllRules()">清除规则</button>
+        </div>
+        <div class="canvas-container">
+            <canvas id="sheet"></canvas>
+        </div>
+        <div class="status-bar">
+            <span>插件状态: <span id="pluginStatus" class="badge badge-inactive">未激活</span></span>
+            <span>规则数: <strong id="ruleCount">0</strong></span>
+            <span>冲突策略: <strong id="strategyDisplay">short-circuit</strong></span>
+        </div>
+    </div>
+
+    <!-- ═══ 验证器类型说明 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>🔍</span> 内置验证器</h2>
+        <div class="validator-grid">
+            <div class="validator-card">
+                <div class="type">type: number</div>
+                <div class="name">数值范围验证</div>
+                <div class="desc">验证数值是否在指定范围内，支持大小比较和相等性判断。</div>
+                <div class="ops">运算符: between, notBetween, greaterThan, lessThan, equalTo, notEqualTo,
+                    greaterThanOrEqual, lessThanOrEqual
+                </div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: text</div>
+                <div class="name">文本长度验证</div>
+                <div class="desc">验证文本字符串的长度是否满足条件。</div>
+                <div class="ops">运算符: lengthBetween, lengthGreaterThan, lengthLessThan, lengthEqualTo</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: list</div>
+                <div class="name">下拉列表验证</div>
+                <div class="desc">验证值是否在预定义选项列表中，支持静态数组和动态区域引用。</div>
+                <div class="ops">配置: source = ['选项1', '选项2', ...]</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: date</div>
+                <div class="name">日期范围验证</div>
+                <div class="desc">验证日期是否在指定范围内，支持前后判断和相等性判断。</div>
+                <div class="ops">运算符: before, after, between, notBetween, equalTo, notEqualTo</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: time</div>
+                <div class="name">时间范围验证</div>
+                <div class="desc">验证时间值是否在指定范围内。</div>
+                <div class="ops">运算符: before, after, between, notBetween</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: regex</div>
+                <div class="name">正则表达式验证</div>
+                <div class="desc">根据正则模式验证文本，内置邮箱、手机号、身份证等预设。</div>
+                <div class="ops">配置: pattern = '^[a-z]+$' 或预设名 email, phoneCN, idCardCN, url</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: unique</div>
+                <div class="name">唯一性验证</div>
+                <div class="desc">验证值在指定区域内是否唯一，适用于订单号、学号等场景。</div>
+                <div class="ops">无需运算符，自动排除当前编辑行</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: custom</div>
+                <div class="name">自定义公式验证</div>
+                <div class="desc">通过公式表达式进行自定义验证逻辑。</div>
+                <div class="ops">配置: formula = '=A1>0'</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ API 参考 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>📖</span> 插件 API 参考</h2>
+        <div class="api-grid">
+            <div class="api-card">
+                <div class="category">初始化</div>
+                <div class="name">plugins 配置方式</div>
+                <div class="syntax">plugins: ['dataValidation']</div>
+                <div class="desc">在 Workbook 构造时通过 plugins 数组启用数据验证插件，可通过
+                    pluginOptions.dataValidation 传入初始规则。
+                </div>
+                <div class="example">new Workbook(canvas, {
+                    plugins: ['dataValidation'],
+                    pluginOptions: {
+                    dataValidation: {
+                    rules: [{
+                    range: 'A:A',
+                    type: 'number',
+                    operator: 'greaterThan',
+                    value: 0
+                    }],
+                    conflictStrategy: 'short-circuit'
+                    }
+                    }
+                    });
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">规则管理</div>
+                <div class="name">setValidation</div>
+                <div class="syntax">dv.setValidation(ruleOptions): string</div>
+                <div class="desc">添加验证规则，返回规则 ID。触发 BEFORE/AFTER_VALIDATION_RULE_CHANGE 钩子。</div>
+                <div class="example">const id = dv.setValidation({
+                    range: 'B2:B100',
+                    type: 'number',
+                    operator: 'between',
+                    value: [0, 10000],
+                    errorMessage: '请输入0-10000',
+                    errorStyle: 'stop',
+                    allowBlank: true
+                    });
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">规则管理</div>
+                <div class="name">removeValidation</div>
+                <div class="syntax">dv.removeValidation(ruleId): boolean</div>
+                <div class="desc">根据规则 ID 移除验证规则，返回是否成功。</div>
+                <div class="example">dv.removeValidation(id); // true</div>
+            </div>
+            <div class="api-card">
+                <div class="category">规则管理</div>
+                <div class="name">getRulesForCell / getAllRules / getRuleById</div>
+                <div class="syntax">dv.getRulesForCell(row, col): Rule[]</div>
+                <div class="desc">查询规则：按单元格查询、获取全部、按 ID 查询。</div>
+                <div class="example">dv.getRulesForCell(0, 0);
+                    dv.getAllRules();
+                    dv.getRuleById('vr_xxx');
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">验证执行</div>
+                <div class="name">validateCell</div>
+                <div class="syntax">dv.validateCell(row, col, value): Promise&lt;Result&gt;</div>
+                <div class="desc">异步验证单个单元格的值，返回 ValidationResult 对象。</div>
+                <div class="example">const r = await dv.validateCell(0, 0, 50);
+                    // r.valid, r.message, r.errorStyle
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">验证执行</div>
+                <div class="name">validateRange</div>
+                <div class="syntax">dv.validateRange(range): Promise&lt;Report&gt;</div>
+                <div class="desc">批量验证区域内所有单元格，返回统计报告。</div>
+                <div class="example">const report = await dv.validateRange('A1:A100');
+                    // report.total, report.valid,
+                    // report.invalid, report.results
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">导入导出</div>
+                <div class="name">exportRules / importRules</div>
+                <div class="syntax">dv.exportRules(): Object[]</div>
+                <div class="desc">导出规则为 JSON 数组（持久化），或从 JSON 数组导入规则。</div>
+                <div class="example">const json = dv.exportRules();
+                    localStorage.setItem('dv', JSON.stringify(json));
+
+                    const ids = dv.importRules(json);
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">生命周期</div>
+                <div class="name">enable / disable / destroy</div>
+                <div class="syntax">dv.enable() / dv.disable() / dv.destroy()</div>
+                <div class="desc">启用/禁用/销毁插件。禁用时暂停拦截，销毁时释放所有资源。</div>
+                <div class="example">dv.disable(); // 暂停验证
+                    dv.enable(); // 恢复验证
+                    dv.destroy(); // 彻底销毁
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">冲突策略</div>
+                <div class="name">engine.conflictStrategy</div>
+                <div class="syntax">dv.engine.conflictStrategy = 'short-circuit'</div>
+                <div class="desc">
+                    设置多规则冲突解决策略：short-circuit（首条失败即返回）、priority（末条决定）、aggregate（收集全部错误）。
+                </div>
+                <div class="example">dv.engine.conflictStrategy = 'aggregate';</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ ValidationRule 配置 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>⚙️</span> ValidationRule 配置项</h2>
+        <div class="api-grid">
+            <div class="api-card">
+                <div class="category">必填</div>
+                <div class="name">range + type</div>
+                <div class="syntax">range: 'A1:A100', type: 'number'</div>
+                <div class="desc">range 指定目标区域（支持 "A:A" 整列、"1:1" 整行、"A1:B100" 区域）。type 指定验证类型。</div>
+            </div>
+            <div class="api-card">
+                <div class="category">条件</div>
+                <div class="name">operator + value</div>
+                <div class="syntax">operator: 'between', value: [0, 100]</div>
+                <div class="desc">operator 指定比较运算符，value 指定比较值。between/notBetween 时 value 为数组 [min,
+                    max]。
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">列表</div>
+                <div class="name">source</div>
+                <div class="syntax">source: ['选项A', '选项B']</div>
+                <div class="desc">type=list 时必填。静态数组或动态区域引用 '=Sheet1!$A$1:$A$10'。</div>
+            </div>
+            <div class="api-card">
+                <div class="category">正则</div>
+                <div class="name">pattern</div>
+                <div class="syntax">pattern: '^[a-z]+$'</div>
+                <div class="desc">type=regex 时必填。正则表达式字符串，也可使用 RegexValidator.PRESETS 中的预设名。</div>
+            </div>
+            <div class="api-card">
+                <div class="category">公式</div>
+                <div class="name">formula</div>
+                <div class="syntax">formula: '=A1>0'</div>
+                <div class="desc">type=custom 时必填。自定义公式表达式，返回真值表示验证通过。</div>
+            </div>
+            <div class="api-card">
+                <div class="category">错误提示</div>
+                <div class="name">errorStyle + errorMessage</div>
+                <div class="syntax">errorStyle: 'stop', errorMessage: '值无效'</div>
+                <div class="desc">errorStyle: stop（阻止输入）、warning（警告可继续）、information（仅提示）。errorMessage
+                    自定义错误消息。
+                </div>
+            </div>
+            <div class="api-card">
+                <div class="category">输入提示</div>
+                <div class="name">inputMessage + inputTitle</div>
+                <div class="syntax">inputMessage: '请输入正数', inputTitle: '提示'</div>
+                <div class="desc">选中单元格时显示的输入提示信息。</div>
+            </div>
+            <div class="api-card">
+                <div class="category">其他</div>
+                <div class="name">allowBlank / showDropdown / priority</div>
+                <div class="syntax">allowBlank: true, priority: 0</div>
+                <div class="desc">allowBlank 是否允许空值；showDropdown 是否显示下拉箭头（list 类型）；priority
+                    规则优先级（越小越先执行）。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ 操作日志 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>📝</span> 操作日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">数据验证演示初始化完成</div>
+        </div>
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+    let dvPlugin = null;
+
+    const sampleData = [
+        ["数值(0-100)", "下拉列表", "文本(5-20字)", "日期", "邮箱", "唯一编号"],
+        [50, "选项A", "Hello World", "2024-06-15", "user@example.com", "ORD-001"],
+        [120, "选项B", "Hi", "2025-01-01", "invalid-email", "ORD-002"],
+        [75, "选项C", "Canvas Spreadsheet", "2024-12-31", "test@test.org", "ORD-003"],
+        [-5, "无效选项", "A", "2020-07-20", "name@domain.com", "ORD-001"],
+        [0, "选项A", "Medium length text", "2024-03-15", "bad@", "ORD-004"],
+        [100, "选项B", "Another valid text here", "2023-11-11", "ok@company.cn", "ORD-005"],
+        [200, "选项C", "X", "2026-01-01", "user@site.net", "ORD-006"],
+    ];
+
+    function log(msg, type) {
+        type = type || 'info';
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    function updateStatus() {
+        if (!dvPlugin) return;
+        const statusEl = document.getElementById('pluginStatus');
+        const countEl = document.getElementById('ruleCount');
+        const strategyEl = document.getElementById('strategyDisplay');
+
+        statusEl.textContent = dvPlugin.active ? '已激活' : '未激活';
+        statusEl.className = 'badge ' + (dvPlugin.active ? 'badge-active' : 'badge-inactive');
+        countEl.textContent = dvPlugin.getAllRules().length;
+        strategyEl.textContent = dvPlugin.engine ? dvPlugin.engine.conflictStrategy : '-';
+    }
+
+    function addRule() {
+        if (!dvPlugin) {
+            log('插件未初始化', 'error');
+            return;
+        }
+
+        const type = document.getElementById('ruleType').value;
+        const range = document.getElementById('ruleRange').value;
+        const errorStyle = document.getElementById('errorStyle').value;
+
+        const ruleConfig = {range, type, errorStyle};
+
+        switch (type) {
+            case 'number':
+                ruleConfig.operator = 'between';
+                ruleConfig.value = [0, 100];
+                ruleConfig.errorMessage = '请输入 0-100 之间的数值';
+                break;
+            case 'text':
+                ruleConfig.operator = 'lengthBetween';
+                ruleConfig.value = [5, 20];
+                ruleConfig.errorMessage = '文本长度必须在 5-20 个字符之间';
+                break;
+            case 'list':
+                ruleConfig.source = ['选项A', '选项B', '选项C'];
+                ruleConfig.errorMessage = '请从下拉列表中选择';
+                break;
+            case 'date':
+                ruleConfig.operator = 'between';
+                ruleConfig.value = ['2024-01-01', '2024-12-31'];
+                ruleConfig.errorMessage = '请输入 2024 年内的日期';
+                break;
+            case 'regex':
+                ruleConfig.pattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$';
+                ruleConfig.errorMessage = '请输入有效的邮箱地址';
+                break;
+            case 'unique':
+                ruleConfig.errorMessage = '该值已存在，不能重复！';
+                ruleConfig.errorStyle = 'warning';
+                break;
+        }
+
+        try {
+            const ruleId = dvPlugin.setValidation(ruleConfig);
+            log('✅ 添加规则成功: [' + type + '] ' + range + ' → ' + ruleId, 'success');
+            updateStatus();
+        } catch (e) {
+            log('❌ 添加规则失败: ' + e.message, 'error');
+        }
+    }
+
+    async function validateAll() {
+        if (!dvPlugin) {
+            log('插件未初始化', 'error');
+            return;
+        }
+
+        log('开始批量验证...', 'info');
+        try {
+            const report = await dvPlugin.validateRange('A1:F8');
+            log('📊 批量验证完成: 总计 ' + report.total + ' 个, 通过 ' + report.valid + ' 个, 失败 ' + report.invalid + ' 个', report.invalid > 0 ? 'warn' : 'success');
+
+            if (report.invalid > 0) {
+                const failures = report.results.filter(function (r) {
+                    return !r.valid;
+                });
+                failures.slice(0, 5).forEach(function (r) {
+                    log('  ❌ (' + r.row + ',' + r.col + '): ' + (r.message || '验证失败'), 'error');
+                });
+                if (failures.length > 5) {
+                    log('  ... 还有 ' + (failures.length - 5) + ' 个失败项', 'warn');
+                }
+            }
+        } catch (e) {
+            log('❌ 批量验证失败: ' + e.message, 'error');
+        }
+    }
+
+    function exportRules() {
+        if (!dvPlugin) {
+            log('插件未初始化', 'error');
+            return;
+        }
+
+        const rules = dvPlugin.exportRules();
+        const json = JSON.stringify(rules, null, 2);
+        log('📤 导出 ' + rules.length + ' 条规则, JSON 大小: ' + (json.length / 1024).toFixed(2) + ' KB', 'success');
+        console.log('Exported rules:', json);
+    }
+
+    function clearAllRules() {
+        if (!dvPlugin) {
+            log('插件未初始化', 'error');
+            return;
+        }
+
+        const rules = dvPlugin.getAllRules();
+        rules.forEach(function (r) {
+            dvPlugin.removeValidation(r.id);
+        });
+        log('🗑️ 已清除全部 ' + rules.length + ' 条规则', 'warn');
+        updateStatus();
+    }
+
+    async function initWorkbook() {
+        try {
+            log('初始化数据验证演示...', 'info');
+            const container = document.getElementById('sheet');
+            container.width = 900;
+            container.height = 320;
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1200, height: 320,
+                sheets: [{
+                    name: '数据验证',
+                    data: sampleData,
+                    columns: [
+                        {type: 'numeric', width: 130},
+                        {type: 'text', width: 120},
+                        {type: 'text', width: 180},
+                        {type: 'text', width: 120},
+                        {type: 'text', width: 180},
+                        {type: 'text', width: 120},
+                    ],
+                    cellPadding: 8
+                }],
+                plugins: ['dataValidation'],
+                pluginOptions: {
+                    dataValidation: {
+                        conflictStrategy: 'short-circuit',
+                        rules: [
+                            {
+                                range: 'A2:A20',
+                                type: 'number',
+                                operator: 'between',
+                                value: [0, 100],
+                                errorMessage: '请输入 0-100 之间的数值',
+                                errorStyle: 'stop'
+                            },
+                            {
+                                range: 'B2:B20',
+                                type: 'list',
+                                source: ['选项A', '选项B', '选项C'],
+                                errorMessage: '请从下拉列表中选择',
+                                inputMessage: '请选择一个选项'
+                            },
+                            {
+                                range: 'C2:C20',
+                                type: 'text',
+                                operator: 'lengthBetween',
+                                value: [5, 20],
+                                errorMessage: '文本长度必须在 5-20 个字符之间'
+                            },
+                            {
+                                range: 'E2:E20',
+                                type: 'regex',
+                                pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
+                                errorMessage: '请输入有效的邮箱地址',
+                                errorStyle: 'warning'
+                            },
+                            {
+                                range: 'F2:F20',
+                                type: 'unique',
+                                errorMessage: '编号不能重复！',
+                                errorStyle: 'warning'
+                            }
+                        ]
+                    }
+                }
+            });
+
+            dvPlugin = workbook.getPlugin('dataValidation');
+
+            if (dvPlugin) {
+                log('✅ 数据验证插件已加载，初始规则: ' + dvPlugin.getAllRules().length + ' 条', 'success');
+                updateStatus();
+            } else {
+                log('⚠️ 未找到数据验证插件', 'warn');
+            }
+
+            log('数据验证演示初始化成功', 'success');
+        } catch (e) {
+            log('初始化失败: ' + e.message, 'error');
+            console.error(e);
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>
