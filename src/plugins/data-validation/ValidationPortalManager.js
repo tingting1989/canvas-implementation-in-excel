@@ -121,7 +121,6 @@ export class ValidationPortalManager extends DOMComponent {
         this.trackEvent(window, "scroll", () => this.#handleScroll(), true);
 
         this.#initialized = true;
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 初始化完成");
     }
 
     /**
@@ -248,7 +247,6 @@ export class ValidationPortalManager extends DOMComponent {
     destroyAll() {
         this.#portals.forEach((portal) => portal.remove());
         this.#portals.clear();
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 已清除所有 Portal");
     }
 
     /**
@@ -264,7 +262,6 @@ export class ValidationPortalManager extends DOMComponent {
         this.#initialized = false;
         this.#renderEngine = null;
         this.#portalContainer = null;
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationPortalManager] 已销毁");
     }
 
     /**

@@ -2,7 +2,7 @@
 import { NumberValidator } from "./validators/NumberValidator.js";
 import { TextLengthValidator } from "./validators/TextLengthValidator.js";
 import { ListValidator } from "./validators/ListValidator.js";
-import { UniqueValidatorV3 } from "./validators/UniqueValidatorV3.js";
+import { UniqueValidator } from "./validators/UniqueValidator.js";
 import { FormulaValidator } from "./validators/FormulaValidator.js";
 import { DateValidator } from "./validators/DateValidator.js";
 import { TimeValidator } from "./validators/TimeValidator.js";
@@ -77,7 +77,7 @@ export class ValidationEngine {
         listValidator.setSourceResolver(this.#sourceResolver);
         this.registerValidator("list", listValidator);
 
-        this.registerValidator("unique", new UniqueValidatorV3(this.#cellStore));
+        this.registerValidator("unique", new UniqueValidator(this.#cellStore));
         this.registerValidator("custom", new FormulaValidator(formulaEngine));
         this.registerValidator("date", new DateValidator());
         this.registerValidator("time", new TimeValidator());
@@ -122,7 +122,6 @@ export class ValidationEngine {
         if (rule) {
             this.#rules.delete(ruleId);
             this.invalidateCache(rule.range);
-            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationEngine] 移除规则: ${ruleId}`);
             return true;
         }
         return false;

@@ -87,6 +87,7 @@ const initApp = () => {
                         style: { textAlign: "center" },
                         options: { min: "2025-12-11", max: "2026-01-01", allowInvalid: false, dateFormat: { pattern: "YYYY-MM-DD" } },
                     },
+                    { type: "text", width: 120 },
                     // // 推荐指数
                     // {
                     //     type: "starRating",
@@ -242,7 +243,19 @@ const initApp = () => {
 
             dataValidation: {
                 conflictStrategy: "short-circuit",
+                highlightInvalidCells: true,
                 rules: [
+                    {
+                        range: "F2:F10",
+                        type: "text",
+                        operator: "lengthBetween",
+                        value: [3, 10],
+                        allowBlank: false,
+                        errorMessage: "长度为3-10个字符",
+                        errorStyle: "warning",
+                        inputTitle: "输入提示",
+                        inputMessage: "请输入3~10个字符",
+                    },
                     // {
                     //     range: "B:B",
                     //     type: "number",

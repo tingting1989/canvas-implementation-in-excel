@@ -347,4 +347,27 @@ export const HOOKS = Object.freeze({
 
     /** 数据清空后 - 单元格数据已成功清除，包含详细的变更信息 */
     AFTER_CLEAR_DATA: "afterClearData",
+
+    /*
+     * ==================== 数据验证相关钩子 ====================
+     * 管理单元格数据验证的生命周期
+     */
+
+    /** 验证前 - 单元格验证即将执行，返回 false 可跳过验证 */
+    BEFORE_VALIDATE: "beforeValidate",
+
+    /** 验证后 - 单元格验证已完成 */
+    AFTER_VALIDATE: "afterValidate",
+
+    /** 验证失败 - 单元格值未通过验证规则 */
+    VALIDATION_FAILED: "validationFailed",
+
+    /** 验证规则变更前 - 规则即将添加或移除，返回 false 可阻止 */
+    BEFORE_VALIDATION_RULE_CHANGE: "beforeValidationRuleChange",
+
+    /** 验证规则变更后 - 规则已添加或移除 */
+    AFTER_VALIDATION_RULE_CHANGE: "afterValidationRuleChange",
+
+    /** 批量验证后 - 区域验证全部完成 */
+    AFTER_BATCH_VALIDATION: "afterBatchValidation",
 });

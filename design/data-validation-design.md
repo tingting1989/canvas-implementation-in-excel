@@ -387,7 +387,7 @@ CellStore: ✅ ORD-005 已删除
  * 3. 索引不一致时自动降级为全表扫描
  * 4. 批量操作后必须重建索引（或标记为 dirty）
  */
-export class UniqueValidatorV3 {
+export class UniqueValidator {
     /**
      * @type {Map<string, Set<*>>} 辅助索引（非权威）
      * @private

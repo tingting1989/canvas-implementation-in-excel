@@ -3,11 +3,30 @@ import { BasePlugin } from "../BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
 import { ValidationUIController } from "./ValidationUIController.js";
+import { ValidationPortalManager } from "./ValidationPortalManager.js";
 import { ValidationDirtyFlagManager } from "./ValidationDirtyFlagManager.js";
 import { CopyPasteHandler, PASTE_OPTIONS } from "./CopyPasteHandler.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
+import { stylePool } from "../../model/styles/index.js";
+
+const VALIDATION_ERROR_STYLES = Object.freeze({
+    stop: {
+        backgroundColor: "#FFCDD2",
+        color: "#B71C1C",
+        textDecoration: "line-through",
+        fontWeight: "bold",
+    },
+    warning: {
+        backgroundColor: "#FFF9C4",
+        color: "#F57F17",
+        fontStyle: "italic",
+    },
+    information: {
+        border: "2px dashed #2196F3",
+    },
+});
 
 /**
  * 数据验证插件
@@ -80,6 +99,9 @@ export class DataValidationPlugin extends BasePlugin {
     /** @type {ValidationUIController|null} UI 控制器实例 */
     #portalUI = null;
 
+    /** @type {ValidationPortalManager|null} Portal 管理器实例（由本插件创建） */
+    #portalManager = null;
+
     /** @type {ValidationDirtyFlagManager|null} 脏标记管理器 */
     #dirtyFlagManager = null;
 
@@ -92,6 +114,12 @@ export class DataValidationPlugin extends BasePlugin {
     /** @type {string} 冲突策略（用于新 Sheet 复用） */
     #conflictStrategy = "short-circuit";
 
+    /** @type {boolean} 是否对违规单元格应用错误样式（背景色/文字色等） */
+    #highlightInvalidCells = false;
+
+    /** @type {Map<string, {cfRule: Object, styleId: number}>} 违规单元格的条件格式规则映射 key="row,col" */
+    #errorStyleRules = new Map();
+
     /**
      * 初始化插件
      *
@@ -100,6 +128,7 @@ export class DataValidationPlugin extends BasePlugin {
      * @param {Object} [options={}] - 插件配置
      * @param {Array} [options.rules=[]] - 预定义的验证规则数组
      * @param {string} [options.conflictStrategy='short-circuit'] - 规则冲突解决策略
+     * @param {boolean} [options.highlightInvalidCells=false] - 是否对违规单元格应用错误样式
      */
     async init(options = {}) {
         super.init(options);
@@ -111,6 +140,10 @@ export class DataValidationPlugin extends BasePlugin {
             if (options.conflictStrategy) {
                 this.#engine.conflictStrategy = options.conflictStrategy;
                 this.#conflictStrategy = options.conflictStrategy;
+            }
+
+            if (options.highlightInvalidCells !== undefined) {
+                this.#highlightInvalidCells = !!options.highlightInvalidCells;
             }
 
             if (options.rules && Array.isArray(options.rules)) {
@@ -201,8 +234,16 @@ export class DataValidationPlugin extends BasePlugin {
 
             this.#portalUI?.showErrorTooltip(row, col, result.message || "输入值无效", result.errorStyle || "stop");
 
+            if (this.#highlightInvalidCells) {
+                this.#applyErrorStyle(row, col, result.errorStyle || "stop");
+            }
+
             if (result.errorStyle === ERROR_STYLE.STOP) {
                 return false;
+            }
+        } else {
+            if (this.#highlightInvalidCells) {
+                this.#removeErrorStyle(row, col);
             }
         }
 
@@ -287,7 +328,21 @@ export class DataValidationPlugin extends BasePlugin {
      */
     #initUIController() {
         try {
-            const portalManager = this.workbook?.validationPortalManager || null;
+            let portalManager = this.workbook?.validationPortalManager || null;
+
+            if (!portalManager) {
+                const renderEngine = this.renderEngine;
+                const rootContainer = this.workbook?.container || renderEngine?.canvas?.parentElement || document.body;
+
+                portalManager = new ValidationPortalManager(renderEngine);
+                portalManager.init(rootContainer);
+
+                this.#portalManager = portalManager;
+                if (this.workbook) {
+                    this.workbook.validationPortalManager = portalManager;
+                }
+            }
+
             this.#portalUI = new ValidationUIController(this.sheet, portalManager, this, this.renderEngine);
             this.#portalUI.init();
         } catch (error) {
@@ -316,8 +371,6 @@ export class DataValidationPlugin extends BasePlugin {
                 errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 新 Sheet 加载规则失败:`, e);
             }
         }
-
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] Sheet 切换完成，已重新加载 ${this.#engine.rules.size} 条规则`);
     }
 
     /**
@@ -447,12 +500,106 @@ export class DataValidationPlugin extends BasePlugin {
     }
 
     /**
+     * 是否启用违规单元格样式高亮
+     * @returns {boolean}
+     */
+    get highlightInvalidCells() {
+        return this.#highlightInvalidCells;
+    }
+
+    /**
+     * 设置是否启用违规单元格样式高亮
+     * @param {boolean} value
+     */
+    set highlightInvalidCells(value) {
+        this.#highlightInvalidCells = !!value;
+        if (!this.#highlightInvalidCells) {
+            this.#clearAllErrorStyles();
+        }
+    }
+
+    /**
+     * 对违规单元格应用错误样式（通过条件格式）
+     *
+     * @private
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {string} errorStyle - 错误级别 "stop" | "warning" | "information"
+     */
+    #applyErrorStyle(row, col, errorStyle) {
+        const key = `${row},${col}`;
+
+        if (this.#errorStyleRules.has(key)) {
+            this.#removeErrorStyle(row, col);
+        }
+
+        const sheet = this.sheet;
+        if (!sheet?.conditionalFormat) return;
+
+        const styleObj = VALIDATION_ERROR_STYLES[errorStyle] || VALIDATION_ERROR_STYLES.stop;
+        const styleId = stylePool.getStyleId(styleObj);
+
+        const range = { topRow: row, bottomRow: row, topCol: col, bottomCol: col };
+        const cfRule = sheet.conditionalFormat.addRule(range, () => true, styleId);
+
+        this.#errorStyleRules.set(key, { cfRule, styleId });
+
+        sheet.styleManager?.invalidateCache();
+        this.renderEngine?.invalidateAll();
+        this.render();
+    }
+
+    /**
+     * 移除违规单元格的错误样式
+     *
+     * @private
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     */
+    #removeErrorStyle(row, col) {
+        const key = `${row},${col}`;
+        const entry = this.#errorStyleRules.get(key);
+        if (!entry) return;
+
+        const sheet = this.sheet;
+        if (sheet?.conditionalFormat) {
+            sheet.conditionalFormat.removeRule(entry.cfRule);
+        }
+
+        this.#errorStyleRules.delete(key);
+
+        sheet?.styleManager?.invalidateCache();
+        this.renderEngine?.invalidateAll();
+        this.render();
+    }
+
+    /**
+     * 清除所有违规单元格的错误样式
+     *
+     * @private
+     */
+    #clearAllErrorStyles() {
+        const sheet = this.sheet;
+
+        for (const [, entry] of this.#errorStyleRules) {
+            if (sheet?.conditionalFormat) {
+                sheet.conditionalFormat.removeRule(entry.cfRule);
+            }
+        }
+
+        this.#errorStyleRules.clear();
+
+        sheet?.styleManager?.invalidateCache();
+        this.renderEngine?.invalidateAll();
+        this.render();
+    }
+
+    /**
      * 启用插件，恢复验证拦截功能
      */
     enable() {
         super.enable();
         this.#active = true;
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已启用");
     }
 
     /**
@@ -461,7 +608,6 @@ export class DataValidationPlugin extends BasePlugin {
     disable() {
         this.#active = false;
         super.disable();
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已禁用");
     }
 
     /**
@@ -470,6 +616,7 @@ export class DataValidationPlugin extends BasePlugin {
     destroy() {
         this.disable();
 
+        this.#clearAllErrorStyles();
         this.#unbindSheetSwitchListener();
 
         if (this.#engine) {
@@ -482,6 +629,11 @@ export class DataValidationPlugin extends BasePlugin {
             this.#portalUI = null;
         }
 
+        if (this.#portalManager) {
+            this.#portalManager.destroy();
+            this.#portalManager = null;
+        }
+
         if (this.#dirtyFlagManager) {
             this.#dirtyFlagManager.destroy();
             this.#dirtyFlagManager = null;
@@ -491,9 +643,7 @@ export class DataValidationPlugin extends BasePlugin {
             this.#copyPasteHandler.destroy();
             this.#copyPasteHandler = null;
         }
-
         super.destroy();
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已销毁");
     }
 
     /**

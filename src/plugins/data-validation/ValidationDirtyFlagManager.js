@@ -1,5 +1,3 @@
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-
 const MAX_CACHE_AGE = 5000;
 
 /**
@@ -87,11 +85,7 @@ export class ValidationDirtyFlagManager {
         }
 
         const lastTime = this.#lastValidationTime.get(key);
-        if (lastTime !== undefined && Date.now() - lastTime > MAX_CACHE_AGE) {
-            return true;
-        }
-
-        return false;
+        return lastTime !== undefined && Date.now() - lastTime > MAX_CACHE_AGE;
     }
 
     /**

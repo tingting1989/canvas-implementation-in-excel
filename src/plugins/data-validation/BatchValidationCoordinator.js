@@ -1,4 +1,4 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+﻿import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { ValidationResult } from "./ValidationResult.js";
 
 const BATCH_EVENTS = {
@@ -135,8 +135,6 @@ export class BatchValidationCoordinator {
         }
 
         const startTime = performance.now();
-
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 开始批量验证，共 ${this.#pendingValidations.length} 项`);
 
         let report;
         try {
@@ -352,7 +350,6 @@ export class BatchValidationCoordinator {
         this.cancel();
         this.#engine = null;
         this.#eventBus = null;
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[BatchValidationCoordinator] 已销毁");
     }
 }
 

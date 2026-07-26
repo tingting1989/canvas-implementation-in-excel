@@ -18,13 +18,13 @@ import { ValidationResult } from "../ValidationResult.js";
  * @extends BaseValidator
  *
  * @example
- * const validator = new UniqueValidatorV3(cellStore);
+ * const validator = new UniqueValidator(cellStore);
  * const result = await validator.fullValidate('ORD-001', {
  *     range: 'A1:A10000',
  *     excludeRow: 5 // 排除当前编辑行
  * });
  */
-export class UniqueValidatorV3 extends BaseValidator {
+export class UniqueValidator extends BaseValidator {
     static get TYPE() {
         return "unique";
     }

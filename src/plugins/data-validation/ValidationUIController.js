@@ -1,4 +1,4 @@
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { colToIndex } from "@/utils/cellRef.js";
 
 const UI_EVENTS = Object.freeze({
     DROPDOWN_SHOW: "validation:ui:dropdown:show",
@@ -102,8 +102,6 @@ export class ValidationUIController {
         this.#registerGlobalListeners();
         this.#scanDropdownArrowCells();
         this.#initialized = true;
-
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationUIController] 初始化完成");
     }
 
     /**
@@ -587,8 +585,6 @@ export class ValidationUIController {
         this.#validationPlugin = null;
         this.#renderEngine = null;
         this.#initialized = false;
-
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationUIController] 已销毁");
     }
 
     // ─── 私有方法 ───
@@ -603,12 +599,9 @@ export class ValidationUIController {
      */
     #selectDropdownOption(row, col, option) {
         this.hideDropdown();
-
         if (this.#sheet?.cellStore) {
-            this.#sheet.setCellValue?.(row, col, option);
+            this.#sheet.setCell?.(row, col, option);
         }
-
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationUIController] 选择下拉选项: (${row},${col}) = ${option}`);
     }
 
     /**
@@ -636,14 +629,14 @@ export class ValidationUIController {
         if (!this.#renderEngine) return null;
 
         if (typeof this.#renderEngine.getCellRect === "function") {
-            return this.#renderEngine.getCellRect(row, col);
-        }
-
-        if (typeof this.#renderEngine.getCellPosition === "function") {
-            const pos = this.#renderEngine.getCellPosition(row, col);
-            const rowHeight = this.#renderEngine.getRowHeight?.(row) || 25;
-            const colWidth = this.#renderEngine.getColWidth?.(col) || 100;
-            return { x: pos.x, y: pos.y, width: colWidth, height: rowHeight };
+            const rect = this.#renderEngine.getCellRect(row, col);
+            if (!rect) return null;
+            return {
+                x: rect.x,
+                y: rect.y,
+                width: rect.width ?? rect.w ?? 0,
+                height: rect.height ?? rect.h ?? 0,
+            };
         }
 
         return null;
@@ -680,18 +673,10 @@ export class ValidationUIController {
     #getCellsInRange(rangeStr) {
         const cells = [];
 
-        const colToNum = (colStr) => {
-            let num = 0;
-            for (let i = 0; i < colStr.length; i++) {
-                num = num * 26 + (colStr.charCodeAt(i) - 64);
-            }
-            return num - 1;
-        };
-
         const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
         if (fullColMatch) {
-            const startCol = colToNum(fullColMatch[1]);
-            const endCol = colToNum(fullColMatch[2]);
+            const startCol = colToIndex(fullColMatch[1]);
+            const endCol = colToIndex(fullColMatch[2]);
             const maxRow = Math.min(this.#sheet?.rowCount || 1000, 1000);
             for (let col = startCol; col <= endCol; col++) {
                 for (let row = 0; row < maxRow; row++) {
@@ -704,9 +689,9 @@ export class ValidationUIController {
         const rangeMatch = rangeStr.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
         if (rangeMatch) {
             const startRow = parseInt(rangeMatch[2]) - 1;
-            const startCol = colToNum(rangeMatch[1]);
+            const startCol = colToIndex(rangeMatch[1]);
             const endRow = parseInt(rangeMatch[4]) - 1;
-            const endCol = colToNum(rangeMatch[3]);
+            const endCol = colToIndex(rangeMatch[3]);
             for (let row = startRow; row <= endRow; row++) {
                 for (let col = startCol; col <= endCol; col++) {
                     cells.push({ row, col });

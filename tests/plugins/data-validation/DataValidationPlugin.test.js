@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import { DataValidationPlugin, ValidationRule, ValidationResult, ValidationEngine, NumberValidator, TextLengthValidator, ListValidator, UniqueValidatorV3 } from '../../../src/plugins/data-validation/index.js';
+import { DataValidationPlugin, ValidationRule, ValidationResult, ValidationEngine, NumberValidator, TextLengthValidator, ListValidator, UniqueValidator } from '../../../src/plugins/data-validation/index.js';
 
 describe('DataValidationPlugin - 基础框架测试', () => {
     let plugin;

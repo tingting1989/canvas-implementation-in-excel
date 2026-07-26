@@ -760,7 +760,7 @@ pasteWithConflictResolution(
 
 ### P3-3: 唯一性索引重建完善
 
-**当前问题**：`UniqueValidatorV3.scheduleIndexRebuild()` 中 TODO 未实现，仅打印日志。
+**当前问题**：`UniqueValidator.scheduleIndexRebuild()` 中 TODO 未实现，仅打印日志。
 
 **目标**：从 CellStore 全量扫描并重建 `#auxiliaryIndex`。
 

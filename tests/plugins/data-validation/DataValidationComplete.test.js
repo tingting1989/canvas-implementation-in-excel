@@ -10,7 +10,7 @@ import {
     NumberValidator,
     TextLengthValidator,
     ListValidator,
-    UniqueValidatorV3
+    UniqueValidator
 } from '../../../src/plugins/data-validation/index.js';
 
 // ═══════════════════════════════════════════════════════════════════

@@ -62,7 +62,22 @@ export class ConditionalFormatManager {
      * @param {number} styleId - 命中时应用的样式 ID（由 stylePool 预分配）
      */
     addRule(range, conditionFn, styleId) {
-        this.#rules.push(new ConditionalRule(range, conditionFn, styleId));
+        const rule = new ConditionalRule(range, conditionFn, styleId);
+        this.#rules.push(rule);
+        return rule;
+    }
+
+    /**
+     * 移除条件格式规则
+     *
+     * @param {ConditionalRule} rule - 要移除的规则实例
+     * @returns {boolean} 是否成功移除
+     */
+    removeRule(rule) {
+        const index = this.#rules.indexOf(rule);
+        if (index === -1) return false;
+        this.#rules.splice(index, 1);
+        return true;
     }
 
     /**

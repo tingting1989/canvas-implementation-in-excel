@@ -21,7 +21,7 @@
 | [NumberValidator.js](../src/plugins/data-validation/validators/NumberValidator.js) | 数值范围 (`number`) | between, greaterThan, lessThan, equalTo 等 (8种) | ✅ Phase 1 |
 | [TextLengthValidator.js](../src/plugins/data-validation/validators/TextLengthValidator.js) | 文本长度 (`text`) | lengthBetween, lengthGreaterThan 等 (8种) | ✅ Phase 1 |
 | [ListValidator.js](../src/plugins/data-validation/validators/ListValidator.js) | 下拉列表 (`list`) | 静态数组 `source: ['a','b']` | ✅ Phase 1 |
-| [UniqueValidatorV3.js](../src/plugins/data-validation/validators/UniqueValidatorV3.js) | 唯一性 (`unique`) | CellStore 单一数据源 + 辅助索引 | ✅ Phase 1 |
+| [UniqueValidator.js](../src/plugins/data-validation/validators/UniqueValidator.js) | 唯一性 (`unique`) | CellStore 单一数据源 + 辅助索引 | ✅ Phase 1 |
 | [FormulaValidator.js](../src/plugins/data-validation/validators/FormulaValidator.js) | 自定义公式 (`custom`) | FormulaEngine 沙箱隔离求值 | ✅ Phase 2 已实现 |
 | [DateValidator.js](../src/plugins/data-validation/validators/DateValidator.js) | 日期范围 (`date`) | before, after, between, equalTo 等 | ✅ Phase 2 已实现 |
 | [TimeValidator.js](../src/plugins/data-validation/validators/TimeValidator.js) | 时间范围 (`time`) | HH:mm / HH:mm:ss 格式校验 | ✅ Phase 2 已实现 |
@@ -1399,7 +1399,7 @@ errorStyle: 'information'
 
 ### Q3: 如何实现跨表唯一性校验？
 
-目前 UniqueValidatorV3 仅支持同表内唯一性。跨表唯一性需要在 Phase 2 中扩展 CellStore 的查询能力。
+目前 UniqueValidator 仅支持同表内唯一性。跨表唯一性需要在 Phase 2 中扩展 CellStore 的查询能力。
 
 ### Q4: 性能如何？支持多少行数据？
 - **单次验证**: < 1ms（含缓存命中时 < 0.1ms）
