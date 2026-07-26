@@ -129,7 +129,9 @@ export class SettingsApplier {
 
     // ---- 私有辅助 ----
 
-    /** @param {import("../Sheet.js").Sheet} sheet */
+    /** @param {import("../Sheet.js").Sheet} sheet
+     * @param rowHeights
+     */
     static #applyRowHeights(sheet, rowHeights) {
         const rc = sheet.rowColManager;
         if (isNumber(rowHeights)) {

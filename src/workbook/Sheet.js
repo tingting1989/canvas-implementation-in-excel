@@ -553,304 +553,560 @@ export class Sheet extends ISheet {
 
     // ---- StyleCoordinator 代理 ----
 
-    /** @type {Object} 行样式集合 */
+    /**
+     * 获取行样式集合
+     * @type {Object}
+     */
     get rowStyles() {
         return this.styleManager.rowStyles;
     }
-    /** @type {Object} 列样式集合 */
+    /**
+     * 获取列样式集合
+     * @type {Object}
+     */
     get colStyles() {
         return this.styleManager.colStyles;
     }
 
-    /** 设置行样式 */
+    /**
+     * 设置整行的默认样式
+     * @param {number} row - 行号
+     * @param {Object} styleObj - 样式对象（如 { bold: "weight", color: 'red' }）
+     */
     setRowStyle(...args) {
         return this.styles.setRowStyle(...args);
     }
-    /** 设置列样式 */
+    /**
+     * 设置整列的默认样式
+     * @param {number} col - 列号
+     * @param {Object} styleObj - 样式对象
+     */
     setColStyle(...args) {
         return this.styles.setColStyle(...args);
     }
-    /** 设置默认样式（全局回退样式） */
+    /**
+     * 设置工作表的默认样式（应用于无自定义样式的单元格）
+     * @param {Object} styleObj - 样式对象
+     */
     setDefaultStyle(...args) {
         return this.styles.setDefaultStyle(...args);
     }
-    /** 获取默认样式 */
+    /**
+     * 获取工作表的默认样式
+     * @returns {Object} 默认样式对象
+     */
     getDefaultStyle(...args) {
         return this.styles.getDefaultStyle(...args);
     }
-    /** 设置单元格样式 */
+    /**
+     * 设置单个单元格的自定义样式
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {Object} styleObj - 样式对象
+     */
     setCellStyle(...args) {
         return this.styles.setCellStyle(...args);
     }
-    /** 清除单元格样式 */
+    /**
+     * 清除单元格级别的自定义样式
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     */
     clearCellStyle(...args) {
         return this.styles.clearCellStyle(...args);
     }
-    /** 清除行样式 */
+    /**
+     * 清除行级别的自定义样式
+     * @param {number} row - 行号
+     */
     clearRowStyle(...args) {
         return this.styles.clearRowStyle(...args);
     }
-    /** 清除列样式 */
+    /**
+     * 清除列级别的自定义样式
+     * @param {number} col - 列号
+     */
     clearColStyle(...args) {
         return this.styles.clearColStyle(...args);
     }
-    /** 设置区域样式（批量设置矩形范围内所有单元格的样式） */
+    /**
+     * 设置矩形区域内所有单元格的样式
+     * @param {{topRow:number, topCol:number, bottomRow:number, bottomCol:number}} range - 区域范围
+     * @param {Object} styleObj - 样式对象
+     */
     setRangeStyle(...args) {
         return this.styles.setRangeStyle(...args);
     }
-    /** 清除区域样式 */
+    /**
+     * 清除矩形区域的样式
+     * @param {{topRow:number, topCol:number, bottomRow:number, bottomCol:number}} range - 区域范围
+     */
     clearRangeStyle(...args) {
         return this.styles.clearRangeStyle(...args);
     }
-    /** 批量样式更新（合并多次样式修改为单次提交） */
+    /**
+     * 批量样式更新（在单个撤销步骤中执行多个样式修改）
+     * @param {function(sheet: Sheet): void} fn - 样式修改回调函数
+     */
     batchStyleUpdate(...args) {
         return this.styles.batchStyleUpdate(...args);
     }
-    /** 获取单元格样式（合并行/列/单元格层级后的最终样式） */
+    /**
+     * 获取单元格的最终计算样式（合并行/列/单元格/条件格式/数据绑定层级）
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {Object} 最终样式对象
+     */
     getCellStyle(...args) {
         return this.styles.getCellStyle(...args);
     }
-    /** 解析样式（将样式 ID 解析为样式对象） */
+    /**
+     * 解析样式（将样式 ID 解析为样式对象，同 getCellStyle）
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {Object} 最终样式对象
+     */
     resolveStyle(...args) {
         return this.styles.resolveStyle(...args);
     }
 
-    /** 添加条件格式规则 */
+    /**
+     * 添加条件格式规则
+     * @param {Object} options - 规则选项
+     * @param {{topRow:number, topCol:number, bottomRow:number, bottomCol:number}} options.range - 应用范围
+     * @param {function(value: *, cell?: Object): boolean} options.condition - 条件判断函数
+     * @param {Object} [options.style={}] - 命中时应用的样式对象
+     */
     addConditionalRule(...args) {
         return this.styles.addConditionalRule(...args);
     }
-    /** 检查是否存在条件格式规则 */
+    /**
+     * 检查是否存在条件格式规则
+     * @returns {boolean}
+     */
     hasConditionalRules(...args) {
         return this.styles.hasConditionalRules(...args);
     }
-    /** 检查是否存在数据绑定 */
+    /**
+     * 检查是否存在数据绑定
+     * @returns {boolean}
+     */
     hasDataBindings(...args) {
         return this.styles.hasDataBindings(...args);
     }
-    /** 匹配条件格式样式（根据单元格值返回匹配的条件样式） */
+    /**
+     * 匹配条件格式样式（根据单元格值返回匹配的条件样式）
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {Object} cell - 单元格对象
+     * @returns {Object|null} 匹配的样式对象，未匹配返回 null
+     */
     matchConditionalStyle(...args) {
         return this.styles.matchConditionalStyle(...args);
     }
-    /** 绑定数据样式（将样式与数据条件关联） */
+    /**
+     * 绑定数据到样式映射（将某列的值映射为不同的样式）
+     * @param {number} col - 列号
+     * @param {function(value: *): number} mapperFn - 值→样式ID 的映射函数
+     */
     bindDataStyle(...args) {
         return this.styles.bindDataStyle(...args);
     }
-    /** 获取数据绑定样式 */
+    /**
+     * 获取数据绑定的样式
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {Object|null}
+     */
     getDataBindStyle(...args) {
         return this.styles.getDataBindStyle(...args);
     }
-    /** @type {Object} 数据绑定样式集合 */
+    /**
+     * 获取所有数据绑定映射
+     * @type {Map<number, Function>}
+     */
     get dataBindings() {
         return this.styles.dataBindings;
     }
 
     // ---- MetaCoordinator 代理 ----
 
-    /** @type {Array<Object>} 列配置列表（类型、宽度、格式等） */
+    /**
+     * 获取列配置列表
+     * @type {Array<Object>}
+     */
     get columnsConfig() {
         return this.meta.columnsConfig;
     }
-    /** @type {Object} 单元格类型映射（列号 → 类型名称） */
+    /**
+     * 获取单元格类型映射
+     * @type {Object}
+     */
     get cellTypes() {
         return this.meta.cellTypes;
     }
-    /** @type {Array<string>|Object} 自定义列头标签 */
+    /**
+     * 获取自定义列头标签
+     * @type {Array<string>|Object}
+     */
     get colHeaders() {
         return this.meta.colHeaders;
     }
     set colHeaders(v) {
         this.meta.colHeaders = v;
     }
-    /** @type {Array<string>|Object} 自定义行头标签 */
+    /**
+     * 获取自定义行头标签
+     * @type {Array<string>|Object}
+     */
     get rowHeaders() {
         return this.meta.rowHeaders;
     }
     set rowHeaders(v) {
         this.meta.rowHeaders = v;
     }
-    /** @type {Array<Object>} 嵌套表头配置 */
+    /**
+     * 获取嵌套表头配置
+     * @type {Array<Object>}
+     */
     get nestedHeaders() {
         return this.meta.nestedHeaders;
     }
     set nestedHeaders(v) {
         this.meta.nestedHeaders = v;
     }
-    /** @type {number} 行头宽度（px） */
+    /**
+     * 获取行头宽度
+     * @type {number}
+     */
     get rowHeaderWidth() {
         return this.meta.rowHeaderWidth;
     }
     set rowHeaderWidth(v) {
         this.meta.rowHeaderWidth = v;
     }
-    /** 获取指定列的表头文本 */
+    /**
+     * 获取指定列的头部标签文本
+     * @param {number} col - 列号
+     * @returns {string}
+     */
     getColHeader(...args) {
         return this.meta.getColHeader(...args);
     }
-    /** 获取指定列的表头样式 */
+    /**
+     * 获取指定列的头部样式
+     * @param {number} col - 列号
+     * @returns {Object}
+     */
     getColHeaderStyle(...args) {
         return this.meta.getColHeaderStyle(...args);
     }
-    /** 获取指定行的表头文本 */
+    /**
+     * 获取指定行的头部标签文本
+     * @param {number} row - 行号
+     * @returns {string}
+     */
     getRowHeader(...args) {
         return this.meta.getRowHeader(...args);
     }
-    /** 获取指定行的表头样式 */
+    /**
+     * 获取指定行的头部样式
+     * @param {number} row - 行号
+     * @returns {Object}
+     */
     getRowHeaderStyle(...args) {
         return this.meta.getRowHeaderStyle(...args);
     }
-    /** 获取嵌套表头的行数 */
+    /**
+     * 获取嵌套表头的总层数
+     * @returns {number} 0 表示未启用嵌套表头
+     */
     getNestedHeaderRowCount(...args) {
         return this.meta.getNestedHeaderRowCount(...args);
     }
-    /** 获取嵌套列头配置 */
+    /**
+     * 获取嵌套表头中指定层的表头信息
+     * @param {number} rowIndex - 嵌套层索引（0=顶层）
+     * @param {number} col - 数据列号
+     * @returns {{label: string, colspan: number}|null}
+     */
     getNestedColHeader(...args) {
         return this.meta.getNestedColHeader(...args);
     }
-    /** @type {number} 表头总高度（px） */
+    /**
+     * 获取表头总高度
+     * @type {number}
+     */
     get headerHeight() {
         return this.meta.headerHeight;
     }
     set headerHeight(v) {
         this.meta.headerHeight = v;
     }
-    /** 计算表头区域高度 */
+    /**
+     * 计算表头区域高度（像素）
+     * @returns {number}
+     */
     getHeaderHeight(...args) {
         return this.meta.getHeaderHeight(...args);
     }
-    /** 计算表头区域宽度 */
+    /**
+     * 计算表头区域宽度（像素）
+     * @returns {number}
+     */
     getHeaderWidth(...args) {
         return this.meta.getHeaderWidth(...args);
     }
 
-    /** 获取指定列的配置对象 */
+    /**
+     * 获取指定列的完整配置
+     * @param {number} col - 列号
+     * @returns {Object}
+     */
     getColumnConfig(...args) {
         return this.meta.getColumnConfig(...args);
     }
-    /** 获取指定列的数据类型名称 */
+    /**
+     * 获取指定列的类型名称
+     * @param {number} col - 列号
+     * @returns {string}
+     */
     getColumnType(...args) {
         return this.meta.getColumnType(...args);
     }
-    /** 检查列类型一致性（调试用） */
+    /**
+     * 检查列类型一致性（内部使用）
+     * @param {number} topCol - 起始列
+     * @param {number} bottomCol - 结束列
+     * @returns {boolean}
+     */
     _checkColumnTypeConsistency(...args) {
         return this.meta._checkColumnTypeConsistency(...args);
     }
-    /** 获取指定列的类型实例（含渲染器和编辑器） */
+    /**
+     * 获取列类型的实例（包含编辑器和渲染器）
+     * @param {number} col - 列号
+     * @returns {Object}
+     */
     getColumnTypeInstance(...args) {
         return this.meta.getColumnTypeInstance(...args);
     }
-    /** 获取指定单元格的类型实例（优先单元格级 > 列级 > 默认） */
+    /**
+     * 获取指定单元格的类型实例（优先单元格级 > 列级 > 默认）
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {Object}
+     */
     getCellTypeInstance(...args) {
         return this.meta.getCellTypeInstance(...args);
     }
-    /** 应用列配置（批量设置列类型、宽度等） */
+    /**
+     * 应用列配置数组（批量设置列类型、宽度等）
+     * @param {Array<Object>} columnsConfig - 列配置数组
+     */
     applyColumnsConfig(...args) {
         return this.meta.applyColumnsConfig(...args);
     }
 
-    /** 格式化单元格值为显示文本 */
+    /**
+     * 格式化单元格值用于显示
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {*} value - 原始值
+     * @returns {string} 格式化后的字符串
+     */
     formatCellValue(...args) {
         return this.meta.formatCellValue(...args);
     }
-    /** 校验单元格值是否合法 */
+    /**
+     * 验证单元格值是否符合类型约束
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {*} value - 待验证的值
+     * @returns {boolean} 是否有效
+     */
     validateCellValue(...args) {
         return this.meta.validateCellValue(...args);
     }
-    /** 将输入文本解析为单元格值 */
+    /**
+     * 解析用户输入为标准值
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @param {string} input - 用户输入的字符串
+     * @returns {*} 解析后的值
+     */
     parseCellValue(...args) {
         return this.meta.parseCellValue(...args);
     }
 
-    /** 应用单元格配置（静态 cellConfig） */
+    /**
+     * 应用静态 cell 配置数组
+     */
     applyCellConfig(...args) {
         return this.meta.applyCellConfig(...args);
     }
-    /** 解析单元格属性（合并静态配置和动态 cellsFn） */
+    /**
+     * 解析单元格属性（合并静态配置和动态 cellsFn）
+     * @param {number} r - 行号
+     * @param {number} c - 列号
+     * @returns {{style?: Object, disabled?: boolean, readOnly?: boolean, value?: *}|null}
+     */
     resolveCellProperties(...args) {
         return this.meta.resolveCellProperties(...args);
     }
 
     // ---- MergeCoordinator 代理 ----
 
-    /** 合并指定区域的单元格 */
+    /**
+     * 合并指定区域的单元格
+     * @param {number} topRow - 左上角行号
+     * @param {number} topCol - 左上角列号
+     * @param {number} bottomRow - 右下角行号
+     * @param {number} bottomCol - 右下角列号
+     * @returns {boolean} 是否成功
+     */
     mergeCells(...args) {
         return this.merges.mergeCells(...args);
     }
-    /** 取消指定区域的合并 */
+    /**
+     * 取消合并单元格
+     * @param {number} row - 合并区域内任意单元格的行号
+     * @param {number} col - 合并区域内任意单元格的列号
+     * @returns {boolean} 是否成功
+     */
     unmergeCells(...args) {
         return this.merges.unmergeCells(...args);
     }
-    /** 获取指定位置的合并区域信息 */
+    /**
+     * 获取单元格所属的合并区域信息
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {Object|null} 合并区域信息，未合并返回 null
+     */
     getMerge(...args) {
         return this.merges.getMerge(...args);
     }
-    /** 检查指定单元格是否为合并区域的左上角 */
+    /**
+     * 判断是否为合并区域的左上角单元格
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {boolean}
+     */
     isMergeTopLeft(...args) {
         return this.merges.isMergeTopLeft(...args);
     }
-    /** 检查指定单元格是否属于某个合并区域 */
+    /**
+     * 判断是否属于某个合并区域（且不是左上角）
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {boolean}
+     */
     isMergedCell(...args) {
         return this.merges.isMergedCell(...args);
     }
-    /** 获取所有合并区域信息 */
+    /**
+     * 获取所有合并单元格信息
+     * @returns {Array<Object>}
+     */
     getAllMerges(...args) {
         return this.merges.getAllMerges(...args);
     }
 
     // ---- OperationCoordinator 代理 ----
 
-    /** 开始批量操作（暂停事件派发和渲染更新） */
+    /**
+     * 开始批量操作（暂停事件派发和渲染更新）
+     */
     beginBatch(...args) {
         return this.operations.beginBatch(...args);
     }
-    /** 结束批量操作（提交所有变更并触发渲染） */
+    /**
+     * 结束批量操作（提交所有变更并触发渲染）
+     */
     endBatch(...args) {
         return this.operations.endBatch(...args);
     }
-    /** 触发渲染更新 */
+    /**
+     * 触发工作表重新渲染
+     */
     render(...args) {
         return this.operations.render(...args);
     }
-    /** 撤销上一步操作 */
+    /**
+     * 撤销上一步操作
+     */
     undo(...args) {
         return this.operations.undo(...args);
     }
-    /** 重做已撤销的操作 */
+    /**
+     * 重做已撤销的操作
+     */
     redo(...args) {
         return this.operations.redo(...args);
     }
-    /** 在指定位置插入行 */
+    /**
+     * 在指定位置插入新行
+     * @param {number} atRow - 插入位置的行号
+     */
     insertRow(...args) {
         return this.operations.insertRow(...args);
     }
-    /** 在指定位置插入列 */
+    /**
+     * 在指定位置插入新列
+     * @param {number} atCol - 插入位置的列号
+     */
     insertCol(...args) {
         return this.operations.insertCol(...args);
     }
-    /** 删除指定行 */
+    /**
+     * 删除指定行
+     * @param {number} atRow - 要删除的行号
+     */
     deleteRow(...args) {
         return this.operations.deleteRow(...args);
     }
-    /** 删除指定列 */
+    /**
+     * 删除指定列
+     * @param {number} atCol - 要删除的列号
+     */
     deleteCol(...args) {
         return this.operations.deleteCol(...args);
     }
-    /** 移动列（拖拽排序） */
+    /**
+     * 移动列：将 fromCol 的数据移到 toCol 位置
+     * @param {number} fromCol - 源列号
+     * @param {number} toCol - 目标列号
+     */
     moveCol(...args) {
         return this.operations.moveCol(...args);
     }
-    /** 移动行（拖拽排序） */
+    /**
+     * 移动行：将 fromRow 的数据移到 toRow 位置
+     * @param {number} fromRow - 源行号
+     * @param {number} toRow - 目标行号
+     */
     moveRow(...args) {
         return this.operations.moveRow(...args);
     }
-    /** 设置行数（调整表格行数） */
+    /**
+     * 动态设置行数
+     * @param {number} rows - 新的行数（必须 >= 1）
+     */
     setRowCount(...args) {
         return this.operations.setRowCount(...args);
     }
-    /** 设置列数（调整表格列数） */
+    /**
+     * 动态设置列数
+     * @param {number} cols - 新的列数（必须 >= 1）
+     */
     setColCount(...args) {
         return this.operations.setColCount(...args);
     }
-    /** 设置网格尺寸（同时调整行数和列数） */
+    /**
+     * 同时动态设置行数和列数
+     * @param {number} rows - 新的行数（必须 >= 1）
+     * @param {number} cols - 新的列数（必须 >= 1）
+     */
     setGridSize(...args) {
         return this.operations.setGridSize(...args);
     }
