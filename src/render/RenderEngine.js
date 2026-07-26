@@ -55,6 +55,9 @@ export class RenderEngine extends DOMComponent {
     /** @type {number | null} 用户手动指定的高度，null 表示自动取容器高度 */
     #userHeight = null;
 
+    /** @type {Function[]} 每帧渲染完成后的回调列表（多订阅者） */
+    #afterRenderCallbacks = [];
+
     /**
      * @param {HTMLElement | string} element - Canvas 元素、元素 id 或容器元素
      */
@@ -75,9 +78,6 @@ export class RenderEngine extends DOMComponent {
         this.ctx = this.canvas.getContext("2d");
         // 外层容器（Canvas 的原始父元素）
         this.outerWrap = this.canvas.parentElement;
-
-        /** @type {Function | null} 每帧渲染完成后的回调 */
-        this.onAfterRender = null;
 
         // 创建内部包裹层，用于定位滚动条和 Sheet 标签栏
         this.wrap = this.createElement("div", {
@@ -297,7 +297,7 @@ export class RenderEngine extends DOMComponent {
      * 7. 获取/创建 ViewportTransform
      * 8. 调用合成器 compose 绘制所有图层
      * 9. 更新滚动条和标签栏布局
-     * 10. 触发 onAfterRender 回调
+     * 10. 触发 afterRender 回调列表
      *
      * @param {import('../sheet/Sheet').Sheet} sheet - 要渲染的 Sheet 实例
      */
@@ -380,10 +380,35 @@ export class RenderEngine extends DOMComponent {
         this.scrollMgr.updateScrollbars(this.#viewW, this.#viewH);
         this.sheetTabBar.updateLayout(this.scrollMgr.hasHScrollbar);
 
-        // 渲染后回调
-        if (this.onAfterRender) {
-            this.onAfterRender();
+        // 渲染后回调（多订阅者）
+        for (const cb of this.#afterRenderCallbacks) {
+            try {
+                cb();
+            } catch (e) {
+                console.error("[RenderEngine] onAfterRender callback error:", e);
+            }
         }
+    }
+
+    /**
+     * 注册渲染后回调（多订阅者模式，替代直接赋值 onAfterRender）
+     * @param {Function} callback
+     * @returns {Function} 传入的 callback（便于用同一引用移除）
+     */
+    addAfterRenderCallback(callback) {
+        if (typeof callback === "function" && !this.#afterRenderCallbacks.includes(callback)) {
+            this.#afterRenderCallbacks.push(callback);
+        }
+        return callback;
+    }
+
+    /**
+     * 移除渲染后回调
+     * @param {Function} callback
+     */
+    removeAfterRenderCallback(callback) {
+        const idx = this.#afterRenderCallbacks.indexOf(callback);
+        if (idx !== -1) this.#afterRenderCallbacks.splice(idx, 1);
     }
 
     /**

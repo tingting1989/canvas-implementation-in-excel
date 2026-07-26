@@ -527,6 +527,7 @@ export class KeyboardStrategy extends EventStrategy {
 
         if (shiftKey) {
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, currentCol);
+            this.#notifySelectionChanged(sheet);
         } else {
             this.#selectCellOrMerge(sheet, target.row, currentCol);
         }
@@ -553,6 +554,7 @@ export class KeyboardStrategy extends EventStrategy {
 
         if (shiftKey) {
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], target.row, currentCol);
+            this.#notifySelectionChanged(sheet);
         } else {
             this.#selectCellOrMerge(sheet, target.row, currentCol);
         }
@@ -586,6 +588,7 @@ export class KeyboardStrategy extends EventStrategy {
 
         if (shiftKey) {
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], currentRow, target.col);
+            this.#notifySelectionChanged(sheet);
         } else {
             this.#selectCellOrMerge(sheet, currentRow, target.col);
         }
@@ -617,6 +620,7 @@ export class KeyboardStrategy extends EventStrategy {
 
         if (shiftKey) {
             sheet.selection.setRange(sheet.selection.getAnchor()[0], sheet.selection.getAnchor()[1], currentRow, target.col);
+            this.#notifySelectionChanged(sheet);
         } else {
             this.#selectCellOrMerge(sheet, currentRow, target.col);
         }
@@ -652,6 +656,13 @@ export class KeyboardStrategy extends EventStrategy {
         } else {
             sheet.selection.setActive(row, col);
         }
+        this.#notifySelectionChanged(sheet);
+    }
+
+    #notifySelectionChanged(sheet) {
+        const range = sheet.selection.getRange();
+        const focus = sheet.selection.getFocus();
+        this.handler.runHooks(HOOKS.AFTER_SELECTION, range, focus);
     }
 
     /**

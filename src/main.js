@@ -253,8 +253,8 @@ const initApp = () => {
                         allowBlank: false,
                         errorMessage: "长度为3-10个字符",
                         errorStyle: "warning",
-                        inputTitle: "输入提示",
-                        inputMessage: "请输入3~10个字符",
+                        // inputTitle: "输入提示",
+                        // inputMessage: "请输入3~10个字符",
                     },
                     // {
                     //     range: "B:B",

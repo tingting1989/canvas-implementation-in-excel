@@ -92,6 +92,10 @@ export class MouseStrategy extends EventStrategy {
             this.#dragging = true;
         }
 
+        const range = this.handler.sheet.selection.getRange();
+        const focus = this.handler.sheet.selection.getFocus();
+        this.handler.runHooks(HOOKS.AFTER_SELECTION, range, focus);
+
         this.handler.render();
     }
 
@@ -143,6 +147,9 @@ export class MouseStrategy extends EventStrategy {
 
         if (focusRow !== this.handler.sheet.selection.getFocus()[0] || focusCol !== this.handler.sheet.selection.getFocus()[1]) {
             this.handler.sheet.selection.setRange(this.#dragAnchorRow, this.#dragAnchorCol, focusRow, focusCol);
+            const range = this.handler.sheet.selection.getRange();
+            const selFocus = this.handler.sheet.selection.getFocus();
+            this.handler.runHooks(HOOKS.AFTER_SELECTION, range, selFocus);
             this.handler.render();
         }
     }
@@ -162,6 +169,10 @@ export class MouseStrategy extends EventStrategy {
         } else if (headerHit.type === HIT_TYPE.ROW_HEADER) {
             sheet.selection.selectRow(headerHit.index, rc.realColCount - 1);
         }
+
+        const range = sheet.selection.getRange();
+        const focus = sheet.selection.getFocus();
+        this.handler.runHooks(HOOKS.AFTER_SELECTION, range, focus);
 
         this.handler.render();
     }

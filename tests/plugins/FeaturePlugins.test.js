@@ -132,7 +132,7 @@ describe("FormulaPlugin", () => {
         it("should hook FormulaBar to render cycle", () => {
             plugin.init();
 
-            expect(typeof workbook.renderEngine.onAfterRender).toBe("function");
+            expect(workbook.renderEngine.addAfterRenderCallback).toHaveBeenCalled();
         });
 
         it("should trigger invalidateAll and render on init", () => {

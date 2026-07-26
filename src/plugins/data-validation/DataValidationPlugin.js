@@ -212,6 +212,11 @@ export class DataValidationPlugin extends BasePlugin {
         this.addHook(HOOKS.BEFORE_PASTE, (data) => {
             return this.interceptBeforePaste(data);
         });
+
+        this.addHook(HOOKS.AFTER_SELECTION, (range, focus) => {
+            const [row, col] = focus;
+            this.#portalUI?.onCellSelected(row, col);
+        });
     }
 
     /**
@@ -345,10 +350,45 @@ export class DataValidationPlugin extends BasePlugin {
 
             this.#portalUI = new ValidationUIController(this.sheet, portalManager, this, this.renderEngine);
             this.#portalUI.init();
+
+            this.#hookRenderEngine();
         } catch (error) {
             errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[DataValidation] UI 控制器初始化失败:", error);
             this.#portalUI = null;
         }
+    }
+
+    #hookRenderEngine() {
+        const re = this.renderEngine;
+        if (!re) return;
+
+        this.#afterRenderCallback = () => {
+            this.#renderValidationIcons();
+        };
+        re.addAfterRenderCallback(this.#afterRenderCallback);
+    }
+
+    #renderValidationIcons() {
+        if (!this.#portalUI || !this.#engine || !this.renderEngine) return;
+
+        const sheet = this.sheet;
+        if (!sheet) return;
+
+        const rc = sheet.rowColManager;
+        const re = this.renderEngine;
+        const sx = re.scrollX;
+        const sy = re.scrollY;
+        const viewW = re.viewW;
+        const viewH = re.viewH;
+
+        const visibleRange = rc.getVisibleRange(sx, sy, viewW, viewH);
+
+        this.#portalUI.renderValidationIcons({
+            startRow: visibleRange.topRow,
+            endRow: visibleRange.bottomRow,
+            startCol: visibleRange.topCol,
+            endCol: visibleRange.bottomCol,
+        });
     }
 
     /**
@@ -618,6 +658,7 @@ export class DataValidationPlugin extends BasePlugin {
 
         this.#clearAllErrorStyles();
         this.#unbindSheetSwitchListener();
+        this.#unhookRenderEngine();
 
         if (this.#engine) {
             this.#engine.destroy();
@@ -644,6 +685,16 @@ export class DataValidationPlugin extends BasePlugin {
             this.#copyPasteHandler = null;
         }
         super.destroy();
+    }
+
+    #afterRenderCallback = null;
+
+    #unhookRenderEngine() {
+        const re = this.renderEngine;
+        if (re && this.#afterRenderCallback) {
+            re.removeAfterRenderCallback(this.#afterRenderCallback);
+            this.#afterRenderCallback = null;
+        }
     }
 
     /**

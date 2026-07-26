@@ -40,7 +40,8 @@ function createMockWorkbook(overrides = {}) {
             },
             viewH: 600,
             outerWrap: document.createElement("div"),
-            onAfterRender: null,
+            addAfterRenderCallback: vi.fn(),
+            removeAfterRenderCallback: vi.fn(),
         },
         eventHandler: overrides.eventHandler || {
             hooks: {

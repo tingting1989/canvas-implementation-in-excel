@@ -417,7 +417,9 @@ function createMockWorkbook() {
             cellStore: mockCellStore
         },
         renderEngine: {
-            invalidateAll: () => {}
+            invalidateAll: () => {},
+            addAfterRenderCallback: () => {},
+            removeAfterRenderCallback: () => {}
         },
         eventHandler: {
             hooks: {

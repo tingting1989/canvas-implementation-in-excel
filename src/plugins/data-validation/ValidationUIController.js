@@ -369,6 +369,8 @@ export class ValidationUIController {
      * @param {string} message - 提示消息
      */
     showInputMessage(row, col, title, message) {
+        console.log("showInputMessage", row, col, title, message);
+
         this.hideInputMessage();
 
         if (!this.#portalManager?.isInitialized) return;
@@ -505,9 +507,16 @@ export class ValidationUIController {
                 const cell = this.#sheet?.cellStore?.get(row, col);
                 if (!cell) continue;
 
-                const result = this.#validationPlugin.engine.getFromCache
-                    ? this.#validationPlugin.engine.getFromCache(`${row},${col}`, cell.value)
-                    : null;
+                const engine = this.#validationPlugin.engine;
+                let result = null;
+
+                if (engine.getFromCache) {
+                    result = engine.getFromCache(`${row},${col}`, cell.value);
+                }
+
+                if (!result && engine.validateCellSync) {
+                    result = engine.validateCellSync(row, col, cell.value);
+                }
 
                 const cellRect = this.#getCellRect(row, col);
                 if (!cellRect) continue;

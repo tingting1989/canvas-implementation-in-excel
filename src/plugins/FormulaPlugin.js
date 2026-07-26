@@ -45,6 +45,9 @@ export class FormulaPlugin extends BasePlugin {
     /** @type {FormulaBarManager} */
     #bar = null;
 
+    /** @type {Function | null} */
+    #afterRenderCallback = null;
+
     // ═══════════════════════════════════════════════════════════════
     // 只读属性
     // ═══════════════════════════════════════════════════════════════
@@ -139,11 +142,10 @@ export class FormulaPlugin extends BasePlugin {
         const re = this.workbook.renderEngine;
         if (!re) return;
 
-        const original = re.onAfterRender;
-        re.onAfterRender = () => {
-            if (original) original();
+        this.#afterRenderCallback = () => {
             this.#bar?.update();
         };
+        re.addAfterRenderCallback(this.#afterRenderCallback);
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -181,6 +183,12 @@ export class FormulaPlugin extends BasePlugin {
      * 最后调用父类销毁清理所有注册资源。
      */
     destroy() {
+        const re = this.workbook?.renderEngine;
+        if (re && this.#afterRenderCallback) {
+            re.removeAfterRenderCallback(this.#afterRenderCallback);
+            this.#afterRenderCallback = null;
+        }
+
         this.disable();
 
         if (this.#bar) {
