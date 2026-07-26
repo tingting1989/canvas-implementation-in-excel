@@ -124,14 +124,20 @@ export class DataValidationPlugin extends BasePlugin {
         }
     }
 
+    /** @returns {boolean} 插件是否处于激活状态 */
     get active() {
         return this.#active;
     }
 
+    /** @returns {ValidationEngine|null} 验证引擎实例 */
     get engine() {
         return this.#engine;
     }
 
+    /**
+     * 注册插件钩子
+     * 拦截单元格赋值和粘贴操作，在操作前后执行验证逻辑
+     */
     registerHooks() {
         if (!this.hooks) return;
 
@@ -148,6 +154,14 @@ export class DataValidationPlugin extends BasePlugin {
         });
     }
 
+    /**
+     * 拦截单元格赋值前的验证
+     * 同步验证目标单元格的值，若验证失败且错误样式为 STOP 则阻止赋值
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} value - 待赋值的值
+     * @returns {boolean} true 允许赋值，false 阻止赋值
+     */
     interceptBeforeSetValue(row, col, value) {
         if (!this.#active || !this.#engine) return true;
 
@@ -166,18 +180,35 @@ export class DataValidationPlugin extends BasePlugin {
         return true;
     }
 
+    /**
+     * 单元格赋值后的处理
+     * 触发 AFTER_VALIDATE 钩子通知验证完成
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} value - 赋值后的新值
+     */
     handleAfterSetValue(row, col, value) {
         if (!this.#active || !this.#engine) return;
 
         this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, row, col, value);
     }
 
+    /**
+     * 拦截粘贴操作前的验证（Phase 2 预留）
+     * @param {object} data - 粘贴数据
+     * @returns {boolean} true 允许粘贴，false 阻止粘贴
+     */
     interceptBeforePaste(data) {
         return true;
     }
 
+    /** @type {Function|null} Sheet 切换事件取消订阅函数 */
     #sheetSwitchUnsubscribe = null;
 
+    /**
+     * 绑定工作表切换事件监听
+     * 当用户切换 Sheet 时，重新初始化验证引擎并加载初始规则
+     */
     #bindSheetSwitchListener() {
         if (!this.sheet?.bus) return;
 
@@ -192,6 +223,9 @@ export class DataValidationPlugin extends BasePlugin {
         });
     }
 
+    /**
+     * 解除工作表切换事件监听
+     */
     #unbindSheetSwitchListener() {
         if (this.#sheetSwitchUnsubscribe) {
             this.#sheetSwitchUnsubscribe();
@@ -199,6 +233,11 @@ export class DataValidationPlugin extends BasePlugin {
         }
     }
 
+    /**
+     * 工作表切换后的处理
+     * 为新 Sheet 创建验证引擎，并重新加载初始规则
+     * @param {object} newSheet - 切换后的新工作表实例
+     */
     async #onSheetSwitched(newSheet) {
         const formulaEngine = this.workbook?.formulaEngine || null;
 
@@ -218,6 +257,13 @@ export class DataValidationPlugin extends BasePlugin {
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] Sheet 切换完成，已重新加载 ${this.#engine.rules.size} 条规则`);
     }
 
+    /**
+     * 添加验证规则
+     * 校验规则有效性，触发变更前后钩子，添加到引擎并刷新渲染
+     * @param {object} ruleOptions - 规则配置选项，参见 ValidationRule 构造参数
+     * @returns {string} 规则 ID
+     * @throws {Error} 规则无效时抛出异常
+     */
     setValidation(ruleOptions) {
         const rule = new ValidationRule(ruleOptions);
         const validation = rule.validate();
@@ -238,6 +284,12 @@ export class DataValidationPlugin extends BasePlugin {
         return ruleId;
     }
 
+    /**
+     * 移除验证规则
+     * 触发变更前后钩子，从引擎中移除规则并刷新渲染
+     * @param {string} ruleId - 要移除的规则 ID
+     * @returns {boolean} 是否成功移除
+     */
     removeValidation(ruleId) {
         const rule = this.#engine.rules.get(ruleId);
 
@@ -259,6 +311,14 @@ export class DataValidationPlugin extends BasePlugin {
         return success;
     }
 
+    /**
+     * 异步验证单个单元格的值
+     * 触发 BEFORE_VALIDATE 和 AFTER_VALIDATE 钩子
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} value - 待验证的值
+     * @returns {Promise<ValidationResult>} 验证结果
+     */
     async validateCell(row, col, value) {
         if (!this.#engine) {
             return ValidationResult.success();
@@ -273,6 +333,12 @@ export class DataValidationPlugin extends BasePlugin {
         return result;
     }
 
+    /**
+     * 批量验证指定区域的所有单元格
+     * 触发 AFTER_BATCH_VALIDATION 钩子
+     * @param {object} range - 验证范围，包含 startRow/startCol/endRow/endCol
+     * @returns {Promise<{total: number, valid: number, invalid: number, results: Array}>} 批量验证报告
+     */
     async validateRange(range) {
         if (!this.#engine) {
             return { total: 0, valid: 0, invalid: 0, results: [] };
@@ -285,33 +351,57 @@ export class DataValidationPlugin extends BasePlugin {
         return report;
     }
 
+    /**
+     * 获取指定单元格关联的所有验证规则
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {ValidationRule[]} 规则数组
+     */
     getRulesForCell(row, col) {
         if (!this.#engine) return [];
         return this.#engine.getRulesForCell(row, col);
     }
 
+    /**
+     * 获取所有验证规则
+     * @returns {ValidationRule[]} 规则数组
+     */
     getAllRules() {
         if (!this.#engine) return [];
         return Array.from(this.#engine.rules.values());
     }
 
+    /**
+     * 根据 ID 获取验证规则
+     * @param {string} ruleId - 规则 ID
+     * @returns {ValidationRule|null} 规则实例，不存在则返回 null
+     */
     getRuleById(ruleId) {
         if (!this.#engine) return null;
         return this.#engine.rules.get(ruleId);
     }
 
+    /**
+     * 启用插件，恢复验证拦截功能
+     */
     enable() {
         super.enable();
         this.#active = true;
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已启用");
     }
 
+    /**
+     * 禁用插件，暂停验证拦截功能
+     */
     disable() {
         this.#active = false;
         super.disable();
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已禁用");
     }
 
+    /**
+     * 销毁插件，释放验证引擎、Portal UI 和事件监听等所有资源
+     */
     destroy() {
         this.disable();
 
@@ -331,12 +421,23 @@ export class DataValidationPlugin extends BasePlugin {
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[DataValidation] 已销毁");
     }
 
+    /**
+     * 导出所有验证规则为 JSON 数组，用于持久化存储
+     * @returns {object[]} 规则 JSON 对象数组
+     */
     exportRules() {
         if (!this.#engine) return [];
 
         return this.getAllRules().map((rule) => rule.toJSON());
     }
 
+    /**
+     * 从 JSON 数组导入验证规则
+     * 逐条解析并调用 setValidation 添加，跳过无效规则
+     * @param {object[]} rulesJSON - 规则 JSON 对象数组
+     * @returns {string[]} 成功导入的规则 ID 数组
+     * @throws {Error} 输入不是数组时抛出异常
+     */
     importRules(rulesJSON) {
         if (!Array.isArray(rulesJSON)) {
             throw new Error("导入数据必须是数组格式");

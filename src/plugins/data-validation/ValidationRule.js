@@ -142,12 +142,11 @@ export class ValidationRule {
      * @returns {ValidationRule}
      */
     static fromJSON(json) {
-        const rule = new ValidationRule({
+        return new ValidationRule({
             ...json,
             createdAt: new Date(json.createdAt),
             updatedAt: new Date(json.updatedAt),
         });
-        return rule;
     }
 
     /**
