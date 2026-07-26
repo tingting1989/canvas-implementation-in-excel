@@ -87,16 +87,30 @@ const DEFAULT_COLORS = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "
  * });
  */
 export class ChartModel {
+    /**
+     * 构造图表数据模型
+     * @param {ChartModelOptions} [options={}] - 图表配置选项
+     */
     constructor(options = {}) {
+        /** @type {string} 图表唯一标识，未指定时自动生成 UUID */
         this.id = options.id || crypto.randomUUID();
+        /** @type {string} 图表类型标识符，默认柱状图 */
         this.type = options.type || CHART_TYPE.BAR;
+        /** @type {number} 锚定行号（图表左上角绑定的单元格行） */
         this.anchorRow = options.anchorRow ?? 0;
+        /** @type {number} 锚定列号（图表左上角绑定的单元格列） */
         this.anchorCol = options.anchorCol ?? 0;
+        /** @type {number} 相对锚单元格的 X 像素偏移 */
         this.offsetX = options.offsetX ?? 0;
+        /** @type {number} 相对锚单元格的 Y 像素偏移 */
         this.offsetY = options.offsetY ?? 0;
+        /** @type {number} 图表宽度(px) */
         this.width = options.width ?? 400;
+        /** @type {number} 图表高度(px) */
         this.height = options.height ?? 300;
+        /** @type {DataRange|null} 图表关联的数据范围，null 表示未绑定数据 */
         this.dataRange = options.dataRange || null;
+        /** @type {ChartStyle} 图表样式配置 */
         this.style = {
             title: "",
             showLegend: true,
@@ -106,10 +120,19 @@ export class ChartModel {
             showTooltip: true,
             ...options.style,
         };
+        /** @type {object|null} 缓存的图表计算数据，用于避免重复计算 */
         this._cachedData = null;
+        /** @type {number} 缓存版本号，用于判断缓存是否过期 */
         this._cacheVersion = -1;
     }
 
+    /**
+     * 计算图表在视口中的边界矩形
+     * 若未提供 viewport，则仅返回偏移量作为坐标（适用于无视口场景）
+     * 若提供 viewport，则根据锚单元格的视口坐标 + 偏移量计算实际位置
+     * @param {object} [viewport] - 视口对象，需提供 colToViewX / rowToViewY 方法
+     * @returns {{ x: number, y: number, w: number, h: number }} 边界矩形 { x, y, w, h }
+     */
     getBounds(viewport) {
         if (!viewport) {
             return { x: this.offsetX, y: this.offsetY, w: this.width, h: this.height };
@@ -124,11 +147,23 @@ export class ChartModel {
         };
     }
 
+    /**
+     * 判断指定点是否在图表边界矩形内
+     * @param {number} px - 点的 X 坐标
+     * @param {number} py - 点的 Y 坐标
+     * @param {object} [viewport] - 视口对象，需提供 colToViewX / rowToViewY 方法
+     * @returns {boolean} 点是否在图表区域内
+     */
     containsPoint(px, py, viewport) {
         const b = this.getBounds(viewport);
         return px >= b.x && px <= b.x + b.w && py >= b.y && py <= b.y + b.h;
     }
 
+    /**
+     * 将图表模型序列化为纯 JSON 对象，用于持久化存储或传输
+     * 不包含缓存相关属性（_cachedData、_cacheVersion）
+     * @returns {object} 可 JSON 序列化的图表数据对象
+     */
     toJSON() {
         return {
             id: this.id,
@@ -144,6 +179,11 @@ export class ChartModel {
         };
     }
 
+    /**
+     * 从 JSON 对象反序列化创建 ChartModel 实例
+     * @param {object} json - 由 toJSON() 生成的序列化对象
+     * @returns {ChartModel} 还原的图表模型实例
+     */
     static fromJSON(json) {
         return new ChartModel(json);
     }

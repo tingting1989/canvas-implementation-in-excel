@@ -691,3 +691,29 @@ export class BadColumnType extends BaseColumnType {
 2. **主题一致性**：切换主题时自动应用新主题的样式定义
 3. **易于维护**：修改样式只需改一处，无需修改多个 Column Type 类
 4. **扩展性强**：支持自定义主题覆盖默认样式
+## 17. if 语句大括号规范
+
+- 所有 `if` / `else if` / `else` 语句**必须**使用大括号 `{}` 包裹代码块，**禁止**省略大括号的单行写法
+- 即使代码块只有一行，也**必须**用大括号包裹
+- 原因：
+  - 省略大括号容易在后续添加语句时遗漏大括号，导致逻辑错误
+  - 大括号使代码结构更清晰，减少代码审查时的歧义
+  - 符合主流代码规范（如 ESLint `curly: ["error", "all"]`）
+
+#### ✅ 正确示例
+
+```javascript
+if (!chart) { return null; }
+if (updates.offsetX !== undefined) { chart.offsetX = updates.offsetX; }
+if (value > 0) {
+    doSomething();
+}
+```
+
+#### ❌ 错误示例
+
+```javascript
+if (!chart) return null;
+if (updates.offsetX !== undefined) chart.offsetX = updates.offsetX;
+if (value > 0) doSomething();
+```

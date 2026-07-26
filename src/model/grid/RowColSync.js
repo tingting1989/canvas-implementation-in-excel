@@ -87,19 +87,35 @@ export class RowColSync {
 
     // ─── 数组操作工具 ──────────────────────────────────
 
-    /** 在数组指定位置插入空元素 */
+    /**
+     * 在数组指定位置插入空字符串元素
+     * 用于插入行/列时在标签数组中添加新标签位
+     * @param {string[]} arr - 标签数组
+     * @param {number} atIndex - 插入位置索引
+     */
     #insertArrayAt(arr, atIndex) {
         if (!Array.isArray(arr) || atIndex < 0 || atIndex >= CONFIG.MAX_COLS) return;
         arr.splice(atIndex, 0, "");
     }
 
-    /** 删除数组指定位置的元素 */
+    /**
+     * 删除数组指定位置的元素
+     * 用于删除行/列时从标签数组中移除对应标签
+     * @param {string[]} arr - 标签数组
+     * @param {number} atIndex - 删除位置索引
+     */
     #deleteArrayAt(arr, atIndex) {
         if (!Array.isArray(arr) || atIndex < 0 || atIndex >= arr.length) return;
         arr.splice(atIndex, 1);
     }
 
-    /** 将数组元素从 from 位置移到 to 位置 */
+    /**
+     * 将数组元素从 from 位置移到 to 位置
+     * 用于移动行/列时调整标签数组中元素的顺序
+     * @param {string[]} arr - 标签数组
+     * @param {number} from - 源位置
+     * @param {number} to - 目标位置
+     */
     #shiftArray(arr, from, to) {
         if (!Array.isArray(arr) || arr.length <= Math.max(from, to)) return;
         const [item] = arr.splice(from, 1);
@@ -110,8 +126,10 @@ export class RowColSync {
 
     /**
      * 重映射 Map 的所有键
-     * @param {Map<number, *>} map
-     * @param {(key: number) => number} shiftFn - 键映射函数
+     * 遍历 Map 中所有条目，对每个键应用 shiftFn 得到新键，
+     * 若新键与旧键不同则先删除旧键再设置新键，避免键冲突
+     * @param {Map<number, *>} map - 需要重映射键的 Map
+     * @param {(key: number) => number} shiftFn - 键映射函数，接收旧键返回新键
      */
     #remapMapKeys(map, shiftFn) {
         const moved = [];
@@ -125,8 +143,11 @@ export class RowColSync {
 
     /**
      * 重映射 cellTypes Map 的键
-     * @param {(key: number) => number} shiftFn - 键映射函数
-     * @param {boolean} [deleteOnMinusOne=false] - 是否在映射结果为 -1 时删除该条目
+     * cellTypes 的键格式为 "row,col" 字符串，需要根据轴类型（行/列）提取对应索引并重映射
+     * - 若映射结果为 -1，表示该条目应被删除（对应行/列已被删除）
+     * - 若映射结果与原值不同，则更新键中的行号或列号
+     * @param {(key: number) => number} shiftFn - 键映射函数，接收旧行/列索引返回新索引
+     * @param {boolean} [deleteOnMinusOne=false] - 是否在映射结果为 -1 时删除该条目（删除操作时为 true）
      */
     #remapCellTypesKeys(shiftFn, deleteOnMinusOne = false) {
         const toDelete = [];
@@ -151,10 +172,14 @@ export class RowColSync {
 
     /**
      * 计算移动操作后的新索引
+     * 处理三种情况：
+     * - 被移动元素本身：直接移到目标位置
+     * - 向后移动（from < to）：区间 (from, to] 内的元素前移一位
+     * - 向前移动（from > to）：区间 [to, from) 内的元素后移一位
      * @param {number} index - 原始索引
      * @param {number} from - 源位置
      * @param {number} to - 目标位置
-     * @returns {number}
+     * @returns {number} 移动后的新索引
      */
     #calcShiftedIndex(index, from, to) {
         if (index === from) return to;
@@ -164,7 +189,14 @@ export class RowColSync {
 
     // ─── 嵌套表头操作（仅列轴）──────────────────────────
 
-    /** 插入列时扩展嵌套表头的 colspan */
+    /**
+     * 插入列时扩展嵌套表头的 colspan
+     * 遍历每一层嵌套表头，找到插入列所在的表头项：
+     * - 若该项有 colspan，则 colspan +1
+     * - 若该项为简单字符串且 colspan=1，则在该位置插入空字符串项
+     * 若插入位置超出所有表头项的范围，则在末尾追加空字符串
+     * @param {number} atCol - 插入列的位置
+     */
     #insertNestedHeaderColumn(atCol) {
         const nh = this.#sheet.nestedHeaders;
         if (!Array.isArray(nh) || nh.length === 0) return;
@@ -193,7 +225,13 @@ export class RowColSync {
         }
     }
 
-    /** 删除列时缩减嵌套表头的 colspan */
+    /**
+     * 删除列时缩减嵌套表头的 colspan
+     * 遍历每一层嵌套表头，找到删除列所在的表头项：
+     * - 若 colspan > 1，则 colspan -1（减为 1 时退化为简单字符串）
+     * - 若 colspan = 1，则直接移除该项
+     * @param {number} atCol - 删除列的位置
+     */
     #deleteNestedHeaderColumn(atCol) {
         const nh = this.#sheet.nestedHeaders;
         if (!Array.isArray(nh) || nh.length === 0) return;
@@ -219,7 +257,15 @@ export class RowColSync {
         }
     }
 
-    /** 移动列时平移嵌套表头的标签和样式 */
+    /**
+     * 移动列时平移嵌套表头的标签和样式
+     * 处理步骤：
+     * 1. 将每一层嵌套表头展开为扁平数组（每个单元格对应一个条目）
+     * 2. 在扁平数组中执行 from → to 的移动操作
+     * 3. 重新打包：将相邻且标签和样式相同的条目合并为带 colspan 的对象
+     * @param {number} fromCol - 源列位置
+     * @param {number} toCol - 目标列位置
+     */
     #shiftNestedHeaders(fromCol, toCol) {
         const nh = this.#sheet.nestedHeaders;
         if (!Array.isArray(nh) || nh.length === 0) return;
@@ -271,9 +317,11 @@ export class RowColSync {
 
     /**
      * 浅比较两个样式对象是否相等
-     * @param {object|null} a
-     * @param {object|null} b
-     * @returns {boolean}
+     * 两个 null 引用视为相等，null 与非 null 视为不等
+     * 比较所有自有属性的数量和值
+     * @param {object|null} a - 第一个样式对象
+     * @param {object|null} b - 第二个样式对象
+     * @returns {boolean} 两个样式对象是否浅相等
      */
     #stylesEqual(a, b) {
         if (a === b) return true;

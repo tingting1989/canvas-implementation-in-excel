@@ -53,6 +53,10 @@ export class ChunkedCellStore {
      */
     #cachedMaxCol = -1;
 
+    /**
+     * 构造分块单元格存储
+     * 初始化空的块映射表和无效的缓存
+     */
     constructor() {}
 
     /**
@@ -407,7 +411,7 @@ export class ChunkedCellStore {
 
     /**
      * 将指定列的所有 Cell 左移一列（用于 moveCol 中间列的移动）
-     * @param {number} col - 要左移的列号
+     * @param {number} targetCol - 要左移的列号
      */
     #shiftColLeft(targetCol) {
         for (const [, chunk] of this.#chunks) {
@@ -427,7 +431,7 @@ export class ChunkedCellStore {
 
     /**
      * 将指定列的所有 Cell 右移一列（用于 moveCol 中间列的移动）
-     * @param {number} col - 要右移的列号
+     * @param {number} targetCol - 要右移的列号
      */
     #shiftColRight(targetCol) {
         for (const [, chunk] of this.#chunks) {
@@ -446,8 +450,8 @@ export class ChunkedCellStore {
     }
 
     /**
-     * 将指定行的所有 Cell 上移一行
-     * @param {number} row - 要上移的行号
+     * 将指定行的所有 Cell 上移一行（用于 moveRow 中间行的移动）
+     * @param {number} targetRow - 要上移的行号
      */
     #shiftRowUp(targetRow) {
         for (const [, chunk] of this.#chunks) {
@@ -466,8 +470,8 @@ export class ChunkedCellStore {
     }
 
     /**
-     * 将指定行的所有 Cell 下移一行
-     * @param {number} row - 要下移的行号
+     * 将指定行的所有 Cell 下移一行（用于 moveRow 中间行的移动）
+     * @param {number} targetRow - 要下移的行号
      */
     #shiftRowDown(targetRow) {
         for (const [, chunk] of this.#chunks) {
@@ -593,7 +597,7 @@ export class ChunkedCellStore {
      *
      * @private
      * @param {Array<number>} chain - 行号链条 [source, target1, target2, ...]
-     modal.msgSuccess("修改成功");     * @param {Map<number, number>} mapping - 完整的行映射表
+     * @param {Map<number, number>} mapping - 完整的行映射表
      * @returns {number} 实际移动的行数
      */
     #moveChainSafely(chain, mapping) {
@@ -610,12 +614,11 @@ export class ChunkedCellStore {
             }
         }
 
-        const movedCount = chain.filter((row, i) => {
+        // 统计实际发生位移的行数（排除原地不动的行）
+        return chain.filter((row, i) => {
             const target = chain[(i + 1) % chain.length];
             return row !== target;
         }).length;
-
-        return movedCount;
     }
 
     /**
