@@ -709,67 +709,9 @@ pasteWithConflictResolution(
 
 ---
 
-### P2-4: 条件格式按 errorStyle 差异化
+### ~~P2-4: 条件格式按 errorStyle 差异化~~ （已移除）
 
-> **优先级**: 🟡 中 — 视觉反馈正确性
-> **涉及文件**:
-> - `src/plugins/data-validation/ValidationFormattingBridge.js`（修改）
-> **预估工时**: 1 天
-
-#### 问题描述
-
-当前 `#applyErrorFormat()` 根据 `rule.type` 选择模板，不区分 `rule.errorStyle`。warning 级别的验证看起来和 stop 一样严重。
-
-#### 实现规格
-
-##### 按 errorStyle 差异化的样式模板
-
-```javascript
-const ERROR_STYLE_TEMPLATES = {
-    stop: {
-        backgroundColor: '#FFCDD2',      // 浅红背景
-        color: '#C62828',               // 深红文字
-        textDecoration: 'line-through', // 删除线
-        fontWeight: 'bold',
-        icon: '❌',
-    },
-    warning: {
-        backgroundColor: '#FFF9C4',      // 浅黄背景
-        color: '#F57F17',               // 橙色文字
-        fontStyle: 'italic',            // 斜体
-        icon: '⚠️',
-    },
-    information: {
-        borderColor: '#2196F3',          // 蓝色边框
-        borderWidth: '2px',
-        borderStyle: 'dashed',           // 虚线边框
-        icon: 'ℹ️',
-    }
-};
-```
-
-##### 修改 `#applyErrorFormat` 逻辑
-
-```javascript
-#applyErrorFormat(row, col, rule, result) {
-    // 优先使用 errorStyle 决定样式，而非 rule.type
-    const errorStyle = rule.errorStyle || 'stop';
-    const styleTemplate = ERROR_STYLE_TEMPLATES[errorStyle];
-
-    // 合并验证类型特定的模板（如唯一性冲突的波浪线）
-    const typeTemplate = ValidationFormattingBridge.FORMAT_TEMPLATES[this.#getFormatTemplateKey(rule.type)];
-
-    const format = { ...styleTemplate, ...typeTemplate?.style };
-    // ...
-}
-```
-
-#### 验收标准
-
-- [ ] errorStyle=stop → 红色背景 + 删除线 + 加粗
-- [ ] errorStyle=warning → 黄色背景 + 斜体
-- [ ] errorStyle=information → 蓝色虚线边框
-- [ ] 唯一性冲突 → 保留红色波浪线特色样式
+> `ValidationFormattingBridge` 已删除，验证错误视觉反馈由 `ValidationUIController` 统一处理。
 
 ---
 

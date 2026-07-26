@@ -35,7 +35,6 @@
 | [ValidationEngine.js](../src/plugins/data-validation/ValidationEngine.js) | 验证引擎（协调器 + 缓存 + 冲突策略） | ✅ 完成 |
 | [DataValidationPlugin.js](../src/plugins/data-validation/DataValidationPlugin.js) | 主插件（生命周期管理 + API 暴露） | ✅ 完成 |
 | [ValidationPortalManager.js](../src/plugins/data-validation/ValidationPortalManager.js) | Portal UI 管理（下拉菜单、错误提示、气泡框） | ✅ Phase 2 已实现 |
-| [ValidationFormattingBridge.js](../src/plugins/data-validation/ValidationFormattingBridge.js) | 条件格式联动桥接器（验证失败自动应用样式） | ✅ Phase 2 已实现 |
 | [BatchValidationCoordinator.js](../src/plugins/data-validation/BatchValidationCoordinator.js) | 批量验证协调器（分批异步 + 进度反馈） | ✅ Phase 2 已实现（主线程版本） |
 
 ### ⏳ 待实现功能
@@ -587,7 +586,6 @@ dv.engine.conflictStrategy = 'priority';
 | ✅ **正则表达式验证** (`type: 'regex'`) | **已实现** | [RegexValidator.js](../src/plugins/data-validation/validators/RegexValidator.js) — 自定义 pattern 模式匹配 |
 | ⏳ **下拉列表动态源** | **未实现** | [ListValidator.js#L75-L76](../src/plugins/data-validation/validators/ListValidator.js#L75-L76) 标记 `// TODO Phase 2: 实现动态区域引用解析`，当前仅支持静态数组 `source: ['a','b']` |
 | ✅ **ValidationPortal UI** | **已实现** | [ValidationPortalManager.js](../src/plugins/data-validation/ValidationPortalManager.js) — 基于 DOMComponent + Portal 渲染（下拉菜单、错误提示、气泡框） |
-| ✅ **条件格式联动** | **已实现** | [ValidationFormattingBridge.js](../src/plugins/data-validation/ValidationFormattingBridge.js) — 监听验证结果 → 自动生成/更新条件格式规则（如红色背景） |
 | ⚠️ **批量异步验证** | **部分实现** | [BatchValidationCoordinator.js](../src/plugins/data-validation/BatchValidationCoordinator.js) — 分批异步 + 进度反馈已实现，但运行在**主线程**，尚未引入 Web Worker |
 
 ### Phase 2 已实现验证器使用示例
@@ -1425,7 +1423,6 @@ errorStyle: 'information'
 - ✅ **日期/时间验证** (`type: 'date'`, `type: 'time'`) — 完整运算符支持
 - ✅ **正则表达式验证** (`type: 'regex'`) — 自定义 pattern 模式匹配
 - ✅ **ValidationPortal UI** — Portal 渲染下拉菜单、错误提示、气泡框
-- ✅ **条件格式联动** — ValidationFormattingBridge 自动应用失败样式
 - ⚠️ **批量异步验证** — BatchValidationCoordinator 已实现（主线程版本）
 - ⏳ **下拉列表动态源** — ListValidator 区域引用尚未实现
 

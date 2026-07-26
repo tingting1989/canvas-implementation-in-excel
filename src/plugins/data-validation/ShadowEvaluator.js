@@ -1,4 +1,5 @@
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { ERROR_CODE, errorHandler } from "@/core/ErrorHandler.js";
+import { indexToCol } from "@/utils/cellRef.js";
 
 const VOLATILE_FUNCTIONS = Object.freeze(["INDIRECT", "OFFSET", "RAND", "RANDBETWEEN", "NOW", "TODAY"]);
 
@@ -173,13 +174,11 @@ export class ShadowEvaluator {
             disableCaching: true,
             disableDependencyTracking: true,
             onCellAccess: (row, col, sheet) => {
-                this.#trackedDependencies.add(`${sheet || this.#context.sheet}!${this.#colToLetter(col)}${row + 1}`);
+                this.#trackedDependencies.add(`${sheet || this.#context.sheet}!${indexToCol(col)}${row + 1}`);
             },
         };
 
-        const result = await evaluateFn(formula, sandboxContext);
-
-        return result;
+        return await evaluateFn(formula, sandboxContext);
     }
 
     /**
@@ -228,23 +227,6 @@ export class ShadowEvaluator {
                 return false;
             },
         };
-    }
-
-    /**
-     * 列号转字母（0 → A, 25 → Z, 26 → AA）
-     *
-     * @private
-     * @param {number} col - 0-based 列号
-     * @returns {string} 列字母
-     */
-    #colToLetter(col) {
-        let result = "";
-        let c = col;
-        while (c >= 0) {
-            result = String.fromCharCode((c % 26) + 65) + result;
-            c = Math.floor(c / 26) - 1;
-        }
-        return result;
     }
 }
 
