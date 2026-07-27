@@ -65,18 +65,17 @@ function createMockSheetWithNestedHeaders() {
                 const value = data[row]?.[col];
                 return value !== undefined ? { value } : null;
             }),
-            chunks: vi.fn(() => [
+            chunks: [
                 {
-                    iterate: vi.fn(function* () {
-
+                    iterate: function* () {
                         for (let r = 0; r <= 2; r++) {
                             for (let c = 0; c <= 5; c++) {
                                 yield { row: r, col: c };
                             }
                         }
-                    }),
+                    },
                 },
-            ]),
+            ],
         },
 
         // 表头配置
@@ -204,11 +203,11 @@ function createMockSheetWithNestedHeaders() {
             setColWidth: vi.fn((col, widthPx) => {
                 mockSheet.rowColManager._colWidths.set(col, widthPx);
             }),
-            getColWidth: vi.fn((col) => mockSheet.rowColManager._colWidths.get(col)),
+            getColWidth: (col) => mockSheet.rowColManager._colWidths.get(col),
             setRowHeight: vi.fn((row, heightPx) => {
                 mockSheet.rowColManager._rowHeights.set(row, heightPx);
             }),
-            getRowHeight: vi.fn((row) => mockSheet.rowColManager._rowHeights.get(row)),
+            getRowHeight: (row) => mockSheet.rowColManager._rowHeights.get(row),
         },
 
         // v2.0+ 重构：CellDataAccessor 支持
@@ -465,7 +464,7 @@ describe("ExportFilePlugin - 完整功能测试", () => {
             const sheet = workbook.activeSheet;
 
             const originalChunks = sheet.cellStore.chunks;
-            sheet.cellStore.chunks = vi.fn(() => []);  // 模拟无数据
+            sheet.cellStore.chunks = [];  // 模拟无数据（chunks 是可迭代对象，不是函数）
 
             try {
                 const blob = await plugin.exportAsBlob("xlsx", { nestedHeaders: true, cellStyles: true });
@@ -513,7 +512,7 @@ describe("ExportFilePlugin - 完整功能测试", () => {
 
         it("无数据时应该只包含表头", () => {
             // 当没有实际数据单元格时，应该至少导出表头（如果有）
-            workbook.activeSheet.cellStore.chunks = vi.fn(() => []);
+            workbook.activeSheet.cellStore.chunks = [];
 
             const result = plugin.exportAsString("csv");
 
@@ -572,7 +571,7 @@ describe("ExportFilePlugin - 完整功能测试", () => {
                     getMaxRow: vi.fn(() => 0),
                     getMaxCol: vi.fn(() => 0),
                     get: vi.fn(() => null),
-                    chunks: vi.fn(() => []),
+                    chunks: [],  // chunks 是可迭代对象，不是函数
                 },
                 colHeaders: ["A"],
                 getColHeader: vi.fn(() => "A"),
@@ -758,18 +757,17 @@ describe("ExportFilePlugin - 性能测试", () => {
         perfWorkbook.activeSheet.cellStore.getMaxRow = vi.fn(() => 999);
         perfWorkbook.activeSheet.cellStore.getMaxCol = vi.fn(() => 2);
 
-        // 更新 chunks 方法以匹配大数据量
-        perfWorkbook.activeSheet.cellStore.chunks = vi.fn(() => [
-            {
-                iterate: vi.fn(function* () {
-                    for (let r = 0; r <= 999; r++) {
-                        for (let c = 0; c <= 2; c++) {
-                            yield { row: r, col: c };
-                        }
+        // 更新 chunks getter 以匹配大数据量（chunks 是可迭代对象，不是函数）
+        const mockChunk = {
+            iterate: vi.fn(function* () {
+                for (let r = 0; r <= 999; r++) {
+                    for (let c = 0; c <= 2; c++) {
+                        yield { row: r, col: c };
                     }
-                }),
-            },
-        ]);
+                }
+            }),
+        };
+        perfWorkbook.activeSheet.cellStore.chunks = [mockChunk];
 
         const startTime = performance.now();
         const result = perfPlugin.exportAsString("csv");

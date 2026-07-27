@@ -286,9 +286,9 @@ describe('Hooks 完整生命周期测试', () => {
             },
         });
 
-        expect(lifecycleEvents).not.toContain('init'); // init 还没触发
-
-        wb.initRender();
+        // 注意：Workbook 构造函数会调用 initRender()（autoInit 默认为 true）
+        // 所以 init hook 在构造函数中就会被触发
+        expect(lifecycleEvents).toContain('init');
 
         // 验证所有子系统就绪
         expect(wb.renderEngine).not.toBeNull();
