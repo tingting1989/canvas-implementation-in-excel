@@ -217,7 +217,9 @@ describe("FormulaEvaluator BugHunt - Range reference edge cases", () => {
             { type: "rangeRef", topRow: 0, topCol: 0, bottomRow: 9, bottomCol: 4 },
             sheet
         );
-        expect(evaluator.dependencies.size).toBe(50);
+        // 范围引用以范围键形式添加，而非单个单元格键
+        expect(evaluator.dependencies.size).toBe(1);
+        expect(evaluator.dependencies.has("Sheet1!0,0:9,4")).toBe(true);
     });
 });
 

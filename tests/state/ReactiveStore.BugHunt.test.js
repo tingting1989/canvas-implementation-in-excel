@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ReactiveStore, Scheduler } from "../../src/state/ReactiveStore.js";
+import { ReactiveStore } from "../../src/state/ReactiveStore.js";
+import { Scheduler } from "../../src/state/Scheduler.js";
 
 describe("ReactiveStore - Bug Hunting", () => {
     describe("Scheduler - 竞态与边界条件", () => {

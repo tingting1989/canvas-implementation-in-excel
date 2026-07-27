@@ -31,20 +31,27 @@ export class ThemeManager {
         this.styleIds = {};
 
         /**
-         * 当前主题名称
-         * @type {string}
-         */
-        this.currentTheme = options.defaultTheme || "default";
-
-        /**
          * 是否持久化主题配置
          * @type {boolean}
          */
         this.persist = options.persist !== false;
 
-        // 加载持久化配置
+        /**
+         * 当前主题名称
+         * @type {string}
+         */
+        if (options.defaultTheme) {
+            this.currentTheme = options.defaultTheme;
+        } else if (this.persist) {
+            const saved = localStorage.getItem("canvas-sheet-theme");
+            this.currentTheme = saved || "default";
+        } else {
+            this.currentTheme = "default";
+        }
+
+        // 加载持久化的自定义主题（不影响 currentTheme）
         if (this.persist) {
-            this.#loadFromStorage();
+            this.#loadCustomThemesFromStorage();
         }
 
         // 注册内置主题
@@ -61,15 +68,11 @@ export class ThemeManager {
     }
 
     /**
-     * 从 localStorage 加载持久化配置
+     * 从 localStorage 加载自定义主题（不影响 currentTheme）
      * @private
      */
-    #loadFromStorage() {
+    #loadCustomThemesFromStorage() {
         try {
-            const saved = localStorage.getItem("canvas-sheet-theme");
-            if (saved) {
-                this.currentTheme = saved;
-            }
             const themesJson = localStorage.getItem("canvas-sheet-themes");
             if (themesJson) {
                 const customThemes = JSON.parse(themesJson);
@@ -80,7 +83,7 @@ export class ThemeManager {
                 });
             }
         } catch (e) {
-            errorHandler.warn(ERROR_CODE.THEME_STORAGE_LOAD_FAILED, `Failed to load theme from storage: ${e.message}`, { error: e });
+            errorHandler.warn(ERROR_CODE.THEME_STORAGE_LOAD_FAILED, `Failed to load custom themes from storage: ${e.message}`, { error: e });
         }
     }
 

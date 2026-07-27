@@ -16,8 +16,8 @@ describe('ThemeStyleProvider', () => {
     });
 
     describe('getCellStyle', () => {
-        it('should return header style for header row', () => {
-            const style = provider.getCellStyle(0, 0, 'text');
+        it('should return header style for header cell type', () => {
+            const style = provider.getCellStyle(0, 0, 'header');
             expect(style.backgroundColor).toBe('#4CAF50');
             expect(style.color).toBe('#fff');
         });

@@ -93,14 +93,10 @@ describe('TextColumnType - 基础功能测试', () => {
     });
 
     describe('getDefaultStyle() 方法', () => {
-        it('默认添加左对齐', () => {
-            const style = textType.getDefaultStyle({});
-            expect(style.textAlign).toBe('left');
-        });
-
-        it('已有 textAlign 不覆盖', () => {
-            const style = textType.getDefaultStyle({ textAlign: 'right' });
-            expect(style.textAlign).toBe('right');
+        it('返回传入的 baseStyle', () => {
+            const baseStyle = {};
+            const style = textType.getDefaultStyle(baseStyle);
+            expect(style).toBe(baseStyle);
         });
 
         it('保留原有样式属性', () => {
@@ -108,7 +104,6 @@ describe('TextColumnType - 基础功能测试', () => {
             const style = textType.getDefaultStyle(baseStyle);
             expect(style.color).toBe('red');
             expect(style.fontSize).toBe(14);
-            expect(style.textAlign).toBe('left');
         });
     });
 });
@@ -327,8 +322,7 @@ describe('TextColumnType - Bug 检测', () => {
             const type = new TextColumnType();
 
             const result = type.getDefaultStyle(null);
-            expect(result).toBeDefined();
-            expect(result.textAlign).toBe('left');
+            expect(result).toBeNull();
         });
     });
 

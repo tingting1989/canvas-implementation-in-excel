@@ -57,7 +57,6 @@ export class ThemeStyleProvider {
      * @returns {number} 样式 ID
      */
     getCellStyleId(row, col, cellType) {
-        // 根据单元格类型获取对应的样式类型
         const styleType = typeToStyleMap[cellType] || "cell.default";
         return this.themeManager.getStyleId(styleType);
     }
@@ -71,7 +70,6 @@ export class ThemeStyleProvider {
      * @returns {object} 样式配置
      */
     getCellStyle(row, col, cellType) {
-        // 根据单元格类型获取对应的样式类型
         const styleType = typeToStyleMap[cellType] || "cell.default";
         const styleId = this.themeManager.getStyleId(styleType);
         if (styleId) {

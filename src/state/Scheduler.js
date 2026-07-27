@@ -39,7 +39,7 @@ export class Scheduler {
     queueJob(job) {
         // 去重：相同 id 的任务只保留一个
         if (job.id !== undefined) {
-            const exists = this._queue.some((j) => j.id === job);
+            const exists = this._queue.some((j) => j.id === job.id);
             if (exists) return;
         }
         this._queue.push(job);

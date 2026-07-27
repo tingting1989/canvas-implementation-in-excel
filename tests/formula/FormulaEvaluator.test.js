@@ -159,8 +159,8 @@ describe("FormulaEvaluator - Range Reference", () => {
             { type: "rangeRef", sheet: null, topRow: 0, topCol: 0, bottomRow: 0, bottomCol: 1 },
             sheet
         );
-        expect(evaluator.dependencies.has("Sheet1!0,0")).toBe(true);
-        expect(evaluator.dependencies.has("Sheet1!0,1")).toBe(true);
+        // 范围引用以范围键形式添加，而非单个单元格键
+        expect(evaluator.dependencies.has("Sheet1!0,0:0,1")).toBe(true);
     });
 });
 
@@ -415,7 +415,6 @@ describe("FormulaEvaluator - CellDataAccessor Integration", () => {
             sheet
         );
 
-        expect(evaluator.dependencies.has("Sheet1!0,0")).toBe(true);
-        expect(evaluator.dependencies.has("Sheet1!0,1")).toBe(true);
+        expect(evaluator.dependencies.has("Sheet1!0,0:0,1")).toBe(true);
     });
 });

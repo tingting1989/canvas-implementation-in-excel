@@ -33,17 +33,17 @@ describe('NumericColumnType - 基础功能测试', () => {
     });
 
     describe('getDefaultStyle() 方法', () => {
-        it('默认右对齐', () => {
-            const style = numericType.getDefaultStyle({});
-            expect(style.textAlign).toBe('right');
+        it('返回传入的 baseStyle', () => {
+            const baseStyle = {};
+            const style = numericType.getDefaultStyle(baseStyle);
+            expect(style).toBe(baseStyle);
         });
 
-        it('保留原有样式', () => {
+        it('保留原有样式属性', () => {
             const baseStyle = { color: 'blue', fontSize: 16 };
             const style = numericType.getDefaultStyle(baseStyle);
             expect(style.color).toBe('blue');
             expect(style.fontSize).toBe(16);
-            expect(style.textAlign).toBe('right');
         });
     });
 

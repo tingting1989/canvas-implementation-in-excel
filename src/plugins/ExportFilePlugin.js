@@ -365,7 +365,7 @@ function getDataRange(sheet) {
     // ✅ 使用 chunks getter（无括号）避免兼容性问题
     // 如果 chunks 是函数（如某些测试 mock），调用它获取数组
     let chunks = sheet.cellStore.chunks;
-    if (typeof chunks === 'function') {
+    if (typeof chunks === "function") {
         chunks = chunks();
     }
 
@@ -376,7 +376,7 @@ function getDataRange(sheet) {
     }
 
     // 检查是否有 Symbol.iterator（可迭代协议）
-    const isIterable = chunks && typeof chunks[Symbol.iterator] === 'function';
+    const isIterable = chunks && typeof chunks[Symbol.iterator] === "function";
     if (!isIterable) {
         return null;
     }

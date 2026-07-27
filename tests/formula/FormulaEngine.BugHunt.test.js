@@ -100,7 +100,9 @@ describe("FormulaEngine BugHunt - Dependency graph edge cases", () => {
         const engine = new FormulaEngine(null);
         engine.setFormula(sheet, 51, 0, "=SUM(A1:A50)");
         const deps = engine.dependsOn.get("S1!51,0");
-        expect(deps.size).toBe(50);
+        // 范围引用以范围键形式添加，而非单个单元格键
+        expect(deps.size).toBe(1);
+        expect(deps.has("S1!0,0:49,0")).toBe(true);
     });
 
     it("should correctly update dependencies when formula changes completely", () => {
