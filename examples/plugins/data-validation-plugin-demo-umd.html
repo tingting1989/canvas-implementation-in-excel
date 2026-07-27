@@ -114,8 +114,11 @@
                 <option value="text">文本长度</option>
                 <option value="list">下拉列表</option>
                 <option value="date">日期范围</option>
+                <option value="time">时间范围</option>
+                <option value="datetime">日期时间</option>
                 <option value="regex">正则表达式</option>
                 <option value="unique">唯一性</option>
+                <option value="custom">自定义公式</option>
             </select>
             <label>范围:</label>
             <input type="text" id="ruleRange" value="A2:A20" style="width:100px">
@@ -129,6 +132,7 @@
             <button class="btn btn-success" onclick="validateAll()">批量验证</button>
             <button class="btn btn-warning" onclick="exportRules()">导出规则</button>
             <button class="btn btn-danger" onclick="clearAllRules()">清除规则</button>
+            <button class="btn" style="background:#7c3aed;color:#fff" onclick="toggleHooks()" id="hooksBtn">🔌 Hooks: 关</button>
         </div>
         <div class="canvas-container"><canvas id="sheet"></canvas></div>
         <div class="status-bar">
@@ -195,6 +199,12 @@
                 <div class="name">自定义公式验证</div>
                 <div class="desc">通过公式表达式进行自定义验证逻辑。</div>
                 <div class="ops">配置: formula = '=A1>0'</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: datetime</div>
+                <div class="name">日期时间验证</div>
+                <div class="desc">验证日期时间值是否在指定范围内，支持多种格式（ISO、中文、12h 等），由 DateTimeValidator 统一处理。</div>
+                <div class="ops">运算符: before, after, between, notBetween, equalTo, notEqualTo<br>配置: value = ['2024-01-01 00:00:00', '2024-12-31 23:59:59']</div>
             </div>
         </div>
     </div>
@@ -297,6 +307,60 @@ dv.destroy();  // 彻底销毁</div>
                 <div class="desc">设置多规则冲突解决策略：short-circuit（首条失败即返回）、priority（末条决定）、aggregate（收集全部错误）。</div>
                 <div class="example">dv.engine.conflictStrategy = 'aggregate';</div>
             </div>
+            <div class="api-card">
+                <div class="category">Hooks 事件</div>
+                <div class="name">BEFORE_VALIDATE</div>
+                <div class="syntax">hooks.runHooksUntil('beforeValidate', value, {row, col})</div>
+                <div class="desc">单元格验证前触发，返回 false 可拦截验证（阻止赋值）。参数：value（待验证值）、context（含 row, col）。</div>
+                <div class="example">dv.hooks.addHook('beforeValidate', (value, ctx) => {
+  console.log('验证前', value, ctx);
+});</div>
+            </div>
+            <div class="api-card">
+                <div class="category">Hooks 事件</div>
+                <div class="name">AFTER_VALIDATE</div>
+                <div class="syntax">hooks.runHooks('afterValidate', result)</div>
+                <div class="desc">单元格验证完成后触发。参数：result（ValidationResult 对象，含 valid, message, row, col, value, source）。</div>
+                <div class="example">dv.hooks.addHook('afterValidate', (result) => {
+  if (result.valid) console.log('通过');
+});</div>
+            </div>
+            <div class="api-card">
+                <div class="category">Hooks 事件</div>
+                <div class="name">VALIDATION_FAILED</div>
+                <div class="syntax">hooks.runHooks('validationFailed', row, col, value, result)</div>
+                <div class="desc">验证失败时触发。参数：row, col（单元格位置）、value（输入值）、result（含 message, errorStyle）。</div>
+                <div class="example">dv.hooks.addHook('validationFailed', (r, c, v, res) => {
+  console.log('失败', res.message);
+});</div>
+            </div>
+            <div class="api-card">
+                <div class="category">Hooks 事件</div>
+                <div class="name">BEFORE_VALIDATION_RULE_CHANGE</div>
+                <div class="syntax">hooks.runHooksUntil('beforeValidationRuleChange', oldRule, newRule)</div>
+                <div class="desc">规则变更前触发（添加/删除规则），返回 false 可阻止变更。参数：oldRule（旧规则，添加时为 null）、newRule（新规则，删除时为 null）。</div>
+                <div class="example">dv.hooks.addHook('beforeValidationRuleChange', (old, nw) => {
+  console.log('规则即将变更');
+});</div>
+            </div>
+            <div class="api-card">
+                <div class="category">Hooks 事件</div>
+                <div class="name">AFTER_VALIDATION_RULE_CHANGE</div>
+                <div class="syntax">hooks.runHooks('afterValidationRuleChange', newRule, oldRule)</div>
+                <div class="desc">规则变更后触发。参数：newRule（新规则，删除时为 null）、oldRule（旧规则，添加时为 null）。</div>
+                <div class="example">dv.hooks.addHook('afterValidationRuleChange', (nw, old) => {
+  console.log('规则已变更');
+});</div>
+            </div>
+            <div class="api-card">
+                <div class="category">Hooks 事件</div>
+                <div class="name">AFTER_BATCH_VALIDATION</div>
+                <div class="syntax">hooks.runHooks('afterBatchValidation', report)</div>
+                <div class="desc">批量验证完成后触发。参数：report（含 total, valid, invalid, results 数组）。</div>
+                <div class="example">dv.hooks.addHook('afterBatchValidation', (report) => {
+  console.log('批量完成', report.total);
+});</div>
+            </div>
         </div>
     </div>
 
@@ -362,16 +426,18 @@ dv.destroy();  // 彻底销毁</div>
 <script>
     let workbook = null;
     let dvPlugin = null;
+    let hooksEnabled = false;
+    var registeredHookCallbacks = {};
 
     const sampleData = [
-        ["数值(0-100)", "下拉列表", "文本(5-20字)", "日期", "邮箱", "唯一编号"],
-        [50, "选项A", "Hello World", "2024-06-15", "user@example.com", "ORD-001"],
-        [120, "选项B", "Hi", "2025-01-01", "invalid-email", "ORD-002"],
-        [75, "选项C", "Canvas Spreadsheet", "2024-12-31", "test@test.org", "ORD-003"],
-        [-5, "无效选项", "A", "2020-07-20", "name@domain.com", "ORD-001"],
-        [0, "选项A", "Medium length text", "2024-03-15", "bad@", "ORD-004"],
-        [100, "选项B", "Another valid text here", "2023-11-11", "ok@company.cn", "ORD-005"],
-        [200, "选项C", "X", "2026-01-01", "user@site.net", "ORD-006"],
+        ["数值(0-100)", "下拉列表", "文本(5-20字)", "日期(2024年)", "时间(09:00-18:00)", "日期时间(2024年)", "邮箱", "唯一编号", "自定义公式(>0)"],
+        [50, "选项A", "Hello World", "2024-06-15", "09:30", "2024-06-15 09:30", "user@example.com", "ORD-001", 100],
+        [120, "选项B", "Hi", "2025-01-01", "08:00", "2025-01-01 08:00", "invalid-email", "ORD-002", -10],
+        [75, "选项C", "Canvas Spreadsheet", "2024-12-31", "18:00", "2024-12-31 18:00", "test@test.org", "ORD-003", 55],
+        [-5, "无效选项", "A", "2020-07-20", "07:15", "2020-07-20 07:15", "name@domain.com", "ORD-001", 0],
+        [0, "选项A", "Medium length text", "2024-03-15", "20:30", "2024-03-15 20:30", "bad@", "ORD-004", 88],
+        [100, "选项B", "Another valid text here", "2023-11-11", "12:45", "2023-11-11 12:45", "ok@company.cn", "ORD-005", -1],
+        [200, "选项C", "X", "2026-01-01", "23:59", "2026-01-01 23:59", "user@site.net", "ORD-006", 42],
     ];
 
     function log(msg, type) {
@@ -424,6 +490,16 @@ dv.destroy();  // 彻底销毁</div>
                 ruleConfig.value = ['2024-01-01', '2024-12-31'];
                 ruleConfig.errorMessage = '请输入 2024 年内的日期';
                 break;
+            case 'time':
+                ruleConfig.operator = 'between';
+                ruleConfig.value = ['09:00', '18:00'];
+                ruleConfig.errorMessage = '请输入 09:00-18:00 之间的时间';
+                break;
+            case 'datetime':
+                ruleConfig.operator = 'between';
+                ruleConfig.value = ['2024-01-01 00:00:00', '2024-12-31 23:59:59'];
+                ruleConfig.errorMessage = '请输入 2024 年内的日期时间';
+                break;
             case 'regex':
                 ruleConfig.pattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$';
                 ruleConfig.errorMessage = '请输入有效的邮箱地址';
@@ -431,6 +507,10 @@ dv.destroy();  // 彻底销毁</div>
             case 'unique':
                 ruleConfig.errorMessage = '该值已存在，不能重复！';
                 ruleConfig.errorStyle = 'warning';
+                break;
+            case 'custom':
+                ruleConfig.formula = '=A1>0';
+                ruleConfig.errorMessage = '自定义公式验证失败';
                 break;
         }
 
@@ -448,17 +528,16 @@ dv.destroy();  // 彻底销毁</div>
 
         log('开始批量验证...', 'info');
         try {
-            const report = await dvPlugin.validateRange('A1:F8');
+            const report = await dvPlugin.validateRange('A1:I8');
+            console.log(report);
+
             log('📊 批量验证完成: 总计 ' + report.total + ' 个, 通过 ' + report.valid + ' 个, 失败 ' + report.invalid + ' 个', report.invalid > 0 ? 'warn' : 'success');
 
             if (report.invalid > 0) {
                 const failures = report.results.filter(function(r) { return !r.valid; });
-                failures.slice(0, 5).forEach(function(r) {
+                failures.forEach(function(r) {
                     log('  ❌ (' + r.row + ',' + r.col + '): ' + (r.message || '验证失败'), 'error');
                 });
-                if (failures.length > 5) {
-                    log('  ... 还有 ' + (failures.length - 5) + ' 个失败项', 'warn');
-                }
             }
         } catch (e) {
             log('❌ 批量验证失败: ' + e.message, 'error');
@@ -483,25 +562,108 @@ dv.destroy();  // 彻底销毁</div>
         updateStatus();
     }
 
+    function toggleHooks() {
+        if (!dvPlugin) { log('插件未初始化000', 'error'); return; }
+
+        hooksEnabled = !hooksEnabled;
+        var btn = document.getElementById('hooksBtn');
+
+        if (hooksEnabled) {
+            registerHooks();
+            btn.textContent = '🔌 Hooks: 开';
+            btn.style.background = '#16a34a';
+            log('🔌 Hooks 已启用 — 所有 6 个钩子事件已注册', 'success');
+        } else {
+            unregisterHooks();
+            btn.textContent = '🔌 Hooks: 关';
+            btn.style.background = '#7c3aed';
+            log('🔌 Hooks 已禁用 — 所有钩子事件已移除', 'warn');
+        }
+    }
+
+    function registerHooks() {
+        if (!dvPlugin || !dvPlugin.hooks) {
+            log('❌ 无法注册 hooks: dvPlugin=' + !!dvPlugin + ', hooks=' + !!(dvPlugin && dvPlugin.hooks), 'error');
+            if (dvPlugin) {
+                log('   dvPlugin.active=' + dvPlugin.active + ', engine=' + !!dvPlugin.engine, 'error');
+            }
+            return;
+        }
+        var hooks = dvPlugin.hooks;
+        log('🔍 Hooks 对象类型: ' + hooks.constructor.name + ', 已注册钩子: ' + JSON.stringify(hooks.getHookNames()), 'info');
+
+        registeredHookCallbacks.beforeValidate = function(value, context) {
+            log('🪝 [BEFORE_VALIDATE] 值=' + JSON.stringify(value) + ' 位置=(' + context.row + ',' + context.col + ')', 'info');
+        };
+        workbook.addHook('beforeValidate', registeredHookCallbacks.beforeValidate);
+
+        registeredHookCallbacks.afterValidate = function(result) {
+            var status = result.valid ? '✅ 通过' : '❌ 失败';
+            log('🪝 [AFTER_VALIDATE] ' + status + ' 位置=(' + result.row + ',' + result.col + ') 来源=' + result.source, result.valid ? 'success' : 'error');
+        };
+        workbook.addHook('afterValidate', registeredHookCallbacks.afterValidate);
+
+        registeredHookCallbacks.validationFailed = function(row, col, value, result) {
+            log('🪝 [VALIDATION_FAILED] (' + row + ',' + col + ') 值=' + JSON.stringify(value) + ' 消息="' + result.message + '" 样式=' + result.errorStyle, 'error');
+        };
+        workbook.addHook('validationFailed', registeredHookCallbacks.validationFailed);
+
+        registeredHookCallbacks.beforeValidationRuleChange = function(oldRule, newRule) {
+            var action = newRule ? '添加' : '删除';
+            var ruleType = (newRule || oldRule).type;
+            var ruleRange = (newRule || oldRule).range;
+            log('🪝 [BEFORE_VALIDATION_RULE_CHANGE] 即将' + action + '规则: [' + ruleType + '] ' + ruleRange, 'info');
+        };
+        workbook.addHook('beforeValidationRuleChange', registeredHookCallbacks.beforeValidationRuleChange);
+
+        registeredHookCallbacks.afterValidationRuleChange = function(newRule, oldRule) {
+            var action = newRule ? '添加' : '删除';
+            var ruleType = (newRule || oldRule).type;
+            var ruleRange = (newRule || oldRule).range;
+            log('🪝 [AFTER_VALIDATION_RULE_CHANGE] 已' + action + '规则: [' + ruleType + '] ' + ruleRange, 'success');
+        };
+        workbook.addHook('afterValidationRuleChange', registeredHookCallbacks.afterValidationRuleChange);
+
+        registeredHookCallbacks.afterBatchValidation = function(report) {
+            log('🪝 [AFTER_BATCH_VALIDATION] 总计=' + report.total + ' 通过=' + report.valid + ' 失败=' + report.invalid, report.invalid > 0 ? 'warn' : 'success');
+        };
+        hooks.addHook('afterBatchValidation', registeredHookCallbacks.afterBatchValidation);
+
+        log('✅ Hooks 注册完成, beforeValidate 回调数=' + (hooks.getHooks('beforeValidate') || []).length, 'success');
+    }
+
+    function unregisterHooks() {
+        if (!dvPlugin || !dvPlugin.hooks) return;
+        var hooks = dvPlugin.hooks;
+        var hookNames = Object.keys(registeredHookCallbacks);
+        hookNames.forEach(function(name) {
+            hooks.removeHook(name, registeredHookCallbacks[name]);
+        });
+        registeredHookCallbacks = {};
+    }
+
     async function initWorkbook() {
         try {
             log('初始化数据验证演示...', 'info');
             const container = document.getElementById('sheet');
-            container.width = 900;
+            container.width = 1400;
             container.height = 320;
 
             workbook = new CanvasSheet.Workbook(container, {
-                width: 1200, height: 320,
+                width: 1600, height: 320,
                 sheets: [{
                     name: '数据验证',
                     data: sampleData,
                     columns: [
-                        { type: 'numeric', width: 130 },
+                        { type: 'numeric', width: 110 },
+                        { type: 'text', width: 100 },
+                        { type: 'text', width: 150 },
+                        { type: 'text', width: 110 },
                         { type: 'text', width: 120 },
-                        { type: 'text', width: 180 },
-                        { type: 'text', width: 120 },
-                        { type: 'text', width: 180 },
-                        { type: 'text', width: 120 },
+                        { type: 'text', width: 140 },
+                        { type: 'text', width: 150 },
+                        { type: 'text', width: 100 },
+                        { type: 'numeric', width: 120 },
                     ],
                     cellPadding: 8
                 }],
@@ -533,25 +695,61 @@ dv.destroy();  // 彻底销毁</div>
                                 errorMessage: '文本长度必须在 5-20 个字符之间'
                             },
                             {
+                                range: 'D2:D20',
+                                type: 'date',
+                                operator: 'between',
+                                value: ['2024年1月1日', '2024年12月31日'],
+                                errorMessage: '请输入 2024 年内的日期',
+                                errorStyle: 'warning'
+                            },
+                            {
                                 range: 'E2:E20',
+                                type: 'time',
+                                operator: 'between',
+                                value: ['09:00', '18:00'],
+                                errorMessage: '请输入 09:00-18:00 之间的时间',
+                                errorStyle: 'warning'
+                            },
+                            {
+                                range: 'F2:F20',
+                                type: 'datetime',
+                                operator: 'between',
+                                value: ['2024-01-01 00:00:00', '2024-12-31 23:59:59'],
+                                errorMessage: '请输入 2024 年内的日期时间',
+                                errorStyle: 'warning'
+                            },
+                            {
+                                range: 'G2:G20',
                                 type: 'regex',
                                 pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
                                 errorMessage: '请输入有效的邮箱地址',
                                 errorStyle: 'warning'
                             },
                             {
-                                range: 'F2:F20',
+                                range: 'H2:H20',
                                 type: 'unique',
                                 errorMessage: '编号不能重复！',
                                 errorStyle: 'warning'
+                            },
+                            {
+                                range: 'I2:I20',
+                                type: 'custom',
+                                formula: '=A1>0',
+                                errorMessage: '自定义公式验证: 值必须大于 0',
+                                errorStyle: 'warning'
                             }
                         ]
+                    }
+                },
+                hooks:{
+                    beforeValidate: function(value, context) {
+                        log('🪝 [BEFORE_VALIDATE] 值=' + JSON.stringify(value) + ' 位置=(' + context.row + ',' + context.col + ')', 'info');
                     }
                 }
             });
 
             dvPlugin = workbook.getPlugin('dataValidation');
-
+            toggleHooks();
             if (dvPlugin) {
                 log('✅ 数据验证插件已加载，初始规则: ' + dvPlugin.getAllRules().length + ' 条', 'success');
                 updateStatus();

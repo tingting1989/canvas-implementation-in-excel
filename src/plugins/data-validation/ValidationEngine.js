@@ -4,8 +4,7 @@ import { TextLengthValidator } from "./validators/TextLengthValidator.js";
 import { ListValidator } from "./validators/ListValidator.js";
 import { UniqueValidator } from "./validators/UniqueValidator.js";
 import { FormulaValidator } from "./validators/FormulaValidator.js";
-import { DateValidator } from "./validators/DateValidator.js";
-import { TimeValidator } from "./validators/TimeValidator.js";
+import { DateTimeValidator } from "./validators/DateTimeValidator.js";
 import { RegexValidator } from "./validators/RegexValidator.js";
 import { ValidationResult } from "./ValidationResult.js";
 import { ListSourceResolver } from "./ListSourceResolver.js";
@@ -23,7 +22,7 @@ import { ListSourceResolver } from "./ListSourceResolver.js";
  *
  * @example
  * const engine = new ValidationEngine(cellStore);
- * await engine.init();
+ * engine.init();
  *
  * const result = await engine.validateCell(0, 0, 50);
  * const report = await engine.validateRange('A1:A100');
@@ -67,7 +66,7 @@ export class ValidationEngine {
      * @param {Object|null} [formulaEngine=null] - 公式引擎实例，custom 类型验证器需要
      * @param {Object|null} [sheetManager=null] - SheetManager 实例，动态区域引用需要
      */
-    async init(formulaEngine = null, sheetManager = null) {
+    init(formulaEngine = null, sheetManager = null) {
         this.#sourceResolver = new ListSourceResolver(this.#cellStore, sheetManager);
 
         this.registerValidator("number", new NumberValidator());
@@ -79,8 +78,10 @@ export class ValidationEngine {
 
         this.registerValidator("unique", new UniqueValidator(this.#cellStore));
         this.registerValidator("custom", new FormulaValidator(formulaEngine));
-        this.registerValidator("date", new DateValidator());
-        this.registerValidator("time", new TimeValidator());
+        const dateTimeValidator = new DateTimeValidator();
+        this.registerValidator("date", dateTimeValidator);
+        this.registerValidator("time", dateTimeValidator);
+        this.registerValidator("datetime", dateTimeValidator);
         this.registerValidator("regex", new RegexValidator());
     }
 

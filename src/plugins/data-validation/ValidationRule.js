@@ -74,7 +74,7 @@ export class ValidationRule {
     updatedAt;
 
     /** @type {string[]} 允许的验证类型 */
-    static VALID_TYPES = ["number", "text", "list", "custom", "date", "time", "regex", "unique"];
+    static VALID_TYPES = ["number", "text", "list", "custom", "date", "time", "datetime", "regex", "unique"];
 
     /**
      * 构造验证规则

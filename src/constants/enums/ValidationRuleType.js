@@ -8,6 +8,7 @@
  * @property {string} CUSTOM - 自定义验证，使用自定义函数或表达式进行复杂的验证逻辑判断
  * @property {string} DATE - 日期验证，限制输入必须为有效日期格式，可设定日期范围
  * @property {string} TIME - 时间验证，限制输入必须为有效时间格式，可设定时间范围
+ * @property {string} DATETIME - 日期时间验证，限制输入必须为有效日期时间格式，可设定日期时间范围
  * @property {string} REGEX - 正则表达式验证，使用正则表达式模式匹配输入内容的格式
  * @property {string} UNIQUE - 唯一性验证，确保输入值在指定范围内不重复，适用于主键或唯一标识字段
  */
@@ -18,6 +19,7 @@ export const VALIDATION_RULE_TYPE = Object.freeze({
     CUSTOM: "custom",
     DATE: "date",
     TIME: "time",
+    DATETIME: "datetime",
     REGEX: "regex",
     UNIQUE: "unique",
 });

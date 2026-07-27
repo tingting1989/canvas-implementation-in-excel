@@ -1,8 +1,7 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import {
     FormulaValidator,
-    DateValidator,
-    TimeValidator,
+    DateTimeValidator,
     RegexValidator,
     ValidationRule,
     ValidationResult
@@ -80,11 +79,11 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
         });
     });
 
-    describe('DateValidator（日期范围验证）', () => {
+    describe('DateTimeValidator - 日期验证（type: date）', () => {
         let validator;
 
         beforeEach(() => {
-            validator = new DateValidator();
+            validator = new DateTimeValidator();
         });
 
         test('between 运算符', async () => {
@@ -141,13 +140,34 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
             expect(result.valid).toBe(false);
             expect(result.message).toContain('有效的日期');
         });
+
+        test('中文日期格式', async () => {
+            const rule = new ValidationRule({
+                type: 'date',
+                operator: 'between',
+                value: ['2024-01-01', '2024-12-31']
+            });
+
+            expect((await validator.validate('2024年6月15日', rule)).valid).toBe(true);
+            expect((await validator.validate('2023年12月31日', rule)).valid).toBe(false);
+        });
+
+        test('斜杠日期格式', async () => {
+            const rule = new ValidationRule({
+                type: 'date',
+                operator: 'between',
+                value: ['2024-01-01', '2024-12-31']
+            });
+
+            expect((await validator.validate('2024/06/15', rule)).valid).toBe(true);
+        });
     });
 
-    describe('TimeValidator（时间范围验证）', () => {
+    describe('DateTimeValidator - 时间验证（type: time）', () => {
         let validator;
 
         beforeEach(() => {
-            validator = new TimeValidator();
+            validator = new DateTimeValidator();
         });
 
         test('between 运算符', async () => {
@@ -202,6 +222,56 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
 
             expect((await validator.validate('25:00', rule)).valid).toBe(false);
             expect((await validator.validate('abc', rule)).valid).toBe(false);
+        });
+
+        test('12小时制格式', async () => {
+            const rule = new ValidationRule({
+                type: 'time',
+                operator: 'between',
+                value: ['09:00', '18:00']
+            });
+
+            expect((await validator.validate('2:30 PM', rule)).valid).toBe(true);
+            expect((await validator.validate('8:00 AM', rule)).valid).toBe(false);
+        });
+    });
+
+    describe('DateTimeValidator - 日期时间验证（type: datetime）', () => {
+        let validator;
+
+        beforeEach(() => {
+            validator = new DateTimeValidator();
+        });
+
+        test('between 运算符', async () => {
+            const rule = new ValidationRule({
+                type: 'datetime',
+                operator: 'between',
+                value: ['2024-01-01 00:00:00', '2024-12-31 23:59:59']
+            });
+
+            expect((await validator.validate('2024-06-15 09:30', rule)).valid).toBe(true);
+            expect((await validator.validate('2025-01-01 08:00', rule)).valid).toBe(false);
+        });
+
+        test('中文日期时间格式', async () => {
+            const rule = new ValidationRule({
+                type: 'datetime',
+                operator: 'between',
+                value: ['2024-01-01 00:00:00', '2024-12-31 23:59:59']
+            });
+
+            expect((await validator.validate('2024年6月15日 14:30', rule)).valid).toBe(true);
+        });
+
+        test('ISO T 分隔格式', async () => {
+            const rule = new ValidationRule({
+                type: 'datetime',
+                operator: 'between',
+                value: ['2024-01-01T00:00:00', '2024-12-31T23:59:59']
+            });
+
+            expect((await validator.validate('2024-06-15T09:30:00', rule)).valid).toBe(true);
         });
     });
 

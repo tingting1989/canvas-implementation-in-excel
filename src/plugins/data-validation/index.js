@@ -11,6 +11,5 @@ export { TextLengthValidator } from "./validators/TextLengthValidator.js";
 export { ListValidator } from "./validators/ListValidator.js";
 export { UniqueValidator } from "./validators/UniqueValidator.js";
 export { FormulaValidator } from "./validators/FormulaValidator.js";
-export { DateValidator } from "./validators/DateValidator.js";
-export { TimeValidator } from "./validators/TimeValidator.js";
+export { DateTimeValidator } from "./validators/DateTimeValidator.js";
 export { RegexValidator } from "./validators/RegexValidator.js";
