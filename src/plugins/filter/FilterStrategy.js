@@ -4,16 +4,39 @@ import { HIT_TYPE } from "../../constants/hitType.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 export class FilterStrategy extends EventStrategy {
-    /** 筛选策略优先级（高于默认鼠标策略 50） */
     priority = STRATEGY_PRIORITY.POPUP_UI;
 
     #uiManager = null;
+    #plugin = null;
     #iconSize = 12;
     #iconPadding = 6;
 
-    constructor(uiManager, handler) {
+    constructor(uiManager, handler, plugin) {
         super(handler);
         this.#uiManager = uiManager;
+        this.#plugin = plugin;
+    }
+
+    handleAfterSetCellData(row, col, oldValue, newValue) {
+        if (!this.enabled || !this.#plugin?.enabled) return;
+
+        const filterState = this.#plugin.sheet?.filterState;
+        if (filterState) {
+            filterState.invalidateColumnCache(col);
+            this.#plugin.refreshHeaderIcon(col);
+        }
+    }
+
+    handleColumnSorted(col) {
+        if (!this.enabled || !this.#plugin?.enabled) return;
+
+        this.#plugin.refreshHeaderIcon(col);
+    }
+
+    handleFilterApplied() {
+        if (!this.enabled || !this.#plugin?.enabled) return;
+
+        this.#plugin.refreshAllHeaderIcons();
     }
 
     getEventHandlers() {
@@ -88,5 +111,6 @@ export class FilterStrategy extends EventStrategy {
     destroy() {
         super.destroy();
         this.#uiManager = null;
+        this.#plugin = null;
     }
 }

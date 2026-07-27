@@ -107,12 +107,19 @@ export class EventHandler {
 
         // ==================== 数据变更事件 ====================
 
-        // 值变更前 → BEFORE_CHANGE hook + BEFORE_SET_VALUE_AT（逐单元格验证）
+        // 值变更前 → ValidationStrategy 拦截 → BEFORE_CHANGE hook + BEFORE_SET_VALUE_AT（逐单元格验证）
         bus.on(SHEET_EVENTS.BEFORE_CHANGE, (envelope) => {
             const [changes] = envelope.payload;
 
             for (const change of changes) {
                 const { row, col, newValue } = change;
+
+                const validationStrategy = this.strategies.get("validation");
+                if (validationStrategy) {
+                    const canProceed = validationStrategy.interceptBeforeSetValue(row, col, newValue);
+                    if (!canProceed) return false;
+                }
+
                 const canSet = this.runHooksUntil(HOOKS.BEFORE_SET_VALUE_AT, row, col, newValue);
                 if (canSet === false) {
                     return false;
@@ -122,9 +129,25 @@ export class EventHandler {
             return this.runHooksUntil(HOOKS.BEFORE_CHANGE, changes);
         });
 
-        // 值变更后 → AFTER_CHANGE hook
+        // 值变更后 → ValidationStrategy/FilterStrategy 处理 → AFTER_CHANGE hook
         bus.on(SHEET_EVENTS.AFTER_CHANGE, (envelope) => {
             const [changes] = envelope.payload;
+
+            const validationStrategy = this.strategies.get("validation");
+            if (validationStrategy) {
+                for (const change of changes) {
+                    validationStrategy.handleAfterSetValue(change.row, change.col, change.newValue);
+                }
+            }
+
+            const filterStrategy = this.strategies.get("filterClick");
+            if (filterStrategy && typeof filterStrategy.handleAfterSetCellData === "function") {
+                for (const change of changes) {
+                    const oldValue = this.sheet?.cellStore?.get(change.row, change.col)?.value;
+                    filterStrategy.handleAfterSetCellData(change.row, change.col, oldValue, change.newValue);
+                }
+            }
+
             this.runHooks(HOOKS.AFTER_CHANGE, changes);
         });
 

@@ -167,10 +167,6 @@ export class SortPlugin extends BasePlugin {
         // 注册列头渲染器（用于绘制排序箭头和高亮）
         this.#registerHeaderRenderer();
 
-        this.addHook(HOOKS.AFTER_SORT, () => {
-            this.#sortUIManager.updateIndicators();
-        });
-
         // 通过 EventBus 监听工作表切换（内部模块通信，非用户扩展点）
         this.#bindSheetSwitchListener(sheet);
 
@@ -498,18 +494,17 @@ export class SortPlugin extends BasePlugin {
         const sheet = this.sheet;
         if (!sheet) return;
 
-        // 1. 重置选区到起始位置（SelectionManager 没有 clear() 方法）
+        this.#sortUIManager.updateIndicators();
+
         if (sheet.selection && typeof sheet.selection.setActive === "function") {
             sheet.selection.setActive(0, 0);
         }
 
-        // 2. 重置滚动位置（如果有冻结行）
         const fixedRowsTop = sheet.fixedRowsTop || 0;
         if (fixedRowsTop > 0 && this.eventHandler?.viewport) {
             this.eventHandler.viewport.scrollToCell(fixedRowsTop, 0);
         }
 
-        // 3. 触发重新渲染
         this.renderEngine?.invalidateAll();
         this.render();
     }

@@ -55,6 +55,17 @@ export class ValidationResult {
     }
 
     /**
+     * 创建被取消的验证结果（用户通过 before 钩子拦截）
+     * @returns {ValidationResult}
+     */
+    static cancelled() {
+        const result = new ValidationResult(true);
+        result.cancelled = true;
+        result.message = "验证被用户拦截";
+        return result;
+    }
+
+    /**
      * 创建失败的验证结果
      * @param {string} message - 错误消息
      * @param {string} [errorStyle='stop'] - 错误样式
@@ -77,6 +88,7 @@ export class ValidationResult {
     toJSON() {
         return {
             valid: this.valid,
+            cancelled: this.cancelled || false,
             message: this.message,
             errorStyle: this.errorStyle,
             errorTitle: this.errorTitle,

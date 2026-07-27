@@ -108,7 +108,7 @@ export class FilterPlugin extends BasePlugin {
         const filterState = this.sheet?.filterState;
         if (filterState) {
             filterState.clearAll();
-            this.#refreshAllHeaderIcons();
+            this.refreshAllHeaderIcons();
         }
     }
 
@@ -152,7 +152,7 @@ export class FilterPlugin extends BasePlugin {
         }
     }
 
-    #refreshAllHeaderIcons() {
+    refreshAllHeaderIcons() {
         for (const [col] of this.#headerRenderers) {
             this.refreshHeaderIcon(col);
         }
@@ -181,7 +181,7 @@ export class FilterPlugin extends BasePlugin {
     }
 
     #registerStrategies() {
-        this.#strategy = new FilterStrategy(this.#uiManager, this.eventHandler);
+        this.#strategy = new FilterStrategy(this.#uiManager, this.eventHandler, this);
 
         // 使用 BasePlugin 的 addStrategy 方法（自动管理生命周期）
         this.addStrategy("filterClick", this.#strategy);
@@ -243,21 +243,5 @@ export class FilterPlugin extends BasePlugin {
         ctx.closePath();
     }
 
-    #registerHooks() {
-        this.addHook("afterSetCellData", (row, col, oldValue, newValue) => {
-            const filterState = this.sheet?.filterState;
-            if (filterState) {
-                filterState.invalidateColumnCache(col);
-                this.refreshHeaderIcon(col);
-            }
-        });
-
-        this.addHook("onColumnSorted", (col) => {
-            this.refreshHeaderIcon(col);
-        });
-
-        this.addHook("onFilterApplied", () => {
-            this.#refreshAllHeaderIcons();
-        });
-    }
+    #registerHooks() {}
 }

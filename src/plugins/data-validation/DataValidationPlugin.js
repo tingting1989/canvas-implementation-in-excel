@@ -10,6 +10,8 @@ import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
 import { stylePool } from "../../model/styles/index.js";
+import { ValidationStrategy } from "../../editor/strategies/ValidationStrategy.js";
+import { ValidationResult } from "@/plugins/data-validation/ValidationResult";
 
 const VALIDATION_ERROR_STYLES = Object.freeze({
     stop: {
@@ -158,7 +160,7 @@ export class DataValidationPlugin extends BasePlugin {
                 }
             }
 
-            this.registerHooks();
+            this.#registerStrategy();
             this.#bindSheetSwitchListener();
             this.#initUIController();
             this.#dirtyFlagManager = new ValidationDirtyFlagManager();
@@ -194,34 +196,33 @@ export class DataValidationPlugin extends BasePlugin {
         return this.#copyPasteHandler;
     }
 
-    /**
-     * 注册插件钩子
-     * 拦截单元格赋值和粘贴操作，在操作前后执行验证逻辑
-     */
-    registerHooks() {
-        if (!this.hooks) return;
+    #registerStrategy() {
+        if (!this.eventHandler) return;
 
-        this.addHook(HOOKS.BEFORE_SET_VALUE_AT, (row, col, value) => {
-            return this.interceptBeforeSetValue(row, col, value);
-        });
-
-        this.addHook(HOOKS.AFTER_SET_VALUE_AT, (row, col, oldValue, newValue) => {
-            this.handleAfterSetValue(row, col, newValue);
-        });
-
-        this.addHook(HOOKS.BEFORE_PASTE, (data) => {
-            return this.interceptBeforePaste(data);
-        });
-
-        this.addHook(HOOKS.AFTER_SELECTION, (range, focus) => {
-            const [row, col] = focus;
-            this.#portalUI?.onCellSelected(row, col);
-        });
+        const validationStrategy = new ValidationStrategy(this.eventHandler, this);
+        this.addStrategy("validation", validationStrategy);
     }
+
+    // registerHooks() {
+    //     if (!this.hooks) return;
+    //
+    //     this.addHook(HOOKS.VALIDATION_FAILED, (row, col, value, result) => {});
+    //
+    //     this.addHook(HOOKS.AFTER_VALIDATE, (row, col, value) => {});
+    //
+    //     this.addHook(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, (oldRule, newRule) => {});
+    //
+    //     this.addHook(HOOKS.AFTER_VALIDATION_RULE_CHANGE, (newRule, oldRule) => {});
+    //
+    //     this.addHook(HOOKS.BEFORE_VALIDATE, (value, context) => {});
+    //
+    //     this.addHook(HOOKS.AFTER_BATCH_VALIDATION, (report) => {});
+    // }
 
     /**
      * 拦截单元格赋值前的验证
      * 同步验证目标单元格的值，若验证失败且错误样式为 STOP 则阻止赋值
+     * 完整触发 BEFORE_VALIDATE → VALIDATION_FAILED/AFTER_VALIDATE 流程
      * @param {number} row - 行号
      * @param {number} col - 列号
      * @param {*} value - 待赋值的值
@@ -232,9 +233,19 @@ export class DataValidationPlugin extends BasePlugin {
 
         const rules = this.#engine.getRulesForCell(row, col);
 
+        const shouldContinue = this.hooks?.runHooksUntil(HOOKS.BEFORE_VALIDATE, value, { row, col });
+        if (shouldContinue === false) {
+            return false;
+        }
+
         const result = this.#engine.validateCellSync(row, col, value);
 
         if (!result.valid) {
+            result.row = row;
+            result.col = col;
+            result.value = value;
+            result.source = "before_set_value";
+
             this.hooks?.runHooks(HOOKS.VALIDATION_FAILED, row, col, value, result);
 
             this.#portalUI?.showErrorTooltip(row, col, result.message || "输入值无效", result.errorStyle || "stop");
@@ -247,6 +258,14 @@ export class DataValidationPlugin extends BasePlugin {
                 return false;
             }
         } else {
+            result.row = row;
+            result.col = col;
+            result.value = value;
+            result.source = "before_set_value";
+            result.valid = true;
+
+            this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, result);
+
             if (this.#highlightInvalidCells) {
                 this.#removeErrorStyle(row, col);
             }
@@ -266,7 +285,14 @@ export class DataValidationPlugin extends BasePlugin {
         if (!this.#active || !this.#engine) return;
 
         this.#dirtyFlagManager?.markDirty(row, col, "user_edit");
-        this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, row, col, value);
+
+        const result = ValidationResult.success();
+        result.row = row;
+        result.col = col;
+        result.value = value;
+        result.source = "after_set_value";
+
+        this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, result);
     }
 
     /**
@@ -428,7 +454,10 @@ export class DataValidationPlugin extends BasePlugin {
             throw new Error(`规则无效: ${validation.errors.join(", ")}`);
         }
 
-        this.hooks?.runHooks(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, null, rule);
+        const shouldContinue = this.hooks?.runHooksUntil(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, null, rule);
+        if (shouldContinue === false) {
+            return null;
+        }
 
         const ruleId = this.#engine.addRule(rule);
 
@@ -455,7 +484,10 @@ export class DataValidationPlugin extends BasePlugin {
             return false;
         }
 
-        this.hooks?.runHooks(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, rule, null);
+        const shouldContinue = this.hooks?.runHooksUntil(HOOKS.BEFORE_VALIDATION_RULE_CHANGE, rule, null);
+        if (shouldContinue === false) {
+            return false;
+        }
 
         const success = this.#engine.removeRule(ruleId);
 
@@ -482,9 +514,16 @@ export class DataValidationPlugin extends BasePlugin {
             return ValidationResult.success();
         }
 
-        this.hooks?.runHooks(HOOKS.BEFORE_VALIDATE, value, null);
+        const shouldContinue = this.hooks?.runHooksUntil(HOOKS.BEFORE_VALIDATE, value, { row, col });
+        if (shouldContinue === false) {
+            return ValidationResult.cancelled();
+        }
 
         const result = await this.#engine.validateCell(row, col, value);
+
+        result.source = "manual_validation";
+        result.row = row;
+        result.col = col;
 
         this.hooks?.runHooks(HOOKS.AFTER_VALIDATE, result);
 
