@@ -132,12 +132,12 @@ export class DataValidationPlugin extends BasePlugin {
      * @param {string} [options.conflictStrategy='short-circuit'] - 规则冲突解决策略
      * @param {boolean} [options.highlightInvalidCells=false] - 是否对违规单元格应用错误样式
      */
-    async init(options = {}) {
+    init(options = {}) {
         super.init(options);
         try {
             this.#engine = new ValidationEngine(this.sheet?.cellStore);
             const formulaEngine = this.workbook?.formulaEngine || null;
-            await this.#engine.init(formulaEngine);
+            this.#engine.init(formulaEngine);
 
             if (options.conflictStrategy) {
                 this.#engine.conflictStrategy = options.conflictStrategy;
@@ -426,7 +426,7 @@ export class DataValidationPlugin extends BasePlugin {
         const formulaEngine = this.workbook?.formulaEngine || null;
 
         this.#engine = new ValidationEngine(newSheet.cellStore);
-        await this.#engine.init(formulaEngine);
+        this.#engine.init(formulaEngine);
         this.#engine.conflictStrategy = this.#conflictStrategy;
 
         for (const ruleConfig of this.#initialRules) {

@@ -23,7 +23,7 @@ import { ListSourceResolver } from "./ListSourceResolver.js";
  *
  * @example
  * const engine = new ValidationEngine(cellStore);
- * await engine.init();
+ * engine.init();
  *
  * const result = await engine.validateCell(0, 0, 50);
  * const report = await engine.validateRange('A1:A100');
@@ -67,7 +67,7 @@ export class ValidationEngine {
      * @param {Object|null} [formulaEngine=null] - 公式引擎实例，custom 类型验证器需要
      * @param {Object|null} [sheetManager=null] - SheetManager 实例，动态区域引用需要
      */
-    async init(formulaEngine = null, sheetManager = null) {
+    init(formulaEngine = null, sheetManager = null) {
         this.#sourceResolver = new ListSourceResolver(this.#cellStore, sheetManager);
 
         this.registerValidator("number", new NumberValidator());

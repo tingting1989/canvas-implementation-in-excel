@@ -114,6 +114,8 @@
                 <option value="text">文本长度</option>
                 <option value="list">下拉列表</option>
                 <option value="date">日期范围</option>
+                <option value="time">时间范围</option>
+                <option value="datetime">日期时间</option>
                 <option value="regex">正则表达式</option>
                 <option value="unique">唯一性</option>
             </select>
@@ -195,6 +197,12 @@
                 <div class="name">自定义公式验证</div>
                 <div class="desc">通过公式表达式进行自定义验证逻辑。</div>
                 <div class="ops">配置: formula = '=A1>0'</div>
+            </div>
+            <div class="validator-card">
+                <div class="type">type: datetime (date)</div>
+                <div class="name">日期时间验证</div>
+                <div class="desc">验证日期时间值是否在指定范围内，使用 ISO 8601 格式（YYYY-MM-DDTHH:mm:ss），复用 date 验证器。</div>
+                <div class="ops">运算符: before, after, between, notBetween, equalTo, notEqualTo<br>配置: value = ['2024-01-01T00:00:00', '2024-12-31T23:59:59']</div>
             </div>
         </div>
     </div>
@@ -364,14 +372,14 @@ dv.destroy();  // 彻底销毁</div>
     let dvPlugin = null;
 
     const sampleData = [
-        ["数值(0-100)", "下拉列表", "文本(5-20字)", "日期", "邮箱", "唯一编号"],
-        [50, "选项A", "Hello World", "2024-06-15", "user@example.com", "ORD-001"],
-        [120, "选项B", "Hi", "2025-01-01", "invalid-email", "ORD-002"],
-        [75, "选项C", "Canvas Spreadsheet", "2024-12-31", "test@test.org", "ORD-003"],
-        [-5, "无效选项", "A", "2020-07-20", "name@domain.com", "ORD-001"],
-        [0, "选项A", "Medium length text", "2024-03-15", "bad@", "ORD-004"],
-        [100, "选项B", "Another valid text here", "2023-11-11", "ok@company.cn", "ORD-005"],
-        [200, "选项C", "X", "2026-01-01", "user@site.net", "ORD-006"],
+        ["数值(0-100)", "下拉列表", "文本(5-20字)", "日期(2024年)", "时间(09:00-18:00)", "日期时间(2024年)", "邮箱", "唯一编号"],
+        [50, "选项A", "Hello World", "2024-06-15", "09:30", "2024-06-15 09:30", "user@example.com", "ORD-001"],
+        [120, "选项B", "Hi", "2025-01-01", "08:00", "2025-01-01 08:00", "invalid-email", "ORD-002"],
+        [75, "选项C", "Canvas Spreadsheet", "2024-12-31", "18:00", "2024-12-31 18:00", "test@test.org", "ORD-003"],
+        [-5, "无效选项", "A", "2020-07-20", "07:15", "2020-07-20 07:15", "name@domain.com", "ORD-001"],
+        [0, "选项A", "Medium length text", "2024-03-15", "20:30", "2024-03-15 20:30", "bad@", "ORD-004"],
+        [100, "选项B", "Another valid text here", "2023-11-11", "12:45", "2023-11-11 12:45", "ok@company.cn", "ORD-005"],
+        [200, "选项C", "X", "2026-01-01", "23:59", "2026-01-01 23:59", "user@site.net", "ORD-006"],
     ];
 
     function log(msg, type) {
@@ -424,6 +432,17 @@ dv.destroy();  // 彻底销毁</div>
                 ruleConfig.value = ['2024-01-01', '2024-12-31'];
                 ruleConfig.errorMessage = '请输入 2024 年内的日期';
                 break;
+            case 'time':
+                ruleConfig.operator = 'between';
+                ruleConfig.value = ['09:00', '18:00'];
+                ruleConfig.errorMessage = '请输入 09:00-18:00 之间的时间';
+                break;
+            case 'datetime':
+                ruleConfig.type = 'date';
+                ruleConfig.operator = 'between';
+                ruleConfig.value = ['2024-01-01T00:00:00', '2024-12-31T23:59:59'];
+                ruleConfig.errorMessage = '请输入 2024 年内的日期时间';
+                break;
             case 'regex':
                 ruleConfig.pattern = '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$';
                 ruleConfig.errorMessage = '请输入有效的邮箱地址';
@@ -448,17 +467,16 @@ dv.destroy();  // 彻底销毁</div>
 
         log('开始批量验证...', 'info');
         try {
-            const report = await dvPlugin.validateRange('A1:F8');
+            const report = await dvPlugin.validateRange('A1:H8');
+            console.log(report);
+
             log('📊 批量验证完成: 总计 ' + report.total + ' 个, 通过 ' + report.valid + ' 个, 失败 ' + report.invalid + ' 个', report.invalid > 0 ? 'warn' : 'success');
 
             if (report.invalid > 0) {
                 const failures = report.results.filter(function(r) { return !r.valid; });
-                failures.slice(0, 5).forEach(function(r) {
+                failures.forEach(function(r) {
                     log('  ❌ (' + r.row + ',' + r.col + '): ' + (r.message || '验证失败'), 'error');
                 });
-                if (failures.length > 5) {
-                    log('  ... 还有 ' + (failures.length - 5) + ' 个失败项', 'warn');
-                }
             }
         } catch (e) {
             log('❌ 批量验证失败: ' + e.message, 'error');
@@ -487,21 +505,23 @@ dv.destroy();  // 彻底销毁</div>
         try {
             log('初始化数据验证演示...', 'info');
             const container = document.getElementById('sheet');
-            container.width = 900;
+            container.width = 1200;
             container.height = 320;
 
             workbook = new CanvasSheet.Workbook(container, {
-                width: 1200, height: 320,
+                width: 1400, height: 320,
                 sheets: [{
                     name: '数据验证',
                     data: sampleData,
                     columns: [
-                        { type: 'numeric', width: 130 },
-                        { type: 'text', width: 120 },
-                        { type: 'text', width: 180 },
-                        { type: 'text', width: 120 },
-                        { type: 'text', width: 180 },
-                        { type: 'text', width: 120 },
+                        { type: 'numeric', width: 110 },
+                        { type: 'text', width: 100 },
+                        { type: 'text', width: 160 },
+                        { type: 'text', width: 110 },
+                        { type: 'text', width: 130 },
+                        { type: 'text', width: 150 },
+                        { type: 'text', width: 160 },
+                        { type: 'text', width: 100 },
                     ],
                     cellPadding: 8
                 }],
@@ -533,14 +553,38 @@ dv.destroy();  // 彻底销毁</div>
                                 errorMessage: '文本长度必须在 5-20 个字符之间'
                             },
                             {
+                                range: 'D2:D20',
+                                type: 'date',
+                                operator: 'between',
+                                value: ['2024-01-01', '2024-12-31'],
+                                errorMessage: '请输入 2024 年内的日期',
+                                errorStyle: 'warning'
+                            },
+                            {
                                 range: 'E2:E20',
+                                type: 'time',
+                                operator: 'between',
+                                value: ['09:00', '18:00'],
+                                errorMessage: '请输入 09:00-18:00 之间的时间',
+                                errorStyle: 'warning'
+                            },
+                            {
+                                range: 'F2:F20',
+                                type: 'date',
+                                operator: 'between',
+                                value: ['2024-01-01T00:00:00', '2024-12-31T23:59:59'],
+                                errorMessage: '请输入 2024 年内的日期时间',
+                                errorStyle: 'warning'
+                            },
+                            {
+                                range: 'G2:G20',
                                 type: 'regex',
                                 pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
                                 errorMessage: '请输入有效的邮箱地址',
                                 errorStyle: 'warning'
                             },
                             {
-                                range: 'F2:F20',
+                                range: 'H2:H20',
                                 type: 'unique',
                                 errorMessage: '编号不能重复！',
                                 errorStyle: 'warning'
