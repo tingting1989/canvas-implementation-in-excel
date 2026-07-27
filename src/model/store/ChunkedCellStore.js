@@ -122,14 +122,17 @@ export class ChunkedCellStore {
      * @param {import("../Cell.js").Cell} cell
      */
     set(row, col, cell) {
-        this.#getChunk(row, col).set(row, col, cell);
+        const chunk = this.#getChunk(row, col);
+        chunk.set(row, col, cell);
 
         // ✅ O(1) 更新缓存：如果新行号/列号更大，直接更新
         if (row > this.#cachedMaxRow) {
             this.#cachedMaxRow = row;
         }
-        if (col > this.#cachedMaxCol) {
-            this.#cachedMaxCol = col;
+        // getMaxCol 返回 chunk 的最大列号（colStart + CHUNK_COL_SIZE - 1），而非实际列号
+        const chunkMaxCol = chunk.colStart + CONFIG.CHUNK_COL_SIZE - 1;
+        if (chunkMaxCol > this.#cachedMaxCol) {
+            this.#cachedMaxCol = chunkMaxCol;
         }
     }
 
@@ -144,13 +147,18 @@ export class ChunkedCellStore {
         chunk.delete(row, col);
 
         // ⚠️ 删除操作可能影响最大行号/列号，标记缓存待验证
-        // 只有当删除的行号 >= 当前缓存值时才需要重算
-        if (row >= this.#cachedMaxRow && chunk.cells.size === 0) {
-            this.#cachedMaxRow = -1; // 标记为无效，下次 getMaxRow 时重算
-        }
-
-        if (col >= this.#cachedMaxCol && chunk.cells.size === 0) {
-            this.#cachedMaxCol = -1; // 标记为无效，下次 getMaxCol 时重算
+        // 如果删除的是最大行/列所在的 chunk，且删除后 chunk 变空，则缓存失效
+        if (chunk.cells.size === 0) {
+            // 对于 getMaxRow：如果删除的行所在的 chunk 变空，需要重算
+            // chunk.rowStart <= row <= chunk.rowStart + CHUNK_ROW_SIZE - 1
+            if (row >= chunk.rowStart && row < chunk.rowStart + CONFIG.CHUNK_ROW_SIZE) {
+                this.#cachedMaxRow = -1;
+            }
+            // 对于 getMaxCol：如果删除的列所在的 chunk 变空，需要重算
+            // chunk.colStart <= col <= chunk.colStart + CHUNK_COL_SIZE - 1
+            if (col >= chunk.colStart && col < chunk.colStart + CONFIG.CHUNK_COL_SIZE) {
+                this.#cachedMaxCol = -1;
+            }
         }
     }
 

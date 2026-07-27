@@ -36,7 +36,7 @@ export class ValidationStrategy extends EventStrategy {
     }
 
     handleCellSelected(row, col) {
-        if (!this.enabled || !this.#plugin?.uiController) return;
+        if (!this.enabled || !this.#plugin?.active || !this.#plugin?.uiController) return;
 
         this.#plugin.uiController.onCellSelected(row, col);
     }

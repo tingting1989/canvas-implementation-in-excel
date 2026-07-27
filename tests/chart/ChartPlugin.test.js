@@ -48,7 +48,7 @@ function createMockWorkbook() {
         bus: createMockBus(),
         render: vi.fn(),
         getPlugin: vi.fn(),
-        eventHandler: { hooks: { runHooks: vi.fn(), addHook: vi.fn() }, addStrategy: vi.fn() },
+        eventHandler: { hooks: { runHooks: vi.fn(), addHook: vi.fn() }, addStrategy: vi.fn(), removeStrategy: vi.fn() },
         renderEngine: null,
         editor: null,
         clipboard: null,
@@ -242,7 +242,7 @@ describe("ChartPlugin", () => {
                 endRow: 5,
                 endCol: 3,
             });
-            const moved = plugin.moveChart(chart.id, 100, 200);
+            const moved = plugin.moveChart(chart.id, undefined, undefined, 100, 200);
             expect(moved.offsetX).toBe(100);
             expect(moved.offsetY).toBe(200);
         });

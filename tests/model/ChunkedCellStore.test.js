@@ -482,7 +482,7 @@ describe("ChunkedCellStore", () => {
 
     describe("chunks generator", () => {
         it("should yield no chunks for empty store", () => {
-            const result = [...store.chunks()];
+            const result = [...store.chunks];
             expect(result).toHaveLength(0);
         });
 
@@ -490,7 +490,7 @@ describe("ChunkedCellStore", () => {
             store.set(0, 0, new Cell("a"));
             store.set(1024, 0, new Cell("b"));
 
-            const result = [...store.chunks()];
+            const result = [...store.chunks];
             expect(result.length).toBeGreaterThanOrEqual(2);
         });
     });

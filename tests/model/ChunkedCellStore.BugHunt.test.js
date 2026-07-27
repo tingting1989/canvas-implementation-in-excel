@@ -481,7 +481,7 @@ describe("ChunkedCellStore - Bug Hunting", () => {
 
 function countCells(store) {
     let count = 0;
-    for (const chunk of store.chunks()) {
+    for (const [key, chunk] of store.chunks) {
         count += chunk.cells.size;
     }
     return count;
