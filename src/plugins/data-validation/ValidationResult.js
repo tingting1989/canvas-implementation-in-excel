@@ -82,19 +82,51 @@ export class ValidationResult {
     }
 
     /**
-     * 转换为简单对象（用于序列化）
+     * 创建延迟验证结果（v3.0 新增）
+     *
+     * 用于同步快速通道无法立即完成验证的场景：
+     * - 公式复杂度过高，需要异步管道处理
+     * - FormulaEngine 不可用时的降级方案
+     *
+     * 特点：
+     * - valid = true（允许输入继续）
+     * - deferred = true（标记需要异步复核）
+     * - 包含元数据供后续异步验证使用
+     *
+     * @param {string} [message='需要异步验证'] - 提示消息
+     * @param {Object} [metadata={}] - 延迟验证的元数据
+     * @returns {ValidationResult}
+     */
+    static deferred(message = "需要异步验证", metadata = {}) {
+        const result = new ValidationResult(true, message, "warning");
+        result.deferred = true; // 标记为延迟验证
+        result.needsAsyncValidation = metadata.needsAsyncValidation || false;
+        result.complexity = metadata.complexity || null;
+        result.estimatedTime = metadata.estimatedTime || null;
+        result.reasons = metadata.reasons || [];
+        result.metadata = metadata;
+        return result;
+    }
+
+    /**
+     * 转换为简单对象（用于序列化）v3.0 增强
      * @returns {Object}
      */
     toJSON() {
         return {
             valid: this.valid,
             cancelled: this.cancelled || false,
+            deferred: this.deferred || false, // v3.0 新增
+            needsAsyncValidation: this.needsAsyncValidation || false, // v3.0 新增
             message: this.message,
             errorStyle: this.errorStyle,
             errorTitle: this.errorTitle,
             failedValue: this.failedValue,
             ruleId: this.ruleId,
             timestamp: this.timestamp.toISOString(),
+            complexity: this.complexity || null, // v3.0 新增
+            estimatedTime: this.estimatedTime || null, // v3.0 新增
+            reasons: this.reasons || [], // v3.0 新增
             metadata: this.metadata,
         };
     }

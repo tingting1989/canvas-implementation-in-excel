@@ -8,24 +8,30 @@ import { DateTimeValidator } from "./validators/DateTimeValidator.js";
 import { RegexValidator } from "./validators/RegexValidator.js";
 import { ValidationResult } from "./ValidationResult.js";
 import { ListSourceResolver } from "./ListSourceResolver.js";
+import { complexityAnalyzer } from "./ComplexityAnalyzer.js"; // v3.0 新增
+import { getValidationCache } from "./ValidationCache.js"; // v3.0 新增
 
 /**
- * 数据验证引擎
+ * ═══════════════════════════════════════════════════════════════
+ * 📌 ValidationEngine v3.0 - 单轨异步架构验证引擎
+ * ═══════════════════════════════════════════════════════════════
  *
- * 协调各验证器的工作，提供统一的验证入口。
- * 支持单单元格验证、批量验证、快速预检等模式。
- *
- * 核心功能：
- * 1. 根据 ValidationRule.type 分发到对应的验证器
- * 2. 支持多规则冲突解决策略（短路、优先级、聚合）
- * 3. 提供批量验证优化（分块处理、防抖等）
+ * 核心升级：
+ * ✅ 深度集成 FormulaEngine（消除 Mock 数据）
+ * ✅ 单轨异步架构 + 同步快速通道优化
+ * ✅ 三级缓存系统（L1视口 → L2最近 → L3持久化）
+ * ✅ 复杂度分析器（智能路径决策）
+ * ✅ 安全机制（移除 eval()，采用安全解析器）
  *
  * @example
  * const engine = new ValidationEngine(cellStore);
- * engine.init();
+ * engine.init(formulaEngine);
  *
+ * // 异步验证（标准路径）
  * const result = await engine.validateCell(0, 0, 50);
- * const report = await engine.validateRange('A1:A100');
+ *
+ * // 同步快速通道（简单公式 <10ms）
+ * const syncResult = engine.validateCellSync(0, 0, 'hello');
  */
 export class ValidationEngine {
     /** @type {Map<string, Object>} 验证器注册表 */
@@ -40,7 +46,7 @@ export class ValidationEngine {
     /** @type {Object} CellStore 实例 */
     #cellStore;
 
-    /** @type {Map<string, Map<string, import('./ValidationResult.js').ValidationResult>>} 验证结果缓存 */
+    /** @type {Map<string, Map<string, import('./ValidationResult.js').ValidationResult>>} 验证结果缓存（保留向后兼容） */
     #cache = new Map();
 
     /** @type {number} 缓存最大容量 */
@@ -52,6 +58,16 @@ export class ValidationEngine {
     /** @type {ListSourceResolver|null} 动态数据源解析器 */
     #sourceResolver = null;
 
+    // ════════════════════════════════════════
+    // v3.0 新增属性
+    // ════════════════════════════════════════
+
+    /** @type {Object|null} FormulaEngine 实例 */
+    #formulaEngine = null;
+
+    /** @type {boolean} 是否启用三级缓存 */
+    #enableAdvancedCache = true;
+
     /**
      * 构造验证引擎
      * @param {Object} cellStore - CellStore 实例
@@ -61,14 +77,29 @@ export class ValidationEngine {
     }
 
     /**
-     * 初始化引擎（注册所有内置验证器）
-     * 内置验证器类型：number、text、list、unique、custom、date、time、regex
-     * @param {Object|null} [formulaEngine=null] - 公式引擎实例，custom 类型验证器需要
-     * @param {Object|null} [sheetManager=null] - SheetManager 实例，动态区域引用需要
+     * 初始化引擎（v3.0 增强版）
+     *
+     * 注册所有内置验证器，并初始化高级组件：
+     * - ComplexityAnalyzer（复杂度分析器）
+     * - ValidationCache（三级缓存系统）
+     *
+     * 内置验证器类型：
+     * number、text、list、unique、formula、date、time、datetime、regex
+     *
+     * @param {Object|null} [formulaEngine=null] - 公式引擎实例（formula 类型必需）
+     * @param {Object|null} [sheetManager=null] - SheetManager 实例（动态区域引用需要）
+     * @param {Object} [config={}] - 配置选项
+     * @param {boolean} [config.enableAdvancedCache=true] - 是否启用三级缓存
      */
-    init(formulaEngine = null, sheetManager = null) {
+    init(formulaEngine = null, sheetManager = null, config = {}) {
+        // 保存配置
+        this.#formulaEngine = formulaEngine;
+        this.#enableAdvancedCache = config.enableAdvancedCache !== false;
+
+        // 初始化动态数据源解析器
         this.#sourceResolver = new ListSourceResolver(this.#cellStore, sheetManager);
 
+        // 注册所有内置验证器
         this.registerValidator("number", new NumberValidator());
         this.registerValidator("text", new TextLengthValidator());
 
@@ -77,12 +108,29 @@ export class ValidationEngine {
         this.registerValidator("list", listValidator);
 
         this.registerValidator("unique", new UniqueValidator(this.#cellStore));
-        this.registerValidator("formula", new FormulaValidator(formulaEngine));
+
+        // v3.0 增强：FormulaValidator 现在接收完整配置
+        const formulaConfig = {
+            syncThreshold: config.syncThreshold || 10,
+            asyncTimeout: config.asyncTimeout || 500,
+            enableDeferred: config.enableDeferred !== false,
+            enableCache: this.#enableAdvancedCache,
+        };
+        this.registerValidator("formula", new FormulaValidator(formulaEngine, formulaConfig));
+
         const dateTimeValidator = new DateTimeValidator();
         this.registerValidator("date", dateTimeValidator);
         this.registerValidator("time", dateTimeValidator);
         this.registerValidator("datetime", dateTimeValidator);
         this.registerValidator("regex", new RegexValidator());
+
+        errorHandler.info(ERROR_CODE.VALIDATION_INFO, `[ValidationEngine] v3.0 初始化完成`, {
+            FormulaEngine: formulaEngine ? "✅" : "❌",
+            高级缓存: this.#enableAdvancedCache ? "✅" : "❌",
+            同步阈值: `${config.syncThreshold || 10}ms`,
+            异步超时: `${config.asyncTimeout || 500}ms`,
+            延迟验证: config.enableDeferred !== false ? "✅" : "❌",
+        });
     }
 
     /**
@@ -146,38 +194,113 @@ export class ValidationEngine {
     }
 
     /**
-     * 异步验证单个单元格
-     * 先查缓存，命中则直接返回；否则按冲突策略执行验证并写入缓存
+     * 异步验证单个单元格（v3.0 增强版）
+     *
+     * 缓存读取优先级：
+     * 1. 三级缓存系统（L1 → L2 → L3）- 如果启用高级缓存
+     * 2. 传统内存缓存（向后兼容）
+     * 3. 未命中则执行验证并写入缓存
+     *
      * @param {number} row - 行号
      * @param {number} col - 列号
      * @param {*} value - 待验证的值
-     * @returns {Promise<import('./ValidationResult.js').ValidationResult>} 验证结果
+     * @param {Array} [rules] - 可选的预加载规则（避免重复查询）
+     * @returns {Promise<ValidationResult>} 验证结果
      */
-    async validateCell(row, col, value) {
+    async validateCell(row, col, value, rules) {
         const cacheKey = `${row},${col}`;
-        const cachedResult = this.getFromCache(cacheKey, value);
 
-        if (cachedResult) {
-            return cachedResult;
-        }
+        try {
+            // v3.0 新增：优先使用三级缓存系统
+            if (this.#enableAdvancedCache) {
+                const cache = getValidationCache();
+                try {
+                    const cached = cache ? await cache.get(cacheKey) : null;
 
-        const rules = this.getRulesForCell(row, col);
+                    if (cached && cached.result !== null && cached.result !== undefined) {
+                        // 三级缓存命中，直接返回
+                        return cached.result.valid
+                            ? ValidationResult.success({ source: "advanced-cache", level: cached.level })
+                            : ValidationResult.failure(cached.result.rule?.errorMessage || "验证失败", cached.result.rule?.errorStyle || "stop", {
+                                  ...cached.result.metadata,
+                                  source: "advanced-cache",
+                              });
+                    }
+                } catch (cacheError) {
+                    errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] 三级缓存读取失败，降级到传统缓存", { error: cacheError });
+                }
+            }
 
-        if (rules.length === 0) {
-            return ValidationResult.success();
-        }
+            // 向后兼容：传统内存缓存检查
+            const legacyCached = this.getFromCache(cacheKey, value);
+            if (legacyCached) {
+                return legacyCached;
+            }
 
-        const context = { row, col, sheet: this.#cellStore.sheetName };
+            // 获取验证规则（如果未预加载）
+            if (!rules || !Array.isArray(rules)) {
+                rules = this.getRulesForCell(row, col);
+            }
 
-        switch (this.#conflictStrategy) {
-            case "short-circuit":
-                return await this.validateWithShortCircuit(rules, value, context);
-            case "priority":
-                return await this.validateWithPriority(rules, value, context);
-            case "aggregate":
-                return await this.validateWithAggregate(rules, value, context);
-            default:
-                return await this.validateWithShortCircuit(rules, value, context);
+            if (rules.length === 0) {
+                return ValidationResult.success();
+            }
+
+            // 构建上下文
+            const context = {
+                row,
+                col,
+                sheet: this.#cellStore?.sheetName || "default",
+                workbook: this.#cellStore?.workbook || null,
+            };
+
+            // 根据冲突策略执行验证
+            let result;
+            switch (this.#conflictStrategy) {
+                case "short-circuit":
+                    result = await this.validateWithShortCircuit(rules, value, context);
+                    break;
+                case "priority":
+                    result = await this.validateWithPriority(rules, value, context);
+                    break;
+                case "aggregate":
+                    result = await this.validateWithAggregate(rules, value, context);
+                    break;
+                default:
+                    result = await this.validateWithShortCircuit(rules, value, context);
+            }
+
+            // 写入三级缓存（异步，不阻塞返回）
+            if (this.#enableAdvancedCache && result) {
+                const cache = getValidationCache();
+                if (cache) {
+                    cache
+                        .set(
+                            cacheKey,
+                            {
+                                valid: result.valid,
+                                value,
+                                ruleId: result.ruleId,
+                                metadata: result.metadata,
+                            },
+                            {
+                                source: "validation-engine",
+                                sheet: context.sheet,
+                            },
+                        )
+                        .catch((cacheError) => {
+                            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 缓存写入失败（不影响主流程）", {
+                                error: cacheError,
+                            });
+                        });
+                }
+            }
+
+            return result;
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] validateCell() 异常", { error, row, col, value });
+
+            return ValidationResult.failure(`验证引擎异常: ${error.message}`, "warning", { error: error.message, row, col });
         }
     }
 
@@ -570,18 +693,37 @@ export class ValidationEngine {
     }
 
     /**
-     * 销毁引擎，清空验证器注册表、规则存储和缓存
+     * 销毁引擎，清空验证器注册表、规则存储和缓存（v3.0 增强版）
      */
     destroy() {
         if (this.#destroyed) return;
         this.#destroyed = true;
 
+        // 清理基础资源
         this.#validators.clear();
         this.#rules.clear();
         this.#cache.clear();
+
+        // v3.0 新增：清理三级缓存系统
+        if (this.#enableAdvancedCache) {
+            const cache = getValidationCache();
+            if (cache) {
+                cache
+                    .clear()
+                    .then(() => {
+                        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 三级缓存已清空");
+                    })
+                    .catch((error) => {
+                        errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] 三级缓存清空失败", { error });
+                    });
+            }
+        }
+
         this.#sourceResolver?.destroy();
         this.#sourceResolver = null;
         this.#cellStore = null;
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 已销毁");
+        this.#formulaEngine = null;
+
+        errorHandler.info(ERROR_CODE.VALIDATION_INFO, "[ValidationEngine v3.0 已销毁");
     }
 }

@@ -6,6 +6,7 @@ import { ValidationUIController } from "./ValidationUIController.js";
 import { ValidationPortalManager } from "./ValidationPortalManager.js";
 import { ValidationDirtyFlagManager } from "./ValidationDirtyFlagManager.js";
 import { CopyPasteHandler, PASTE_OPTIONS } from "./CopyPasteHandler.js";
+import { initValidationCache, getValidationCache } from "./ValidationCache.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
@@ -131,44 +132,120 @@ export class DataValidationPlugin extends BasePlugin {
      * @param {Array} [options.rules=[]] - 预定义的验证规则数组
      * @param {string} [options.conflictStrategy='short-circuit'] - 规则冲突解决策略
      * @param {boolean} [options.highlightInvalidCells=false] - 是否对违规单元格应用错误样式
+     * @param {Object} [options.formulaValidation={}] - v3.0 公式验证配置
+     * @param {Object} [options.formulaValidation.syncFastPath] - 同步快速通道配置
+     * @param {boolean} [options.formulaValidation.syncFastPath.enabled=true] - 是否启用同步快速通道
+     * @param {number} [options.formulaValidation.syncFastPath.threshold=10] - 同步阈值(ms)
+     * @param {number} [options.formulaValidation.syncFastPath.maxComplexity=2] - 同步最大复杂度
+     * @param {Object} [options.formulaValidation.asyncValidation] - 异步验证配置
+     * @param {boolean} [options.formulaValidation.asyncValidation.enabled=true] - 是否启用异步验证
+     * @param {number} [options.formulaValidation.asyncValidation.timeout=500] - 异步超时(ms)
+     * @param {number} [options.formulaValidation.asyncValidation.maxConcurrent=5] - 最大并发数
+     * @param {number} [options.formulaValidation.asyncValidation.retryAttempts=2] - 重试次数
+     * @param {Object} [options.formulaValidation.cache] - 三级缓存配置
+     * @param {boolean} [options.formulaValidation.cache.enabled=true] - 是否启用缓存
+     * @param {number} [options.formulaValidation.cache.l1MaxSize=500] - L1视口缓存大小
+     * @param {number} [options.formulaValidation.cache.l2MaxSize=1000] - L2最近缓存大小
+     * @param {boolean} [options.formulaValidation.cache.l3Enabled=true] - 是否启用L3持久化缓存
+     * @param {number} [options.formulaValidation.cache.defaultTTL=3600000] - 默认缓存有效期(ms)
+     *
+     * @example
+     * // v3.0 完整配置示例
+     * const workbook = new Workbook(element, {
+     *     plugins: ['dataValidation'],
+     *     pluginOptions: {
+     *         dataValidation: {
+     *             conflictStrategy: 'short-circuit',
+     *             highlightInvalidCells: true,
+     *             formulaValidation: {
+     *                 syncFastPath: { enabled: true, threshold: 10, maxComplexity: 2 },
+     *                 asyncValidation: { enabled: true, timeout: 500, maxConcurrent: 5 },
+     *                 cache: { enabled: true, l1MaxSize: 500, l2MaxSize: 1000, l3Enabled: true }
+     *             },
+     *             rules: [
+     *                 { range: 'A1:A10', type: 'formula', formula: '=A1>0', errorMessage: '必须大于0' }
+     *             ]
+     *         }
+     *     }
+     * });
      */
     init(options = {}) {
         super.init(options);
-        try {
-            this.#engine = new ValidationEngine(this.sheet?.cellStore);
-            const formulaEngine = this.workbook?.formulaEngine || null;
-            this.#engine.init(formulaEngine);
+        // v3.0 配置处理：从 options.formulaValidation 中提取配置
+        const formulaValidationConfig = options.formulaValidation || {};
 
-            if (options.conflictStrategy) {
-                this.#engine.conflictStrategy = options.conflictStrategy;
-                this.#conflictStrategy = options.conflictStrategy;
-            }
+        // 构建 ValidationEngine 配置
+        const engineConfig = {
+            enableAdvancedCache: formulaValidationConfig.cache?.enabled !== false,
+            syncThreshold: formulaValidationConfig.syncFastPath?.threshold || 10,
+            maxComplexity: formulaValidationConfig.syncFastPath?.maxComplexity || 2,
+            asyncTimeout: formulaValidationConfig.asyncValidation?.timeout || 500,
+            maxConcurrent: formulaValidationConfig.asyncValidation?.maxConcurrent || 5,
+            retryAttempts: formulaValidationConfig.asyncValidation?.retryAttempts || 2,
+            enableDeferred: formulaValidationConfig.asyncValidation?.enabled !== false,
+        };
 
-            if (options.highlightInvalidCells !== undefined) {
-                this.#highlightInvalidCells = !!options.highlightInvalidCells;
-            }
+        // v3.0 新增：初始化 ValidationCache 单例（延迟初始化，只有插件启用时才创建）
+        if (formulaValidationConfig.cache) {
+            initValidationCache({
+                l1MaxSize: formulaValidationConfig.cache.l1MaxSize,
+                l2MaxSize: formulaValidationConfig.cache.l2MaxSize,
+                l3Enabled: formulaValidationConfig.cache.l3Enabled,
+                defaultTTL: formulaValidationConfig.cache.defaultTTL,
+            });
+        } else {
+            // 即使没有传入 cache 配置，也初始化缓存（使用默认配置）
+            initValidationCache();
+        }
 
-            if (options.rules && Array.isArray(options.rules)) {
-                this.#initialRules = [...options.rules];
-                for (const ruleConfig of options.rules) {
-                    try {
-                        const rule = new ValidationRule(ruleConfig);
-                        this.#engine.addRule(rule);
-                    } catch (e) {
-                        errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
-                    }
+        this.#engine = new ValidationEngine(this.sheet?.cellStore);
+        const formulaEngine = this.workbook?.formulaEngine || null;
+        this.#engine.init(formulaEngine, null, engineConfig);
+
+        // v3.0 调试日志：输出初始化配置
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] v3.0 初始化配置:`, {
+            formulaEngine: formulaEngine ? "✅ 已连接" : "❌ 未连接",
+            enableAdvancedCache: engineConfig.enableAdvancedCache,
+            syncThreshold: engineConfig.syncThreshold,
+            asyncTimeout: engineConfig.asyncTimeout,
+            ruleCount: options.rules?.length || 0,
+        });
+
+        if (options.conflictStrategy) {
+            this.#engine.conflictStrategy = options.conflictStrategy;
+            this.#conflictStrategy = options.conflictStrategy;
+        }
+
+        if (options.highlightInvalidCells !== undefined) {
+            this.#highlightInvalidCells = !!options.highlightInvalidCells;
+        }
+
+        if (options.rules && Array.isArray(options.rules)) {
+            this.#initialRules = [...options.rules];
+            let successCount = 0;
+            for (const ruleConfig of options.rules) {
+                try {
+                    const rule = new ValidationRule(ruleConfig);
+                    this.#engine.addRule(rule);
+                    successCount++;
+                } catch (e) {
+                    errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
                 }
             }
-
-            this.#registerStrategy();
-            this.#bindSheetSwitchListener();
-            this.#initUIController();
-            this.#dirtyFlagManager = new ValidationDirtyFlagManager();
-            this.#copyPasteHandler = new CopyPasteHandler(this);
-            this.#active = true;
-        } catch (error) {
-            throw error;
+            errorHandler.info(ERROR_CODE.VALIDATION_INFO, `[DataValidation] ✅ 规则加载完成: ${successCount}/${options.rules.length}`);
         }
+
+        this.#registerStrategy();
+        this.#bindSheetSwitchListener();
+        this.#initUIController();
+        this.#dirtyFlagManager = new ValidationDirtyFlagManager();
+        this.#copyPasteHandler = new CopyPasteHandler(this);
+        this.#active = true;
+
+        errorHandler.info(
+            ERROR_CODE.VALIDATION_INFO,
+            `[DataValidation] ✅ DataValidationPlugin v3.0 激活 | FormulaEngine: ${formulaEngine ? "✅" : "❌"}`,
+        );
     }
 
     /** @returns {boolean} 插件是否处于激活状态 */
@@ -230,8 +307,6 @@ export class DataValidationPlugin extends BasePlugin {
      */
     interceptBeforeSetValue(row, col, value) {
         if (!this.#active || !this.#engine) return true;
-
-        const rules = this.#engine.getRulesForCell(row, col);
 
         const shouldContinue = this.hooks?.runHooksUntil(HOOKS.BEFORE_VALIDATE, value, { row, col });
         if (shouldContinue === false) {
@@ -422,7 +497,7 @@ export class DataValidationPlugin extends BasePlugin {
      * 为新 Sheet 创建验证引擎，并重新加载初始规则
      * @param {object} newSheet - 切换后的新工作表实例
      */
-    async #onSheetSwitched(newSheet) {
+    #onSheetSwitched(newSheet) {
         const formulaEngine = this.workbook?.formulaEngine || null;
 
         this.#engine = new ValidationEngine(newSheet.cellStore);

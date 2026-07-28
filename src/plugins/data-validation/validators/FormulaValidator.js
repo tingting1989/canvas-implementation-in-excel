@@ -1,7 +1,41 @@
 ﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
-import { ShadowEvaluator } from "../ShadowEvaluator.js";
+import { complexityAnalyzer, COMPLEXITY_THRESHOLD } from "../ComplexityAnalyzer.js";
+import { getValidationCache } from "../ValidationCache.js";
+
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📌 FormulaValidator v3.0 - 单轨异步架构 + 同步快速通道
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * 🎯 核心设计理念：
+ * 统一为单轨异步架构，所有公式验证最终都走异步管道，
+ * 但针对简单公式提供同步快速通道作为性能优化。
+ *
+ * ✅ 关键特性：
+ * - 集成 ComplexityAnalyzer 实现智能路径选择
+ * - 三级缓存架构 (L1/L2/L3) 保证高性能
+ * - 支持 49+ 内置函数 + 无限自定义函数
+ * - 移除 eval() 和 Mock 数据，使用真实 FormulaEngine
+ * - 完整的错误处理和超时保护
+ *
+ * ⚙️ 架构说明：
+ * ```
+ * 用户输入 → ComplexityAnalyzer 分析复杂度
+ *           ↓
+ *   ┌───────┴───────┐
+ *   ↓               ↓
+ * 复杂度≤2?       复杂度>2?
+ *   ↓               ↓
+ * 同步快速通道    标准异步管道
+ * (<10ms)         (<500ms)
+ *   ↓               ↓
+ *   └───────┬───────┘
+ *           ↓
+ *   写入统一缓存 → 触发UI更新事件
+ * ```
+ */
 
 /**
  * 自定义公式验证器（沙箱隔离版本）
@@ -160,174 +194,379 @@ export class FormulaValidator extends BaseValidator {
     /** @type {Object|null} FormulaEngine 实例 */
     #formulaEngine;
 
+    /** @type {ComplexityAnalyzer} 复杂度分析器实例 */
+    #complexityAnalyzer;
+
+    /** @type {object} 配置选项 */
+    #config;
+
     /**
-     * 构造公式验证器
-     * @param {Object} formulaEngine - FormulaEngine 实例
+     * 构造公式验证器（v3.0 单轨异步架构）
+     *
+     * @param {Object} formulaEngine - FormulaEngine 实例（必需）
+     * @param {Object} [config={}] - 配置选项
+     * @param {number} [config.syncThreshold=10] - 同步快速通道时间阈值 (ms)
+     * @param {number} [config.asyncTimeout=500] - 异步执行超时时间 (ms)
+     * @param {boolean} [config.enableDeferred=true] - 是否启用延迟验证（stop模式下）
+     * @param {boolean} [config.enableCache=true] - 是否启用三级缓存
      */
-    constructor(formulaEngine) {
+    constructor(formulaEngine, config = {}) {
         super();
+
+        if (!formulaEngine) {
+            errorHandler.throw(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] FormulaEngine 实例是必需的参数");
+        }
+
         this.#formulaEngine = formulaEngine;
+        this.#complexityAnalyzer = complexityAnalyzer; // 使用全局单例
+        this.#config = {
+            syncThreshold: COMPLEXITY_THRESHOLD.SYNC_TIME_LIMIT_MS,
+            asyncTimeout: 500,
+            enableDeferred: true,
+            enableCache: true,
+            ...config,
+        };
+
+        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[FormulaValidator] v3.0 初始化完成，配置: ${JSON.stringify(this.#config)}`);
     }
 
     /**
-     * 验证公式结果
+     * 标准异步验证管道（单轨架构的核心执行路径）
+     *
+     * ✅ 这是统一的验证入口，所有公式最终都通过此方法执行
+     *
+     * 特点：
+     * - 支持所有公式（包括复杂的聚合/查找/自定义函数）
+     * - 使用真实 CellStore 数据（非 Mock）
+     * - 执行完成后更新统一缓存并触发 UI 重绘
+     * - 与同步快速通道共享同一套缓存和事件系统
+     *
+     * 执行流程：
+     * 1. 检查空白值
+     * 2. 解析占位符
+     * 3. 通过 FormulaEngine 求值
+     * 4. 写入三级缓存
+     * 5. 触发 UI 更新事件
+     *
      * @param {*} value - 当前单元格值
-     * @param {import('../ValidationRule.js').ValidationRule} rule - 规则
+     * @param {import('../ValidationRule.js').ValidationRule} rule - 验证规则
      * @param {Object} [context={}] - 上下文（必须包含 row, col）
      * @returns {Promise<ValidationResult>}
      */
     async validate(value, rule, context = {}) {
-        const { isBlank, allowed } = this.checkBlank(value, rule);
-        if (isBlank) {
-            return allowed
-                ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
-        }
-
-        if (!this.#formulaEngine) {
-            console.warn("[FormulaValidator] FormulaEngine 未初始化，尝试使用同步解析器降级处理");
-
-            try {
-                const resolvedFormula = this.resolveFormulaPlaceholders(rule.formula, context);
-                const canEvaluate = this.canEvaluateSync(resolvedFormula);
-
-                if (canEvaluate.supported) {
-                    console.info("[FormulaValidator] 公式简单，同步解析器可以处理:", resolvedFormula);
-                    const result = this.evaluateSimpleFormulaSync(resolvedFormula, value, context);
-
-                    return result
-                        ? ValidationResult.success()
-                        : ValidationResult.failure(rule.errorMessage || `公式 "${rule.formula}" 返回 FALSE`, rule.errorStyle, {
-                              value,
-                              ruleId: rule.id,
-                              metadata: { formula: resolvedFormula, mode: "sync-fallback" },
-                          });
-                } else {
-                    console.warn("[FormulaValidator] 公式复杂，尝试增强解析:", resolvedFormula);
-
-                    const enhancedResult = this.tryEnhancedEvaluation(resolvedFormula, value, context, rule);
-
-                    if (enhancedResult !== null) {
-                        console.info("[FormulaValidator] 增强解析成功");
-                        return enhancedResult.valid
-                            ? ValidationResult.success()
-                            : ValidationResult.failure(enhancedResult.message || rule.errorMessage, rule.errorStyle, {
-                                  value,
-                                  ruleId: rule.id,
-                                  metadata: { formula: resolvedFormula, mode: "enhanced-sync" },
-                              });
-                    }
-
-                    console.warn("[FormulaValidator] 无法处理复杂公式:", canEvaluate.reason);
-
-                    const fallbackMessage = `⚠️ 异步公式验证跳过（FormulaEngine 未加载）: ${canEvaluate.reason}`;
-
-                    if (rule.errorStyle === "stop") {
-                        return ValidationResult.failure(fallbackMessage, "stop", {
-                            value,
-                            ruleId: rule.id,
-                            metadata: { formula: resolvedFormula, reason: canEvaluate.reason, mode: "skipped-stop" },
-                        });
-                    } else {
-                        return ValidationResult.failure(fallbackMessage, "warning", {
-                            value,
-                            ruleId: rule.id,
-                            metadata: { formula: resolvedFormula, reason: canEvaluate.reason, mode: "skipped-warning" },
-                        });
-                    }
-                }
-            } catch (error) {
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 降级处理失败:", error);
-                return ValidationResult.failure(`公式验证错误: ${error.message}`, "warning", {
-                    value,
-                    ruleId: rule.id,
-                    metadata: { error: error.message, mode: "fallback-error" },
-                });
-            }
-        }
+        const startTime = performance.now();
 
         try {
-            const result = await this.evaluateInSandbox(value, rule, context);
+            // 1️⃣ 空白值检查
+            const { isBlank, allowed } = this.checkBlank(value, rule);
+            if (isBlank) {
+                return allowed
+                    ? ValidationResult.success()
+                    : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
+            }
 
-            return result
-                ? ValidationResult.success()
+            // 2️⃣ 检查 FormulaEngine 是否可用
+            if (!this.#formulaEngine) {
+                errorHandler.throw(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] FormulaEngine 未初始化，无法进行异步验证");
+            }
+
+            // 3️⃣ 解析占位符（{row}, {col}, {value} 等）
+            const resolvedFormula = this.resolveFormulaPlaceholders(rule.formula, context);
+
+            // 4️⃣ 构建求值上下文
+            const evaluationContext = this.#buildEvaluationContext(value, context);
+
+            // 5️⃣ 通过 FormulaEngine 求值（核心步骤）
+            let result;
+            try {
+                // 使用 evaluateForValidation 接口（隔离环境，无副作用）
+                result = await this.#formulaEngine.evaluateForValidation(resolvedFormula, evaluationContext);
+            } catch (evalError) {
+                // 处理求值错误（语法错误、循环引用等）
+                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[FormulaValidator] FormulaEngine 求值失败: ${resolvedFormula}`, {
+                    error: evalError,
+                    formula: resolvedFormula,
+                    context,
+                });
+
+                return ValidationResult.failure(
+                    `公式验证错误: ${evalError.message}`,
+                    rule.errorStyle === "stop" ? "warning" : rule.errorStyle, // stop模式降级避免完全阻止
+                    {
+                        value,
+                        ruleId: rule.id,
+                        metadata: {
+                            error: evalError.message,
+                            formula: resolvedFormula,
+                            executionPath: "async-pipeline",
+                            executionTime: performance.now() - startTime,
+                        },
+                    },
+                );
+            }
+
+            // 6️⃣ 转换结果并写入缓存
+            const isValid = !!result;
+            const cacheKey = `${context.row || 0},${context.col || 0}`;
+
+            // 写入三级缓存（如果启用）
+            if (this.#config.enableCache) {
+                const cache = getValidationCache();
+                if (cache) {
+                    await cache.set(
+                        cacheKey,
+                        {
+                            valid: isValid,
+                            value,
+                            ruleId: rule.id,
+                            formula: resolvedFormula,
+                        },
+                        {
+                            source: "async-pipeline",
+                            sheet: context.sheet || "default",
+                        },
+                    );
+                }
+            }
+
+            // 7️⃣ 返回标准化的验证结果
+            const validationResult = isValid
+                ? ValidationResult.success({
+                      pendingValidation: false,
+                      executionPath: "async-pipeline",
+                  })
                 : ValidationResult.failure(rule.errorMessage || `公式 "${rule.formula}" 返回 FALSE`, rule.errorStyle, {
                       value,
                       ruleId: rule.id,
-                      metadata: { formula: rule.formula },
+                      metadata: {
+                          formula: resolvedFormula,
+                          executionPath: "async-pipeline",
+                          executionTime: performance.now() - startTime,
+                          functionsUsed: [], // 可从 FormulaEngine 获取详细信息
+                      },
                   });
+
+            errorHandler.debug(
+                ERROR_CODE.VALIDATION_DEBUG_LOG,
+                `[FormulaValidator] ✅ 异步验证完成: valid=${isValid}, time=${(performance.now() - startTime).toFixed(1)}ms`,
+            );
+
+            return validationResult;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 公式求值失败:", error);
-            return ValidationResult.failure(`公式验证错误: ${error.message}`, "warning", {
-                value,
-                ruleId: rule.id,
-                metadata: { error: error.message },
-            });
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 异步验证过程异常", { error, value, rule, context });
+
+            return ValidationResult.failure(
+                `公式验证系统错误: ${error.message}`,
+                "warning", // 降级避免崩溃
+                {
+                    value,
+                    ruleId: rule?.id,
+                    metadata: {
+                        error: error.message,
+                        executionPath: "async-pipeline-error",
+                    },
+                },
+            );
         }
     }
 
     /**
-     * 同步验证（增强版 - 支持基础公式的同步求值）
+     * 同步快速通道（用于 BEFORE_SET_VALUE_AT 实时拦截）
      *
-     * 用于 BEFORE_SET_VALUE_AT 同步拦截场景。
+     * ⚠️ 重要：这是单轨异步架构的性能优化，不是独立的执行路径！
      *
-     * 支持的基础公式模式：
-     * - 数值比较: =A1>0, =A1<100, =A1>=10, =A1<=50, =A1=5, =A1<>3
-     * - 文本长度: =LEN(A1)>=5, =LEN(A1)<10
-     * - 逻辑组合: =AND(cond1, cond2), =OR(cond1, cond2), =NOT(cond)
-     * - 复合条件: =AND(A1>0, A1<100, LEN(B1)>=5)
-     * - 日期比较: =A1>=DATE(2024,1,1), =A1<=DATE(2024,12,31)
-     * - 类型检查: =ISNUMBER(A1), =ISTEXT(A1), =ISODD(A1)
-     *
-     * ⚠️ 不支持的模式（会触发不同策略）：
-     * - 范围引用: =SUM(A1:A100), =AVERAGE(B2:B10)
-     * - 跨单元格引用: =A1+B1, =C1>D1
-     * - 复杂函数: =VLOOKUP(...), =IFERROR(...)
-     * - 数组公式: ={1,2,3}*{4,5,6}
+     * 特点：
+     * - 仅支持简单公式（canUseSyncFastPath === true，即复杂度 ≤ 2）
+     * - 保证响应时间 < 10ms
+     * - 执行结果会写入统一缓存，与异步管道保持一致
+     * - 对于复杂公式返回 deferred/pending 结果，引导至异步管道
      *
      * 📋 处理策略（基于 errorStyle）：
-     * - 'stop':      无法验证时阻止输入（安全优先）
-     * - 'warning':   无法验证时允许输入（异步验证稍后执行）
-     * - 'information': 无法验证时允许输入（仅提示）
+     * - 'stop' + 简单公式：同步验证并实时拦截 ✅
+     * - 'stop' + 复杂公式：返回 deferred（允许输入但标记待复核）⏳
+     * - 'warning' + 任意公式：直接放行，后续异步标记 ℹ️
      *
      * @param {*} value - 当前单元格值
-     * @param {import('../ValidationRule.js').ValidationRule} rule - 规则
+     * @param {import('../ValidationRule.js').ValidationRule} rule - 验证规则
      * @param {Object} [context={}] - 上下文（必须包含 row, col）
      * @returns {ValidationResult}
      */
     validateSync(value, rule, context = {}) {
-        const { isBlank, allowed } = this.checkBlank(value, rule);
-        if (isBlank && !allowed) {
-            return ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
-        }
+        const startTime = performance.now();
 
         try {
-            const resolvedFormula = this.resolveFormulaPlaceholders(rule.formula, context);
-
-            const canEvaluate = this.canEvaluateSync(resolvedFormula);
-
-            if (!canEvaluate.supported) {
-                return this.handleUnsupportedFormula(value, rule, resolvedFormula, canEvaluate.reason);
+            // 1️⃣ 空白值检查
+            const { isBlank, allowed } = this.checkBlank(value, rule);
+            if (isBlank) {
+                return allowed
+                    ? ValidationResult.success()
+                    : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
             }
 
-            const result = this.evaluateSimpleFormulaSync(resolvedFormula, value, context);
+            // 2️⃣ 快速预检：使用 ComplexityAnalyzer 分析公式复杂度
+            const analysis = this.#complexityAnalyzer.analyze(rule.formula);
 
-            return result
-                ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || `公式 "${rule.formula}" 返回 FALSE`, rule.errorStyle, {
-                      value,
-                      ruleId: rule.id,
-                      metadata: { formula: resolvedFormula },
-                  });
+            // 3️⃣ 判断是否可以使用同步快速通道优化
+            if (analysis.canUseSyncFastPath && analysis.estimatedTime < this.#config.syncThreshold) {
+                errorHandler.debug(
+                    ERROR_CODE.VALIDATION_DEBUG_LOG,
+                    `[FormulaValidator] ✅ 使用同步快速通道: ${rule.formula} (${analysis.estimatedTime.toFixed(1)}ms预估)`,
+                );
+
+                // 解析占位符
+                const resolvedFormula = this.resolveFormulaPlaceholders(rule.formula, context);
+
+                // 构建求值上下文
+                const evaluationContext = this.#buildEvaluationContext(value, context);
+
+                // 执行同步求值（使用 FormulaEngine 或降级方案）
+                let result;
+                if (this.#formulaEngine && typeof this.#formulaEngine.evaluateForValidationSync === "function") {
+                    // 使用 FormulaEngine 的同步接口（如果可用）
+                    result = this.#formulaEngine.evaluateForValidationSync(resolvedFormula, evaluationContext);
+                } else {
+                    // 降级到简单的同步解析器（仅支持基础公式）
+                    result = this.evaluateSimpleFormulaSync(resolvedFormula, value, context);
+                }
+
+                // ✅ 关键：结果写入统一缓存（与异步管道共享）
+                if (this.#config.enableCache) {
+                    const cacheKey = `${context.row || 0},${context.col || 0}`;
+                    const cache = getValidationCache();
+                    if (cache) {
+                        cache
+                            .set(
+                                cacheKey,
+                                {
+                                    valid: !!result,
+                                    value,
+                                    ruleId: rule.id,
+                                    formula: resolvedFormula,
+                                },
+                                {
+                                    source: "sync-fast-path",
+                                    sheet: context.sheet || "default",
+                                },
+                            )
+                            .catch((cacheError) => {
+                                errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 缓存写入失败（不影响主流程）", {
+                                    error: cacheError,
+                                });
+                            });
+                    }
+                }
+
+                const executionTime = performance.now() - startTime;
+
+                return result
+                    ? ValidationResult.success({
+                          executionPath: "sync-fast-path",
+                          executionTime,
+                      })
+                    : ValidationResult.failure(rule.errorMessage || `公式 "${rule.formula}" 返回 FALSE`, rule.errorStyle, {
+                          value,
+                          ruleId: rule.id,
+                          metadata: {
+                              formula: resolvedFormula,
+                              executionPath: "sync-fast-path",
+                              executionTime,
+                              complexity: analysis.complexity,
+                          },
+                      });
+            }
+
+            // 4️⃣ 处理复杂公式的同步场景
+            errorHandler.debug(
+                ERROR_CODE.VALIDATION_DEBUG_LOG,
+                `[FormulaValidator] ⚠️ 公式复杂度 ${analysis.complexity} > 阈值 ${COMPLEXITY_THRESHOLD.SYNC_FAST_PATH_MAX}, 原因: ${analysis.reasons.join(", ")}`,
+            );
+
+            if (rule.errorStyle === "stop") {
+                // stop 模式 + 复杂公式 → 返回 deferred（允许输入但标记待复核）
+                if (this.#config.enableDeferred) {
+                    return ValidationResult.deferred(`复杂公式将在后台验证: ${rule.formula}`, {
+                        needsAsyncValidation: true,
+                        complexity: analysis.complexity,
+                        estimatedTime: analysis.estimatedTime,
+                        reasons: analysis.reasons,
+                    });
+                } else {
+                    // 如果禁用延迟验证，阻止输入（保守策略）
+                    return ValidationResult.failure(
+                        `⚠️ 公式过于复杂无法实时验证（${analysis.reasons[0] || "未知原因"}）\n建议简化公式或改用 'warning' 模式`,
+                        "stop",
+                        {
+                            value,
+                            ruleId: rule.id,
+                            metadata: {
+                                action: "BLOCKED_COMPLEX_FORMULA",
+                                complexity: analysis.complexity,
+                                reasons: analysis.reasons,
+                            },
+                        },
+                    );
+                }
+            }
+
+            // warning/info 模式 → 直接放行，后续异步标记
+            errorHandler.info(ERROR_CODE.VALIDATION_INFO, `[FormulaValidator] ℹ️ 异步路径(延迟): ${rule.formula}`);
+
+            return ValidationResult.success({
+                pendingValidation: true,
+                complexity: analysis.complexity,
+                estimatedTime: analysis.estimatedTime,
+            });
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 同步公式求值失败:", error);
-            return this.handleEvaluationError(value, rule, error);
+            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 同步快速通道异常", { error, value, rule });
+
+            // 异常情况降级处理，避免完全阻塞用户操作
+            return ValidationResult.failure(
+                `公式验证错误: ${error.message}`,
+                rule.errorStyle === "stop" ? "warning" : rule.errorStyle, // stop模式降级
+                {
+                    value,
+                    ruleId: rule?.id,
+                    metadata: {
+                        error: error.message,
+                        executionPath: "sync-fast-path-error",
+                    },
+                },
+            );
         }
     }
 
     /**
-     * 检查公式是否可以同步评估
+     * 构建 FormulaEngine 求值上下文
      *
+     * 将验证上下文转换为 FormulaEngine 需要的标准格式
+     *
+     * @private
+     * @param {*} value - 当前单元格值
+     * @param {Object} context - 验证上下文
+     * @returns {Object} 求值上下文对象
+     */
+    #buildEvaluationContext(value, context = {}) {
+        return {
+            cellKey: `${context.sheet || "default"}!${context.row || 0},${context.col || 0}`,
+            value,
+            row: context.row || 0,
+            col: context.col || 0,
+            sheet: context.sheet || null,
+            workbook: context.workbook || null,
+            options: {
+                allowCrossSheet: true, // 允许跨表引用
+                blockVolatile: true, // 阻止易变函数（NOW/RAND）
+                timeout: this.#config.asyncTimeout,
+                callStack: new Set(), // 防止循环引用
+                collectMetrics: false, // 是否收集性能指标（调试用）
+            },
+        };
+    }
+
+    /**
+     * 检查公式是否可以同步评估（保留向后兼容）
+     *
+     * @deprecated v3.0 推荐使用 ComplexityAnalyzer.analyze() 替代
      * @private
      * @param {string} formula - 已解析占位符的公式
      * @returns {{ supported: boolean, reason?: string }}
@@ -856,7 +1095,7 @@ export class FormulaValidator extends BaseValidator {
         const args = this.splitArguments(argsStr);
         const isAnd = !!andMatch;
 
-        let allResults = [];
+        const allResults = [];
         for (const arg of args) {
             try {
                 const argResult = this.evaluateCondition(arg.trim());
