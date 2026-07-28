@@ -1624,7 +1624,26 @@ dv.destroy();  // 彻底销毁</div>
                     ],
                     cellPadding: 8
                 }],
-                plugins: ['dataValidation'],
+                plugins: [
+                    "autoFill",
+                    "contextMenu",
+                    "columnMove",
+                    "copyPaste",
+
+                    "exportFile",
+                    "importFile",
+                    "hiddenColumns",
+                    "hiddenRows",
+                    "rowMove",
+                    "freeze",
+                    "formula",
+
+                    // "sort",
+                    "dataValidation",
+                    "chart",
+                    // "interaction"
+                    // "filter",
+                ],
                 pluginOptions: {
                     dataValidation: {
                         conflictStrategy: 'short-circuit',

@@ -150,6 +150,9 @@ export const ERROR_CODE = Object.freeze({
     /** 用于调试时的信息日志 */
     VALIDATION_DEBUG_LOG: "VALIDATION_DEBUG_LOG",
 
+    /** 数据验证信息日志 */
+    VALIDATION_INFO: "VALIDATION_INFO",
+
     // ── 导出 ──
     /** 导出功能 - 样式获取失败 */
     EXPORT_STYLE_FETCH_FAILED: "EXPORT_STYLE_FETCH_FAILED",

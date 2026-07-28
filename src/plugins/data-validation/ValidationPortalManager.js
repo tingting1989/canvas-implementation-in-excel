@@ -309,6 +309,8 @@ export class ValidationPortalManager extends DOMComponent {
         let offsetX = 0;
         let offsetY = 0;
 
+        // 这里有问题
+        // TODO: 这里需要根据当前的冻结状态来计算偏移量
         if (this.#renderEngine?.frozenState) {
             offsetX = this.#renderEngine.frozenState.offsetX || 0;
             offsetY = this.#renderEngine.frozenState.offsetY || 0;

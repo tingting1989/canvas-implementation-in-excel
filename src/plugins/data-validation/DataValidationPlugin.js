@@ -329,6 +329,8 @@ export class DataValidationPlugin extends BasePlugin {
                 this.#applyErrorStyle(row, col, result.errorStyle || "stop");
             }
 
+            this.#portalUI?.setIconStatus(row, col, false, result.errorStyle || "stop");
+
             if (result.errorStyle === ERROR_STYLE.STOP) {
                 return false;
             }
@@ -344,6 +346,8 @@ export class DataValidationPlugin extends BasePlugin {
             if (this.#highlightInvalidCells) {
                 this.#removeErrorStyle(row, col);
             }
+
+            this.#portalUI?.setIconStatus(row, col, true);
         }
 
         return true;
@@ -503,6 +507,8 @@ export class DataValidationPlugin extends BasePlugin {
         this.#engine = new ValidationEngine(newSheet.cellStore);
         this.#engine.init(formulaEngine);
         this.#engine.conflictStrategy = this.#conflictStrategy;
+
+        this.#portalUI?.clearPendingValidations();
 
         for (const ruleConfig of this.#initialRules) {
             try {

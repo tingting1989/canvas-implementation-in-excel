@@ -59,37 +59,37 @@ const initApp = () => {
                 ],
 
                 columns: [
-                    { type: "numeric", width: 120, style: { textAlign: "center" } },
-                    { type: "hyperlink", width: 100 },
-                    // 用户评分
-                    {
-                        type: "starRating",
-                        width: 180,
-                        options: { maxStars: 3, color: "#00FF00", emptyColor: "#CCCCCC" },
-                    },
-                    // 专家评分
+                    // { type: "numeric", width: 120, style: { textAlign: "center" } },
+                    // { type: "hyperlink", width: 100 },
+                    // // 用户评分
                     // {
-                    //     type: "trafficLight",
+                    //     type: "starRating",
                     //     width: 180,
-                    //     options: { maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0" },
+                    //     options: { maxStars: 3, color: "#00FF00", emptyColor: "#CCCCCC" },
                     // },
-                    // // 综合评价
-                    {
-                        type: "select",
-                        width: 180,
-                        source: [
-                            { value: "0", label: "好" },
-                            { value: "1", label: "中" },
-                            { value: "2", label: "差" },
-                        ],
-                    },
-                    {
-                        type: "date",
-                        width: 120,
-                        style: { textAlign: "center" },
-                        options: { min: "2025-12-11", max: "2026-01-01", allowInvalid: false, dateFormat: { pattern: "YYYY-MM-DD" } },
-                    },
-                    { type: "text", width: 120 },
+                    // // 专家评分
+                    // // {
+                    // //     type: "trafficLight",
+                    // //     width: 180,
+                    // //     options: { maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0" },
+                    // // },
+                    // // // 综合评价
+                    // {
+                    //     type: "select",
+                    //     width: 180,
+                    //     source: [
+                    //         { value: "0", label: "好" },
+                    //         { value: "1", label: "中" },
+                    //         { value: "2", label: "差" },
+                    //     ],
+                    // },
+                    // {
+                    //     type: "date",
+                    //     width: 120,
+                    //     style: { textAlign: "center" },
+                    //     options: { min: "2025-12-11", max: "2026-01-01", allowInvalid: false, dateFormat: { pattern: "YYYY-MM-DD" } },
+                    // },
+                    // { type: "text", width: 120 },
                     // // 推荐指数
                     // {
                     //     type: "starRating",
@@ -286,29 +286,16 @@ const initApp = () => {
 
                 rules: [
                     // ═══════════════════════════════════════════════════════════
-                    // 📝 示例1：基础文本验证（原有规则）
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "F2:F10",
-                        type: "text",
-                        operator: "lengthBetween",
-                        value: [3, 10],
-                        allowBlank: false,
-                        errorMessage: "长度为3-10个字符",
-                        errorStyle: "warning",
-                    },
-
-                    // ═══════════════════════════════════════════════════════════
                     // 📝 示例2：同步快速通道公式验证（简单公式）
                     // 复杂度 ≤2，预计响应时间 <10ms
                     // ═══════════════════════════════════════════════════════════
                     {
-                        range: "C2:C20",
+                        range: "A:A",
                         type: "formula",
-                        formula: "=C1>0", // 简单比较公式，复杂度=1
+                        formula: "=A{row}>0", // 简单比较公式，复杂度=1
                         allowBlank: false,
                         errorMessage: "评分必须大于0",
-                        errorStyle: "stop",
+                        errorStyle: "warning",
                         // inputTitle: "评分验证",
                         // inputMessage: "请输入1-5的评分"
                     },
@@ -318,9 +305,9 @@ const initApp = () => {
                     // AND函数 + 多条件，复杂度=2
                     // ═══════════════════════════════════════════════════════════
                     {
-                        range: "D2:D20",
+                        range: "B:B",
                         type: "formula",
-                        formula: "=AND(D1>=1,D1<=5)", // 复合条件，复杂度=2
+                        formula: "=AND(B{row}>=1, B{row}<=5)", // 复合条件，复杂度=2
                         allowBlank: true,
                         errorMessage: "专家评分必须在1-5之间",
                         errorStyle: "stop",
@@ -331,12 +318,24 @@ const initApp = () => {
                     // 复杂度 >2，自动走异步管道，显示 pending 图标
                     // ═══════════════════════════════════════════════════════════
                     {
-                        range: "E2:E20",
+                        range: "C2:C20",
                         type: "formula",
-                        formula: "=IF(AND(C1>0,D1>0),C1*0.6+D1*0.4,-1)", // 复杂公式，复杂度>2
+                        formula: "=AND(C{row}>0,A{row}>0,C{row}*0.6+A{row}*0.4>0)", // 复杂公式，复杂度>2
                         allowBlank: true,
                         errorMessage: "综合评分计算失败，请检查输入",
                         errorStyle: "warning",
+                    },
+                    // ═══════════════════════════════════════════════════════════
+                    // 📝 示例1：基础文本验证（原有规则）
+                    // ═══════════════════════════════════════════════════════════
+                    {
+                        range: "D1:D10",
+                        type: "text",
+                        operator: "lengthBetween",
+                        value: [3, 10],
+                        allowBlank: false,
+                        errorMessage: "长度为3-10个字符",
+                        errorStyle: "stop",
                     },
 
                     // ═══════════════════════════════════════════════════════════
@@ -344,12 +343,13 @@ const initApp = () => {
                     // 使用已注册的自定义函数验证数据
                     // ═══════════════════════════════════════════════════════════
                     {
-                        range: "G2:G20",
+                        range: "E2:E20",
                         type: "formula",
-                        formula: "=ISPRIME(G1)", // 自定义函数验证质数
+                        formula: "=ISPRIME(E{row})", // 自定义函数验证质数
                         allowBlank: true,
                         errorMessage: "推荐指数必须是质数",
-                        errorStyle: "information",
+                        // errorStyle: "information",
+                        errorStyle: "warning",
                     },
 
                     // ═══════════════════════════════════════════════════════════
@@ -357,21 +357,21 @@ const initApp = () => {
                     // 引用其他单元格进行条件判断
                     // ═══════════════════════════════════════════════════════════
                     {
-                        range: "H2:H20",
+                        range: "F2:F20",
                         type: "formula",
-                        formula: '=IF(C1>D1,"推荐","不推荐")', // 跨单元格比较
+                        formula: "=C{row}>A{row}", // 跨单元格比较
                         allowBlank: true,
                         errorMessage: "满意度对比验证失败",
                         errorStyle: "warning",
                     },
-                    // {
-                    //     range: "B:B",
-                    //     type: "number",
-                    //     operator: "between",
-                    //     value: [0, 100],
-                    //     errorMessage: "必须输入正数",
-                    //     errorStyle: "stop",
-                    // },
+
+                    {
+                        range: "G:G",
+                        type: "formula",
+                        formula: "CALCULATEBMI(A{row},B{row})", // 跨单元格比较
+                        errorMessage: "必须输入正数",
+                        errorStyle: "warning",
+                    },
                     //
                     // {
                     //     range: "A:A",
@@ -759,6 +759,7 @@ const initApp = () => {
 
         // 注册自定义函数：ISPRIME - 判断是否为质数
         functionRegistry.register?.("ISPRIME", (args) => {
+            console.log("ISPRIME", args);
             const value = args[0];
             if (value === null || value === undefined || isNaN(value)) {
                 return false;
@@ -775,12 +776,14 @@ const initApp = () => {
 
         // 注册自定义函数：ISPOSITIVE - 判断是否为正数
         functionRegistry.register?.("ISPOSITIVE", (args) => {
+            console.log("ISPOSITIVE", args);
             const value = args[0];
             return !isNaN(value) && value > 0;
         });
 
         // 注册自定义函数：ISBETWEEN - 判断是否在指定范围内
         functionRegistry.register("ISBETWEEN", (args) => {
+            console.log("ISBETWEEN", args);
             const [value, min, max] = args;
             if (isNaN(value) || isNaN(min) || isNaN(max)) {
                 return false;
@@ -790,6 +793,7 @@ const initApp = () => {
 
         // 注册自定义函数：GETLETTERGRADE - 根据分数返回等级
         functionRegistry.register("GETLETTERGRADE", (args) => {
+            console.log("GETLETTERGRADE", args);
             const score = args[0];
             if (isNaN(score)) return "F";
             if (score >= 90) return "A";
@@ -801,6 +805,7 @@ const initApp = () => {
 
         // 注册自定义函数：VALIDATEEMAIL - 验证邮箱格式
         functionRegistry.register("VALIDATEEMAIL", (args) => {
+            console.log("VALIDATEEMAIL", args);
             const email = String(args[0] || "");
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
@@ -808,6 +813,7 @@ const initApp = () => {
 
         // 注册自定义函数：CALCULATEBMI - 计算BMI指数
         functionRegistry.register("CALCULATEBMI", (args) => {
+            console.log("CALCULATEBMI", args);
             const [weight, height] = args;
             if (isNaN(weight) || isNaN(height) || height <= 0) {
                 return NaN;

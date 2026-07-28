@@ -81,12 +81,11 @@ export const ICON_STATUS = Object.freeze({
  */
 export class ValidationUIController {
     /** @type {Object|null} 工作表实例 */
-    #sheet = null;
 
     /** @type {Object|null} Portal 管理器 */
     #portalManager = null;
 
-    /** @type {Object|null} 验证插件 */
+    /** @type {import('./DataValidationPlugin')|null} */
     #validationPlugin = null;
 
     /** @type {Object|null} 渲染引擎 */
@@ -135,8 +134,8 @@ export class ValidationUIController {
     /** @type {number} 防抖延迟时间 (ms) */
     #debounceDelay = 50;
 
-    /** @type {Map<string, string>} 上一次渲染的图标状态 (用于局部重绘判断) */
-    #lastRenderedStates = new Map();
+    /** @type {Map<string, Map<string, string>>} 按 Sheet 分离的图标状态缓存 (外层key=sheetName, 内层key="row,col" → status) */
+    #iconStatusCaches = new Map();
 
     /**
      * 构造 UI 控制器
@@ -147,10 +146,19 @@ export class ValidationUIController {
      * @param {Object} renderEngine - 渲染引擎实例
      */
     constructor(sheet, portalManager, validationPlugin, renderEngine) {
-        this.#sheet = sheet;
         this.#portalManager = portalManager;
         this.#validationPlugin = validationPlugin;
         this.#renderEngine = renderEngine;
+    }
+
+    #getCurrentCache() {
+        const sheetName = this.#validationPlugin?.sheet?.name || "__default__";
+        let cache = this.#iconStatusCaches.get(sheetName);
+        if (!cache) {
+            cache = new Map();
+            this.#iconStatusCaches.set(sheetName, cache);
+        }
+        return cache;
     }
 
     /**
@@ -233,7 +241,7 @@ export class ValidationUIController {
         });
 
         let activeIndex = -1;
-        const currentValue = this.#sheet?.cellStore?.get(row, col)?.value;
+        const currentValue = this.#validationPlugin?.sheet?.cellStore?.get(row, col)?.value;
 
         options.forEach((option, index) => {
             const itemEl = document.createElement("li");
@@ -639,15 +647,14 @@ export class ValidationUIController {
      *
      * @param {Object} viewport - 视口信息 { startRow, endRow, startCol, endCol }
      */
-    async renderValidationIcons(viewport) {
+    renderValidationIcons(viewport) {
         if (!this.#validationPlugin?.engine || !this.#renderEngine) return;
 
-        const ctx = this.#renderEngine.overlayCtx || this.#renderEngine.ctx;
+        const ctx = this.#renderEngine.ctx;
         if (!ctx) return;
 
         const { startRow, endRow, startCol, endCol } = viewport;
 
-        // 收集需要绘制的图标信息（按状态分组以优化性能）
         const iconsToDraw = {
             [ICON_STATUS.VALID]: [],
             [ICON_STATUS.INVALID]: [],
@@ -657,41 +664,33 @@ export class ValidationUIController {
             [ICON_STATUS.ERROR]: [],
         };
 
-        // 遍历视口内的所有单元格
         for (let row = startRow; row <= endRow; row++) {
             for (let col = startCol; col <= endCol; col++) {
                 const rules = this.#validationPlugin.getRulesForCell(row, col);
                 if (rules.length === 0) continue;
 
-                const cell = this.#sheet?.cellDataAccessor?.get(row, col);
-                if (!cell) continue;
-
-                // 使用新的状态决策方法
-                const { status } = await this.determineIconStatus(row, col, cell.value);
-
-                // 局部重绘优化：仅当状态变化时才绘制
                 const key = `${row},${col}`;
-                const lastStatus = this.#lastRenderedStates.get(key);
+                const cachedStatus = this.#getCurrentCache().get(key);
 
-                if (lastStatus !== status || lastStatus === undefined) {
-                    // 记录当前状态
-                    this.#lastRenderedStates.set(key, status);
+                if (!cachedStatus) {
+                    const cell = this.#validationPlugin?.sheet?.cellDataAccessor?.get(row, col);
+                    if (!cell) continue;
 
-                    // 获取单元格位置
-                    const cellRect = this.#getCellRect(row, col);
-                    if (!cellRect) continue;
-
-                    // 添加到对应状态的绘制队列
-                    iconsToDraw[status].push({
-                        x: cellRect.x + cellRect.width - 16,
-                        y: cellRect.y + 2,
-                        size: 12,
-                    });
+                    this.#scheduleStatusUpdate(row, col, cell.value, rules);
+                    continue;
                 }
+
+                const cellRect = this.#getCellRect(row, col);
+                if (!cellRect) continue;
+
+                iconsToDraw[cachedStatus].push({
+                    x: cellRect.x + cellRect.width - 16,
+                    y: cellRect.y + 2,
+                    size: 12,
+                });
             }
         }
 
-        // 按状态分组批量绘制（减少 fillStyle/strokeStyle 切换次数）
         for (const [status, icons] of Object.entries(iconsToDraw)) {
             if (icons.length === 0) continue;
 
@@ -715,64 +714,109 @@ export class ValidationUIController {
      * @param {*} value - 单元格值
      * @returns {Promise<{status: string, source: string}>}
      */
+    #scheduleStatusUpdate(row, col, value) {
+        const key = `${row},${col}`;
+
+        if (this.#pendingValidations.has(key)) return;
+
+        const engine = this.#validationPlugin.engine;
+
+        let result = null;
+        if (engine.getFromCache) {
+            result = engine.getFromCache(key, value);
+        }
+
+        if (!result && engine.validateCellSync) {
+            try {
+                result = engine.validateCellSync(row, col, value);
+            } catch (error) {
+                errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] 同步验证失败", { error, row, col });
+            }
+        }
+
+        if (result) {
+            let status;
+            if (result.valid) {
+                status = ICON_STATUS.VALID;
+            } else {
+                const statusMap = {
+                    stop: ICON_STATUS.INVALID,
+                    warning: ICON_STATUS.WARNING,
+                    information: ICON_STATUS.DEFERRED,
+                };
+                status = statusMap[result.errorStyle] || ICON_STATUS.INVALID;
+            }
+            this.#getCurrentCache().set(key, status);
+
+            const cache = getValidationCache();
+            if (cache) {
+                cache
+                    .set(key, { valid: result.valid, errorStyle: result.errorStyle, value, ruleId: result.ruleId }, { source: "sync-validation" })
+                    .catch(() => {});
+            }
+            return;
+        }
+
+        this.scheduleAsyncValidation(row, col, value, rules);
+    }
+
     async determineIconStatus(row, col, value) {
         const key = `${row},${col}`;
 
         try {
-            // 1️⃣ 尝试从三级缓存读取
             const cache = getValidationCache();
             const cached = cache ? await cache.get(key) : null;
 
-            if (cached && cached.result !== null) {
-                // 缓存命中，直接返回结果
-                return {
-                    status: cached.result.valid ? ICON_STATUS.VALID : ICON_STATUS.INVALID,
-                    source: cached.source,
-                };
+            if (cached && cached.result != null) {
+                let status;
+                if (cached.result.valid) {
+                    status = ICON_STATUS.VALID;
+                } else {
+                    const statusMap = { stop: ICON_STATUS.INVALID, warning: ICON_STATUS.WARNING, information: ICON_STATUS.DEFERRED };
+                    status = statusMap[cached.result.errorStyle] || ICON_STATUS.INVALID;
+                }
+                this.#getCurrentCache().set(key, status);
+                return { status, source: cached.source };
             }
 
-            // 2️⃣ 缓存未命中，检查是否有验证规则
             const rules = this.#validationPlugin?.getRulesForCell(row, col) || [];
             if (rules.length === 0) {
                 return { status: ICON_STATUS.PENDING, source: "no-rules" };
             }
 
-            // 3️⃣ 尝试使用引擎的缓存或同步验证
             const engine = this.#validationPlugin.engine;
             let result = null;
 
-            // 优先从引擎缓存获取
             if (engine.getFromCache) {
                 result = engine.getFromCache(key, value);
             }
 
-            // 如果没有缓存，尝试同步验证（如果可用且简单）
             if (!result && engine.validateCellSync) {
                 result = engine.validateCellSync(row, col, value);
             }
 
             if (result) {
-                // 同步验证成功，写入缓存并返回
-                const cache = getValidationCache();
-                if (cache) {
-                    await cache.set(
+                let status;
+                if (result.valid) {
+                    status = ICON_STATUS.VALID;
+                } else {
+                    const statusMap = { stop: ICON_STATUS.INVALID, warning: ICON_STATUS.WARNING, information: ICON_STATUS.DEFERRED };
+                    status = statusMap[result.errorStyle] || ICON_STATUS.INVALID;
+                }
+                this.#getCurrentCache().set(key, status);
+
+                const advCache = getValidationCache();
+                if (advCache) {
+                    await advCache.set(
                         key,
-                        {
-                            valid: result.valid,
-                            value,
-                            ruleId: result.ruleId,
-                        },
+                        { valid: result.valid, errorStyle: result.errorStyle, value, ruleId: result.ruleId },
                         { source: "sync-validation" },
                     );
                 }
 
-                return {
-                    status: result.valid ? ICON_STATUS.VALID : ICON_STATUS.INVALID,
-                    source: "sync-validation",
-                };
+                return { status, source: "sync-validation" };
             }
 
-            // 4️⃣ 无法立即获取结果，调度异步验证（带防抖和并发控制）
             this.scheduleAsyncValidation(row, col, value, rules);
 
             return { status: ICON_STATUS.PENDING, source: "async-scheduled" };
@@ -821,15 +865,23 @@ export class ValidationUIController {
             this.#currentConcurrentCount++;
 
             try {
-                // 执行异步验证
                 const engine = this.#validationPlugin.engine;
                 if (engine.validateCell) {
-                    await engine.validateCell(row, col, value, rules);
+                    const result = await engine.validateCell(row, col, value, rules);
 
-                    // 验证完成后清除 pending 状态
                     this.#pendingValidations.delete(key);
 
-                    // 请求局部重绘（只刷新该单元格区域）
+                    if (result) {
+                        let status;
+                        if (result.valid) {
+                            status = ICON_STATUS.VALID;
+                        } else {
+                            const statusMap = { stop: ICON_STATUS.INVALID, warning: ICON_STATUS.WARNING, information: ICON_STATUS.DEFERRED };
+                            status = statusMap[result.errorStyle] || ICON_STATUS.INVALID;
+                        }
+                        this.#getCurrentCache().set(key, status);
+                    }
+
                     this.requestPartialRedraw(row, col);
                 }
             } catch (error) {
@@ -851,11 +903,24 @@ export class ValidationUIController {
      * @param {number} col - 列号
      */
     requestPartialRedraw(row, col) {
-        // TODO: 实现局部重绘逻辑
-        // 可以通过事件通知渲染引擎仅重绘该单元格区域
-        // 或者标记脏区域，在下一帧统一重绘
+        if (this.#renderEngine && typeof this.#renderEngine.requestRender === "function") {
+            this.#renderEngine.requestRender();
+        }
+    }
 
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationUIController] 请求局部重绘: ${row},${col}`);
+    clearAllStatus() {
+        this.#getCurrentCache().clear();
+        this.#pendingValidations.clear();
+        this.#debounceTimers.forEach((timerId) => clearTimeout(timerId));
+        this.#debounceTimers.clear();
+        this.#currentConcurrentCount = 0;
+    }
+
+    clearPendingValidations() {
+        this.#pendingValidations.clear();
+        this.#debounceTimers.forEach((timerId) => clearTimeout(timerId));
+        this.#debounceTimers.clear();
+        this.#currentConcurrentCount = 0;
     }
 
     /**
@@ -867,6 +932,26 @@ export class ValidationUIController {
      */
     hasDropdownArrow(row, col) {
         return this.#dropdownArrowCells.has(`${row},${col}`);
+    }
+
+    invalidateCellStatus(row, col) {
+        const key = `${row},${col}`;
+        this.#getCurrentCache().delete(key);
+    }
+
+    setIconStatus(row, col, valid, errorStyle) {
+        const key = `${row},${col}`;
+        const cache = this.#getCurrentCache();
+        if (valid) {
+            cache.set(key, ICON_STATUS.VALID);
+        } else {
+            const statusMap = {
+                stop: ICON_STATUS.INVALID,
+                warning: ICON_STATUS.WARNING,
+                information: ICON_STATUS.DEFERRED,
+            };
+            cache.set(key, statusMap[errorStyle] || ICON_STATUS.INVALID);
+        }
     }
 
     /**
@@ -929,11 +1014,10 @@ export class ValidationUIController {
 
         // 清空集合和缓存
         this.#dropdownArrowCells.clear();
-        this.#lastRenderedStates.clear();
+        this.#iconStatusCaches.clear();
         this.#pendingValidations.clear();
 
         // 释放引用
-        this.#sheet = null;
         this.#portalManager = null;
         this.#validationPlugin = null;
         this.#renderEngine = null;
@@ -964,7 +1048,7 @@ export class ValidationUIController {
         this.#pendingValidations.clear();
 
         // 清除状态记录（避免内存泄漏）
-        this.#lastRenderedStates.clear();
+        this.#iconStatusCaches.clear();
     }
 
     // ─── 私有方法 ───
@@ -979,8 +1063,8 @@ export class ValidationUIController {
      */
     #selectDropdownOption(row, col, option) {
         this.hideDropdown();
-        if (this.#sheet?.cellStore) {
-            this.#sheet.setCell?.(row, col, option);
+        if (this.#validationPlugin?.sheet?.cellStore) {
+            this.#validationPlugin?.sheet.setCell?.(row, col, option);
         }
     }
 
@@ -1057,7 +1141,7 @@ export class ValidationUIController {
         if (fullColMatch) {
             const startCol = colToIndex(fullColMatch[1]);
             const endCol = colToIndex(fullColMatch[2]);
-            const maxRow = Math.min(this.#sheet?.rowCount || 1000, 1000);
+            const maxRow = Math.min(this.#validationPlugin?.sheet?.rowCount || 1000, 1000);
             for (let col = startCol; col <= endCol; col++) {
                 for (let row = 0; row < maxRow; row++) {
                     cells.push({ row, col });
