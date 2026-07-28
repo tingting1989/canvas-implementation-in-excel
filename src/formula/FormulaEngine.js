@@ -2,7 +2,7 @@ import { parseFormula } from "./FormulaParser.js";
 import { indexToCol } from "../utils/cellRef.js";
 import { FormulaEvaluator } from "./FormulaEvaluator.js";
 import { isString } from "../utils/helper.js";
-import { registry } from "./functions/index.js";
+import { functionRegistry } from "./functions/index.js";
 import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
 
 /**
@@ -458,7 +458,7 @@ export class FormulaEngine {
      * ```
      */
     static registerFunction(name, fn) {
-        registry.register(name, fn, { category: "custom" });
+        functionRegistry.register(name, fn, { category: "custom" });
     }
 
     /**
@@ -473,7 +473,7 @@ export class FormulaEngine {
      * ```
      */
     static unregisterFunction(name) {
-        return registry.unregister(name);
+        return functionRegistry.unregister(name);
     }
 
     /**
@@ -483,7 +483,7 @@ export class FormulaEngine {
      * @returns {boolean}
      */
     static hasFunction(name) {
-        return registry.has(name);
+        return functionRegistry.has(name);
     }
 
     /**
@@ -498,7 +498,7 @@ export class FormulaEngine {
      * ```
      */
     static getRegisteredFunctions() {
-        return registry.list();
+        return functionRegistry.list();
     }
 
     /**

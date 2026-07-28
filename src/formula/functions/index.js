@@ -786,7 +786,7 @@ class FunctionRegistry {
  *
  * - **内部变量名**：`registry` (模块私有，用于代码实现)
  * - **公共导出名**：`functionRegistry` (遵循 camelCase 规范，表示这是一个实例而非类)
- * - **不要尝试**：`new functionRegistry()` 或 `new FunctionRegistry()` (❌ 它是实例，不是类！)
+ * - **不要尝试**：`new FunctionRegistry()` 或 `new FunctionRegistry()` (❌ 它是实例，不是类！)
  *
  * ## 📌 快速参考卡
  *
@@ -812,7 +812,7 @@ class FunctionRegistry {
  * // 步骤 1: 检查函数是否已存在
  * if (!functionRegistry.has('TAX_CALC')) {
  *     // 步骤 2: 注册自定义税务计算函数
- *     registry.register('TAX_CALC', (args, ctx) => {
+ *     registerFunction.register('TAX_CALC', (args, ctx) => {
  *         const amount = args[0];
  *         const rate = args[1] ?? 0.13;  // 默认税率 13%
  *         return amount * rate;
@@ -822,12 +822,12 @@ class FunctionRegistry {
  * }
  *
  * // 步骤 3: 使用函数
- * const tax = registry.get('TAX_CALC')([10000]);  // 1300
+ * const tax = registerFunction.get('TAX_CALC')([10000]);  // 1300
  * console.log(`税费: ${tax}`);
  *
  * // 步骤 4: 查看统计
- * console.log(registry.getStats());
+ * console.log(registerFunction.getStats());
  * // { total: 17, builtin: 16, custom: 1, modules: [...] }
  * ```
  */
-export const registry = new FunctionRegistry();
+export const functionRegistry = new FunctionRegistry();

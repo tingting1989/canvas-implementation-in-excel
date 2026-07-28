@@ -36,7 +36,7 @@ export { FormulaEvaluator } from "../formula/FormulaEvaluator.js";
 export { BaseColumnType } from "../types/BaseColumnType.js";
 export * from "../types/index.js";
 export { themeStyleProvider } from "../theme/ThemeStyleProvider.js";
-export { registry as functionRegistry, FUNCTION_CATEGORY } from "../formula/functions/index.js";
+export { functionRegistry, FUNCTION_CATEGORY } from "../formula/functions/index.js";
 export { BaseLayer } from "../render/BaseLayer.js";
 export { ViewportTransform } from "../render/ViewportTransform.js";
 export * from "../constants/enums/AutoFillDir.js";
