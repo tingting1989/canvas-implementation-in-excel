@@ -28,7 +28,7 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
 
         test('应该验证简单公式', async () => {
             const rule = new ValidationRule({
-                type: 'custom',
+                type: 'formula',
                 formula: '=A1>0'
             });
 
@@ -42,7 +42,7 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
 
         test('应该验证复合公式', async () => {
             const rule = new ValidationRule({
-                type: 'custom',
+                type: 'formula',
                 formula: '=AND(A1>0,B1<>"")',
                 errorMessage: '值必须大于 0 且不为空'
             });
@@ -56,7 +56,7 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
 
         test('空值处理', async () => {
             const rule = new ValidationRule({
-                type: 'custom',
+                type: 'formula',
                 formula: '=A1>0',
                 allowBlank: true
             });
@@ -71,7 +71,7 @@ describe('Phase 2 验证器 - 完整功能测试', () => {
 
         test('FormulaEngine 未初始化时应该返回错误', async () => {
             const validatorNoEngine = new FormulaValidator(null);
-            const rule = new ValidationRule({ type: 'custom', formula: '=A1>0' });
+            const rule = new ValidationRule({ type: 'formula', formula: '=A1>0' });
 
             const result = await validatorNoEngine.validate(50, rule);
             expect(result.valid).toBe(false);

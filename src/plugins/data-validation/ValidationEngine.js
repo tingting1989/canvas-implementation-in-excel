@@ -77,7 +77,7 @@ export class ValidationEngine {
         this.registerValidator("list", listValidator);
 
         this.registerValidator("unique", new UniqueValidator(this.#cellStore));
-        this.registerValidator("custom", new FormulaValidator(formulaEngine));
+        this.registerValidator("formula", new FormulaValidator(formulaEngine));
         const dateTimeValidator = new DateTimeValidator();
         this.registerValidator("date", dateTimeValidator);
         this.registerValidator("time", dateTimeValidator);

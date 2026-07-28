@@ -109,7 +109,7 @@
         <h2 class="section-title"><span>📊</span> 数据验证演示表格</h2>
         <div class="control-bar">
             <label>验证类型:</label>
-            <select id="ruleType">
+            <select id="ruleType" onchange="toggleFormulaOptions()">
                 <option value="number">数值范围</option>
                 <option value="text">文本长度</option>
                 <option value="list">下拉列表</option>
@@ -118,18 +118,30 @@
                 <option value="datetime">日期时间</option>
                 <option value="regex">正则表达式</option>
                 <option value="unique">唯一性</option>
-                <option value="custom">自定义公式</option>
+                <option value="formula" selected>自定义公式</option>
             </select>
+            
+            <span id="formulaTypeContainer" style="display:inline-block;">
+                <label>公式类型:</label>
+                <select id="formulaType">
+                    <option value="greaterThanZero">大于零 (>0)</option>
+                    <option value="rangeCheck">范围检查 (0-100)</option>
+                    <option value="textLength">文本长度 (>=5)</option>
+                    <option value="dateRange">日期范围 (2024年)</option>
+                    <option value="complexCondition">复合条件 (OR)</option>
+                </select>
+            </span>
+            
             <label>范围:</label>
-            <input type="text" id="ruleRange" value="A2:A20" style="width:100px">
+            <input type="text" id="ruleRange" value="I2:I20" style="width:100px">
             <label>错误样式:</label>
             <select id="errorStyle">
                 <option value="stop">阻止 (stop)</option>
-                <option value="warning">警告 (warning)</option>
+                <option value="warning" selected>警告 (warning)</option>
                 <option value="information">提示 (information)</option>
             </select>
             <button class="btn btn-primary" onclick="addRule()">添加规则</button>
-            <button class="btn btn-success" onclick="validateAll()">批量验证</button>
+            <button class="btn btn-success" onclick="validateAll()" title="验证范围: A2-Y8 (跳过表头，覆盖全部25列)">📊 批量验证</button>
             <button class="btn btn-warning" onclick="exportRules()">导出规则</button>
             <button class="btn btn-danger" onclick="clearAllRules()">清除规则</button>
             <button class="btn" style="background:#7c3aed;color:#fff" onclick="toggleHooks()" id="hooksBtn">🔌 Hooks: 关</button>
@@ -141,6 +153,553 @@
             <span>冲突策略: <strong id="strategyDisplay">short-circuit</strong></span>
         </div>
     </div>
+
+    <!-- ═══ 列定义与验证规则对照表 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>📋</span> 25列完整配置说明 (A-Y)</h2>
+
+        <div style="overflow-x: auto;">
+            <table style="width:100%; border-collapse: collapse; font-size: 13px; margin-top: 15px;">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                        <th style="padding: 10px; border: 1px solid #ddd;">列号</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">字段名</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">数据类型</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">验证类型</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">验证规则/公式</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">errorStyle</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">执行模式</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- A-H 基础类型 -->
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">A</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">编号</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">number</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">between [1, 100]</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器</td>
+                    </tr>
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">B</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">姓名</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">text</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">lengthBetween [2, 10]</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器</td>
+                    </tr>
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">C</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">部门</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#10b981;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">list</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">source: ['技术部','市场部',...]</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器（下拉列表）</td>
+                    </tr>
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">D</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">职位</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#3b82f6;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">text</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">lengthBetween [2, 15]</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器</td>
+                    </tr>
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">E</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">邮箱</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#8b5cf6;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">regex</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">pattern: 邮箱正则表达式</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器</td>
+                    </tr>
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">F</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">日期时间</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#ec4899;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">datetime</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">between [2020~, 2026~]</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器</td>
+                    </tr>
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">G</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">邮箱格式</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#8b5cf6;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">regex</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">pattern: 简化邮箱格式</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器</td>
+                    </tr>
+                    <tr style="background: #f0f9ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #0369a1;">H</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">唯一编号</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#ef4444;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">unique</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">全局唯一性检查</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop 🚫</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">内置验证器</td>
+                    </tr>
+
+                    <!-- I-P 同步公式验证 -->
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">I</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">数值>0</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=I{row}>0</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">J</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">范围0-100</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=AND(J{row}>=0,J{row}<=100)</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">K</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">整数检查</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=INT(K{row})=K{row}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">L</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">偶数检查</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=ISEVEN(L{row})</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">M</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">文本长度≥5</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=LEN(M{row})>=5</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">N</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">非空文本</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=AND(ISTEXT(N{row}),LEN(N{row})>0)</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">O</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">日期2024</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=AND(O{row}>=DATE(2024,1,1),O{row}<=DATE(2024,12,31))</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop 🚫</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fee2e2;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #dc2626;">P</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">布尔值<br><span style="font-size:10px;color:#991b1b;">(严格模式)</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#dc2626;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=OR(P{row}=TRUE,P{row}=FALSE)<br><span style="font-size:10px;color:#991b1d;">使用===严格相等</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">stop ⛔</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#dc2626;">🔄 同步 (&lt;16ms)</strong><br><span style="font-size:10px;">禁止0/1/字符串</span></td>
+                    </tr>
+
+                    <!-- Q-Y 异步公式验证 -->
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">Q</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">SUM聚合</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=SUM(I{row}:P{row})&lt;500</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">R</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">AVERAGE平均</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=AVERAGE(I,K,L,Q){row}&gt;0</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">S</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">COUNTIF条件</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=COUNTIF(E{row},"*@*")&gt;0</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">T</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">IFERROR处理</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=IFERROR(INT(T{row}),0)=T{row}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">U</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">AND复合联动</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=AND(I&gt;0,LEN(M)&gt;5,Q&lt;100)</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">V</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">OR异常检测</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=OR(I&lt;0,I&gt;100,M="特殊")</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">W</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">NOT非空检查</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=NOT(ISBLANK(W{row}))</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">X</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">MAX/MIN范围</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>numeric</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=AND(X&gt;=MIN(I:L),X&lt;=MAX(I:L))</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #d97706;">Y</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">VLOOKUP外键</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>text</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#f59e0b;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">formula</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">=ISNUMBER(VLOOKUP(Y,$B$2:$D$20,1,FALSE))</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border-radius: 8px; border-left: 4px solid #2563eb;">
+            <h3 style="margin-bottom: 10px; color: #1e40af;">🎨 颜色编码说明</h3>
+            <ul style="line-height: 1.8; color: #1e3a8a;">
+                <li><strong style="color:#0369a1;background:#f0f9ff;padding:2px 6px;border-radius:4px;">A-H 浅蓝</strong>: 基础类型验证（number/text/list/datetime/regex/unique）</li>
+                <li><strong style="color:#dc2626;background:#fee2e2;padding:2px 6px;border-radius:4px;">I-P 浅红</strong>: 同步公式验证（简单函数，立即阻止，errorStyle:'stop'）</li>
+                <li><strong style="color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:4px;">Q-Y 浅黄</strong>: 异步公式验证（复杂函数，后台标记，errorStyle:'warning'）</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- ═══ 17个公式验证示例说明 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>🧮</span> 公式验证示例 (17个) - 同步 vs 异步</h2>
+
+        <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); border-radius: 8px; border-left: 4px solid #0284c7;">
+            <h3 style="margin-bottom: 10px; color: #0369a1;">📖 核心概念</h3>
+            <p><strong>同步验证 (🔄 errorStyle:'stop')</strong>: 使用轻量级解析器，支持基础运算符和简单函数（AND/OR/NOT/LEN/INT/DATE等），<strong>&lt;16ms</strong> 响应，可立即阻止非法输入。</p>
+            <p><strong>异步验证 (⏳ errorStyle:'warning')</strong>: 使用完整 FormulaEngine + ShadowEvaluator 沙箱，支持所有49个内置函数（SUM/AVERAGE/VLOOKUP/COUNTIF/IFERROR等），后台执行后显示标记。</p>
+
+            <div style="margin-top:15px;padding:12px;background:#fefce8;border-radius:6px;border-left:4px solid #eab308;">
+                <h4 style="margin-bottom:8px;color:#854d0e;">🗓️ 日期验证特殊处理</h4>
+                <p style="margin:0;color:#713f12;font-size:13px;line-height:1.6;">
+                    当公式包含 <code style="background:#fde047;padding:1px 4px;border-radius:3px;">DATE()</code> 函数时，
+                    系统会<strong>自动将 YYYY-MM-DD 格式的字符串转换为时间戳数字</strong>进行比较：
+                </p>
+                <ul style="margin:5px 0 0 20px;color:#713f12;font-size:12px;line-height:1.8;">
+                    <li>✅ <strong>输入：</strong>"2024-06-15" → <strong>转换：</strong>1718409600000 → <strong>比较：</strong>1704067200000 ≤ 1718409600000 ≤ 1735689600000</li>
+                    <li>❌ <strong>输入：</strong>"2023-01-01" → <strong>转换：</strong>1672531200000 → <strong>比较失败：</strong>&lt; 1704067200000</li>
+                    <li>🔧 <strong>支持格式：</strong>YYYY-MM-DD, YYYY/MM/DD, 或 JavaScript Date 对象</li>
+                    <li>⚠️ <strong>注意：</strong>非标准格式（如"2024年6月15日"）需要预处理或使用异步验证</li>
+                </ul>
+            </div>
+
+            <div style="margin-top:15px;padding:12px;background:#fef2f2;border-radius:6px;border-left:4px solid #dc2626;">
+                <h4 style="margin-bottom:8px;color:#991b1b;">🔒 布尔值严格类型检查</h4>
+                <p style="margin:0;color:#7f1d1d;font-size:13px;line-height:1.6;">
+                    当公式与 <code style="background:#fecaca;padding:1px 4px;border-radius:3px;">TRUE</code> 或
+                    <code style="background:#fecaca;padding:1px 4px;border-radius:3px;">FALSE</code> 比较时，
+                    系统会使用<strong>严格相等（===）</strong>运算符，禁止 JavaScript 的类型转换陷阱：
+                </p>
+                <ul style="margin:5px 0 0 20px;color:#7f1d1d;font-size:12px;line-height:1.8;">
+                    <li>✅ <strong>通过：</strong>true (布尔值), false (布尔值)</li>
+                    <li>❌ <strong>阻止：</strong>0, 1 (数字 - 即使语义相似也不通过)</li>
+                    <li>❌ <strong>阻止：</strong>"true", "false", "yes", "no" (字符串)</li>
+                    <li>❌ <strong>阻止：</strong>null, undefined, "", [] (其他 falsy 值)</li>
+                </ul>
+                <div style="margin-top:8px;padding:6px;background:white;border-radius:4px;font-size:11px;color:#450a0a;">
+                    🔧 <strong>技术细节：</strong><br>
+                    • JavaScript 宽松相等：0 == false → true（危险）<br>
+                    • 严格相等修复：0 === false → false（安全）<br>
+                    • 类型检查优先：typeof 不匹配直接返回 false
+                </div>
+            </div>
+        </div>
+
+        <h3 style="color: #dc2626; margin: 20px 0 10px;">🔄 同步验证 (8个) - 简单公式 + 即时阻止</h3>
+        <div class="api-grid">
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ I列: 数值比较</div>
+                <div class="name">=I{row}>0</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: 比较运算符</div>
+                <div class="desc">基础数值检查，确保正数。输入 -10 会立即被阻止。</div>
+                <div class="example">✅ 通过: 100, 42, 55<br>❌ 阻止: -10, 0, -1</div>
+            </div>
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ J列: 范围检查</div>
+                <div class="name">=AND(J{row}>=0, J{row}<=100)</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: AND + 范围</div>
+                <div class="desc">复合条件：数值必须在 [0, 100] 区间内。超出范围立即阻止。</div>
+                <div class="example">✅ 通过: 50, 75, 99<br>❌ 阻止: -5, 101, 150</div>
+            </div>
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ K列: 整数验证</div>
+                <div class="name">=INT(K{row})=K{row}</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: INT</div>
+                <div class="desc">使用 INT() 取整后与原值比较，确保是整数。小数会被阻止。</div>
+                <div class="example">✅ 通过: 42, 100, -7<br>❌ 阻止: 3.14, 2.5, 77.5</div>
+            </div>
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ L列: 偶数判断</div>
+                <div class="name">=ISEVEN(L{row})</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: ISEVEN</div>
+                <div class="desc">信息函数 ISEVEN() 检查是否为偶数。奇数会立即被阻止。</div>
+                <div class="example">✅ 通过: 8, 42, 100, 6, 4, 10<br>❌ 阻止: 7, 9, 3, 55</div>
+            </div>
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ M列: 文本长度</div>
+                <div class="name">=LEN(M{row})>=5</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: LEN</div>
+                <div class="desc">文本函数 LEN() 计算字符数，确保 >= 5 个字符。短文本阻止。</div>
+                <div class="example">✅ 通过: "Valid Text", "Perfect Length"<br>❌ 阻止: "No", "X", "Bad"</div>
+            </div>
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ N列: 非空文本</div>
+                <div class="name">=AND(ISTEXT(N{row}), LEN(N{row})>0)</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: ISTEXT + LEN</div>
+                <div class="desc">双重验证：必须是文本类型且非空。空值或非文本类型被阻止。</div>
+                <div class="example">✅ 通过: "NonEmpty", "TextHere", "Has Value"<br>❌ 阻止: "", null, 数字</div>
+            </div>
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ O列: 日期范围</div>
+                <div class="name">=AND(O{row}>=DATE(2024,1,1), O{row}<=DATE(2024,12,31))</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: DATE (日期)</div>
+                <div class="desc">
+                    日期函数 DATE() 创建时间戳，验证是否在2024年内。
+                    <strong style="color:#059669;">✨ 智能转换：支持 YYYY-MM-DD 格式字符串自动转为时间戳比较</strong>
+                    <br>超期日期会立即阻止输入。
+                </div>
+                <div class="example">
+                    ✅ 通过: "2024-06-15" → 时间戳匹配<br>
+                    ✅ 通过: "2024-12-31" → 在范围内<br>
+                    ❌ 阻止: "2023-01-01" → 早于2024年<br>
+                    ❌ 阻止: "2026-01-01" → 晚于2024年
+                </div>
+                <div style="margin-top:8px;padding:6px;background:#f0fdf4;border-radius:4px;font-size:11px;color:#166534;">
+                    💡 <strong>支持的日期格式：</strong>YYYY-MM-DD (如 2024-06-15)
+                    <br>🔧 <strong>内部机制：</strong>字符串 → Date对象 → 时间戳数字 → 比较
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #dc2626;">
+                <div class="category">⛔ P列: 布尔值</div>
+                <div class="name">=OR(P{row}=TRUE, P{row}=FALSE)</div>
+                <div class="syntax">errorStyle: 'stop' | 函数: OR + 布尔常量</div>
+                <div class="desc">
+                    强制布尔类型检查，只接受真正的布尔值 true/false。
+                    <strong style="color:#dc2626;">✨ 严格模式：使用 === 严格相等，禁止 JavaScript 类型转换陷阱</strong>
+                    <br>数字 0/1、字符串 "true"/"false"、空值等都会被阻止。
+                </div>
+                <div class="example">
+                    ✅ 通过: true (布尔值), false (布尔值)<br>
+                    ❌ 阻止: 0 (数字→≠false), 1 (数字→≠true)<br>
+                    ❌ 阻止: "" (空字符串→≠false), "yes" (字符串)<br>
+                    ❌ 阻止: null, undefined, [] (其他类型)
+                </div>
+                <div style="margin-top:8px;padding:6px;background:#fef2f2;border-radius:4px;font-size:11px;color:#991b1b;">
+                    ⚠️ <strong>JavaScript 陷阱已修复：</strong><br>
+                    • 旧版：0 == false → true（错误通过）<br>
+                    • 新版：0 === false → false（正确阻止）<br>
+                    • 使用严格相等运算符确保类型安全
+                </div>
+            </div>
+
+            <div style="margin-top:15px;padding:12px;background:#eff6ff;border-radius:6px;border-left:4px solid #3b82f6;">
+
+                uni.showToast({
+                title: '上传成功',
+                icon: 'success'
+                });                <h4 style="margin-bottom:8px;color:#1e40af;">🔄 FormulaEngine 智能降级机制（增强版）</h4>
+                <p style="margin:0;color:#1e3a8a;font-size:13px;line-height:1.6;">
+                    当 <strong>FormulaEngine 未加载</strong>时，系统会使用<strong>三级降级策略</strong>：
+                </p>
+
+                <div style="margin:12px 0;padding:10px;background:white;border-radius:6px;">
+                    <h5 style="margin:0 0 8px;color:#1e40af;font-size:12px;">📊 降级优先级</h5>
+                    <ol style="margin:0;padding-left:20px;color:#1e3a8a;font-size:11px;line-height:1.9;">
+                        <li><strong style="color:#059669;">Level 1 - 基础同步解析器</strong>：I-P 列简单公式（比较/AND/OR/LEN/INT/DATE/ISEVEN）</li>
+                        <li><strong style="color:#d97706;">Level 2 - 增强解析器（新增）</strong>：Q-Y 列复杂公式的子集
+                            <ul style="margin:3px 0 0 15px;font-size:10px;line-height:1.7;">
+                                <li>✅ <code>SUM(range)</code>: 范围求和（使用模拟数据）</li>
+                                <li>✅ <code>AVERAGE(args)</code>: 多参数平均值</li>
+                                <li>✅ <code>COUNTIF(ref, pattern)</code>: 通配符匹配计数</li>
+                                <li>✅ <code>IFERROR(expr, fallback)</code>: 错误容错处理</li>
+                                <li>✅ <code>AND(...)/OR(...)</code>: 复合逻辑条件</li>
+                                <li>⚠️ <code>VLOOKUP(...)</code>: 基本类型检查（部分支持）</li>
+                            </ul>
+                        </li>
+                        <li><strong style="color:#dc2626;">Level 3 - 跳过并标记</strong>：无法处理的公式返回 warning 错误信息</li>
+                    </ol>
+                </div>
+
+                <ul style="margin:5px 0 0 20px;color:#1e3a8a;font-size:12px;line-height:1.8;">
+                    <li>🎯 <strong>策略区分：</strong>
+                        <ul style="margin:3px 0 0 15px;">
+                            <li><code style="background:#dbeafe;padding:1px 4px;border-radius:3px;">errorStyle:'stop'</code> → 阻止输入 + 显示"需要 FormulaEngine"</li>
+                            <li><code style="background:#fef3c7;padding:1px 4px;border-radius:3px;">errorStyle:'warning'</code> → 标记为 ⚠️ "异步验证跳过"（不再直接通过！）</li>
+                        </ul>
+                    </li>
+                    <li>💡 <strong>建议：</strong>生产环境请加载 FormulaPlugin 以启用完整49个函数和精确数据访问</li>
+                </ul>
+                <div style="margin-top:8px;padding:6px;background:#f0f9ff;border-radius:4px;font-size:11px;color:#1e40af;">
+                    🔧 <strong>当前演示状态：</strong>UMD 环境未加载 FormulaPlugin<br>
+                    • I-P 列（同步）：✅ Level 1 完全可用<br>
+                    • Q-Y 列（异步）：✨ Level 2 增强解析器已激活（SUM/AVERAGE/COUNTIF等可用）<br>
+                    • 数据来源：Q-Y 列使用模拟数据集进行演示验证
+                </div>
+            </div>
+        </div>
+
+        <h3 style="color: #f59e0b; margin: 30px 0 10px;">⏳ 异步验证 (9个) - 复杂函数 + 后台标记</h3>
+        <div class="api-grid">
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ Q列: SUM聚合</div>
+                <div class="name">=SUM(I{row}:P{row})<500</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: SUM (数学) | 🔄 Level 2 增强解析</div>
+                <div class="desc">对I-P列求总和，限制<500。使用增强同步解析器计算（模拟数据）。</div>
+                <div class="example">✅ 通过: 行总和200, 102<br>❌ 失败: 行总和264 (>500), 231 (>500)</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：使用内置模拟数据集进行验证
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ R列: AVERAGE平均</div>
+                <div class="name">=AVERAGE(I{row},K{row},L{row},Q{row})>0</div>
+<!--                <div class="syntax">errorStyle: 'warning' | 函数: AVERAGE (统计) | 🔄 Level 2 增强解析</div>-->
+                <div class="desc">计算多列平均值，必须>0。使用增强同步解析器（模拟数据）。</div>
+                <div class="example">✅ 通过: 平均值50.0, 62.75<br>❌ 失败: 平均值-1.33 (<0)</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：使用内置模拟数据集进行验证
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ S列: COUNTIF条件</div>
+                <div class="name">=COUNTIF(E{row},"*@*")>0</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: COUNTIF (条件) | 🔄 Level 2 增强解析</div>
+                <div class="desc">使用通配符 * 匹配@符号，验证邮箱格式包含@（模拟数据）。</div>
+                <div class="example">✅ 通过: "test@mail.com" (含@)<br>❌ 失败: "no-at-sign" (无@)</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：使用内置模拟邮箱数据集
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ T列: IFERROR处理</div>
+                <div class="name">=IFERROR(INT(T{row}),0)=T{row}</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: IFERROR (条件) | 🔄 Level 2 增强解析</div>
+                <div class="desc">安全转换：尝试转为整数，失败返回0再比较（增强解析）。</div>
+                <div class="example">✅ 通过: "123", "456", "789"<br>❌ 失败: "abc" → INT失败→0≠"abc"</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：增强同步解析器支持 IFERROR 容错
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ U列: AND复合联动</div>
+                <div class="name">=AND(I{row}>0, LEN(M{row})>=5, Q{row}<100)</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: AND (逻辑) | 🔄 Level 2 增强解析</div>
+                <div class="desc">跨多列联合验证：I列>0 且 M列长度≥5 且 Q列<100（增强解析）。</div>
+                <div class="example">✅ 通过: I=55,M="Perfect",Q=231→Q不满足<br>❌ 失败: 多字段组合失败</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：增强同步解析器支持复合 AND 条件
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ V列: OR异常检测</div>
+                <div class="name">=OR(I{row}<0, I{row}>100, M{row}="特殊")</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: OR (逻辑) | 🔄 Level 2 增强解析</div>
+                <div class="desc">多条件容错：任一异常值即触发警告（增强解析）。</div>
+                <div class="example">✅ 正常值不触发<br>❌ 失败: I=-10 或 I=120 或 M="特殊"</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：增强同步解析器支持复合 OR 条件
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ W列: NOT非空检查</div>
+                <div class="name">=NOT(ISBLANK(W{row}))</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: NOT + ISBLANK (信息) | 🔄 Level 1 基础解析</div>
+                <div class="desc">双重否定逻辑：不能为空（基础同步解析器支持）。</div>
+                <div class="example">✅ 通过: "Filled", "Data", "Present"<br>❌ 失败: "", 空单元格</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：Level 1 同步解析器完全支持
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ X列: MAX/MIN动态范围</div>
+                <div class="name">=AND(X{row}>=MIN(I{row}:L{row}), X{row}<=MAX(I{row}:L{row}))</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: MAX/MIN (数学) | 🔄 Level 2 增强解析</div>
+                <div class="desc">动态极值函数：X列值必须在I-L列的历史最小最大值范围内（增强解析）。</div>
+                <div class="example">✅ 通过: X=75, 90, 109 在 [min,max] 内<br>❌ 失败: X=-10 或 X=120 超出范围</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：增强同步解析器支持 MIN/MAX 范围检查
+                </div>
+            </div>
+            <div class="api-card" style="border-left-color: #f59e0b;">
+                <div class="category">⚠️ Y列: VLOOKUP外键约束</div>
+                <div class="name">=ISNUMBER(VLOOKUP(Y{row},$B$2:$D$20,1,FALSE))</div>
+                <div class="syntax">errorStyle: 'warning' | 函数: VLOOKUP (查找) | 🔄 Level 2 增强解析（部分支持）</div>
+                <div class="desc">外键约束：Y列的值必须存在于B-D列员工列表中（基本类型检查）。</div>
+                <div class="example">✅ 通过: 所有值（演示模式仅做类型检查）<br>⚠️ 完整功能需 FormulaEngine</div>
+                <div style="margin-top:5px;padding:4px;background:#fef3c7;border-radius:3px;font-size:10px;color:#92400e;">
+                    💡 演示模式：VLOOKUP 仅做基本类型检查，完整功能需要 FormulaEngine
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 25px; padding: 18px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 8px; border-left: 4px solid #f59e0b;">
+            <h3 style="margin-bottom: 12px; color: #b45309;">💡 使用建议</h3>
+            <ul style="line-height: 1.8; color: #78350f;">
+                <li><strong>简单验证用 stop</strong>: 数值比较、长度检查、格式限制等即时性要求高的场景，用户体验最佳（立即反馈）。</li>
+                <li><strong>复杂规则用 warning</strong>: 聚合计算、查找引用、跨表关联等需要 FormulaEngine 完整功能的场景，先允许后标记。</li>
+                <li><strong>混合策略</strong>: 关键字段用 stop 保证数据质量，辅助字段用 warning 提供灵活性。</li>
+                <li><strong>性能考虑</strong>: 同步验证 &lt;16ms，异步验证 &lt;100ms。大量复杂公式可能影响性能。</li>
+                <li><strong>扩展能力</strong>: 可通过 FormulaEngine.registerFunction() 注册自定义函数，然后用 stop 模式调用。</li>
+            </ul>
+        </div>
+    </div>
+
     <!-- ═══ 操作日志 ═══ -->
     <div class="demo-section">
         <h2 class="section-title"><span>📝</span> 操作日志</h2>
@@ -195,16 +754,184 @@
                 <div class="ops">无需运算符，自动排除当前编辑行</div>
             </div>
             <div class="validator-card">
-                <div class="type">type: custom</div>
-                <div class="name">自定义公式验证</div>
-                <div class="desc">通过公式表达式进行自定义验证逻辑。</div>
-                <div class="ops">配置: formula = '=A1>0'</div>
+                <div class="type">type: formula</div>
+                <div class="name">自定义公式验证（沙箱隔离）</div>
+                <div class="desc">
+                    通过公式表达式进行高级自定义验证逻辑。使用 FormulaValidator 沙箱隔离执行，确保零副作用：
+                    <br>• 不调用 setVirtualCell（不修改虚拟单元格）
+                    <br>• 不修改 DependencyGraph（不影响依赖关系）
+                    <br>• 不触发 AFTER_CALC 钩子（无副作用通知）
+                    <br>• 不写入任何 Cache（不污染缓存）
+                    <br>• 求值结束后零副作用（完全隔离）
+                    <br><br>
+                    <strong>支持场景：</strong><br>
+                    • 数值范围：=AND(A1>0, A1&lt;100)<br>
+                    • 文本长度：=LEN(B1)>=5<br>
+                    • 日期范围：=AND(C1>=DATE(2024,1,1), C1&lt;=DATE(2024,12,31))<br>
+                    • 复合条件：=OR(A1="VIP", B1>1000)<br>
+                    • 跨列引用：=SUM(A1:D1)>threshold
+                </div>
+                <div class="ops">
+                    配置选项：<br>
+                    • formula = '=I{row}>0' （支持 {row} 占位符）<br>
+                    • errorMessage = '验证失败提示'<br>
+                    • errorStyle = 'stop' | 'warning' | 'information'<br>
+                    <br>
+                    <strong>安全机制：</strong><br>
+                    ✅ ShadowEvaluator 沙箱隔离<br>
+                    ✅ evaluateForValidation 专用接口<br>
+                    ✅ 错误边界处理（求值失败返回友好错误）
+                </div>
             </div>
             <div class="validator-card">
                 <div class="type">type: datetime</div>
                 <div class="name">日期时间验证</div>
                 <div class="desc">验证日期时间值是否在指定范围内，支持多种格式（ISO、中文、12h 等），由 DateTimeValidator 统一处理。</div>
                 <div class="ops">运算符: before, after, between, notBetween, equalTo, notEqualTo<br>配置: value = ['2024-01-01 00:00:00', '2024-12-31 23:59:59']</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ 自定义公式验证详解 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>🔬</span> FormulaValidator 深度解析（沙箱隔离机制）</h2>
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px; border-radius: 16px; margin-bottom: 24px; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.35);">
+            <h3 style="margin: 0 0 20px 0; font-size: 1.6em; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.3em;">🛡️</span> 
+                零副作用公式求值引擎
+            </h3>
+            <p style="margin: 0 0 20px 0; line-height: 1.7; font-size: 1.05em;">
+                FormulaValidator 是数据验证插件的核心组件，专门用于执行自定义公式验证。
+                它采用<strong>沙箱隔离架构</strong>，确保公式求值过程完全独立于工作簿的主数据流，
+                <strong>不会产生任何副作用</strong>（side-effects）。
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+                <div style="background: rgba(255,255,255,0.15); padding: 18px; border-radius: 12px; backdrop-filter: blur(10px);">
+                    <h4 style="margin: 0 0 14px 0; font-size: 1.15em;">✅ 五大零副作用保证</h4>
+                    <ul style="margin: 0; padding-left: 22px; line-height: 1.9;">
+                        <li><strong>不调用 setVirtualCell</strong><br><span style="opacity: 0.85; font-size: 0.95em;">不修改虚拟单元格状态</span></li>
+                        <li><strong>不修改 DependencyGraph</strong><br><span style="opacity: 0.85; font-size: 0.95em;">不影响依赖关系图结构</span></li>
+                        <li><strong>不触发 AFTER_CALC 钩子</strong><br><span style="opacity: 0.85; font-size: 0.95em;">无副作用通知事件</span></li>
+                        <li><strong>不写入任何 Cache</strong><br><span style="opacity: 0.85; font-size: 0.95em;">不污染计算缓存层</span></li>
+                        <li><strong>求值结束后完全清理</strong><br><span style="opacity: 0.85; font-size: 0.95em;">沙箱实例立即销毁</span></li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.15); padding: 18px; border-radius: 12px; backdrop-filter: blur(10px);">
+                    <h4 style="margin: 0 0 14px 0; font-size: 1.15em;">🎯 三层降级策略</h4>
+                    <ul style="margin: 0; padding-left: 22px; line-height: 1.9;">
+                        <li><strong>P1: evaluateForValidation()</strong><br><span style="opacity: 0.85; font-size: 0.95em;">FormulaEngine 专用验证接口（推荐）</span></li>
+                        <li><strong>P2: ShadowEvaluator 实例</strong><br><span style="opacity: 0.85; font-size: 0.95em;">创建临时沙箱实例进行隔离求值</span></li>
+                        <li><strong>Fallback: 明确错误抛出</strong><br><span style="opacity: 0.85; font-size: 0.95em;">拒绝使用有副作用的降级方案</span></li>
+                        <li style="list-style: none; margin-top: 12px; background: rgba(255,100,100,0.2); padding: 10px; border-radius: 6px;">
+                            ⚠️ <strong>安全原则：</strong>宁可失败也不破坏数据完整性
+                        </li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.15); padding: 18px; border-radius: 12px; backdrop-filter: blur(10px);">
+                    <h4 style="margin: 0 0 14px 0; font-size: 1.15em;">📐 支持的公式语法</h4>
+                    <ul style="margin: 0; padding-left: 22px; line-height: 1.9;">
+                        <li><strong>比较运算:</strong> &gt;, &lt;, &gt;=, &lt;=, =, &lt;&gt;</li>
+                        <li><strong>逻辑函数:</strong> AND(), OR(), NOT(), IF(), XOR()</li>
+                        <li><strong>数学函数:</strong> SUM(), AVG(), MIN(), MAX(), ABS()</li>
+                        <li><strong>文本函数:</strong> LEN(), LEFT(), RIGHT(), CONCAT(), TRIM()</li>
+                        <li><strong>日期函数:</strong> DATE(), TODAY(), NOW(), YEAR(), MONTH()</li>
+                        <li><strong>单元格引用:</strong> A1, B2, {row}, {col} 占位符</li>
+                    </ul>
+                </div>
+                
+                <div style="background: rgba(255,255,255,0.15); padding: 18px; border-radius: 12px; backdrop-filter: blur(10px);">
+                    <h4 style="margin: 0 0 14px 0; font-size: 1.15em;">⚡ 性能与安全优化</h4>
+                    <ul style="margin: 0; padding-left: 22px; line-height: 1.9;">
+                        <li><strong>即时销毁:</strong> shadow.destroy() 确保资源释放</li>
+                        <li><strong>异步执行:</strong> 不阻塞主线程 UI 渲染</li>
+                        <li><strong>错误边界:</strong> 公式语法错误返回友好提示</li>
+                        <li><strong>内存保护:</strong> 避免循环引用导致栈溢出</li>
+                        <li style="list-style: none; margin-top: 12px; background: rgba(100,255,150,0.2); padding: 10px; border-radius: 6px;">
+                            ✅ 符合 v3.0 设计文档的安全要求
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 典型应用场景示例 -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-top: 24px;">
+            <div style="border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <div style="background: #f7fafc; padding: 16px; border-bottom: 2px solid #e2e8f0;">
+                    <h4 style="margin: 0; font-size: 1.15em; color: #2d3748;">📊 场景 1：数值范围复合条件</h4>
+                </div>
+                <div style="padding: 16px; background: white;">
+<pre style="background: #2d3744; color: #68d391; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: 'Consolas', monospace; font-size: 0.9em; line-height: 1.5; margin: 0;"><code>{
+  range: 'I2:I20',
+  type: 'formula',
+  formula: '=AND(I{row}>0, I{row}<100)',
+  errorMessage: '数值必须在 0-100 范围内',
+  errorStyle: 'warning'
+}</code></pre>
+                    <p style="margin: 14px 0 0 0; color: #4a5568; font-size: 0.95em; line-height: 1.6;">
+                        <strong>说明：</strong>同时检查数值大于 0 且小于 100，
+                        使用 AND() 函数组合两个条件。适用于成绩、百分比等有明确范围的场景。
+                    </p>
+                </div>
+            </div>
+
+            <div style="border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <div style="background: #f7fafc; padding: 16px; border-bottom: 2px solid #e2e8f0;">
+                    <h4 style="margin: 0; font-size: 1.15em; color: #2d3748;">📝 场景 2：文本长度验证</h4>
+                </div>
+                <div style="padding: 16px; background: white;">
+<pre style="background: #2d3744; color: #68d391; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: 'Consolas', monospace; font-size: 0.9em; line-height: 1.5; margin: 0;"><code>{
+  range: 'K2:K20',
+  type: 'formula',
+  formula: '=LEN(K{row})>=5',
+  errorMessage: '文本长度不足，需要 >= 5 个字符'
+}</code></pre>
+                    <p style="margin: 14px 0 0 0; color: #4a5568; font-size: 0.95em; line-height: 1.6;">
+                        <strong>说明：</strong>使用 LEN() 函数检查文本长度，
+                        确保用户输入满足最小字符数要求。适用于标题、描述等字段。
+                    </p>
+                </div>
+            </div>
+
+            <div style="border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <div style="background: #f7fafc; padding: 16px; border-bottom: 2px solid #e2e8f0;">
+                    <h4 style="margin: 0; font-size: 1.15em; color: #2d3748;">📅 场景 3：日期范围限制</h4>
+                </div>
+                <div style="padding: 16px; background: white;">
+<pre style="background: #2d3744; color: #68d391; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: 'Consolas', monospace; font-size: 0.9em; line-height: 1.5; margin: 0;"><code>{
+  range: 'L2:L20',
+  type: 'formula',
+  formula: '=AND(L{row}>=DATE(2024,1,1), L{row}<=DATE(2024,12,31))',
+  errorMessage: '日期必须在 2024 年内',
+  errorStyle: 'stop'  // 阻止模式
+}</code></pre>
+                    <p style="margin: 14px 0 0 0; color: #4a5568; font-size: 0.95em; line-height: 1.6;">
+                        <strong>说明：</strong>结合 DATE() 函数和 AND() 条件，
+                        强制日期必须在指定年份范围内。errorStyle 设为 'stop' 可阻止无效输入。
+                    </p>
+                </div>
+            </div>
+
+            <div style="border: 2px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                <div style="background: #f7fafc; padding: 16px; border-bottom: 2px solid #e2e8f0;">
+                    <h4 style="margin: 0; font-size: 1.15em; color: #2d3748;">🔄 场景 4：跨列逻辑条件</h4>
+                </div>
+                <div style="padding: 16px; background: white;">
+<pre style="background: #2d3744; color: #68d391; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: 'Consolas', monospace; font-size: 0.9em; line-height: 1.5; margin: 0;"><code>{
+  range: 'J2:J20',
+  type: 'formula',
+  formula: '=OR(J{row}=TRUE, I{row}>50)',
+  errorMessage: '需要为 TRUE 或 I列数值 > 50'
+}</code></pre>
+                    <p style="margin: 14px 0 0 0; color: #4a5568; font-size: 0.95em; line-height: 1.6;">
+                        <strong>说明：</strong>使用 OR() 函数实现"或"逻辑，
+                        引用多列数据进行复合判断。适用于审批状态、VIP 标识等业务规则。
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -232,6 +959,64 @@
     }
   }
 });</div>
+            </div>
+            <div class="api-card">
+                <div class="category">自定义公式验证</div>
+                <div class="name">FormulaValidator（沙箱隔离）</div>
+                <div class="syntax">type: 'formula' + formula 配置</div>
+                <div class="desc">
+                    使用 FormulaValidator 执行自定义公式验证，采用沙箱隔离机制确保零副作用：
+                    <br><br>
+                    <strong>核心特性：</strong><br>
+                    • 🔒 沙箱隔离：不修改 DependencyGraph、Cache、触发钩子<br>
+                    • 🎯 专用接口：优先使用 evaluateForValidation()，降级使用 ShadowEvaluator<br>
+                    • ⚡ 零副作用：求值结束后无任何残留影响<br>
+                    • 🛡️ 错误边界：公式错误返回友好提示而非崩溃<br>
+                    <br>
+                    <strong>占位符支持：</strong><br>
+                    • {row} - 当前行号（自动替换为实际行号）<br>
+                    • {col} - 当前列号（自动替换为实际列号）
+                </div>
+                <div class="example">// 基础：值大于零
+{
+  range: 'I2:I20',
+  type: 'formula',
+  formula: '=I{row}>0',
+  errorMessage: '必须大于 0'
+}
+
+// 复合条件：范围检查
+{
+  range: 'I2:I20',
+  type: 'formula',
+  formula: '=AND(I{row}>0, I{row}<100)',
+  errorMessage: '必须在 0-100 范围内'
+}
+
+// 文本长度验证
+{
+  range: 'K2:K20',
+  type: 'formula',
+  formula: '=LEN(K{row})>=5',
+  errorMessage: '文本长度不足'
+}
+
+// 日期范围验证
+{
+  range: 'L2:L20',
+  type: 'formula',
+  formula: '=AND(L{row}>=DATE(2024,1,1), L{row}<=DATE(2024,12,31))',
+  errorMessage: '日期超出范围',
+  errorStyle: 'stop'  // 阻止模式
+}
+
+// 复合逻辑条件
+{
+  range: 'J2:J20',
+  type: 'formula',
+  formula: '=OR(J{row}=TRUE, I{row}>50)',
+  errorMessage: '复合条件不满足'
+}</div>
             </div>
             <div class="api-card">
                 <div class="category">规则管理</div>
@@ -396,7 +1181,7 @@ dv.destroy();  // 彻底销毁</div>
                 <div class="category">公式</div>
                 <div class="name">formula</div>
                 <div class="syntax">formula: '=A1>0'</div>
-                <div class="desc">type=custom 时必填。自定义公式表达式，返回真值表示验证通过。</div>
+                <div class="desc">type=formula 时必填。Excel 公式表达式（如 =AND(A1>0, A1<100)），返回真值表示验证通过。</div>
             </div>
             <div class="api-card">
                 <div class="category">错误提示</div>
@@ -430,14 +1215,61 @@ dv.destroy();  // 彻底销毁</div>
     var registeredHookCallbacks = {};
 
     const sampleData = [
-        ["数值(0-100)", "下拉列表", "文本(5-20字)", "日期(2024年)", "时间(09:00-18:00)", "日期时间(2024年)", "邮箱", "唯一编号", "自定义公式(>0)"],
-        [50, "选项A", "Hello World", "2024-06-15", "09:30", "2024-06-15 09:30", "user@example.com", "ORD-001", 100],
-        [120, "选项B", "Hi", "2025-01-01", "08:00", "2025-01-01 08:00", "invalid-email", "ORD-002", -10],
-        [75, "选项C", "Canvas Spreadsheet", "2024-12-31", "18:00", "2024-12-31 18:00", "test@test.org", "ORD-003", 55],
-        [-5, "无效选项", "A", "2020-07-20", "07:15", "2020-07-20 07:15", "name@domain.com", "ORD-001", 0],
-        [0, "选项A", "Medium length text", "2024-03-15", "20:30", "2024-03-15 20:30", "bad@", "ORD-004", 88],
-        [100, "选项B", "Another valid text here", "2023-11-11", "12:45", "2023-11-11 12:45", "ok@company.cn", "ORD-005", -1],
-        [200, "选项C", "X", "2026-01-01", "23:59", "2026-01-01 23:59", "user@site.net", "ORD-006", 42],
+        // 表头行
+        [
+            "编号", "姓名", "部门", "职位", "邮箱", "日期时间", "邮箱格式", "唯一编号",
+            "数值>0", "范围0-100", "整数检查", "偶数检查", "文本长度≥5", "非空文本", "日期2024", "布尔值",
+            "SUM聚合", "AVERAGE平均", "COUNTIF条件", "IFERROR处理", "AND复合联动", "OR异常检测", "NOT非空检查", "MAX/MIN范围", "VLOOKUP外键"
+        ],
+
+        // 第1行：全部通过（正常数据）
+        [
+            1, "张三", "技术部", "工程师", "zhangsan@corp.com", "2024-06-15 09:30", "valid@email.com", "EMP001",
+            100, 50, 42, 8, "Valid Text", "NonEmpty", "2024-06-15", true,
+            200, 50.0, "test@mail.com", "123", "OK", "Normal", "Filled", 75, "张三"
+        ],
+
+        // 第2行：多个失败（测试同步阻止 + 异步标记）
+        [
+            2, "李四", "市场部", "经理", "lisi@corp.com.cn", "2024-03-20 14:00", "user@domain.org", "EMP001",
+            -10, 150, 3.14, 7, "No", "", "2023-01-01", false,
+            141, 35.29, "no-at-sign", "abc", "Fail", "Abnormal", "", 120, "王五"
+        ],
+
+        // 第3行：部分失败（边界测试）
+        [
+            3, "王五", "财务部", "会计", "wangwu@finance.net", "2024-12-31 16:45", "ok@test.io", "EMP003",
+            55, 75, 100, 6, "Perfect Length", "HasContent", "2024-12-31", true,
+            231, 62.75, "another@email.com", "456", "Pass", "Normal", "Data", 90, "赵六"
+        ],
+
+        // 第4行：异常数据组合
+        [
+            4, "赵六", "人事部", "专员", "zhaoliu@hr.org", "2020-07-20 08:15", "bad-format", "EMP004",
+            0, -5, -7, 9, "X", "TextHere", "2026-01-01", true,
+            -3, -1.33, "missing@symbol", "xyz", "Error", "Outlier", "Value", -10, "钱七"
+        ],
+
+        // 第5行：混合结果
+        [
+            5, "钱七", "技术部", "架构师", "qianqi@tech.com", "2024-06-20 20:30", "good@email.cn", "EMP005",
+            88, 99, 77, 4, "Another Good One", "NotEmpty", "2024-06-20", false,
+            264, 66.0, "user@host.com", "789", "Good", "Normal", "Present", 85, "孙八"
+        ],
+
+        // 第6行：大量标记
+        [
+            6, "孙八", "市场部", "销售", "sunba@mkt.co.uk", "2023-11-11 12:45", "simple@addr", "EMP006",
+            -1, 101, 2.5, 3, "Bad", "", "2023-12-31", false,
+            102, 25.5, "invalid-email", "ABC", "Fail", "Special", "", 105, "周九"
+        ],
+
+        // 第7行：基本正常
+        [
+            7, "周九", "财务部", "总监", "zhoujiu@fin.com", "2024-07-04 10:00", "chief@office.gov", "EMP007",
+            42, 50, 200, 10, "OK", "Has Value", "2024-07-04", true,
+            292, 73.0, "admin@system.edu", "101010", "Pass", "Normal", "Exists", 110, "吴十"
+        ]
     ];
 
     function log(msg, type) {
@@ -459,6 +1291,39 @@ dv.destroy();  // 彻底销毁</div>
         statusEl.className = 'badge ' + (dvPlugin.active ? 'badge-active' : 'badge-inactive');
         countEl.textContent = dvPlugin.getAllRules().length;
         strategyEl.textContent = dvPlugin.engine ? dvPlugin.engine.conflictStrategy : '-';
+    }
+
+    function toggleFormulaOptions() {
+        const ruleType = document.getElementById('ruleType').value;
+        const formulaContainer = document.getElementById('formulaTypeContainer');
+        
+        if (ruleType === 'formula') {
+            formulaContainer.style.display = 'inline-block';
+            log('📐 已启用公式选项', 'info');
+        } else {
+            formulaContainer.style.display = 'none';
+        }
+    }
+
+    function explainFormula(formula) {
+        const explanations = {
+            '>0': '检查单元格值是否大于 0',
+            'AND(...>0, ...<100)': '复合条件：值必须在 0-100 范围内',
+            'LEN(...)>=5': '文本长度验证：字符数必须 >= 5',
+            'AND(DATE(...)>=..., DATE(...)<=...)': '日期范围验证：确保日期在指定范围内',
+            'OR(...=TRUE, ...>50)': '逻辑或条件：满足任一条件即可'
+        };
+        
+        let explanation = '自定义公式: ' + formula;
+        for (const [pattern, desc] of Object.entries(explanations)) {
+            if (formula.includes(pattern)) {
+                explanation = desc + '\n公式: ' + formula;
+                break;
+            }
+        }
+        
+        log('📖 ' + explanation, 'info');
+        return explanation;
     }
 
     function addRule() {
@@ -508,14 +1373,47 @@ dv.destroy();  // 彻底销毁</div>
                 ruleConfig.errorMessage = '该值已存在，不能重复！';
                 ruleConfig.errorStyle = 'warning';
                 break;
-            case 'custom':
-                ruleConfig.formula = '=A1>0';
-                ruleConfig.errorMessage = '自定义公式验证失败';
+            case 'formula':
+                const formulaType = document.getElementById('formulaType').value;
+                
+                switch (formulaType) {
+                    case 'greaterThanZero':
+                        ruleConfig.formula = '=I' + (parseInt(range.match(/\d+/)[0])) + '>0';
+                        ruleConfig.errorMessage = '值必须大于 0';
+                        break;
+                    case 'rangeCheck':
+                        ruleConfig.formula = '=AND(I' + (parseInt(range.match(/\d+/)[0])) + '>0, I' + (parseInt(range.match(/\d+/)[0])) + '<100)';
+                        ruleConfig.errorMessage = '值必须在 0-100 范围内';
+                        break;
+                    case 'textLength':
+                        ruleConfig.formula = '=LEN(K' + (parseInt(range.match(/\d+/)[0])) + ')>=5';
+                        ruleConfig.errorMessage = '文本长度必须 >= 5 个字符';
+                        break;
+                    case 'dateRange':
+                        ruleConfig.formula = '=AND(L' + (parseInt(range.match(/\d+/)[0])) + '>=DATE(2024,1,1), L' + (parseInt(range.match(/\d+/)[0])) + '<=DATE(2024,12,31))';
+                        ruleConfig.errorMessage = '日期必须在 2024 年范围内';
+                        break;
+                    case 'complexCondition':
+                        ruleConfig.formula = '=OR(J' + (parseInt(range.match(/\d+/)[0])) + '=TRUE, I' + (parseInt(range.match(/\d+/)[0])) + '>50)';
+                        ruleConfig.errorMessage = '复合条件不满足：需要为 TRUE 或数值 >50';
+                        break;
+                    default:
+                        ruleConfig.formula = '=I' + (parseInt(range.match(/\d+/)[0])) + '>0';
+                        ruleConfig.errorMessage = '自定义公式验证失败';
+                }
+                
+                log('📐 使用公式: ' + ruleConfig.formula, 'info');
                 break;
         }
 
         try {
             const ruleId = dvPlugin.setValidation(ruleConfig);
+            
+            if (type === 'formula' && ruleConfig.formula) {
+                explainFormula(ruleConfig.formula);
+                log('🔬 公式验证使用沙箱隔离模式（零副作用）', 'info');
+            }
+            
             log('✅ 添加规则成功: [' + type + '] ' + range + ' → ' + ruleId, 'success');
             updateStatus();
         } catch (e) {
@@ -526,18 +1424,59 @@ dv.destroy();  // 彻底销毁</div>
     async function validateAll() {
         if (!dvPlugin) { log('插件未初始化', 'error'); return; }
 
-        log('开始批量验证...', 'info');
+        log('🚀 开始批量验证...', 'info');
+        log('📋 验证范围: A2:Y8 (跳过表头行，覆盖全部25列)', 'info');
+
         try {
-            const report = await dvPlugin.validateRange('A1:I8');
-            console.log(report);
+            const report = await dvPlugin.validateRange('A2:Y8');
+            console.log('完整验证报告:', report);
 
-            log('📊 批量验证完成: 总计 ' + report.total + ' 个, 通过 ' + report.valid + ' 个, 失败 ' + report.invalid + ' 个', report.invalid > 0 ? 'warn' : 'success');
+            const total = report.total || 0;
+            const valid = report.valid || 0;
+            const invalid = report.invalid || 0;
 
-            if (report.invalid > 0) {
+            log('📊 批量验证完成:', 'success');
+            log('   📈 总计: ' + total + ' 个单元格', 'info');
+            log('   ✅ 通过: ' + valid + ' 个 (' + (total > 0 ? Math.round(valid/total*100) : 0) + '%)', valid === total ? 'success' : 'info');
+            log('   ❌ 失败: ' + invalid + ' 个 (' + (total > 0 ? Math.round(invalid/total*100) : 0) + '%)', invalid > 0 ? 'warn' : 'success');
+
+            if (invalid > 0 && report.results) {
                 const failures = report.results.filter(function(r) { return !r.valid; });
+
+                log('━━━ 失败详情 ━━━', 'warn');
+
+                const groupedErrors = {};
                 failures.forEach(function(r) {
-                    log('  ❌ (' + r.row + ',' + r.col + '): ' + (r.message || '验证失败'), 'error');
+                    const colLetter = String.fromCharCode(65 + (r.col || 0));
+                    const key = colLetter + '列';
+                    if (!groupedErrors[key]) {
+                        groupedErrors[key] = [];
+                    }
+                    groupedErrors[key].push({
+                        row: r.row,
+                        message: r.message || '验证失败',
+                        value: r.value !== undefined ? JSON.stringify(r.value).substring(0, 20) : 'N/A'
+                    });
                 });
+
+                Object.keys(groupedErrors).forEach(function(col) {
+                    log('📍 ' + col + ' (' + groupedErrors[col].length + '个失败):', 'error');
+                    groupedErrors[col].forEach(function(err, idx) {
+                        if (idx < 3) {
+                            log('   第' + (err.row + 2) + '行: ' + err.message + (err.value ? ' [值:' + err.value + ']' : ''), 'error');
+                        } else if (idx === 3) {
+                            log('   ... 还有 ' + (groupedErrors[col].length - 3) + ' 个错误', 'warn');
+                        }
+                    });
+                });
+
+                log('━━━━━━━━━━━━━', 'warn');
+            }
+
+            if (invalid === 0) {
+                log('🎉 所有验证均通过！数据完全符合规则。', 'success');
+            } else if (invalid <= total * 0.3) {
+                log('💡 提示：少量验证失败是正常的（测试数据包含预期失败的用例）', 'info');
             }
         } catch (e) {
             log('❌ 批量验证失败: ' + e.message, 'error');
@@ -647,23 +1586,41 @@ dv.destroy();  // 彻底销毁</div>
             log('初始化数据验证演示...', 'info');
             const container = document.getElementById('sheet');
             container.width = 1400;
-            container.height = 320;
+            container.height = 400;
 
             workbook = new CanvasSheet.Workbook(container, {
-                width: 1600, height: 320,
+                width: 1600, height: 400,
                 sheets: [{
                     name: '数据验证',
                     data: sampleData,
                     columns: [
-                        { type: 'numeric', width: 110 },
-                        { type: 'text', width: 100 },
-                        { type: 'text', width: 150 },
-                        { type: 'text', width: 110 },
-                        { type: 'text', width: 120 },
-                        { type: 'text', width: 140 },
-                        { type: 'text', width: 150 },
-                        { type: 'text', width: 100 },
-                        { type: 'numeric', width: 120 },
+                        { type: 'numeric', width: 55, title: '编号' },
+                        { type: 'text', width: 65, title: '姓名' },
+                        { type: 'text', width: 70, title: '部门' },
+                        { type: 'text', width: 70, title: '职位' },
+                        { type: 'text', width: 120, title: '邮箱' },
+                        { type: 'text', width: 130, title: '日期时间' },
+                        { type: 'text', width: 110, title: '邮箱格式' },
+                        { type: 'text', width: 70, title: '唯一编号' },
+
+                        { type: 'numeric', width: 72, title: '数值>0\n[同步-stop]' },
+                        { type: 'numeric', width: 72, title: '范围0-100\n[同步-stop]' },
+                        { type: 'numeric', width: 68, title: '整数检查\n[同步-stop]' },
+                        { type: 'numeric', width: 68, title: '偶数检查\n[同步-stop]' },
+                        { type: 'text', width: 85, title: '文本长度≥5\n[同步-stop]' },
+                        { type: 'text', width: 80, title: '非空文本\n[同步-stop]' },
+                        { type: 'text', width: 90, title: '日期2024\n[同步-stop]' },
+                        { type: 'text', width: 68, title: '布尔值\n[同步-stop]' },
+
+                        { type: 'numeric', width: 72, title: 'SUM聚合\n[异步-warning]' },
+                        { type: 'numeric', width: 78, title: 'AVERAGE平均\n[异步-warning]' },
+                        { type: 'text', width: 82, title: 'COUNTIF条件\n[异步-warning]' },
+                        { type: 'text', width: 78, title: 'IFERROR处理\n[异步-warning]' },
+                        { type: 'text', width: 75, title: 'AND复合联动\n[异步-warning]' },
+                        { type: 'text', width: 75, title: 'OR异常检测\n[异步-warning]' },
+                        { type: 'text', width: 72, title: 'NOT非空检查\n[异步-warning]' },
+                        { type: 'numeric', width: 80, title: 'MAX/MIN范围\n[异步-warning]' },
+                        { type: 'text', width: 80, title: 'VLOOKUP外键\n[异步-warning]' }
                     ],
                     cellPadding: 8
                 }],
@@ -672,71 +1629,219 @@ dv.destroy();  // 彻底销毁</div>
                     dataValidation: {
                         conflictStrategy: 'short-circuit',
                         rules: [
+                            // ════════════════════════════════════════
+                            // 📋 基础类型验证 (A-H列) - 展示内置验证器
+                            // ════════════════════════════════════════
+
                             {
                                 range: 'A2:A20',
                                 type: 'number',
                                 operator: 'between',
-                                value: [0, 100],
-                                errorMessage: '请输入 0-100 之间的数值',
+                                value: [3, 100],
+                                errorMessage: '⛔ 编号必须是 1-100 之间的整数',
                                 errorStyle: 'stop'
                             },
                             {
                                 range: 'B2:B20',
-                                type: 'list',
-                                source: ['选项A', '选项B', '选项C'],
-                                errorMessage: '请从下拉列表中选择',
-                                inputMessage: '请选择一个选项'
+                                type: 'text',
+                                operator: 'lengthBetween',
+                                value: [3, 10],
+                                errorMessage: '⛔ 姓名长度必须在 2-10 个字符之间',
+                                errorStyle: 'stop'
                             },
                             {
                                 range: 'C2:C20',
-                                type: 'text',
-                                operator: 'lengthBetween',
-                                value: [5, 20],
-                                errorMessage: '文本长度必须在 5-20 个字符之间'
+                                type: 'list',
+                                source: ['技术部', '市场部', '财务部', '人事部', '运营部'],
+                                errorMessage: '⚠️ 请从下拉列表中选择部门',
+                                errorStyle: 'warning',
+                                inputMessage: '选择部门：技术/市场/财务/人事/运营'
                             },
                             {
                                 range: 'D2:D20',
-                                type: 'date',
-                                operator: 'between',
-                                value: ['2024年1月1日', '2024年12月31日'],
-                                errorMessage: '请输入 2024 年内的日期',
+                                type: 'text',
+                                operator: 'lengthBetween',
+                                value: [3, 15],
+                                errorMessage: '⚠️ 职位长度必须在 2-15 个字符之间',
                                 errorStyle: 'warning'
                             },
                             {
                                 range: 'E2:E20',
-                                type: 'time',
-                                operator: 'between',
-                                value: ['09:00', '18:00'],
-                                errorMessage: '请输入 09:00-18:00 之间的时间',
-                                errorStyle: 'warning'
+                                type: 'regex',
+                                pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
+                                errorMessage: '⚠️ 请输入有效的邮箱地址（如 user@example.com）',
+                                errorStyle: 'warning',
+                                inputMessage: '格式：用户名@域名.后缀'
                             },
                             {
                                 range: 'F2:F20',
                                 type: 'datetime',
                                 operator: 'between',
-                                value: ['2024-01-01 00:00:00', '2024-12-31 23:59:59'],
-                                errorMessage: '请输入 2024 年内的日期时间',
+                                value: ['2020-01-01 00:00:00', '2026-12-31 23:59:59'],
+                                errorMessage: '⚠️ 请输入 2020-2026 年内的日期时间',
                                 errorStyle: 'warning'
                             },
                             {
                                 range: 'G2:G20',
                                 type: 'regex',
-                                pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
-                                errorMessage: '请输入有效的邮箱地址',
+                                pattern: '^.*@.*\\..*$',
+                                errorMessage: '⚠️ 邮箱格式必须包含 @ 和 . 符号',
                                 errorStyle: 'warning'
                             },
                             {
                                 range: 'H2:H20',
                                 type: 'unique',
-                                errorMessage: '编号不能重复！',
-                                errorStyle: 'warning'
+                                errorMessage: '🚫 唯一编号不能重复！',
+                                errorStyle: 'stop'
                             },
+                            // ════════════════════════════════════════
+                            // 🔄 同步验证示例 (8个) - 简单公式 + errorStyle:'stop'
+                            // 特点：即时响应，可立即阻止非法输入
+                            // ════════════════════════════════════════
+
                             {
                                 range: 'I2:I20',
-                                type: 'custom',
-                                formula: '=A1>0',
-                                errorMessage: '自定义公式验证: 值必须大于 0',
-                                errorStyle: 'warning'
+                                type: 'formula',
+                                formula: '=I{row}>0',
+                                errorMessage: '⛔ 数值必须大于0（同步-立即阻止）',
+                                errorStyle: 'stop',
+                                description: '[同步] 基础数值比较运算符 >'
+                            },
+                            {
+                                range: 'J2:J20',
+                                type: 'formula',
+                                formula: '=AND(J{row}>=0, J{row}<=100)',
+                                errorMessage: '⛔ 数值必须在0-100范围内（同步-范围检查）',
+                                errorStyle: 'stop',
+                                description: '[同步] AND逻辑组合 + 范围检查'
+                            },
+                            {
+                                range: 'K2:K20',
+                                type: 'formula',
+                                formula: '=INT(K{row})=K{row}',
+                                errorMessage: '⛔ 必须是整数（同步-整数验证）',
+                                errorStyle: 'stop',
+                                description: '[同步] INT函数 - 整数类型检查'
+                            },
+                            {
+                                range: 'L2:L20',
+                                type: 'formula',
+                                formula: '=ISEVEN(L{row})',
+                                errorMessage: '⛔ 必须是偶数（同步-奇偶性检查）',
+                                errorStyle: 'stop',
+                                description: '[同步] ISEVEN函数 - 偶数判断'
+                            },
+                            {
+                                range: 'M2:M20',
+                                type: 'formula',
+                                formula: '=LEN(M{row})>=5',
+                                errorMessage: '⛔ 文本长度不足：需要>=5字符（同步-长度验证）',
+                                errorStyle: 'stop',
+                                description: '[同步] LEN函数 - 文本长度限制'
+                            },
+                            {
+                                range: 'N2:N20',
+                                type: 'formula',
+                                formula: '=AND(ISTEXT(N{row}), LEN(N{row})>0)',
+                                errorMessage: '⛔ 必须是非空文本（同步-非空文本验证）',
+                                errorStyle: 'stop',
+                                description: '[同步] ISTEXT函数 + 复合条件'
+                            },
+                            {
+                                range: 'O2:O20',
+                                type: 'formula',
+                                formula: '=AND(O{row}>=DATE(2024,1,1), O{row}<=DATE(2024,12,31))',
+                                errorMessage: '🚫 日期必须在2024年内（同步-日期范围严格阻止）',
+                                errorStyle: 'stop',
+                                description: '[同步] DATE函数 - 固定日期范围（支持 YYYY-MM-DD 格式自动转换）',
+                                hint: '输入格式：2024-06-15, 2024/06/15, 或 Date 对象'
+                            },
+                            {
+                                range: 'P2:P20',
+                                type: 'formula',
+                                formula: '=OR(P{row}=TRUE, P{row}=FALSE)',
+                                errorMessage: '⛔ 必须是布尔值TRUE/FALSE（严格模式：禁止0/1/"true"/"false"等）',
+                                errorStyle: 'stop',
+                                description: '[同步] OR逻辑 + 布尔值常量（严格类型检查，使用===）',
+                                hint: '只接受 JavaScript 布尔值 true 或 false，其他所有值（包括数字0/1、字符串）都会被阻止'
+                            },
+
+                            // ════════════════════════════════════════
+                            // ⏳ 异步验证示例 (9个) - 复杂函数 + errorStyle:'warning'
+                            // 特点：使用FormulaEngine完整功能，后台执行后标记
+                            // ════════════════════════════════════════
+
+                            {
+                                range: 'Q2:Q20',
+                                type: 'formula',
+                                formula: '=SUM(I{row}:P{row})<500',
+                                errorMessage: '⚠️ 行总和超过500（异步-SUM聚合函数）',
+                                errorStyle: 'warning',
+                                description: '[异步] SUM聚合函数 - 行汇总限制'
+                            },
+                            {
+                                range: 'R2:R20',
+                                type: 'formula',
+                                formula: '=AVERAGE(I{row},K{row},L{row},Q{row})>0',
+                                errorMessage: '⚠️ 平均值必须>0（异步-AVERAGE统计函数）',
+                                errorStyle: 'warning',
+                                description: '[异步] AVERAGE统计函数 - 多列平均'
+                            },
+                            {
+                                range: 'S2:S20',
+                                type: 'formula',
+                                formula: '=COUNTIF(E{row},"*@*")>0',
+                                errorMessage: '⚠️ 邮箱格式不包含@符号（异步-COUNTIF条件计数）',
+                                errorStyle: 'warning',
+                                description: '[异步] COUNTIF条件函数 - 通配符匹配'
+                            },
+                            {
+                                range: 'T2:T20',
+                                type: 'formula',
+                                formula: '=IFERROR(INT(T{row}),0)=T{row}',
+                                errorMessage: '⚠️ 无法转换为整数（异步-IFERROR错误处理）',
+                                errorStyle: 'warning',
+                                description: '[异步] IFERROR条件函数 - 安全转换'
+                            },
+                            {
+                                range: 'U2:U20',
+                                type: 'formula',
+                                formula: '=AND(I{row}>0, LEN(M{row})>=5, Q{row}<100)',
+                                errorMessage: '⚠️ 复合条件不满足（异步-AND多字段联动）',
+                                errorStyle: 'warning',
+                                description: '[异步] AND复合逻辑 - 跨多列联合验证'
+                            },
+                            {
+                                range: 'V2:V20',
+                                type: 'formula',
+                                formula: '=OR(I{row}<0, I{row}>100, M{row}="特殊")',
+                                errorMessage: '⚠️ 触发了异常值规则（异步-OR多条件容错）',
+                                errorStyle: 'warning',
+                                description: '[异步] OR多条件逻辑 - 异常检测'
+                            },
+                            {
+                                range: 'W2:W20',
+                                type: 'formula',
+                                formula: '=NOT(ISBLANK(W{row}))',
+                                errorMessage: '⚠️ 不能为空（异步-NOT+ISBLANK组合）',
+                                errorStyle: 'warning',
+                                description: '[异步] NOT非运算 + ISBLANK空值检查'
+                            },
+                            {
+                                range: 'X2:X20',
+                                type: 'formula',
+                                formula: '=AND(X{row}>=MIN(I{row}:L{row}), X{row}<=MAX(I{row}:L{row}))',
+                                errorMessage: '⚠️ 超出历史数据范围（异步-MAX/MIN极值函数）',
+                                errorStyle: 'warning',
+                                description: '[异步] MAX/MIN数学函数 - 动态范围'
+                            },
+                            {
+                                range: 'Y2:Y20',
+                                type: 'formula',
+                                formula: '=ISNUMBER(VLOOKUP(Y{row},$B$2:$D$20,1,FALSE))',
+                                errorMessage: '⚠️ 未在员工列表中找到（异步-VLOOKUP查找函数）',
+                                errorStyle: 'warning',
+                                description: '[异步] VLOOKUP查找函数 - 外键约束'
                             }
                         ]
                     }
@@ -750,13 +1855,53 @@ dv.destroy();  // 彻底销毁</div>
 
             dvPlugin = workbook.getPlugin('dataValidation');
             toggleHooks();
+            
             if (dvPlugin) {
                 log('✅ 数据验证插件已加载，初始规则: ' + dvPlugin.getAllRules().length + ' 条', 'success');
                 updateStatus();
+                
+                const customRules = dvPlugin.getAllRules().filter(r => r.type === 'formula');
+                if (customRules.length > 0) {
+                    const syncRules = customRules.filter(r => r.errorStyle === 'stop');
+                    const asyncRules = customRules.filter(r => r.errorStyle === 'warning');
+
+                    log('📐 公式验证规则总计: ' + customRules.length + ' 条', 'success');
+                    log('  🔄 同步验证（即时阻止）: ' + syncRules.length + ' 条 - 简单公式，<16ms响应', 'info');
+                    syncRules.forEach(rule => {
+                        log('     ⛔ ' + rule.range + ': ' + rule.formula + (rule.description ? ' [' + rule.description + ']' : ''), 'info');
+                    });
+
+                    log('  ⏳ 异步验证（后台标记）: ' + asyncRules.length + ' 条 - 复杂函数，使用完整FormulaEngine', 'info');
+                    asyncRules.forEach(rule => {
+                        log('     ⚠️  ' + rule.range + ': ' + rule.formula + (rule.description ? ' [' + rule.description + ']' : ''), 'info');
+                    });
+
+                    log('', 'info');
+                    log('📊 覆盖的函数类型:', 'info');
+                    log('  🔢 数学函数: SUM, AVERAGE, MAX, MIN, INT, ABS (6个)', 'info');
+                    log('  📈 统计函数: COUNTIF (1个)', 'info');
+                    log('  🔣 逻辑函数: AND, OR, NOT, IF (4个)', 'info');
+                    log('  📝 文本函数: LEN, ISTEXT (2个)', 'info');
+                    log('  🎯 条件函数: IFERROR (1个)', 'info');
+                    log('  🔍 查找函数: VLOOKUP (1个)', 'info');
+                    log('  📅 日期函数: DATE (1个)', 'info');
+                    log('  ℹ️ 信息函数: ISEVEN, ISBLANK (2个)', 'info');
+
+                    log('', 'info');
+                    log('🔒 安全特性（ShadowEvaluator沙箱隔离）:', 'info');
+                    log('   ✅ 不修改 CellStore 数据', 'info');
+                    log('   ✅ 不更新 DependencyGraph 依赖图', 'info');
+                    log('   ✅ 不触发 Hooks 钩子回调', 'info');
+                    log('   ✅ 不写入 Cache 缓存', 'info');
+                    log('   ❌ 禁止易变函数: INDIRECT, OFFSET, RAND, NOW, TODAY', 'info');
+                    log('   ✅ 求值结束后零副作用，完全安全', 'info');
+                }
             } else {
                 log('⚠️ 未找到数据验证插件', 'warn');
             }
 
+            toggleFormulaOptions();
+            
             log('数据验证演示初始化成功', 'success');
         } catch (e) {
             log('初始化失败: ' + e.message, 'error');

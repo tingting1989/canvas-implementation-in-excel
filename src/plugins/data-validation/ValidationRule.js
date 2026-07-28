@@ -74,7 +74,7 @@ export class ValidationRule {
     updatedAt;
 
     /** @type {string[]} 允许的验证类型 */
-    static VALID_TYPES = ["number", "text", "list", "custom", "date", "time", "datetime", "regex", "unique"];
+    static VALID_TYPES = ["number", "text", "list", "formula", "date", "time", "datetime", "regex", "unique"];
 
     /**
      * 构造验证规则
@@ -177,8 +177,8 @@ export class ValidationRule {
             errors.push("列表验证需要指定 source");
         }
 
-        if (this.type === VALIDATION_RULE_TYPE.CUSTOM && !this.formula) {
-            errors.push("自定义公式验证需要指定 formula");
+        if (this.type === VALIDATION_RULE_TYPE.FORMULA && !this.formula) {
+            errors.push("公式验证需要指定 formula");
         }
 
         if (this.type === VALIDATION_RULE_TYPE.REGEX && !this.pattern) {

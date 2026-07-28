@@ -621,7 +621,7 @@ describe('DataValidation - 攻击性测试（边界情况与异常输入）', ()
             const deepObject = { a: { b: { c: { d: { e: 'value' } } } } };
             const rule = new ValidationRule({
                 range: 'A1:A1',
-                type: 'custom',
+                type: 'formula',
                 formula: '=TRUE()',
                 ...deepObject
             });

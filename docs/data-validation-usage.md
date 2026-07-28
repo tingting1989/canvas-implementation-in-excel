@@ -484,7 +484,7 @@ dv.setValidation({
 // 规则 B：自定义公式校验 必须为 5 的倍数（priority=1）
 dv.setValidation({
     range: 'B1:B10',
-    type: 'custom',
+    type: 'formula',
     formula: '=MOD(B2,5)=0',
     errorMessage: '必须为 5 的倍数',
     priority: 1,
@@ -554,7 +554,7 @@ console.log(dv.engine.conflictStrategy);      // 'short-circuit' | 'priority' | 
 ```javascript
 // priority 值越小越先执行 / 优先级越高
 dv.setValidation({ range: 'A:A', type: 'number', ..., priority: 0 });   // 第一位
-dv.setValidation({ range: 'A:A', type: 'custom', ..., priority: 1 });   // 第二位
+dv.setValidation({ range: 'A:A', type: 'formula', ..., priority: 1 });   // 第二位
 dv.setValidation({ range: 'A:A', type: 'unique', ..., priority: 10 });  // 最后一位（默认值）
 ```
 
@@ -581,7 +581,7 @@ dv.engine.conflictStrategy = 'priority';
 
 | 功能 | 状态 | 说明 |
 |------|------|------|
-| ✅ **自定义公式验证** (`type: 'custom'`) | **已实现** | [FormulaValidator.js](../src/plugins/data-validation/validators/FormulaValidator.js) — FormulaEngine 沙箱隔离求值，零副作用 |
+| ✅ **自定义公式验证** (`type: 'formula'`) | **已实现** | [FormulaValidator.js](../src/plugins/data-validation/validators/FormulaValidator.js) — FormulaEngine 沙箱隔离求值，零副作用 |
 | ✅ **日期/时间验证** (`type: 'date'`, `type: 'time'`) | **已实现** | [DateValidator.js](../src/plugins/data-validation/validators/DateValidator.js) + [TimeValidator.js](../src/plugins/data-validation/validators/TimeValidator.js) — 完整运算符支持 |
 | ✅ **正则表达式验证** (`type: 'regex'`) | **已实现** | [RegexValidator.js](../src/plugins/data-validation/validators/RegexValidator.js) — 自定义 pattern 模式匹配 |
 | ⏳ **下拉列表动态源** | **未实现** | [ListValidator.js#L75-L76](../src/plugins/data-validation/validators/ListValidator.js#L75-L76) 标记 `// TODO Phase 2: 实现动态区域引用解析`，当前仅支持静态数组 `source: ['a','b']` |
@@ -651,10 +651,10 @@ dv.setValidation({
 
 | 方式 | 适用场景 | 复杂度 | 需要写代码 |
 |------|---------|--------|-----------|
-| **方式一：`type: 'custom'` + `formula`** | Excel 公式能表达的条件（数值比较、逻辑组合、文本函数等） | 低 | ✅ 只需配置 |
+| **方式一：`type: 'formula'` + `formula`** | Excel 公式能表达的条件（数值比较、逻辑组合、文本函数等） | 低 | ✅ 只需配置 |
 | **方式二：继承 `BaseValidator` + `registerValidator()`** | 完全自定义逻辑（正则、异步 API 调用、跨表查询等） | 高 | ✅ 需要创建新类 |
 
-### 方式一：公式验证器 (`type: 'custom'`)
+### 方式一：公式验证器 (`type: 'formula'`)
 
 通过编写 Excel 公式定义验证逻辑，[FormulaValidator](../src/plugins/data-validation/validators/FormulaValidator.js) 会在**隔离沙箱**中执行求值（零副作用：不修改 DependencyGraph、不触发钩子、不写入缓存）。
 
@@ -666,7 +666,7 @@ const dv = workbook.getPlugin('dataValidation');
 // 示例 1: 复合条件 - 数值必须在 0-100 且为偶数
 dv.setValidation({
     range: 'A1:A100',
-    type: 'custom',
+    type: 'formula',
     formula: '=AND(A1>0, A1<100, MOD(A1,2)=0)',
     errorMessage: '必须输入 0-100 之间的偶数',
     errorStyle: 'stop'
@@ -675,7 +675,7 @@ dv.setValidation({
 // 示例 2: 引用其他单元格 - B 列值必须大于 A 列同行的值
 dv.setValidation({
     range: 'B1:B50',
-    type: 'custom',
+    type: 'formula',
     formula: '=B1>A1',
     errorMessage: 'B 列值必须大于 A 列同行值'
 });
@@ -683,7 +683,7 @@ dv.setValidation({
 // 示例 3: 文本格式校验 - 必须包含 @ 符号（邮箱格式）
 dv.setValidation({
     range: 'C1:C200',
-    type: 'custom',
+    type: 'formula',
     formula: '=ISNUMBER(FIND("@",C1))',
     errorMessage: '请输入有效的邮箱地址',
     errorStyle: 'warning'
@@ -698,7 +698,7 @@ const dv = workbook.getPlugin('dataValidation');
 // 示例 4: 日期范围 + 工作日判断（排除周末）
 dv.setValidation({
     range: 'D1:D50',
-    type: 'custom',
+    type: 'formula',
     formula: '=AND(D1>=DATE(2024,1,1), D1<=DATE(2025,12,31), WEEKDAY(D1,2)<6)',
     errorMessage: '必须在 2024-2025 年的工作日（周一至周五）'
 });
@@ -706,7 +706,7 @@ dv.setValidation({
 // 示例 5: 多条件复合 - 年龄必须在 18-65 且工龄不超过年龄-18
 dv.setValidation({
     range: 'E1:E500',
-    type: 'custom',
+    type: 'formula',
     formula: '=AND(E1>=18, E1<=65, F1<=E1-18)',
     errorMessage: '年龄必须在 18-65 岁之间，且工龄不能超过(年龄-18)年'
 });
@@ -714,7 +714,7 @@ dv.setValidation({
 // 示例 6: 文本前缀/后缀约束 - 订单号必须以 "ORD-" 开头
 dv.setValidation({
     range: 'F1:F1000',
-    type: 'custom',
+    type: 'formula',
     formula: '=LEFT(F1,4)="ORD-"',
     errorMessage: '订单号必须以 "ORD-" 开头',
     allowBlank: false,
@@ -724,7 +724,7 @@ dv.setValidation({
 // 示例 7: 数值精度 - 必须为 0.01 的整数倍（两位小数金额）
 dv.setValidation({
     range: 'G1:G200',
-    type: 'custom',
+    type: 'formula',
     formula: '=G1=ROUND(G1,2)',
     errorMessage: '金额最多保留 2 位小数',
     errorStyle: 'information'
@@ -733,7 +733,7 @@ dv.setValidation({
 // 示例 8: 跨列联动验证 - 结束日期必须大于开始日期
 dv.setValidation({
     range: 'H1:H100',
-    type: 'custom',
+    type: 'formula',
     formula: '=H1>G1',
     errorMessage: '结束日期必须晚于开始日期（G 列）'
 });
@@ -1419,7 +1419,7 @@ errorStyle: 'information'
 - **完善的测试覆盖** - 25 个用例 100% 通过
 
 ### Phase 2 ✅ 扩展验证器与基础设施（5/7 完成）
-- ✅ **自定义公式验证** (`type: 'custom'`) — FormulaEngine 沙箱隔离
+- ✅ **自定义公式验证** (`type: 'formula'`) — FormulaEngine 沙箱隔离
 - ✅ **日期/时间验证** (`type: 'date'`, `type: 'time'`) — 完整运算符支持
 - ✅ **正则表达式验证** (`type: 'regex'`) — 自定义 pattern 模式匹配
 - ✅ **ValidationPortal UI** — Portal 渲染下拉菜单、错误提示、气泡框

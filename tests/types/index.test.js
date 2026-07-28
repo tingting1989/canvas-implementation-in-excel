@@ -390,7 +390,7 @@ describe('types/index - Bug 检测', () => {
 
         it('Bug #3: extractTypeOptions 不完整', () => {
             const config = {
-                type: 'custom',
+                type: 'formula',
                 customOption: 'should be extracted',
                 anotherOption: 123,
             };

@@ -2317,7 +2317,7 @@ pasteWithConflictResolution(targetRow, targetCol, newRules, option) {
 // 单元格 A1 有 3 个规则：
 dv.setValidation({ range: 'A1', type: 'number', value: [0, 100] });        // Rule 1: 数值范围
 dv.setValidation({ range: 'A:A', type: 'text', operator: 'lengthBetween', value: [1, 10] }); // Rule 2: 文本长度
-dv.setValidation({ range: 'A1:A10', type: 'custom', formula: '=ISODD(A1)' }); // Rule 3: 自定义公式
+dv.setValidation({ range: 'A1:A10', type: 'formula', formula: '=ISODD(A1)' }); // Rule 3: 自定义公式
 
 // 用户输入 "abc" → Rule 1 失败（非数字），Rule 2 通过，Rule 3 无法执行
 // 最终结果是什么？
@@ -3193,7 +3193,7 @@ class DataValidationPlugin extends BasePlugin {
  * 验证规则配置选项
  * @typedef {Object} ValidationRuleOptions
  * @property {string} range - 目标区域（如 'A1:A100' 或 'B2:D50'）
- * @property {'number'|'text'|'list'|'date'|'time'|'custom'|'regex'|'unique'} type - 验证类型
+ * @property {'number'|'text'|'list'|'date'|'time'|'formula'|'regex'|'unique'} type - 验证类型
  * @property {string} [operator] - 比较运算符（用于 number/text/date 类型）
  *   - number: 'between'|'notBetween'|'greaterThan'|'lessThan'|'equal'|'notEqual'
  *   - text: 'contains'|'notContains'|'beginsWith'|'endsWith'|'lengthBetween'
@@ -3980,7 +3980,7 @@ const workbook = new Workbook('grid', {
 | 日期 | ✅ `type: 'date'` | 支持 |
 | 时间 | ✅ `type: 'time'` | 支持 |
 | 文本长度 | ✅ `type: 'text'` + `operator: 'lengthBetween'` | 支持 |
-| 自定义 | ✅ `type: 'custom'` + `formula` | 支持 |
+| 自定义 | ✅ `type: 'formula'` + `formula` | 支持 |
 | 圈释无效数据 | ⏳ Phase 2 | 条件格式联动 |
 | 输入信息 | ⏳ Phase 2 | Input Message |
 | 出错警告 | ✅ `errorStyle` | 支持 |
