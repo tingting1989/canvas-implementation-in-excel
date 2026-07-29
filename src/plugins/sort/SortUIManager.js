@@ -53,6 +53,20 @@ export class SortUIManager {
      */
     #showAllArrows = false;
 
+    /**
+     * 是否显示可排序列的指示器图标
+     * @type {boolean}
+     * @private
+     */
+    #showSortableIndicators = false;
+
+    /**
+     * 允许显示指示器的列索引集合
+     * @type {Set<number>|null}
+     * @private
+     */
+    #sortableColumns = null;
+
     constructor(plugin) {
         this.#plugin = plugin;
     }
@@ -102,8 +116,17 @@ export class SortUIManager {
 
         const isActive = state.col === col && state.isSorted;
 
-        if (!isActive && !this.#showAllArrows) {
-            return; // 未排序且不显示所有箭头
+        // 检查是否是可排序列
+        const isSortable = this.#isColumnSortable(col);
+
+        // 未排序状态下，只有在 showSortableIndicators 且列可排时才显示灰色箭头
+        if (!isActive && !this.#showAllArrows && !this.#showSortableIndicators) {
+            return;
+        }
+
+        // 未排序状态且需要显示可排序指示器，但列不可排
+        if (!isActive && this.#showSortableIndicators && !isSortable) {
+            return;
         }
 
         const arrowSize = CONFIG.SORT_ARROW_SIZE;
@@ -114,19 +137,24 @@ export class SortUIManager {
         ctx.save();
 
         if (isActive) {
-            ctx.fillStyle = CONFIG.SORT_ACTIVE_COLOR;
-            ctx.strokeStyle = CONFIG.SORT_ACTIVE_COLOR;
-            ctx.lineWidth = CONFIG.SORT_ARROW_LINE_WIDTH;
+            // 升序/降序：先画双向箭头（深色），再高亮上半部分或下半部分
+            ctx.fillStyle = CONFIG.SORT_INACTIVE_COLOR;
+            ctx.globalAlpha = 1.0;
+            this.#drawUpDownArrow(ctx, arrowX, arrowY, arrowSize);
 
+            // 高亮上半部分（升序↑）或下半部分（降序↓）
+            ctx.fillStyle = CONFIG.SORT_ACTIVE_COLOR;
+            ctx.globalAlpha = 1.0;
             if (state.order === SORT_ORDER.ASC) {
-                this.#drawUpArrow(ctx, arrowX, arrowY, arrowSize);
+                this.#fillUpArrow(ctx, arrowX, arrowY, arrowSize);
             } else if (state.order === SORT_ORDER.DESC) {
-                this.#drawDownArrow(ctx, arrowX, arrowY, arrowSize);
+                this.#fillDownArrow(ctx, arrowX, arrowY, arrowSize);
             }
         } else {
+            // 未排序状态：显示深色双向箭头
             ctx.fillStyle = CONFIG.SORT_INACTIVE_COLOR;
-            ctx.globalAlpha = CONFIG.SORT_INACTIVE_ALPHA;
-            this.#drawUpDownArrow(ctx, arrowX, arrowY, arrowSize); // 双向箭头
+            ctx.globalAlpha = 1.0;
+            this.#drawUpDownArrow(ctx, arrowX, arrowY, arrowSize);
         }
 
         ctx.restore();
@@ -177,39 +205,39 @@ export class SortUIManager {
         this.#showAllArrows = show;
     }
 
+    /**
+     * 设置是否显示可排序列的排序指示器图标
+     *
+     * @param {boolean} show - 是否显示
+     * @param {Set<number>|null} sortableColumns - 可排序列索引集合
+     */
+    setShowSortableIndicators(show, sortableColumns) {
+        this.#showSortableIndicators = show;
+        this.#sortableColumns = sortableColumns;
+    }
+
+    /**
+     * 检查指定列是否可排序
+     *
+     * @param {number} colIndex - 列索引
+     * @returns {boolean} 是否可排序
+     * @private
+     */
+    #isColumnSortable(colIndex) {
+        if (this.#sortableColumns === null) {
+            return false;
+        }
+
+        if (this.#sortableColumns.size === 0) {
+            return false;
+        }
+
+        return this.#sortableColumns.has(colIndex);
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // 私有方法 - 箭头绘制
     // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * 绘制上升箭头（▲）
-     * @private
-     */
-    #drawUpArrow(ctx, x, y, size) {
-        const path = this.#getOrCreatePath("up", size);
-
-        ctx.beginPath();
-        ctx.moveTo(x + size / 2, y);
-        ctx.lineTo(x + size, y + size);
-        ctx.lineTo(x, y + size);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-    }
-
-    /**
-     * 绘制下降箭头（▼）
-     * @private
-     */
-    #drawDownArrow(ctx, x, y, size) {
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + size, y);
-        ctx.lineTo(x + size / 2, y + size);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-    }
 
     /**
      * 绘制双向箭头（↕）- 用于未排序状态
@@ -234,6 +262,64 @@ export class SortUIManager {
         ctx.lineTo(x + halfSize, y + size - 1);
         ctx.closePath();
         ctx.fill();
+    }
+
+    /**
+     * 填充双向箭头的上半部分（升序高亮↑）
+     * @private
+     */
+    #fillUpArrow(ctx, x, y, size) {
+        const halfSize = size / 2;
+        const centerY = y + halfSize;
+
+        ctx.beginPath();
+        ctx.moveTo(x + halfSize, y + 1);
+        ctx.lineTo(x + size - 1, centerY - 1);
+        ctx.lineTo(x + 1, centerY - 1);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    /**
+     * 填充双向箭头的下半部分（降序高亮↓）
+     * @private
+     */
+    #fillDownArrow(ctx, x, y, size) {
+        const halfSize = size / 2;
+        const centerY = y + halfSize;
+
+        ctx.beginPath();
+        ctx.moveTo(x + 1, centerY + 1);
+        ctx.lineTo(x + size - 1, centerY + 1);
+        ctx.lineTo(x + halfSize, y + size - 1);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    /**
+     * 绘制上升空心三角形（▲）
+     * @private
+     */
+    #drawUpTriangle(ctx, x, y, size) {
+        ctx.beginPath();
+        ctx.moveTo(x + size / 2, y);
+        ctx.lineTo(x + size, y + size);
+        ctx.lineTo(x, y + size);
+        ctx.closePath();
+        ctx.stroke();
+    }
+
+    /**
+     * 绘制下降空心三角形（▼）
+     * @private
+     */
+    #drawDownTriangle(ctx, x, y, size) {
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + size, y);
+        ctx.lineTo(x + size / 2, y + size);
+        ctx.closePath();
+        ctx.stroke();
     }
 
     // ═══════════════════════════════════════════════════════════════

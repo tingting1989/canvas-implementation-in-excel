@@ -117,6 +117,14 @@ export class SortPlugin extends BasePlugin {
      */
     #active = false;
 
+    /**
+     * 允许排序的列索引集合（Set 用于 O(1) 查找）
+     * 为空或 null 表示所有列都不允许排序
+     * @type {Set<number>|null}
+     * @private
+     */
+    #sortableColumns = null;
+
     /** @type {Function|null} 列头渲染回调（用于绘制排序UI） */
     #headerRendererCallback = null;
 
@@ -158,11 +166,16 @@ export class SortPlugin extends BasePlugin {
 
         this.#initSortEngine(sheet);
 
+        this.#parseSortableColumns(options.sortableColumns);
+
         // 创建并注册排序策略到 EventHandler（标准化方式）
         this.#sortStrategy = new SortStrategy(this.eventHandler, this);
         this.addStrategy("sort", this.#sortStrategy);
 
         this.#sortUIManager.init();
+
+        // 启用显示所有可排序列的排序指示器图标
+        this.#sortUIManager.setShowSortableIndicators(true, this.#sortableColumns);
 
         // 注册列头渲染器（用于绘制排序箭头和高亮）
         this.#registerHeaderRenderer();
@@ -174,6 +187,11 @@ export class SortPlugin extends BasePlugin {
         this.#active = true;
         this.renderEngine?.invalidateAll();
         this.render();
+
+        errorHandler.info(
+            ERROR_CODE.SORT_INFO,
+            `[Sort] 初始化完成，允许排序的列: ${this.#sortableColumns?.size > 0 ? [...this.#sortableColumns].join(", ") : "无"}`,
+        );
     }
 
     /**
@@ -189,6 +207,43 @@ export class SortPlugin extends BasePlugin {
 
         this.#sortEngine = new SortEngine(cellStore, this.#sortState, rowCount);
         this.#fixedRowsTop = sheet.fixedRowsTop || 0;
+    }
+
+    /**
+     * 解析可排序列配置
+     *
+     * 配置规则：
+     * - 如果未配置（undefined/null）或为空数组 → 所有列都不可排序
+     * - 如果配置了数组 → 只有数组中的列索引可以排序
+     *
+     * @param {number[]|undefined} sortableColumns - 可排序列索引数组
+     * @private
+     */
+    #parseSortableColumns(sortableColumns) {
+        if (!sortableColumns || !Array.isArray(sortableColumns) || sortableColumns.length === 0) {
+            this.#sortableColumns = null;
+            return;
+        }
+
+        this.#sortableColumns = new Set(sortableColumns.map((col) => Number(col)));
+    }
+
+    /**
+     * 检查指定列是否允许排序
+     *
+     * @param {number} colIndex - 列索引
+     * @returns {boolean} 是否可排序
+     */
+    isColumnSortable(colIndex) {
+        if (this.#sortableColumns === null) {
+            return false;
+        }
+
+        if (this.#sortableColumns.size === 0) {
+            return false;
+        }
+
+        return this.#sortableColumns.has(colIndex);
     }
 
     /**
@@ -527,5 +582,27 @@ export class SortPlugin extends BasePlugin {
 
     get sortUIManager() {
         return this.#sortUIManager;
+    }
+
+    /**
+     * 获取可排序列配置
+     * @returns {number[]|null} 可排序列索引数组，null 表示不允许任何列排序
+     */
+    get sortableColumns() {
+        if (this.#sortableColumns === null) {
+            return null;
+        }
+        return [...this.#sortableColumns];
+    }
+
+    /**
+     * 设置可排序列配置
+     *
+     * @param {number[]|null} columns - 可排序列索引数组，null 或空数组表示不允许任何列排序
+     */
+    set sortableColumns(columns) {
+        this.#parseSortableColumns(columns);
+        this.#sortUIManager?.setShowSortableIndicators(this.#sortableColumns !== null && this.#sortableColumns.size > 0, this.#sortableColumns);
+        this.#sortUIManager?.updateIndicators();
     }
 }

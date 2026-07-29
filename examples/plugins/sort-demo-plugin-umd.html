@@ -1,0 +1,696 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔀 SortPlugin 功能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .canvas-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            min-height: 500px;
+        }
+
+        #spreadsheet {
+            width: 100%;
+            height: 450px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 1.3em;
+            color: #495057;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #11998e;
+            font-weight: 600;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .control-group select,
+        .control-group input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .control-group select:focus,
+        .control-group input[type="text"]:focus {
+            outline: none;
+            border-color: #11998e;
+            box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+            transition: all 0.2s ease;
+        }
+
+        .checkbox-item:hover {
+            border-color: #11998e;
+            background: #f8fff9;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: normal;
+        }
+
+        .column-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .column-chip {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: #e9ecef;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .column-chip:hover {
+            background: #dee2e6;
+        }
+
+        .column-chip.selected {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .column-chip input {
+            display: none;
+        }
+
+        .status-display {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #11998e;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .log-panel {
+            grid-column: 1 / -1;
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+
+        .log-title {
+            color: #4facfe;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .log-content {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #d4d4d4;
+        }
+
+        .log-entry {
+            padding: 6px 10px;
+            margin: 4px 0;
+            border-radius: 4px;
+            border-left: 4px solid transparent;
+        }
+
+        .log-success {
+            background: rgba(56, 239, 125, 0.1);
+            border-left-color: #38ef7d;
+            color: #38ef7d;
+        }
+
+        .log-error {
+            background: rgba(255, 107, 107, 0.1);
+            border-left-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .log-info {
+            background: rgba(79, 172, 254, 0.1);
+            border-left-color: #4facfe;
+            color: #4facfe;
+        }
+
+        .log-warn {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            color: #ffc107;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔀 SortPlugin 功能演示</h1>
+            <p>通过 sortableColumns 配置控制哪些列可以参与排序</p>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <h3 style="margin-bottom: 15px; color: #495057;">📊 电子表格预览</h3>
+                <canvas id="spreadsheet"></canvas>
+            </div>
+
+            <div class="control-panel">
+                <h3 class="panel-title">⚙️ 排序配置</h3>
+
+                <div class="status-display">
+                    <div class="status-row">
+                        <span class="status-label">当前排序列</span>
+                        <span class="status-value" id="currentSortCol">-</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">排序方向</span>
+                        <span class="status-value" id="currentSortOrder">-</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">可排序列</span>
+                        <span class="status-value" id="sortableColsDisplay">-</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>🗂️ 选择可排序的列（点击切换）</label>
+                    <div class="column-selector" id="columnSelector">
+                        <!-- 动态生成 -->
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="applySortableColumns()">
+                    <span class="icon">✅</span>
+                    应用配置
+                </button>
+
+                <button class="btn btn-secondary" onclick="allowAllColumns()">
+                    <span class="icon">🔓</span>
+                    允许所有列排序
+                </button>
+
+                <button class="btn btn-warning" onclick="disallowAllColumns()">
+                    <span class="icon">🔒</span>
+                    禁用所有列排序
+                </button>
+
+                <button class="btn btn-info" onclick="testAscSort()">
+                    <span class="icon">⬆️</span>
+                    测试升序排序
+                </button>
+
+                <button class="btn btn-info" onclick="testDescSort()">
+                    <span class="icon">⬇️</span>
+                    测试降序排序
+                </button>
+            </div>
+
+            <div class="log-panel">
+                <h3 class="log-title">📋 操作日志</h3>
+                <div class="log-content" id="logContent">
+                    <div class="log-entry log-info">[系统] 页面加载完成，等待初始化...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>系统就绪</span>
+            </div>
+            <div>
+                CanvasSheet v2.1.0 | SortPlugin Demo
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入依赖 -->
+    <script src="../../dist/canvas-sheet.umd.js"></script>
+
+    <script>
+        let workbook = null;
+        let sortPlugin = null;
+        const TOTAL_COLUMNS = 6;
+        const COLUMN_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
+
+        function log(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        async function initSpreadsheet() {
+            try {
+                log('开始初始化 Workbook...', 'info');
+
+                const container = document.getElementById('spreadsheet');
+                workbook = new CanvasSheet.Workbook(container, {
+                    width: 900,
+                    height: 530,
+                    plugins: [
+                        "autoFill",
+                        "contextMenu",
+                        "columnMove",
+                        "copyPaste",
+                        "exportFile",
+                        "importFile",
+                        "hiddenColumns",
+                        "hiddenRows",
+                        "rowMove",
+                        "freeze",
+                        "formula",
+                        "sort",
+                        "dataValidation",
+                    ],
+                    pluginOptions: {
+                        sort: {
+                            sortableColumns: [0, 2, 4]
+                        }
+                    },
+                    sheets: [{
+                        name: "员工信息",
+                        data: [
+                            ["张三", 25, "北京", "技术部", 15000, "2020-03-15"],
+                            ["李四", 30, "上海", "市场部", 18000, "2019-07-01"],
+                            ["王五", 28, "广州", "技术部", 16000, "2021-01-10"],
+                            ["赵六", 35, "深圳", "人事部", 20000, "2018-05-20"],
+                            ["孙七", 27, "杭州", "技术部", 14000, "2022-02-28"],
+                            ["周八", 32, "南京", "财务部", 17000, "2017-11-15"],
+                            ["吴九", 29, "成都", "市场部", 15500, "2020-08-10"],
+                            ["郑十", 31, "武汉", "技术部", 19000, "2019-03-25"],
+                        ],
+                        rowHeaderWidth: 120,
+                        rowHeaders: [
+                            { label: "序号", style: { textAlign: "center" } },
+                            { label: "姓名", style: { textAlign: "center" } },
+                            { label: "年龄", style: { textAlign: "center" } },
+                            { label: "城市", style: { textAlign: "center" } },
+                            { label: "部门", style: { textAlign: "center" } },
+                            { label: "薪资", style: { textAlign: "center" } },
+                            { label: "入职日期", style: { textAlign: "center" } }
+                        ],
+                        columns: [
+                            { type: "text", width: 100 },
+                            { type: "numeric", width: 80, numericFormat: { pattern: "0" } },
+                            { type: "text", width: 100 },
+                            { type: "text", width: 100 },
+                            { type: "numeric", width: 100, numericFormat: { pattern: "$0,0" } },
+                            { type: "date", width: 120 },
+                        ],
+                    }]
+                });
+
+                workbook.initRender();
+                workbook.render();
+
+                sortPlugin = workbook.getPlugin('sort');
+
+                if (!sortPlugin) {
+                    throw new Error('SortPlugin 未找到');
+                }
+
+                log('✅ Workbook 初始化成功', 'success');
+                log('✅ SortPlugin 已加载', 'success');
+
+                initColumnSelector();
+                updateStatusDisplay();
+
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function initColumnSelector() {
+            const selector = document.getElementById('columnSelector');
+            selector.innerHTML = '';
+
+            const sortableColumns = sortPlugin.sortableColumns || [];
+
+            for (let i = 0; i < TOTAL_COLUMNS; i++) {
+                const chip = document.createElement('label');
+                chip.className = 'column-chip' + (sortableColumns.includes(i) ? ' selected' : '');
+                chip.innerHTML = `
+                    <input type="checkbox" value="${i}" ${sortableColumns.includes(i) ? 'checked' : ''}>
+                    列 ${COLUMN_LABELS[i]}
+                `;
+                chip.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'INPUT') return;
+                    const checkbox = chip.querySelector('input');
+                    checkbox.checked = !checkbox.checked;
+                    chip.classList.toggle('selected', checkbox.checked);
+                });
+                chip.querySelector('input').addEventListener('change', (e) => {
+                    chip.classList.toggle('selected', e.target.checked);
+                });
+                selector.appendChild(chip);
+            }
+        }
+
+        function getSelectedColumns() {
+            const checkboxes = document.querySelectorAll('#columnSelector input:checked');
+            return Array.from(checkboxes).map(cb => parseInt(cb.value));
+        }
+
+        function applySortableColumns() {
+            const selected = getSelectedColumns();
+            sortPlugin.sortableColumns = selected;
+            log(`✅ 已设置可排序列: [${selected.map(c => COLUMN_LABELS[c]).join(', ')}]`, 'success');
+            updateStatusDisplay();
+        }
+
+        function allowAllColumns() {
+            const allColumns = Array.from({ length: TOTAL_COLUMNS }, (_, i) => i);
+            sortPlugin.sortableColumns = allColumns;
+            log(`✅ 已允许所有列排序: [${COLUMN_LABELS.join(', ')}]`, 'success');
+            initColumnSelector();
+            updateStatusDisplay();
+        }
+
+        function disallowAllColumns() {
+            sortPlugin.sortableColumns = [];
+            log(`🔒 已禁用所有列排序`, 'warn');
+            initColumnSelector();
+            updateStatusDisplay();
+        }
+
+        async function testAscSort() {
+            const state = sortPlugin.getSortState();
+            if (state.col !== null) {
+                log(`⬆️ 对列 ${COLUMN_LABELS[state.col]} 执行升序排序...`, 'info');
+            } else {
+                log(`⬆️ 对列 A 执行升序排序（默认）...`, 'info');
+            }
+
+            try {
+                const startTime = performance.now();
+                sortPlugin.sortRows(0, { order: 'asc' });
+                const endTime = performance.now();
+
+                log(`✅ 升序排序完成 (${(endTime - startTime).toFixed(2)}ms)`, 'success');
+                updateStatusDisplay();
+            } catch (error) {
+                log(`❌ 排序失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testDescSort() {
+            const state = sortPlugin.getSortState();
+            if (state.col !== null) {
+                log(`⬇️ 对列 ${COLUMN_LABELS[state.col]} 执行降序排序...`, 'info');
+            } else {
+                log(`⬇️ 对列 A 执行降序排序（默认）...`, 'info');
+            }
+
+            try {
+                const startTime = performance.now();
+                sortPlugin.sortRows(0, { order: 'desc' });
+                const endTime = performance.now();
+
+                log(`✅ 降序排序完成 (${(endTime - startTime).toFixed(2)}ms)`, 'success');
+                updateStatusDisplay();
+            } catch (error) {
+                log(`❌ 排序失败: ${error.message}`, 'error');
+            }
+        }
+
+        function updateStatusDisplay() {
+            const state = sortPlugin.getSortState();
+            const sortableColumns = sortPlugin.sortableColumns || [];
+
+            document.getElementById('currentSortCol').textContent =
+                state.col !== null ? `列 ${COLUMN_LABELS[state.col]}` : '-';
+
+            document.getElementById('currentSortOrder').textContent =
+                state.order ? state.order.toUpperCase() : '-';
+
+            document.getElementById('sortableColsDisplay').textContent =
+                sortableColumns.length > 0
+                    ? sortableColumns.map(c => COLUMN_LABELS[c]).join(', ')
+                    : '无';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initSpreadsheet, 500);
+        });
+
+        window.addEventListener('error', (event) => {
+            log(`💥 全局错误: ${event.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

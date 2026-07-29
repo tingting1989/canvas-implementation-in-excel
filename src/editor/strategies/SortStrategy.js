@@ -158,6 +158,10 @@ export class SortStrategy extends EventStrategy {
      * @private
      */
     #toggleSort(colIndex) {
+        if (!this.#plugin.isColumnSortable(colIndex)) {
+            return;
+        }
+
         const currentState = this.#plugin.getSortState();
         let newOrder;
 

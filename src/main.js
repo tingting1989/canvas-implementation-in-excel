@@ -175,7 +175,7 @@ const initApp = () => {
             "freeze",
             "formula",
 
-            // "sort",
+            "sort",
             "dataValidation",
             "chart",
             // "interaction"
@@ -242,7 +242,11 @@ const initApp = () => {
             },
 
             // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
-
+            sort: {
+                // 允许排序的列索引数组（0-based）
+                // 不配置或为空数组 → 所有列都不可排序
+                sortableColumns: [0, 2, 4], // 只允许 A、C、E 列排序
+            },
             dataValidation: {
                 // ═══════════════════════════════════════════════════════════
                 // 📌 DataValidationPlugin v3.0 配置
