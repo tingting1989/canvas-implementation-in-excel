@@ -21,7 +21,8 @@ export class FilterEngine {
         const rowCount = this.#sheet.rowCount || 1000;
 
         for (let row = 0; row < rowCount; row++) {
-            const cellValue = this.#sheet.getCellValue(row, col);
+            const cell = this.#sheet.data.cellStore.get(row, col);
+            const cellValue = cell?.value;
 
             if (NullValueHandler.isNullValue(cellValue)) {
                 values.add(NullValueHandler.NULL_KEY);
@@ -46,7 +47,10 @@ export class FilterEngine {
 
     computeHiddenRows() {
         const filters = this.#filterState.getAllFilters();
-        if (filters.size === 0) return new Set();
+        console.log("[FilterEngine] computeHiddenRows, filters.size:", filters?.size);
+        if (filters.size === 0) {
+            return new Set();
+        }
 
         const rowCount = this.#sheet.rowCount || 1000;
         const hiddenRows = new Set();
@@ -70,7 +74,8 @@ export class FilterEngine {
     }
 
     #rowMatchesFilter(row, col, filter) {
-        const cellValue = this.#sheet.getCellValue(row, col);
+        const cell = this.#sheet.data.cellStore.get(row, col);
+        const cellValue = cell?.value;
         const isNullCell = NullValueHandler.isNullValue(cellValue);
 
         if (filter.type === "values") {

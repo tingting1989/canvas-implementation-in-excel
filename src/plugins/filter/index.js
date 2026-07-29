@@ -3,7 +3,6 @@ export { FilterEngine } from "./FilterEngine.js";
 export { FilterUIManager } from "./FilterUIManager.js";
 export { FilterDropdown } from "./FilterDropdown.js";
 export { VirtualValueList } from "./VirtualValueList.js";
-export { FilterStrategy } from "./FilterStrategy.js";
 export { NullValueHandler, NULL_VALUE_TYPES } from "./NullValueTypes.js";
 export { FilterIconRenderer } from "./FilterIconRenderer.js";
 export { FilterPerformanceUtils } from "./FilterPerformanceUtils.js";

@@ -1,6 +1,6 @@
-﻿import { WebComponent } from "../../core/WebComponent.js";
-import { NullValueHandler } from "./NullValueTypes.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
+﻿import {WebComponent} from "@/core/WebComponent";
+import {EVENT_NAMES} from "@/constants/eventNames";
+import {NullValueHandler} from "@/plugins/filter/NullValueTypes";
 
 export class VirtualValueList extends WebComponent {
     #items = [];
@@ -10,6 +10,7 @@ export class VirtualValueList extends WebComponent {
     #visibleCount = 10;
     #scrollTop = 0;
     #renderZone = null;
+    #eventsBound = false;  // ← 新增：标记事件是否已绑定
 
     init(items, uncheckedValues, onToggle) {
         this.#items = items;
@@ -20,6 +21,11 @@ export class VirtualValueList extends WebComponent {
     updateItems(items, uncheckedValues) {
         this.#items = items;
         this.#uncheckedValues = new Set(uncheckedValues);
+        this.#scrollTop = 0;
+        // 重置滚动位置
+        if (this.shadowRoot) {
+            this.scrollTop = 0;  // ← 直接设置，因为 this 就是 host element
+        }
         this.#renderVisibleItems();
     }
 
@@ -28,7 +34,7 @@ export class VirtualValueList extends WebComponent {
             <style>
                 :host {
                     display: block;
-                    height: ${this.#visibleCount * this.#itemHeight}px;
+                    height: 240px;
                     overflow-y: auto;
                     position: relative;
                 }
@@ -64,10 +70,12 @@ export class VirtualValueList extends WebComponent {
         `;
 
         this.#renderZone = this.shadowRoot.querySelector(".virtual-render-zone");
+        this.#eventsBound = false;  // ← render 后需要重新绑定
+        this.#bindRenderZoneEvents();  // ← 只在 render 时绑定一次
     }
 
     onConnect(disposable) {
-        disposable.trackEvent(this, EVENT_NAMES.SCROLL, this.#handleScroll.bind(this));
+        disposable.trackEvent(this, EVENT_NAMES.SCROLL, this.#handleScroll);
         this.#renderVisibleItems();
     }
 
@@ -75,15 +83,22 @@ export class VirtualValueList extends WebComponent {
         this.#items = [];
         this.#uncheckedValues.clear();
         this.#onToggle = null;
+        this.#renderZone = null;
+        this.#eventsBound = false;
     }
 
-    #handleScroll() {
-        this.#scrollTop = this.scrollTop;
+    #handleScroll(e) {
+        this.#scrollTop = e.target?.scrollTop || 0;
         this.#renderVisibleItems();
     }
 
     #renderVisibleItems() {
         if (!this.#renderZone) return;
+
+        const container = this.shadowRoot.querySelector(".virtual-container");
+        if (container) {
+            container.style.height = `${this.#items.length * this.#itemHeight}px`;
+        }
 
         const startIndex = Math.floor(this.#scrollTop / this.#itemHeight);
         const endIndex = Math.min(startIndex + this.#visibleCount + 2, this.#items.length);
@@ -114,11 +129,11 @@ export class VirtualValueList extends WebComponent {
         }
 
         this.#renderZone.innerHTML = html;
-        this.#bindRenderZoneEvents();
+        // ← 注意：不再在这里调用 #bindRenderZoneEvents()
     }
 
     #bindRenderZoneEvents() {
-        if (!this.#renderZone) return;
+        if (!this.#renderZone || this.#eventsBound) return;  // ← 防止重复绑定
 
         this.#renderZone.addEventListener(EVENT_NAMES.CLICK, (e) => {
             const valueItem = e.target.closest(".virtual-item");
@@ -133,6 +148,7 @@ export class VirtualValueList extends WebComponent {
                 } else {
                     this.#uncheckedValues.add(key);
                 }
+                this.#onToggle?.(key, !this.#uncheckedValues.has(key));
             } else {
                 checkbox.checked = !checkbox.checked;
                 if (checkbox.checked) {
@@ -140,10 +156,11 @@ export class VirtualValueList extends WebComponent {
                 } else {
                     this.#uncheckedValues.add(key);
                 }
+                this.#onToggle?.(key, checkbox.checked);
             }
-
-            this.#onToggle?.(key);
         });
+
+        this.#eventsBound = true;  // ← 标记已绑定
     }
 }
 

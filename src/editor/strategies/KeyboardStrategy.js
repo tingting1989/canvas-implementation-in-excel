@@ -125,9 +125,40 @@ export class KeyboardStrategy extends EventStrategy {
     }
 
     /**
+     * 获取实际焦点的元素（处理 Shadow DOM 情况）
+     * 当焦点在 WebComponent 的 Shadow DOM 内时，document.activeElement 返回宿主元素
+     * 此方法深入 shadowRoot 找到真正聚焦的元素
+     *
+     * @param {HTMLElement} host - 可能是宿主元素的元素
+     * @returns {HTMLElement|null} 实际的焦点元素，如果不是 Shadow DOM 则返回原元素
+     */
+    #getEffectiveActiveElement(host) {
+        if (!host || !host.shadowRoot) {
+            return null;
+        }
+
+        const shadowRoot = host.shadowRoot;
+        if (!shadowRoot.activeElement) {
+            return null;
+        }
+
+        return shadowRoot.activeElement;
+    }
+
+    /**
      * 执行完整的焦点元素检查（核心逻辑）
      */
     #performFullCheck(activeElement) {
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // 0️⃣ 特殊处理：Shadow DOM 情况
+        // 当焦点在 Shadow DOM 内的 input 时，document.activeElement 是宿主元素
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        const effectiveElement = this.#getEffectiveActiveElement(activeElement);
+        if (effectiveElement && effectiveElement !== activeElement) {
+            // 递归检查 shadow DOM 内的实际焦点元素
+            return this.#performFullCheck(effectiveElement);
+        }
+
         const tagName = activeElement.tagName.toLowerCase();
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

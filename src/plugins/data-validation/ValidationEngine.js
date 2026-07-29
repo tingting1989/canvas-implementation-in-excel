@@ -123,14 +123,6 @@ export class ValidationEngine {
         this.registerValidator("time", dateTimeValidator);
         this.registerValidator("datetime", dateTimeValidator);
         this.registerValidator("regex", new RegexValidator());
-
-        errorHandler.info(ERROR_CODE.VALIDATION_INFO, `[ValidationEngine] v3.0 初始化完成`, {
-            FormulaEngine: formulaEngine ? "✅" : "❌",
-            高级缓存: this.#enableAdvancedCache ? "✅" : "❌",
-            同步阈值: `${config.syncThreshold || 10}ms`,
-            异步超时: `${config.asyncTimeout || 500}ms`,
-            延迟验证: config.enableDeferred !== false ? "✅" : "❌",
-        });
     }
 
     /**

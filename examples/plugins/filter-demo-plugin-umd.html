@@ -1,11 +1,9 @@
-
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🔀 SortPlugin 功能演示</title>
+    <title>🔍 FilterPlugin 功能演示</title>
     <style>
         * {
             margin: 0;
@@ -30,7 +28,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -56,17 +54,14 @@
 
         .canvas-container {
             background: #f8f9fa;
-            border-radius: 12px;
             padding: 20px;
-            border: 2px solid #e9ecef;
+            border: 1px solid #e9ecef;
             min-height: 500px;
         }
 
         #spreadsheet {
             width: 100%;
             height: 450px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
             background: white;
         }
 
@@ -83,8 +78,37 @@
             color: #495057;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 3px solid #11998e;
+            border-bottom: 3px solid #667eea;
             font-weight: 600;
+        }
+
+        .status-display {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #667eea;
         }
 
         .control-group {
@@ -96,57 +120,6 @@
             font-weight: 600;
             margin-bottom: 8px;
             color: #495057;
-        }
-
-        .control-group select,
-        .control-group input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-
-        .control-group select:focus,
-        .control-group input[type="text"]:focus {
-            outline: none;
-            border-color: #11998e;
-            box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .checkbox-item {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-            background: white;
-            border-radius: 6px;
-            border: 1px solid #dee2e6;
-            transition: all 0.2s ease;
-        }
-
-        .checkbox-item:hover {
-            border-color: #11998e;
-            background: #f8fff9;
-        }
-
-        .checkbox-item input[type="checkbox"] {
-            margin-right: 10px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .checkbox-item label {
-            margin: 0;
-            cursor: pointer;
-            font-weight: normal;
         }
 
         .column-selector {
@@ -178,41 +151,12 @@
         }
 
         .column-chip.selected {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
 
         .column-chip input {
             display: none;
-        }
-
-        .status-display {
-            padding: 15px;
-            background: white;
-            border-radius: 8px;
-            border: 2px solid #dee2e6;
-            margin-bottom: 20px;
-        }
-
-        .status-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .status-row:last-child {
-            border-bottom: none;
-        }
-
-        .status-label {
-            color: #6c757d;
-            font-size: 13px;
-        }
-
-        .status-value {
-            font-weight: 600;
-            color: #11998e;
         }
 
         .btn {
@@ -232,25 +176,25 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            color: white;
-            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
-        }
-
-        .btn-secondary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
 
-        .btn-secondary:hover {
+        .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
         }
 
         .btn-info {
@@ -265,14 +209,14 @@
         }
 
         .btn-warning {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
             color: white;
-            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);
         }
 
         .btn-warning:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+            box-shadow: 0 6px 20px rgba(250, 112, 154, 0.6);
         }
 
         .log-panel {
@@ -374,83 +318,63 @@
         .icon {
             font-size: 1.2em;
         }
-
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔀 SortPlugin 功能演示</h1>
-            <p>通过 sortableColumns 配置控制哪些列可以参与排序</p>
+            <h1>🔍 FilterPlugin 功能演示</h1>
+            <p>通过 filterableColumns 配置控制哪些列可以参与过滤</p>
         </div>
 
         <div class="main-content">
             <div class="canvas-container">
-                <h3 style="margin-bottom: 15px; color: #495057;">📊 电子表格预览</h3>
                 <canvas id="spreadsheet"></canvas>
             </div>
 
             <div class="control-panel">
-                <h3 class="panel-title">⚙️ 排序配置</h3>
+                <h3 class="panel-title">⚙️ 过滤配置</h3>
 
                 <div class="status-display">
                     <div class="status-row">
-                        <span class="status-label">当前排序列</span>
-                        <span class="status-value" id="currentSortCol">-</span>
+                        <span class="status-label">激活的过滤器</span>
+                        <span class="status-value" id="activeFilters">无</span>
                     </div>
                     <div class="status-row">
-                        <span class="status-label">排序方向</span>
-                        <span class="status-value" id="currentSortOrder">-</span>
+                        <span class="status-label">可见行数</span>
+                        <span class="status-value" id="visibleRows">-</span>
                     </div>
                     <div class="status-row">
-                        <span class="status-label">可排序列</span>
-                        <span class="status-value" id="sortableColsDisplay">-</span>
+                        <span class="status-label">可过滤列</span>
+                        <span class="status-value" id="filterableColsDisplay">-</span>
                     </div>
                 </div>
 
                 <div class="control-group">
-                    <label>🗂️ 选择可排序的列（点击切换）</label>
+                    <label>🗂️ 选择可过滤的列（点击切换）</label>
                     <div class="column-selector" id="columnSelector">
                         <!-- 动态生成 -->
                     </div>
                 </div>
 
-                <button class="btn btn-primary" onclick="applySortableColumns()">
+                <button class="btn btn-primary" onclick="applyFilterableColumns()">
                     <span class="icon">✅</span>
                     应用配置
                 </button>
 
                 <button class="btn btn-secondary" onclick="allowAllColumns()">
                     <span class="icon">🔓</span>
-                    允许所有列排序
+                    允许所有列过滤
                 </button>
 
                 <button class="btn btn-warning" onclick="disallowAllColumns()">
                     <span class="icon">🔒</span>
-                    禁用所有列排序
+                    禁用所有列过滤
                 </button>
 
-                <button class="btn btn-info" onclick="testAscSort()">
-                    <span class="icon">⬆️</span>
-                    测试升序排序
-                </button>
-
-                <button class="btn btn-info" onclick="testDescSort()">
-                    <span class="icon">⬇️</span>
-                    测试降序排序
+                <button class="btn btn-info" onclick="clearAllFilters()">
+                    <span class="icon">🧹</span>
+                    清除所有过滤器
                 </button>
             </div>
 
@@ -468,7 +392,7 @@
                 <span>系统就绪</span>
             </div>
             <div>
-                CanvasSheet v2.1.0 | SortPlugin Demo
+                CanvasSheet v2.1.0 | FilterPlugin Demo
             </div>
         </div>
     </div>
@@ -478,9 +402,10 @@
 
     <script>
         let workbook = null;
-        let sortPlugin = null;
+        let filterPlugin = null;
         const TOTAL_COLUMNS = 6;
         const COLUMN_LABELS = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const TOTAL_ROWS = 12;
 
         function log(message, type = 'info') {
             const logContent = document.getElementById('logContent');
@@ -514,11 +439,17 @@
                         "freeze",
                         "formula",
                         "sort",
+                        "filter",
                         "dataValidation",
                     ],
                     pluginOptions: {
+                        filter: {
+                            // 允许过滤的列索引数组（0-based）
+                            filterableColumns: [0, 2, 4]
+                        },
                         sort: {
-                            sortableColumns: [0, 2, 4]
+                            // 允许过滤的列索引数组（0-based）
+                            filterableColumns: [0, 2, 4]
                         }
                     },
                     sheets: [{
@@ -532,6 +463,10 @@
                             ["周八", 32, "南京", "财务部", 17000, "2017-11-15"],
                             ["吴九", 29, "成都", "市场部", 15500, "2020-08-10"],
                             ["郑十", 31, "武汉", "技术部", 19000, "2019-03-25"],
+                            ["王二", 26, "西安", "市场部", 14500, "2021-05-20"],
+                            ["李三", 33, "苏州", "财务部", 18500, "2018-09-12"],
+                            ["赵四", 29, "重庆", "技术部", 16500, "2020-11-30"],
+                            ["孙五", 34, "天津", "人事部", 19500, "2017-06-08"],
                         ],
                         rowHeaderWidth: 120,
                         rowHeaders: [
@@ -554,15 +489,15 @@
                     }]
                 });
 
+                filterPlugin = workbook.getPlugin('filter');
 
-                sortPlugin = workbook.getPlugin('sort');
-
-                if (!sortPlugin) {
-                    throw new Error('SortPlugin 未找到');
+                if (!filterPlugin) {
+                    throw new Error('FilterPlugin 未找到');
                 }
 
                 log('✅ Workbook 初始化成功', 'success');
-                log('✅ SortPlugin 已加载', 'success');
+                log('✅ FilterPlugin 已加载', 'success');
+                log(`📝 默认允许过滤的列: [${filterPlugin.filterableColumns?.map(c => COLUMN_LABELS[c]).join(', ') || '无'}]`, 'info');
 
                 initColumnSelector();
                 updateStatusDisplay();
@@ -577,13 +512,13 @@
             const selector = document.getElementById('columnSelector');
             selector.innerHTML = '';
 
-            const sortableColumns = sortPlugin.sortableColumns || [];
+            const filterableColumns = filterPlugin.filterableColumns || [];
 
             for (let i = 0; i < TOTAL_COLUMNS; i++) {
                 const chip = document.createElement('label');
-                chip.className = 'column-chip' + (sortableColumns.includes(i) ? ' selected' : '');
+                chip.className = 'column-chip' + (filterableColumns.includes(i) ? ' selected' : '');
                 chip.innerHTML = `
-                    <input type="checkbox" value="${i}" ${sortableColumns.includes(i) ? 'checked' : ''}>
+                    <input type="checkbox" value="${i}" ${filterableColumns.includes(i) ? 'checked' : ''}>
                     列 ${COLUMN_LABELS[i]}
                 `;
                 chip.addEventListener('click', (e) => {
@@ -604,81 +539,57 @@
             return Array.from(checkboxes).map(cb => parseInt(cb.value));
         }
 
-        function applySortableColumns() {
+        function applyFilterableColumns() {
             const selected = getSelectedColumns();
-            sortPlugin.sortableColumns = selected;
-            log(`✅ 已设置可排序列: [${selected.map(c => COLUMN_LABELS[c]).join(', ')}]`, 'success');
+            filterPlugin.filterableColumns = selected;
+            log(`✅ 已设置可过滤列: [${selected.map(c => COLUMN_LABELS[c]).join(', ') || '无'}]`, 'success');
             updateStatusDisplay();
         }
 
         function allowAllColumns() {
             const allColumns = Array.from({ length: TOTAL_COLUMNS }, (_, i) => i);
-            sortPlugin.sortableColumns = allColumns;
-            log(`✅ 已允许所有列排序: [${COLUMN_LABELS.join(', ')}]`, 'success');
+            filterPlugin.filterableColumns = allColumns;
+            log(`✅ 已允许所有列过滤: [${COLUMN_LABELS.join(', ')}]`, 'success');
             initColumnSelector();
             updateStatusDisplay();
         }
 
         function disallowAllColumns() {
-            sortPlugin.sortableColumns = [];
-            log(`🔒 已禁用所有列排序`, 'warn');
+            filterPlugin.filterableColumns = [];
+            log(`🔒 已禁用所有列过滤`, 'warn');
             initColumnSelector();
             updateStatusDisplay();
         }
 
-        async function testAscSort() {
-            const state = sortPlugin.getSortState();
-            if (state.col !== null) {
-                log(`⬆️ 对列 ${COLUMN_LABELS[state.col]} 执行升序排序...`, 'info');
-            } else {
-                log(`⬆️ 对列 A 执行升序排序（默认）...`, 'info');
-            }
-
-            try {
-                const startTime = performance.now();
-                sortPlugin.sortRows(0, { order: 'asc' });
-                const endTime = performance.now();
-
-                log(`✅ 升序排序完成 (${(endTime - startTime).toFixed(2)}ms)`, 'success');
-                updateStatusDisplay();
-            } catch (error) {
-                log(`❌ 排序失败: ${error.message}`, 'error');
-            }
-        }
-
-        async function testDescSort() {
-            const state = sortPlugin.getSortState();
-            if (state.col !== null) {
-                log(`⬇️ 对列 ${COLUMN_LABELS[state.col]} 执行降序排序...`, 'info');
-            } else {
-                log(`⬇️ 对列 A 执行降序排序（默认）...`, 'info');
-            }
-
-            try {
-                const startTime = performance.now();
-                sortPlugin.sortRows(0, { order: 'desc' });
-                const endTime = performance.now();
-
-                log(`✅ 降序排序完成 (${(endTime - startTime).toFixed(2)}ms)`, 'success');
-                updateStatusDisplay();
-            } catch (error) {
-                log(`❌ 排序失败: ${error.message}`, 'error');
-            }
+        function clearAllFilters() {
+            filterPlugin.clearAllFilters();
+            log(`🧹 已清除所有过滤器`, 'info');
+            updateStatusDisplay();
         }
 
         function updateStatusDisplay() {
-            const state = sortPlugin.getSortState();
-            const sortableColumns = sortPlugin.sortableColumns || [];
+            const filterableColumns = filterPlugin.filterableColumns || [];
+            const filterState = workbook.getActiveSheet()?.filterState;
+            let activeCount = 0;
+            let activeList = [];
 
-            document.getElementById('currentSortCol').textContent =
-                state.col !== null ? `列 ${COLUMN_LABELS[state.col]}` : '-';
+            if (filterState) {
+                for (let i = 0; i < TOTAL_COLUMNS; i++) {
+                    if (filterState.getColumnFilter(i) !== null) {
+                        activeCount++;
+                        activeList.push(COLUMN_LABELS[i]);
+                    }
+                }
+            }
 
-            document.getElementById('currentSortOrder').textContent =
-                state.order ? state.order.toUpperCase() : '-';
+            document.getElementById('activeFilters').textContent =
+                activeCount > 0 ? `列 ${activeList.join(', ')}` : '无';
 
-            document.getElementById('sortableColsDisplay').textContent =
-                sortableColumns.length > 0
-                    ? sortableColumns.map(c => COLUMN_LABELS[c]).join(', ')
+            document.getElementById('visibleRows').textContent = TOTAL_ROWS;
+
+            document.getElementById('filterableColsDisplay').textContent =
+                filterableColumns.length > 0
+                    ? filterableColumns.map(c => COLUMN_LABELS[c]).join(', ')
                     : '无';
         }
 

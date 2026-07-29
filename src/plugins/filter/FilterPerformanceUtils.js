@@ -31,7 +31,8 @@
 
         const data = [];
         for (let row = 0; row < rowCount; row++) {
-            const rawValue = sheet.getCellValue(row, col);
+            const cell = sheet.data.cellStore.get(row, col);
+            const rawValue = cell?.value;
 
             data.push({
                 raw: rawValue,

@@ -8,8 +8,6 @@ export class FilterStrategy extends EventStrategy {
 
     #uiManager = null;
     #plugin = null;
-    #iconSize = 12;
-    #iconPadding = 6;
 
     constructor(uiManager, handler, plugin) {
         super(handler);
@@ -48,22 +46,54 @@ export class FilterStrategy extends EventStrategy {
     #handleCanvasMouseDown(e) {
         if (!this.enabled || !this.#uiManager || !this.handler?.viewport) return true;
 
-        // 使用 viewport.hitTest 获取点击信息（与 MouseStrategy 相同的方式）
+        // 使用 viewport.hitTest 获取点击信息
         const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit) return true;
 
         // 只处理列头区域的点击
         if (hit.type !== HIT_TYPE.COL_HEADER) return true;
 
-        // 检查是否点击了筛选图标区域
-        const isFilterIconHit = this.#isFilterIconArea(hit, e);
+        const col = hit.index;
 
-        if (!isFilterIconHit) return true; // 不是图标区域，让其他策略处理
+        // 检查该列是否可过滤
+        const filterPlugin = this.#plugin;
+        if (!filterPlugin || !filterPlugin.isColumnFilterable(col)) return true;
+
+        // 获取 canvas 边界以计算画布坐标
+        const canvasRect = this.handler.canvasContext.canvas.getBoundingClientRect();
+        const canvasX = e.clientX - canvasRect.left;
+        const canvasY = e.clientY - canvasRect.top;
+
+        // 获取 sheet 和行列管理器
+        const sheet = this.handler.sheet;
+        if (!sheet) return true;
+
+        const rc = sheet.rowColManager;
+        const headerW = sheet.getHeaderWidth();
+        const headerH = sheet.getHeaderHeight();
+        const scrollX = this.handler.viewport.scrollX;
+        const fixedCols = sheet.fixedColumnsStart || 0;
+
+        // 计算列头矩形（视口坐标）
+        const effectiveScrollX = col < fixedCols ? 0 : scrollX;
+        const colX = rc.getColX(col);
+        const colWidth = rc.getColWidth(col);
+
+        const headerRect = {
+            x: headerW + colX - effectiveScrollX,
+            y: 0,
+            width: colWidth,
+            height: headerH,
+        };
+
+        // 使用 FilterPlugin 的 hitTestFilterIcon 方法检测是否点击在过滤图标上
+        const isFilterIconHit = filterPlugin.hitTestFilterIcon(col, canvasX, canvasY, headerRect);
+
+        if (!isFilterIconHit) return true;
 
         e.preventDefault();
         e.stopPropagation();
 
-        const col = hit.col;
         const position = {
             x: e.clientX,
             y: e.clientY,
@@ -73,39 +103,7 @@ export class FilterStrategy extends EventStrategy {
 
         this.#uiManager.openDropdown(col, position);
 
-        return false; // 阻止后续策略处理（如选整列）
-    }
-
-    #isFilterIconArea(hit, event) {
-        if (!hit.rect) return false;
-
-        // 计算图标区域（列头右侧）
-        const iconRightEdge = hit.rect.right - this.#iconPadding;
-        const iconLeftEdge = iconRightEdge - (this.#iconSize + this.#iconPadding * 2);
-
-        // 使用 hit 中的坐标或事件的 clientX
-        let mouseX;
-        if (hit.mouseX !== undefined) {
-            mouseX = hit.mouseX;
-        } else {
-            // 如果 hit 没有 mouseX，从 rect 和事件计算相对位置
-            mouseX = event.clientX - (hit.rect.left || 0);
-
-            // 加上可能的视口偏移
-            if (hit.viewportX !== undefined) {
-                mouseX += hit.viewportX;
-            }
-        }
-
-        const isIconArea = mouseX >= iconLeftEdge && mouseX <= iconRightEdge;
-
-        if (isIconArea) {
-            console.log("[Filter] 图标命中检测成功");
-            console.log("   图标区域:", iconLeftEdge, "-", iconRightEdge);
-            console.log("   鼠标 X:", mouseX);
-        }
-
-        return isIconArea;
+        return false;
     }
 
     destroy() {

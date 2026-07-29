@@ -1,6 +1,4 @@
-﻿import { EVENT_NAMES } from "../../constants/eventNames.js";
-
-export class FilterIconRenderer {
+﻿export class FilterIconRenderer {
     static ICON_SIZE = 12;
     static ICON_PADDING = 6;
     static ACTIVE_COLOR = "#1890ff";

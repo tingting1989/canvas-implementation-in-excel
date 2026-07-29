@@ -59,7 +59,7 @@ const initApp = () => {
                 ],
 
                 columns: [
-                    // { type: "numeric", width: 120, style: { textAlign: "center" } },
+                    { type: "numeric", width: 120 },
                     // { type: "hyperlink", width: 100 },
                     // // 用户评分
                     // {
@@ -176,10 +176,9 @@ const initApp = () => {
             "formula",
 
             "sort",
-            "dataValidation",
+            //"dataValidation",
             "chart",
-            // "interaction"
-            // "filter",
+            "filter",
         ],
         pluginOptions: {
             contextMenu: {
@@ -242,172 +241,176 @@ const initApp = () => {
             },
 
             // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
-            sort: {
-                // 允许排序的列索引数组（0-based）
-                // 不配置或为空数组 → 所有列都不可排序
-                sortableColumns: [0, 2, 4], // 只允许 A、C、E 列排序
+            // sort: {
+            //     // 允许排序的列索引数组（0-based）
+            //     // 不配置或为空数组 → 所有列都不可排序
+            //     sortableColumns: [0, 2, 4], // 只允许 A、C、E 列排序
+            // },
+            filter: {
+                // 允许过滤的列索引数组（0-based）
+                filterableColumns: [0, 2, 4],
             },
-            dataValidation: {
-                // ═══════════════════════════════════════════════════════════
-                // 📌 DataValidationPlugin v3.0 配置
-                // ═══════════════════════════════════════════════════════════
-                //
-                // 核心功能：
-                // ✅ 单轨异步架构 + 同步快速通道优化
-                // ✅ 深度集成 FormulaEngine（消除 Mock 数据）
-                // ✅ 三级缓存系统（L1视口 → L2最近 → L3持久化）
-                // ✅ 复杂度分析器（智能路径决策）
-                // ✅ 支持 49+ 内置函数 + 无限自定义函数
-                // ✅ 6种图标状态渐进式渲染
-                //
-                conflictStrategy: "short-circuit",
-                highlightInvalidCells: true,
-
-                // v3.0 新增：公式验证配置
-                formulaValidation: {
-                    // 同步快速通道配置（用于 BEFORE_SET_VALUE_AT 实时拦截）
-                    syncFastPath: {
-                        enabled: true,
-                        threshold: 10, // 复杂度阈值(ms)，<10ms 走同步
-                        maxComplexity: 2, // 复杂度等级 ≤2 才走同步
-                    },
-                    // 异步验证配置
-                    asyncValidation: {
-                        enabled: true,
-                        timeout: 500, // 异步超时时间(ms)
-                        maxConcurrent: 5, // 最大并发验证数
-                        retryAttempts: 2, // 失败重试次数
-                    },
-                    // 三级缓存配置
-                    cache: {
-                        enabled: true,
-                        l1MaxSize: 500, // 视口缓存最大容量
-                        l2MaxSize: 1000, // 最近缓存最大容量
-                        l3Enabled: true, // 是否启用持久化缓存(IndexedDB)
-                        defaultTTL: 3600000, // 默认缓存有效期(ms)，1小时
-                    },
-                },
-
-                rules: [
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例2：同步快速通道公式验证（简单公式）
-                    // 复杂度 ≤2，预计响应时间 <10ms
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "A:A",
-                        type: "formula",
-                        formula: "=A{row}>0", // 简单比较公式，复杂度=1
-                        allowBlank: false,
-                        errorMessage: "评分必须大于0",
-                        errorStyle: "warning",
-                        // inputTitle: "评分验证",
-                        // inputMessage: "请输入1-5的评分"
-                    },
-
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例3：同步快速通道公式验证（复合条件）
-                    // AND函数 + 多条件，复杂度=2
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "B:B",
-                        type: "formula",
-                        formula: "=AND(B{row}>=1, B{row}<=5)", // 复合条件，复杂度=2
-                        allowBlank: true,
-                        errorMessage: "专家评分必须在1-5之间",
-                        errorStyle: "stop",
-                    },
-
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例4：异步验证公式（复杂公式）
-                    // 复杂度 >2，自动走异步管道，显示 pending 图标
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "C2:C20",
-                        type: "formula",
-                        formula: "=AND(C{row}>0,A{row}>0,C{row}*0.6+A{row}*0.4>0)", // 复杂公式，复杂度>2
-                        allowBlank: true,
-                        errorMessage: "综合评分计算失败，请检查输入",
-                        errorStyle: "warning",
-                    },
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例1：基础文本验证（原有规则）
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "D1:D10",
-                        type: "text",
-                        operator: "lengthBetween",
-                        value: [3, 10],
-                        allowBlank: false,
-                        errorMessage: "长度为3-10个字符",
-                        errorStyle: "stop",
-                    },
-
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例5：自定义函数验证（业务逻辑注入）
-                    // 使用已注册的自定义函数验证数据
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "E2:E20",
-                        type: "formula",
-                        formula: "=ISPRIME(E{row})", // 自定义函数验证质数
-                        allowBlank: true,
-                        errorMessage: "推荐指数必须是质数",
-                        // errorStyle: "information",
-                        errorStyle: "warning",
-                    },
-
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例6：跨单元格引用验证
-                    // 引用其他单元格进行条件判断
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "F2:F20",
-                        type: "formula",
-                        formula: "=C{row}>A{row}", // 跨单元格比较
-                        allowBlank: true,
-                        errorMessage: "满意度对比验证失败",
-                        errorStyle: "warning",
-                    },
-
-                    {
-                        range: "G:G",
-                        type: "formula",
-                        formula: "CALCULATEBMI(A{row},B{row})", // 跨单元格比较
-                        errorMessage: "必须输入正数",
-                        errorStyle: "warning",
-                    },
-                    //
-                    // {
-                    //     range: "A:A",
-                    //     type: "text",
-                    //     operator: "greaterThan",
-                    //     value: 5,
-                    //     errorMessage: "必须输入正数",
-                    //     errorStyle: "stop",
-                    // },
-                    //
-                    // {
-                    //     range: "C:C",
-                    //     type: "time",
-                    //     operator: "between",
-                    //     value: ["09:00", "18:00"],
-                    //     errorMessage: "必须输入正数",
-                    //     errorStyle: "stop",
-                    // },
-                    // {
-                    //     range: "D:D",
-                    //     type: "unique",
-                    // },
-                    // {
-                    //     range: "G:G",
-                    //     type: "date",
-                    //     operator: "between",
-                    //     value: ["01/01/2020", "12/31/2020"],
-                    //     errorMessage: "必须输入正数",
-                    //     errorStyle: "stop",
-                    // },
-                ],
-            },
+            // dataValidation: {
+            //     // ═══════════════════════════════════════════════════════════
+            //     // 📌 DataValidationPlugin v3.0 配置
+            //     // ═══════════════════════════════════════════════════════════
+            //     //
+            //     // 核心功能：
+            //     // ✅ 单轨异步架构 + 同步快速通道优化
+            //     // ✅ 深度集成 FormulaEngine（消除 Mock 数据）
+            //     // ✅ 三级缓存系统（L1视口 → L2最近 → L3持久化）
+            //     // ✅ 复杂度分析器（智能路径决策）
+            //     // ✅ 支持 49+ 内置函数 + 无限自定义函数
+            //     // ✅ 6种图标状态渐进式渲染
+            //     //
+            //     conflictStrategy: "short-circuit",
+            //     highlightInvalidCells: true,
+            //
+            //     // v3.0 新增：公式验证配置
+            //     formulaValidation: {
+            //         // 同步快速通道配置（用于 BEFORE_SET_VALUE_AT 实时拦截）
+            //         syncFastPath: {
+            //             enabled: true,
+            //             threshold: 10, // 复杂度阈值(ms)，<10ms 走同步
+            //             maxComplexity: 2, // 复杂度等级 ≤2 才走同步
+            //         },
+            //         // 异步验证配置
+            //         asyncValidation: {
+            //             enabled: true,
+            //             timeout: 500, // 异步超时时间(ms)
+            //             maxConcurrent: 5, // 最大并发验证数
+            //             retryAttempts: 2, // 失败重试次数
+            //         },
+            //         // 三级缓存配置
+            //         cache: {
+            //             enabled: true,
+            //             l1MaxSize: 500, // 视口缓存最大容量
+            //             l2MaxSize: 1000, // 最近缓存最大容量
+            //             l3Enabled: true, // 是否启用持久化缓存(IndexedDB)
+            //             defaultTTL: 3600000, // 默认缓存有效期(ms)，1小时
+            //         },
+            //     },
+            //
+            //     rules: [
+            //         // ═══════════════════════════════════════════════════════════
+            //         // 📝 示例2：同步快速通道公式验证（简单公式）
+            //         // 复杂度 ≤2，预计响应时间 <10ms
+            //         // ═══════════════════════════════════════════════════════════
+            //         {
+            //             range: "A:A",
+            //             type: "formula",
+            //             formula: "=A{row}>0", // 简单比较公式，复杂度=1
+            //             allowBlank: false,
+            //             errorMessage: "评分必须大于0",
+            //             errorStyle: "warning",
+            //             // inputTitle: "评分验证",
+            //             // inputMessage: "请输入1-5的评分"
+            //         },
+            //
+            //         // ═══════════════════════════════════════════════════════════
+            //         // 📝 示例3：同步快速通道公式验证（复合条件）
+            //         // AND函数 + 多条件，复杂度=2
+            //         // ═══════════════════════════════════════════════════════════
+            //         {
+            //             range: "B:B",
+            //             type: "formula",
+            //             formula: "=AND(B{row}>=1, B{row}<=5)", // 复合条件，复杂度=2
+            //             allowBlank: true,
+            //             errorMessage: "专家评分必须在1-5之间",
+            //             errorStyle: "stop",
+            //         },
+            //
+            //         // ═══════════════════════════════════════════════════════════
+            //         // 📝 示例4：异步验证公式（复杂公式）
+            //         // 复杂度 >2，自动走异步管道，显示 pending 图标
+            //         // ═══════════════════════════════════════════════════════════
+            //         {
+            //             range: "C2:C20",
+            //             type: "formula",
+            //             formula: "=AND(C{row}>0,A{row}>0,C{row}*0.6+A{row}*0.4>0)", // 复杂公式，复杂度>2
+            //             allowBlank: true,
+            //             errorMessage: "综合评分计算失败，请检查输入",
+            //             errorStyle: "warning",
+            //         },
+            //         // ═══════════════════════════════════════════════════════════
+            //         // 📝 示例1：基础文本验证（原有规则）
+            //         // ═══════════════════════════════════════════════════════════
+            //         {
+            //             range: "D1:D10",
+            //             type: "text",
+            //             operator: "lengthBetween",
+            //             value: [3, 10],
+            //             allowBlank: false,
+            //             errorMessage: "长度为3-10个字符",
+            //             errorStyle: "stop",
+            //         },
+            //
+            //         // ═══════════════════════════════════════════════════════════
+            //         // 📝 示例5：自定义函数验证（业务逻辑注入）
+            //         // 使用已注册的自定义函数验证数据
+            //         // ═══════════════════════════════════════════════════════════
+            //         {
+            //             range: "E2:E20",
+            //             type: "formula",
+            //             formula: "=ISPRIME(E{row})", // 自定义函数验证质数
+            //             allowBlank: true,
+            //             errorMessage: "推荐指数必须是质数",
+            //             // errorStyle: "information",
+            //             errorStyle: "warning",
+            //         },
+            //
+            //         // ═══════════════════════════════════════════════════════════
+            //         // 📝 示例6：跨单元格引用验证
+            //         // 引用其他单元格进行条件判断
+            //         // ═══════════════════════════════════════════════════════════
+            //         {
+            //             range: "F2:F20",
+            //             type: "formula",
+            //             formula: "=C{row}>A{row}", // 跨单元格比较
+            //             allowBlank: true,
+            //             errorMessage: "满意度对比验证失败",
+            //             errorStyle: "warning",
+            //         },
+            //
+            //         {
+            //             range: "G:G",
+            //             type: "formula",
+            //             formula: "CALCULATEBMI(A{row},B{row})", // 跨单元格比较
+            //             errorMessage: "必须输入正数",
+            //             errorStyle: "warning",
+            //         },
+            //         //
+            //         // {
+            //         //     range: "A:A",
+            //         //     type: "text",
+            //         //     operator: "greaterThan",
+            //         //     value: 5,
+            //         //     errorMessage: "必须输入正数",
+            //         //     errorStyle: "stop",
+            //         // },
+            //         //
+            //         // {
+            //         //     range: "C:C",
+            //         //     type: "time",
+            //         //     operator: "between",
+            //         //     value: ["09:00", "18:00"],
+            //         //     errorMessage: "必须输入正数",
+            //         //     errorStyle: "stop",
+            //         // },
+            //         // {
+            //         //     range: "D:D",
+            //         //     type: "unique",
+            //         // },
+            //         // {
+            //         //     range: "G:G",
+            //         //     type: "date",
+            //         //     operator: "between",
+            //         //     value: ["01/01/2020", "12/31/2020"],
+            //         //     errorMessage: "必须输入正数",
+            //         //     errorStyle: "stop",
+            //         // },
+            //     ],
+            // },
         },
         hooks: {
             // ==================== 编辑相关钩子 ====================
@@ -697,6 +700,10 @@ const initApp = () => {
     // });
 
     const sheet = wb.getActiveSheet();
+    for (let i = 0; i < 300; i++) {
+        sheet.setCell(i, 0, i);
+    }
+
     wb.updateSettings({
         conditionalStyles: [
             {

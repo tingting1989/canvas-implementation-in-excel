@@ -1,7 +1,7 @@
-﻿import { PopupPanel } from "../../ui/components/PopupPanel.js";
-import { VirtualValueList } from "./VirtualValueList.js";
-import { NullValueHandler } from "./NullValueTypes.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
+﻿import {PopupPanel} from "../../ui/components/PopupPanel.js";
+import {VirtualValueList} from "./VirtualValueList.js";
+import {NullValueHandler} from "./NullValueTypes.js";
+import {EVENT_NAMES} from "../../constants/eventNames.js";
 
 export class FilterDropdown extends PopupPanel {
     #col = -1;
@@ -50,7 +50,8 @@ export class FilterDropdown extends PopupPanel {
             position,
             placement: "bottom",
             zIndex: 10001,
-            onClose: () => {},
+            onClose: () => {
+            },
         });
 
         this.#renderContent();
@@ -117,6 +118,10 @@ export class FilterDropdown extends PopupPanel {
                     overflow-y: auto;
                     min-height: 100px;
                     max-height: 250px;
+                }
+                .filter-dropdown-panel .filter-content.virtual {
+                    overflow: hidden;
+                    max-height: none;
                 }
                 .filter-dropdown-panel .filter-value-item {
                     padding: 4px 12px;
@@ -226,13 +231,23 @@ export class FilterDropdown extends PopupPanel {
         }
 
         if (target.classList.contains("filter-clear-btn")) {
+
+            this.#searchKeyword = "";
+            const searchInput = this.shadowRoot.querySelector(".filter-search-input");
+            if (searchInput) searchInput.value = "";
+            this.#uncheckedValues = new Set();
+            this.#conditionOperator = null;
+            this.#conditionValue = null;
+
+            this.#renderContent();
+
             this.#onClear?.();
             return;
         }
 
         if (target.classList.contains("filter-apply-btn")) {
             this.#applyCurrentFilter();
-            return;
+
         }
     }
 
@@ -252,7 +267,6 @@ export class FilterDropdown extends PopupPanel {
 
         if (target.classList.contains("filter-condition-operator")) {
             this.#conditionOperator = target.value;
-            return;
         }
     }
 
@@ -279,6 +293,7 @@ export class FilterDropdown extends PopupPanel {
     }
 
     #getFilteredValues() {
+
         let filtered = this.#allValues;
 
         if (this.#searchKeyword) {
@@ -295,6 +310,7 @@ export class FilterDropdown extends PopupPanel {
             }
         }
 
+
         return filtered;
     }
 
@@ -305,13 +321,22 @@ export class FilterDropdown extends PopupPanel {
 
     #renderContent() {
         const contentArea = this.shadowRoot.querySelector(".filter-content");
-        if (!contentArea) return;
+        const filteredValues = this.#getFilteredValues();
+        const shouldVirtualize = this.#shouldVirtualize(filteredValues);
+
+        const currentlyVirtual = contentArea.classList.contains("virtual");
+
+        if (shouldVirtualize && currentlyVirtual && this.#virtualList) {
+            this.#virtualList.updateItems(filteredValues, this.#uncheckedValues);
+            return;
+        }
 
         contentArea.innerHTML = "";
+        contentArea.classList.remove("virtual");
+        this.#virtualList = null;
 
-        const filteredValues = this.#getFilteredValues();
-
-        if (this.#shouldVirtualize(filteredValues)) {
+        if (shouldVirtualize) {
+            contentArea.classList.add("virtual");
             this.#renderVirtualValueList(contentArea, filteredValues);
         } else {
             this.#renderDirectValueList(contentArea, filteredValues);
@@ -334,7 +359,8 @@ export class FilterDropdown extends PopupPanel {
             <span>(全选)</span>
         `;
 
-        selectAllItem.addEventListener("click", () => {
+        selectAllItem.addEventListener("click", (e) => {
+            if (e.target.tagName === "INPUT") return;
             if (allChecked) {
                 values.forEach((v) => this.#uncheckedValues.add(v));
             } else {
@@ -360,12 +386,14 @@ export class FilterDropdown extends PopupPanel {
                 <span style="font-style: italic; color: #999;">${NullValueHandler.BLANK_DISPLAY}</span>
             `;
 
-            blankItem.addEventListener("click", () => {
+            blankItem.addEventListener("click", (e) => {
+                if (e.target.tagName === "INPUT") return;
                 if (this.#uncheckedValues.has(NullValueHandler.NULL_KEY)) {
                     this.#uncheckedValues.delete(NullValueHandler.NULL_KEY);
                 } else {
                     this.#uncheckedValues.add(NullValueHandler.NULL_KEY);
                 }
+                this.#renderContent();
             });
 
             container.appendChild(blankItem);
@@ -387,12 +415,14 @@ export class FilterDropdown extends PopupPanel {
             <span>${this.escapeHtml(value)}</span>
         `;
 
-        item.addEventListener("click", () => {
+        item.addEventListener("click", (e) => {
+            if (e.target.tagName === "INPUT") return;
             if (this.#uncheckedValues.has(value)) {
                 this.#uncheckedValues.delete(value);
             } else {
                 this.#uncheckedValues.add(value);
             }
+            this.#renderContent();
         });
 
         return item;
@@ -401,19 +431,64 @@ export class FilterDropdown extends PopupPanel {
     #renderVirtualValueList(container, values) {
         if (this.#virtualList) {
             this.#virtualList.updateItems(values, this.#uncheckedValues);
+            this.#updateSelectAllState(container, values);
             return;
         }
 
-        this.#virtualList = document.createElement("virtual-value-list");
-        container.appendChild(this.#virtualList);
+        const selectAllItem = document.createElement("div");
+        selectAllItem.className = "filter-value-item filter-select-all";
+        selectAllItem.innerHTML = `
+            <input type="checkbox">
+            <span>(全选)</span>
+        `;
+        container.appendChild(selectAllItem);
 
+        this.#bindSelectAllEvent(selectAllItem, values);
+
+        this.#virtualList = document.createElement("virtual-value-list");
         this.#virtualList.init(values, this.#uncheckedValues, (value, checked) => {
             if (checked) {
                 this.#uncheckedValues.delete(value);
             } else {
                 this.#uncheckedValues.add(value);
             }
+            this.#virtualList.updateItems(values, this.#uncheckedValues);
+            this.#updateSelectAllState(container, values);
         });
+        container.appendChild(this.#virtualList);
+
+        this.#updateSelectAllState(container, values);
+    }
+
+    #bindSelectAllEvent(selectAllItem, values) {
+        selectAllItem.addEventListener("click", (e) => {
+            if (e.target.tagName === "INPUT") return;
+            const checkbox = selectAllItem.querySelector('input');
+            const isCurrentlyChecked = checkbox.checked;
+
+            if (isCurrentlyChecked) {
+                values.forEach((v) => this.#uncheckedValues.delete(v));
+            } else {
+                values.forEach((v) => this.#uncheckedValues.add(v));
+            }
+
+            this.#virtualList?.updateItems(values, this.#uncheckedValues);
+            this.#updateSelectAllState(e.currentTarget.parentElement, values);
+        });
+    }
+
+    #updateSelectAllState(container, values) {
+        const selectAllItem = container.querySelector(".filter-select-all");
+        if (!selectAllItem) return;
+
+        const normalValues = values.filter((v) => v !== NullValueHandler.NULL_KEY);
+        const allNormalChecked = normalValues.every((v) => !this.#uncheckedValues.has(v));
+        const hasBlankValue = values.includes(NullValueHandler.NULL_KEY);
+        const blankChecked = hasBlankValue && !this.#uncheckedValues.has(NullValueHandler.NULL_KEY);
+        const isAllChecked = normalValues.length > 0 && allNormalChecked && (!hasBlankValue || blankChecked);
+
+        const checkbox = selectAllItem.querySelector('input');
+        checkbox.checked = isAllChecked;
     }
 
     #renderConditionOperators() {
@@ -448,6 +523,7 @@ export class FilterDropdown extends PopupPanel {
     }
 
     #applyCurrentFilter() {
+        console.log("[FilterDropdown] #applyCurrentFilter, #uncheckedValues:", Array.from(this.#uncheckedValues), "size:", this.#uncheckedValues.size);
         let filter;
 
         if (this.#filterMode === "values") {
@@ -455,6 +531,7 @@ export class FilterDropdown extends PopupPanel {
                 type: "values",
                 uncheckedValues: new Set(this.#uncheckedValues),
             };
+            console.log("[FilterDropdown] filter created:", filter);
         } else {
             filter = {
                 type: "condition",
