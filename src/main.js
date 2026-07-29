@@ -760,7 +760,7 @@ const initApp = () => {
         // 注册自定义函数：ISPRIME - 判断是否为质数
         functionRegistry.register?.("ISPRIME", (args) => {
             console.log("ISPRIME", args);
-            const value = args[0];
+            const value = Number(args[0]);
             if (value === null || value === undefined || isNaN(value)) {
                 return false;
             }
@@ -777,7 +777,7 @@ const initApp = () => {
         // 注册自定义函数：ISPOSITIVE - 判断是否为正数
         functionRegistry.register?.("ISPOSITIVE", (args) => {
             console.log("ISPOSITIVE", args);
-            const value = args[0];
+            const value = Number(args[0]);
             return !isNaN(value) && value > 0;
         });
 

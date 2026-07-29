@@ -830,4 +830,110 @@ export class FormulaEngine {
                 return "";
         }
     }
+
+    /**
+     * 验证专用同步求值方法
+     * 支持：
+     * - 自定义函数（通过 functionRegistry）
+     * - 内置函数
+     * - 单元格引用
+     * - 虚拟上下文（编辑时单元格可能没有实际值）
+     *
+     * @param {string} formulaStr - 公式字符串（含前导 "="）
+     * @param {Object} context - 验证上下文
+     * @param {*} context.value - 当前单元格值
+     * @param {number} context.row - 当前行号
+     * @param {number} context.col - 当前列号
+     * @param {object} context.sheet - Sheet 实例
+     * @param {object} [context.workbook] - Workbook 实例
+     * @param {Object} [context.options] - 求值选项
+     * @returns {*} 公式计算结果
+     */
+    evaluateForValidation(formulaStr, context = {}) {
+        return Promise.resolve().then(() => this.evaluateForValidationSync(formulaStr, context));
+    }
+
+    /**
+     * 验证专用同步求值方法
+     * 支持：
+     * - 自定义函数（通过 functionRegistry）
+     * - 内置函数
+     * - 单元格引用
+     * - 虚拟上下文（编辑时单元格可能没有实际值）
+     *
+     * @param {string} formulaStr - 公式字符串（含前导 "="）
+     * @param {Object} context - 验证上下文
+     * @param {*} context.value - 当前单元格值
+     * @param {number} context.row - 当前行号
+     * @param {number} context.col - 当前列号
+     * @param {object} context.sheet - Sheet 实例
+     * @param {object} [context.workbook] - Workbook 实例
+     * @param {Object} [context.options] - 求值选项
+     * @returns {*} 公式计算结果
+     */
+    evaluateForValidationSync(formulaStr, context = {}) {
+        if (!formulaStr || typeof formulaStr !== "string") {
+            return true;
+        }
+
+        const raw = formulaStr.startsWith("=") ? formulaStr.substring(1) : formulaStr;
+
+        let ast;
+        try {
+            ast = parseFormula(raw);
+        } catch (parseError) {
+            errorHandler.debug(ERROR_CODE.FORMULA_PARSE_ERROR, `验证公式解析失败: ${formulaStr}`, {
+                formulaStr,
+                error: parseError,
+            });
+            return false;
+        }
+
+        const { value, row, col, sheet, options = {} } = context;
+        const targetSheet = sheet || this.workbook?.getActiveSheet?.();
+
+        if (!targetSheet) {
+            errorHandler.debug(ERROR_CODE.VALIDATION_ERROR, "验证上下文缺少 sheet", { context });
+            return false;
+        }
+
+        const virtualSheet = this.#createVirtualSheet(targetSheet, row, col, value);
+
+        this.evaluator.dependencies = new Set();
+
+        try {
+            const result = this.evaluator.evaluate(ast, virtualSheet);
+            return result;
+        } catch (evalError) {
+            errorHandler.debug(ERROR_CODE.FORMULA_EVAL_ERROR, `验证公式求值失败: ${formulaStr}`, {
+                formulaStr,
+                error: evalError,
+            });
+            return false;
+        }
+    }
+
+    /**
+     * 创建虚拟 Sheet，用于验证时提供隔离的求值环境
+     * @private
+     */
+    #createVirtualSheet(realSheet, row, col, value) {
+        const self = this;
+
+        return {
+            name: realSheet.name,
+            cellStore: {
+                get: (r, c) => {
+                    if (r === row && c === col) {
+                        return { value, formula: null };
+                    }
+                    return realSheet.cellStore?.get?.(r, c) || null;
+                },
+                set: () => {},
+            },
+            cellDataAccessor: realSheet.cellDataAccessor,
+            getAllCells: () => [],
+            workbook: self.workbook,
+        };
+    }
 }
