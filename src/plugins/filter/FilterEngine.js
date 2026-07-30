@@ -176,11 +176,22 @@ export class FilterEngine {
         }
 
         const dateOperators = [
-            "dateEq", "dateNeq", "dateBefore", "dateAfter", "dateBetween",
-            "dateToday", "dateYesterday", "dateTomorrow",
-            "dateThisWeek", "dateLastWeek", "dateNextWeek",
-            "dateThisMonth", "dateLastMonth", "dateNextMonth",
-            "dateThisYear", "dateLastYear"
+            "dateEq",
+            "dateNeq",
+            "dateBefore",
+            "dateAfter",
+            "dateBetween",
+            "dateToday",
+            "dateYesterday",
+            "dateTomorrow",
+            "dateThisWeek",
+            "dateLastWeek",
+            "dateNextWeek",
+            "dateThisMonth",
+            "dateLastMonth",
+            "dateNextMonth",
+            "dateThisYear",
+            "dateLastYear",
         ];
         if (dateOperators.includes(operator)) {
             return this.#evaluateDateCondition(cellValue, isNullCell, operator, conditionValue, conditionValueEnd);
@@ -307,8 +318,7 @@ export class FilterEngine {
             case "dateAfter":
                 return this.#compareDates(cellDate, conditionValue) > 0;
             case "dateBetween":
-                return this.#compareDates(cellDate, conditionValue) >= 0 &&
-                       this.#compareDates(cellDate, conditionValueEnd) <= 0;
+                return this.#compareDates(cellDate, conditionValue) >= 0 && this.#compareDates(cellDate, conditionValueEnd) <= 0;
             case "dateToday":
                 return this.#isSameDay(cellDate, now);
             case "dateYesterday":
@@ -389,9 +399,7 @@ export class FilterEngine {
      */
     #isSameDay(date1, date2) {
         if (!date1 || !date2) return false;
-        return date1.getFullYear() === date2.getFullYear() &&
-               date1.getMonth() === date2.getMonth() &&
-               date1.getDate() === date2.getDate();
+        return date1.getFullYear() === date2.getFullYear() && date1.getMonth() === date2.getMonth() && date1.getDate() === date2.getDate();
     }
 
     /**

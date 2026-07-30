@@ -824,13 +824,22 @@ export class FilterDropdown extends PopupPanel {
 
         if (columnType === "date") {
             return [
-                "dateEq", "dateNeq",
-                "dateBefore", "dateAfter",
+                "dateEq",
+                "dateNeq",
+                "dateBefore",
+                "dateAfter",
                 "dateBetween",
-                "dateToday", "dateYesterday", "dateTomorrow",
-                "dateThisWeek", "dateLastWeek", "dateNextWeek",
-                "dateThisMonth", "dateLastMonth", "dateNextMonth",
-                "dateThisYear", "dateLastYear"
+                "dateToday",
+                "dateYesterday",
+                "dateTomorrow",
+                "dateThisWeek",
+                "dateLastWeek",
+                "dateNextWeek",
+                "dateThisMonth",
+                "dateLastMonth",
+                "dateNextMonth",
+                "dateThisYear",
+                "dateLastYear",
             ];
         }
 
