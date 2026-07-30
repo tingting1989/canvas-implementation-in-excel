@@ -2,6 +2,18 @@
 import { EVENT_NAMES } from "@/constants/eventNames";
 import { NullValueHandler } from "@/plugins/filter/NullValueTypes";
 
+/**
+ * 虚拟值列表组件
+ *
+ * 用于大数据量时的虚拟滚动优化，只渲染可见区域的选项。
+ * 支持：
+ * - 虚拟滚动（只渲染可见项）
+ * - 复选框勾选状态管理
+ * - 全选/取消全选
+ * - 空值显示
+ *
+ * @extends WebComponent
+ */
 const template = document.createElement("template");
 template.innerHTML = `
     <style>
@@ -52,16 +64,28 @@ export class VirtualValueList extends WebComponent {
     #renderZone = null;
     #eventsBound = false;
 
+    /**
+     * 初始化组件
+     *
+     * @param {string[]} items - 所有可选值列表
+     * @param {Set<string>} uncheckedValues - 未勾选的值集合
+     * @param {Function} onToggle - 值切换时的回调函数
+     */
     init(items, uncheckedValues, onToggle) {
         this.#items = items;
         this.#uncheckedValues = new Set(uncheckedValues);
         this.#onToggle = onToggle;
+        this.#renderVisibleItems();
     }
 
+    /**
+     * 更新列表数据
+     *
+     * @param {string[]} items - 新值列表
+     * @param {Set<string>} uncheckedValues - 未勾选的值集合
+     */
     updateItems(items, uncheckedValues) {
-        const itemsChanged =
-            this.#items.length !== items.length ||
-            !this.#items.every((v, i) => v === items[i]);
+        const itemsChanged = this.#items.length !== items.length || !this.#items.every((v, i) => v === items[i]);
 
         this.#items = items;
         this.#uncheckedValues = new Set(uncheckedValues);
@@ -74,6 +98,11 @@ export class VirtualValueList extends WebComponent {
         this.#renderVisibleItems();
     }
 
+    /**
+     * 渲染组件
+     *
+     * 创建 Shadow DOM 结构并绑定事件
+     */
     render() {
         if (!this.shadowRoot.querySelector(".virtual-container")) {
             this.shadowRoot.appendChild(template.content.cloneNode(true));
@@ -84,16 +113,30 @@ export class VirtualValueList extends WebComponent {
         this.#bindRenderZoneEvents();
     }
 
+    /**
+     * 应用动态样式
+     *
+     * 设置 CSS 变量 --item-height
+     * @private
+     */
     #applyDynamicStyles() {
         const host = this.shadowRoot.host;
         host.style.setProperty("--item-height", `${this.#itemHeight}px`);
     }
 
+    /**
+     * 组件连接时调用
+     *
+     * @param {Object} disposable - 可追踪事件的对象
+     */
     onConnect(disposable) {
         disposable.trackEvent(this, EVENT_NAMES.SCROLL, this.#handleScroll);
         this.#renderVisibleItems();
     }
 
+    /**
+     * 组件断开连接时调用
+     */
     onDisconnect() {
         this.#items = [];
         this.#uncheckedValues.clear();
@@ -102,11 +145,23 @@ export class VirtualValueList extends WebComponent {
         this.#eventsBound = false;
     }
 
+    /**
+     * 处理滚动事件
+     *
+     * @param {Event} e - 滚动事件
+     * @private
+     */
     #handleScroll(e) {
         this.#scrollTop = e.target?.scrollTop || 0;
         this.#renderVisibleItems();
     }
 
+    /**
+     * 渲染可见区域的列表项
+     *
+     * 根据当前滚动位置计算可见范围，只渲染该范围内的项
+     * @private
+     */
     #renderVisibleItems() {
         if (!this.#renderZone) return;
 
@@ -116,10 +171,7 @@ export class VirtualValueList extends WebComponent {
         }
 
         const startIndex = Math.floor(this.#scrollTop / this.#itemHeight);
-        const endIndex = Math.min(
-            startIndex + this.#visibleCount + 2,
-            this.#items.length
-        );
+        const endIndex = Math.min(startIndex + this.#visibleCount + 2, this.#items.length);
 
         let html = "";
 
@@ -149,6 +201,12 @@ export class VirtualValueList extends WebComponent {
         this.#renderZone.innerHTML = html;
     }
 
+    /**
+     * 绑定渲染区域的事件
+     *
+     * 处理列表项的点击事件，切换勾选状态
+     * @private
+     */
     #bindRenderZoneEvents() {
         if (!this.#renderZone || this.#eventsBound) return;
 

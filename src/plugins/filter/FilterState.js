@@ -33,6 +33,7 @@
  * @property {"condition"} type - 筛选类型：按条件筛选
  * @property {string} operator - 条件操作符
  * @property {string} value - 条件值
+ * @property {string} [valueEnd] - 范围条件结束值（between、dateBetween 等操作符时使用）
  *
  * @typedef {FilterConfigValues | FilterConfigCondition} FilterConfig
  */
@@ -55,6 +56,7 @@ export class FilterState {
      * @param {Set<string>} [filter.uncheckedValues] - 未勾选的值（type="values"时）
      * @param {string} [filter.operator] - 条件操作符（type="condition"时）
      * @param {string} [filter.value] - 条件值（type="condition"时）
+     * @param {string} [filter.valueEnd] - 范围条件结束值（type="condition"时，用于 between 等操作符）
      */
     setColumnFilter(col, filter) {
         this.#columnFilters.set(col, filter);

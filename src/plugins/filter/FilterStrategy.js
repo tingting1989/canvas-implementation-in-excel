@@ -3,18 +3,42 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
+/**
+ * 筛选策略
+ *
+ * 负责处理与筛选相关的事件：
+ * - 点击表头时打开筛选面板
+ * - 数据变化时使缓存失效
+ * - 排序后刷新图标状态
+ *
+ * @extends EventStrategy
+ */
 export class FilterStrategy extends EventStrategy {
     priority = STRATEGY_PRIORITY.POPUP_UI;
 
     #uiManager = null;
     #plugin = null;
 
+    /**
+     * @param {FilterUIManager} uiManager - UI 管理器
+     * @param {Object} handler - 事件处理器
+     * @param {FilterPlugin} plugin - 筛选插件
+     */
     constructor(uiManager, handler, plugin) {
         super(handler);
         this.#uiManager = uiManager;
         this.#plugin = plugin;
     }
 
+    /**
+     * 单元格数据设置后的处理
+     *
+     * 使该列的唯一值缓存失效，并刷新图标状态
+     * @param {number} row - 行索引
+     * @param {number} col - 列索引
+     * @param {*} oldValue - 旧值
+     * @param {*} newValue - 新值
+     */
     handleAfterSetCellData(row, col, oldValue, newValue) {
         if (!this.enabled || !this.#plugin?.enabled) return;
 
@@ -25,24 +49,47 @@ export class FilterStrategy extends EventStrategy {
         }
     }
 
+    /**
+     * 列排序后的处理
+     *
+     * 刷新该列的筛选图标状态
+     * @param {number} col - 列索引
+     */
     handleColumnSorted(col) {
         if (!this.enabled || !this.#plugin?.enabled) return;
 
         this.#plugin.refreshHeaderIcon(col);
     }
 
+    /**
+     * 筛选应用后的处理
+     *
+     * 刷新所有列的筛选图标状态
+     */
     handleFilterApplied() {
         if (!this.enabled || !this.#plugin?.enabled) return;
 
         this.#plugin.refreshAllHeaderIcons();
     }
 
+    /**
+     * 获取事件处理器映射
+     *
+     * @returns {Object} 事件名称到处理函数的映射
+     */
     getEventHandlers() {
         return {
             [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#handleCanvasMouseDown(e),
         };
     }
 
+    /**
+     * 处理画布鼠标按下事件
+     *
+     * @param {MouseEvent} e - 鼠标事件
+     * @returns {boolean} 是否阻止默认行为
+     * @private
+     */
     #handleCanvasMouseDown(e) {
         if (!this.enabled || !this.#uiManager || !this.handler?.viewport) return true;
 

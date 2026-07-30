@@ -1,9 +1,29 @@
-﻿export class FilterIconRenderer {
+﻿/**
+ * 筛选图标渲染器
+ *
+ * 负责在表头单元格中渲染筛选漏斗图标，支持：
+ * - 活跃状态（已配置筛选）显示蓝色填充图标
+ * - 非活跃状态显示空心图标
+ * - 鼠标悬停效果
+ * - 点击事件回调
+ *
+ * @example
+ * const renderer = new FilterIconRenderer({ iconSize: 14 });
+ * renderer.render(container, 0, true);  // 渲染活跃状态图标
+ */
+export class FilterIconRenderer {
     static ICON_SIZE = 12;
     static ICON_PADDING = 6;
     static ACTIVE_COLOR = "#1890ff";
     static INACTIVE_COLOR = "#999";
 
+    /**
+     * @param {Object} [options] - 配置选项
+     * @param {number} [options.iconSize=12] - 图标尺寸
+     * @param {number} [options.iconPadding=6] - 图标内边距
+     * @param {string} [options.activeColor=#1890ff] - 活跃状态颜色
+     * @param {string} [options.inactiveColor=#999] - 非活跃状态颜色
+     */
     constructor(options = {}) {
         this.iconSize = options.iconSize || FilterIconRenderer.ICON_SIZE;
         this.iconPadding = options.iconPadding || FilterIconRenderer.ICON_PADDING;
@@ -11,6 +31,14 @@
         this.inactiveColor = options.inactiveColor || FilterIconRenderer.INACTIVE_COLOR;
     }
 
+    /**
+     * 渲染筛选图标
+     *
+     * @param {HTMLElement} container - 图标容器元素
+     * @param {number} col - 列索引
+     * @param {boolean} hasActiveFilter - 是否有激活的筛选
+     * @returns {HTMLElement} 图标包装器元素
+     */
     render(container, col, hasActiveFilter) {
         const iconWrapper = document.createElement("div");
         iconWrapper.className = "filter-icon-wrapper";
@@ -61,6 +89,12 @@
         return iconWrapper;
     }
 
+    /**
+     * 更新图标状态
+     *
+     * @param {HTMLElement} iconElement - 图标元素
+     * @param {boolean} hasActiveFilter - 是否有激活的筛选
+     */
     updateIconState(iconElement, hasActiveFilter) {
         if (!iconElement) return;
 

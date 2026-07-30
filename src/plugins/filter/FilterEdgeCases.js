@@ -1,4 +1,21 @@
-﻿export class FilterEdgeCases {
+﻿/**
+ * 筛选边界情况处理器
+ *
+ * 处理各种特殊值的标准化和显示：
+ * - 空值（null, undefined, ""）
+ * - 特殊数值（NaN, Infinity, -Infinity）
+ * - 包含换行/制表符的字符串
+ * - 布尔值
+ * - 日期对象
+ * - 数组
+ */
+export class FilterEdgeCases {
+    /**
+     * 处理特殊值
+     *
+     * @param {*} value - 待处理的值
+     * @returns {Object} { normalized, display, isSpecial }
+     */
     static handleSpecialValues(value) {
         if (value === undefined || value === null) {
             return { normalized: "__EXCEL_NULL__", display: "(空白)", isSpecial: true };
@@ -64,6 +81,12 @@
         return { normalized: String(value), display: String(value), isSpecial: false };
     }
 
+    /**
+     * 验证筛选配置是否有效
+     *
+     * @param {Object} filter - 筛选配置
+     * @returns {Object} { valid, error }
+     */
     static validateFilterInput(filter) {
         if (!filter) return { valid: false, error: "Filter cannot be null/undefined" };
 

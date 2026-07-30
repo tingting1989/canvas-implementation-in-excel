@@ -5,6 +5,19 @@ import { FilterStrategy } from "./filter/FilterStrategy.js";
 import { FilterIconRenderer } from "./filter/FilterIconRenderer.js";
 import { errorHandler } from "@/core";
 
+/**
+ * 筛选插件
+ *
+ * 提供 Excel 风格的筛选功能，支持：
+ * - 按值筛选（勾选要显示的值）
+ * - 按条件筛选（等于、包含、大于等操作符）
+ * - 日期筛选（今天、昨天、本周等）
+ * - 数值范围筛选
+ * - 正则表达式筛选
+ * - 虚拟滚动（大数据量优化）
+ *
+ * @extends BasePlugin
+ */
 export class FilterPlugin extends BasePlugin {
     static get PLUGIN_NAME() {
         return "filter";
@@ -22,13 +35,13 @@ export class FilterPlugin extends BasePlugin {
             treatBlankAsNull: true,
             trimWhitespace: true,
         },
-        conditionOperators: ["eq", "neq", "contains", "notContains"],
+        conditionOperators: ["eq", "neq", "contains", "notContains", "startsWith", "endsWith", "gt", "gte", "lt", "lte"],
         iconRenderer: {
             iconSize: 12,
             iconPadding: 6,
         },
-        /** 允许过滤的列索引数组，为空或 null 表示不允许任何列过滤 */
         filterableColumns: null,
+        columnTypes: {},
     };
 
     #uiManager = null;
@@ -43,16 +56,84 @@ export class FilterPlugin extends BasePlugin {
      */
     #filterableColumns = null;
 
+    /** @type {Object<string, "text"|"numeric"|"date">} 列类型配置 */
+    #columnTypes = {};
+
     constructor(workbook) {
         super(workbook);
     }
 
+    /**
+     * 初始化筛选插件
+     *
+     * @param {Object} options - 筛选插件配置选项
+     * @param {boolean} [options.enabled=true] - 是否启用筛选功能
+     * @param {number} [options.dropdownWidth=240] - 筛选下拉面板宽度（像素）
+     * @param {number} [options.dropdownMaxHeight=360] - 筛选下拉面板最大高度（像素），超出后可滚动
+     * @param {number} [options.virtualScrollThreshold=200] - 虚拟滚动阈值，当唯一值数量超过此值时启用虚拟滚动
+     * @param {Object} [options.nullValueHandling] - 空值处理配置
+     * @param {string} [options.nullValueHandling.displayAs="(空白)"] - 空值在列表中的显示文本
+     * @param {boolean} [options.nullValueHandling.alwaysShowInList=true] - 是否始终在列表中显示空值项
+     * @param {boolean} [options.nullValueHandling.sortToEnd=true] - 是否将空值排序到列表末尾
+     * @param {boolean} [options.nullValueHandling.treatBlankAsNull=true] - 是否将空白字符串视为空值
+     * @param {boolean} [options.nullValueHandling.trimWhitespace=true] - 比较前是否去除空白字符
+     * @param {string[]} [options.conditionOperators] - 条件模式下的操作符列表（默认全部操作符）
+     * @param {Object} [options.iconRenderer] - 筛选图标渲染配置
+     * @param {number} [options.iconRenderer.iconSize=12] - 筛选图标大小
+     * @param {number} [options.iconRenderer.iconPadding=6] - 筛选图标内边距
+     * @param {number[]|null} [options.filterableColumns=null] - 允许筛选的列索引数组，null表示允许所有列
+     * @param {Object<string, "text"|"numeric"|"date">} [options.columnTypes={}] - 列类型配置，用于决定各列的筛选UI和操作符
+     *
+     * @example
+     * // 基本用法：允许所有列筛选
+     * filterPlugin.init();
+     *
+     * @example
+     * // 指定允许筛选的列
+     * filterPlugin.init({
+     *     filterableColumns: [0, 2, 5],
+     * });
+     *
+     * @example
+     * // 配置列类型
+     * filterPlugin.init({
+     *     columnTypes: {
+     *         0: "date",     // 第0列是日期
+     *         1: "numeric",   // 第1列是数值
+     *         // 其他列默认是 text
+     *     }
+     * });
+     *
+     * @example
+     * // 完整配置示例
+     * filterPlugin.init({
+     *     enabled: true,
+     *     dropdownWidth: 280,
+     *     dropdownMaxHeight: 400,
+     *     virtualScrollThreshold: 100,
+     *     nullValueHandling: {
+     *         displayAs: "(空)",
+     *         alwaysShowInList: true,
+     *         sortToEnd: true,
+     *     },
+     *     filterableColumns: [0, 1, 2],
+     *     columnTypes: {
+     *         0: "date",
+     *         1: "numeric",
+     *     },
+     *     iconRenderer: {
+     *         iconSize: 14,
+     *         iconPadding: 8,
+     *     },
+     * });
+     */
     init(options = {}) {
         const mergedOptions = { ...FilterPlugin.DEFAULT_OPTIONS, ...options };
 
         if (!mergedOptions.enabled) return;
 
         this.#parseFilterableColumns(mergedOptions.filterableColumns);
+        this.#columnTypes = mergedOptions.columnTypes || {};
 
         this.#initFilterState();
         this.#initIconRenderer(mergedOptions.iconRenderer);
@@ -66,6 +147,16 @@ export class FilterPlugin extends BasePlugin {
         );
     }
 
+    /**
+     * 销毁插件，释放资源
+     *
+     * 清理内容：
+     * - 清除所有 hooks
+     * - 移除所有策略
+     * - 注销表头渲染器
+     * - 销毁 UI 管理器
+     * - 清空图标渲染器缓存
+     */
     destroy() {
         this.clearOwnHooks();
         this.removeOwnStrategies();
@@ -81,12 +172,22 @@ export class FilterPlugin extends BasePlugin {
         super.destroy();
     }
 
+    /**
+     * 启用筛选功能
+     *
+     * 重新注册筛选策略和表头渲染器
+     */
     enable() {
         super.enable();
         this.#strategy?.enable();
         this.#registerHeaderRenderer();
     }
 
+    /**
+     * 禁用筛选功能
+     *
+     * 关闭下拉面板、注销表头渲染器并禁用策略
+     */
     disable() {
         this.closeDropdown();
         this.#unregisterHeaderRenderer();
@@ -94,32 +195,63 @@ export class FilterPlugin extends BasePlugin {
         super.disable();
     }
 
+    /**
+     * 获取筛选 UI 管理器
+     * @returns {FilterUIManager} UI 管理器实例
+     */
     getFilterUIManager() {
         return this.#uiManager;
     }
 
+    /**
+     * 获取筛选引擎
+     * @returns {FilterEngine|null} 筛选引擎实例
+     */
     getFilterEngine() {
         return this.#uiManager?.filterEngine || null;
     }
 
+    /**
+     * 获取图标渲染器
+     * @returns {FilterIconRenderer|null} 图标渲染器实例
+     */
     getIconRenderer() {
         return this.#iconRenderer;
     }
 
+    /**
+     * 打开指定列的筛选下拉面板
+     *
+     * @param {number} col - 列索引
+     * @param {Object} position - 面板显示位置 { x, y }
+     */
     openDropdown(col, position) {
         if (!this.enabled) return;
 
         this.#uiManager.openDropdown(col, position);
     }
 
+    /**
+     * 关闭当前打开的筛选下拉面板
+     */
     closeDropdown() {
         this.#uiManager?.closeDropdown();
     }
 
+    /**
+     * 检查筛选下拉面板是否处于打开状态
+     *
+     * @returns {boolean} 是否打开
+     */
     isDropdownOpen() {
         return this.#uiManager?.isDropdownOpen() || false;
     }
 
+    /**
+     * 清除所有列的筛选条件
+     *
+     * 移除所有已应用的筛选，恢复显示所有数据行
+     */
     clearAllFilters() {
         const filterState = this.sheet?.filterState;
         if (filterState) {
@@ -128,6 +260,14 @@ export class FilterPlugin extends BasePlugin {
         }
     }
 
+    /**
+     * 在指定列的表头容器中渲染筛选图标
+     *
+     * @param {HTMLElement} headerContainer - 列头容器元素
+     * @param {number} col - 列索引
+     * @param {boolean} hasActiveFilter - 该列是否有激活的筛选条件
+     * @returns {HTMLElement} 图标包装器元素
+     */
     renderFilterIcon(headerContainer, col, hasActiveFilter) {
         if (!this.#iconRenderer) return null;
 
@@ -156,6 +296,11 @@ export class FilterPlugin extends BasePlugin {
         return wrapper;
     }
 
+    /**
+     * 刷新指定列的筛选图标状态
+     *
+     * @param {number} col - 列索引
+     */
     refreshHeaderIcon(col) {
         const filterState = this.sheet?.filterState;
         if (!filterState) return;
@@ -168,6 +313,11 @@ export class FilterPlugin extends BasePlugin {
         }
     }
 
+    /**
+     * 刷新所有列的筛选图标状态
+     *
+     * 同时触发表头重绘
+     */
     refreshAllHeaderIcons() {
         for (const [col] of this.#headerRenderers) {
             this.refreshHeaderIcon(col);
@@ -178,6 +328,12 @@ export class FilterPlugin extends BasePlugin {
         this.renderEngine?.render();
     }
 
+    /**
+     * 初始化筛选状态管理器
+     *
+     * 创建 FilterState 实例并挂载到 sheet 对象上
+     * @private
+     */
     #initFilterState() {
         const sheet = this.sheet;
         if (!sheet) return;
@@ -192,10 +348,22 @@ export class FilterPlugin extends BasePlugin {
         });
     }
 
+    /**
+     * 初始化筛选图标渲染器
+     *
+     * @param {Object} options - 图标渲染配置
+     * @private
+     */
     #initIconRenderer(options) {
         this.#iconRenderer = new FilterIconRenderer(options);
     }
 
+    /**
+     * 注册筛选策略
+     *
+     * 创建 FilterStrategy 实例并添加到插件策略列表
+     * @private
+     */
     #registerStrategies() {
         this.#strategy = new FilterStrategy(this.#uiManager, this.eventHandler, this);
 
@@ -203,6 +371,12 @@ export class FilterPlugin extends BasePlugin {
         this.addStrategy("filterClick", this.#strategy);
     }
 
+    /**
+     * 注册表头筛选图标渲染器
+     *
+     * 将筛选图标绘制逻辑注册到渲染引擎的表头渲染器中
+     * @private
+     */
     #registerHeaderRenderer() {
         if (!this.renderEngine?.headerRenderer || this.#headerRendererCallback) return;
 
@@ -215,6 +389,10 @@ export class FilterPlugin extends BasePlugin {
         this.renderEngine.headerRenderer.registerColumnHeaderRenderer(this.#headerRendererCallback);
     }
 
+    /**
+     * 注销表头筛选图标渲染器
+     * @private
+     */
     #unregisterHeaderRenderer() {
         if (this.renderEngine?.headerRenderer && this.#headerRendererCallback) {
             this.renderEngine.headerRenderer.unregisterColumnHeaderRenderer(this.#headerRendererCallback);
@@ -222,6 +400,17 @@ export class FilterPlugin extends BasePlugin {
         }
     }
 
+    /**
+     * 在表头画布上绘制筛选图标
+     *
+     * @param {CanvasRenderingContext2D} ctx - 画布上下文
+     * @param {number} colIndex - 列索引
+     * @param {number} x - 图标 X 坐标
+     * @param {number} y - 图标 Y 坐标
+     * @param {number} width - 列头宽度
+     * @param {number} height - 列头高度
+     * @private
+     */
     #drawFilterIcon(ctx, colIndex, x, y, width, height) {
         if (!this.#iconRenderer) return;
 
@@ -271,6 +460,15 @@ export class FilterPlugin extends BasePlugin {
         ctx.restore();
     }
 
+    /**
+     * 绘制漏斗形状（筛选图标的形状）
+     *
+     * @param {CanvasRenderingContext2D} ctx - 画布上下文
+     * @param {number} x - 左上角 X 坐标
+     * @param {number} y - 左上角 Y 坐标
+     * @param {number} size - 图标尺寸
+     * @private
+     */
     #drawFunnelShape(ctx, x, y, size) {
         const midX = x + size / 2;
 
@@ -320,8 +518,19 @@ export class FilterPlugin extends BasePlugin {
     }
 
     /**
+     * 获取指定列的类型
+     *
+     * @param {number} colIndex - 列索引
+     * @returns {"text"|"numeric"|"date"} 列类型，默认是 "text"
+     */
+    getColumnType(colIndex) {
+        return this.#columnTypes[colIndex] || "text";
+    }
+
+    /**
      * 获取可过滤列配置
-     * @returns {number[]|null} 可过滤列索引数组，null 表示不允许任何列过滤
+     *
+     * @returns {number[]|null} 可过滤列索引数组，null 表示允许所有列
      */
     get filterableColumns() {
         if (this.#filterableColumns === null) {
@@ -341,13 +550,13 @@ export class FilterPlugin extends BasePlugin {
     }
 
     /**
-     * 检测点击是否在过滤图标区域
+     * 检测点击是否在指定列的筛选图标区域
      *
      * @param {number} colIndex - 列索引
      * @param {number} mouseX - 鼠标 X 坐标（画布坐标）
      * @param {number} mouseY - 鼠标 Y 坐标（画布坐标）
-     * @param {object} headerRect - 列头区域矩形 { x, y, width, height }
-     * @returns {boolean} 是否点击在过滤图标上
+     * @param {Object} headerRect - 列头区域矩形 { x, y, width, height }
+     * @returns {boolean} 是否点击在筛选图标上
      */
     hitTestFilterIcon(colIndex, mouseX, mouseY, headerRect) {
         if (!this.isColumnFilterable(colIndex)) {
@@ -377,5 +586,9 @@ export class FilterPlugin extends BasePlugin {
         return inX && inY;
     }
 
+    /**
+     * 注册事件钩子（可被子类重写）
+     * @protected
+     */
     #registerHooks() {}
 }

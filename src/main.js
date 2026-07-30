@@ -59,7 +59,9 @@ const initApp = () => {
                 ],
 
                 columns: [
+                    { type: "text", width: 120 },
                     { type: "numeric", width: 120 },
+                    { type: "date", width: 120 },
                     // { type: "hyperlink", width: 100 },
                     // // 用户评分
                     // {
@@ -248,7 +250,12 @@ const initApp = () => {
             // },
             filter: {
                 // 允许过滤的列索引数组（0-based）
-                filterableColumns: [0, 2, 4],
+                filterableColumns: [0, 1, 2],
+                columnTypes: {
+                    0: "text",
+                    1: "numeric",
+                    2: "date",
+                },
             },
             // dataValidation: {
             //     // ═══════════════════════════════════════════════════════════

@@ -1,6 +1,6 @@
 ﻿import { PopupPanel } from "../../ui/components/PopupPanel.js";
-import { VirtualValueList } from "./VirtualValueList.js";
 import { NullValueHandler } from "./NullValueTypes.js";
+import { VirtualValueList } from "./VirtualValueList.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 const template = document.createElement("template");
@@ -114,20 +114,43 @@ template.innerHTML = `
         }
         .filter-dropdown-panel .filter-condition-area {
             padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        .filter-dropdown-panel .filter-condition-operator,
-        .filter-dropdown-panel .filter-condition-value {
+        .filter-dropdown-panel .filter-condition-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .filter-dropdown-panel .filter-condition-operator {
             width: 100%;
             padding: 4px 8px;
             border: 1px solid #d9d9d9;
             border-radius: 4px;
-            box-sizing: border-box;
-            margin-bottom: 8px;
+            outline: none;
+        }
+        .filter-dropdown-panel .filter-condition-value {
+            flex: 1;
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
             outline: none;
         }
         .filter-dropdown-panel .filter-condition-value:focus {
             border-color: #1890ff;
             box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+        }
+        .filter-dropdown-panel .filter-condition-separator {
+            color: #999;
+            flex-shrink: 0;
+            display: none;
+        }
+        .filter-dropdown-panel .filter-condition-value-end {
+            display: none;
+        }
+        .filter-dropdown-panel input[type="date"].filter-condition-value {
+            width: 100%;
         }
         .filter-dropdown-panel .filter-footer {
             padding: 8px 12px;
@@ -173,8 +196,14 @@ template.innerHTML = `
             </div>
             <div class="filter-panel condition">
                 <div class="filter-condition-area">
-                    <select class="filter-condition-operator"></select>
-                    <input type="text" class="filter-condition-value" placeholder="输入值...">
+                    <div class="filter-condition-row">
+                        <select class="filter-condition-operator"></select>
+                    </div>
+                    <div class="filter-condition-row filter-condition-values">
+                        <input type="text" class="filter-condition-value filter-condition-value-start" placeholder="起始值...">
+                        <span class="filter-condition-separator">~</span>
+                        <input type="text" class="filter-condition-value filter-condition-value-end" placeholder="结束值...">
+                    </div>
                 </div>
             </div>
         </div>
@@ -185,6 +214,18 @@ template.innerHTML = `
     </div>
 `;
 
+/**
+ * 筛选下拉面板组件
+ *
+ * 负责渲染和管理筛选弹出面板的 UI，包括：
+ * - 值筛选模式（勾选列表）
+ * - 条件筛选模式（操作符 + 值输入）
+ * - 搜索过滤功能
+ * - 虚拟滚动（大数据量优化）
+ * - 全选/取消全选
+ *
+ * @extends PopupPanel
+ */
 export class FilterDropdown extends PopupPanel {
     #col = -1;
     #allValues = [];
@@ -192,26 +233,44 @@ export class FilterDropdown extends PopupPanel {
     #searchKeyword = "";
     #conditionOperator = null;
     #conditionValue = null;
+    #conditionValueEnd = null;
     #filterMode = "values";
     #virtualList = null;
     #onApply = null;
     #onClear = null;
     #options = null;
+    #columnType = "text";
 
     constructor() {
         super();
     }
 
+    /**
+     * 获取当前列索引
+     * @returns {number}
+     */
     get col() {
         return this.#col;
     }
 
+    /**
+     * 显示筛选面板
+     *
+     * @param {number} col - 列索引
+     * @param {Object} position - 显示位置 { x, y }
+     * @param {string[]} allValues - 所有唯一值列表
+     * @param {Object} currentFilter - 当前筛选配置
+     * @param {Object} options - 显示选项
+     * @param {Function} onApply - 应用筛选回调
+     * @param {Function} onClear - 清除筛选回调
+     */
     show(col, position, allValues, currentFilter, options, onApply, onClear) {
         this.#col = col;
         this.#allValues = allValues;
         this.#options = options;
         this.#onApply = onApply;
         this.#onClear = onClear;
+        this.#columnType = options?.columnType || "text";
 
         if (currentFilter) {
             this.#filterMode = currentFilter.type;
@@ -220,11 +279,13 @@ export class FilterDropdown extends PopupPanel {
             } else {
                 this.#conditionOperator = currentFilter.operator;
                 this.#conditionValue = currentFilter.value;
+                this.#conditionValueEnd = currentFilter.valueEnd || null;
             }
         } else {
             this.#uncheckedValues = new Set();
             this.#conditionOperator = null;
             this.#conditionValue = null;
+            this.#conditionValueEnd = null;
             this.#filterMode = "values";
         }
 
@@ -244,6 +305,11 @@ export class FilterDropdown extends PopupPanel {
         });
     }
 
+    /**
+     * 渲染组件
+     *
+     * 创建 Shadow DOM 结构
+     */
     render() {
         if (!this.shadowRoot.querySelector(".filter-dropdown-panel")) {
             this.shadowRoot.appendChild(template.content.cloneNode(true));
@@ -252,6 +318,12 @@ export class FilterDropdown extends PopupPanel {
         }
     }
 
+    /**
+     * 初始化面板状态
+     *
+     * 设置面板的初始位置和可见性
+     * @private
+     */
     #initPanelState() {
         const valuesPanel = this.shadowRoot.querySelector(".filter-panel.values");
         const conditionPanel = this.shadowRoot.querySelector(".filter-panel.condition");
@@ -264,6 +336,12 @@ export class FilterDropdown extends PopupPanel {
         }
     }
 
+    /**
+     * 应用动态样式
+     *
+     * 根据配置设置 CSS 变量
+     * @private
+     */
     #applyDynamicStyles() {
         const width = this.#options?.dropdownWidth || 240;
         const maxHeight = this.#options?.dropdownMaxHeight || 360;
@@ -272,6 +350,11 @@ export class FilterDropdown extends PopupPanel {
         host.style.setProperty("--dropdown-max-height", `${maxHeight}px`);
     }
 
+    /**
+     * 组件连接时调用
+     *
+     * @param {Object} disposable - 可追踪事件的对象
+     */
     onConnect(disposable) {
         super.onConnect(disposable);
 
@@ -283,6 +366,9 @@ export class FilterDropdown extends PopupPanel {
         }
     }
 
+    /**
+     * 组件断开连接时调用
+     */
     onDisconnect() {
         if (this.#virtualList) {
             this.#virtualList.destroy();
@@ -291,6 +377,12 @@ export class FilterDropdown extends PopupPanel {
         super.onDisconnect();
     }
 
+    /**
+     * 处理面板点击事件
+     *
+     * @param {Event} e - 点击事件
+     * @private
+     */
     #handlePanelClick(e) {
         const target = e.target;
 
@@ -319,6 +411,12 @@ export class FilterDropdown extends PopupPanel {
         }
     }
 
+    /**
+     * 处理面板输入事件
+     *
+     * @param {Event} e - 输入事件
+     * @private
+     */
     #handlePanelInput(e) {
         const target = e.target;
 
@@ -328,16 +426,28 @@ export class FilterDropdown extends PopupPanel {
             return;
         }
 
-        if (target.classList.contains("filter-condition-value")) {
+        if (target.classList.contains("filter-condition-value-start")) {
             this.#conditionValue = target.value;
+            return;
+        }
+
+        if (target.classList.contains("filter-condition-value-end")) {
+            this.#conditionValueEnd = target.value;
             return;
         }
 
         if (target.classList.contains("filter-condition-operator")) {
             this.#conditionOperator = target.value;
+            this.#updateConditionValueVisibility();
         }
     }
 
+    /**
+     * 切换筛选模式
+     *
+     * @param {string} mode - 模式："values" 或 "condition"
+     * @private
+     */
     #switchMode(mode) {
         this.#filterMode = mode;
 
@@ -367,6 +477,13 @@ export class FilterDropdown extends PopupPanel {
         }
     }
 
+    /**
+     * 获取过滤后的值列表
+     *
+     * 根据搜索关键词过滤值列表
+     * @returns {string[]} 过滤后的值列表
+     * @private
+     */
     #getFilteredValues() {
         let filtered = this.#allValues;
 
@@ -387,11 +504,24 @@ export class FilterDropdown extends PopupPanel {
         return filtered;
     }
 
+    /**
+     * 判断是否应该使用虚拟滚动
+     *
+     * @param {string[]} values - 值列表
+     * @returns {boolean} 是否应该虚拟滚动
+     * @private
+     */
     #shouldVirtualize(values) {
         const threshold = this.#options?.virtualScrollThreshold || 200;
         return values.length > threshold;
     }
 
+    /**
+     * 渲染内容区域
+     *
+     * 根据数据量决定使用直接渲染或虚拟滚动
+     * @private
+     */
     #renderContent() {
         const contentArea = this.shadowRoot.querySelector(".filter-content");
         if (!contentArea) return;
@@ -400,8 +530,9 @@ export class FilterDropdown extends PopupPanel {
         const shouldVirtualize = this.#shouldVirtualize(filteredValues);
 
         const currentlyVirtual = contentArea.classList.contains("virtual");
+        const virtualListReady = this.#virtualList && typeof this.#virtualList.updateItems === "function";
 
-        if (shouldVirtualize && currentlyVirtual && this.#virtualList) {
+        if (shouldVirtualize && currentlyVirtual && virtualListReady) {
             this.#virtualList.updateItems(filteredValues, this.#uncheckedValues);
             return;
         }
@@ -418,6 +549,13 @@ export class FilterDropdown extends PopupPanel {
         }
     }
 
+    /**
+     * 直接渲染值列表（适用于小数据量）
+     *
+     * @param {HTMLElement} container - 容器元素
+     * @param {string[]} values - 值列表
+     * @private
+     */
     #renderDirectValueList(container, values) {
         const normalValues = values.filter((v) => v !== NullValueHandler.NULL_KEY);
         const hasBlankValue = values.includes(NullValueHandler.NULL_KEY);
@@ -489,6 +627,13 @@ export class FilterDropdown extends PopupPanel {
         container.appendChild(separator);
     }
 
+    /**
+     * 创建值列表项
+     *
+     * @param {string} value - 值
+     * @returns {HTMLElement} 列表项元素
+     * @private
+     */
     #createValueItem(value) {
         const item = document.createElement("div");
         item.className = "filter-value-item";
@@ -518,6 +663,13 @@ export class FilterDropdown extends PopupPanel {
         return item;
     }
 
+    /**
+     * 渲染虚拟值列表（适用于大数据量）
+     *
+     * @param {HTMLElement} container - 容器元素
+     * @param {string[]} values - 值列表
+     * @private
+     */
     #renderVirtualValueList(container, values) {
         if (this.#virtualList) {
             this.#virtualList.updateItems(values, this.#uncheckedValues);
@@ -536,20 +688,30 @@ export class FilterDropdown extends PopupPanel {
         this.#bindSelectAllEvent(selectAllItem, values);
 
         this.#virtualList = document.createElement("virtual-value-list");
-        this.#virtualList.init(values, this.#uncheckedValues, (value, checked) => {
-            if (checked) {
-                this.#uncheckedValues.delete(value);
-            } else {
-                this.#uncheckedValues.add(value);
-            }
-            this.#virtualList.updateItems(values, this.#uncheckedValues);
-            this.#updateSelectAllState(container, values);
-        });
-        container.appendChild(this.#virtualList);
 
-        this.#updateSelectAllState(container, values);
+        customElements.whenDefined("virtual-value-list").then(() => {
+            if (typeof this.#virtualList.init === "function") {
+                this.#virtualList.init(values, this.#uncheckedValues, (value, checked) => {
+                    if (checked) {
+                        this.#uncheckedValues.delete(value);
+                    } else {
+                        this.#uncheckedValues.add(value);
+                    }
+                    this.#updateSelectAllState(container, values);
+                });
+                container.appendChild(this.#virtualList);
+                this.#updateSelectAllState(container, values);
+            }
+        });
     }
 
+    /**
+     * 绑定全选事件
+     *
+     * @param {HTMLElement} selectAllItem - 全选项元素
+     * @param {string[]} values - 值列表
+     * @private
+     */
     #bindSelectAllEvent(selectAllItem, values) {
         selectAllItem.addEventListener("click", (e) => {
             const checkbox = selectAllItem.querySelector("input");
@@ -567,11 +729,20 @@ export class FilterDropdown extends PopupPanel {
                 values.forEach((v) => this.#uncheckedValues.add(v));
             }
 
-            this.#virtualList?.updateItems(values, this.#uncheckedValues);
+            if (typeof this.#virtualList?.updateItems === "function") {
+                this.#virtualList.updateItems(values, this.#uncheckedValues);
+            }
             this.#updateSelectAllState(e.currentTarget.parentElement, values);
         });
     }
 
+    /**
+     * 更新全选状态
+     *
+     * @param {HTMLElement} container - 容器元素
+     * @param {string[]} values - 值列表
+     * @private
+     */
     #updateSelectAllState(container, values) {
         const selectAllItem = container.querySelector(".filter-select-all");
         if (!selectAllItem) return;
@@ -586,28 +757,23 @@ export class FilterDropdown extends PopupPanel {
         checkbox.checked = isAllChecked;
     }
 
+    /**
+     * 渲染条件操作符
+     *
+     * 根据列类型显示对应的操作符列表
+     * @private
+     */
     #renderConditionOperators() {
         const select = this.shadowRoot.querySelector(".filter-condition-operator");
-        if (!select) return;
+        const valuesRow = this.shadowRoot.querySelector(".filter-condition-values");
+        const startInput = this.shadowRoot.querySelector(".filter-condition-value-start");
+        const endInput = this.shadowRoot.querySelector(".filter-condition-value-end");
+        const separator = this.shadowRoot.querySelector(".filter-condition-separator");
 
-        const operators = this.#options?.conditionOperators || [
-            "eq", "neq", "contains", "notContains",
-            "startsWith", "endsWith",
-            "gt", "gte", "lt", "lte"
-        ];
+        if (!select || !valuesRow) return;
 
-        const operatorLabels = {
-            eq: "等于",
-            neq: "不等于",
-            contains: "包含",
-            notContains: "不包含",
-            startsWith: "开头是",
-            endsWith: "结尾是",
-            gt: "大于",
-            gte: "大于等于",
-            lt: "小于",
-            lte: "小于等于",
-        };
+        const operators = this.#getOperatorsByColumnType();
+        const operatorLabels = this.#getOperatorLabels();
 
         if (!this.#conditionOperator && operators.length > 0) {
             this.#conditionOperator = operators[0];
@@ -623,8 +789,125 @@ export class FilterDropdown extends PopupPanel {
             }
             select.appendChild(option);
         });
+
+        this.#updateConditionValueVisibility();
+
+        if (this.#columnType === "date") {
+            startInput.type = "date";
+            endInput.type = "date";
+            startInput.placeholder = "开始日期...";
+            endInput.placeholder = "结束日期...";
+            if (this.#conditionValue) {
+                startInput.value = this.#conditionValue;
+            }
+            if (this.#conditionValueEnd) {
+                endInput.value = this.#conditionValueEnd;
+            }
+        } else {
+            startInput.type = "text";
+            endInput.type = "text";
+            startInput.placeholder = "起始值...";
+            endInput.placeholder = "结束值...";
+            startInput.value = this.#conditionValue || "";
+            endInput.value = this.#conditionValueEnd || "";
+        }
     }
 
+    /**
+     * 根据列类型获取操作符列表
+     *
+     * @returns {string[]} 操作符列表
+     * @private
+     */
+    #getOperatorsByColumnType() {
+        const columnType = this.#columnType;
+
+        if (columnType === "date") {
+            return [
+                "dateEq", "dateNeq",
+                "dateBefore", "dateAfter",
+                "dateBetween",
+                "dateToday", "dateYesterday", "dateTomorrow",
+                "dateThisWeek", "dateLastWeek", "dateNextWeek",
+                "dateThisMonth", "dateLastMonth", "dateNextMonth",
+                "dateThisYear", "dateLastYear"
+            ];
+        }
+
+        if (columnType === "numeric") {
+            return ["eq", "neq", "gt", "gte", "lt", "lte", "between"];
+        }
+
+        return ["eq", "neq", "contains", "notContains", "startsWith", "endsWith", "regex"];
+    }
+
+    /**
+     * 获取操作符标签映射
+     *
+     * @returns {Object} 操作符到中文标签的映射
+     * @private
+     */
+    #getOperatorLabels() {
+        return {
+            eq: "等于",
+            neq: "不等于",
+            contains: "包含",
+            notContains: "不包含",
+            startsWith: "开头是",
+            endsWith: "结尾是",
+            gt: "大于",
+            gte: "大于等于",
+            lt: "小于",
+            lte: "小于等于",
+            between: "介于",
+            regex: "正则匹配",
+            dateEq: "日期等于",
+            dateNeq: "日期不等于",
+            dateBefore: "早于",
+            dateAfter: "晚于",
+            dateBetween: "日期范围",
+            dateToday: "今天",
+            dateYesterday: "昨天",
+            dateTomorrow: "明天",
+            dateThisWeek: "本周",
+            dateLastWeek: "上周",
+            dateNextWeek: "下周",
+            dateThisMonth: "本月",
+            dateLastMonth: "上月",
+            dateNextMonth: "下月",
+            dateThisYear: "今年",
+            dateLastYear: "去年",
+        };
+    }
+
+    /**
+     * 更新条件值的可见性
+     *
+     * 根据操作符决定是否显示结束值输入框（如 between 操作符）
+     * @private
+     */
+    #updateConditionValueVisibility() {
+        const valuesRow = this.shadowRoot.querySelector(".filter-condition-values");
+        const separator = this.shadowRoot.querySelector(".filter-condition-separator");
+        const endInput = this.shadowRoot.querySelector(".filter-condition-value-end");
+
+        const rangeOperators = ["between", "dateBetween"];
+
+        if (rangeOperators.includes(this.#conditionOperator)) {
+            separator.style.display = "inline-block";
+            endInput.style.display = "inline-block";
+        } else {
+            separator.style.display = "none";
+            endInput.style.display = "none";
+        }
+    }
+
+    /**
+     * 应用当前筛选
+     *
+     * 根据当前模式构建筛选配置并调用 onApply 回调
+     * @private
+     */
     #applyCurrentFilter() {
         console.log(
             "[FilterDropdown] #applyCurrentFilter, #uncheckedValues:",
@@ -645,7 +928,9 @@ export class FilterDropdown extends PopupPanel {
                 type: "condition",
                 operator: this.#conditionOperator,
                 value: this.#conditionValue,
+                valueEnd: this.#conditionValueEnd,
             };
+            console.log("[FilterDropdown] condition filter created:", filter);
         }
 
         this.#onApply?.(filter);
