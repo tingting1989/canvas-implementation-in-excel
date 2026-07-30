@@ -5,13 +5,50 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
- * 列宽/行高拖拽调整策略
- * 优先级最高（100），确保调整手柄事件不被其他策略消费
+ * 尺寸调整策略 (Resize Strategy)
  *
- * 处理以下操作：
- * - 悬停在列/行边界时切换光标样式
- * - 拖拽调整列宽/行高
- * - 实时显示调整参考线
+ * 处理Canvas表格中行高和列宽的拖拽调整操作。
+ * 拥有最高优先级（100），确保调整手柄的事件不被其他策略拦截。
+ *
+ * 优先级：100（STRATEGY_PRIORITY.RESIZE_LAYOUT）
+ * - 最高优先级，确保调整操作始终优先响应
+ * - 在 MouseStrategy (50) 和 AutoFillStrategy (90) 之前执行
+ *
+ * 核心功能：
+ * ┌────────────────────┬─────────────────────────────────────────┐
+ * │ 操作               │ 行为                                    │
+ * ├────────────────────┼─────────────────────────────────────────┤
+ * │ 悬停列边界         │ 光标变为 ↔（水平调整）                │
+ * │ 悬停行边界         │ 光标变为 ↕（垂直调整）                  │
+ * │ 拖拽列边界         │ 实时调整列宽，显示参考线               │
+ * │ 拖拽行边界         │ 实时调整行高，显示参考线               │
+ * │ 双击列/行边界      │ 自动适应内容宽度/高度                   │
+ * └────────────────────┴─────────────────────────────────────────┘
+ *
+ * 技术实现：
+ * - 使用 headerHitTest() 检测是否点击在调整区域
+ * - 通过 CSS cursor 属性提供视觉反馈
+ * - 绘制临时参考线辅助用户对齐
+ * - 支持像素级精确调整和网格吸附
+ * - 最小尺寸限制防止过度压缩
+ *
+ * 状态机：
+ * ```
+ * idle → hover(悬停) → dragging(拖拽) → idle
+ *                     ↓
+ *              autoFit(双击自适应)
+ * ```
+ *
+ * 与其他组件协作：
+ * - RowColManager: 获取/设置实际的行列尺寸
+ * - Viewport: 坐标转换和命中测试
+ * - RenderEngine: 绘制参考线和更新光标
+ *
+ * @class ResizeStrategy
+ * @extends EventStrategy
+ *
+ * @see EventStrategy - 基类
+ * @see MouseStrategy - 低优先级的鼠标交互策略
  */
 export class ResizeStrategy extends EventStrategy {
     priority = STRATEGY_PRIORITY.RESIZE_LAYOUT;

@@ -282,7 +282,7 @@ export class CellEditor extends DOMComponent {
     }
 
     /**
-     * 绑定编辑器的通用事件
+     * @private 私有方法 - 绑定编辑器的通用事件
      *
      * 绑定的事件：
      * - BLUR → 失去焦点时提交编辑
@@ -397,7 +397,7 @@ export class CellEditor extends DOMComponent {
     }
 
     /**
-     * 同步单元格字体样式到编辑器
+     * @private 私有方法 - 同步单元格字体样式到编辑器
      *
      * @param {number} row - 行号
      * @param {number} col - 列号
@@ -517,7 +517,7 @@ export class CellEditor extends DOMComponent {
     }
 
     /**
-     * 处理编辑器失去焦点事件
+     * @private 私有方法 - 处理编辑器失去焦点事件
      *
      * 提交流程：
      * 1. 检查状态（滚动隐藏、中文输入）
@@ -602,7 +602,7 @@ export class CellEditor extends DOMComponent {
     }
 
     /**
-     * 批量填充选择区域
+     * @private 私有方法 - 批量填充选择区域
      *
      * @param {object} range - 填充范围 {topRow, topCol, bottomRow, bottomCol}
      * @param {*} value - 要填充的值
@@ -666,6 +666,14 @@ export class CellEditor extends DOMComponent {
         this.sheet.bus.emit(SHEET_EVENTS.AFTER_CHANGE, [changes], { source: "CellEditor" });
     }
 
+    /**
+     * @private 私有方法 - 处理键盘按下事件
+     *
+     * 处理以下按键：
+     * - Enter: 提交并移动到下一行（Ctrl+Enter: 填充选择区域）
+     * - Escape: 取消编辑
+     * - Tab: 提交并移动到下一列（Shift+Tab: 上一列）
+     */
     #onKeyDown(e) {
         if (!this.sheet) return;
         if (this.composing) return;
@@ -694,6 +702,12 @@ export class CellEditor extends DOMComponent {
         }
     }
 
+    /**
+     * @private 私有方法 - 提交并填充选择区域
+     *
+     * 当用户按下 Ctrl+Enter 时调用，
+     * 将当前编辑器的值填充到整个选择区域。
+     */
     #commitAndFillSelection() {
         if (this.activeRow < 0 || !this.sheet) return;
 
@@ -709,6 +723,16 @@ export class CellEditor extends DOMComponent {
         this.#render();
     }
 
+    /**
+     * @private 私有方法 - 提交编辑并移动到下一个单元格
+     *
+     * 处理 Enter 和 Tab 键的提交和移动逻辑：
+     * - Enter: 移动到下一行
+     * - Tab: 移动到下一列（Shift+Tab: 上一列）
+     *
+     * @param {string} direction - 移动方向："enter" 或 "tab"
+     * @param {boolean} [shiftKey=false] - 是否按下 Shift 键
+     */
     #commitAndMoveNext(direction, shiftKey = false) {
         const currentRow = this.activeRow;
         const currentCol = this.activeCol;
@@ -767,6 +791,16 @@ export class CellEditor extends DOMComponent {
         this.#commitLock = false;
     }
 
+    /**
+     * @private 私有方法 - 获取合并单元格的左上角位置
+     *
+     * 如果单元格属于合并区域，返回合并区域的左上角坐标；
+     * 否则返回原坐标。
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {{row: number, col: number}} 左上角坐标
+     */
     #getTopLeft(row, col) {
         const merge = this.sheet?.getMerge(row, col);
         if (merge) {
@@ -776,7 +810,7 @@ export class CellEditor extends DOMComponent {
     }
 
     /**
-     * 提交编辑器值但不通过 blur 事件触发
+     * @private 私有方法 - 提交编辑器值但不通过 blur 事件触发
      * 用于 #commitAndMoveNext 中，避免 blur → onblur → setCell → 公式重算的同步阻塞
      * 直接提交值，然后 hide 编辑器
      */
@@ -841,6 +875,9 @@ export class CellEditor extends DOMComponent {
         }
     }
 
+    /**
+     * @private 私有方法 - 触发工作表重新渲染
+     */
     #render() {
         if (this.sheet && this.canvasContext && isFunction(this.canvasContext.render)) {
             this.canvasContext.render(this.sheet);

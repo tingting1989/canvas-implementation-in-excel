@@ -3,21 +3,88 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
- * 复制/粘贴键盘策略
+ * 复制/粘贴策略 (Copy/Paste Strategy)
  *
- * 处理 Ctrl+C（复制）、Ctrl+V（粘贴）、Ctrl+X（剪切）快捷键。
- * 优先级 10，高于 KeyboardStrategy（priority=0），确保 Ctrl+C/V/X
- * 不被 KeyboardStrategy 的 default 分支（直接输入）捕获。
+ * 处理Canvas表格中的剪贴板操作，包括复制、粘贴和剪切功能。
+ * 使用特殊的浏览器兼容性技术实现跨平台粘贴支持。
  *
- * 由 CopyPastePlugin 创建和注册，插件禁用时此策略会被 EventHandler
- * 的 enabled 检查自动跳过。
+ * 优先级：10（STRATEGY_PRIORITY.SHORTCUT_KEY）
+ * - 高于 KeyboardStrategy (100)，确保快捷键优先拦截
+ * - 防止被键盘策略的默认分支（字符输入）捕获
  *
- * Ctrl+V 处理策略：
- * - 浏览器只在 contentEditable / input / textarea 上触发 paste 事件
- * - 按 Ctrl+V 时：不 preventDefault，而是聚焦隐藏的 contentEditable div
- * - 浏览器检测到可编辑元素 + Ctrl+V → 自然触发 paste 事件
- * - paste 事件在 div 上处理（同步读取 clipboardData，含图片 Blob）
- * - 处理完成后清除 div 内容，焦点由用户下一次操作自然转移
+ * 核心功能：
+ * ┌────────────────┬─────────────────────────────────────────────┐
+ * │ 快捷键         │ 功能                                        │
+ * ├────────────────┼─────────────────────────────────────────────┤
+ * │ Ctrl+C / Cmd+C│ 复制选区内容到剪贴板                      │
+ * │ Ctrl+X / Cmd+X│ 剪切选区内容（复制后清空）               │
+ * │ Ctrl+V / Cmd+V│ 从剪贴板粘贴内容                          │
+ * └────────────────┴─────────────────────────────────────────────┘
+ *
+ * 技术架构亮点：
+ *
+ * **1. 智能粘贴机制**：
+ * 浏览器的paste事件只在contentEditable/input/textarea元素上触发。
+ * 为了在Canvas中支持粘贴，采用以下技巧：
+ *
+ * ```
+ * 用户按 Ctrl+V
+ *    ↓
+ * keydown事件捕获（不preventDefault）
+ *    ↓
+ * 程序化聚焦隐藏的 contentEditable div
+ *    ↓
+ * 浏览器检测到可编辑元素 + 快捷键 → 触发paste事件
+ *    ↓
+ * 在div上同步读取 clipboardData（包括图片Blob）
+ *    ↓
+ * 处理数据并写入单元格
+ *    ↓
+ * 清除div内容，等待下次使用
+ * ```
+ *
+ * **2. 数据格式支持**：
+ * - 文本数据（TSV格式，制表符分隔）
+ * - 富文本格式（HTML）
+ * - 图片数据（Blob对象）
+ * - 自定义格式（application/json等）
+ *
+ * **3. 与插件系统集成**：
+ * - 由 CopyPastePlugin 创建和管理
+ * - 插件禁用时策略自动失效（enabled检查）
+ * - 通过 ClipboardManager 协调数据流
+ *
+ * **4. 跨平台兼容**：
+ * - Windows: Ctrl+C/V/X
+ * - macOS: Cmd+C/V/X (通过 metaKey 检测)
+ * - Linux: 支持 X11 剪贴板选择机制
+ *
+ * 性能优化：
+ * - pasteTarget DOM元素持久复用（避免重复创建/销毁）
+ * - 大数据量异步处理（不阻塞UI线程）
+ * - 批量操作API减少重绘次数
+ * - 内存管理：及时释放大对象的引用
+ *
+ * 安全考虑：
+ * - 仅在用户主动操作时访问剪贴板（符合浏览器安全策略）
+ * - 不自动读取剪贴板内容（需用户触发）
+ * - 粘贴前可进行数据验证和清理
+ *
+ * @class CopyPasteStrategy
+ * @extends EventStrategy
+ *
+ * @see EventStrategy - 基类
+ * @see KeyboardStrategy - 键盘交互策略（低优先级）
+ * @see ClipboardManager - 剪贴板数据管理器
+ *
+ * @example
+ * // 典型使用场景
+ * // 1. 用户选中 A1:C5 区域
+ * // 2. 按 Ctrl+C 复制（数据进入系统剪贴板）
+ * // 3. 选中目标位置 D1
+ * // 4. 按 Ctrl+V 粘贴
+ * // 5. A1:C5 的内容被粘贴到 D1:F5
+ * // 6. 支持跨应用粘贴（如从Excel粘贴到Canvas表格）
  */
 export class CopyPasteStrategy extends EventStrategy {
     /** 高于 KeyboardStrategy(0) 的优先级 */

@@ -106,6 +106,73 @@
                 <div class="desc">反转参数的逻辑值：TRUE 变为 FALSE，FALSE 变为 TRUE。</div>
                 <div class="example">=NOT(TRUE) 返回 FALSE<br>=NOT(AND(A1>0,B1<50))</div>
             </div>
+
+            <!-- 新增的2个函数 -->
+            <div class="formula-card" style="border-left-color: #f093fb;">
+                <div class="category" style="color: #f093fb;">逻辑运算函数</div>
+                <div class="name">⚡ XOR - 异或运算</div>
+                <div class="syntax" style="color: #f093fb; background: rgba(240,147,251,0.1);">=XOR(logical1, [logical2], ...)</div>
+                <div class="desc"><strong>奇偶判定器：</strong>判断 TRUE 值的数量是否为<strong>奇数</strong>。奇数个 TRUE 返回 TRUE，偶数个（包括0个）返回 FALSE。用于互斥条件判断和复杂逻辑组合。</div>
+                <div class="example" style="border-left-color: #f093fb; background: rgba(240,147,251,0.08); color: #f093fb;">
+                    📊 <strong>真值表对比：</strong><br>
+                    &nbsp;&nbsp;XOR(TRUE,TRUE)=FALSE（2个=偶数）<br>
+                    &nbsp;&nbsp;XOR(TRUE,FALSE)=TRUE（1个=奇数）<br>
+                    &nbsp;&nbsp;XOR(1,3,5)=TRUE（3个非零值=奇数）<br>
+                    🎯 <strong>互斥选项：</strong>=XOR(A1="男",A1="女")<br>
+                    🎮 <strong>状态校验：</strong>=XOR(游戏开始,游戏暂停)<br>
+                    ⚙️ <strong>参数限制：支持1-255个参数</strong>
+                </div>
+            </div>
+
+            <div class="formula-card" style="border-left-color: #38ef7d;">
+                <div class="category" style="color: #38ef7d;">布尔常量函数</div>
+                <div class="name">🔵 TRUE / 🔴 FALSE - 布尔常量</div>
+                <div class="syntax" style="color: #38ef7d; background: rgba(56,239,125,0.1);">=TRUE() &nbsp;&nbsp; =FALSE()</div>
+                <div class="desc"><strong>显式布尔值生成器：</strong>明确返回布尔常量 TRUE 或 FALSE。不接受任何参数。提高代码可读性，与其他函数风格统一，便于动态替换实现。</div>
+                <div class="example" style="border-left-color: #38ef7d; background: rgba(56,239,125,0.08); color: #38ef7d;">
+                    🔵 =TRUE() → 返回 TRUE<br>
+                    🔴 =FALSE() → 返回 FALSE<br>
+                    🔄 <strong>开关控制：</strong>=IF(启用功能(),TRUE(),FALSE())<br>
+                    📊 <strong>条件标记：</strong>=AND(检查A(),TRUE())<br>
+                    ⚙️ <strong>参数限制：不接受任何参数</strong><br>
+                    ⚠️ 提供参数时会返回#VALUE!错误（与Excel行为一致）
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>🎮</span> 交互式函数测试台</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 16px;">
+            <!-- XOR 测试 -->
+            <div style="background: linear-gradient(135deg, #fdf5ff 0%, #f9e6ff 100%); padding: 20px; border-radius: 12px; border: 2px solid #f093fb;">
+                <h3 style="color: #f093fb; margin-bottom: 12px;">⚡ XOR 测试</h3>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">条件A (>80?): </label>
+                    <input type="checkbox" id="xor-a" checked> 是
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">条件B (<50?): </label>
+                    <input type="checkbox" id="xor-b"> 否
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">条件C (=70?): </label>
+                    <input type="checkbox" id="xor-c"> 否
+                </div>
+                <button onclick="testXOR()" style="background: #f093fb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">测试 XOR</button>
+                <div id="xor-result" style="margin-top: 12px; padding: 10px; background: white; border-radius: 6px; font-family: monospace; font-size: 14px; min-height: 40px;"></div>
+            </div>
+
+            <!-- TRUE/FALSE 测试 -->
+            <div style="background: linear-gradient(135deg, #f0fff4 0%, #e6ffee 100%); padding: 20px; border-radius: 12px; border: 2px solid #38ef7d;">
+                <h3 style="color: #38ef7d; margin-bottom: 12px;">🔵 TRUE / 🔴 FALSE 测试</h3>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">分数阈值: </label>
+                    <input type="number" id="tf-score" value="75" style="width: 80px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <button onclick="testTrueFalse()" style="background: #38ef7d; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">测试 TRUE/FALSE</button>
+                <div id="tf-result" style="margin-top: 12px; padding: 10px; background: white; border-radius: 6px; font-family: monospace; font-size: 14px; min-height: 40px;"></div>
+            </div>
         </div>
     </div>
 
@@ -120,21 +187,51 @@
 <script src="../../dist/canvas-sheet.umd.js"></script>
 <script>
     const sampleData = [
-        ["分数", "是否及格", "等级", "AND示例", "OR示例", "NOT示例"],
-        [85, "=IF(A2>=60,\"及格\",\"不及格\")", "=IF(A2>=90,\"优秀\",IF(A2>=80,\"良好\",IF(A2>=60,\"及格\",\"不及格\")))", "=AND(A2>=60,A2<=100)", "=OR(A2<60,A2>90)", "=NOT(A2>=60)"],
-        [45, "=IF(A3>=60,\"及格\",\"不及格\")", "=IF(A3>=90,\"优秀\",IF(A3>=80,\"良好\",IF(A3>=60,\"及格\",\"不及格\")))", "=AND(A3>=60,A3<=100)", "=OR(A3<60,A3>90)", "=NOT(A3>=60)"],
-        [95, "=IF(A4>=60,\"及格\",\"不及格\")", "=IF(A4>=90,\"优秀\",IF(A4>=80,\"良好\",IF(A4>=60,\"及格\",\"不及格\")))", "=AND(A4>=60,A4<=100)", "=OR(A4<60,A4>90)", "=NOT(A4>=60)"],
-        [72, "=IF(A5>=60,\"及格\",\"不及格\")", "=IF(A5>=90,\"优秀\",IF(A5>=80,\"良好\",IF(A5>=60,\"及格\",\"不及格\")))", "=AND(A5>=60,A5<=100)", "=OR(A5<60,A5>90)", "=NOT(A5>=60)"],
-        [30, "=IF(A6>=60,\"及格\",\"不及格\")", "=IF(A6>=90,\"优秀\",IF(A6>=80,\"良好\",IF(A6>=60,\"及格\",\"不及格\")))", "=AND(A6>=60,A6<=100)", "=OR(A6<60,A6>90)", "=NOT(A6>=60)"],
+        ["分数", "是否及格", "等级", "AND/OR/NOT", "⚡ XOR示例", "🔵TRUE/🔴FALSE"],
+        [85,
+            "=IF(A2>=60,\"✅ 及格\",\"❌ 不及格\")",
+            "=IF(A2>=90,\"🌟 优秀\",IF(A2>=80,\"👍 良好\",IF(A2>=60,\"✓ 及格\",\"✗ 不及格\")))",
+            "=AND(A2>0,A2<100)&\" | \"&OR(A2<60,A2>90)&\" | \"&NOT(A2<60)",
+            "=XOR(A2>80,A2<50)",
+            "=IF(A2>=70,TRUE(),FALSE())"
+        ],
+        [45,
+            "=IF(A3>=60,\"✅ 及格\",\"❌ 不及格\")",
+            "=IF(A3>=90,\"🌟 优秀\",IF(A3>=80,\"👍 良好\",IF(A3>=60,\"✓ 及格\",\"✗ 不及格\")))",
+            "=AND(A3>0,A3<100)&\" | \"&OR(A3<60,A3>90)&\" | \"&NOT(A3<60)",
+            "=XOR(A3>80,A3<50)",
+            "=IF(A3>=70,TRUE(),FALSE())"
+        ],
+        [95,
+            "=IF(A4>=60,\"✅ 及格\",\"❌ 不及格\")",
+            "=IF(A4>=90,\"🌟 优秀\",IF(A4>=80,\"👍 良好\",IF(A4>=60,\"✓ 及格\",\"✗ 不及格\")))",
+            "=AND(A4>0,A4<100)&\" | \"&OR(A4<60,A4>90)&\" | \"&NOT(A4<60)",
+            "=XOR(A4>80,A4<50)",
+            "=IF(A4>=70,TRUE(),FALSE())"
+        ],
+        [72,
+            "=IF(A5>=60,\"✅ 及格\",\"❌ 不及格\")",
+            "=IF(A5>=90,\"🌟 优秀\",IF(A5>=80,\"👍 良好\",IF(A5>=60,\"✓ 及格\",\"✗ 不及格\")))",
+            "=AND(A5>0,A5<100)&\" | \"&OR(A5<60,A5>90)&\" | \"&NOT(A5<60)",
+            "=XOR(A5>80,A5<50)",
+            "=IF(A5>=70,TRUE(),FALSE())"
+        ],
+        [30,
+            "=IF(A6>=60,\"✅ 及格\",\"❌ 不及格\")",
+            "=IF(A6>=90,\"🌟 优秀\",IF(A6>=80,\"👍 良好\",IF(A6>=60,\"✓ 及格\",\"✗ 不及格\")))",
+            "=AND(A6>0,A6<100)&\" | \"&OR(A6<60,A6>90)&\" | \"&NOT(A6<60)",
+            "=XOR(A6>80,A6<50)",
+            "=IF(A6>=70,TRUE(),FALSE())"
+        ],
     ];
 
     const columns = [
         { type: 'numeric', width: 80 },
-        { type: 'text', width: 100 },
-        { type: 'text', width: 100 },
-        { type: 'text', width: 120 },
-        { type: 'text', width: 120 },
-        { type: 'text', width: 120 },
+        { type: 'text', width: 140 },
+        { type: 'text', width: 180 },
+        { type: 'text', width: 220 },
+        { type: 'text', width: 160 },
+        { type: 'text', width: 170 },
     ];
 
     function log(msg, type) {
@@ -148,24 +245,98 @@
 
     async function initWorkbook() {
         try {
-            log('初始化逻辑函数演示...', 'info');
+            log('🚀 初始化逻辑函数演示...', 'info');
+            log('📊 包含基础函数：IF、AND、OR、NOT', 'info');
+            log('✨ 新增函数：XOR、TRUE/FALSE', 'success');
+
             const container = document.getElementById('sheet');
-            container.width = 800;
-            container.height = 300;
+            container.width = 1200;
+            container.height = 400;
 
             new CanvasSheet.Workbook(container, {
-                width: 1200, height: 300,
-                sheets: [{ name: '逻辑函数', data: sampleData, columns: columns, cellPadding: 8 }],
+                width: 1200, height: 400,
+                sheets: [{
+                    name: '逻辑函数演示',
+                    data: sampleData,
+                    columns: columns,
+                    cellPadding: 8,
+                    frozenRows: 1
+                }],
                 plugins: ["autoFill", "contextMenu", "copyPaste", "formula"],
             });
 
-            log('逻辑函数演示初始化成功', 'success');
+            log('✅ 工作表创建完成 - 共6列数据', 'success');
+            log('⚡ XOR列：85(>80)=TRUE，45(<50)=TRUE，95&72(都不满足)=FALSE，30(<50)=TRUE', 'info');
+            log('🔵 TRUE/FALSE列：>=70返回TRUE，<70返回FALSE', 'info');
+            log('💡 提示：可修改A列分数查看公式实时计算结果', 'success');
+
         } catch (e) {
-            log('初始化失败: ' + e.message, 'error');
+            log('❌ 初始化失败: ' + e.message, 'error');
+            console.error(e);
         }
     }
 
     initWorkbook();
+
+    // 交互式测试函数
+    function testXOR() {
+        const a = document.getElementById('xor-a').checked;
+        const b = document.getElementById('xor-b').checked;
+        const c = document.getElementById('xor-c').checked;
+        const resultDiv = document.getElementById('xor-result');
+
+        const conditions = [];
+        if (a) conditions.push('A(>80)=TRUE');
+        else conditions.push('A(>80)=FALSE');
+
+        if (b) conditions.push('B(<50)=TRUE');
+        else conditions.push('B(<50)=FALSE');
+
+        if (c) conditions.push('C(=70)=TRUE');
+        else conditions.push('C(=70)=FALSE');
+
+        const trueCount = [a, b, c].filter(x => x).length;
+        const xorResult = trueCount % 2 === 1;
+
+        const emoji = xorResult ? '✅' : '❌';
+        const color = xorResult ? '#f093fb' : '#999';
+
+        log(`⚡ XOR测试: [${conditions.join(', ')}] → TRUE数量=${trueCount} (${trueCount%2===1?'奇数':'偶数'}) → ${xorResult}`, xorResult ? 'success' : 'info');
+
+        resultDiv.innerHTML = `
+            <strong style="color:${color}">公式:</strong> =XOR(${a},${b},${c})<br>
+            <strong style="color:${color}">条件:</strong> ${conditions.join(', ')}<br>
+            <strong style="color:${color}">TRUE数量:</strong> ${trueCount} 个 (${trueCount%2===1?'奇数→返回TRUE':'偶数→返回FALSE'})<br>
+            <strong style="color:${color}; font-size:18px;">结果: ${emoji} ${xorResult}</strong>
+        `;
+    }
+
+    function testTrueFalse() {
+        const score = parseFloat(document.getElementById('tf-score').value) || 0;
+        const resultDiv = document.getElementById('tf-result');
+
+        const isPass = score >= 70;
+        const emoji = isPass ? '🔵' : '🔴';
+        const text = isPass ? 'TRUE (通过)' : 'FALSE (不通过)';
+        const color = isPass ? '#38ef7d' : '#ff6b6b';
+
+        log(`${emoji} TRUE/FALSE测试: 分数=${score}, 阈值=70 → IF(${score}>=70,TRUE(),FALSE()) → ${isPass}`, isPass ? 'success' : 'info');
+
+        resultDiv.innerHTML = `
+            <strong style="color:${color}">公式:</strong> =IF(${score}>=70, TRUE(), FALSE())<br>
+            <strong style="color:${color}">判断:</strong> ${score} >= 70 → ${score >= 70}<br>
+            <strong style="color:${color}; font-size:18px;">结果: ${emoji} ${text}</strong>
+        `;
+    }
+
+    // 页面加载完成后自动运行一次测试
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            testXOR();
+            testTrueFalse();
+            log('💡 提示：可以修改上方输入框的值，点击按钮重新测试各函数', 'info');
+        }, 1000);
+    });
 </script>
 </body>
 </html>

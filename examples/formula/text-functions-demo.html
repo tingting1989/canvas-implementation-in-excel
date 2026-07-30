@@ -76,100 +76,259 @@
     </div>
 
     <div class="demo-section">
-        <h2 class="section-title"><span>📖</span> 函数详细说明</h2>
+        <h2 class="section-title"><span>📖</span> 函数详细说明（共13个）</h2>
         <div class="formula-grid">
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">UPPER - 转大写</div>
-                <div class="syntax">=UPPER(text)</div>
-                <div class="desc">将文本字符串中所有的小写字母转换为大写形式。</div>
-                <div class="example">=UPPER("hello") 返回 "HELLO"</div>
+
+            <!-- UPPER -->
+            <div class="formula-card" style="border-left-color: #ff6b6b;">
+                <div class="category" style="color: #ff6b6b;">大小写转换</div>
+                <div class="name">🔤 UPPER - 转大写字母</div>
+                <div class="syntax" style="color: #ff6b6b; background: rgba(255,107,107,0.1);">=UPPER(text)</div>
+                <div class="desc"><strong>将所有小写字母转换为大写形式</strong>，用于统一格式、数据标准化等场景。</div>
+                <div class="example" style="border-left-color: #ff6b6b; background: rgba(255,107,107,0.08); color: #ff6b6b;">
+                    ✅ =UPPER("hello world") → "HELLO WORLD"<br>
+                    ✅ =UPPER(A1) → 将单元格内容转大写<br>
+                    💡 应用：姓名大写化、代码规范化
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">LOWER - 转小写</div>
-                <div class="syntax">=LOWER(text)</div>
-                <div class="desc">将文本字符串中所有的大写字母转换为小写形式。</div>
-                <div class="example">=LOWER("HELLO") 返回 "hello"</div>
+
+            <!-- LOWER -->
+            <div class="formula-card" style="border-left-color: #4facfe;">
+                <div class="category" style="color: #4facfe;">大小写转换</div>
+                <div class="name">🔡 LOWER - 转小写字母</div>
+                <div class="syntax" style="color: #4facfe; background: rgba(79,172,254,0.1);">=LOWER(text)</div>
+                <div class="desc"><strong>将所有大写字母转换为小写形式</strong>，用于邮箱地址、URL等小写敏感场景。</div>
+                <div class="example" style="border-left-color: #4facfe; background: rgba(79,172,254,0.08); color: #4facfe;">
+                    ✅ =LOWER("HELLO WORLD") → "hello world"<br>
+                    ✅ =LOWER(A1) → 将单元格内容转小写<br>
+                    💡 应用：邮箱格式化、文件名处理
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">CONCAT / CONCATENATE - 文本连接</div>
-                <div class="syntax">=CONCAT(text1, [text2], ...)</div>
-                <div class="desc">将多个文本字符串连接为一个连续字符串。</div>
-                <div class="example">=CONCAT("Hello"," ","World") 返回 "Hello World"</div>
+
+            <!-- CONCAT / CONCATENATE -->
+            <div class="formula-card" style="border-left-color: #38ef7d;">
+                <div class="category" style="color: #38ef7d;">文本连接</div>
+                <div class="name">🔗 CONCAT / CONCATENATE - 连接文本</div>
+                <div class="syntax" style="color: #38ef7d; background: rgba(56,239,125,0.1);">=CONCAT(text1, [text2], ...)</div>
+                <div class="desc"><strong>将多个文本字符串连接为一个连续字符串</strong>。CONCAT是现代版本，CONCATENATE兼容旧Excel。</div>
+                <div class="example" style="border-left-color: #38ef7d; background: rgba(56,239,125,0.08); color: #38ef7d;">
+                    ✅ =CONCAT("Hello"," ","World") → "Hello World"<br>
+                    ✅ =CONCAT(A1,"-",B1) → "A1值-B1值"<br>
+                    ⚙️ 参数：支持1到无限个文本或范围引用<br>
+                    💡 应用：拼接姓名、生成编号、组合地址
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">LEFT - 从左侧截取</div>
-                <div class="syntax">=LEFT(text, [num_chars])</div>
-                <div class="desc">返回文本字符串最左边的字符。</div>
-                <div class="example">=LEFT("Hello World", 5) 返回 "Hello"</div>
+
+            <!-- LEFT -->
+            <div class="formula-card" style="border-left-color: #f093fb;">
+                <div class="category" style="color: #f093fb;">截取函数</div>
+                <div class="name">⬅️ LEFT - 从左侧截取字符</div>
+                <div class="syntax" style="color: #f093fb; background: rgba(240,147,251,0.1);">=LEFT(text, [num_chars])</div>
+                <div class="desc"><strong>从文本字符串的最左边开始截取指定数量的字符</strong>，默认截取1个字符。</div>
+                <div class="example" style="border-left-color: #f093fb; background: rgba(240,147,251,0.08); color: #f093fb;">
+                    ✅ =LEFT("Hello World",5) → "Hello"<br>
+                    ✅ =LEFT("ABC") → "A"（默认1个字符）<br>
+                    ⚙️ 参数：num_chars≥0，超出长度则返回全部<br>
+                    💡 应用：提取区号、获取前缀代码
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">RIGHT - 从右侧截取</div>
-                <div class="syntax">=RIGHT(text, [num_chars])</div>
-                <div class="desc">返回文本字符串最右边的字符。</div>
-                <div class="example">=RIGHT("Hello World", 5) 返回 "World"</div>
+
+            <!-- RIGHT -->
+            <div class="formula-card" style="border-left-color: #fa709a;">
+                <div class="category" style="color: #fa709a;">截取函数</div>
+                <div class="name">➡️ RIGHT - 从右侧截取字符</div>
+                <div class="syntax" style="color: #fa709a; background: rgba(250,112,154,0.1);">=RIGHT(text, [num_chars])</div>
+                <div class="desc"><strong>从文本字符串的最右边开始截取指定数量的字符</strong>，默认截取1个字符。</div>
+                <div class="example" style="border-left-color: #fa709a; background: rgba(250,112,154,0.08); color: #fa709a;">
+                    ✅ =RIGHT("Hello World",5) → "World"<br>
+                    ✅ =RIGHT("ABC") → "C"（默认1个字符）<br>
+                    ⚙️ 参数：num_chars≥0，超出长度则返回全部<br>
+                    💡 应用：提取扩展名、获取后缀标识
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">MID - 从中间截取</div>
-                <div class="syntax">=MID(text, start_num, num_chars)</div>
-                <div class="desc">返回文本字符串中从指定位置开始的特定数目的字符。</div>
-                <div class="example">=MID("Hello World", 7, 5) 返回 "World"</div>
+
+            <!-- MID -->
+            <div class="formula-card" style="border-left-color: #feca57;">
+                <div class="category" style="color: #feca57;">截取函数</div>
+                <div class="name">📍 MID - 从中间截取字符</div>
+                <div class="syntax" style="color: #feca57; background: rgba(254,202,87,0.1);">=MID(text, start_num, num_chars)</div>
+                <div class="desc"><strong>从指定位置开始截取特定数目的字符</strong>，start_num从1开始计数。</div>
+                <div class="example" style="border-left-color: #feca57; background: rgba(254,202,87,0.08); color: #feca57;">
+                    ✅ =MID("Hello World",7,5) → "World"<br>
+                    ✅ =MID("1234567890",3,4) → "3456"<br>
+                    ⚙️ 参数：start_num≥1, num_chars≥0<br>
+                    ⚠️ start_num超出范围返回空字符串<br>
+                    💡 应用：提取身份证段、解析固定格式数据
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">LEN - 字符串长度</div>
-                <div class="syntax">=LEN(text)</div>
-                <div class="desc">返回文本字符串中的字符个数。</div>
-                <div class="example">=LEN("Hello") 返回 5</div>
+
+            <!-- LEN -->
+            <div class="formula-card" style="border-left-color: #48dbfb;">
+                <div class="category" style="color: #48dbfb;">长度计算</div>
+                <div class="name">📏 LEN - 字符串长度</div>
+                <div class="syntax" style="color: #48dbfb; background: rgba(72,219,251,0.1);">=LEN(text)</div>
+                <div class="desc"><strong>返回文本字符串中的字符个数</strong>，包括空格和标点符号。</div>
+                <div class="example" style="border-left-color: #48dbfb; background: rgba(72,219,251,0.08); color: #48dbfb;">
+                    ✅ =LEN("Hello") → 5<br>
+                    ✅ =LEN("  Hello  ") → 9（包含空格）<br>
+                    ✅ =LEN("") → 0（空字符串）<br>
+                    💡 应用：验证输入长度、限制字符数
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">TRIM - 去除首尾空格</div>
-                <div class="syntax">=TRIM(text)</div>
-                <div class="desc">删除文本字符串的首尾空格。</div>
-                <div class="example">=TRIM("  Hello  ") 返回 "Hello"</div>
+
+            <!-- TRIM -->
+            <div class="formula-card" style="border-left-color: #1dd1a1;">
+                <div class="category" style="color: #1dd1a1;">清理函数</div>
+                <div class="name">🧹 TRIM - 去除首尾空格</div>
+                <div class="syntax" style="color: #1dd1a1; background: rgba(29,209,161,0.1);">=TRIM(text)</div>
+                <div class="desc"><strong>删除文本字符串的首尾空格</strong>，并将中间连续空格压缩为单个空格。</div>
+                <div class="example" style="border-left-color: #1dd1a1; background: rgba(29,209,161,0.08); color: #1dd1a1;">
+                    ✅ =TRIM("  Hello  ") → "Hello"<br>
+                    ✅ =TRIM("  A   B   C  ") → "A B C"<br>
+                    💡 应用：清洗用户输入、去除多余空白<br>
+                    🔄 配合：常与CLEAN()配合使用
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">FIND - 查找子串(区分大小写)</div>
-                <div class="syntax">=FIND(find_text, within_text, [start_num])</div>
-                <div class="desc">在文本中查找子串，返回其起始位置（从1开始）。</div>
-                <div class="example">=FIND("World", "Hello World") 返回 7</div>
+
+            <!-- FIND -->
+            <div class="formula-card" style="border-left-color: #ff9ff3;">
+                <div class="category" style="color: #ff9ff3;">查找函数</div>
+                <div class="name">🔍 FIND - 查找子串（区分大小写）</div>
+                <div class="syntax" style="color: #ff9ff3; background: rgba(255,159,243,0.1);">=FIND(find_text, within_text, [start_num])</div>
+                <div class="desc"><strong>在文本中查找子串并返回其起始位置（从1开始）</strong>，严格区分大小写。</div>
+                <div class="example" style="border-left-color: #ff9ff3; background: rgba(255,159,243,0.08); color: #ff9ff3;">
+                    ✅ =FIND("World","Hello World") → 7<br>
+                    ❌ =FIND("world","Hello World") → #VALUE!（大小写不匹配）<br>
+                    ✅ =FIND("o","Hello",5) → 5（从第5位开始查找）<br>
+                    ⚠️ 未找到时返回 #VALUE! 错误<br>
+                    💡 应用：精确文本定位、验证包含关系
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">SEARCH - 查找子串(不区分大小写)</div>
-                <div class="syntax">=SEARCH(find_text, within_text, [start_num])</div>
-                <div class="desc">在文本中查找子串，不区分大小写。</div>
-                <div class="example">=SEARCH("world", "Hello World") 返回 7</div>
+
+            <!-- SEARCH -->
+            <div class="formula-card" style="border-left-color: #54a0ff;">
+                <div class="category" style="color: #54a0ff;">查找函数</div>
+                <div class="name">🔎 SEARCH - 查找子串（不区分大小写）</div>
+                <div class="syntax" style="color: #54a0ff; background: rgba(84,160,255,0.1);">=SEARCH(find_text, within_text, [start_num])</div>
+                <div class="desc"><strong>在文本中查找子串并返回其起始位置（从1开始）</strong>，不区分大小写。</div>
+                <div class="example" style="border-left-color: #54a0ff; background: rgba(84,160,255,0.08); color: #54a0ff;">
+                    ✅ =SEARCH("world","Hello World") → 7（忽略大小写）<br>
+                    ✅ =SEARCH("W","Hello World",2) → 7（从第2位开始）<br>
+                    ❌ =SEARCH("xyz","Hello") → #VALUE!（未找到）<br>
+                    ⚠️ 未找到时返回 #VALUE! 错误<br>
+                    💡 应用：模糊搜索、用户输入容错处理
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">SUBSTITUTE - 替换文本</div>
-                <div class="syntax">=SUBSTITUTE(text, old_text, new_text, [instance_num])</div>
-                <div class="desc">将文本中的旧文本替换为新文本，可指定替换第几次出现。</div>
-                <div class="example">=SUBSTITUTE("2024-01-01","-","/") 返回 "2024/01/01"<br>=SUBSTITUTE("a-b-c","-","/",2) 返回 "a-b/c"</div>
+
+            <!-- SUBSTITUTE -->
+            <div class="formula-card" style="border-left-color: #5f27cd;">
+                <div class="category" style="color: #5f27cd;">替换函数</div>
+                <div class="name">🔄 SUBSTITUTE - 替换文本</div>
+                <div class="syntax" style="color: #5f27cd; background: rgba(95,39,205,0.1);">=SUBSTITUTE(text, old_text, new_text, [instance_num])</div>
+                <div class="desc"><strong>将文本中的旧文本替换为新文本</strong>，可选择性地只替换第几次出现的实例。</div>
+                <div class="example" style="border-left-color: #5f27cd; background: rgba(95,39,205,0.08); color: #5f27cd;">
+                    ✅ =SUBSTITUTE("2024-01-01","-","/") → "2024/01/01"（全替换）<br>
+                    ✅ =SUBSTITUTE("a-b-c","-","/",2) → "a-b/c"（仅第2次）<br>
+                    ⚙️ instance_num可选，省略则替换所有出现<br>
+                    💡 应用：日期格式转换、批量修改内容
+                </div>
             </div>
-            <div class="formula-card">
-                <div class="category">文本函数</div>
-                <div class="name">TEXT - 格式化数值</div>
-                <div class="syntax">=TEXT(value, [format_text])</div>
-                <div class="desc">将数值按指定格式转换为文本字符串。</div>
-                <div class="example">=TEXT(1234.567,"#,##0.00") 返回 "1,234.57"<br>=TEXT(0.15,"0%") 返回 "15%"</div>
+
+            <!-- TEXT -->
+            <div class="formula-card" style="border-left-color: #ee5a24;">
+                <div class="category" style="color: #ee5a24;">格式化函数</div>
+                <div class="name">💎 TEXT - 格式化数值为文本</div>
+                <div class="syntax" style="color: #ee5a24; background: rgba(238,90,36,0.1);">=TEXT(value, format_text)</div>
+                <div class="desc"><strong>将数值按指定格式转换为文本字符串</strong>，支持千分位、百分比、小数等多种格式。</div>
+                <div class="example" style="border-left-color: #ee5a24; background: rgba(238,90,36,0.08); color: #ee5a24;">
+                    ✅ =TEXT(1234.567,"#,##0.00") → "1,234.57"<br>
+                    ✅ =TEXT(0.15,"0%") → "15%"<br>
+                    ✅ =TEXT(3.14,"0.00") → "3.14"<br>
+                    📋 支持格式："0"、"#,##0"、"0.00"、"0%"等<br>
+                    💡 应用：货币显示、百分比展示、自定义格式输出
+                </div>
             </div>
+
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h2 class="section-title"><span>🧪</span> 交互式测试台</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-top: 16px;">
+
+            <!-- 大小写测试 -->
+            <div style="background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); padding: 20px; border-radius: 12px; border: 2px solid #ff6b6b;">
+                <h3 style="color: #ff6b6b; margin-bottom: 12px;">🔤 大小写转换测试</h3>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">输入文本: </label>
+                    <input type="text" id="case-input" value="Hello World" style="width: 200px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <button onclick="testCaseConversion()" style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-right: 10px;">测试转换</button>
+                <div id="case-result" style="margin-top: 12px; padding: 12px; background: white; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8;"></div>
+            </div>
+
+            <!-- 截取函数测试 -->
+            <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%); padding: 20px; border-radius: 12px; border: 2px solid #4facfe;">
+                <h3 style="color: #4facfe; margin-bottom: 12px;">✂️ 截取函数测试</h3>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">原文本: </label>
+                    <input type="text" id="substr-input" value="Canvas-Sheet Excel" style="width: 180px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 10px; display: flex; gap: 10px; align-items: center;">
+                    <label style="font-weight: 600; color: #333;">LEFT:</label>
+                    <input type="number" id="left-num" value="6" min="1" max="20" style="width: 60px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="font-weight: 600; color: #333;">RIGHT:</label>
+                    <input type="number" id="right-num" value="5" min="1" max="20" style="width: 60px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <button onclick="testSubstring()" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">测试截取</button>
+                <div id="substr-result" style="margin-top: 12px; padding: 12px; background: white; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8;"></div>
+            </div>
+
+            <!-- 查找与替换测试 -->
+            <div style="background: linear-gradient(135deg, #fdf5ff 0%, #fce4ec 100%); padding: 20px; border-radius: 12px; border: 2px solid #f093fb;">
+                <h3 style="color: #f093fb; margin-bottom: 12px;">🔍 查找与替换测试</h3>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">被查找文本: </label><br>
+                    <input type="text" id="search-within" value="Hello World Canvas-Sheet" style="width: 250px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; margin-top: 4px;">
+                </div>
+                <div style="margin-bottom: 10px; display: flex; gap: 10px; align-items: center;">
+                    <label style="font-weight: 600; color: #333;">查找:</label>
+                    <input type="text" id="find-text" value="world" style="width: 80px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="font-weight: 600; color: #333;">替换为:</label>
+                    <input type="text" id="replace-text" value="Earth" style="width: 80px; padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <button onclick="testSearchReplace()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">测试查找替换</button>
+                <div id="search-result" style="margin-top: 12px; padding: 12px; background: white; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8;"></div>
+            </div>
+
+            <!-- 格式化测试 -->
+            <div style="background: linear-gradient(135deg, #fff9e6 0%, #ffe8cc 100%); padding: 20px; border-radius: 12px; border: 2px solid #feca57;">
+                <h3 style="color: #feca57; margin-bottom: 12px;">💎 TEXT格式化测试</h3>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">数值: </label>
+                    <input type="number" id="format-value" value="12345.6789" step="0.0001" style="width: 150px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #333;">格式: </label>
+                    <select id="format-type" style="padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="#,##0.00">千分位 + 2位小数 (#,##0.00)</option>
+                        <option value="#,##0">整数千分位 (#,##0)</option>
+                        <option value="0.00">2位小数 (0.00)</option>
+                        <option value="0%">百分比 (0%)</option>
+                        <option value="0.0%">百分比1位 (0.0%)</option>
+                        <option value="0">整数 (0)</option>
+                    </select>
+                </div>
+                <button onclick="testTextFormat()" style="background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">格式化</button>
+                <div id="format-result" style="margin-top: 12px; padding: 12px; background: white; border-radius: 8px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8;"></div>
+            </div>
+
         </div>
     </div>
 
     <div class="demo-section">
         <h2 class="section-title"><span>📝</span> 操作日志</h2>
-        <div class="log-container" id="logContainer">
-            <div class="log-entry log-info">文本函数演示初始化完成</div>
-        </div>
+        <div class="log-container" id="logContainer"></div>
     </div>
 </div>
 
@@ -178,22 +337,24 @@
     const sampleData = [
         ["原文本", "UPPER", "LOWER", "LEFT(5)", "RIGHT(5)", "MID(7,5)", "LEN", "TRIM"],
         ["Hello World", "=UPPER(A2)", "=LOWER(A2)", "=LEFT(A2,5)", "=RIGHT(A2,5)", "=MID(A2,7,5)", "=LEN(A2)", "=TRIM(\"  Hello  \")"],
-        ["  Spaces  ", "=UPPER(A3)", "=LOWER(A3)", "=LEFT(A3,5)", "=RIGHT(A3,5)", "=MID(A3,3,6)", "=LEN(A3)", "=TRIM(A3)"],
+        ["Canvas-Sheet", "=UPPER(A3)", "=LOWER(A3)", "=LEFT(A3,6)", "=RIGHT(A3,5)", "=MID(A3,8,5)", "=LEN(A3)", "=TRIM(\"  Test  \")"],
+        ["  多空格文本  ", "=UPPER(A4)", "=LOWER(A4)", "=LEFT(A4,6)", "=RIGHT(A4,6)", "=MID(A4,3,5)", "=LEN(A4)", "=TRIM(A4)"],
         ["", "", "", "", "", "", "", ""],
-        ["FIND/SEARCH", "SUBSTITUTE", "TEXT格式化", "CONCAT", "", "", "", ""],
-        ["=FIND(\"World\",A2)", "=SUBSTITUTE(\"2024-01-01\",\"-\",\"/\")", "=TEXT(1234.567,\"#,##0.00\")", "=CONCAT(A2,\"!\")", "", "", "", ""],
-        ["=SEARCH(\"world\",A2)", "=SUBSTITUTE(\"a-b-c\",\"-\",\"/\",2)", "=TEXT(0.15,\"0%\")", "=CONCATENATE(\"Hello\",\" \",\"World\")", "", "", "", ""],
+        ["查找与替换", "FIND结果", "SEARCH结果", "SUBSTITUTE全替换", "SUBSTITUTE指定次", "TEXT千分位", "TEXT百分比", "CONCAT连接"],
+        ["Hello World Canvas", "=FIND(\"World\",A6)", "=SEARCH(\"world\",A6)", "=SUBSTITUTE(A6,\" \",\"-\")", "=SUBSTITUTE(A6,\" \",\"-\",2)", "=TEXT(12345.6789,\"#,##0.00\")", "=TEXT(0.1567,\"0.0%\")", "=CONCAT(A6,\"!\")"],
+        ["2024-01-15 Date", "=FIND(\"Date\",A7)", "=SEARCH(\"date\",A7)", "=SUBSTITUTE(A7,\"-\",\"/\")", "=SUBSTITUTE(A7,\"-\",\"/\",1)", "=TEXT(9876.54,\"#,##0\")", "=TEXT(0.85,\"0%\")", "=CONCATENATE(\"日期:\",A7)"],
+        ["Email@Test.COM", "=FIND(\"@\",A8)", "=SEARCH(\"TEST\",A8)", "=SUBSTITUTE(A8,\"@\",\"[at]\")", "=SUBSTITUTE(A8,\".\",\"_\",1)", "=TEXT(3.14159,\"0.00\")", "=TEXT(0.75,\"0%\")", "=CONCAT(\"<\",A8,\">\")"],
     ];
 
     const columns = [
-        { type: 'text', width: 120 },
+        { type: 'text', width: 140 },
+        { type: 'text', width: 140 },
+        { type: 'text', width: 140 },
         { type: 'text', width: 130 },
         { type: 'text', width: 130 },
-        { type: 'text', width: 130 },
-        { type: 'text', width: 130 },
-        { type: 'text', width: 130 },
-        { type: 'numeric', width: 80 },
-        { type: 'text', width: 120 },
+        { type: 'text', width: 140 },
+        { type: 'numeric', width: 90 },
+        { type: 'text', width: 150 },
     ];
 
     function log(msg, type) {
@@ -207,24 +368,202 @@
 
     async function initWorkbook() {
         try {
-            log('初始化文本函数演示...', 'info');
+            log('🚀 初始化文本函数演示...', 'info');
+            log('📊 共包含13个文本处理函数：大小写转换、截取、查找、替换、格式化等', 'info');
+
             const container = document.getElementById('sheet');
-            container.width = 800;
-            container.height = 350;
+            container.width = 1000;
+            container.height = 400;
 
             new CanvasSheet.Workbook(container, {
-                width: 1200, height: 350,
-                sheets: [{ name: '文本函数', data: sampleData, columns: columns, cellPadding: 8 }],
+                width: 1200, height: 400,
+                sheets: [{ name: '📝 文本函数完整演示', data: sampleData, columns: columns, cellPadding: 8, frozenRows: 1 }],
                 plugins: ["autoFill", "contextMenu", "copyPaste", "formula"],
             });
 
-            log('文本函数演示初始化成功', 'success');
+            log('✅ 工作表创建完成 - 共8列 × 9行数据', 'success');
+            log('📋 第2-4行：基础转换示例（UPPER/LOWER/LEFT/RIGHT/MID/LEN/TRIM）', 'info');
+            log('📋 第6-8行：高级应用示例（FIND/SEARCH/SUBSTITUTE/TEXT/CONCAT）', 'info');
+            log('💡 提示：可修改A列原文本查看公式实时计算结果', 'success');
+
         } catch (e) {
-            log('初始化失败: ' + e.message, 'error');
+            log('❌ 初始化失败: ' + e.message, 'error');
         }
     }
 
-    initWorkbook();
+    // ========== 交互式测试函数 ==========
+
+    // 大小写转换测试
+    function testCaseConversion() {
+        const input = document.getElementById('case-input').value;
+        const resultDiv = document.getElementById('case-result');
+
+        try {
+            const upperResult = input.toUpperCase();
+            const lowerResult = input.toLowerCase();
+
+            resultDiv.innerHTML = `
+                <strong style="color: #ff6b6b;">🔤 UPPER结果：</strong>${upperResult}<br>
+                <strong style="color: #4facfe;">🔡 LOWER结果：</strong>${lowerResult}<br>
+                <hr style="margin: 8px 0; border-color: #eee;">
+                <div style="font-size: 12px; color: #666;">
+                    公式：<br>
+                    =UPPER("${input}") → "${upperResult}"<br>
+                    =LOWER("${input}") → "${lowerResult}"
+                </div>
+            `;
+
+            log(`🔤 大小写转换测试: "${input}" → UPPER="${upperResult}", LOWER="${lowerResult}"`, 'success');
+        } catch (e) {
+            resultDiv.innerHTML = `<span style="color: red;">❌ 错误: ${e.message}</span>`;
+            log(`❌ 大小写转换失败: ${e.message}`, 'error');
+        }
+    }
+
+    // 截取函数测试
+    function testSubstring() {
+        const input = document.getElementById('substr-input').value;
+        const leftNum = parseInt(document.getElementById('left-num').value) || 1;
+        const rightNum = parseInt(document.getElementById('right-num').value) || 1;
+        const resultDiv = document.getElementById('substr-result');
+
+        try {
+            const leftResult = input.substring(0, leftNum);
+            const rightResult = input.substring(input.length - rightNum);
+            const midResult = input.substring(3, 3 + 5);
+
+            resultDiv.innerHTML = `
+                <strong style="color: #f093fb;">⬅️ LEFT(${leftNum})：</strong>"${leftResult}"<br>
+                <strong style="color: #fa709a;">➡️ RIGHT(${rightNum})：</strong>"${rightResult}"<br>
+                <strong style="color: #feca57;">📍 MID(4,5)：</strong>"${midResult}"<br>
+                <hr style="margin: 8px 0; border-color: #eee;">
+                <div style="font-size: 12px; color: #666;">
+                    原文本长度：${input.length} 个字符<br>
+                    LEFT从左边截取${leftNum}个字符<br>
+                    RIGHT从右边截取${rightNum}个字符
+                </div>
+            `;
+
+            log(`✂️ 截取测试: "${input}" → LEFT=${leftResult}, RIGHT=${rightResult}, MID(4,5)=${midResult}`, 'success');
+        } catch (e) {
+            resultDiv.innerHTML = `<span style="color: red;">❌ 错误: ${e.message}</span>`;
+            log(`❌ 截取测试失败: ${e.message}`, 'error');
+        }
+    }
+
+    // 查找与替换测试
+    function testSearchReplace() {
+        const withinText = document.getElementById('search-within').value;
+        const findText = document.getElementById('find-text').value;
+        const replaceText = document.getElementById('replace-text').value;
+        const resultDiv = document.getElementById('search-result');
+
+        try {
+            // FIND（区分大小写）
+            let findResult, findStatus;
+            const findIndex = withinText.indexOf(findText);
+            if (findIndex !== -1) {
+                findResult = findIndex + 1; // Excel从1开始计数
+                findStatus = `✅ 找到，位置: ${findResult}`;
+            } else {
+                findResult = '#VALUE!';
+                findStatus = `❌ 未找到（区分大小写）`;
+            }
+
+            // SEARCH（不区分大小写）
+            let searchResult, searchStatus;
+            const searchIndex = withinText.toLowerCase().indexOf(findText.toLowerCase());
+            if (searchIndex !== -1) {
+                searchResult = searchIndex + 1;
+                searchStatus = `✅ 找到，位置: ${searchResult}`;
+            } else {
+                searchResult = '#VALUE!';
+                searchStatus = `❌ 未找到`;
+            }
+
+            // SUBSTITUTE（全替换）
+            const substituteAll = withinText.split(findText).join(replaceText);
+            // SUBSTITUTE（仅第1次）
+            let substituteFirst = withinText;
+            if (findText && withinText.includes(findText)) {
+                const idx = withinText.indexOf(findText);
+                substituteFirst = withinText.substring(0, idx) + replaceText + withinText.substring(idx + findText.length);
+            }
+
+            resultDiv.innerHTML = `
+                <strong style="color: #ff9ff3;">🔍 FIND结果：</strong>${findResult} (${findStatus})<br>
+                <strong style="color: #54a0ff;">🔎 SEARCH结果：</strong>${searchResult} (${searchStatus})<br>
+                <hr style="margin: 8px 0; border-color: #eee;">
+                <strong style="color: #5f27cd;">🔄 SUBSTITUTE全替换：</strong><br>"${substituteAll}"<br>
+                <strong style="color: #5f27cd;">🔄 SUBSTITUTE仅第1次：</strong><br>"${substituteFirst}"
+            `;
+
+            log(`🔍 查找替换测试: FIND(${findResult}), SEARCH(${searchResult})`, 'success');
+        } catch (e) {
+            resultDiv.innerHTML = `<span style="color: red;">❌ 错误: ${e.message}</span>`;
+            log(`❌ 查找替换失败: ${e.message}`, 'error');
+        }
+    }
+
+    // TEXT格式化测试
+    function testTextFormat() {
+        const value = parseFloat(document.getElementById('format-value').value) || 0;
+        const formatType = document.getElementById('format-type').value;
+        const resultDiv = document.getElementById('format-result');
+
+        try {
+            let formattedValue;
+            switch(formatType) {
+                case "#,##0.00":
+                    formattedValue = value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    break;
+                case "#,##0":
+                    formattedValue = Math.round(value).toLocaleString();
+                    break;
+                case "0.00":
+                    formattedValue = value.toFixed(2);
+                    break;
+                case "0%":
+                    formattedValue = (value * 100).toFixed(0) + "%";
+                    break;
+                case "0.0%":
+                    formattedValue = (value * 100).toFixed(1) + "%";
+                    break;
+                case "0":
+                    formattedValue = String(Math.round(value));
+                    break;
+                default:
+                    formattedValue = value.toString();
+            }
+
+            resultDiv.innerHTML = `
+                <strong>原始数值：</strong>${value}<br>
+                <strong style="color: #ee5a24;">💎 格式化结果（${formatType}）：</strong><br>
+                <span style="font-size: 18px; font-weight: bold; color: #ee5a24;">"${formattedValue}"</span><br>
+                <hr style="margin: 8px 0; border-color: #eee;">
+                <div style="font-size: 12px; color: #666;">
+                    Excel公式：=TEXT(${value},"${formatType}")
+                </div>
+            `;
+
+            log(`💎 格式化测试: ${value} → "${formattedValue}" (格式: ${formatType})`, 'success');
+        } catch (e) {
+            resultDiv.innerHTML = `<span style="color: red;">❌ 错误: ${e.message}</span>`;
+            log(`❌ 格式化失败: ${e.message}`, 'error');
+        }
+    }
+
+    // 页面加载完成后自动运行一次测试
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            initWorkbook();
+            testCaseConversion();
+            testSubstring();
+            testSearchReplace();
+            testTextFormat();
+            log('💡 提示：可以修改上方输入框的值，点击按钮重新测试各函数', 'info');
+        }, 500);
+    });
 </script>
 </body>
 </html>

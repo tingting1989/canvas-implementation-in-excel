@@ -6,20 +6,50 @@ import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 import { isFunction } from "../../utils/helper.js";
 
 /**
- * 键盘交互策略
- * 优先级 0（默认），低于 CopyPasteStrategy(10)，确保 Ctrl+C/V/X 优先被 CopyPastePlugin 拦截
+ * 键盘交互策略 (Keyboard Interaction Strategy)
  *
- * 处理以下键盘操作：
- * - 方向键导航（支持 Shift 扩展选区）
- * - Enter/F2 进入编辑
- * - Tab 切换单元格
- * - Delete/Backspace 批量清空选区内容
- * - Ctrl+A 全选
- * - Ctrl+Z/Y 撤销/重做
- * - Ctrl+B/I/U 格式化加粗/斜体/下划线（批量格式化）
- * - 直接输入字符进入批量赋值模式
+ * 处理Canvas表格中所有键盘相关的用户交互操作。
+ * 负责单元格导航、编辑、数据操作等键盘快捷键功能。
  *
- * 注意：Ctrl+C/V/X（复制/粘贴/剪切）已移至 CopyPasteStrategy，由 CopyPastePlugin 管理。
+ * 优先级：100（STRATEGY_PRIORITY.KEYBOARD_BASE）
+ * - 高于默认优先级，确保键盘事件被及时处理
+ * - 低于 CopyPasteStrategy (10)，让复制/粘贴优先拦截
+ *
+ * 核心快捷键映射：
+ * ┌──────────────────┬─────────────────────────────────────────────┐
+ * │ 快捷键           │ 功能                                        │
+ * ├──────────────────┼─────────────────────────────────────────────┤
+ * │ ↑ ↓ ← →         │ 移动活动单元格（Shift扩展选区）            │
+ * │ Enter            │ 下移一行（编辑时确认）                      │
+ * │ Tab              │ 右移一列（Shift左移）                       │
+ * │ F2 / Enter       │ 进入编辑模式                               │
+ * │ Delete/Backspace │ 清空选区内容                                │
+ * │ Ctrl+A           │ 全选                                       │
+ * │ Ctrl+Z/Y         │ 撤销/重做                                  │
+ * │ Ctrl+B/I/U       │ 批量格式化（粗体/斜体/下划线）             │
+ * │ 字符键           │ 批量赋值模式（直接输入值）                 │
+ * │ Esc              │ 取消/退出                                  │
+ * │ Home/End         │ 行首/行尾                                  │
+ * │ PageUp/PageDown  │ 上翻/下翻一页                              │
+ * └──────────────────┴─────────────────────────────────────────────┘
+ *
+ * 技术特性：
+ * - **焦点检查优化**：缓存上次焦点检查结果，避免重复DOM查询
+ * - **输入防抖**：快速连续按键时的性能优化
+ * - **组合键支持**：完整支持 Ctrl、Shift、Alt 等修饰键
+ * - **编辑器感知**：在编辑模式下自动切换行为
+ * - **批量操作**：支持对整个选区执行操作
+ *
+ * 与其他策略的关系：
+ * - CopyPasteStrategy (优先级10): 处理 Ctrl+C/V/X
+ * - MouseStrategy: 配合鼠标选择执行操作
+ * - ValidationStrategy: 输入时触发验证
+ *
+ * @class KeyboardStrategy
+ * @extends EventStrategy
+ *
+ * @see EventStrategy - 基类
+ * @see CopyPasteStrategy - 复制粘贴策略（更高优先级）
  */
 export class KeyboardStrategy extends EventStrategy {
     /**

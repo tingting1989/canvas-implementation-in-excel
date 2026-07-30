@@ -46,6 +46,7 @@
         .category-card.text { border-top: 4px solid #4facfe; }
         .category-card.conditional { border-top: 4px solid #fa709a; }
         .category-card.lookup { border-top: 4px solid #43e97b; }
+        .category-card.custom { border-top: 4px solid #f7971e; }
         .demo-section {
             background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2);
@@ -104,17 +105,18 @@
 
         <a href="logical-functions-demo.html" class="category-card logical">
             <div class="icon">🔀</div>
-            <div class="title">逻辑函数 <span class="count">4</span></div>
-            <div class="desc">提供条件判断和逻辑运算功能：IF 条件分支、AND/OR 逻辑组合、NOT 取反。</div>
+            <div class="title">逻辑函数 <span class="count">6</span></div>
+            <div class="desc">提供条件判断和逻辑运算功能：IF条件分支、AND/OR/NOT/XOR逻辑组合、TRUE/FALSE布尔常量。</div>
             <div class="function-tags">
                 <span class="tag">IF</span><span class="tag">AND</span><span class="tag">OR</span><span class="tag">NOT</span>
+                <span class="tag">XOR</span><span class="tag">TRUE/FALSE</span>
             </div>
         </a>
 
         <a href="text-functions-demo.html" class="category-card text">
             <div class="icon">📝</div>
-            <div class="title">文本函数 <span class="count">12</span></div>
-            <div class="desc">提供字符串操作和转换功能：大小写转换、截取、查找、替换、格式化等。</div>
+            <div class="title">文本函数 <span class="count">13</span></div>
+            <div class="desc">提供完整的字符串操作功能：大小写转换、文本连接、字符截取、查找替换、格式化输出等。含交互式测试台。</div>
             <div class="function-tags">
                 <span class="tag">UPPER</span><span class="tag">LOWER</span><span class="tag">CONCAT</span><span class="tag">CONCATENATE</span>
                 <span class="tag">LEFT</span><span class="tag">RIGHT</span><span class="tag">MID</span><span class="tag">LEN</span>
@@ -125,7 +127,7 @@
         <a href="conditional-functions-demo.html" class="category-card conditional">
             <div class="icon">🎯</div>
             <div class="title">条件函数 <span class="count">6</span></div>
-            <div class="desc">提供条件筛选和错误处理功能：条件求和/计数、多条件组合、错误捕获。</div>
+            <div class="desc">提供完整的条件筛选与错误处理功能：单/多条件求和计数、万能/精准错误捕获。含交互式测试台。</div>
             <div class="function-tags">
                 <span class="tag">SUMIF</span><span class="tag">SUMIFS</span><span class="tag">COUNTIF</span><span class="tag">COUNTIFS</span>
                 <span class="tag">IFERROR</span><span class="tag">IFNA</span>
@@ -154,12 +156,12 @@
         <h2 class="section-title"><span>📊</span> 综合演示表格</h2>
         <div class="canvas-container"><canvas id="sheet"></canvas></div>
         <div class="stats-grid">
-            <div class="stat-card"><div class="value">48</div><div class="label">函数总数</div></div>
+            <div class="stat-card"><div class="value">51</div><div class="label">函数总数</div></div>
             <div class="stat-card"><div class="value">13</div><div class="label">数学函数</div></div>
             <div class="stat-card"><div class="value">9</div><div class="label">统计函数</div></div>
-            <div class="stat-card"><div class="value">4</div><div class="label">逻辑函数</div></div>
-            <div class="stat-card"><div class="value">12</div><div class="label">文本函数</div></div>
-            <div class="stat-card"><div class="value">6</div><div class="label">条件函数</div></div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);"><div class="value">6</div><div class="label">逻辑函数</div></div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);"><div class="value">13</div><div class="label">文本函数 ✨</div></div>
+            <div class="stat-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);"><div class="value">6</div><div class="label">条件函数 🎯</div></div>
             <div class="stat-card"><div class="value">4</div><div class="label">查找函数</div></div>
             <div class="stat-card"><div class="value">6</div><div class="label">自定义函数</div></div>
         </div>
@@ -189,10 +191,162 @@
         </div>
     </div>
 
+    <div class="demo-section" style="background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%); border: 2px solid #a18cd1;">
+        <h2 class="section-title"><span>✨</span> 逻辑函数扩展（4→6）</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 16px;">
+            <div style="background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #f093fb;">
+                <h4 style="color: #f093fb; margin-bottom: 10px; font-size: 18px;">⚡ XOR - 异或奇偶判定器</h4>
+                <p style="font-size: 15px; color: #666; line-height: 1.7; margin-bottom: 12px;">判断 TRUE 值数量是否为<strong>奇数</strong>。奇数个 TRUE 返回 TRUE，偶数个返回 FALSE。用于互斥条件判断和复杂逻辑组合场景。</p>
+                <code style="display: block; background: #fdf5ff; padding: 10px; border-radius: 6px; font-size: 13px; color: #f093fb; font-weight: 600;">=XOR(A>80, B<50) → 奇数个TRUE返回TRUE</code>
+                <ul style="margin-top: 12px; padding-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+                    <li><strong>真值表：</strong>XOR(TRUE,FALSE)=TRUE, XOR(TRUE,TRUE)=FALSE</li>
+                    <li><strong>应用：</strong>互斥选项判断、状态校验、奇偶校验</li>
+                    <li><strong>参数：</strong>支持 1-255 个逻辑表达式</li>
+                </ul>
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #38ef7d;">
+                <h4 style="color: #38ef7d; margin-bottom: 10px; font-size: 18px;">🔵 TRUE / 🔴 FALSE - 布尔常量</h4>
+                <p style="font-size: 15px; color: #666; line-height: 1.7; margin-bottom: 12px;"><strong>显式布尔值生成器</strong>：明确返回布尔常量 TRUE 或 FALSE。不接受任何参数，提高代码可读性，便于动态替换实现。</p>
+                <code style="display: block; background: #f0fff4; padding: 10px; border-radius: 6px; font-size: 13px; color: #38ef7d; font-weight: 600;">=IF(score>70, TRUE(), FALSE()) → 显式返回布尔值</code>
+                <ul style="margin-top: 12px; padding-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+                    <li><strong>特点：</strong>不接受任何参数，提供参数返回 #VALUE!</li>
+                    <li><strong>用途：</strong>开关控制、条件标记、代码规范统一</li>
+                    <li><strong>优势：</strong>语义清晰，与其他函数风格一致</li>
+                </ul>
+            </div>
+        </div>
+        <div style="text-align: center; margin-top: 24px;">
+            <a href="logical-functions-demo.html" style="display: inline-block; background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); color: white; padding: 14px 36px; border-radius: 25px; text-decoration: none; font-weight: 700; box-shadow: 0 4px 15px rgba(161,140,209,0.4); transition: transform 0.2s; font-size: 15px;">
+                🚀 查看完整逻辑函数演示（含交互式测试）
+            </a>
+        </div>
+    </div>
+
+    <div class="demo-section" style="background: linear-gradient(135deg, #f0f8ff 0%, #e6f2ff 100%); border: 2px solid #4facfe;">
+        <h2 class="section-title"><span>📝</span> 文本函数全面升级（13个函数 + 交互式测试台）</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 16px;">
+
+            <!-- 大小写转换 -->
+            <div style="background: white; padding: 16px; border-radius: 10px; border-left: 4px solid #ff6b6b;">
+                <h4 style="color: #ff6b6b; margin-bottom: 8px; font-size: 16px;">🔤 大小写转换</h4>
+                <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 8px;"><strong>UPPER / LOWER</strong>：统一文本大小写格式，用于数据标准化、邮箱处理等场景。</p>
+                <code style="display: block; background: #fff5f5; padding: 8px; border-radius: 4px; font-size: 12px; color: #ff6b6b;">=UPPER("hello") → "HELLO"<br>=LOWER("EMAIL") → "email"</code>
+            </div>
+
+            <!-- 文本连接 -->
+            <div style="background: white; padding: 16px; border-radius: 10px; border-left: 4px solid #38ef7d;">
+                <h4 style="color: #38ef7d; margin-bottom: 8px; font-size: 16px;">🔗 文本连接</h4>
+                <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 8px;"><strong>CONCAT / CONCATENATE</strong>：拼接多个文本字符串，支持范围引用和无限参数。</p>
+                <code style="display: block; background: #f0fff4; padding: 8px; border-radius: 4px; font-size: 12px; color: #38ef7d;">=CONCAT("Hello"," ","World") → "Hello World"</code>
+            </div>
+
+            <!-- 字符截取 -->
+            <div style="background: white; padding: 16px; border-radius: 10px; border-left: 4px solid #f093fb;">
+                <h4 style="color: #f093fb; margin-bottom: 8px; font-size: 16px;">✂️ 字符截取</h4>
+                <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 8px;"><strong>LEFT / RIGHT / MID</strong>：从文本的不同位置截取指定数量的字符，灵活提取子串。</p>
+                <code style="display: block; background: #fdf5ff; padding: 8px; border-radius: 4px; font-size: 12px; color: #f093fb;">=LEFT("Hello",3) → "Hel"<br>=MID("Hello",2,3) → "ell"</code>
+            </div>
+
+            <!-- 查找与替换 -->
+            <div style="background: white; padding: 16px; border-radius: 10px; border-left: 4px solid #54a0ff;">
+                <h4 style="color: #54a0ff; margin-bottom: 8px; font-size: 16px;">🔍 查找与替换</h4>
+                <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 8px;"><strong>FIND / SEARCH / SUBSTITUTE</strong>：定位子串位置或批量替换文本内容。</p>
+                <code style="display: block; background: #f0f8ff; padding: 8px; border-radius: 4px; font-size: 12px; color: #54a0ff;">=FIND("World","Hi") → 位置<br>=SEARCH("w","Hi") → 忽略大小写</code>
+            </div>
+
+            <!-- 长度与清理 -->
+            <div style="background: white; padding: 16px; border-radius: 10px; border-left: 4px solid #1dd1a1;">
+                <h4 style="color: #1dd1a1; margin-bottom: 8px; font-size: 16px;">📏 长度与清理</h4>
+                <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 8px;"><strong>LEN / TRIM</strong>：计算字符长度并清除多余空格，数据清洗必备工具。</p>
+                <code style="display: block; background: #f0fff9; padding: 8px; border-radius: 4px; font-size: 12px; color: #1dd1a1;">=LEN("Hello") → 5<br>=TRIM("  Hi  ") → "Hi"</code>
+            </div>
+
+            <!-- 格式化输出 -->
+            <div style="background: white; padding: 16px; border-radius: 10px; border-left: 4px solid #ee5a24;">
+                <h4 style="color: #ee5a24; margin-bottom: 8px; font-size: 16px;">💎 格式化输出</h4>
+                <p style="font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 8px;"><strong>TEXT</strong>：将数值转换为指定格式的文本，支持千分位、百分比等多种格式。</p>
+                <code style="display: block; background: #fff9f5; padding: 8px; border-radius: 4px; font-size: 12px; color: #ee5a24;">=TEXT(1234,"#,##0") → "1,234"<br>=TEXT(0.15,"0%") → "15%"</code>
+            </div>
+
+        </div>
+        <div style="text-align: center; margin-top: 24px;">
+            <a href="text-functions-demo.html" style="display: inline-block; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 14px 36px; border-radius: 25px; text-decoration: none; font-weight: 700; box-shadow: 0 4px 15px rgba(79,172,254,0.4); transition: transform 0.2s; font-size: 15px;">
+                🚀 查看完整文本函数演示（含4个交互式测试台）
+            </a>
+        </div>
+    </div>
+
+    <div class="demo-section" style="background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%); border: 2px solid #fa709a;">
+        <h2 class="section-title"><span>🎯</span> 条件函数完整升级（6个函数 + 交互式测试台）</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-top: 16px;">
+
+            <!-- 条件求和 -->
+            <div style="background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #ff6b6b;">
+                <h4 style="color: #ff6b6b; margin-bottom: 10px; font-size: 18px;">➕ SUMIF / SUMIFS - 条件求和</h4>
+                <p style="font-size: 15px; color: #666; line-height: 1.7; margin-bottom: 12px;"><strong>SUMIF</strong>对满足单个条件的单元格求和，<strong>SUMIFS</strong>支持多条件组合（AND关系）。支持数值比较、文本匹配、通配符等多种条件格式。</p>
+                <code style="display: block; background: #fff5f5; padding: 10px; border-radius: 6px; font-size: 13px; color: #ff6b6b; font-weight: 600;">=SUMIF(B:B,"水果",E:E) → 水果类销售额总和<br>=SUMIFS(E:E,B:B,"北京",D:D,">500")</code>
+                <ul style="margin-top: 12px; padding-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+                    <li><strong>支持条件：</strong>>、<、=、>=、<=、<>、*、?、精确匹配</li>
+                    <li><strong>参数校验：</strong>SUMIFS要求奇数参数+范围长度一致</li>
+                    <li><strong>应用场景：</strong>按类别统计、多维筛选汇总、复杂报表</li>
+                </ul>
+            </div>
+
+            <!-- 条件计数 -->
+            <div style="background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #38ef7d;">
+                <h4 style="color: #38ef7d; margin-bottom: 10px; font-size: 18px;">🔢 COUNTIF / COUNTIFS - 条件计数</h4>
+                <p style="font-size: 15px; color: #666; line-height: 1.7; margin-bottom: 12px;"><strong>COUNTIF</strong>统计满足单个条件的数量，<strong>COUNTIFS</strong>支持多条件组合计数。自动忽略空值，支持通配符模糊匹配。</p>
+                <code style="display: block; background: #f0fff4; padding: 10px; border-radius: 6px; font-size: 13px; color: #38ef7d; font-weight: 600;">=COUNTIF(A:A,">80") → 大于80的数量<br>=COUNTIFS(B:B,"北京",C:C,">500")</code>
+                <ul style="margin-top: 12px; padding-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+                    <li><strong>通配符：</strong>* (任意多个)、? (单个字符)</li>
+                    <li><strong>COUNTIFS：</strong>偶数参数要求+所有范围长度一致</li>
+                    <li><strong>应用场景：</strong>数据质量检查、分类统计、复合筛选</li>
+                </ul>
+            </div>
+
+            <!-- 错误处理 -->
+            <div style="background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #fa709a;">
+                <h4 style="color: #fa709a; margin-bottom: 10px; font-size: 18px;">🛡️ IFERROR - 万能错误捕捉器</h4>
+                <p style="font-size: 15px; color: #666; line-height: 1.7; margin-bottom: 12px;"><strong>捕获所有以#开头的错误值</strong>并返回替代值。包括 #N/A、#VALUE!、#REF!、#DIV/0! 等全部错误类型，提供统一的错误处理机制。</p>
+                <code style="display: block; background: #fdf5ff; padding: 10px; border-radius: 6px; font-size: 13px; color: #fa709a; font-weight: 600;">=IFERROR(A/B, 0) → 除零时返回0<br>=IFERROR(VLOOKUP(...), "未找到")</code>
+                <ul style="margin-top: 12px; padding-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+                    <li><strong>捕获范围：</strong>#N/A、#VALUE!、#REF!、#DIV/0!、#NUM!等</li>
+                    <li><strong>优势：</strong>一行代码处理所有可能的错误</li>
+                    <li><strong>注意：</strong>可能掩盖真正的问题，需谨慎使用</li>
+                </ul>
+            </div>
+
+            <!-- 精准错误处理 -->
+            <div style="background: white; padding: 20px; border-radius: 12px; border-left: 4px solid #feca57;">
+                <h4 style="color: #feca57; margin-bottom: 10px; font-size: 18px;">🎯 IFNA - 精准N/A处理器</h4>
+                <p style="font-size: 15px; color: #666; line-height: 1.7; margin-bottom: 12px;"><strong>仅捕获#N/A这一种错误</strong>，比IFERROR更精确。其他错误正常传播便于调试，特别适合VLOOKUP/MATCH等查找类函数的错误处理。</p>
+                <code style="display: block; background: #fffdf5; padding: 10px; border-radius: 6px; font-size: 13px; color: #feca57; font-weight: 600;">=IFNA(VLOOKUP(...), "不存在")<br>=IFNA(MATCH(...), 0)</code>
+                <ul style="margin-top: 12px; padding-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+                    <li><strong>精准定位：</strong>只处理"未找到"类的#N/A错误</li>
+                    <li><strong>优势：</strong>不会掩盖其他类型的错误</li>
+                    <li><strong>嵌套技巧：</strong>=IFERROR(IFNA(...), "其他错误") 分层处理</li>
+                </ul>
+            </div>
+
+        </div>
+        <div style="text-align: center; margin-top: 24px;">
+            <a href="conditional-functions-demo.html" style="display: inline-block; background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 14px 36px; border-radius: 25px; text-decoration: none; font-weight: 700; box-shadow: 0 4px 15px rgba(250,112,154,0.4); transition: transform 0.2s; font-size: 15px;">
+                🚀 查看完整条件函数演示（含3个交互式测试台）
+            </a>
+        </div>
+    </div>
+
     <div class="demo-section">
         <h2 class="section-title"><span>📝</span> 操作日志</h2>
         <div class="log-container" id="logContainer">
-            <div class="log-entry log-info">公式引擎初始化完成，共加载 48 个内置函数</div>
+            <div class="log-entry log-success">✨ 公式引擎初始化完成 - 共加载 51 个内置函数</div>
+            <div class="log-entry log-info">📋 函数分类：数学(13) + 统计(9) + 逻辑(6) + 文本(13) ✨ + 条件(6) 🎯 + 查找(4) + 自定义(6)</div>
+            <div class="log-entry log-info">🔀 逻辑函数：IF/AND/OR/NOT/XOR/TRUE/FALSE（基础+扩展）</div>
+            <div class="log-entry log-info">📝 文本函数已升级至13个，新增交互式测试台功能</div>
+            <div class="log-entry log-success">🎯 条件函数已完整实现（6个）：SUMIF/SUMIFS/COUNTIF/COUNTIFS/IFERROR/IFNA</div>
+            <div class="log-entry log-info">➕ 条件求和/计数：支持单多条件、通配符、数值比较等丰富场景</div>
+            <div class="log-entry log-info">🛡️ 错误处理：IFERROR(万能) + IFNA(精准N/A)，分层容错机制</div>
         </div>
     </div>
 </div>
@@ -201,39 +355,80 @@
 <script src="../../dist/canvas-sheet.umd.js"></script>
 <script>
     const sampleData = [
-        ["商品名称", "类别", "单价", "数量", "销售额", "备注"],
-        ["苹果", "水果", 5.5, 100, "=C2*D2", ""],
-        ["香蕉", "水果", 3.2, 150, "=C3*D3", ""],
-        ["西红柿", "蔬菜", 4.8, 80, "=C4*D4", ""],
-        ["鸡蛋", "食品", 12.0, 50, "=C5*D5", ""],
-        ["牛奶", "饮品", 6.5, 120, "=C6*D6", ""],
-        ["总计", "", "", "=SUM(D2:D6)", "=SUM(E2:E6)", ""],
+        ["商品名称", "类别", "单价", "数量", "销售额", "地区"],
+        ["苹果", "水果", 5.5, 100, "=C2*D2", "北京"],
+        ["香蕉", "水果", 3.2, 150, "=C3*D3", "上海"],
+        ["西红柿", "蔬菜", 4.8, 80, "=C4*D4", "北京"],
+        ["鸡蛋", "食品", 12.0, 50, "=C5*D5", "广州"],
+        ["牛奶", "饮品", 6.5, 120, "=C6*D6", "深圳"],
+        ["橙汁", "饮品", 8.0, 90, "=C7*D7", "北京"],
+        ["面包", "食品", 15.0, 40, "=C8*D8", "上海"],
+        ["总计", "", "", "=SUM(D2:D8)", "=SUM(E2:E8)", ""],
         ["", "", "", "", "", ""],
-        ["统计信息", "", "", "", "", ""],
-        ["水果销售额", "=SUMIF(B2:B6,\"水果\",E2:E6)", "", "", "", ""],
-        ["平均单价", "=AVERAGE(C2:C6)", "", "", "", ""],
-        ["最高单价", "=MAX(C2:C6)", "", "", "", ""],
-        ["最低单价", "=MIN(C2:C6)", "", "", "", ""],
-        ["商品种类", "=COUNTIF(B2:B6,\"*水果*\")", "", "", "", ""],
+        ["➕ SUMIF 单条件求和（4个示例）", "结果", "公式说明", "", "", ""],
+        ["水果总销售额", "=SUMIF(B2:B8,\"水果\",E2:E8)", "B列=水果时E列求和", "", "", ""],
+        ["北京地区销售额", "=SUMIF(F2:F8,\"北京\",E2:E8)", "F列=北京时E列求和", "", "", ""],
+        ["单价>6的商品总额", "=SUMIF(C2:C8,\">6\",E2:E8)", "C列>6时E列求和", "", "", ""],
+        ["饮品类销售额", "=SUMIF(B2:B8,\"饮品\",E2:E8)", "B列=饮品时E列求和", "", "", ""],
         ["", "", "", "", "", ""],
-        ["文本函数示例", "", "", "", "", ""],
-        ["原文本", "Hello World", "", "", "", ""],
-        ["大写", "=UPPER(B17)", "", "", "", ""],
-        ["小写", "=LOWER(B17)", "", "", "", ""],
-        ["连接", "=CONCAT(A17,\" - \",B17)", "", "", "", ""],
+        ["➕➕ SUMIFS 多条件求和（2个示例）", "结果", "公式说明", "", "", ""],
+        ["北京+水果销售额", "=SUMIFS(E2:E8,B2:B8,\"水果\",F2:F8,\"北京\")", "同时满足两个条件", "", "", ""],
+        ["北京/上海且>500", "=SUMIFS(E2:E8,F2:F8,\"北京\",E2:E8,\">500\")+SUMIFS(E2:E8,F2:F8,\"上海\",E2:E8,\">500\")", "多条件组合", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["🔢 COUNTIF 单条件计数（4个示例）", "结果", "公式说明", "", "", ""],
+        ["水果种类数", "=COUNTIF(B2:B8,\"水果\")", "统计B列=水果的数量", "", "", ""],
+        ["北京地区商品数", "=COUNTIF(F2:F8,\"北京\")", "统计F列=北京的数量", "", "", ""],
+        ["单价>6的商品数", "=COUNTIF(C2:C8,\">6\")", "统计C列>6的数量", "", "", ""],
+        ["包含\"饮\"字的数量", "=COUNTIF(B2:B8,\"*饮*\")", "通配符模糊匹配", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["🔢🔢 COUNTIFS 多条件计数（2个示例）", "结果", "公式说明", "", "", ""],
+        ["北京且是水果", "=COUNTIFS(F2:F8,\"北京\",B2:B8,\"水果\")", "同时满足两条件", "", "", ""],
+        ["数量>80且单价<10", "=COUNTIFS(D2:D8,\">80\",C2:C8,\"<10\")", "数值范围组合", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["🛡️ IFERROR 错误处理（3个示例）", "结果", "公式说明", "", "", ""],
+        ["除零保护", "=IFERROR(1/0,\"⚠️ 除零错误\")", "捕获#DIV/0!错误", "", "", ""],
+        ["正常计算", "=IFERROR(100/25,\"错误\")", "无错误时返回原值", "", "", ""],
+        ["查找容错", "=IFERROR(VLOOKUP(\"不存在\",A2:B8,1,FALSE),\"🔍 未找到\")", "VLOOKUP失败处理", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["🎯 IFNA 精准N/A处理（2个示例）", "结果", "公式说明", "", "", ""],
+        ["VLOOKUP未找到", "=IFNA(VLOOKUP(\"未知商品\",A2:B8,1,FALSE),\"❌ 不存在\")", "仅处理#N/A", "", "", ""],
+        ["MATCH未匹配", "=IFNA(MATCH(\"西瓜\",B2:B8,0),\"⚠️ 无匹配项\")", "MATCH专用处理", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["📝 文本函数完整示例（13个）", "", "", "", "", ""],
+        ["原文本", "Hello World Canvas", "2024-01-15", "Email@Test.COM", "", ""],
+        ["🔤 大写转换", "=UPPER(B41)", "=UPPER(C41)", "=UPPER(D41)", "", ""],
+        ["🔡 小写转换", "=LOWER(B41)", "=LOWER(C41)", "=LOWER(D41)", "", ""],
+        ["🔗 文本连接", "=CONCAT(B41,\"!\")", "=CONCATENATE(\"日期:\",C41)", "", "", ""],
+        ["⬅️ LEFT截取", "=LEFT(B41,5)", "=LEFT(C41,4)", "=LEFT(D41,5)", "", ""],
+        ["➡️ RIGHT截取", "=RIGHT(B41,6)", "=RIGHT(C41,4)", "=RIGHT(D41,4)", "", ""],
+        ["📍 MID中间截取", "=MID(B41,7,5)", "=MID(C41,6,2)", "=MID(D41,7,4)", "", ""],
+        ["📏 字符长度", "=LEN(B41)", "=LEN(C41)", "=LEN(D41)", "", ""],
+        ["🧹 去除空格", "=TRIM(\"  Hello  \")", "=TRIM(\"  Test  \")", "", "", ""],
+        ["🔍 FIND查找", "=FIND(\"World\",B41)", "=FIND(\"01\",C41)", "=FIND(\"@\",D41)", "", ""],
+        ["🔎 SEARCH查找", "=SEARCH(\"world\",B41)", "=SEARCH(\"date\",C41)", "=SEARCH(\"TEST\",D41)", "", ""],
+        ["🔄 替换全替换", "=SUBSTITUTE(B41,\" \",\"-\")", "=SUBSTITUTE(C41,\"-\",\"/\")", "=SUBSTITUTE(D41,\"@\",\"[at]\")", "", ""],
+        ["🔄 指定次替换", "=SUBSTITUTE(B41,\" \",\"-\",2)", "=SUBSTITUTE(C41,\"-\",\"/\",1)", "=SUBSTITUTE(D41,\".\",\"_\",1)", "", ""],
+        ["💎 格式化千分位", "=TEXT(12345.6789,\"#,##0.00\")", "=TEXT(9876.54,\"#,##0\")", "", "", ""],
+        ["💎 格式化百分比", "=TEXT(0.1567,\"0.0%\")", "=TEXT(0.85,\"0%\")", "", "", ""],
         ["", "", "", "", "", ""],
         ["逻辑函数示例", "", "", "", "", ""],
         ["条件判断", "=IF(C2>5,\"高价\",\"低价\")", "", "", "", ""],
-        ["复合条件", "=IF(AND(C2>5,D2>100),\"热销\",\"普通\")", "", "", "", ""],
+        ["复合条件", "=IF(AND(C2>5,E2>100),\"热销\",\"普通\")", "", "", "", ""],
+        ["或条件", "=IF(OR(C2<4,C2>10),\"特殊价格\",\"正常价格\")", "", "", "", ""],
+        ["取反", "=NOT(C2>10)", "", "", "", ""],
+        ["", "", "", "", "", ""],
+        ["⚡ 异或运算 & 布尔常量（新增）", "", "", "", "", ""],
+        ["互斥判断", "=XOR(C2>5,C2<4)", "", "", "", ""],
+        ["显式布尔", "=IF(E2>80,TRUE(),FALSE())", "", "", "", ""],
     ];
 
     const columns = [
+        { type: 'text', width: 180 },
+        { type: 'text', width: 140 },
+        { type: 'text', width: 200 },
+        { type: 'text', width: 160 },
         { type: 'text', width: 120 },
         { type: 'text', width: 100 },
-        { type: 'numeric', width: 80 },
-        { type: 'numeric', width: 80 },
-        { type: 'numeric', width: 100 },
-        { type: 'text', width: 120 },
     ];
 
     function log(msg, type) {
@@ -247,14 +442,21 @@
 
     async function initWorkbook() {
         try {
-            log('初始化 Workbook...', 'info');
+            log('🚀 初始化 Workbook...', 'info');
+            log('📊 加载公式引擎，共 49 个内置函数', 'info');
             const container = document.getElementById('sheet');
-            container.width = 800;
-            container.height = 600;
+            container.width = 950;
+            container.height = 800;
 
             new CanvasSheet.Workbook(container, {
-                width: 1200, height: 600,
-                sheets: [{ name: '公式演示', data: sampleData, columns: columns, cellPadding: 8 }],
+                width: 1200, height: 800,
+                sheets: [{
+                    name: '✨ 公式演示（完整版）',
+                    data: sampleData,
+                    columns: columns,
+                    cellPadding: 8,
+                    frozenRows: 1
+                }],
                 plugins: [
                     "autoFill", "contextMenu", "columnMove", "copyPaste",
                     "exportFile", "importFile", "hiddenColumns", "hiddenRows",
@@ -262,10 +464,18 @@
                 ],
             });
 
-            log('Workbook 初始化成功', 'success');
-            log('公式示例已填充，包括数学、条件、文本、逻辑函数', 'info');
+            log('✅ Workbook 初始化成功', 'success');
+            log('📈 示例数据包含：基础数据(7行) + 🎯条件函数(17个示例) + 📝文本函数(13个) + 🔀逻辑函数(6个)', 'info');
+            log('🎯 条件函数示例区（第10-30行）：SUMIF(4个) + SUMIFS(2个) + COUNTIF(4个) + COUNTIFS(2个) + IFERROR(3个) + IFNA(2个)', 'success');
+            log('➕ SUMIF/SUMIFS：支持文本匹配/数值比较/多条件组合求和', 'info');
+            log('🔢 COUNTIF/COUNTIFS：支持通配符/范围统计/复合条件计数', 'info');
+            log('🛡️ IFERROR/IFNA：万能错误捕获 vs 精准N/A处理对比', 'success');
+            log('📝 文本函数示例区：第32-46行，涵盖全部13个文本函数', 'info');
+            log('🔀 逻辑函数示例区：第48-51行，包含XOR和TRUE/FALSE扩展', 'info');
+            log('💡 提示：可修改B2:B8的基础数据查看所有公式的实时计算效果', 'success');
+
         } catch (e) {
-            log('初始化失败: ' + e.message, 'error');
+            log('❌ 初始化失败: ' + e.message, 'error');
         }
     }
 

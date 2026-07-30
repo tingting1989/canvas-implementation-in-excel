@@ -1,28 +1,141 @@
 ﻿/**
- * 单元格类型交互策略
+ * 交互式单元格策略 (Interactive Cell Strategy)
  *
- * 将 InteractionPlugin 从 BasePlugin 重构为 EventStrategy，
- * 集成到 EventHandler 的委托系统中，解决与 ChartSelectionStrategy 等策略的事件冲突。
+ * 处理Canvas表格中特殊类型单元格（如按钮、链接、复选框等）的交互行为。
+ * 将原有的 InteractionPlugin 重构为 EventStrategy，集成到统一的事件委托系统中。
+ *
+ * 优先级：400（STRATEGY_PRIORITY.CELL_TYPE_INTERACTION）
+ * - **高于** MOUSE_DEFAULT (300): 需要拦截交互式单元格的鼠标事件
+ * - **低于** POPUP_UI (500): 筛选器等弹出式UI优先级更高
+ * - **与图表策略无冲突**: CHART_INTERACTION (800) 处理不同区域
  *
  * 核心功能：
- * - 处理交互式单元格的鼠标事件（悬停、点击）
- * - 智能管理合并单元格的状态同步
- * - 高效的重绘节流控制
+ * ┌────────────────────┬─────────────────────────────────────────┐
+ * │ 功能               │ 说明                                    │
+ * ├────────────────────┼─────────────────────────────────────────┤
+ * │ 悬停检测           │ 跟踪鼠标位置，识别交互式单元格         │
+ * │ 点击处理           │ 触发单元格的点击回调（防抖200ms）      │
+ * │ 双击支持           │ 区分单击和双击操作                      │
+ * │ 合并单元格处理     │ 正确处理合并区域的悬停和点击            │
+ * │ 渲染优化           │ requestAnimationFrame + setTimeout降级   │
+ * └────────────────────┴─────────────────────────────────────────┘
  *
- * 优先级：400 (CELL_TYPE_INTERACTION)
- * - 高于 MOUSE_DEFAULT(300)：需要拦截交互式单元格的鼠标事件
- * - 低于 POPUP_UI(500)：筛选器等弹出式 UI 优先级更高
- * - 与图表策略(CHART_INTERACTION: 800)无冲突：处理不同区域
+ * 设计背景（重构原因）：
  *
- * @module plugins/InteractionStrategy
+ * **原有问题**：
+ * - InteractionPlugin 作为 BasePlugin 直接监听DOM事件
+ * - 与 ChartSelectionStrategy、MouseStrategy 等产生事件冲突
+ * - 难以控制事件的执行顺序和优先级
+ * - 事件处理逻辑分散，难以维护
+ *
+ * **重构方案**：
+ * ```
+ * Before: BasePlugin → 直接addEventListener()
+ * After:  EventStrategy → getEventHandlers() → EventHandler统一分发
+ * ```
+ *
+ * **重构优势**：
+ * ✅ 统一的事件生命周期管理
+ * ✅ 明确的优先级控制
+ * ✅ 避免事件监听器冲突
+ * ✅ 支持启用/禁用切换
+ * ✅ 更好的测试性和可维护性
+ *
+ * 技术实现细节：
+ *
+ * **1. 悬停状态跟踪**：
+ * ```js
+ * #lastHoveredCell = "row,col"  // 缓存上次悬停位置
+ * ```
+ * - 使用字符串 "row,col" 格式缓存，避免对象创建开销
+ * - 每次mousemove时比较当前位置与缓存
+ * - 仅在变化时触发更新和重绘
+ *
+ * **2. 点击防抖机制**：
+ * ```js
+ * #debouncedHandleClick = debounce(callback, 200)
+ * ```
+ * - 200ms延迟区分单击和双击
+ * - 双击触发时调用 cancel() 取消待执行的单击
+ * - 类似 MouseStrategy 的实现方式
+ *
+ * **3. 合并单元格处理**：
+ * - hitTest 返回合并区域的左上角坐标
+ * - 需要将坐标映射到实际的可见单元格
+ * - 确保整个合并区域响应交互
+ * - 避免重复触发（同一合并区域只处理一次）
+ *
+ * **4. 渲染性能优化**：
+ * ```
+ * 主路径: requestAnimationFrame (#rafId)
+ * 降级:   setTimeout (#timeoutId)  // RAF不可用时
+ * 合并:   #pendingRender 防止重复调度
+ * ```
+ * - 优先使用RAF实现60fps流畅动画
+ * - RAF不支持时自动降级到setTimeout(16ms)
+ * - 使用pendingRender标记避免重复调度
+ * - 批量处理多个连续的状态变化
+ *
+ * 支持的交互式单元格类型：
+ * - **按钮（Button）**: 点击触发动作
+ * - **超链接（Link）**: 点击打开URL
+ * - **复选框（Checkbox）**: 切换选中状态
+ * - **下拉选择（Dropdown）**: 展开选项列表
+ * - **日期选择器（DatePicker）**: 显示日历控件
+ * - **自定义组件**: 通过插件扩展的其他类型
+ *
+ * 与其他策略的协作关系：
+ * ┌─────────────────────┬──────────┬───────────┬────────────────┐
+ * │ 策略                 │ 优先级   │ 处理区域  │ 关系            │
+ * ├─────────────────────┼──────────┼───────────┼────────────────┤
+ * │ ChartSelection       │ 800      │ 图表区域  │ 无冲突        │
+ * │ InteractionStrategy  │ 400      │ 交互单元格│ 可能重叠       │
+ * │ MouseStrategy        │ 300      │ 所有单元格│ 低优先级       │
+ * │ ContextMenuStrategy  │ 0        │ 右键菜单  │ 无冲突        │
+ * └─────────────────────┴──────────┴───────────┴────────────────┘
+ *
+ * 当交互式单元格被点击时：
+ * 1. 此策略拦截事件（优先级400 > 300）
+ * 2. 执行单元格的自定义回调
+ * 3. 返回 false 阻止后续 MouseStrategy 处理
+ * 4. 如果不是交互式单元格，透传给后续策略
+ *
+ * 错误处理：
+ * - 使用全局 errorHandler 记录异常
+ * - 错误码: ERROR_CODE 相关常量
+ * - 不中断其他策略的正常工作
+ * - 提供详细的错误上下文信息
+ *
+ * @class InteractionStrategy
+ * @extends EventStrategy
+ *
+ * @see EventStrategy - 基类
+ * @see MouseStrategy - 低优先级的通用鼠标策略
+ * @see ChartSelectionStrategy - 高优先级的图表交互策略
+ * @see ValidationStrategy - 数据验证策略（可能联动）
+ *
+ * @example
+ * // 配置交互式单元格
+ * sheet.setCellType(5, 2, {
+ *   type: 'button',
+ *   label: '提交',
+ *   onClick: (row, col, sheet) => {
+ *     console.log(`按钮被点击: ${row}, ${col}`);
+ *     // 执行业务逻辑
+ *   },
+ *   style: {
+ *     backgroundColor: '#007bff',
+ *     color: '#ffffff',
+ *     borderRadius: '4px'
+ *   }
+ * });
+ *
+ * // 当用户点击该单元格时:
+ * // 1. InteractionStrategy 捕获点击事件
+ * // 2. 检测到是 button 类型
+ * // 3. 调用 onClick 回调
+ * // 4. 阻止默认的单元格选择行为
  */
-
-import { EventStrategy } from "@/editor/strategies/EventStrategy.js";
-import { DELEGATE_KEYS } from "@/constants/eventNames.js";
-import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { isFunction, debounce } from "@/utils";
-
 export class InteractionStrategy extends EventStrategy {
     /**
      * 策略优先级

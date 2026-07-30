@@ -6,12 +6,10 @@
  * - AND: 逻辑与（所有条件都为真）
  * - OR: 逻辑或（任一条件为真）
  * - NOT: 逻辑非（反转逻辑值）
- *
- * TODO: 计划添加
- * - IFERROR: 错误处理
- * - IFNA: N/A 值处理
- * - XOR: 异或运算
- * - TRUE/FALSE: 常量函数
+ * - IFERROR: 错误捕获和处理
+ * - IFNA: #N/A 错误专门处理
+ * - XOR: 异或运算（奇数个TRUE返回TRUE）
+ * - TRUE/FALSE: 布尔常量函数
  *
  * @module formula/functions/logical
  */
@@ -231,5 +229,125 @@ export const logicalFunctions = {
         }
 
         return !result;
+    },
+
+    /**
+     * XOR - 异或逻辑运算函数
+     *
+     * 检查参数中 TRUE 值的个数是否为奇数。奇数个 TRUE 返回 TRUE，
+     * 偶数个 TRUE（包括0个）返回 FALSE。与 OR 不同的是，XOR 要求恰好奇数个条件成立。
+     *
+     * 语法: XOR(logical1, [logical2], ...)
+     *
+     * 特性：
+     * - 参数数量：1 到 255 个
+     * - 自动类型转换（数值、字符串等）
+     * - 奇数判定：TRUE 的计数为奇数时返回 TRUE
+     *
+     * 应用场景：
+     * - 互斥条件判断（只能选其一）
+     * - 奇偶校验
+     * - 复杂逻辑组合
+     *
+     * @param {Array} args - 逻辑表达式数组
+     * @returns {boolean|String} 奇数个TRUE返回true，否则返回false；错误时返回 #VALUE!
+     *
+     * @example
+     * =XOR(TRUE)                     // 返回 TRUE（1个TRUE，奇数）
+     * =XOR(TRUE, FALSE)              // 返回 TRUE（1个TRUE，奇数）
+     * =XOR(TRUE, TRUE)               // 返回 FALSE（2个TRUE，偶数）
+     * =XOR(FALSE, FALSE)             // 返回 FALSE（0个TRUE，偶数）
+     * =XOR(1, 3, 5)                 // 返回 TRUE（3个非零值=3个TRUE，奇数）
+     * =XOR(A1>10, B1>20, C1>30)     // 恰好1个或3个条件成立时返回 TRUE
+     */
+    XOR: (args) => {
+        if (!_validateArgs(args, 1, Infinity, "XOR")) return "#VALUE!";
+
+        let trueCount = 0;
+
+        for (let i = 0; i < args.length; i++) {
+            const result = _toBoolean(args[i]);
+
+            if (typeof result === "string" && result.startsWith("#")) {
+                errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `XOR: 第 ${i + 1} 个参数是错误值`, {
+                    error: result,
+                    index: i,
+                    functionName: "XOR",
+                });
+                return result;
+            }
+
+            if (result === true) {
+                trueCount++;
+            }
+        }
+
+        return trueCount % 2 === 1;
+    },
+
+    /**
+     * TRUE - 布尔常量函数（返回逻辑真）
+     *
+     * 返回布尔值 TRUE。主要用于公式中需要显式指定 TRUE 值的场景，
+     * 或与其他逻辑函数配合使用。
+     *
+     * 语法: TRUE()
+     *
+     * 特点：
+     * - 不接受任何参数
+     * - 始终返回布尔值 true
+     * - 与 FALSE() 形成对称
+     *
+     * @param {Array} args - 空数组（不接受参数）
+     * @returns {boolean} 始终返回 true；如果提供了参数则返回 #VALUE!
+     *
+     * @example
+     * =TRUE()                        // 返回 TRUE
+     * =IF(A1>100, TRUE(), FALSE())   // 显式返回布尔值
+     * =AND(TRUE(), A1>0)             // 显式指定一个条件为TRUE
+     */
+    TRUE: (args) => {
+        if (args.length > 0) {
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "TRUE: 函数不需要参数", {
+                argCount: args.length,
+                expectedCount: 0,
+                functionName: "TRUE",
+            });
+            return "#VALUE!";
+        }
+        return true;
+    },
+
+    /**
+     * FALSE - 布尔常量函数（返回逻辑假）
+     *
+     * 返回布尔值 FALSE。主要用于公式中需要显式指定 FALSE 值的场景，
+     * 或与其他逻辑函数配合使用。
+     *
+     * 语法: FALSE()
+     *
+     * 特点：
+     * - 不接受任何参数
+     * - 始终返回布尔值 false
+     * - 与 TRUE() 形成对称
+     *
+     * @param {Array} args - 空数组（不接受参数）
+     * @returns {boolean} 始终返回 false；如果提供了参数则返回 #VALUE!
+     *
+     * @example
+     * =FALSE()                       // 返回 FALSE
+     * =IF(A1="", FALSE(), TRUE())    // 空单元格返回FALSE
+     * =OR(FALSE(), A1<0)             // 显式指定一个条件为FALSE
+     */
+    FALSE: (args) => {
+        if (args.length > 0) {
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "FALSE: 函数不需要参数", {
+                argCount: args.length,
+                expectedCount: 0,
+                functionName: "FALSE",
+            });
+            return "#VALUE!";
+        }
+        return false;
     },
 };

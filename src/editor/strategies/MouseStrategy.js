@@ -7,17 +7,51 @@ import { debounce } from "../../utils/helper.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
- * 鼠标交互策略
- * 优先级 50（默认），在 Resize（100）和 AutoFill（90）之后处理
+ * 鼠标交互策略 (Mouse Interaction Strategy)
  *
- * 处理以下鼠标操作：
- * - 单击选中单元格
- * - 拖拽范围选区（按住左键拖动）
- * - Shift+单击扩展选区
- * - 单击行头选整行
- * - 单击列头选整列
- * - 单击左上角全选
- * - 双击进入编辑模式
+ * 处理Canvas表格中所有鼠标相关的用户交互操作。
+ * 是最核心的交互策略之一，负责单元格选择、范围选择等功能。
+ *
+ * 优先级：50（STRATEGY_PRIORITY.MOUSE_DEFAULT）
+ * - 在 ResizeStrategy (100) 和 AutoFillStrategy (90) 之后执行
+ * - 确保尺寸调整和自动填充优先捕获鼠标事件
+ *
+ * 核心功能：
+ * ┌────────────────────┬─────────────────────────────────────────┐
+ * │ 操作               │ 行为                                    │
+ * ├────────────────────┼─────────────────────────────────────────┤
+ * │ 单元格单击         │ 选中单元格，触发 ON_CELL_CLICK hook     │
+ * │ 单元格双击         │ 进入编辑模式                            │
+ * │ 拖拽选择           │ 创建/更新矩形范围选区                   │
+ * │ Shift+单击        │ 扩展选区到点击位置                      │
+ * │ 行头单击           │ 选中整行                                │
+ * │ 列头单击           │ 选中整列                                │
+ * │ 左上角按钮单击     │ 全选所有单元格                          │
+ * └────────────────────┴─────────────────────────────────────────┘
+ *
+ * 技术实现要点：
+ * - 使用 hitTest() 判断鼠标点击的位置类型
+ * - 通过 debounce 区分单击和双击（200ms延迟）
+ * - 拖拽时监听 document 的 mousemove/mouseup（支持移出Canvas）
+ * - 支持合并单元格的选区处理
+ * - 自动滚动：拖拽到边缘时自动滚动表格
+ *
+ * 事件流程示例（单击单元格）：
+ * ```
+ * mousedown → hitTest → 更新activeCell → mouseup → debounce(200ms) → ON_CELL_CLICK hook
+ * ```
+ *
+ * 事件流程示例（双击编辑）：
+ * ```
+ * mousedown → mouseup → mousedown(第2次) → mouseup(第2次) → dblclick → cancel(debounce) → enterEditMode()
+ * ```
+ *
+ * @class MouseStrategy
+ * @extends EventStrategy
+ *
+ * @see EventStrategy - 基类
+ * @see ResizeStrategy - 高优先级的尺寸调整策略
+ * @see AutoFillStrategy - 高优先级的自动填充策略
  */
 
 // 考虑是否需要将 InteractionPlugin 的功能合并到 MouseStrategy 中

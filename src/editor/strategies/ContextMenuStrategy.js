@@ -6,40 +6,93 @@ import "./contextMenu.css";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
- * 右键菜单策略
- * 优先级 0（默认），contextmenu 事件无与其他策略冲突
+ * 右键上下文菜单策略 (Context Menu Strategy)
  *
- * 根据右击区域显示不同菜单：
- * - 单元格（cell）：完整菜单（行/列操作 + 合并 + 清空 + 自定义项）
- * - 行头（rowHeader）：行操作菜单（插入行/删除行/清空内容）
- * - 列头（colHeader）：列操作菜单（插入列/删除列/清空内容）
- * - 左上角（corner）：不弹出菜单
+ * 处理Canvas表格中的右键菜单显示和命令执行。
+ * 根据右键点击的位置类型显示不同的上下文菜单。
  *
- * 事件委托模式：
- * - hover 效果由内嵌 CSS :hover 伪类处理，无需 JS 监听
- * - click 事件委托到 #menuEl 容器，通过 data-key + #menuItemMap 查找目标项
- * - 菜单项增减不影响监听器数量，始终只有 1 个 click 委托监听器
+ * 优先级：0（STRATEGY_PRIORITY.POPUP_UI）
+ * - contextmenu事件通常不会与其他策略冲突
+ * - 使用弹出式UI的优先级常量
  *
- * 自定义菜单项配置（customItems）：
- * - label: string        — 菜单项文本
- * - action: Function     — 点击回调 (row, col, sheet) => void
- * - key: string          — 可选，唯一标识，默认 custom_${index}
- * - contexts: string[]   — 可选，在哪些上下文中显示，默认 ["cell"]
- *                          可选值："cell" | "rowHeader" | "colHeader"
- * - type: "separator"    — 可选，插入分隔线
+ * 菜单类型及适用场景：
+ * ┌────────────────┬─────────────────────────────────────────────┐
+ * │ 点击位置       │ 显示的菜单内容                              │
+ * ├────────────────┼─────────────────────────────────────────────┤
+ * │ cell           │ 完整菜单：行/列操作、合并、清空、自定义项   │
+ * │ rowHeader      │ 行操作：插入行、删除行、清空行内容         │
+ * │ colHeader      │ 列操作：插入列、删除列、清空列内容         │
+ * │ corner         │ 不弹出菜单                                 │
+ * └────────────────┴─────────────────────────────────────────────┘
  *
- * 禁用内置菜单项（disabledItems）：
- * - 传入内置项 key 数组，如 ["mergeCells", "unmergeCells"]
+ * 架构设计特点：
+ *
+ * **1. 事件委托模式**：
+ * - hover效果由CSS :hover伪类处理（零JS开销）
+ * - click事件委托到#menuEl容器（单个监听器）
+ * - 通过data-key属性和menuItemMap查找目标项
+ * - 菜单项增减不影响监听器数量
+ *
+ * **2. 高度可定制性**：
+ * - 支持添加自定义菜单项（customItems）
+ * - 支持禁用内置菜单项（disabledItems）
+ * - 支持分隔线（type: "separator"）
+ * - 支持上下文过滤（contexts数组）
+ *
+ * **3. 内置菜单项列表**：
+ * - 插入行/列、删除行/列
+ * - 合并单元格/取消合并
+ * - 清空内容
+ * - 复制/粘贴等（可扩展）
+ *
+ * 配置选项说明：
+ * ```js
+ * {
+ *   customItems: [        // 自定义菜单项数组
+ *     {
+ *       label: "菜单文本",
+ *       action: (row, col, sheet) => {},  // 点击回调
+ *       key: "unique_id",                 // 可选唯一标识
+ *       contexts: ["cell"],               // 显示的上下文
+ *       type: "separator"                 // 可选：分隔线
+ *     }
+ *   ],
+ *   disabledItems: ["mergeCells"]  // 要禁用的内置项key数组
+ * }
+ * ```
+ *
+ * 性能优化：
+ * - 菜单DOM元素复用（创建一次，重复使用）
+ * - CSS动画过渡（避免JS动画的性能开销）
+ * - 延迟销毁（隐藏后保留DOM，下次直接显示）
+ *
+ * @class ContextMenuStrategy
+ * @extends EventStrategy
  *
  * @example
- * new ContextMenuStrategy(handler, {
- *     customItems: [
- *         { label: "高亮行", contexts: ["cell", "rowHeader"], action: (r, c, s) => s.setRowStyle(r, { backgroundColor: "yellow" }) },
- *         { type: "separator" },
- *         { label: "导出", contexts: ["cell"], action: (r, c, s) => exportSheet(s) },
- *     ],
- *     disabledItems: ["mergeCells", "unmergeCells"],
- * })
+ * // 创建带自定义菜单项的策略
+ * const contextMenu = new ContextMenuStrategy(handler, {
+ *   customItems: [
+ *     {
+ *       label: "高亮行",
+ *       contexts: ["cell", "rowHeader"],
+ *       action: (row, col, sheet) => {
+ *         sheet.setRowStyle(row, { backgroundColor: "yellow" });
+ *       }
+ *     },
+ *     { type: "separator" },  // 分隔线
+ *     {
+ *       label: "导出数据",
+ *       contexts: ["cell"],
+ *       action: (row, col, sheet) => {
+ *         exportToCSV(sheet);
+ *       }
+ *     }
+ *   ],
+ *   disabledItems: ["mergeCells", "unmergeCells"]
+ * });
+ *
+ * editor.addStrategy(contextMenu);
  */
 export class ContextMenuStrategy extends EventStrategy {
     /**

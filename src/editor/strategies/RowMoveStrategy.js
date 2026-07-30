@@ -1,23 +1,94 @@
-﻿import { EventStrategy } from "./EventStrategy.js";
-import { HIT_TYPE } from "../../constants/hitType";
-import { DELEGATE_KEYS } from "../../constants/eventNames.js";
-import { HOOKS } from "../../constants/hookNames.js";
-import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
-
-/** 拖拽启动阈值（像素），鼠标移动超过此距离才视为拖拽开始 */
+﻿/**
+ * 行拖拽移动策略 (Row Move Strategy)
+ *
+ * 处理Canvas表格中行的拖拽重新排序功能。
+ * 允许用户通过拖拽行头来改变行的顺序。
+ *
+ * 优先级：使用 STRATEGY_PRIORITY.ROW_COLUMN_MOVE
+ * - 与 ColumnMoveStrategy 共享优先级常量
+ * - 确保在适当的时机处理行移动事件
+ *
+ * 核心功能：
+ * ┌────────────────────┬─────────────────────────────────────────┐
+ * │ 操作               │ 行为                                    │
+ * ├────────────────────┼─────────────────────────────────────────┤
+ * │ 按下行头           │ 记录源行位置，准备拖拽                │
+ * │ 拖拽（超过阈值）   │ 进入拖拽状态，显示插入指示器           │
+ * │ 拖拽中移动         │ 实时更新目标位置，显示预览效果         │
+ * │ 松开鼠标          │ 执行行移动，更新数据和UI              │
+ * └────────────────────┴─────────────────────────────────────────┘
+ *
+ * 交互流程详解：
+ *
+ * **阶段1: 初始化（mousedown）**
+ * ```
+ * 用户按下鼠标左键（在行头区域）
+ *    ↓
+ * hitTest() 检测到 ROW_HEADER 类型
+ *    ↓
+ * 记录源行索引 (#sourceRow)
+ * 记录起始坐标 (#dragStartY, #mouseDownY)
+ * 设置 #moving = true, #dragStarted = false
+ * ```
+ *
+ * **阶段2: 拖拽启动检测（mousemove）**
+ * ```
+ * 鼠标开始移动
+ *    ↓
+ * 计算移动距离: |currentY - mouseDownY|
+ *    ↓
+ * 距离 > DRAG_THRESHOLD (3px)?
+ *   ├── 是 → 设置 #dragStarted = true
+ * │        显示幽灵行和插入指示器
+ * │        调用 HeaderRenderer.setRowMoveState()
+ * └── 否 → 继续等待（可能是单击选择）
+ * ```
+ *
+ * **阶段3: 拖拽进行中（mousemove持续）**
+ * ```
+ * 实时更新目标位置 (#targetRow)
+ *    ↓
+ * 根据鼠标Y坐标计算插入位置
+ *    ↓
+ * 更新插入指示器的视觉位置
+ *    ↓
+ * 使用 requestAnimationFrame 节流渲染
+ * ```
+ *
+ * **阶段4: 完成（mouseup）**
+ * ```
+ * 如果 #dragStarted == true:
+ *    ↓
+ * 调用 sheet.moveRow(sourceRow, targetRow)
+ *    ↓
+ * 更新数据模型、调整选区
+ *    ↓
+ * 触发 ON_ROW_MOVE 钩子
+ *    ↓
+ * 清理所有临时状态和视觉效果
+ * ```
+ *
+ * 技术实现特点：
+ * - **渲染委托**：本策略只负责逻辑，渲染交给 HeaderRenderer
+ * - **光标管理**：通过 #cursorOwned 标记避免光标冲突
+ * - **防误触**：3像素拖拽阈值区分单击和拖拽
+ * - **性能优化**：requestAnimationFrame 节流 + 区域重绘
+ *
+ * 与其他组件的关系：
+ * - HeaderRenderer: 绘制幽灵行、插入指示器
+ * - CellStore: 更新行顺序相关的数据引用
+ * - SelectionManager: 调整选中范围
+ * - UndoManager: 记录操作以支持撤销
+ *
+ * @class RowMoveStrategy
+ * @extends EventStrategy
+ *
+ * @see EventStrategy - 基类
+ * @see ColumnMoveStrategy - 列移动策略（类似实现）
+ * @see HeaderRenderer - 负责绘制移动状态的视觉元素
+ */
 const DRAG_THRESHOLD = 3;
 
-/**
- * 行拖拽移动策略
- *
- * 交互流程：
- * 1. 鼠标在行头区域按下 → 记录源行
- * 2. 鼠标移动超过阈值 → 进入拖拽状态，显示幽灵行和插入指示器
- * 3. 鼠标松开 → 执行 moveRow，调整选区，触发钩子
- *
- * 渲染委托给 HeaderRenderer.setRowMoveState()，
- * 本策略只负责交互逻辑和状态传递。
- */
 export class RowMoveStrategy extends EventStrategy {
     /** 优先级低于列移动（80），避免同时拖列和行时冲突 */
     priority = STRATEGY_PRIORITY.ROW_COLUMN_MOVE;
