@@ -1,4 +1,4 @@
-﻿import { CONFIG } from "@/constants/config";
+﻿import {CONFIG} from "@/constants/config";
 
 /**
  * 行列管理器类
@@ -627,8 +627,8 @@ export class RowColManager {
      */
     showColumn(col) {
         if (!this.#hiddenCols.has(col)) return; // 只有隐藏的列才能显示
-        const originalWidth = this.#originalColWidths.get(col) ?? CONFIG.DEFAULT_COL_WIDTH; // 获取原始宽度或默认值
-        this.#colWidths[col] = originalWidth; // 恢复宽度
+         // 获取原始宽度或默认值
+        this.#colWidths[col] = this.#originalColWidths.get(col) ?? CONFIG.DEFAULT_COL_WIDTH; // 恢复宽度
         this.#originalColWidths.delete(col); // 清除缓存
         this.#hiddenCols.delete(col); // 从隐藏集合移除
         this.#colPrefixDirty = true; // 标记前缀和需重建

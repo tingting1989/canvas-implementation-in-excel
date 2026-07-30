@@ -1,7 +1,189 @@
-﻿import {PopupPanel} from "../../ui/components/PopupPanel.js";
-import {VirtualValueList} from "./VirtualValueList.js";
-import {NullValueHandler} from "./NullValueTypes.js";
-import {EVENT_NAMES} from "../../constants/eventNames.js";
+﻿import { PopupPanel } from "../../ui/components/PopupPanel.js";
+import { VirtualValueList } from "./VirtualValueList.js";
+import { NullValueHandler } from "./NullValueTypes.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+
+const template = document.createElement("template");
+template.innerHTML = `
+    <style>
+        :host {
+            --dropdown-width: 240px;
+            --dropdown-max-height: 360px;
+        }
+        .filter-dropdown-panel {
+            width: var(--dropdown-width);
+            height: var(--dropdown-max-height);
+            max-height: var(--dropdown-max-height);
+            background: #fff;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 13px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-dropdown-panel .filter-header {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        .filter-dropdown-panel .filter-tab {
+            flex: 1;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            color: #666;
+        }
+        .filter-dropdown-panel .filter-tab.active {
+            color: #1890ff;
+            border-bottom: 2px solid #1890ff;
+        }
+        .filter-dropdown-panel .filter-tab:hover {
+            background: #f5f5f5;
+        }
+        .filter-dropdown-panel .filter-body {
+            position: relative;
+            overflow: hidden;
+            flex: 1;
+            min-height: 0;
+        }
+        .filter-dropdown-panel .filter-panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            transition: transform 0.2s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-dropdown-panel .filter-panel.values {
+            transform: translateX(0);
+        }
+        .filter-dropdown-panel .filter-panel.condition {
+            transform: translateX(-100%);
+        }
+        .filter-dropdown-panel .filter-panel.hidden {
+            transform: translateX(-100%);
+            pointer-events: none;
+        }
+        .filter-dropdown-panel .filter-search-box {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            flex-shrink: 0;
+        }
+        .filter-dropdown-panel .filter-search-input {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .filter-dropdown-panel .filter-search-input:focus {
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+        }
+        .filter-dropdown-panel .filter-content {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-dropdown-panel .filter-content.virtual {
+            overflow: hidden;
+            min-height: 0;
+        }
+        .filter-dropdown-panel .filter-value-item {
+            padding: 4px 12px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .filter-dropdown-panel .filter-value-item:hover {
+            background: #f5f5f5;
+        }
+        .filter-dropdown-panel .filter-value-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .filter-dropdown-panel .filter-condition-area {
+            padding: 12px;
+        }
+        .filter-dropdown-panel .filter-condition-operator,
+        .filter-dropdown-panel .filter-condition-value {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            box-sizing: border-box;
+            margin-bottom: 8px;
+            outline: none;
+        }
+        .filter-dropdown-panel .filter-condition-value:focus {
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+        }
+        .filter-dropdown-panel .filter-footer {
+            padding: 8px 12px;
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .filter-dropdown-panel .filter-clear-btn {
+            padding: 4px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            background: #fff;
+            cursor: pointer;
+        }
+        .filter-dropdown-panel .filter-clear-btn:hover {
+            border-color: #1890ff;
+            color: #1890ff;
+        }
+        .filter-dropdown-panel .filter-apply-btn {
+            padding: 4px 12px;
+            border: 1px solid #1890ff;
+            border-radius: 4px;
+            background: #1890ff;
+            color: #fff;
+            cursor: pointer;
+        }
+        .filter-dropdown-panel .filter-apply-btn:hover {
+            background: #40a9ff;
+        }
+    </style>
+    <div class="filter-dropdown-panel">
+        <div class="filter-header">
+            <span class="filter-tab active" data-mode="values">值</span>
+            <span class="filter-tab" data-mode="condition">条件</span>
+        </div>
+        <div class="filter-search-box">
+            <input type="text" class="filter-search-input" placeholder="搜索...">
+        </div>
+        <div class="filter-body">
+            <div class="filter-panel values">
+                <div class="filter-content"></div>
+            </div>
+            <div class="filter-panel condition">
+                <div class="filter-condition-area">
+                    <select class="filter-condition-operator"></select>
+                    <input type="text" class="filter-condition-value" placeholder="输入值...">
+                </div>
+            </div>
+        </div>
+        <div class="filter-footer">
+            <button class="filter-clear-btn">清除筛选</button>
+            <button class="filter-apply-btn">确定</button>
+        </div>
+    </div>
+`;
 
 export class FilterDropdown extends PopupPanel {
     #col = -1;
@@ -50,160 +232,44 @@ export class FilterDropdown extends PopupPanel {
             position,
             placement: "bottom",
             zIndex: 10001,
-            onClose: () => {
-            },
+            onClose: () => {},
         });
 
-        this.#renderContent();
+        requestAnimationFrame(() => {
+            if (this.#filterMode === "condition") {
+                this.#switchMode("condition");
+            } else {
+                this.#renderContent();
+            }
+        });
     }
 
     render() {
+        if (!this.shadowRoot.querySelector(".filter-dropdown-panel")) {
+            this.shadowRoot.appendChild(template.content.cloneNode(true));
+            this.#applyDynamicStyles();
+            this.#initPanelState();
+        }
+    }
+
+    #initPanelState() {
+        const valuesPanel = this.shadowRoot.querySelector(".filter-panel.values");
+        const conditionPanel = this.shadowRoot.querySelector(".filter-panel.condition");
+        if (valuesPanel && conditionPanel) {
+            valuesPanel.classList.add("values");
+            valuesPanel.style.transform = "translateX(0)";
+            conditionPanel.classList.add("condition");
+            conditionPanel.classList.add("hidden");
+            conditionPanel.style.transform = "translateX(-100%)";
+        }
+    }
+
+    #applyDynamicStyles() {
         const width = this.#options?.dropdownWidth || 240;
         const maxHeight = this.#options?.dropdownMaxHeight || 360;
-
-        this.shadowRoot.innerHTML = `
-            <style>
-                .filter-dropdown-panel {
-                    width: ${width}px;
-                    max-height: ${maxHeight}px;
-                    background: #fff;
-                    border: 1px solid #d9d9d9;
-                    border-radius: 4px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                    font-size: 13px;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                }
-                .filter-dropdown-panel .filter-header {
-                    padding: 8px 12px;
-                    border-bottom: 1px solid #f0f0f0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .filter-dropdown-panel .filter-tab {
-                    flex: 1;
-                    padding: 8px;
-                    text-align: center;
-                    cursor: pointer;
-                    color: #666;
-                }
-                .filter-dropdown-panel .filter-tab.active {
-                    color: #1890ff;
-                    border-bottom: 2px solid #1890ff;
-                }
-                .filter-dropdown-panel .filter-tab:hover {
-                    background: #f5f5f5;
-                }
-                .filter-dropdown-panel .filter-search-box {
-                    padding: 8px 12px;
-                    border-bottom: 1px solid #f0f0f0;
-                }
-                .filter-dropdown-panel .filter-search-input {
-                    width: 100%;
-                    padding: 4px 8px;
-                    border: 1px solid #d9d9d9;
-                    border-radius: 4px;
-                    box-sizing: border-box;
-                    outline: none;
-                }
-                .filter-dropdown-panel .filter-search-input:focus {
-                    border-color: #1890ff;
-                    box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
-                }
-                .filter-dropdown-panel .filter-content {
-                    flex: 1;
-                    overflow-y: auto;
-                    min-height: 100px;
-                    max-height: 250px;
-                }
-                .filter-dropdown-panel .filter-content.virtual {
-                    overflow: hidden;
-                    max-height: none;
-                }
-                .filter-dropdown-panel .filter-value-item {
-                    padding: 4px 12px;
-                    display: flex;
-                    align-items: center;
-                    cursor: pointer;
-                }
-                .filter-dropdown-panel .filter-value-item:hover {
-                    background: #f5f5f5;
-                }
-                .filter-dropdown-panel .filter-value-item input[type="checkbox"] {
-                    margin-right: 8px;
-                }
-                .filter-dropdown-panel .filter-condition-area {
-                    padding: 12px;
-                    display: none;
-                }
-                .filter-dropdown-panel .filter-condition-area.visible {
-                    display: block;
-                }
-                .filter-dropdown-panel .filter-condition-operator,
-                .filter-dropdown-panel .filter-condition-value {
-                    width: 100%;
-                    padding: 4px 8px;
-                    border: 1px solid #d9d9d9;
-                    border-radius: 4px;
-                    box-sizing: border-box;
-                    margin-bottom: 8px;
-                    outline: none;
-                }
-                .filter-dropdown-panel .filter-condition-value:focus {
-                    border-color: #1890ff;
-                    box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
-                }
-                .filter-dropdown-panel .filter-footer {
-                    padding: 8px 12px;
-                    border-top: 1px solid #f0f0f0;
-                    display: flex;
-                    justify-content: space-between;
-                }
-                .filter-dropdown-panel .filter-clear-btn {
-                    padding: 4px 12px;
-                    border: 1px solid #d9d9d9;
-                    border-radius: 4px;
-                    background: #fff;
-                    cursor: pointer;
-                }
-                .filter-dropdown-panel .filter-clear-btn:hover {
-                    border-color: #1890ff;
-                    color: #1890ff;
-                }
-                .filter-dropdown-panel .filter-apply-btn {
-                    padding: 4px 12px;
-                    border: 1px solid #1890ff;
-                    border-radius: 4px;
-                    background: #1890ff;
-                    color: #fff;
-                    cursor: pointer;
-                }
-                .filter-dropdown-panel .filter-apply-btn:hover {
-                    background: #40a9ff;
-                }
-            </style>
-            <div class="filter-dropdown-panel">
-                <div class="filter-header">
-                    <span class="filter-tab active" data-mode="values">值</span>
-                    <span class="filter-tab" data-mode="condition">条件</span>
-                </div>
-                <div class="filter-search-box">
-                    <input type="text" class="filter-search-input" placeholder="搜索...">
-                </div>
-                <div class="filter-content"></div>
-                <div class="filter-condition-area">
-                    <select class="filter-condition-operator"></select>
-                    <input type="text" class="filter-condition-value" placeholder="输入值...">
-                </div>
-                <div class="filter-footer">
-                    <button class="filter-clear-btn">清除筛选</button>
-                    <button class="filter-apply-btn">确定</button>
-                </div>
-            </div>
-        `;
+        const host = this.shadowRoot.host;
+        host.style.setProperty("--dropdown-width", `${width}px`);
+        host.style.setProperty("--dropdown-max-height", `${maxHeight}px`);
     }
 
     onConnect(disposable) {
@@ -211,6 +277,10 @@ export class FilterDropdown extends PopupPanel {
 
         disposable.trackEvent(this.shadowRoot, EVENT_NAMES.CLICK, this.#handlePanelClick.bind(this));
         disposable.trackEvent(this.shadowRoot, EVENT_NAMES.INPUT, this.#handlePanelInput.bind(this));
+
+        if (this.#filterMode === "condition") {
+            this.#switchMode("condition");
+        }
     }
 
     onDisconnect() {
@@ -231,7 +301,6 @@ export class FilterDropdown extends PopupPanel {
         }
 
         if (target.classList.contains("filter-clear-btn")) {
-
             this.#searchKeyword = "";
             const searchInput = this.shadowRoot.querySelector(".filter-search-input");
             if (searchInput) searchInput.value = "";
@@ -247,7 +316,6 @@ export class FilterDropdown extends PopupPanel {
 
         if (target.classList.contains("filter-apply-btn")) {
             this.#applyCurrentFilter();
-
         }
     }
 
@@ -278,22 +346,28 @@ export class FilterDropdown extends PopupPanel {
             tab.classList.toggle("active", tab.dataset.mode === mode);
         });
 
-        const contentArea = this.shadowRoot.querySelector(".filter-content");
-        const conditionArea = this.shadowRoot.querySelector(".filter-condition-area");
+        const searchBox = this.shadowRoot.querySelector(".filter-search-box");
+        const valuesPanel = this.shadowRoot.querySelector(".filter-panel.values");
+        const conditionPanel = this.shadowRoot.querySelector(".filter-panel.condition");
 
         if (mode === "values") {
-            contentArea.style.display = "block";
-            conditionArea.classList.remove("visible");
+            searchBox.style.display = "";
+            valuesPanel.style.transform = "translateX(0)";
+            valuesPanel.classList.remove("hidden");
+            conditionPanel.style.transform = "translateX(-100%)";
+            conditionPanel.classList.add("hidden");
             this.#renderContent();
         } else {
-            contentArea.style.display = "none";
-            conditionArea.classList.add("visible");
+            searchBox.style.display = "none";
+            valuesPanel.style.transform = "translateX(-100%)";
+            valuesPanel.classList.add("hidden");
+            conditionPanel.style.transform = "translateX(0)";
+            conditionPanel.classList.remove("hidden");
             this.#renderConditionOperators();
         }
     }
 
     #getFilteredValues() {
-
         let filtered = this.#allValues;
 
         if (this.#searchKeyword) {
@@ -310,7 +384,6 @@ export class FilterDropdown extends PopupPanel {
             }
         }
 
-
         return filtered;
     }
 
@@ -321,6 +394,8 @@ export class FilterDropdown extends PopupPanel {
 
     #renderContent() {
         const contentArea = this.shadowRoot.querySelector(".filter-content");
+        if (!contentArea) return;
+
         const filteredValues = this.#getFilteredValues();
         const shouldVirtualize = this.#shouldVirtualize(filteredValues);
 
@@ -351,7 +426,7 @@ export class FilterDropdown extends PopupPanel {
         const blankChecked = hasBlankValue && !this.#uncheckedValues.has(NullValueHandler.NULL_KEY);
 
         const selectAllItem = document.createElement("div");
-        selectAllItem.className = "filter-value-item";
+        selectAllItem.className = "filter-value-item filter-select-all";
 
         const allChecked = allNormalChecked && (!hasBlankValue || blankChecked);
         selectAllItem.innerHTML = `
@@ -360,11 +435,16 @@ export class FilterDropdown extends PopupPanel {
         `;
 
         selectAllItem.addEventListener("click", (e) => {
-            if (e.target.tagName === "INPUT") return;
-            if (allChecked) {
-                values.forEach((v) => this.#uncheckedValues.add(v));
-            } else {
+            const checkbox = selectAllItem.querySelector("input");
+
+            if (e.target.tagName !== "INPUT") {
+                checkbox.checked = !checkbox.checked;
+            }
+
+            if (checkbox.checked) {
                 values.forEach((v) => this.#uncheckedValues.delete(v));
+            } else {
+                values.forEach((v) => this.#uncheckedValues.add(v));
             }
             this.#renderContent();
         });
@@ -387,8 +467,13 @@ export class FilterDropdown extends PopupPanel {
             `;
 
             blankItem.addEventListener("click", (e) => {
-                if (e.target.tagName === "INPUT") return;
-                if (this.#uncheckedValues.has(NullValueHandler.NULL_KEY)) {
+                const checkbox = blankItem.querySelector("input");
+
+                if (e.target.tagName !== "INPUT") {
+                    checkbox.checked = !checkbox.checked;
+                }
+
+                if (checkbox.checked) {
                     this.#uncheckedValues.delete(NullValueHandler.NULL_KEY);
                 } else {
                     this.#uncheckedValues.add(NullValueHandler.NULL_KEY);
@@ -416,8 +501,13 @@ export class FilterDropdown extends PopupPanel {
         `;
 
         item.addEventListener("click", (e) => {
-            if (e.target.tagName === "INPUT") return;
-            if (this.#uncheckedValues.has(value)) {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+
+            if (e.target.tagName !== "INPUT") {
+                checkbox.checked = !checkbox.checked;
+            }
+
+            if (checkbox.checked) {
                 this.#uncheckedValues.delete(value);
             } else {
                 this.#uncheckedValues.add(value);
@@ -462,11 +552,16 @@ export class FilterDropdown extends PopupPanel {
 
     #bindSelectAllEvent(selectAllItem, values) {
         selectAllItem.addEventListener("click", (e) => {
-            if (e.target.tagName === "INPUT") return;
-            const checkbox = selectAllItem.querySelector('input');
-            const isCurrentlyChecked = checkbox.checked;
+            const checkbox = selectAllItem.querySelector("input");
 
-            if (isCurrentlyChecked) {
+            if (e.target.tagName === "INPUT") {
+                // 点击 checkbox 本身，浏览器已切换状态，使用当前状态
+            } else {
+                // 点击名称，手动切换状态
+                checkbox.checked = !checkbox.checked;
+            }
+
+            if (checkbox.checked) {
                 values.forEach((v) => this.#uncheckedValues.delete(v));
             } else {
                 values.forEach((v) => this.#uncheckedValues.add(v));
@@ -487,7 +582,7 @@ export class FilterDropdown extends PopupPanel {
         const blankChecked = hasBlankValue && !this.#uncheckedValues.has(NullValueHandler.NULL_KEY);
         const isAllChecked = normalValues.length > 0 && allNormalChecked && (!hasBlankValue || blankChecked);
 
-        const checkbox = selectAllItem.querySelector('input');
+        const checkbox = selectAllItem.querySelector("input");
         checkbox.checked = isAllChecked;
     }
 
@@ -495,7 +590,11 @@ export class FilterDropdown extends PopupPanel {
         const select = this.shadowRoot.querySelector(".filter-condition-operator");
         if (!select) return;
 
-        const operators = this.#options?.conditionOperators || ["eq", "neq", "contains", "notContains"];
+        const operators = this.#options?.conditionOperators || [
+            "eq", "neq", "contains", "notContains",
+            "startsWith", "endsWith",
+            "gt", "gte", "lt", "lte"
+        ];
 
         const operatorLabels = {
             eq: "等于",
@@ -510,6 +609,10 @@ export class FilterDropdown extends PopupPanel {
             lte: "小于等于",
         };
 
+        if (!this.#conditionOperator && operators.length > 0) {
+            this.#conditionOperator = operators[0];
+        }
+
         select.innerHTML = "";
         operators.forEach((op) => {
             const option = document.createElement("option");
@@ -523,7 +626,12 @@ export class FilterDropdown extends PopupPanel {
     }
 
     #applyCurrentFilter() {
-        console.log("[FilterDropdown] #applyCurrentFilter, #uncheckedValues:", Array.from(this.#uncheckedValues), "size:", this.#uncheckedValues.size);
+        console.log(
+            "[FilterDropdown] #applyCurrentFilter, #uncheckedValues:",
+            Array.from(this.#uncheckedValues),
+            "size:",
+            this.#uncheckedValues.size,
+        );
         let filter;
 
         if (this.#filterMode === "values") {

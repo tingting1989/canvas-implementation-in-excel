@@ -1,6 +1,46 @@
-﻿import {WebComponent} from "@/core/WebComponent";
-import {EVENT_NAMES} from "@/constants/eventNames";
-import {NullValueHandler} from "@/plugins/filter/NullValueTypes";
+﻿import { WebComponent } from "@/core/WebComponent";
+import { EVENT_NAMES } from "@/constants/eventNames";
+import { NullValueHandler } from "@/plugins/filter/NullValueTypes";
+
+const template = document.createElement("template");
+template.innerHTML = `
+    <style>
+        :host {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+            --item-height: 28px;
+        }
+        .virtual-container {
+            height: 100%;
+            position: relative;
+        }
+        .virtual-item {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: var(--item-height);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+        .virtual-item:hover {
+            background: #f5f5f5;
+        }
+        .virtual-item input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .virtual-blank-item span {
+            font-style: italic;
+            color: #999;
+        }
+    </style>
+    <div class="virtual-container">
+        <div class="virtual-render-zone"></div>
+    </div>
+`;
 
 export class VirtualValueList extends WebComponent {
     #items = [];
@@ -10,7 +50,7 @@ export class VirtualValueList extends WebComponent {
     #visibleCount = 10;
     #scrollTop = 0;
     #renderZone = null;
-    #eventsBound = false;  // ← 新增：标记事件是否已绑定
+    #eventsBound = false;
 
     init(items, uncheckedValues, onToggle) {
         this.#items = items;
@@ -19,59 +59,34 @@ export class VirtualValueList extends WebComponent {
     }
 
     updateItems(items, uncheckedValues) {
+        const itemsChanged =
+            this.#items.length !== items.length ||
+            !this.#items.every((v, i) => v === items[i]);
+
         this.#items = items;
         this.#uncheckedValues = new Set(uncheckedValues);
-        this.#scrollTop = 0;
-        // 重置滚动位置
-        if (this.shadowRoot) {
-            this.scrollTop = 0;  // ← 直接设置，因为 this 就是 host element
+
+        if (itemsChanged && this.shadowRoot) {
+            this.#scrollTop = 0;
+            this.scrollTop = 0;
         }
+
         this.#renderVisibleItems();
     }
 
     render() {
-        this.shadowRoot.innerHTML = `
-            <style>
-                :host {
-                    display: block;
-                    height: 240px;
-                    overflow-y: auto;
-                    position: relative;
-                }
-                .virtual-container {
-                    height: ${this.#items.length * this.#itemHeight}px;
-                    position: relative;
-                }
-                .virtual-item {
-                    position: absolute;
-                    left: 0;
-                    right: 0;
-                    height: ${this.#itemHeight}px;
-                    display: flex;
-                    align-items: center;
-                    padding: 0 12px;
-                    cursor: pointer;
-                    box-sizing: border-box;
-                }
-                .virtual-item:hover {
-                    background: #f5f5f5;
-                }
-                .virtual-item input[type="checkbox"] {
-                    margin-right: 8px;
-                }
-                .virtual-blank-item span {
-                    font-style: italic;
-                    color: #999;
-                }
-            </style>
-            <div class="virtual-container">
-                <div class="virtual-render-zone"></div>
-            </div>
-        `;
-
+        if (!this.shadowRoot.querySelector(".virtual-container")) {
+            this.shadowRoot.appendChild(template.content.cloneNode(true));
+            this.#applyDynamicStyles();
+        }
         this.#renderZone = this.shadowRoot.querySelector(".virtual-render-zone");
-        this.#eventsBound = false;  // ← render 后需要重新绑定
-        this.#bindRenderZoneEvents();  // ← 只在 render 时绑定一次
+        this.#eventsBound = false;
+        this.#bindRenderZoneEvents();
+    }
+
+    #applyDynamicStyles() {
+        const host = this.shadowRoot.host;
+        host.style.setProperty("--item-height", `${this.#itemHeight}px`);
     }
 
     onConnect(disposable) {
@@ -101,7 +116,10 @@ export class VirtualValueList extends WebComponent {
         }
 
         const startIndex = Math.floor(this.#scrollTop / this.#itemHeight);
-        const endIndex = Math.min(startIndex + this.#visibleCount + 2, this.#items.length);
+        const endIndex = Math.min(
+            startIndex + this.#visibleCount + 2,
+            this.#items.length
+        );
 
         let html = "";
 
@@ -129,13 +147,12 @@ export class VirtualValueList extends WebComponent {
         }
 
         this.#renderZone.innerHTML = html;
-        // ← 注意：不再在这里调用 #bindRenderZoneEvents()
     }
 
     #bindRenderZoneEvents() {
-        if (!this.#renderZone || this.#eventsBound) return;  // ← 防止重复绑定
+        if (!this.#renderZone || this.#eventsBound) return;
 
-        this.#renderZone.addEventListener(EVENT_NAMES.CLICK, (e) => {
+        const handler = (e) => {
             const valueItem = e.target.closest(".virtual-item");
             if (!valueItem) return;
 
@@ -158,9 +175,10 @@ export class VirtualValueList extends WebComponent {
                 }
                 this.#onToggle?.(key, checkbox.checked);
             }
-        });
+        };
 
-        this.#eventsBound = true;  // ← 标记已绑定
+        this.#renderZone.addEventListener(EVENT_NAMES.CLICK, handler);
+        this.#eventsBound = true;
     }
 }
 
