@@ -1,3 +1,6 @@
+import { BasePlugin } from "@/plugins/BasePlugin";
+import { AutoFillStrategy } from "@/editor/strategies";
+
 /**
  * 自动填充插件 (Auto Fill Plugin)
  *

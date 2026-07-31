@@ -146,8 +146,6 @@ export class FilterStrategy extends EventStrategy {
             y: e.clientY,
         };
 
-        console.log("[Filter] 点击筛选图标 - 列:", col, "位置:", position);
-
         this.#uiManager.openDropdown(col, position);
 
         return false;

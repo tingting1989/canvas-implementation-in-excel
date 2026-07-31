@@ -1,4 +1,10 @@
-﻿/**
+﻿import { HOOKS } from "@/constants/hookNames";
+import { HIT_TYPE } from "@/constants/hitType";
+import { EventStrategy } from "@/editor/strategies/EventStrategy";
+import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
+import { DELEGATE_KEYS } from "@/constants/eventNames";
+
+/**
  * 行拖拽移动策略 (Row Move Strategy)
  *
  * 处理Canvas表格中行的拖拽重新排序功能。

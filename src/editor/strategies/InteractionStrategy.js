@@ -1,4 +1,10 @@
-﻿/**
+﻿import { ERROR_CODE, errorHandler } from "@/core";
+import { debounce, isFunction } from "@/utils";
+import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
+import { EventStrategy } from "@/editor/strategies/EventStrategy";
+import { DELEGATE_KEYS } from "@/constants/eventNames";
+
+/**
  * 交互式单元格策略 (Interactive Cell Strategy)
  *
  * 处理Canvas表格中特殊类型单元格（如按钮、链接、复选框等）的交互行为。
@@ -493,7 +499,7 @@ export class InteractionStrategy extends EventStrategy {
                 }
             }
         } catch (error) {
-            errorHandler.warn(ERROR_CODE.PLUGIN_RUNTIME_WARNING, `InteractionStrategy#clearPreviousHoverState 警告: ${error.message}`);
+            errorHandler.warn(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#clearPreviousHoverState 警告: ${error.message}`);
         }
     }
 

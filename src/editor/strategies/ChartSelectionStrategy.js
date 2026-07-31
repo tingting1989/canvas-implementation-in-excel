@@ -2,6 +2,8 @@
 import { NativeChartRenderer } from "@/render/chart/NativeChartRenderer";
 import { HIT_TYPE } from "@/constants/hitType";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
+import { EventStrategy } from "@/editor/strategies/EventStrategy";
+import { DELEGATE_KEYS } from "@/constants/eventNames";
 
 /**
  * 图表选区交互策略 (Chart Selection Strategy)
