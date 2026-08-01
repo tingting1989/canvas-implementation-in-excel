@@ -40,19 +40,23 @@
 
 ### 🧮 **强大的公式系统**
 - ✅ **Excel 兼容语法** - `=SUM(A1:A100)`, `=VLOOKUP(...)`
-- ✅ **51 个内置函数** - 数学、统计、逻辑、文本、查找、条件函数（全部经过测试验证，含 examples）
+- ✅ **52 个内置函数** - 数学(13)、统计(9)、逻辑(7)、文本(13)、查找(4)、条件(6) 函数（全部经过测试验证，含 examples）
 - ✅ **自定义函数注册** - `registerFunction('MYFUNC', impl)`
 - ✅ **循环引用检测** - 防止无限递归
 - ✅ **惰性求值** - 按需计算，避免不必要的开销
 
 ### 🎨 **丰富的数据类型**
-- ✅ **8 种基础类型**: text, numeric, date, select, textarea, hyperlink, checkbox, starRating
-- ✅ **5 种可视化渲染器**: progressBar, sparkline, colorPreview 等
+- ✅ **11 种列类型**:
+  - 基础数据类型 (6种): text, numeric, date, select, textarea, hyperlink
+  - 可视化渲染器 (5种): checkbox, progressBar, starRating, sparkline, colorPreview
 - ✅ **可扩展的类型系统** - 继承 BaseColumnType 创建自定义类型
 - ✅ **增强的日期解析** - 支持如 "2021年05月10日" 等中文日期格式
 
 ### 📊 **企业级图表系统**
-- ✅ **9 类图表类型** - 柱状图、折线图、饼图、面积图、散点图等（全部经过测试验证）
+- ✅ **10 类图表类型**（全部经过测试验证）:
+  - 柱状图 (Bar)、折线图 (Line)、饼图 (Pie)、面积图 (Area)
+  - 散点图 (Scatter)、K线图 (Candlestick)、仪表盘 (Gauge)
+  - 漏斗图 (Funnel)、雷达图 (Radar)、热力图 (Heatmap)
 - ✅ **多图表支持** - 同一 Sheet 中可导出多张图表
 - ✅ **数据联动** - 图表与数据的实时同步更新
 - ✅ **Tooltip 提示** - 图表悬浮提示功能
@@ -71,7 +75,7 @@
 - ✅ **多工作表管理** - SheetTab 切换与管理
 - ✅ **导入导出功能** - 企业级别 Excel 导入导出（嵌套表头、样式、列宽行高、图表）
 - ✅ **筛选功能** - 支持 text/numeric/date 类型，支持正则匹配过滤
-- ✅ **主题系统** - 2 种内置主题 + 自定义主题注册能力
+- ✅ **主题系统** - 2 种内置主题 (Default/Light + Dark) + 自定义主题注册能力
 - ✅ **批量操作** - 批量更新选区内数据
 
 ### 🔌 **插件化架构**
@@ -1847,15 +1851,16 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
 ### ✅ **公式系统 (95%)**
 - ✅ 公式解析器 (FormulaParser)
 - ✅ 公式求值器 (FormulaEvaluator)
-- ✅ **51 个内置函数** - 全部经过测试验证，含完整 examples
+- ✅ **52 个内置函数** - 数学(13)、统计(9)、逻辑(7)、文本(13)、查找(4)、条件(6)，全部经过测试验证，含完整 examples
 - ✅ 循环引用检测
 - ✅ 惰性求值 (Lazy Evaluation)
 - ✅ 自定义函数注册
 - [ ] 数组公式 (Array Formulas) - *计划中*
 
 ### ✅ **类型系统 (98%)**
-- ✅ **8 种基础类型** (text/numeric/date/select/textarea/hyperlink/checkbox/starRating)
-- ✅ 5 种渲染器类型 (progressBar/sparkline/colorPreview 等)
+- ✅ **11 种列类型**:
+  - 基础数据类型 (6种): text, numeric, date, select, textarea, hyperlink
+  - 可视化渲染器 (5种): checkbox, progressBar, starRating, sparkline, colorPreview
 - ✅ 可扩展的类型注册表
 - ✅ 格式化/解析/验证管道
 - ✅ **增强的日期解析** - 支持中文日期格式（如 "2021年05月10日"）
@@ -1871,7 +1876,7 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
 - ✅ 导出文件插件 (ExportFilePlugin) - **企业级导出（嵌套表头/样式/列宽行高/多图表）**
 - ✅ 导入文件插件 (ImportFilePlugin)
 - ✅ 公式插件 (FormulaPlugin)
-- ✅ 图表插件 (ChartPlugin) - **9 类图表，数据联动，Tooltip 提示**
+- ✅ 图表插件 (ChartPlugin) - **10 类图表（Bar/Line/Pie/Area/Scatter/Candlestick/Gauge/Funnel/Radar/Heatmap），数据联动，Tooltip 提示**
 - ✅ 行/列移动插件 (MovePlugins)
 - ✅ 隐藏行/列插件 (HiddenPlugins)
 - ✅ **筛选插件 (FilterPlugin)** - text/numeric/date 类型，正则匹配支持
@@ -1884,7 +1889,7 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
 - ✅ 滚动条 (Scrollbar) - 自定义样式
 - ✅ 单元格编辑器 (Text/Numeric/Date/Select/Textarea/Hyperlink/Checkbox/StarRating)
 - ✅ 选区高亮 (Selection Highlight)
-- ✅ **主题系统** - 8 种内置主题 + 自定义主题注册
+- ✅ **主题系统** - 2 种内置主题 (Default/Light + Dark) + 自定义主题注册
 - [ ] 迷你地图 (Minimap) - *计划中*
 - [ ] 缩放控件 (Zoom Control) - *计划中*
 
@@ -1942,14 +1947,6 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
   - [ ] 按需加载配置
   - [ ] 插件包体积优化
 
-#### 🎨 **样式系统增强**
-- [ ] 渐变背景 (Gradient Backgrounds)
-- [ ] 图片插入 (Image Insertion)
-- [ ] 富文本支持 (Rich Text)
-- [ ] 条件格式规则扩展
-  - [ ] 数据条 (Data Bars)
-  - [ ] 色阶 (Color Scales)
-  - [ ] 图标集 (Icon Sets)
 
 ### 🚀 **中期目标 (v2.0.0 - Q4 2026)**
 
@@ -1961,21 +1958,6 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
 - [ ] 用户权限管理
 - [ ] 版本历史回放
 
-#### 📱 **移动端优化**
-- [ ] 手势操作优化
-  - [ ] 双指缩放 (Pinch-to-zoom)
-  - [ ] 滑动选择 (Swipe Selection)
-  - [ ] 长按菜单 (Long Press Menu)
-- [ ] 响应式布局
-- [ ] 离线缓存 (Offline Support)
-- [ ] PWA 支持
-
-#### 🔌 **插件市场**
-- [ ] 插件在线安装
-- [ ] 插件依赖管理
-- [ ] 沙箱隔离执行
-- [ ] 插件评分系统
-- [ ] API 版本兼容性检查
 
 ### 🌟 **长期愿景 (v3.0.0+ - 2027+)**
 
@@ -1992,11 +1974,7 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
 - [ ] 大规模排序/聚合加速
 - [ ] 内存占用降低 50%
 
-#### ☁️ **云端原生**
-- [ ] Server-side Rendering (SSR)
-- [ ] 边缘计算节点部署
-- [ ] 全球 CDN 加速分发
-- [ ] 多租户隔离架构
+
 
 ---
 

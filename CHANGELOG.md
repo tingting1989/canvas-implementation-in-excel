@@ -16,18 +16,22 @@ This release introduces **significant enhancements** across multiple areas inclu
 ## ✨ New Features
 
 ### 🧮 **Formula System Enhancement**
-- ✅ **51 Built-in Functions** - Increased from 50+ to 51 fully tested functions with comprehensive examples
+- ✅ **52 Built-in Functions** - Math(13), Statistical(9), Logical(7), Text(13), Lookup(4), Conditional(6) - all fully tested with comprehensive examples
 - ✅ **Complete Test Coverage** - All formulas verified with test cases and example code
 - ✅ **Enhanced Documentation** - Each function includes usage examples
 
 ### 📊 **Chart System Upgrade**
-- ✅ **9 Chart Types** - Complete chart library with all types tested and verified:
-  - Bar charts (vertical/horizontal/stacked/grouped)
-  - Line charts (basic/smooth/step)
-  - Pie/Doughnut charts
-  - Area charts (basic/stacked)
-  - Scatter plots
-  - Radar charts
+- ✅ **10 Chart Types** - Complete chart library with all types tested and verified:
+  - Bar (vertical/horizontal/stacked/grouped)
+  - Line (basic/smooth/step)
+  - Pie/Doughnut
+  - Area (basic/stacked)
+  - Scatter
+  - Candlestick (K-line)
+  - Gauge
+  - Funnel
+  - Radar
+  - Heatmap
 - ✅ **Multi-Chart Support** - Export multiple charts in the same sheet
 - ✅ **Data Binding** - Real-time synchronization between data and charts
 - ✅ **Tooltip Support** - Interactive hover tooltips on charts
@@ -46,12 +50,15 @@ This release introduces **significant enhancements** across multiple areas inclu
 - ✅ **2 Built-in Themes**:
   - Default (Light)
   - Dark
-  - Custom (user-defined)
-- ✅ **Theme Registration API** - Register custom themes programmatically
+- ✅ **Custom Theme Support** - Register custom themes programmatically via API
 - ✅ **Dynamic Switching** - Switch themes at runtime without reload
 - ✅ **Persistent Storage** - Theme preference saved to localStorage
+- 📝 *Note: Additional themes (Blue, Green, Purple, Orange, Red) planned for future releases*
 
 ### 🔗 **New Column Types**
+- ✅ **11 Column Types Total**:
+  - Basic Data Types (6): text, numeric, date, select, textarea, hyperlink
+  - Visual Renderers (5): checkbox, progressBar, starRating, sparkline, colorPreview
 - ✅ **Hyperlink Type** - Clickable links with custom styling
 - ✅ **Checkbox Type** - Boolean values with checkbox rendering
 - ✅ **Star Rating Type** - Rating input with star display
@@ -93,15 +100,15 @@ This release introduces **significant enhancements** across multiple areas inclu
 ## 📝 Examples Added
 
 Comprehensive examples covering:
-- All 51 formula functions
-- All 9 chart types
-- Data validation scenarios
-- Import/export workflows
-- Filtering operations
-- Theme customization
-- New column types (hyperlink, checkbox, star rating)
-- Batch operations
-- Hook event usage
+- All 52 formula functions (Math/Statistical/Logical/Text/Lookup/Conditional)
+- All 10 chart types (Bar/Line/Pie/Area/Scatter/Candlestick/Gauge/Funnel/Radar/Heatmap)
+- Data validation scenarios (including custom formula validation)
+- Import/export workflows (nested headers, styles, dimensions, multi-chart)
+- Filtering operations (text/numeric/date with regex support)
+- Theme customization (Default/Dark + custom theme registration)
+- All 11 column types (6 basic + 5 renderers)
+- Batch operations (batch update within selection)
+- Hook event usage (lifecycle and feature hooks)
 
 ---
 
