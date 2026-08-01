@@ -1,7 +1,7 @@
 # 📊 Canvas Spreadsheet Engine
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.12-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.0.15-blue.svg" alt="Version" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License" />
   <img src="https://img.shields.io/badge/JavaScript-ES6%2B-yellow.svg" alt="Language" />
   <a href="#技术栈"><img src="https://img.shields.io/badge/Web_Components-Custom_Elements-orange.svg" alt="Web Components" /></a>
@@ -40,15 +40,23 @@
 
 ### 🧮 **强大的公式系统**
 - ✅ **Excel 兼容语法** - `=SUM(A1:A100)`, `=VLOOKUP(...)`
-- ✅ **50+ 内置函数** - 数学、统计、逻辑、文本、查找、条件函数
+- ✅ **51 个内置函数** - 数学、统计、逻辑、文本、查找、条件函数（全部经过测试验证，含 examples）
 - ✅ **自定义函数注册** - `registerFunction('MYFUNC', impl)`
 - ✅ **循环引用检测** - 防止无限递归
 - ✅ **惰性求值** - 按需计算，避免不必要的开销
 
 ### 🎨 **丰富的数据类型**
-- ✅ **6 种基础类型**: text, numeric, date, boolean, select, textarea
-- ✅ **5 种可视化渲染器**: checkbox, progressBar, starRating, sparkline, colorPreview
+- ✅ **8 种基础类型**: text, numeric, date, select, textarea, hyperlink, checkbox, starRating
+- ✅ **5 种可视化渲染器**: progressBar, sparkline, colorPreview 等
 - ✅ **可扩展的类型系统** - 继承 BaseColumnType 创建自定义类型
+- ✅ **增强的日期解析** - 支持如 "2021年05月10日" 等中文日期格式
+
+### 📊 **企业级图表系统**
+- ✅ **9 类图表类型** - 柱状图、折线图、饼图、面积图、散点图等（全部经过测试验证）
+- ✅ **多图表支持** - 同一 Sheet 中可导出多张图表
+- ✅ **数据联动** - 图表与数据的实时同步更新
+- ✅ **Tooltip 提示** - 图表悬浮提示功能
+- ✅ **样式导出** - 支持带样式的图表导出到 Excel
 
 ### 🔌 **插件化架构**
 - ✅ **20+ 内置插件** - 冻结窗格、排序、筛选、自动填充、数据验证...
@@ -56,12 +64,22 @@
 - ✅ **策略模式** - 键盘、鼠标、复制粘贴等行为可定制
 
 ### 🛡️ **企业级特性**
-- ✅ **数据验证规则** - 必填、唯一性、正则表达式、范围限制
+- ✅ **数据验证规则** - 必填、唯一性、正则表达式、范围限制、**自定义公式验证**
 - ✅ **条件格式** - 基于规则的动态样式应用
 - ✅ **撤销/重做栈** - Command Pattern 实现的完整历史记录
 - ✅ **合并单元格** - 支持跨行跨列合并
 - ✅ **多工作表管理** - SheetTab 切换与管理
-- ✅ **导出功能** - CSV/Excel 格式导出
+- ✅ **导入导出功能** - 企业级别 Excel 导入导出（嵌套表头、样式、列宽行高、图表）
+- ✅ **筛选功能** - 支持 text/numeric/date 类型，支持正则匹配过滤
+- ✅ **主题系统** - 2 种内置主题 + 自定义主题注册能力
+- ✅ **批量操作** - 批量更新选区内数据
+
+### 🔌 **插件化架构**
+- ✅ **20+ 内置插件** - 冻结窗格、排序、筛选、自动填充、数据验证...
+- ✅ **事件驱动** - EventBus + Hooks 双向通信机制
+- ✅ **策略模式** - 键盘、鼠标、复制粘贴等行为可定制
+- ✅ **Hook 事件系统** - 完善的生命周期钩子和功能钩子
+- ✅ **JSDoc 注释** - 所有公共 API 符合 JSDoc 规范，完整的类型提示
 
 ---
 
@@ -1812,101 +1830,117 @@ registerColumnTypeClass('trafficLight', TrafficLightType);
 ## 📋 已完成功能
 
 ### ✅ **核心引擎 (100%)**
-- [x] Canvas 2D 渲染引擎
-- [x] 瓦片化渲染架构 (Tile Rendering)
-- [x] 智能视口裁剪 (Viewport Clipping)
-- [x] 双缓冲绘图 (Double Buffering)
-- [x] 硬件加速 (GPU Acceleration)
+- ✅ Canvas 2D 渲染引擎
+- ✅ 瓦片化渲染架构 (Tile Rendering)
+- ✅ 智能视口裁剪 (Viewport Clipping)
+- ✅ 双缓冲绘图 (Double Buffering)
+- ✅ 硬件加速 (GPU Acceleration)
 
 ### ✅ **数据模型 (95%)**
-- [x] 分块存储系统 (ChunkedCellStore)
-- [x] 单元格对象池 (Cell Pool)
-- [x] 行列管理器 (RowColManager)
-- [x] 合并单元格 (Merge Cells)
-- [x] 隐藏行/列 (Hidden Rows/Cols)
+- ✅ 分块存储系统 (ChunkedCellStore)
+- ✅ 单元格对象池 (Cell Pool)
+- ✅ 行列管理器 (RowColManager)
+- ✅ 合并单元格 (Merge Cells)
+- ✅ 隐藏行/列 (Hidden Rows/Cols)
 - [ ] 数据版本控制 (Data Versioning) - *进行中*
 
-### ✅ **公式系统 (90%)**
-- [x] 公式解析器 (FormulaParser)
-- [x] 公式求值器 (FormulaEvaluator)
-- [x] 50+ 内置函数
-- [x] 循环引用检测
-- [x] 惰性求值 (Lazy Evaluation)
-- [x] 自定义函数注册
+### ✅ **公式系统 (95%)**
+- ✅ 公式解析器 (FormulaParser)
+- ✅ 公式求值器 (FormulaEvaluator)
+- ✅ **51 个内置函数** - 全部经过测试验证，含完整 examples
+- ✅ 循环引用检测
+- ✅ 惰性求值 (Lazy Evaluation)
+- ✅ 自定义函数注册
 - [ ] 数组公式 (Array Formulas) - *计划中*
 
-### ✅ **类型系统 (95%)**
-- [x] 6 种基础类型 (text/numeric/date/boolean/select/textarea)
-- [x] 5 种渲染器类型 (checkbox/progressBar/starRating/sparkline/colorPreview)
-- [x] 可扩展的类型注册表
-- [x] 格式化/解析/验证管道
+### ✅ **类型系统 (98%)**
+- ✅ **8 种基础类型** (text/numeric/date/select/textarea/hyperlink/checkbox/starRating)
+- ✅ 5 种渲染器类型 (progressBar/sparkline/colorPreview 等)
+- ✅ 可扩展的类型注册表
+- ✅ 格式化/解析/验证管道
+- ✅ **增强的日期解析** - 支持中文日期格式（如 "2021年05月10日"）
 - [ ] 地理位置类型 (GeoLocation) - *计划中*
 
-### ✅ **插件生态 (85%)**
-- [x] 冻结窗格插件 (FreezePlugin)
-- [x] 排序插件 (SortPlugin) - 升序/降序/多列排序
-- [x] 自动填充插件 (AutoFillPattern)
-- [x] 复制粘贴插件 (CopyPastePlugin)
-- [x] 数据验证插件 (DataValidationPlugin)
-- [x] 右键菜单插件 (ContextMenuPlugin)
-- [x] 导出文件插件 (ExportFilePlugin)
-- [x] 导入文件插件 (ImportFilePlugin)
-- [x] 公式插件 (FormulaPlugin)
-- [x] 图表插件 (ChartPlugin) - 基础图表
-- [x] 行/列移动插件 (MovePlugins)
-- [x] 隐藏行/列插件 (HiddenPlugins)
-- [ ] 筛选插件 (FilterPlugin) - *开发中*
+### ✅ **插件生态 (92%)**
+- ✅ 冻结窗格插件 (FreezePlugin)
+- ✅ 排序插件 (SortPlugin) - 升序/降序/多列排序，**优化表头图标**
+- ✅ 自动填充插件 (AutoFillPattern)
+- ✅ 复制粘贴插件 (CopyPastePlugin)
+- ✅ 数据验证插件 (DataValidationPlugin) - **完善功能 + 修复 bug + 自定义公式验证**
+- ✅ 右键菜单插件 (ContextMenuPlugin)
+- ✅ 导出文件插件 (ExportFilePlugin) - **企业级导出（嵌套表头/样式/列宽行高/多图表）**
+- ✅ 导入文件插件 (ImportFilePlugin)
+- ✅ 公式插件 (FormulaPlugin)
+- ✅ 图表插件 (ChartPlugin) - **9 类图表，数据联动，Tooltip 提示**
+- ✅ 行/列移动插件 (MovePlugins)
+- ✅ 隐藏行/列插件 (HiddenPlugins)
+- ✅ **筛选插件 (FilterPlugin)** - text/numeric/date 类型，正则匹配支持
 - [ ] 评论/批注插件 (CommentPlugin) - *计划中*
 
-### ✅ **UI 组件 (90%)**
-- [x] 公式栏 (FormulaBar)
-- [x] 工作表标签栏 (SheetTabBar)
-- [x] 右键上下文菜单 (ContextMenu)
-- [x] 滚动条 (Scrollbar) - 自定义样式
-- [x] 单元格编辑器 (Text/Numeric/Date/Select/Textarea)
-- [x] 选区高亮 (Selection Highlight)
+### ✅ **UI 组件 (95%)**
+- ✅ 公式栏 (FormulaBar)
+- ✅ 工作表标签栏 (SheetTabBar)
+- ✅ 右键上下文菜单 (ContextMenu)
+- ✅ 滚动条 (Scrollbar) - 自定义样式
+- ✅ 单元格编辑器 (Text/Numeric/Date/Select/Textarea/Hyperlink/Checkbox/StarRating)
+- ✅ 选区高亮 (Selection Highlight)
+- ✅ **主题系统** - 8 种内置主题 + 自定义主题注册
 - [ ] 迷你地图 (Minimap) - *计划中*
 - [ ] 缩放控件 (Zoom Control) - *计划中*
 
 ### ✅ **事件与钩子 (100%)**
-- [x] 事件总线 (EventBus)
-- [x] 生命周期钩子 (Lifecycle Hooks)
-- [x] 30+ 内置事件
-- [x] 20+ 钩子点
+- ✅ 事件总线 (EventBus)
+- ✅ 生命周期钩子 (Lifecycle Hooks)
+- ✅ 30+ 内置事件
+- ✅ **完善的 Hook 事件系统** - 新增功能相关钩子
+- ✅ 20+ 钩子点
 
-### ✅ **开发者工具 (80%)**
-- [x] ESLint + Prettier 代码规范
-- [x] Vitest 测试框架 (单元/集成/E2E)
-- [x] JSDoc 自动文档生成
-- [x] Husky Git Hooks
-- [x] Webpack 5 构建优化
-- [x] ESM + UMD 双模块输出
+### ✅ **开发者工具 (90%)**
+- ✅ ESLint + Prettier 代码规范
+- ✅ Vitest 测试框架 (单元/集成/E2E)
+- ✅ JSDoc 自动文档生成 - **符合 JSDoc 规范的完整注释**
+- ✅ Husky Git Hooks
+- ✅ Webpack 5 构建优化
+- ✅ ESM + UMD 双模块输出
+- ✅ **丰富的 Examples 示例** - 大量新增示例代码
 - [ ] Playground 在线演示 - *计划中*
 
 ---
 
 ## 🔮 待开发功能
 
-### 🎯 **短期目标 (v1.1.0 - Q2 2026)**
+### 🎯 **短期目标 (v1.2.0 - Q3 2026)**
 
-#### 🔍 **筛选功能增强**
-- [ ] 列筛选器 (Column Filter)
-  - [ ] 文本搜索过滤
-  - [ ] 数值范围过滤
-  - [ ] 日期区间过滤
-  - [ ] 多选列表过滤
-  - [ ] 自定义筛选条件
+#### 🔍 **搜索替换插件**
+- [ ] 搜索替换插件 (SearchReplacePlugin)
+  - [ ] 全文搜索功能
+  - [ ] 正则表达式搜索
+  - [ ] 替换功能（单个/全部）
+  - [ ] 大小写敏感选项
+  - [ ] 单元格范围限制搜索
 
-#### 📊 **图表系统升级**
-- [ ] 更多图表类型
-  - [ ] 折线图 (Line Chart)
-  - [ ] 饼图 (Pie Chart)
-  - [ ] 面积图 (Area Chart)
-  - [ ] 雷达图 (Radar Chart)
-- [ ] 图表交互
-  - [ ] Tooltip 悬浮提示
-  - [ ] 点击钻取 (Drill-down)
-  - [ ] 动态数据绑定
+#### 🎨 **数据验证与样式打通**
+- [ ] 数据验证与列类型样式集成
+  - [ ] 验证失败时的视觉反馈增强
+  - [ ] 基于验证状态的动态样式
+  - [ ] 自定义验证提示样式
+  - [ ] 列类型特定的验证规则预设
+
+### 🚀 **中期目标 (v2.0.0 - Q4 2026)**
+
+#### 💻 **TypeScript 支持**
+- [ ] TypeScript 类型定义
+  - [ ] 完整的 .d.ts 类型声明文件
+  - [ ] 泛型支持
+  - [ ] 类型导出
+  - [ ] TS 示例代码
+
+#### 🔌 **插件按需加载**
+- [ ] 插件懒加载机制
+  - [ ] 动态导入 (Dynamic Import)
+  - [ ] 插件依赖管理
+  - [ ] 按需加载配置
+  - [ ] 插件包体积优化
 
 #### 🎨 **样式系统增强**
 - [ ] 渐变背景 (Gradient Backgrounds)
