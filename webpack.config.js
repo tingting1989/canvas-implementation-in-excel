@@ -18,7 +18,7 @@ module.exports = {
             "@render": path.resolve(__dirname, "src/render"),
             "@plugin": path.resolve(__dirname, "src/plugins"),
         },
-        extensions: [".js"],
+        extensions: [".js", ".ts", ".tsx"],
     },
     module: {
         rules: [
@@ -26,6 +26,14 @@ module.exports = {
                 test: /\.js$/,
                 exclude: /node_modules/,
                 use: "babel-loader",
+            },
+            {
+                test: /\.tsx?$/,
+                exclude: /node_modules/,
+                use: [{
+                    loader: "babel-loader",
+                    options: { presets: ["@babel/preset-typescript"] },
+                }],
             },
             {
                 test: /\.css$/,

@@ -20,12 +20,20 @@ const shared = {
             "@render": path.resolve(__dirname, "src/render"),
             "@plugin": path.resolve(__dirname, "src/plugins"),
         },
-        extensions: [".js"],
+        extensions: [".js",'.ts', '.tsx'],
     },
     module: {
         rules: [
             { test: /\.js$/, exclude: /node_modules/, use: "babel-loader" },
             { test: /\.css$/, use: ["style-loader", "css-loader"] },
+            {
+                test: /\.tsx?$/,
+                exclude: /node_modules/,
+                use: [{
+                    loader: 'babel-loader',
+                    options: { presets: ['@babel/preset-typescript'] }
+                }]
+            }
         ],
     },
     optimization: { minimize: true, minimizer: [new TerserPlugin()] },
