@@ -13,12 +13,13 @@
     ],
     "exports": {
         ".": {
+            "types": "./dist/types/api/index.d.ts",
             "import": "./dist/canvas-sheet.esm.mjs",
             "require": "./dist/canvas-sheet.umd.js"
         },
         "./package.json": "./package.json"
     },
-    "types": "./dist/types/index.d.ts",
+    "types": "./dist/types/api/index.d.ts",
     "engines": {
         "node": ">=16.0.0",
         "npm": ">=8.0.0"
