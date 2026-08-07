@@ -1,6 +1,7 @@
 ﻿import { functionRegistry } from "./functions/index.js";
 import { isNumber, isString } from "../utils/helper.js";
-import { ERROR_CODE, errorHandler } from "../core/ErrorHandler.js";
+import {  errorHandler } from "../core/ErrorHandler.js";
+import {ERROR_CODE} from "../constants/errorCodes.js";
 
 /**
  * 公式求值器 (Formula Evaluator)

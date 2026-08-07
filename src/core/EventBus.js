@@ -1,4 +1,6 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+﻿import { errorHandler} from "./ErrorHandler.js";
+import { EVENT_FLOW_REGISTRY } from "../constants/sheetEvents.js";
+import {ERROR_CODE} from "../constants/errorCodes.js";
 
 /**
  * 事件信封结构
@@ -14,7 +16,7 @@
  * @property {*}      payload   - 业务数据（纯数据，不含 Sheet 对象引用）
  */
 
-import { EVENT_FLOW_REGISTRY } from "../constants/sheetEvents.js";
+
 
 export class EventBus {
     #listeners = new Map();

@@ -69,7 +69,8 @@
  */
 
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 export class ChartCacheManager {
     /** @type {number} 全局版本号，每次数据变化时递增 */

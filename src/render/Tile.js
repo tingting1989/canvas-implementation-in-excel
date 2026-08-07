@@ -1,4 +1,4 @@
-import { CONFIG } from "../constants/config";
+import { CONFIG } from "../constants/config.js";
 
 /**
  * 瓦片（Tile）—— 瓦片渲染架构的基本单元

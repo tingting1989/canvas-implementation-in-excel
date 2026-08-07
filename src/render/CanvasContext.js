@@ -34,10 +34,6 @@
  * @module render/CanvasContext
  */
 
-/* eslint-disable no-unused-vars */
-
-import { errorHandler } from "@/core/ErrorHandler";
-
 export class CanvasContext {
     /**
      * 获取 Canvas 元素引用

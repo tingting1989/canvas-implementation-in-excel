@@ -1,5 +1,5 @@
 ﻿import { isFunction, isNumber, isObject } from "../../utils/helper.js";
-import { CONFIG } from "@/constants/config";
+import { CONFIG } from "../../constants/config";
 
 /**
  * 配置应用器

@@ -59,8 +59,8 @@
  * @see TileRenderer 瓦片渲染器，创建 CellRenderContext 实例
  */
 
-import { CONFIG } from "@/constants/config";
-import { calcCenteredTextY, getAreaCenter } from "@/utils/canvasUtils";
+import { CONFIG } from "../constants/config.js";
+import { calcCenteredTextY } from "../utils/canvasUtils.js";
 
 export class CellRenderContext {
     /**

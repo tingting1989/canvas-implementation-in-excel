@@ -1,8 +1,9 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { BaseValidator } from "./BaseValidator.js";
+﻿import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 import { complexityAnalyzer, COMPLEXITY_THRESHOLD } from "../ComplexityAnalyzer.js";
 import { getValidationCache } from "../ValidationCache.js";
+import {errorHandler} from "../../../core/ErrorHandler";
+import {ERROR_CODE} from "../../../constants/errorCodes.js";
 
 /**
  * ═══════════════════════════════════════════════════════════════

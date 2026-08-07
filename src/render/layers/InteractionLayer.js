@@ -1,8 +1,8 @@
 import { BaseLayer } from "../BaseLayer.js";
-import { CONFIG } from "../../constants/config";
-import { UI_CONFIG } from "../../constants/uiConfig";
-import { HIT_TYPE } from "../../constants/hitType";
-import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
+import { CONFIG } from "../../constants/config.js";
+import { UI_CONFIG } from "../../constants/uiConfig.js";
+import { HIT_TYPE } from "../../constants/hitType.js";
+import { LAYER_Z_INDEX } from "../../constants/layerZIndex.js";
 
 export class InteractionLayer extends BaseLayer {
     #resizeLine = null;

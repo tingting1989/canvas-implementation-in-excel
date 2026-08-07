@@ -66,7 +66,6 @@
 
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isString } from "../utils/helper.js";
-
 import { DateTimeParser } from "../utils/DateTimeParser.js";
 import { SORT_ORDER } from "../constants/enums/SortOrder.js";
 

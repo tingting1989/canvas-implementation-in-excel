@@ -1,4 +1,4 @@
-import { WebComponent } from "@/core/WebComponent";
+import { WebComponent } from "../../core/WebComponent.js";
 import { FORMULA_BAR_EVENTS } from "./formulaBarEvents.js";
 
 /**

@@ -8,5 +8,4 @@
 
 export { SortState } from "./SortState.js";
 export { SortEngine } from "./SortEngine.js";
-export { SortStrategy } from "./SortStrategy.js";
 export { SortUIManager } from "./SortUIManager.js";

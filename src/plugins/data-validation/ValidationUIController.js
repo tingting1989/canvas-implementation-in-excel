@@ -1,5 +1,6 @@
-import { colToIndex } from "@/utils/cellRef.js";
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { colToIndex } from "../../utils/cellRef.js";
+import {errorHandler} from "../../core/ErrorHandler.js";
+import {ERROR_CODE} from "../../constants/errorCodes.js";
 import { getValidationCache } from "./ValidationCache.js";
 
 /**

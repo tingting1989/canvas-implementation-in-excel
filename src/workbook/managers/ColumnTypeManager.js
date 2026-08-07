@@ -6,9 +6,11 @@ import {
     formatCellValue as formatCellValueInternal,
     parseCellValue as parseCellValueInternal,
     validateCellValue as validateCellValueInternal,
-} from "../../types";
+} from "../../types/index.js";
 import { isFunction, isObject } from "../../utils/helper.js";
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+
 
 /**
  * 列类型管理器

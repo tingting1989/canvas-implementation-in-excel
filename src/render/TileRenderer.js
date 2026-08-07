@@ -1,4 +1,4 @@
-import { CONFIG } from "../constants/config";
+import { CONFIG } from "../constants/config.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { CellRenderContext } from "../types/CellRenderContext.js";
 import { FONT_STYLE } from "../constants/enums/FontStyle.js";

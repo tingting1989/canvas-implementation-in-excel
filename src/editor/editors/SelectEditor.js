@@ -81,7 +81,6 @@
  * ```
  */
 import { CellEditor } from "./CellEditor.js";
-import { CONFIG } from "@/constants/config";
 
 export class SelectEditor extends CellEditor {
     /**
@@ -225,9 +224,6 @@ export class SelectEditor extends CellEditor {
         }
     }
 
-    getEditorCssClass() {
-        return "cs-cell-editor--select";
-    }
 
     /**
      * 重写：提交前的选项验证

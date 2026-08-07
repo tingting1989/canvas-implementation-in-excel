@@ -1,7 +1,7 @@
 ﻿import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { EventBus } from "../core/EventBus.js";
 
-import { ChunkedCellStore, SelectionManager, HistoryStack, MergeManager } from "@/model";
+import { ChunkedCellStore, SelectionManager, HistoryStack, MergeManager } from "../model/index.js";
 import { RowColManager } from "../model/grid/RowColManager.js";
 import { RowColSync } from "../model/grid/RowColSync.js";
 import { CONFIG } from "../constants/config";

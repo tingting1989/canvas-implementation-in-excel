@@ -1,6 +1,6 @@
-import { WebComponent } from "@/core/WebComponent";
+import { WebComponent } from "../../core/WebComponent.js";
 import { SHEET_TAB_EVENTS } from "./sheetTabEvents.js";
-import { EVENT_NAMES } from "@/constants/eventNames";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
 
 const CONTEXT_MENU_ITEMS = [
     { action: "rename", label: "重命名" },

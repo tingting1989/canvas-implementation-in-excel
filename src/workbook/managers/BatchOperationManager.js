@@ -1,4 +1,4 @@
-import { BatchCommand } from "../../model";
+import { BatchCommand } from "../../model/command/BatchCommand.js";
 
 /**
  * 批量操作管理器

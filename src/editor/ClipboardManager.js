@@ -15,7 +15,8 @@
  * - 由 TileRenderer 通过 getCellContent() 查询并渲染
  */
 
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import {ERROR_CODE} from "../constants/errorCodes.js";
 
 /**
  * 富内容管理：

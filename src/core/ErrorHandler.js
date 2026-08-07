@@ -1,5 +1,5 @@
-import { ERROR_LEVEL, ERROR_CODE } from "@/constants/errorCodes";
-import { isFunction } from "@/utils/helper";
+import { ERROR_LEVEL } from "../constants/errorCodes.js";
+import { isFunction } from "../utils/helper.js";
 
 /**
  * 统一错误处理器
@@ -255,4 +255,3 @@ class ErrorHandler {
 /** 全局单例 */
 export const errorHandler = new ErrorHandler();
 
-export { ERROR_LEVEL, ERROR_CODE };

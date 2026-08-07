@@ -1,5 +1,5 @@
-﻿import { stylePool, DEFAULT_STYLE_ID } from "../../model/styles";
-import { Cell } from "../../model";
+﻿import { stylePool, DEFAULT_STYLE_ID } from "../../model/styles/index.js";
+import { Cell } from "../../model/store/Cell.js";
 import { StyleChangeRecorder, StyleChangeCommand } from "../../model/command/StyleChangeRecorder.js";
 import { STYLE_SCOPE } from "../../constants/enums/StyleScope.js";
 import { themeStyleProvider } from "../../theme/index.js";

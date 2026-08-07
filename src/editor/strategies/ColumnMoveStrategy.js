@@ -1,8 +1,8 @@
 ﻿import { EventStrategy } from "./EventStrategy.js";
-import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
-import { HIT_TYPE } from "@/constants/hitType";
-import { DELEGATE_KEYS } from "@/constants/eventNames.js";
-import { HOOKS } from "@/constants/hookNames.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { HIT_TYPE } from "../../constants/hitType.js";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { HOOKS } from "../../constants/hookNames.js";
 
 /**
  * 列拖拽移动策略 (Column Move Strategy)

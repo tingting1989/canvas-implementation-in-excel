@@ -1,4 +1,5 @@
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import {errorHandler} from "../../core/ErrorHandler.js";
+import {ERROR_CODE} from "../../constants/errorCodes.js";
 import { ValidationRule } from "./ValidationRule.js";
 
 const PASTE_OPTIONS = Object.freeze({

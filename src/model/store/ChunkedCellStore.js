@@ -1,5 +1,5 @@
 import { Chunk } from "./Chunk.js";
-import { CONFIG } from "../../constants/config";
+import { CONFIG } from "../../constants/config.js";
 
 /**
  * 分块单元格存储（Chunked Cell Store）

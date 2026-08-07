@@ -11,9 +11,9 @@ import { RowMovePlugin } from "./RowMovePlugin.js";
 import { FreezePlugin } from "./FreezePlugin.js";
 import { FormulaPlugin } from "./FormulaPlugin.js";
 import { SortPlugin } from "./SortPlugin.js";
-import { DataValidationPlugin } from "@/plugins/data-validation";
-import { ChartPlugin } from "@/plugins/ChartPlugin";
-import { FilterPlugin } from "@/plugins/FilterPlugin";
+import { DataValidationPlugin } from "./data-validation/DataValidationPlugin.js";
+import { ChartPlugin } from "./ChartPlugin.js";
+import { FilterPlugin } from "./FilterPlugin.js";
 
 const builtinPlugins = [
     ["autoFill", AutoFillPlugin],

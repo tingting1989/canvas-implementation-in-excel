@@ -19,12 +19,12 @@
  * @module render/HeaderRenderer
  */
 
-import { CONFIG } from "@/constants/config";
-import { calcCenteredTextY } from "@/utils/canvasUtils";
+import { CONFIG } from "../constants/config.js";
+import { calcCenteredTextY } from "../utils/canvasUtils.js";
 import { HeaderLayoutBuilder } from "./header/HeaderLayoutBuilder.js";
 import { HeaderPainter } from "./header/HeaderPainter.js";
 import { FrozenBoundaryInfo } from "./header/models/FrozenBoundaryInfo.js";
-import { FONT_STYLE } from "@/constants/enums/FontStyle.js";
+import { FONT_STYLE } from "../constants/enums/FontStyle.js";
 
 /** 默认字体回退值 */
 const DEFAULT_FONT = `${CONFIG.DEFAULT_FONT_SIZE}px ${CONFIG.DEFAULT_FONT_FAMILY}`;

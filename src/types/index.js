@@ -295,8 +295,9 @@ import { BUILTIN_RENDERER_TYPE_REGISTRY } from "./renderers/index.js";
 // 导入工具依赖
 // ════════════════════════════════════════════
 
-import { isFunction } from "@/utils/helper";
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler";
+import { isFunction } from "../utils/helper.js";
+import { errorHandler} from "../core/ErrorHandler.js";
+import {ERROR_CODE} from "../constants/errorCodes.js";
 
 // ════════════════════════════════════════════
 // 核心类：类型注册表（Type Registry）

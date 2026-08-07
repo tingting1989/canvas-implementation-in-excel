@@ -21,10 +21,10 @@ import { UI_CONFIG } from "./uiConfig.js";
 import { CHART_CONFIG } from "./chartConfig.js";
 import { SORT_CONFIG } from "./sortConfig.js";
 import { CELL_TYPE_CONFIG } from "./cellTypeConfig.js";
-import { STYLE_LEVEL } from "@/constants/styleLevel";
-import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
-import { HIT_TYPE } from "@/constants/hitType";
-import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
+import { STYLE_LEVEL } from "./styleLevel.js";
+import { LAYER_Z_INDEX } from "./layerZIndex.js";
+import { HIT_TYPE } from "./hitType.js";
+import { STRATEGY_PRIORITY } from "./strategyPriority.js";
 
 export const CONFIG = Object.freeze({
     ...CORE_CONFIG,

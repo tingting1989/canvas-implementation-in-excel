@@ -250,6 +250,9 @@ export const ERROR_CODE = Object.freeze({
     /** 通用警告 */
     GENERIC_WARN: "GENERIC_WARN",
 
+    /** 通用调试日志 */
+    DEBUG_LOG: "DEBUG_LOG",
+
     // ── 主题 ──
     /** 主题 - 从 localStorage 加载失败 */
     THEME_STORAGE_LOAD_FAILED: "THEME_STORAGE_LOAD_FAILED",

@@ -3,7 +3,7 @@ import { FilterState } from "./filter/FilterState.js";
 import { FilterUIManager } from "./filter/FilterUIManager.js";
 import { FilterStrategy } from "./filter/FilterStrategy.js";
 import { FilterIconRenderer } from "./filter/FilterIconRenderer.js";
-import { errorHandler } from "@/core";
+import { errorHandler } from "../core/ErrorHandler.js";
 
 /**
  * 筛选插件

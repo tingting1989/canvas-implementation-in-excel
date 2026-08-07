@@ -1,5 +1,6 @@
-﻿import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
-import { Scheduler } from "@/state/Scheduler";
+﻿import { errorHandler } from "../core/ErrorHandler.js";
+import { Scheduler } from "./Scheduler.js";
+import {ERROR_CODE} from "../constants/errorCodes";
 
 /**
  * 响应式状态管理器

@@ -1,8 +1,9 @@
 import { stylePool } from "../../model/styles";
-import { Cell } from "@/model";
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import {Cell} from "../..//model/store/Cell.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 import { extractColumnTypeOptions } from "../../types/index.js";
 import { ISheet } from "../interfaces/ISheet.js";
+import {ERROR_CODE} from "../../constants/errorCodes.js";
 
 /**
  * 工作表元数据协调者

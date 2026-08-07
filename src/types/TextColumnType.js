@@ -28,7 +28,6 @@
  */
 
 import { BaseColumnType } from "./BaseColumnType.js";
-import { themeStyleProvider } from "../theme/index.js";
 
 export class TextColumnType extends BaseColumnType {
     /** @type {string} 类型名称标识 */

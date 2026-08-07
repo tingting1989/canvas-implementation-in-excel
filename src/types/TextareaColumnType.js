@@ -1,6 +1,5 @@
 import { BaseColumnType } from "./BaseColumnType.js";
-import { CONFIG } from "@/constants/config";
-import { themeStyleProvider } from "../theme/index.js";
+import { CONFIG } from "../constants/config.js";
 
 /**
  * 多行文本列类型（TextareaColumnType）

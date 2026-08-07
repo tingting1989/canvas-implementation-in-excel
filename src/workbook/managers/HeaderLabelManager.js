@@ -1,6 +1,6 @@
-import { CONFIG } from "@/constants/config";
-import { isFunction, isObject, isString } from "@/utils/helper";
-import { indexToCol } from "@/utils/cellRef";
+import { CONFIG } from "../../constants/config.js";
+import { isFunction, isObject, isString } from "../../utils/helper.js";
+import { indexToCol } from "../../utils/cellRef.js";
 
 /**
  * 表头标签管理器

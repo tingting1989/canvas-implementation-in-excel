@@ -1,4 +1,5 @@
-import { ERROR_CODE, errorHandler } from "@/core";
+import {  errorHandler } from "../core/ErrorHandler.js";
+import {ERROR_CODE} from "../constants/errorCodes.js";
 
 // requestAnimationFrame 兼容：优先使用浏览器原生 raf，否则降级为 16ms 的 setTimeout
 const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (fn) => setTimeout(fn, 16);

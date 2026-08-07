@@ -1,13 +1,13 @@
 import { Sheet } from "./Sheet.js";
-import { RenderEngine } from "@/render/RenderEngine";
-import { EditorManager } from "@/editor/EditorManager";
-import { EventHandler } from "@/core/EventHandler";
-import { isFunction, isObject } from "@/utils/helper";
-import { PluginManager } from "@/plugins";
-import { CONFIG } from "@/constants/config";
+import { RenderEngine } from "../render/RenderEngine.js";
+import { EditorManager } from "../editor/EditorManager.js";
+import { EventHandler } from "../core/EventHandler.js";
+import { isFunction, isObject } from "../utils/helper.js";
+import { PluginManager } from "../plugins/index.js";
+import { CONFIG } from "../constants/config.js";
 import { SettingsApplier } from "./managers/SettingsApplier.js";
-import { SHEET_EVENTS } from "@/constants/sheetEvents";
-import { HOOKS } from "@/constants/hookNames";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { HOOKS } from "../constants/hookNames.js";
 
 /**
  * 工作簿（Workbook）

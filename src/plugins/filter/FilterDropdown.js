@@ -1,5 +1,6 @@
 ﻿import { PopupPanel } from "../../ui/components/PopupPanel.js";
 import { NullValueHandler } from "./NullValueTypes.js";
+// 该导入必须在顶部导入
 import { VirtualValueList } from "./VirtualValueList.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 

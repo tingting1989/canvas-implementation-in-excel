@@ -1,6 +1,6 @@
-﻿import { WebComponent } from "@/core/WebComponent";
-import { EVENT_NAMES } from "@/constants/eventNames";
-import { NullValueHandler } from "@/plugins/filter/NullValueTypes";
+﻿import { WebComponent } from "../../core/WebComponent.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { NullValueHandler } from "../../plugins/filter/NullValueTypes.js";
 
 /**
  * 虚拟值列表组件

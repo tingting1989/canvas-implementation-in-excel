@@ -1,6 +1,6 @@
-import { MergeCommand, UnmergeCommand } from "@/model";
 import { ISheet } from "../interfaces/ISheet.js";
-
+import { MergeCommand } from "../../model/command/MergeCommand.js";
+import { UnmergeCommand } from "../../model/command/UnmergeCommand.js";
 /**
  * 工作表合并单元格协调者
  *

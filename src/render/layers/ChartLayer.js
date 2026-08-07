@@ -55,13 +55,15 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { LAYER_Z_INDEX } from "../../constants/layerZIndex.js";
 import { CONFIG } from "../../constants/config.js";
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { ChartRendererFactory } from "../chart/ChartRendererFactory.js";
 import { DataExtractor } from "../chart/DataExtractor.js";
 import { ChartCache } from "../chart/ChartCache.js";
 import { ChartCacheManager } from "../chart/ChartCacheManager.js";
 import { NativeChartRenderer } from "../chart/NativeChartRenderer.js";
 import { ViewportTransform } from "../ViewportTransform.js";
+
 
 /** @type {{top: number, right: number, bottom: number, left: number}} 图表内边距配置 */
 const PADDING = { top: 36, right: 20, bottom: 44, left: 56 };

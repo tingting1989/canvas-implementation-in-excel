@@ -11,7 +11,6 @@
  * @module formula/functions/utils/matching
  */
 
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { _isBlank, _toNum } from "./helpers.js";
 
 /**

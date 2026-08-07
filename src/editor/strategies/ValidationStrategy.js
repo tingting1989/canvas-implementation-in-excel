@@ -1,5 +1,5 @@
-import { EventStrategy } from "@/editor/strategies/EventStrategy";
-import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
+import { EventStrategy } from "./EventStrategy.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
 /**
  * 数据验证策略 (Data Validation Strategy)

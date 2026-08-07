@@ -1,6 +1,7 @@
-import { stylePool } from "../../model/styles";
+import { stylePool } from "../../model/styles/index.js";
 import { ISheet } from "../interfaces/ISheet.js";
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 /**
  * 工作表样式协调者

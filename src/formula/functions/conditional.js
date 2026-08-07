@@ -12,9 +12,10 @@
  * @module formula/functions/conditional
  */
 
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 import { isString } from "../../utils/helper.js";
-import { _flatten, _toNum, _validateArgs, _matchCriteria, _matchWildcard } from "./utils/index.js";
+import { _toNum, _validateArgs, _matchCriteria, _flatten } from "./utils/index.js";
+import {ERROR_CODE} from "../../constants/errorCodes.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）

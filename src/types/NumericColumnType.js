@@ -1,7 +1,6 @@
 import { BaseColumnType } from "./BaseColumnType.js";
 import { isNumber } from "../utils/helper.js";
 import { SORT_ORDER } from "../constants/enums/SortOrder.js";
-import { themeStyleProvider } from "../theme/index.js";
 
 /**
  * 数字列类型

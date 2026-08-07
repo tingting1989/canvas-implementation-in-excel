@@ -1,10 +1,13 @@
-﻿import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies";
-import { InteractionStrategy } from "@/editor/strategies/InteractionStrategy.js";
+﻿// import { MouseStrategy, KeyboardStrategy, ResizeStrategy } from "../editor/strategies.js";
+import { InteractionStrategy } from "../editor/strategies/InteractionStrategy.js";
 import { Hooks } from "./Hooks.js";
 import { HOOKS } from "../constants/hookNames.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
 import { RenderEngineCanvasContext } from "../render/RenderEngineCanvasContext.js";
+import {MouseStrategy} from "../editor/strategies/MouseStrategy.js";
+import { KeyboardStrategy } from "../editor/strategies/KeyboardStrategy.js";
+import { ResizeStrategy } from "../editor/strategies/ResizeStrategy.js";
 
 /**
  * 事件处理器

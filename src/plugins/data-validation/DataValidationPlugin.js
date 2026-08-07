@@ -1,4 +1,5 @@
-﻿import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+﻿import {errorHandler} from "../../core/ErrorHandler.js";
+import {ERROR_CODE} from "../../constants/errorCodes.js";
 import { BasePlugin } from "../BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
@@ -6,7 +7,7 @@ import { ValidationUIController } from "./ValidationUIController.js";
 import { ValidationPortalManager } from "./ValidationPortalManager.js";
 import { ValidationDirtyFlagManager } from "./ValidationDirtyFlagManager.js";
 import { CopyPasteHandler, PASTE_OPTIONS } from "./CopyPasteHandler.js";
-import { initValidationCache, getValidationCache } from "./ValidationCache.js";
+import { initValidationCache } from "./ValidationCache.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";

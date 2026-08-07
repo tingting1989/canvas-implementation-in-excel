@@ -16,7 +16,7 @@
 
 import { BaseColumnType } from "../BaseColumnType.js";
 import { CONFIG } from "../../constants/config.js";
-import { isUndefined } from "@/utils";
+import { isUndefined } from "../../utils/index.js";
 
 export class StarRatingType extends BaseColumnType {
     /**

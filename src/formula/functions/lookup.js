@@ -10,9 +10,11 @@
  * @module formula/functions/lookup
  */
 
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+
+import {ERROR_CODE} from "../../constants/errorCodes.js";
 import { isString } from "../../utils/helper.js";
 import { _flatten, _toNum, _validateArgs } from "./utils/index.js";
+import {errorHandler} from "../../core/ErrorHandler";
 
 /**
  * 函数定义集合（导出给主注册表使用）
