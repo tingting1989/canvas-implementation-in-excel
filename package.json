@@ -25,10 +25,12 @@
         "npm": ">=8.0.0"
     },
     "scripts": {
-        "types": "tsc --emitDeclarationOnly",
+        "types": "tsc --emitDeclarationOnly && node scripts/fix-dts-paths.js",
         "dev": "node --max-old-space-size=8192 ./node_modules/webpack/bin/webpack.js serve --mode development",
         "build": "node --max-old-space-size=8192 ./node_modules/webpack/bin/webpack.js --mode production",
-        "build:lib": "webpack --config webpack.lib.config.js && tsc --emitDeclarationOnly",
+        "build:lib": "webpack --config webpack.lib.config.js && tsc --emitDeclarationOnly && node scripts/fix-dts-paths.js",
+        "typecheck": "tsc --noEmit",
+        "typecheck:strict": "tsc --noEmit --strict",
         "lint": "npm run lint:js",
         "lint:js": "eslint . --fix",
         "format": "prettier --write src/",
