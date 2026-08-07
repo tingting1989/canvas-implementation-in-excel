@@ -254,4 +254,3 @@ class ErrorHandler {
 
 /** 全局单例 */
 export const errorHandler = new ErrorHandler();
-

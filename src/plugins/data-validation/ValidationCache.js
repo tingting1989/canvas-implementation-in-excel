@@ -27,8 +27,8 @@
  * @version 3.0.0
  */
 
-import {errorHandler} from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { isString } from "../../utils/helper.js";
 
 /**

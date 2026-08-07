@@ -77,7 +77,7 @@ import { FormulaEvaluator } from "./FormulaEvaluator.js"; // 公式求值器
 import { isString } from "../utils/helper.js"; // 类型检查工具
 import { functionRegistry } from "./functions/index.js"; // 函数注册中心
 import { errorHandler } from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes.js"; // 错误处理系统
+import { ERROR_CODE } from "../constants/errorCodes.js"; // 错误处理系统
 
 export class FormulaEngine {
     /**

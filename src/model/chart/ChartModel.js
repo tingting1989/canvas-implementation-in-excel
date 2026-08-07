@@ -25,9 +25,7 @@
  * @property {ChartStyle} [style] - 样式配置
  */
 
-
-
-import {CHART_TYPE} from "../../constants/enums/ChartType.js";
+import { CHART_TYPE } from "../../constants/enums/ChartType.js";
 
 /** 默认系列颜色数组（9色） */
 const DEFAULT_COLORS = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];

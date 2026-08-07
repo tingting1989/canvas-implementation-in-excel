@@ -6,7 +6,7 @@ import { SortEngine } from "./sort/SortEngine.js";
 import { SortStrategy } from "../editor/strategies/SortStrategy.js";
 import { SortUIManager } from "./sort/SortUIManager.js";
 import { errorHandler } from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * 排序插件（Sort Plugin）

@@ -1,5 +1,4 @@
-﻿import {CONFIG} from "../../constants/config.js";
-
+﻿import { CONFIG } from "../../constants/config.js";
 
 /**
  * 行列管理器类

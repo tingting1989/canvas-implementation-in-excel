@@ -1,5 +1,5 @@
 import { errorHandler } from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * 插件基类

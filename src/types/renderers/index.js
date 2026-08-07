@@ -343,7 +343,7 @@ import { SparklineType } from "./SparklineType.js";
  */
 import { ColorPreviewType } from "./ColorPreviewType.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 // ════════════════════════════════════════════
 // 导出渲染器类（供外部直接使用）

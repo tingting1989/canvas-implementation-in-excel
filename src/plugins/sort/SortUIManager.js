@@ -27,7 +27,6 @@ import { CONFIG } from "../../constants/config.js";
  * - 响应式布局（根据列宽自适应位置）
  */
 
-
 export class SortUIManager {
     static ARROW_SIZE = 8;
     static ACTIVE_COLOR = "#1890ff";

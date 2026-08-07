@@ -1,5 +1,5 @@
-﻿import {errorHandler} from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { BasePlugin } from "../BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";

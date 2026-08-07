@@ -224,7 +224,6 @@ export class SelectEditor extends CellEditor {
         }
     }
 
-
     /**
      * 重写：提交前的选项验证
      *

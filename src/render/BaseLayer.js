@@ -1,5 +1,5 @@
-﻿import { errorHandler} from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes.js";
+﻿import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * 图层基类 (BaseLayer)

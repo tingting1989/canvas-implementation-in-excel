@@ -5,7 +5,7 @@ import { HOOKS } from "../constants/hookNames.js";
 import { SHEET_EVENTS } from "../constants/sheetEvents.js";
 import { RenderEngineViewportService } from "../render/RenderEngineViewportService.js";
 import { RenderEngineCanvasContext } from "../render/RenderEngineCanvasContext.js";
-import {MouseStrategy} from "../editor/strategies/MouseStrategy.js";
+import { MouseStrategy } from "../editor/strategies/MouseStrategy.js";
 import { KeyboardStrategy } from "../editor/strategies/KeyboardStrategy.js";
 import { ResizeStrategy } from "../editor/strategies/ResizeStrategy.js";
 

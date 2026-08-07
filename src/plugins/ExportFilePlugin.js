@@ -1,14 +1,14 @@
 ﻿import ExcelJS from "exceljs";
 import JSZip from "jszip";
-import {BasePlugin} from "./BasePlugin.js";
-import {indexToCol} from "../utils/cellRef";
-import {stylePool} from "../model/styles/index.js";
-import {HOOKS} from "../constants/hookNames.js";
-import {pixelToExcelHeight, pixelToExcelWidth} from "../utils/excelUnits.js";
-import {StyleConverter, toArgb} from "../shared/StyleConverter.js";
-import {errorHandler} from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes.js";
-import {CONFIG} from "../constants/config.js";
+import { BasePlugin } from "./BasePlugin.js";
+import { indexToCol } from "../utils/cellRef";
+import { stylePool } from "../model/styles/index.js";
+import { HOOKS } from "../constants/hookNames.js";
+import { pixelToExcelHeight, pixelToExcelWidth } from "../utils/excelUnits.js";
+import { StyleConverter, toArgb } from "../shared/StyleConverter.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
+import { CONFIG } from "../constants/config.js";
 /**
  * @fileoverview 导出文件插件
  *
@@ -50,7 +50,6 @@ import {CONFIG} from "../constants/config.js";
  * @author Canvas-Sheet Team
  * @version 2.1.0 (优化版)
  */
-
 
 // ============================================================================
 // [Section 1] 常量与配置
@@ -221,7 +220,7 @@ const DEFAULT_OPTIONS = {
  */
 function buildOptions(format, userOptions) {
     const preset = FORMAT_PRESETS[format] || FORMAT_PRESETS.csv;
-    return {...DEFAULT_OPTIONS, ...preset, ...userOptions};
+    return { ...DEFAULT_OPTIONS, ...preset, ...userOptions };
 }
 
 /**
@@ -387,7 +386,7 @@ function getDataRange(sheet) {
         for (const chunk of chunks) {
             // 如果是 Map.entries() 格式 [key, chunk]，解构获取 chunk
             const actualChunk = Array.isArray(chunk) ? chunk[1] : chunk;
-            for (const {row, col} of actualChunk.iterate()) {
+            for (const { row, col } of actualChunk.iterate()) {
                 if (row > maxRow) maxRow = row;
                 if (col > maxCol) maxCol = col;
             }
@@ -397,7 +396,7 @@ function getDataRange(sheet) {
         return null;
     }
 
-    return maxRow >= 0 ? {startRow: 0, startCol: 0, endRow: maxRow, endCol: maxCol} : null;
+    return maxRow >= 0 ? { startRow: 0, startCol: 0, endRow: maxRow, endCol: maxCol } : null;
 }
 
 /**
@@ -424,7 +423,7 @@ function getDataRange(sheet) {
 function buildRows(sheet, opts, range) {
     if (!range) return [];
 
-    const {startRow, startCol, endRow, endCol} = range;
+    const { startRow, startCol, endRow, endCol } = range;
     const rows = [];
 
     if (opts.columnHeaders) {
@@ -465,7 +464,7 @@ function buildRows(sheet, opts, range) {
  */
 function toBlob(str, opts) {
     const content = opts.bom && opts.encoding === "utf-8" ? "\uFEFF" + str : str;
-    return new Blob([content], {type: `${opts.mimeType};charset=${opts.encoding}`});
+    return new Blob([content], { type: `${opts.mimeType};charset=${opts.encoding}` });
 }
 
 /**
@@ -584,7 +583,7 @@ function getMergedCellStyle(sheet, row, col) {
         if (typeof sheet.getDefaultStyle === "function") {
             const defaultStyle = sheet.getDefaultStyle();
             if (defaultStyle) {
-                mergedStyle = {...defaultStyle};
+                mergedStyle = { ...defaultStyle };
             }
         }
 
@@ -596,10 +595,10 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const colStyle = stylePool.getStyle(colStyleId);
                 if (colStyle) {
-                    mergedStyle = {...mergedStyle, ...colStyle};
+                    mergedStyle = { ...mergedStyle, ...colStyle };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列样式失败 (col: ${col}, styleId: ${colStyleId})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列样式失败 (col: ${col}, styleId: ${colStyleId})`, { error });
             }
         }
 
@@ -611,10 +610,10 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const rowStyle = stylePool.getStyle(rowStyleId);
                 if (rowStyle) {
-                    mergedStyle = {...mergedStyle, ...rowStyle};
+                    mergedStyle = { ...mergedStyle, ...rowStyle };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取行样式失败 (row: ${row}, styleId: ${rowStyleId})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取行样式失败 (row: ${row}, styleId: ${rowStyleId})`, { error });
             }
         }
 
@@ -639,10 +638,10 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const cellStyle = stylePool.getStyle(cellStyleId);
                 if (cellStyle) {
-                    mergedStyle = {...mergedStyle, ...cellStyle};
+                    mergedStyle = { ...mergedStyle, ...cellStyle };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取单元格样式失败 (${row},${col}, styleId: ${cellStyleId})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取单元格样式失败 (${row},${col}, styleId: ${cellStyleId})`, { error });
             }
         }
 
@@ -655,11 +654,11 @@ function getMergedCellStyle(sheet, row, col) {
                 if (cellTypeInstance && typeof cellTypeInstance.getDefaultStyle === "function") {
                     const typeDefaultStyle = cellTypeInstance.getDefaultStyle(mergedStyle);
                     if (typeDefaultStyle) {
-                        mergedStyle = {...mergedStyle, ...typeDefaultStyle};
+                        mergedStyle = { ...mergedStyle, ...typeDefaultStyle };
                     }
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列类型默认样式失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列类型默认样式失败 (${row},${col})`, { error });
             }
         }
 
@@ -671,10 +670,10 @@ function getMergedCellStyle(sheet, row, col) {
             try {
                 const cellProps = sheet.resolveCellProperties(row, col);
                 if (cellProps?.style) {
-                    mergedStyle = {...mergedStyle, ...cellProps.style};
+                    mergedStyle = { ...mergedStyle, ...cellProps.style };
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取动态单元格属性失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取动态单元格属性失败 (${row},${col})`, { error });
             }
         }
 
@@ -688,11 +687,11 @@ function getMergedCellStyle(sheet, row, col) {
                 if (cfStyleId !== undefined && cfStyleId !== null) {
                     const cfStyle = stylePool.getStyle(cfStyleId);
                     if (cfStyle) {
-                        mergedStyle = {...mergedStyle, ...cfStyle};
+                        mergedStyle = { ...mergedStyle, ...cfStyle };
                     }
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取条件格式样式失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取条件格式样式失败 (${row},${col})`, { error });
             }
         }
 
@@ -705,11 +704,11 @@ function getMergedCellStyle(sheet, row, col) {
                 if (dbStyleId !== undefined && dbStyleId !== null) {
                     const dbStyle = stylePool.getStyle(dbStyleId);
                     if (dbStyle) {
-                        mergedStyle = {...mergedStyle, ...dbStyle};
+                        mergedStyle = { ...mergedStyle, ...dbStyle };
                     }
                 }
             } catch (error) {
-                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取数据绑定样式失败 (${row},${col})`, {error});
+                errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取数据绑定样式失败 (${row},${col})`, { error });
             }
         }
 
@@ -720,7 +719,7 @@ function getMergedCellStyle(sheet, row, col) {
 
         return null;
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `样式提取过程异常 (${row},${col})`, {error});
+        errorHandler.handle(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `样式提取过程异常 (${row},${col})`, { error });
 
         return null;
     }
@@ -808,7 +807,7 @@ function calculateNestedHeaderWidth(sheet) {
  * @requires sheet.getNestedHeaderRowCount() 方法可用
  * @requires sheet.getNestedColHeader(rowIndex, col) 方法可用
  */
-function writeNestedHeaders({worksheet, sheet, opts, range}) {
+function writeNestedHeaders({ worksheet, sheet, opts, range }) {
     const nestedHeaders = sheet.nestedHeaders;
 
     if (!Array.isArray(nestedHeaders) || nestedHeaders.length === 0) {
@@ -868,7 +867,7 @@ function writeNestedHeaders({worksheet, sheet, opts, range}) {
  * @param {number} context.startRow - 起始写入行号（Excel 行号，1-based）
  * @returns {number} 下一行应写入的行号
  */
-function writeColumnHeaders({worksheet, sheet, opts, range, startRow}) {
+function writeColumnHeaders({ worksheet, sheet, opts, range, startRow }) {
     if (!opts.columnHeaders) return startRow;
 
     const headerRow = worksheet.getRow(startRow + 1);
@@ -890,7 +889,7 @@ function writeColumnHeaders({worksheet, sheet, opts, range, startRow}) {
                 try {
                     customStyle = stylePool.getStyle(colStyleId);
                 } catch (error) {
-                    errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列头样式失败 (col: ${c}, styleId: ${colStyleId})`, {error});
+                    errorHandler.warn(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `获取列头样式失败 (col: ${c}, styleId: ${colStyleId})`, { error });
                 }
             }
 
@@ -947,7 +946,7 @@ function writeColumnHeaders({worksheet, sheet, opts, range, startRow}) {
  * @param {number} context.dataStartRow - 数据起始行号（Excel 行号，1-based）
  * @returns {void}
  */
-function writeDataCells({worksheet, sheet, opts, range, dataStartRow}) {
+function writeDataCells({ worksheet, sheet, opts, range, dataStartRow }) {
     for (let r = range.startRow; r <= range.endRow; r += 1) {
         const excelRow = worksheet.getRow(dataStartRow + (r - range.startRow) + 1);
         let colIndex = 1;
@@ -1025,12 +1024,12 @@ function writeDataCells({worksheet, sheet, opts, range, dataStartRow}) {
                             pattern: "solid",
 
                             // 浅灰色背景
-                            fgColor: {argb: "F2F2F2"},
-                            bgColor: {argb: "F2F2F2"},
+                            fgColor: { argb: "F2F2F2" },
+                            bgColor: { argb: "F2F2F2" },
                         };
 
                         // 灰色文字
-                        excelCell.font = {color: {argb: "999999"}};
+                        excelCell.font = { color: { argb: "999999" } };
                     }
                 }
             }
@@ -1079,7 +1078,7 @@ function writeDataCells({worksheet, sheet, opts, range, dataStartRow}) {
  * // 假设 canvas-sheet 中 B4:C4 是合并的
  * // 此函数会在 Excel 中创建对应的合并单元格
  */
-function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
+function exportDataMerges({ worksheet, sheet, range, dataStartRow }) {
     try {
         let mergeManager = null;
         let merges = [];
@@ -1094,7 +1093,7 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
             const possibleNames = ["merges", "mergedCells", "cellMerges", "mergeStore"];
             for (const name of possibleNames) {
                 if (sheet[name]) {
-                    mergeManager = {getMerges: () => sheet[name]};
+                    mergeManager = { getMerges: () => sheet[name] };
                     break;
                 }
             }
@@ -1161,7 +1160,7 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
             worksheet.mergeCells(excelStartRow, excelStartCol, excelEndRow, excelEndCol);
         }
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, {error});
+        errorHandler.handle(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, { error });
     }
 }
 
@@ -1188,12 +1187,12 @@ function exportDataMerges({worksheet, sheet, range, dataStartRow}) {
 function applyDefaultHeaderStyle(cell) {
     const targetCell = cell;
 
-    targetCell.font = {bold: true};
-    targetCell.alignment = {horizontal: "center", vertical: "middle"};
+    targetCell.font = { bold: true };
+    targetCell.alignment = { horizontal: "center", vertical: "middle" };
     targetCell.fill = {
         type: "pattern",
         pattern: "solid",
-        fgColor: {argb: HEADER_BG_COLOR},
+        fgColor: { argb: HEADER_BG_COLOR },
     };
     targetCell.border = createThinBorder();
 }
@@ -1249,10 +1248,10 @@ function applyCellStyle(cell, headerInfo, opts) {
  */
 function createThinBorder() {
     return {
-        top: {style: DEFAULT_BORDER_STYLE, color: {argb: DEFAULT_BORDER_COLOR}},
-        left: {style: DEFAULT_BORDER_STYLE, color: {argb: DEFAULT_BORDER_COLOR}},
-        bottom: {style: DEFAULT_BORDER_STYLE, color: {argb: DEFAULT_BORDER_COLOR}},
-        right: {style: DEFAULT_BORDER_STYLE, color: {argb: DEFAULT_BORDER_COLOR}},
+        top: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
+        left: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
+        bottom: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
+        right: { style: DEFAULT_BORDER_STYLE, color: { argb: DEFAULT_BORDER_COLOR } },
     };
 }
 
@@ -1331,7 +1330,7 @@ async function generateXlsx(sheet, opts, range, pluginInstance) {
             return await workbook.xlsx.writeBuffer();
         }
     } else {
-        adjustedRange = {...range};
+        adjustedRange = { ...range };
     }
 
     let context; // 声明在外部作用域，以便后续使用
@@ -1340,7 +1339,7 @@ async function generateXlsx(sheet, opts, range, pluginInstance) {
         const nestedHeaderWidth = calculateNestedHeaderWidth(sheet);
         adjustedRange.endCol = Math.max(adjustedRange.endCol, nestedHeaderWidth - 1);
 
-        context = {worksheet, sheet, opts, range: adjustedRange};
+        context = { worksheet, sheet, opts, range: adjustedRange };
 
         // 步骤1：写入嵌套表头
         writeNestedHeaders(context);
@@ -1359,7 +1358,7 @@ async function generateXlsx(sheet, opts, range, pluginInstance) {
         exportDataMerges(context);
     } else {
         // 无嵌套表头的简化流程
-        context = {worksheet, sheet, opts, range};
+        context = { worksheet, sheet, opts, range };
         context.startRow = excelRowIndex - 1;
         excelRowIndex = writeColumnHeaders(context);
         context.dataStartRow = excelRowIndex;
@@ -1570,7 +1569,7 @@ async function exportChartsToExcel(workbook, worksheet, sheet, pluginInstance) {
             exportedCount++;
             errorHandler.debug(`📊 [Excel Export] 图表 ${chart.id} 导出成功`);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CHART_EXPORT_ERROR, "图表导出失败", {error, chartId: chart?.id});
+            errorHandler.handle(ERROR_CODE.CHART_EXPORT_ERROR, "图表导出失败", { error, chartId: chart?.id });
         }
     }
 
@@ -1621,14 +1620,14 @@ export class ExportFilePlugin extends BasePlugin {
 
         const range = options.range
             ? {
-                startRow: options.range.startRow ?? 0,
-                startCol: options.range.startCol ?? 0,
-                endRow: options.range.endRow ?? 0,
-                endCol: options.range.endCol ?? 0,
-            }
+                  startRow: options.range.startRow ?? 0,
+                  startCol: options.range.startCol ?? 0,
+                  endRow: options.range.endRow ?? 0,
+                  endCol: options.range.endCol ?? 0,
+              }
             : getDataRange(sheet);
 
-        const result = {opts, range, sheet};
+        const result = { opts, range, sheet };
 
         if (!preset.isBinary) {
             const rows = buildRows(sheet, opts, range);
@@ -1700,24 +1699,24 @@ export class ExportFilePlugin extends BasePlugin {
         try {
             const result = this.#prepare(format, options);
             if (!result) {
-                this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {format, options, error: new Error("Sheet 无效或准备失败")});
+                this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error: new Error("Sheet 无效或准备失败") });
                 return null;
             }
 
-            const {opts} = result;
+            const { opts } = result;
             let blob;
 
             if (FORMAT_PRESETS[format]?.isBinary) {
                 const buffer = await generateXlsx(result.sheet, opts, result.range, this);
-                blob = new Blob([buffer], {type: opts.mimeType});
+                blob = new Blob([buffer], { type: opts.mimeType });
             } else {
                 blob = toBlob(result.str, opts);
             }
 
-            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, {format, options, result});
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { format, options, result });
             return blob;
         } catch (error) {
-            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {format, options, error});
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error });
             throw error;
         }
     }
@@ -1764,16 +1763,16 @@ export class ExportFilePlugin extends BasePlugin {
         try {
             const result = this.#prepare(format, options);
             if (!result) {
-                this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {format, options, error: new Error("Sheet 无效或准备失败")});
+                this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error: new Error("Sheet 无效或准备失败") });
                 return;
             }
 
-            const {opts} = result;
+            const { opts } = result;
             let blob;
 
             if (FORMAT_PRESETS[format]?.isBinary) {
                 const buffer = await generateXlsx(result.sheet, opts, result.range, this);
-                blob = new Blob([buffer], {type: opts.mimeType});
+                blob = new Blob([buffer], { type: opts.mimeType });
             } else {
                 blob = toBlob(result.str, opts);
             }
@@ -1781,9 +1780,9 @@ export class ExportFilePlugin extends BasePlugin {
             const filename = `${opts.filename}.${opts.fileExtension}`;
             triggerDownload(blob, filename);
 
-            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, {format, options, result, filename});
+            this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, { format, options, result, filename });
         } catch (error) {
-            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {format, options, error});
+            this.hooks?.runHooks(HOOKS.EXPORT_ERROR, { format, options, error });
             throw error;
         }
     }
@@ -1865,7 +1864,7 @@ export class ExportFilePlugin extends BasePlugin {
                 throw new Error("Cannot get chart layer");
             }
 
-            const {format = "png", quality = 1.0, scale = 2, rebuildHighQuality = false} = options;
+            const { format = "png", quality = 1.0, scale = 2, rebuildHighQuality = false } = options;
 
             let canvas;
             let useHighRes = false;
@@ -1879,7 +1878,7 @@ export class ExportFilePlugin extends BasePlugin {
                         throw new Error("高清缓存创建失败");
                     }
                 } catch (highResError) {
-                    errorHandler.warn(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, "高清缓存创建失败，回退到普通缓存", {error: highResError.message});
+                    errorHandler.warn(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, "高清缓存创建失败，回退到普通缓存", { error: highResError.message });
                     canvas = await chartLayer.getChartCanvas(chartId);
                 }
             } else {
@@ -1988,11 +1987,11 @@ export class ExportFilePlugin extends BasePlugin {
                 }
             }
 
-            const {format = "png", asZip = true, quality = 1.0, scale = 1, rebuildHighQuality = false} = options;
+            const { format = "png", asZip = true, quality = 1.0, scale = 1, rebuildHighQuality = false } = options;
 
             errorHandler.debug(`📊 [Batch Export] 准备导出 ${chartsToExport.length} 个图表`, {
                 chartIds: chartsToExport.map((c) => c.id),
-                options: {format, asZip, quality, scale, rebuildHighQuality},
+                options: { format, asZip, quality, scale, rebuildHighQuality },
             });
 
             const results = [];
@@ -2040,7 +2039,7 @@ export class ExportFilePlugin extends BasePlugin {
 
                     errorHandler.debug(`✅ [Batch Export] 图表 ${chart.id} 导出成功 → ${finalName}.${format}`);
                 } catch (error) {
-                    errors.push({chartId: chart.id, error});
+                    errors.push({ chartId: chart.id, error });
                     errorHandler.warn(`❌ [Batch Export] 图表 ${chart.id} 导出失败: ${error.message}`);
                 }
             }
@@ -2102,13 +2101,13 @@ export class ExportFilePlugin extends BasePlugin {
 
             this.hooks?.runHooks(HOOKS.EXPORT_COMPLETE, {
                 format: "chart-image",
-                options: {...options, chartId, filename: defaultName},
+                options: { ...options, chartId, filename: defaultName },
                 result: blob,
             });
         } catch (error) {
             this.hooks?.runHooks(HOOKS.EXPORT_ERROR, {
                 format: "chart-image",
-                options: {chartId, filename},
+                options: { chartId, filename },
                 error,
             });
             throw error;
@@ -2131,7 +2130,7 @@ export class ExportFilePlugin extends BasePlugin {
      */
     async downloadAllCharts(options = {}) {
         try {
-            const {filename = null} = options;
+            const { filename = null } = options;
 
             const result = await this.exportAllChartsAsImages(options);
 
@@ -2175,14 +2174,14 @@ export class ExportFilePlugin extends BasePlugin {
     static async #createZipFromImages(images) {
         const zip = new JSZip();
 
-        images.forEach(({name, blob}) => {
+        images.forEach(({ name, blob }) => {
             zip.file(name, blob);
         });
 
         return await zip.generateAsync({
             type: "blob",
             compression: "DEFLATE",
-            compressionOptions: {level: 6},
+            compressionOptions: { level: 6 },
         });
     }
 }

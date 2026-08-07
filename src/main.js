@@ -25,7 +25,7 @@ import { errorHandler } from "./core/ErrorHandler.js";
 import { registerColumnTypeClass } from "@/types";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
 import { functionRegistry } from "@/formula/functions";
-import {ERROR_CODE, ERROR_LEVEL} from "@/constants/errorCodes";
+import { ERROR_CODE, ERROR_LEVEL } from "@/constants/errorCodes";
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 

@@ -19,11 +19,10 @@
  * @module formula/functions/text
  */
 
-
 import { isNumber } from "../../utils/helper.js";
 import { _validateArgs, _toNum } from "./utils/index.js";
-import {errorHandler} from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes";
 
 /**
  * 函数定义集合（导出给主注册表使用）

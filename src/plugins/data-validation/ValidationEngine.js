@@ -1,5 +1,5 @@
-﻿import {errorHandler} from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { NumberValidator } from "./validators/NumberValidator.js";
 import { TextLengthValidator } from "./validators/TextLengthValidator.js";
 import { ListValidator } from "./validators/ListValidator.js";

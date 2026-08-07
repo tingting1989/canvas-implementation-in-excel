@@ -45,14 +45,14 @@
  * @property {number} [indicators[].max] - 该维度的最大值
  */
 
-import {BasePlugin} from "./BasePlugin.js";
-import {ChartModel} from "../model/chart/ChartModel.js";
-import {ChartManager} from "../model/chart/ChartManager.js";
-import {ChartSelectionStrategy} from "../editor/strategies/ChartSelectionStrategy.js";
-import {HOOKS} from "../constants/hookNames.js";
-import {SHEET_EVENTS} from "../constants/sheetEvents.js";
-import {CONFIG} from "../constants/config.js";
-import {CHART_TYPE} from "../constants/enums/ChartType.js";
+import { BasePlugin } from "./BasePlugin.js";
+import { ChartModel } from "../model/chart/ChartModel.js";
+import { ChartManager } from "../model/chart/ChartManager.js";
+import { ChartSelectionStrategy } from "../editor/strategies/ChartSelectionStrategy.js";
+import { HOOKS } from "../constants/hookNames.js";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { CONFIG } from "../constants/config.js";
+import { CHART_TYPE } from "../constants/enums/ChartType.js";
 
 /**
  * 图表插件类
@@ -160,7 +160,7 @@ export class ChartPlugin extends BasePlugin {
         if (!sheet?.bus) return;
         this.#unbindSheetSwitchListener();
         this.#sheetSwitchUnsubscribe = sheet.bus.on(SHEET_EVENTS.SHEET_SWITCHED, (envelope) => {
-            const {currentSheet} = envelope.payload;
+            const { currentSheet } = envelope.payload;
             const newSheet = this.workbook.sheets.get(currentSheet);
             if (newSheet && !newSheet.chartManager) {
                 newSheet.chartManager = new ChartManager(newSheet);
@@ -430,7 +430,7 @@ export class ChartPlugin extends BasePlugin {
     updateChartStyle(id, styleUpdate) {
         const sheet = this.sheet;
         if (!sheet || !sheet.chartManager) return null;
-        const chart = sheet.chartManager.update(id, {style: styleUpdate});
+        const chart = sheet.chartManager.update(id, { style: styleUpdate });
         if (chart) {
             this.hooks?.runHooks(HOOKS.AFTER_CHART_UPDATE, id);
             this.renderEngine?.chartLayer?.invalidateChart(id);
@@ -442,7 +442,7 @@ export class ChartPlugin extends BasePlugin {
     updateChartDataRange(id, dataRange) {
         const sheet = this.sheet;
         if (!sheet || !sheet.chartManager) return null;
-        const chart = sheet.chartManager.update(id, {dataRange});
+        const chart = sheet.chartManager.update(id, { dataRange });
         if (chart) {
             this.hooks?.runHooks(HOOKS.AFTER_CHART_UPDATE, id);
             this.renderEngine?.chartLayer?.invalidateChart(id);
@@ -471,7 +471,7 @@ export class ChartPlugin extends BasePlugin {
     resizeChart(id, width, height) {
         const sheet = this.sheet;
         if (!sheet || !sheet.chartManager) return null;
-        const chart = sheet.chartManager.update(id, {width, height});
+        const chart = sheet.chartManager.update(id, { width, height });
         if (chart) {
             this.#clampToFrozenBoundary(chart, sheet);
             this.renderEngine?.chartLayer?.invalidateChart(id);

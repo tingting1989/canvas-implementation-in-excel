@@ -14,9 +14,9 @@
  * @module formula/functions/logical
  */
 
-import {errorHandler} from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
-import {_validateArgs} from "./utils/index.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { _validateArgs } from "./utils/index.js";
 
 /**
  * 将值转换为布尔值（用于逻辑运算）

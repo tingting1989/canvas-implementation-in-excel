@@ -1,8 +1,8 @@
 ﻿import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 import { ListSourceResolver } from "../ListSourceResolver.js";
-import {errorHandler} from "../../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../../constants/errorCodes.js";
+import { errorHandler } from "../../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
 
 /**
  * 下拉列表验证器

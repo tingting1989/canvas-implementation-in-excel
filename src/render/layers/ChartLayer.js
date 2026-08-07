@@ -64,7 +64,6 @@ import { ChartCacheManager } from "../chart/ChartCacheManager.js";
 import { NativeChartRenderer } from "../chart/NativeChartRenderer.js";
 import { ViewportTransform } from "../ViewportTransform.js";
 
-
 /** @type {{top: number, right: number, bottom: number, left: number}} 图表内边距配置 */
 const PADDING = { top: 36, right: 20, bottom: 44, left: 56 };
 

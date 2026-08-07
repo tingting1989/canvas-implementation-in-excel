@@ -1,7 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { errorHandler } from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes";
-
+import { ERROR_CODE } from "../constants/errorCodes";
 
 /**
  * 行/列拖拽移动插件基类

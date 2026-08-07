@@ -1,7 +1,7 @@
 import { BasePlugin } from "./BasePlugin.js";
 import { CONFIG } from "../constants/config.js";
 import { errorHandler } from "../core/ErrorHandler.js";
-import {ERROR_CODE} from "../constants/errorCodes";
+import { ERROR_CODE } from "../constants/errorCodes";
 
 /**
  * 隐藏行/列插件基类

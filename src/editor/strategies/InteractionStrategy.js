@@ -1,9 +1,9 @@
-﻿import {errorHandler } from "../../core/ErrorHandler.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
 import { debounce, isFunction } from "../../utils/helper.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 import { EventStrategy } from "./EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 /**
  * 交互式单元格策略 (Interactive Cell Strategy)

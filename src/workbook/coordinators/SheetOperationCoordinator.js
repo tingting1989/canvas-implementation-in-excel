@@ -1,8 +1,8 @@
 import { CONFIG } from "../../constants/config.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
-import { errorHandler,  } from "../../core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 import { ISheet } from "../interfaces/ISheet.js";
-import {ERROR_CODE, ERROR_LEVEL} from "../../constants/errorCodes.js";
+import { ERROR_CODE, ERROR_LEVEL } from "../../constants/errorCodes.js";
 
 /** @enum {string} 子系统行列操作方法名（供 #dispatchToSubSystems 使用） */
 const SUB = {
