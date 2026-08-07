@@ -7,7 +7,7 @@
  * @module utils/canvasUtils
  */
 
-import { CONFIG } from "@/constants/config";
+import { CONFIG } from "../constants/config.js";
 
 /**
  * 从 CSS font 字符串中提取字体大小（px）

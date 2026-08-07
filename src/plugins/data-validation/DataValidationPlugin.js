@@ -13,7 +13,7 @@ import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
 import { stylePool } from "../../model/styles/index.js";
 import { ValidationStrategy } from "../../editor/strategies/ValidationStrategy.js";
-import { ValidationResult } from "@/plugins/data-validation/ValidationResult";
+import { ValidationResult } from "./ValidationResult.js";
 
 const VALIDATION_ERROR_STYLES = Object.freeze({
     stop: {

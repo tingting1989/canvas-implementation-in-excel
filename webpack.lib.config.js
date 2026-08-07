@@ -47,6 +47,7 @@ module.exports = [
             filename: "canvas-sheet.esm.mjs",
             library: { type: "module" },
             environment: { module: true },
+            clean: true,
         },
         experiments: { outputModule: true },
         externals: {
