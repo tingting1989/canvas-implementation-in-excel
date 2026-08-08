@@ -370,4 +370,36 @@ export const HOOKS = Object.freeze({
 
     /** 批量验证后 - 区域验证全部完成 */
     AFTER_BATCH_VALIDATION: "afterBatchValidation",
+
+    /*
+     * ==================== 搜索相关钩子 (SEARCH_) ====================
+     * 管理搜索功能的生命周期
+     *
+     * 注意：这些 Hook 由 SearchPlugin 提供，
+     * 使用前需确保插件已加载（plugins 配置中包含 'search'）
+     */
+
+    /** 搜索开始前 - 即将执行搜索操作，返回 false 可取消搜索 */
+    BEFORE_SEARCH: "beforeSearch",
+
+    /** 搜索后 - 搜索已完成并返回结果 */
+    AFTER_SEARCH: "afterSearch",
+
+    /** 搜索导航前 - 即将跳转到下一个/上一个结果 */
+    BEFORE_SEARCH_NAVIGATE: "beforeSearchNavigate",
+
+    /** 搜索导航后 - 已跳转到新的匹配项 */
+    AFTER_SEARCH_NAVIGATE: "afterSearchNavigate",
+
+    /** 替换前 - 即将替换当前匹配项的内容，返回 false 可阻止 */
+    BEFORE_SEARCH_REPLACE: "beforeSearchReplace",
+
+    /** 替换后 - 当前匹配项已替换为新内容 */
+    AFTER_SEARCH_REPLACE: "afterSearchReplace",
+
+    /** 全部替换前 - 即将替换所有匹配项，返回 false 可阻止 */
+    BEFORE_SEARCH_REPLACE_ALL: "beforeSearchReplaceAll",
+
+    /** 全部替换后 - 所有匹配项已替换完成 */
+    AFTER_SEARCH_REPLACE_ALL: "afterSearchReplaceAll",
 });
