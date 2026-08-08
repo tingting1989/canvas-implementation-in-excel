@@ -21,7 +21,7 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
                 scrollToCell: jest.fn(),
                 markDirty: jest.fn(),
                 markDirtyCell: jest.fn(),
-                invalidateAll: jest.fn(),  // ✅ 新增：用于 disable() 测试
+                invalidateAll: jest.fn(), // ✅ 新增：用于 disable() 测试
             },
             activeSheet: createMockSheet(),
             eventHandler: {
@@ -29,8 +29,8 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
                     run: jest.fn().mockReturnValue(true),
                     addHook: jest.fn(),
                 },
-                registerStrategy: jest.fn(),    // ✅ 新增：用于 init() 测试
-                unregisterStrategy: jest.fn(),   // ✅ 新增：用于 destroy() 测试
+                registerStrategy: jest.fn(), // ✅ 新增：用于 init() 测试
+                unregisterStrategy: jest.fn(), // ✅ 新增：用于 destroy() 测试
             },
         };
     }
@@ -73,7 +73,7 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
 
     beforeEach(() => {
         mockWorkbook = createMockWorkbook();
-        
+
         // 创建插件实例并初始化
         plugin = new SearchPlugin(mockWorkbook);
         plugin.init({ enabled: true });
@@ -98,20 +98,20 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
 
     describe("enable() 方法", () => {
         it("调用 enable() 后 active 应为 true", () => {
-            plugin.disable();  // 先禁用
-            
+            plugin.disable(); // 先禁用
+
             expect(plugin.active).toBe(false);
-            
+
             plugin.enable();
-            
+
             expect(plugin.active).toBe(true);
         });
 
         it("调用 enable() 后 enabled 应为 true", () => {
             plugin.disable();
-            
+
             plugin.enable();
-            
+
             expect(plugin.enabled).toBe(true);
         });
 
@@ -122,7 +122,7 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
             };
 
             // 手动设置策略引用（模拟内部状态）
-            plugin._setStrategy(mockStrategy);  // 假设有这个方法，或者通过其他方式
+            plugin._setStrategy(mockStrategy); // 假设有这个方法，或者通过其他方式
 
             plugin.enable();
 
@@ -145,24 +145,24 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
 
     describe("disable() 方法", () => {
         it("调用 disable() 后 active 应为 false", () => {
-            plugin.enable();  // 确保先启用
-            
+            plugin.enable(); // 确保先启用
+
             plugin.disable();
-            
+
             expect(plugin.active).toBe(false);
         });
 
         it("调用 disable() 后 enabled 应为 false", () => {
             plugin.disable();
-            
+
             expect(plugin.enabled).toBe(false);
         });
 
         it("disable() 应关闭搜索面板", () => {
             const hideSpy = jest.spyOn(plugin, "hide");
-            
+
             plugin.disable();
-            
+
             expect(hideSpy).toHaveBeenCalledTimes(1);
             hideSpy.mockRestore();
         });
@@ -172,9 +172,9 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
             const state = plugin.getState();
             // 假设可以通过某种方式获取 highlighter
             // 或者验证 clearHighlights 被调用
-            
+
             plugin.disable();
-            
+
             // 验证渲染引擎失效
             expect(mockWorkbook.renderEngine.invalidateAll).toHaveBeenCalled();
         });
@@ -209,7 +209,7 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
     describe("状态切换场景", () => {
         it("应支持 enable → disable → enable 循环切换", () => {
             // 初始：enabled=true, active=?
-            
+
             // 第 1 次禁用
             plugin.disable();
             expect(plugin.enabled).toBe(false);
@@ -260,31 +260,31 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
     describe("destroy() 清理", () => {
         it("destroy() 应自动调用 disable()", () => {
             const disableSpy = jest.spyOn(plugin, "disable");
-            
+
             plugin.destroy();
-            
+
             expect(disableSpy).toHaveBeenCalledTimes(1);
             disableSpy.mockRestore();
         });
 
         it("destroy() 后 active 和 enabled 都应为 false", () => {
-            plugin.enable();  // 先确保启用
-            
+            plugin.enable(); // 先确保启用
+
             plugin.destroy();
-            
+
             expect(plugin.enabled).toBe(false);
             expect(plugin.active).toBe(false);
         });
 
         it("destroy() 应注销策略", () => {
             plugin.destroy();
-            
+
             expect(mockWorkbook.eventHandler.unregisterStrategy).toHaveBeenCalled();
         });
 
         it("destroy() 后再次调用不应报错", () => {
             plugin.destroy();
-            
+
             expect(() => {
                 plugin.destroy();
                 plugin.destroy();
@@ -310,7 +310,7 @@ describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
             // 4. destroy(): disable() + super.destroy()
 
             // 验证 SearchPlugin 也遵循此模式
-            const hasProperLifecycle = 
+            const hasProperLifecycle =
                 typeof plugin.enable === "function" &&
                 typeof plugin.disable === "function" &&
                 typeof plugin.destroy === "function" &&

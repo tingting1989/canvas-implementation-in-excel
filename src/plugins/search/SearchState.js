@@ -112,9 +112,7 @@ export class SearchState {
     }
 
     getCurrentResult() {
-        return this.#currentIndex >= 0 && this.#currentIndex < this.#results.length
-            ? this.#results[this.#currentIndex]
-            : null;
+        return this.#currentIndex >= 0 && this.#currentIndex < this.#results.length ? this.#results[this.#currentIndex] : null;
     }
 
     isSearching() {

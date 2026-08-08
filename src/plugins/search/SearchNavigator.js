@@ -134,10 +134,7 @@ export class SearchNavigator {
         // 通过事件通知滚动，避免直接依赖 RenderEngine
         if (this.#selectionManager?.workbook?.eventHandler?.hooks) {
             try {
-                this.#selectionManager.workbook.eventHandler.hooks.runHooks(
-                    "onScrollToCell",
-                    { row, col }
-                );
+                this.#selectionManager.workbook.eventHandler.hooks.runHooks("onScrollToCell", { row, col });
             } catch (error) {
                 console.warn("[Search] 滚动到单元格失败:", error);
             }

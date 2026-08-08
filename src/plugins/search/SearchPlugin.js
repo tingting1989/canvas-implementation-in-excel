@@ -19,7 +19,7 @@ import { SearchEngine } from "./SearchEngine.js";
 import { SearchUIController } from "./SearchUIController.js";
 import { SearchNavigator } from "./SearchNavigator.js";
 import { SearchResultHighlighter } from "./SearchResultHighlighter.js";
-import { SearchStrategy } from "./SearchStrategy.js";  // ✅ 新增：搜索策略
+import { SearchStrategy } from "./SearchStrategy.js"; // ✅ 新增：搜索策略
 import { HOOKS } from "../../constants/hookNames.js";
 import { Cell } from "../../model/store/Cell.js";
 import { SetCellCommand } from "../../model/command/SetCellCommand.js";
@@ -88,10 +88,10 @@ export class SearchPlugin extends BasePlugin {
     #highlighter = null;
 
     /** @type {SearchStrategy} */
-    #strategy = null;  // ✅ 新增：搜索策略实例
+    #strategy = null; // ✅ 新增：搜索策略实例
 
     /** @type {boolean} */
-    #active = false;  // ✅ 新增：插件激活状态
+    #active = false; // ✅ 新增：插件激活状态
 
     /** @type {number|null} */
     #debounceTimer = null;
@@ -114,14 +114,8 @@ export class SearchPlugin extends BasePlugin {
         this.#state = new SearchState();
         this.#engine = new SearchEngine();
         this.#uiController = new SearchUIController(this);
-        this.#navigator = new SearchNavigator(
-            this.#state,
-            this.workbook.activeSheet?.selection || null
-        );
-        this.#highlighter = new SearchResultHighlighter(
-            this.workbook.renderEngine || null,
-            this.options.highlightStyle
-        );
+        this.#navigator = new SearchNavigator(this.#state, this.workbook.activeSheet?.selection || null);
+        this.#highlighter = new SearchResultHighlighter(this.workbook.renderEngine || null, this.options.highlightStyle);
 
         this.#registerSearchStrategy();
         this.#registerHooks();
@@ -138,10 +132,7 @@ export class SearchPlugin extends BasePlugin {
     #registerSearchStrategy() {
         if (!this.eventHandler) return;
 
-        this.#strategy = new SearchStrategy(
-            this.eventHandler,
-            this
-        );
+        this.#strategy = new SearchStrategy(this.eventHandler, this);
 
         // 使用 BasePlugin 的 addStrategy 方法（自动管理生命周期，与 FilterPlugin 一致）
         this.addStrategy("searchShortcut", this.#strategy);
@@ -186,7 +177,7 @@ export class SearchPlugin extends BasePlugin {
             }
 
             const cellData = this.#getCellData(options.searchScope);
-            
+
             if (cellData.length === 0) {
                 console.warn("[Search] 搜索范围为空或无数据");
                 this.#uiController.showWarning("搜索范围内无可用数据");
@@ -332,17 +323,11 @@ export class SearchPlugin extends BasePlugin {
                 replaceStr,
                 oldCell?.styleId || 0,
                 oldCell?.disabled || false,
-                null // 替换操作清除公式
+                null, // 替换操作清除公式
             );
 
             // ✅ 创建 SetCellCommand（记录完整状态用于撤销）
-            const cmd = new SetCellCommand(
-                sheet.cellStore,
-                current.row,
-                current.col,
-                oldCell,
-                newCell
-            );
+            const cmd = new SetCellCommand(sheet.cellStore, current.row, current.col, oldCell, newCell);
 
             // ✅ 推入历史栈（关键步骤！支持 Ctrl+Z）
             if (sheet.batchOp && sheet.history) {
@@ -390,10 +375,7 @@ export class SearchPlugin extends BasePlugin {
         if (!sheet) return 0;
 
         // 触发 beforeReplaceAll 钩子（可取消，同步调用）
-        const canReplaceAll = this.hooks.runHooksUntil(
-            HOOKS.BEFORE_SEARCH_REPLACE_ALL,
-            { count: results.length, replaceValue: replaceStr }
-        );
+        const canReplaceAll = this.hooks.runHooksUntil(HOOKS.BEFORE_SEARCH_REPLACE_ALL, { count: results.length, replaceValue: replaceStr });
 
         if (canReplaceAll === false) return 0;
 
@@ -427,20 +409,9 @@ export class SearchPlugin extends BasePlugin {
 
                 const oldCell = sheet.cellStore?.get(result.row, result.col);
 
-                const newCell = new Cell(
-                    replaceStr,
-                    oldCell?.styleId || 0,
-                    oldCell?.disabled || false,
-                    null
-                );
+                const newCell = new Cell(replaceStr, oldCell?.styleId || 0, oldCell?.disabled || false, null);
 
-                commands.push(new SetCellCommand(
-                    sheet.cellStore,
-                    result.row,
-                    result.col,
-                    oldCell,
-                    newCell
-                ));
+                commands.push(new SetCellCommand(sheet.cellStore, result.row, result.col, oldCell, newCell));
             }
 
             // ✅ 创建 BatchCommand（原子批量操作）
@@ -464,7 +435,7 @@ export class SearchPlugin extends BasePlugin {
                 count: commands.length,
                 skipped: skippedCount,
                 replaceValue: replaceStr,
-                details: results.map(r => ({
+                details: results.map((r) => ({
                     row: r.row,
                     col: r.col,
                     oldValue: r.data,
@@ -522,7 +493,7 @@ export class SearchPlugin extends BasePlugin {
      * @override
      */
     enable() {
-        super.enable();  // 基类设置 #enabled = true
+        super.enable(); // 基类设置 #enabled = true
         this.#active = true;
 
         // ✅ 启用搜索策略（允许响应键盘快捷键）
@@ -540,7 +511,7 @@ export class SearchPlugin extends BasePlugin {
      * @override
      */
     disable() {
-        super.disable();  // 基类设置 #enabled = false
+        super.disable(); // 基类设置 #enabled = false
         this.#active = false;
 
         // ✅ 关闭搜索面板（如果正在显示）
@@ -602,7 +573,6 @@ export class SearchPlugin extends BasePlugin {
         // ⚠️ 已废弃：键盘快捷键已迁移至 SearchStrategy
         // 原来的 Ctrl+F、F3 等快捷键逻辑现在在 SearchStrategy.#handleKeyDown() 中实现
         // 这样可以更好地利用策略优先级系统和外部输入检测机制
-        
         // 如果未来需要添加其他 Hook（如数据变化监听等），可以在这里继续添加：
         // this.addHook(HOOKS.AFTER_CHANGE, (changes) => { ... });
     }
@@ -631,12 +601,7 @@ export class SearchPlugin extends BasePlugin {
                 const range = selection.getRange();
                 if (!range) break;
 
-                const nonEmptyCells = accessor.getNonEmptyCells(
-                    range.topRow,
-                    range.topCol,
-                    range.bottomRow,
-                    range.bottomCol
-                );
+                const nonEmptyCells = accessor.getNonEmptyCells(range.topRow, range.topCol, range.bottomRow, range.bottomCol);
 
                 for (const { row, col, cell } of nonEmptyCells) {
                     data.push({ row, col, value: String(cell.value) });

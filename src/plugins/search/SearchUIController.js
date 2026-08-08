@@ -40,7 +40,7 @@ export class SearchUIController {
             position,
             (query, options) => this.#handleSearch(query, options),
             (direction) => this.#handleNavigate(direction),
-            (reason) => this.#handleClose(reason)
+            (reason) => this.#handleClose(reason),
         );
     }
 
@@ -50,7 +50,7 @@ export class SearchUIController {
     hide() {
         if (this.#dropdown) {
             this.#dropdown.hide();
-            
+
             if (this.#popupId) {
                 try {
                     PopupManager.getInstance().unregister(this.#popupId);
@@ -58,7 +58,7 @@ export class SearchUIController {
                     console.warn("[Search] 注销 PopupManager 失败:", error);
                 }
             }
-            
+
             this.#dropdown = null;
             this.#popupId = null;
         }

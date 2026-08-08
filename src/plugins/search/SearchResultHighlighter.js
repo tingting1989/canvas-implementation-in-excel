@@ -95,31 +95,26 @@ export class SearchResultHighlighter {
     render(ctx, viewport, sheet) {
         // ✅ 防御性编程：检查必要参数
         if (!ctx || !viewport || !sheet) return;
-        
+
         // ✅ 快速返回：无高亮数据
         if (this.#highlights.size === 0) return;
 
         try {
             const visibleRange = this.#getVisibleRange(viewport);
 
-        for (const key of this.#highlights) {
-            const [row, col] = key.split(":").map(Number);
+            for (const key of this.#highlights) {
+                const [row, col] = key.split(":").map(Number);
 
-            if (
-                row >= visibleRange.startRow &&
-                row <= visibleRange.endRow &&
-                col >= visibleRange.startCol &&
-                col <= visibleRange.endCol
-            ) {
-                const rect = this.#getCellRect(sheet, row, col, viewport);
-                if (rect) {
-                    const isCurrent = key === this.#currentHighlight;
-                    this.#drawHighlight(ctx, rect, isCurrent);
+                if (row >= visibleRange.startRow && row <= visibleRange.endRow && col >= visibleRange.startCol && col <= visibleRange.endCol) {
+                    const rect = this.#getCellRect(sheet, row, col, viewport);
+                    if (rect) {
+                        const isCurrent = key === this.#currentHighlight;
+                        this.#drawHighlight(ctx, rect, isCurrent);
+                    }
                 }
             }
-        }
 
-        // ✅ 捕获渲染异常，避免影响主渲染循环
+            // ✅ 捕获渲染异常，避免影响主渲染循环
         } catch (error) {
             console.warn("[SearchHighlighter] 渲染高亮时出错:", error);
         }
@@ -148,7 +143,7 @@ export class SearchResultHighlighter {
                 rect.x + this.#styles.borderWidth / 2,
                 rect.y + this.#styles.borderWidth / 2,
                 rect.width - this.#styles.borderWidth,
-                rect.height - this.#styles.borderWidth
+                rect.height - this.#styles.borderWidth,
             );
         }
 

@@ -46,7 +46,7 @@ describe("SearchPlugin Replace with Undo Support", () => {
      */
     function createMockSheet() {
         const cellStore = new Map();
-        
+
         return {
             cellStore: {
                 get: (row, col) => cellStore.get(`${row},${col}`),
@@ -175,7 +175,7 @@ describe("SearchPlugin Replace with Undo Support", () => {
 
         it("全部替换的 BatchCommand 应仅占 1 个撤销槽位", async () => {
             await searchPlugin.query("hello");
-            
+
             // 记录当前栈深度
             const stackDepthBefore = sheet.history.undoStack.length;
 
@@ -280,7 +280,7 @@ describe("SearchPlugin Replace with Undo Support", () => {
                     col: expect.any(Number),
                     oldValue: expect.any(String),
                     newValue: "hi",
-                })
+                }),
             );
         });
     });

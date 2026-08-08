@@ -41,9 +41,7 @@ describe("SearchEngine", () => {
         });
 
         it("应返回空结果当无匹配时", async () => {
-            const data = [
-                { row: 0, col: 0, value: "Hello World" },
-            ];
+            const data = [{ row: 0, col: 0, value: "Hello World" }];
 
             const results = await engine.executeQuery(data, "xyz");
 
@@ -96,26 +94,16 @@ describe("SearchEngine", () => {
                 { row: 2, col: 0, value: "no numbers" },
             ];
 
-            const results = await engine.executeQuery(
-                data,
-                "\\d+",
-                { useRegex: true }
-            );
+            const results = await engine.executeQuery(data, "\\d+", { useRegex: true });
 
             expect(results).toHaveLength(2);
         });
 
         it("应处理无效正则表达式（不抛异常）", async () => {
-            const data = [
-                { row: 0, col: 0, value: "test" },
-            ];
+            const data = [{ row: 0, col: 0, value: "test" }];
 
             // 不应抛出异常，而是返回空结果
-            const results = await engine.executeQuery(
-                data,
-                "[invalid regex",
-                { useRegex: true }
-            );
+            const results = await engine.executeQuery(data, "[invalid regex", { useRegex: true });
 
             expect(results).toHaveLength(0);
         });
@@ -137,9 +125,7 @@ describe("SearchEngine", () => {
         });
 
         it("应正确处理空字符串查询", async () => {
-            const data = [
-                { row: 0, col: 0, value: "Hello" },
-            ];
+            const data = [{ row: 0, col: 0, value: "Hello" }];
 
             const results = await engine.executeQuery(data, "");
 
@@ -172,9 +158,7 @@ describe("SearchEngine", () => {
         });
 
         it("应记录正确的 matchIndex 和 matchLength", async () => {
-            const data = [
-                { row: 0, col: 0, value: "Hello World Hello" },
-            ];
+            const data = [{ row: 0, col: 0, value: "Hello World Hello" }];
 
             const results = await engine.executeQuery(data, "Hello");
 

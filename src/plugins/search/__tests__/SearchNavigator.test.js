@@ -14,11 +14,11 @@ describe("SearchNavigator", () => {
 
     beforeEach(() => {
         state = new SearchState();
-        
+
         mockSelectionManager = {
             setActive: jest.fn(),
         };
-        
+
         navigator = new SearchNavigator(state, mockSelectionManager);
     });
 
@@ -54,7 +54,7 @@ describe("SearchNavigator", () => {
                 { row: 2, col: 2, data: "b" },
                 { row: 3, col: 3, data: "c" },
             ]);
-            
+
             // 先到第一个
             navigator.goToFirst();
 
@@ -70,7 +70,7 @@ describe("SearchNavigator", () => {
                 { row: 2, col: 2, data: "b" },
                 { row: 3, col: 3, data: "c" },
             ]);
-            
+
             // 设置到最后一个
             state.setCurrentIndex(2);
 
@@ -81,9 +81,7 @@ describe("SearchNavigator", () => {
         });
 
         it("应在仅有一个结果时始终返回同一个", () => {
-            state.setResults([
-                { row: 5, col: 5, data: "only" },
-            ]);
+            state.setResults([{ row: 5, col: 5, data: "only" }]);
 
             const result1 = navigator.goToFirst();
             const result2 = navigator.goToNext();
@@ -99,7 +97,7 @@ describe("SearchNavigator", () => {
                 { row: 2, col: 2, data: "b" },
                 { row: 3, col: 3, data: "c" },
             ]);
-            
+
             // 设置到第二个
             state.setCurrentIndex(1);
 
@@ -115,7 +113,7 @@ describe("SearchNavigator", () => {
                 { row: 2, col: 2, data: "b" },
                 { row: 3, col: 3, data: "c" },
             ]);
-            
+
             // 在第一个位置
             state.setCurrentIndex(0);
 
@@ -141,9 +139,7 @@ describe("SearchNavigator", () => {
         });
 
         it("应在索引越界时返回 null", () => {
-            state.setResults([
-                { row: 1, col: 1, data: "a" },
-            ]);
+            state.setResults([{ row: 1, col: 1, data: "a" }]);
 
             const resultInvalidHigh = navigator.goTo(5);
             const resultInvalidLow = navigator.goTo(-1);

@@ -29,9 +29,7 @@ export class SearchEngine {
         }
 
         const results = [];
-        const searchFn = options.useRegex
-            ? this.#createRegexMatcher(query, options)
-            : this.#createTextMatcher(query, options);
+        const searchFn = options.useRegex ? this.#createRegexMatcher(query, options) : this.#createTextMatcher(query, options);
 
         for (const cell of cellData) {
             try {

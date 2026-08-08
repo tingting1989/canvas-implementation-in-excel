@@ -6,7 +6,7 @@ import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
  * 搜索策略 (Search Strategy)
  *
  * 负责处理与搜索功能相关的键盘事件和交互逻辑。
- * 
+ *
  * 核心职责：
  * - **Ctrl+F / Cmd+F**: 打开搜索面板
  * - **F3**: 跳转到下一个搜索结果
@@ -15,14 +15,14 @@ import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
  * - **Esc**: 关闭搜索面板
  *
  * 设计原则：
- * 1. **策略优先级 POPUP_UI (500)**: 
+ * 1. **策略优先级 POPUP_UI (500)**:
  *    - 高于鼠标默认行为 (300)，确保面板交互优先
  *    - 低于拖拽操作 (600+)，不干扰核心功能
- *    
+ *
  * 2. **外部输入检测**:
  *    - 仅在无其他外部输入时响应快捷键
  *    - 避免与编辑器、输入框等冲突
- *    
+ *
  * 3. **事件委托**:
  *    - 通过 EventHandler 统一分发，避免重复绑定
  *    - 返回 false 可阻止事件继续传播
@@ -42,7 +42,7 @@ export class SearchStrategy extends EventStrategy {
     constructor(handler, plugin) {
         super(handler);
         this.#plugin = plugin;
-        
+
         // ✅ 监听搜索面板的显示/隐藏状态
         if (plugin) {
             this.#bindPluginEvents();
@@ -158,14 +158,13 @@ export class SearchStrategy extends EventStrategy {
                     this.#plugin.hide();
                     return false;
                 }
-                
+
                 // 如果搜索未激活，允许 Esc 传递给其他策略（如关闭编辑器等）
                 return true;
             }
 
             // ========== Enter: 在搜索框中导航（由 SearchDropdown 内部处理） ==========
             // 此处不需要额外处理，因为 SearchDropdown 已绑定 input 的 keydown
-
         } catch (error) {
             console.error("[SearchStrategy] 键盘事件处理失败:", error);
         }
@@ -207,7 +206,7 @@ export class SearchStrategy extends EventStrategy {
      */
     async #reopenLastSearch(reverse = false) {
         const lastQuery = this.#plugin.getLastQuery?.();
-        
+
         if (!lastQuery) {
             // 无历史记录，直接打开空面板
             this.#showSearchPanel();
@@ -216,7 +215,7 @@ export class SearchStrategy extends EventStrategy {
 
         // 重新执行上次搜索并定位
         this.#showSearchPanel();
-        
+
         // 等待面板渲染完成后导航
         setTimeout(async () => {
             if (reverse) {
@@ -245,25 +244,21 @@ export class SearchStrategy extends EventStrategy {
         if (activeElement) {
             const tagName = activeElement.tagName?.toLowerCase();
             const isFormElement = ["input", "textarea", "select"].includes(tagName);
-            
+
             // 允许搜索面板自己的输入框接收按键（通过 data 属性标记）
-            const isSearchInput = activeElement.closest?.("search-dropdown") !== null ||
-                                 activeElement.dataset?.searchInput === "true";
-            
+            const isSearchInput = activeElement.closest?.("search-dropdown") !== null || activeElement.dataset?.searchInput === "true";
+
             if (isFormElement && !isSearchInput) {
                 return true;
             }
         }
 
         // ✅ 检查是否有其他模态弹窗打开（通过 z-index 或 class 判断）
-        const modals = document.querySelectorAll(
-            ".modal-overlay, .dialog-backdrop, [role='dialog']"
-        );
-        
+        const modals = document.querySelectorAll(".modal-overlay, .dialog-backdrop, [role='dialog']");
+
         for (const modal of modals) {
             // 排除搜索面板本身
-            if (modal.classList.contains("search-panel") || 
-                modal.tagName === "SEARCH-DROPDOWN") {
+            if (modal.classList.contains("search-panel") || modal.tagName === "SEARCH-DROPDOWN") {
                 continue;
             }
 

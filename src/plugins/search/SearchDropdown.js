@@ -342,11 +342,11 @@ export class SearchDropdown extends PopupPanel {
         this.#inputElement = this.shadowRoot.querySelector(".search-input");
         this.#resultInfo = this.shadowRoot.querySelector(".search-result-info");
 
-        this.shadowRoot.querySelectorAll("[data-option]").forEach(btn => {
+        this.shadowRoot.querySelectorAll("[data-option]").forEach((btn) => {
             this.#optionButtons.set(btn.dataset.option, btn);
         });
 
-        this.shadowRoot.querySelectorAll("[data-action]").forEach(btn => {
+        this.shadowRoot.querySelectorAll("[data-action]").forEach((btn) => {
             this.#navButtons.set(btn.dataset.action, btn);
         });
     }
@@ -381,7 +381,7 @@ export class SearchDropdown extends PopupPanel {
         this.#optionButtons.forEach((btn, option) => {
             btn.addEventListener("click", () => {
                 btn.classList.toggle("active");
-                
+
                 const query = this.#inputElement.value.trim();
                 if (query) {
                     const options = this.#getCurrentOptions();
@@ -419,7 +419,7 @@ export class SearchDropdown extends PopupPanel {
         if (this.#navButtons.has("prev")) {
             this.#navButtons.get("prev").disabled = !hasResults || isFirst;
         }
-        
+
         if (this.#navButtons.has("next")) {
             this.#navButtons.get("next").disabled = !hasResults || isLast;
         }
@@ -434,7 +434,7 @@ export class SearchDropdown extends PopupPanel {
     showError(message, duration = 3000) {
         // ✅ 创建或复用错误提示元素
         let errorEl = this.shadowRoot.querySelector(".search-error-toast");
-        
+
         if (!errorEl) {
             errorEl = document.createElement("div");
             errorEl.className = "search-error-toast";
@@ -450,7 +450,7 @@ export class SearchDropdown extends PopupPanel {
         clearTimeout(this._errorTimer);
         this._errorTimer = setTimeout(() => {
             errorEl.classList.remove("visible");
-            
+
             // 动画结束后移除 DOM
             setTimeout(() => {
                 errorEl.remove();
@@ -469,14 +469,14 @@ export class SearchDropdown extends PopupPanel {
         if (this.#resultInfo) {
             this.#resultInfo.textContent = `⚠ ${message}`;
             this.#resultInfo.className = "search-result-info warning";
-            
+
             // 3 秒后恢复
             setTimeout(() => {
                 this.#resultInfo.textContent = "-";
                 this.#resultInfo.className = "search-result-info";
             }, 3000);
         }
-        
+
         console.warn(`[Search UI] ${message}`);
     }
 }

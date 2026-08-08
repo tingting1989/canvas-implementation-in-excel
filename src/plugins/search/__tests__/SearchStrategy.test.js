@@ -48,13 +48,17 @@ describe("SearchStrategy", () => {
 
         return {
             enabled: true,
-            
-            show: jest.fn(() => { isSearchActive = true; }),
-            hide: jest.fn(() => { isSearchActive = false; }),
+
+            show: jest.fn(() => {
+                isSearchActive = true;
+            }),
+            hide: jest.fn(() => {
+                isSearchActive = false;
+            }),
             findNext: jest.fn(),
             findPrevious: jest.fn(),
             getLastQuery: jest.fn().mockReturnValue("test"),
-            
+
             // 用于验证状态变化
             _getIsActive: () => isSearchActive,
         };
@@ -63,7 +67,7 @@ describe("SearchStrategy", () => {
     beforeEach(() => {
         mockHandler = createMockHandler();
         mockPlugin = createMockPlugin();
-        
+
         strategy = new SearchStrategy(mockHandler, mockPlugin);
     });
 
@@ -250,7 +254,7 @@ describe("SearchStrategy", () => {
     describe("优先级协调", () => {
         it("应与 FilterStrategy 使用相同的 POPUP_UI 优先级", () => {
             const { STRATEGY_PRIORITY } = require("../../constants/strategyPriority");
-            
+
             // FilterStrategy 也使用 POPUP_UI 优先级
             expect(strategy.priority).toBe(STRATEGY_PRIORITY.POPUP_UI);
             expect(strategy.priority).toBe(500);

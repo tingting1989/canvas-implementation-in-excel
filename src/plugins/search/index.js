@@ -16,4 +16,4 @@ export { SearchUIController } from "./SearchUIController.js";
 export { SearchDropdown } from "./SearchDropdown.js";
 export { SearchNavigator } from "./SearchNavigator.js";
 export { SearchResultHighlighter } from "./SearchResultHighlighter.js";
-export { SearchStrategy } from "./SearchStrategy.js";  // ✅ 新增：搜索策略
+export { SearchStrategy } from "./SearchStrategy.js"; // ✅ 新增：搜索策略
