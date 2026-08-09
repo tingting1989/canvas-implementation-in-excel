@@ -100,13 +100,13 @@ export class SearchResultHighlighter {
         if (this.#highlights.size === 0) return;
 
         try {
-            const visibleRange = this.#getVisibleRange(viewport);
+            const visibleRange = this.#getVisibleRange(viewport, sheet);
 
             for (const key of this.#highlights) {
                 const [row, col] = key.split(":").map(Number);
 
                 if (row >= visibleRange.startRow && row <= visibleRange.endRow && col >= visibleRange.startCol && col <= visibleRange.endCol) {
-                    const rect = this.#getCellRect(sheet, row, col, viewport);
+                    const rect = this.#getCellRect(row, col, sheet);
                     if (rect) {
                         const isCurrent = key === this.#currentHighlight;
                         this.#drawHighlight(ctx, rect, isCurrent);
@@ -136,14 +136,14 @@ export class SearchResultHighlighter {
             ctx.fillStyle = this.#styles.backgroundColor;
         }
 
-        ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
 
         if (isCurrent && this.#styles.borderWidth > 0) {
             ctx.strokeRect(
                 rect.x + this.#styles.borderWidth / 2,
                 rect.y + this.#styles.borderWidth / 2,
-                rect.width - this.#styles.borderWidth,
-                rect.height - this.#styles.borderWidth,
+                rect.w - this.#styles.borderWidth,
+                rect.h - this.#styles.borderWidth,
             );
         }
 
@@ -152,23 +152,29 @@ export class SearchResultHighlighter {
 
     /**
      * 获取单元格屏幕坐标
+     * 复用 RenderEngine 的 getCellRect 方法，通过 ViewportTransform 获取准确的视口坐标。
+     * 支持合并单元格：如果目标单元格属于某个合并区域，则返回整个合并区域的矩形。
      *
      * @private
+     * @param {number} row - 行索引
+     * @param {number} col - 列索引
+     * @param {Object} [sheet] - 工作表实例（可选，用于查询合并信息）
+     * @returns {{x: number, y: number, w: number, h: number}|null}
+     *
      */
-    #getCellRect(sheet, row, col, viewport) {
+    #getCellRect(row, col, sheet) {
         try {
-            let x, y, width, height;
+            if (!this.#renderEngine?.getCellRect) return null;
 
-            if (sheet.getColumnLeft && sheet.getRowTop) {
-                x = sheet.getColumnLeft(col) - (viewport?.scrollX || 0) + (viewport?.offsetX || 0);
-                y = sheet.getRowTop(row) - (viewport?.scrollY || 0) + (viewport?.offsetY || 0);
-                width = sheet.getColumnWidth(col);
-                height = sheet.getRowHeight(row);
-            } else {
-                return null;
+            let mergeInfo = null;
+            if (sheet?.mergeManager?.getMerge) {
+                mergeInfo = sheet.mergeManager.getMerge(row, col);
             }
 
-            return { x, y, width, height };
+            const rect = this.#renderEngine.getCellRect(row, col, mergeInfo);
+            if (!rect || (rect.w === 0 && rect.h === 0)) return null;
+
+            return rect;
         } catch (error) {
             return null;
         }
@@ -177,23 +183,39 @@ export class SearchResultHighlighter {
     /**
      * 获取可视范围
      *
+     * 参考 RenderEngine 的实现，通过 RenderEngine 或 viewport 参数获取准确的视口信息，
+     * 并利用 Sheet 的 RowColManager 计算真实可见的行列范围。
+     *
      * @private
+     * @param {Object} viewport - 视口信息对象（可选）
+     * @param {Object} [sheet] - 工作表实例（可选，用于获取行列管理器）
+     * @returns {{startRow: number, endRow: number, startCol: number, endCol: number}}
      */
-    #getVisibleRange(viewport) {
-        const defaultRowHeight = 20;
-        const defaultColWidth = 80;
+    #getVisibleRange(viewport, sheet) {
+        try {
+            let scrollX, scrollY, viewW, viewH;
+            scrollX = this.#renderEngine.scrollX || 0;
+            scrollY = this.#renderEngine.scrollY || 0;
+            viewW = this.#renderEngine.viewW || 0;
+            viewH = this.#renderEngine.viewH || 0;
 
-        const scrollY = viewport?.scrollY || 0;
-        const scrollX = viewport?.scrollX || 0;
-        const viewHeight = viewport?.height || window.innerHeight;
-        const viewWidth = viewport?.width || window.innerWidth;
+            const rc = sheet?.rowColManager;
+            return {
+                startRow: rc.rowAt(Math.max(0, scrollY)),
+                endRow: rc.rowAt(scrollY + viewH) + 1,
+                startCol: rc.colAt(Math.max(0, scrollX)),
+                endCol: rc.colAt(scrollX + viewW) + 1,
+            };
 
-        return {
-            startRow: Math.floor(scrollY / defaultRowHeight),
-            endRow: Math.ceil((scrollY + viewHeight) / defaultRowHeight),
-            startCol: Math.floor(scrollX / defaultColWidth),
-            endCol: Math.ceil((scrollX + viewWidth) / defaultColWidth),
-        };
+        } catch (error) {
+            console.warn("[SearchHighlighter] 获取可视范围失败:", error);
+            return {
+                startRow: 0,
+                endRow: Infinity,
+                startCol: 0,
+                endCol: Infinity,
+            };
+        }
     }
 
     /**
@@ -202,13 +224,13 @@ export class SearchResultHighlighter {
      * @private
      */
     #scrollToVisible(row, col) {
-        if (this.#renderEngine?.scrollToCell) {
-            try {
-                this.#renderEngine.scrollToCell(row, col);
-            } catch (error) {
-                console.warn("[Search] 滚动到单元格失败:", error);
-            }
+
+        try {
+            this.#renderEngine.scrollToCell(row, col);
+        } catch (error) {
+            console.warn("[Search] 滚动到单元格失败:", error);
         }
+
     }
 
     /**
@@ -217,9 +239,9 @@ export class SearchResultHighlighter {
      * @private
      */
     #markDirty() {
-        if (this.#renderEngine?.markDirty) {
+        if (this.#renderEngine?.requestRender) {
             try {
-                this.#renderEngine.markDirty();
+                this.#renderEngine.requestRender();
             } catch (error) {
                 // 静默处理
             }
@@ -235,7 +257,7 @@ export class SearchResultHighlighter {
         if (this.#renderEngine?.markDirtyCell) {
             try {
                 const [row, col] = key.split(":").map(Number);
-                this.#renderEngine.markDirtyCell(row, col);
+                this.#renderEngine.invalidateCell(row, col);
             } catch (error) {
                 // 静默处理
             }

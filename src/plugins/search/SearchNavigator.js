@@ -14,13 +14,18 @@ export class SearchNavigator {
     /** @type {Object|null} SelectionManager 实例 */
     #selectionManager = null;
 
+    /** @type {Object|null} RenderEngine 实例 */
+    #renderEngine = null;
+
     /**
      * @param {import("./SearchState.js")} state - 搜索状态管理器
      * @param {Object|null} selectionManager - 选区管理器
+     * @param {Object|null} renderEngine - 渲染引擎（用于滚动到可视区域）
      */
-    constructor(state, selectionManager) {
+    constructor(state, selectionManager, renderEngine = null) {
         this.#state = state;
         this.#selectionManager = selectionManager;
+        this.#renderEngine = renderEngine;
     }
 
     /**
@@ -124,20 +129,19 @@ export class SearchNavigator {
     }
 
     /**
-     * 滚动到目标单元格可见
+     * 滚动到指定单元格可见
      *
      * @private
      * @param {number} row - 行号
      * @param {number} col - 列号
      */
     #scrollToVisible(row, col) {
-        // 通过事件通知滚动，避免直接依赖 RenderEngine
-        if (this.#selectionManager?.workbook?.eventHandler?.hooks) {
-            try {
-                this.#selectionManager.workbook.eventHandler.hooks.runHooks("onScrollToCell", { row, col });
-            } catch (error) {
-                console.warn("[Search] 滚动到单元格失败:", error);
+        try {
+            if (this.#renderEngine?.scrollToCell) {
+                this.#renderEngine.scrollToCell(row, col);
             }
+        } catch (error) {
+            console.warn("[Search] 滚动到单元格失败:", error);
         }
     }
 }

@@ -19,7 +19,7 @@ import { SearchEngine } from "./SearchEngine.js";
 import { SearchUIController } from "./SearchUIController.js";
 import { SearchNavigator } from "./SearchNavigator.js";
 import { SearchResultHighlighter } from "./SearchResultHighlighter.js";
-import { SearchStrategy } from "./SearchStrategy.js"; // ✅ 新增：搜索策略
+import { SearchStrategy } from "./SearchStrategy.js"; 
 import { HOOKS } from "../../constants/hookNames.js";
 import { Cell } from "../../model/store/Cell.js";
 import { SetCellCommand } from "../../model/command/SetCellCommand.js";
@@ -56,7 +56,6 @@ export class SearchPlugin extends BasePlugin {
         shortcutKey: "Control+f",
         findNextKey: "F3",
         findPrevKey: "Shift+F3",
-        debounceDelay: 300,
         maxResults: 10000,
         highlightStyle: {
             backgroundColor: "rgba(255, 255, 0, 0.3)",
@@ -91,10 +90,7 @@ export class SearchPlugin extends BasePlugin {
     #strategy = null; // ✅ 新增：搜索策略实例
 
     /** @type {boolean} */
-    #active = false; // ✅ 新增：插件激活状态
-
-    /** @type {number|null} */
-    #debounceTimer = null;
+    #active = false; // 插件激活状态
 
     constructor(workbook) {
         super(workbook);
@@ -110,16 +106,13 @@ export class SearchPlugin extends BasePlugin {
 
     init(options = {}) {
         super.init({ ...SearchPlugin.DEFAULT_OPTIONS, ...options });
-
         this.#state = new SearchState();
         this.#engine = new SearchEngine();
         this.#uiController = new SearchUIController(this);
-        this.#navigator = new SearchNavigator(this.#state, this.workbook.activeSheet?.selection || null);
-        this.#highlighter = new SearchResultHighlighter(this.workbook.renderEngine || null, this.options.highlightStyle);
-
+        const renderEngine = this.workbook.renderEngine || null;
+        this.#navigator = new SearchNavigator(this.#state, this.workbook.activeSheet?.selection || null, renderEngine);
+        this.#highlighter = new SearchResultHighlighter(renderEngine, this.options.highlightStyle);
         this.#registerSearchStrategy();
-        this.#registerHooks();
-
         if (this.options.enabled) {
             this.enable();
         }
@@ -133,8 +126,6 @@ export class SearchPlugin extends BasePlugin {
         if (!this.eventHandler) return;
 
         this.#strategy = new SearchStrategy(this.eventHandler, this);
-
-        // 使用 BasePlugin 的 addStrategy 方法（自动管理生命周期，与 FilterPlugin 一致）
         this.addStrategy("searchShortcut", this.#strategy);
     }
 
@@ -315,8 +306,8 @@ export class SearchPlugin extends BasePlugin {
         if (canReplace === false) return false;
 
         try {
-            // ✅ 获取旧值快照
-            const oldCell = sheet.cellStore?.get(current.row, current.col);
+            // ✅ 获取旧值快照（使用 cellDataAccessor 统一访问接口）
+            const oldCell = sheet.cellDataAccessor.get(current.row, current.col);
 
             // ✅ 创建新 Cell 对象
             const newCell = new Cell(
@@ -326,7 +317,7 @@ export class SearchPlugin extends BasePlugin {
                 null, // 替换操作清除公式
             );
 
-            // ✅ 创建 SetCellCommand（记录完整状态用于撤销）
+            // ✅ 创建 SetCellCommand（记录完整状态用于撤销，使用 sheet 的 cellStore 属性）
             const cmd = new SetCellCommand(sheet.cellStore, current.row, current.col, oldCell, newCell);
 
             // ✅ 推入历史栈（关键步骤！支持 Ctrl+Z）
@@ -334,9 +325,9 @@ export class SearchPlugin extends BasePlugin {
                 sheet.batchOp.pushCommand(cmd, sheet.history);
             }
 
-            // ✅ 执行实际赋值
-            if (sheet.cellStore) {
-                sheet.cellStore.set(current.row, current.col, newCell);
+            // ✅ 执行实际赋值（使用 setCell 统一接口，支持事件、公式、缓存失效等）
+            if (sheet.setCell) {
+                sheet.setCell(current.row, current.col, replaceStr);
             }
 
             // 更新当前结果的数据引用
@@ -385,29 +376,20 @@ export class SearchPlugin extends BasePlugin {
             let skippedCount = 0;
 
             for (const result of results) {
-                // ✅ 新增：跳过只读单元格
-                if (sheet.dataCoordinator?.isDisabled?.(result.row, result.col)) {
+                // ✅ 新增：跳过只读单元格（使用统一接口 isDisabled）
+                if (sheet.isDisabled?.(result.row, result.col)) {
                     skippedCount++;
                     continue;
                 }
 
-                // ✅ 新增：跳过合并单元格的非主单元格
-                if (sheet.mergeManager && !sheet.mergeManager.isMainCell?.(result.row, result.col)) {
+                // ✅ 跳过合并单元格的非主单元格（使用 isTopLeft 判断是否为左上角）
+                if (sheet.mergeManager && !sheet.mergeManager.isTopLeft?.(result.row, result.col)) {
                     skippedCount++;
                     continue;
                 }
 
-                // ✅ 版本冲突检测（可选，防止并发编辑问题）
-                const currentCell = sheet.cellStore?.get(result.row, result.col);
-                if (currentCell?._version !== undefined && result.snapshotVersion !== undefined) {
-                    if (currentCell._version !== result.snapshotVersion) {
-                        console.warn(`[Search] 单元格 (${result.row},${result.col}) 数据已变更，跳过`);
-                        skippedCount++;
-                        continue;
-                    }
-                }
-
-                const oldCell = sheet.cellStore?.get(result.row, result.col);
+                // ✅ 获取旧值快照（使用 cellDataAccessor 统一接口）
+                const oldCell = sheet.cellDataAccessor.get(result.row, result.col);
 
                 const newCell = new Cell(replaceStr, oldCell?.styleId || 0, oldCell?.disabled || false, null);
 
@@ -535,16 +517,12 @@ export class SearchPlugin extends BasePlugin {
      * 销毁插件
      *
      * 先禁用（关闭面板、清除高亮、禁用策略），
-     * 再调用父类销毁清理所有注册资源。
+     * 再调用父类销毁，父类会自动清理所有注册的策略、钩子和事件监听。
      */
     destroy() {
         this.hide();
-        clearTimeout(this.#debounceTimer);
-
-        // 使用 BasePlugin 的 removeOwnStrategies 自动清理所有注册的策略
-        this.removeOwnStrategies();
+        // 清理插件特有的引用（策略对象）
         this.#strategy = null;
-
         super.destroy();
     }
 
@@ -557,25 +535,6 @@ export class SearchPlugin extends BasePlugin {
         return this.#state?.getQuery?.() || null;
     }
 
-    // ─── 私有方法 ──────────────────────────────
-
-    /**
-     * 注册钩子（注意：键盘快捷键已由 SearchStrategy 处理！）
-     *
-     * ✅ 重要提示：
-     * - Ctrl+F、F3、Shift+F3、Esc 等快捷键由 SearchStrategy 统一管理
-     * - SearchStrategy 通过 EventHandler 的事件委托机制自动协调优先级
-     * - 此处仅保留其他非快捷键相关的 Hook 注册
-     *
-     * @private
-     */
-    #registerHooks() {
-        // ⚠️ 已废弃：键盘快捷键已迁移至 SearchStrategy
-        // 原来的 Ctrl+F、F3 等快捷键逻辑现在在 SearchStrategy.#handleKeyDown() 中实现
-        // 这样可以更好地利用策略优先级系统和外部输入检测机制
-        // 如果未来需要添加其他 Hook（如数据变化监听等），可以在这里继续添加：
-        // this.addHook(HOOKS.AFTER_CHANGE, (changes) => { ... });
-    }
 
     /**
      * 获取需要搜索的单元格数据

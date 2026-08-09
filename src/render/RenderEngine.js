@@ -636,13 +636,13 @@ export class RenderEngine extends DOMComponent {
     /**
      * 标记指定单元格为脏，请求局部重绘
      *
-     * @param {number} pageRow - 行索引
+     * @param {number} row - 行索引
      * @param {number} col - 列索引
      */
-    invalidateCell(pageRow, col) {
+    invalidateCell(row, col) {
         const rc = this.#currentSheet ? this.#currentSheet.rowColManager : null;
-        this.tileLayer.markCellDirty(pageRow, col, rc);
-        this.frozenLayer.markCellDirty(pageRow, col, rc);
+        this.tileLayer.markCellDirty(row, col, rc);
+        this.frozenLayer.markCellDirty(row, col, rc);
         this.chartLayer?.invalidateChartData();
         this.requestRender();
     }

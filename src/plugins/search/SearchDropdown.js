@@ -5,6 +5,7 @@
  * 遵循项目 UI 组件规范。
  */
 import { PopupPanel } from "../../ui/components/PopupPanel.js";
+import { debounce } from "../../utils/helper.js";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -269,9 +270,28 @@ export class SearchDropdown extends PopupPanel {
     #onSearchCallback = null;
     #onNavigateCallback = null;
     #onCloseCallback = null;
+    /** @type {Function} 防抖后的搜索函数 */
+    #debouncedSearch = null;
 
     constructor() {
         super(template);
+        this.#createDebouncedSearch();
+    }
+
+    /**
+     * 创建防抖搜索函数
+     * @private
+     */
+    #createDebouncedSearch() {
+        this.#debouncedSearch = debounce((query) => {
+            if (query) {
+                const options = this.#getCurrentOptions();
+                this.#onSearchCallback?.(query, options);
+            } else {
+                this.#resultInfo.textContent = "-";
+                this.#resultInfo.className = "search-result-info";
+            }
+        }, 300);
     }
 
     connectedCallback() {
@@ -294,12 +314,13 @@ export class SearchDropdown extends PopupPanel {
         this.#onNavigateCallback = onNavigate;
         this.#onCloseCallback = onClose;
 
-        this.style.position = "fixed";
-        this.style.top = `${position.y}px`;
-        this.style.right = `${window.innerWidth - position.x}px`;
-        this.style.zIndex = this._getNextZIndex();
+        super.show({
+            position,
+            zIndex: undefined,  // 使用父类默认值 DEFAULT_Z_INDEX (10000)
+            closeOnClickOutside: false,
+            closeOnEscape: true,
+        });
 
-        document.body.appendChild(this);
         this.#inputElement?.focus();
         this.#inputElement?.select();
 
@@ -312,7 +333,8 @@ export class SearchDropdown extends PopupPanel {
      * @param {string} [reason="user-close"] - 关闭原因
      */
     hide(reason = "user-close") {
-        this.remove();
+        this.#debouncedSearch?.cancel();
+        super.hide(reason);
         this.#onCloseCallback?.(reason);
     }
 
@@ -352,22 +374,11 @@ export class SearchDropdown extends PopupPanel {
     }
 
     #bindEvents() {
-        let debounceTimer;
-
         if (!this.#inputElement) return;
 
         this.#inputElement.addEventListener("input", (e) => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                const query = e.target.value.trim();
-                if (query) {
-                    const options = this.#getCurrentOptions();
-                    this.#onSearchCallback?.(query, options);
-                } else {
-                    this.#resultInfo.textContent = "-";
-                    this.#resultInfo.className = "search-result-info";
-                }
-            }, 300);
+            const query = e.target.value.trim();
+            this.#debouncedSearch(query);
         });
 
         this.#inputElement.addEventListener("keydown", (e) => {

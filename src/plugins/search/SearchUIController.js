@@ -166,16 +166,7 @@ export class SearchUIController {
         if (!this.#dropdown) return;
 
         console.warn(`[Search] ${message}`);
-
-        if (typeof this.#dropdown.showWarning === "function") {
-            this.#dropdown.showWarning(message);
-        } else {
-            const event = new CustomEvent("search:warning", {
-                detail: { message },
-                bubbles: true,
-            });
-            this.#dropdown.dispatchEvent(event);
-        }
+        this.#dropdown.showWarning?.(message);
     }
 
     destroy() {
