@@ -206,7 +206,6 @@ export class SearchResultHighlighter {
                 startCol: rc.colAt(Math.max(0, scrollX)),
                 endCol: rc.colAt(scrollX + viewW) + 1,
             };
-
         } catch (error) {
             console.warn("[SearchHighlighter] 获取可视范围失败:", error);
             return {
@@ -224,13 +223,11 @@ export class SearchResultHighlighter {
      * @private
      */
     #scrollToVisible(row, col) {
-
         try {
             this.#renderEngine.scrollToCell(row, col);
         } catch (error) {
             console.warn("[Search] 滚动到单元格失败:", error);
         }
-
     }
 
     /**

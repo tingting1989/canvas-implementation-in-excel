@@ -316,7 +316,7 @@ export class SearchDropdown extends PopupPanel {
 
         super.show({
             position,
-            zIndex: undefined,  // 使用父类默认值 DEFAULT_Z_INDEX (10000)
+            zIndex: undefined, // 使用父类默认值 DEFAULT_Z_INDEX (10000)
             closeOnClickOutside: false,
             closeOnEscape: true,
         });

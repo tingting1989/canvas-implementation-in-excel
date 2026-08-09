@@ -19,7 +19,7 @@ import { SearchEngine } from "./SearchEngine.js";
 import { SearchUIController } from "./SearchUIController.js";
 import { SearchNavigator } from "./SearchNavigator.js";
 import { SearchResultHighlighter } from "./SearchResultHighlighter.js";
-import { SearchStrategy } from "./SearchStrategy.js"; 
+import { SearchStrategy } from "./SearchStrategy.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { Cell } from "../../model/store/Cell.js";
 import { SetCellCommand } from "../../model/command/SetCellCommand.js";
@@ -534,7 +534,6 @@ export class SearchPlugin extends BasePlugin {
     getLastQuery() {
         return this.#state?.getQuery?.() || null;
     }
-
 
     /**
      * 获取需要搜索的单元格数据
