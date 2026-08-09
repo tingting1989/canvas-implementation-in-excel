@@ -269,7 +269,7 @@ export class SearchResultHighlighter {
                         this.#drawHighlight(ctx, rect, isCurrent);
                     }
                 }
-                }
+            }
         } catch (error) {
             errorHandler.handle(ERROR_CODE.SEARCH_HIGHLIGHT_RENDER_ERROR, "渲染高亮时出错", { originalError: error });
         }
