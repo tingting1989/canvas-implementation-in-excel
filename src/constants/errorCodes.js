@@ -105,6 +105,67 @@ export const ERROR_CODE = Object.freeze({
     /** 参数数量无效 */
     FORMULA_ARGUMENT_COUNT_INVALID: "FORMULA_ARGUMENT_COUNT_INVALID",
 
+    // ── 搜索 ──
+    /** 搜索范围为空或无数据 */
+    SEARCH_EMPTY_RANGE: "SEARCH_EMPTY_RANGE",
+
+    /** 搜索执行失败 */
+    SEARCH_EXECUTION_ERROR: "SEARCH_EXECUTION_ERROR",
+
+    /** 无效的正则表达式 */
+    SEARCH_INVALID_REGEX: "SEARCH_INVALID_REGEX",
+
+    /** 替换操作失败 */
+    SEARCH_REPLACE_ERROR: "SEARCH_REPLACE_ERROR",
+
+    /** 全部替换失败 */
+    SEARCH_REPLACE_ALL_ERROR: "SEARCH_REPLACE_ALL_ERROR",
+
+    /** 替换时跳过不可编辑单元格 */
+    SEARCH_CELLS_SKIPPED: "SEARCH_CELLS_SKIPPED",
+
+    /** 渲染高亮失败 */
+    SEARCH_HIGHLIGHT_RENDER_ERROR: "SEARCH_HIGHLIGHT_RENDER_ERROR",
+
+    /** 获取可视范围失败 */
+    SEARCH_VISIBLE_RANGE_ERROR: "SEARCH_VISIBLE_RANGE_ERROR",
+
+    /** 滚动到单元格失败 */
+    SEARCH_SCROLL_TO_CELL_ERROR: "SEARCH_SCROLL_TO_CELL_ERROR",
+
+    /** 同步选区失败 */
+    SEARCH_SELECTION_SYNC_ERROR: "SEARCH_SELECTION_SYNC_ERROR",
+
+    /** 键盘事件处理失败 */
+    SEARCH_KEYBOARD_EVENT_ERROR: "SEARCH_KEYBOARD_EVENT_ERROR",
+
+    /** 缺少必要的上下文信息 */
+    SEARCH_MISSING_CONTEXT: "SEARCH_MISSING_CONTEXT",
+
+    /** 搜索结果过多，已截断 */
+    SEARCH_RESULTS_TRUNCATED: "SEARCH_RESULTS_TRUNCATED",
+
+    /** 搜索单元格出错 */
+    SEARCH_CELL_SEARCH_ERROR: "SEARCH_CELL_SEARCH_ERROR",
+
+    /** UI 控制器 - 注销 PopupManager 失败 */
+    SEARCH_UI_POPUP_UNREGISTER_ERROR: "SEARCH_UI_POPUP_UNREGISTER_ERROR",
+
+    /** UI 控制器 - 获取工作表位置失败 */
+    SEARCH_UI_POSITION_ERROR: "SEARCH_UI_POSITION_ERROR",
+
+    /** UI 控制器 - 导航失败 */
+    SEARCH_UI_NAVIGATION_ERROR: "SEARCH_UI_NAVIGATION_ERROR",
+
+    /** UI 控制器 - 关闭面板出错 */
+    SEARCH_UI_CLOSE_ERROR: "SEARCH_UI_CLOSE_ERROR",
+
+    /** Search Dropdown - 显示错误 */
+    SEARCH_DROPDOWN_SHOW_ERROR: "SEARCH_DROPDOWN_SHOW_ERROR",
+
+    /** Search Dropdown - 显示警告 */
+    SEARCH_DROPDOWN_WARNING: "SEARCH_DROPDOWN_WARNING",
+
     // ── 排序 ──
     /** 排序引擎未初始化 */
     SORT_ENGINE_NOT_INITIALIZED: "SORT_ENGINE_NOT_INITIALIZED",

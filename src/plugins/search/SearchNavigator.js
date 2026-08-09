@@ -1,3 +1,6 @@
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+
 /**
  * 搜索结果导航器
  *
@@ -124,7 +127,7 @@ export class SearchNavigator {
             this.#selectionManager.setActive(result.row, result.col);
             this.#scrollToVisible(result.row, result.col);
         } catch (error) {
-            console.error("[Search] 同步选区失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_SELECTION_SYNC_ERROR, "同步选区失败", { originalError: error });
         }
     }
 
@@ -141,7 +144,7 @@ export class SearchNavigator {
                 this.#renderEngine.scrollToCell(row, col);
             }
         } catch (error) {
-            console.warn("[Search] 滚动到单元格失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_SCROLL_TO_CELL_ERROR, "滚动到单元格失败", { originalError: error });
         }
     }
 }

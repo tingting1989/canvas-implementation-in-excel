@@ -6,6 +6,8 @@
  */
 import { PopupPanel } from "../../ui/components/PopupPanel.js";
 import { debounce } from "../../utils/helper.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -468,7 +470,7 @@ export class SearchDropdown extends PopupPanel {
             }, 300); // 与 CSS transition 时长匹配
         }, duration);
 
-        console.error(`[Search UI] ${message}`);
+        errorHandler.handle(ERROR_CODE.SEARCH_DROPDOWN_SHOW_ERROR, `[SearchDropdown] ${message}`);
     }
 
     /**
@@ -488,6 +490,6 @@ export class SearchDropdown extends PopupPanel {
             }, 3000);
         }
 
-        console.warn(`[Search UI] ${message}`);
+        errorHandler.warn(ERROR_CODE.SEARCH_DROPDOWN_WARNING, `[SearchDropdown] ${message}`);
     }
 }

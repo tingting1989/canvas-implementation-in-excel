@@ -1,3 +1,6 @@
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+
 /**
  * 搜索结果高亮渲染器
  *
@@ -116,7 +119,7 @@ export class SearchResultHighlighter {
 
             // ✅ 捕获渲染异常，避免影响主渲染循环
         } catch (error) {
-            console.warn("[SearchHighlighter] 渲染高亮时出错:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_HIGHLIGHT_RENDER_ERROR, "渲染高亮时出错", { originalError: error });
         }
     }
 
@@ -207,7 +210,7 @@ export class SearchResultHighlighter {
                 endCol: rc.colAt(scrollX + viewW) + 1,
             };
         } catch (error) {
-            console.warn("[SearchHighlighter] 获取可视范围失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_VISIBLE_RANGE_ERROR, "获取可视范围失败", { originalError: error });
             return {
                 startRow: 0,
                 endRow: Infinity,
@@ -226,7 +229,7 @@ export class SearchResultHighlighter {
         try {
             this.#renderEngine.scrollToCell(row, col);
         } catch (error) {
-            console.warn("[Search] 滚动到单元格失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_SCROLL_TO_CELL_ERROR, "滚动到单元格失败", { originalError: error });
         }
     }
 

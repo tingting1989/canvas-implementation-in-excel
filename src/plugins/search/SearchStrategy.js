@@ -1,6 +1,8 @@
 import { EventStrategy } from "../../editor/strategies/EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 /**
  * 搜索策略 (Search Strategy)
@@ -166,7 +168,7 @@ export class SearchStrategy extends EventStrategy {
             // ========== Enter: 在搜索框中导航（由 SearchDropdown 内部处理） ==========
             // 此处不需要额外处理，因为 SearchDropdown 已绑定 input 的 keydown
         } catch (error) {
-            console.error("[SearchStrategy] 键盘事件处理失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_KEYBOARD_EVENT_ERROR, "键盘事件处理失败", { originalError: error });
         }
 
         // 默认允许事件继续传播
@@ -182,7 +184,7 @@ export class SearchStrategy extends EventStrategy {
      */
     #showSearchPanel() {
         if (!this.handler?.viewport || !this.handler?.canvasContext) {
-            console.warn("[SearchStrategy] 缺少必要的上下文信息");
+            errorHandler.warn(ERROR_CODE.SEARCH_MISSING_CONTEXT, "缺少必要的上下文信息");
             return;
         }
 

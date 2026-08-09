@@ -1,3 +1,6 @@
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+
 /**
  * 搜索引擎核心算法
  *
@@ -45,13 +48,17 @@ export class SearchEngine {
                         });
 
                         if (results.length >= 10000) {
-                            console.warn("[Search] 结果过多 (10000+)，已截断");
+                            errorHandler.warn(ERROR_CODE.SEARCH_RESULTS_TRUNCATED, "[SearchEngine] 结果过多 (10000+)，已截断");
                             return results;
                         }
                     }
                 }
             } catch (error) {
-                console.error(`[搜索单元格 (${cell.row},${cell.col}) 出错]:`, error);
+                errorHandler.handle(ERROR_CODE.SEARCH_CELL_SEARCH_ERROR, `[SearchEngine] 搜索单元格 (${cell.row},${cell.col}) 出错`, {
+                    originalError: error,
+                    cellRow: cell.row,
+                    cellCol: cell.col,
+                });
                 continue;
             }
         }
@@ -119,7 +126,7 @@ export class SearchEngine {
                 return matches.length > 0 ? matches : null;
             };
         } catch (error) {
-            console.error("[Search] 无效正则表达式:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_INVALID_REGEX, "[SearchEngine] 无效正则表达式", { originalError: error, query: query });
             return () => null;
         }
     }

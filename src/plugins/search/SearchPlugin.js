@@ -24,6 +24,8 @@ import { HOOKS } from "../../constants/hookNames.js";
 import { Cell } from "../../model/store/Cell.js";
 import { SetCellCommand } from "../../model/command/SetCellCommand.js";
 import { BatchCommand } from "../../model/command/BatchCommand.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 /**
  * @typedef {Object} SearchResult
@@ -170,7 +172,7 @@ export class SearchPlugin extends BasePlugin {
             const cellData = this.#getCellData(options.searchScope);
 
             if (cellData.length === 0) {
-                console.warn("[Search] 搜索范围为空或无数据");
+                errorHandler.warn(ERROR_CODE.SEARCH_EMPTY_RANGE, "搜索范围为空或无数据");
                 this.#uiController.showWarning("搜索范围内无可用数据");
                 return [];
             }
@@ -190,15 +192,14 @@ export class SearchPlugin extends BasePlugin {
 
             return results;
         } catch (error) {
-            // ✅ 增强错误处理：分类显示友好提示
-            console.error("[Search] 搜索出错:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_EXECUTION_ERROR, "搜索出错", { originalError: error });
             this.#state.setError(error);
 
             let userMessage = "搜索过程中发生未知错误";
 
             if (error instanceof SyntaxError && options.useRegex) {
                 userMessage = `正则表达式语法错误: ${error.message}`;
-                console.warn(`[Search] 无效的正则表达式: "${queryStr}"`);
+                errorHandler.warn(ERROR_CODE.SEARCH_INVALID_REGEX, `无效的正则表达式: "${queryStr}"`);
             } else if (error instanceof RangeError) {
                 userMessage = "正则表达式过于复杂或递归深度超限";
             } else if (error.message?.includes("memory") || error.message?.includes("stack")) {
@@ -343,7 +344,7 @@ export class SearchPlugin extends BasePlugin {
 
             return true;
         } catch (error) {
-            console.error("[Search] 替换失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
             return false;
         }
     }
@@ -425,14 +426,14 @@ export class SearchPlugin extends BasePlugin {
                 })),
             });
 
-            // ✅ 新增：记录跳过的单元格数量
+            // 记录跳过的单元格数量
             if (skippedCount > 0) {
-                console.warn(`[Search] 已跳过 ${skippedCount} 个不可编辑单元格（只读/合并/数据冲突）`);
+                errorHandler.warn(ERROR_CODE.SEARCH_CELLS_SKIPPED, `已跳过 ${skippedCount} 个不可编辑单元格（只读/合并/数据冲突）`);
             }
 
             return commands.length;
         } catch (error) {
-            console.error("[Search] 全部替换失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
             return 0;
         }
     }

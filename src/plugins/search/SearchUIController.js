@@ -8,6 +8,8 @@
  */
 import { SearchDropdown } from "./SearchDropdown.js";
 import { PopupManager } from "../../ui/components/PopupManager.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 export class SearchUIController {
     /** @type {import("./SearchPlugin.js")} */
@@ -55,7 +57,7 @@ export class SearchUIController {
                 try {
                     PopupManager.getInstance().unregister(this.#popupId);
                 } catch (error) {
-                    console.warn("[Search] 注销 PopupManager 失败:", error);
+                    errorHandler.warn(ERROR_CODE.SEARCH_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", { originalError: error });
                 }
             }
 
@@ -95,7 +97,7 @@ export class SearchUIController {
                 y: Math.max(rect.top + 10, 60),
             };
         } catch (error) {
-            console.warn("[Search] 获取工作表位置失败，使用默认位置");
+            errorHandler.warn(ERROR_CODE.SEARCH_UI_POSITION_ERROR, "获取工作表位置失败，使用默认位置", { originalError: error });
             return { x: window.innerWidth - 450, y: 60 };
         }
     }
@@ -104,7 +106,7 @@ export class SearchUIController {
         try {
             await this.#plugin.query(query, options);
         } catch (error) {
-            console.error("[Search] 搜索失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "搜索失败", { originalError: error });
         }
     }
 
@@ -116,7 +118,7 @@ export class SearchUIController {
                 await this.#plugin.findPrevious();
             }
         } catch (error) {
-            console.error("[Search] 导航失败:", error);
+            errorHandler.handle(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "导航失败", { originalError: error });
         }
     }
 
@@ -124,7 +126,7 @@ export class SearchUIController {
         try {
             this.#plugin.hide();
         } catch (error) {
-            console.warn("[Search] 关闭面板时出错:", error);
+            errorHandler.warn(ERROR_CODE.SEARCH_UI_CLOSE_ERROR, "关闭面板时出错", { originalError: error });
         }
     }
 
@@ -137,7 +139,7 @@ export class SearchUIController {
     showError(message, duration = 3000) {
         if (!this.#dropdown) return;
 
-        console.error(`[Search] ${message}`);
+        errorHandler.handle(ERROR_CODE.GENERIC_ERROR, message);
 
         // 使用 Web Component 的 API 或自定义事件
         if (typeof this.#dropdown.showError === "function") {
@@ -165,7 +167,7 @@ export class SearchUIController {
     showWarning(message) {
         if (!this.#dropdown) return;
 
-        console.warn(`[Search] ${message}`);
+        errorHandler.warn(ERROR_CODE.GENERIC_WARN, message);
         this.#dropdown.showWarning?.(message);
     }
 
