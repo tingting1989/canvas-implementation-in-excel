@@ -352,11 +352,12 @@ export class SearchDropdown extends PopupPanel {
      * 创建搜索面板实例
      *
      * 初始化流程：
-     * 1. 调用父类构造函数，传入 Shadow DOM template
+     * 1. 调用父类构造函数（无参数）
      * 2. 创建防抖搜索函数（300ms 延迟）
      *
      * 注意：
      * - 此时 **不** 绑定事件和缓存 DOM 引用
+     * - Shadow DOM 模板在 render() 方法中渲染
      * - 这些操作延迟到 `connectedCallback`（元素插入 DOM 时）执行
      *
      * @constructor
@@ -366,8 +367,22 @@ export class SearchDropdown extends PopupPanel {
      * const dropdown = new SearchDropdown(); // 仅创建实例，未挂载到 DOM
      */
     constructor() {
-        super(template);
+        super();
         this.#createDebouncedSearch();
+    }
+
+    /**
+     * 渲染组件
+     *
+     * 创建 Shadow DOM 结构（仅在首次渲染时执行）
+     *
+     * @override
+     * @returns {void}
+     */
+    render() {
+        if (!this.shadowRoot.querySelector(".search-dropdown-panel")) {
+            this.shadowRoot.appendChild(template.content.cloneNode(true));
+        }
     }
 
     /**
@@ -790,3 +805,5 @@ export class SearchDropdown extends PopupPanel {
         errorHandler.warn(ERROR_CODE.SEARCH_DROPDOWN_WARNING, `[SearchDropdown] ${message}`);
     }
 }
+
+customElements.define("search-dropdown", SearchDropdown);

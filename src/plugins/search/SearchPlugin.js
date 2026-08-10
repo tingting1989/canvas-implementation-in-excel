@@ -181,6 +181,9 @@ export class SearchPlugin extends BasePlugin {
 
             this.#state.setResults(results.slice(0, this.options.maxResults));
             this.#highlighter.updateHighlights(this.#state.getResults());
+
+            // ✅ 动态更新依赖（确保 goToFirst 能正确同步选区）
+            this.#updateNavigatorDependencies();
             this.#navigator.goToFirst();
 
             // 触发 afterSearch 钩子（同步调用）
@@ -225,6 +228,9 @@ export class SearchPlugin extends BasePlugin {
      * @returns {Promise<SearchResult|null>}
      */
     async findNext() {
+        // ✅ 动态更新 SelectionManager（解决初始化时 selection 为 null 的问题）
+        this.#updateNavigatorDependencies();
+
         // 触发 beforeNavigate 钩子（可取消，同步调用）
         const canProceed = this.hooks.runHooksUntil(HOOKS.BEFORE_SEARCH_NAVIGATE, {
             direction: "next",
@@ -256,6 +262,9 @@ export class SearchPlugin extends BasePlugin {
      * @returns {Promise<SearchResult|null>}
      */
     async findPrevious() {
+        // ✅ 动态更新 SelectionManager（解决初始化时 selection 为 null 的问题）
+        this.#updateNavigatorDependencies();
+
         // 触发 beforeNavigate 钩子（可取消，同步调用）
         const canProceed = this.hooks.runHooksUntil(HOOKS.BEFORE_SEARCH_NAVIGATE, {
             direction: "prev",
@@ -586,6 +595,31 @@ export class SearchPlugin extends BasePlugin {
         }
 
         return data;
+    }
+
+    /**
+     * 动态更新 SearchNavigator 的依赖项
+     *
+     * 解决问题：
+     * - 插件初始化时 activeSheet 可能未就绪，导致 selectionManager 为 null
+     * - 工作表切换后，旧的 selectionManager 引用失效
+     * - 每次导航前重新获取最新的依赖，确保功能正常
+     *
+     * 更新时机：
+     * - findNext() 调用前
+     * - findPrevious() 调用前
+     * - query() 首次搜索后（goToFirst）
+     *
+     * @private
+     * @returns {void}
+     */
+    #updateNavigatorDependencies() {
+        if (!this.#navigator) return;
+
+        const currentSelection = this.workbook?.activeSheet?.selection || null;
+        const currentRenderEngine = this.workbook?.renderEngine || null;
+
+        this.#navigator.updateDependencies(currentSelection, currentRenderEngine);
     }
 
     /**

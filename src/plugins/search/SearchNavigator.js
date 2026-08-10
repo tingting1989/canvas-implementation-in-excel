@@ -293,4 +293,32 @@ export class SearchNavigator {
             errorHandler.handle(ERROR_CODE.SEARCH_SCROLL_TO_CELL_ERROR, "滚动到单元格失败", { originalError: error });
         }
     }
+
+    /**
+     * 动态更新依赖项（SelectionManager 和 RenderEngine）
+     *
+     * 解决问题场景：
+     * 1. **初始化时序问题**：插件 init() 时 activeSheet 可能未就绪
+     * 2. **工作表切换**：用户切换工作表后，旧的 selectionManager 失效
+     * 3. **动态加载**：某些组件延迟加载，初始时为 null
+     *
+     * 使用方式：
+     * 在每次导航操作前由 SearchPlugin 调用，
+     * 确保使用最新的依赖实例。
+     *
+     * @public
+     * @param {Object|null} selectionManager - 最新的选区管理器实例
+     * @param {Object|null} renderEngine - 最新的渲染引擎实例
+     * @returns {void}
+     *
+     * @example
+     * // SearchPlugin.findNext() 中调用
+     * const currentSelection = workbook.activeSheet?.selection || null;
+     * const currentRenderEngine = workbook.renderEngine || null;
+     * navigator.updateDependencies(currentSelection, currentRenderEngine);
+     */
+    updateDependencies(selectionManager, renderEngine) {
+        this.#selectionManager = selectionManager;
+        this.#renderEngine = renderEngine;
+    }
 }

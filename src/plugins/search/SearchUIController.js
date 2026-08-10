@@ -48,6 +48,20 @@ export class SearchUIController {
     #popupId = null;
 
     /**
+     * @private 防重入标志 - 防止关闭时的无限递归
+     *
+     * 当用户按 Esc 键时，会同时触发：
+     * 1. SearchStrategy 调用 plugin.hide()
+     * 2. SearchDropdown 的 onClose 回调调用 plugin.hide()
+     *
+     * 如果不加以控制，会形成无限递归循环。
+     * 此标志位在 hide() 开始时设置为 true，结束时重置为 false。
+     *
+     * @type {boolean}
+     */
+    #isHiding = false;
+
+    /**
      * 创建搜索 UI 控制器实例
      *
      * 初始化时仅保存插件引用，不立即创建 UI 组件。
@@ -106,13 +120,15 @@ export class SearchUIController {
      * 隐藏搜索面板并释放资源
      *
      * 执行流程：
-     * 1. 调用 dropdown.hide() 触发动画隐藏
-     * 2. 从 PopupManager 注销此弹窗标识
-     * 3. 清空内部引用（#dropdown 和 #popupId）
+     * 1. 检查防重入标志，避免无限递归
+     * 2. 调用 dropdown.hide() 触发动画隐藏
+     * 3. 从 PopupManager 注销此弹窗标识
+     * 4. 清空内部引用（#dropdown 和 #popupId）
      *
      * 安全性保证：
      * - 即使注销失败也不会抛出异常（通过 errorHandler 记录警告）
      * - 支持重复调用（幂等操作）
+     * - 防止 Esc 关闭时的双重调用导致的无限循环
      *
      * @public
      * @returns {void}
@@ -121,7 +137,11 @@ export class SearchUIController {
      * uiController.hide(); // 关闭搜索面板
      */
     hide() {
-        if (this.#dropdown) {
+        if (this.#isHiding || !this.#dropdown) return;
+
+        this.#isHiding = true;
+
+        try {
             this.#dropdown.hide();
 
             if (this.#popupId) {
@@ -134,6 +154,8 @@ export class SearchUIController {
 
             this.#dropdown = null;
             this.#popupId = null;
+        } finally {
+            this.#isHiding = false;
         }
     }
 
@@ -285,6 +307,15 @@ export class SearchUIController {
      * 由 SearchDropdown 的关闭按钮或 Esc 键触发。
      * 通知 SearchPlugin 执行完整的关闭流程（包括清除高亮等）。
      *
+     * ⚠️ **重要：防重入保护**
+     *
+     * 此回调可能在以下场景被触发：
+     * 1. 用户点击 ✕ 关闭按钮（仅此回调）
+     * 2. 用户按 Esc 键（SearchStrategy + 此回调 双重触发）
+     *
+     * 由于 `hide()` 方法已有防重入保护（#isHiding 标志），
+     * 此处直接调用 `plugin.hide()` 是安全的，重复调用会被自动忽略。
+     *
      * 关闭原因分类：
      * - "user-close": 用户点击关闭按钮
      * - "escape": 按 Esc 键
@@ -295,6 +326,8 @@ export class SearchUIController {
      * @returns {void}
      */
     #handleClose(reason) {
+        if (!this.#dropdown) return;
+
         try {
             this.#plugin.hide();
         } catch (error) {

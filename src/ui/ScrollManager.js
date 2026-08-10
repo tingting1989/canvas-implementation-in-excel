@@ -274,13 +274,16 @@ export class ScrollManager extends DOMComponent {
         const viewW = this.#viewW - (this.#headerW ?? CONFIG.HEADER_WIDTH) - frozenColsW;
         const viewH = this.#viewH - (this.#headerH ?? CONFIG.HEADER_HEIGHT) - frozenRowsH;
 
+        let newScrollX = this.#scrollX;
+        let newScrollY = this.#scrollY;
+
         if (cellX < frozenColsW) {
             // cell is in frozen column area, no horizontal scroll needed
         } else {
             if (cellX - frozenColsW < this.#scrollX) {
-                this.#scrollX = cellX - frozenColsW;
+                newScrollX = cellX - frozenColsW;
             } else if (cellX + cellW - frozenColsW > this.#scrollX + viewW) {
-                this.#scrollX = cellX + cellW - frozenColsW - viewW;
+                newScrollX = cellX + cellW - frozenColsW - viewW;
             }
         }
 
@@ -288,14 +291,14 @@ export class ScrollManager extends DOMComponent {
             // cell is in frozen row area, no vertical scroll needed
         } else {
             if (cellY - frozenRowsH < this.#scrollY) {
-                this.#scrollY = cellY - frozenRowsH;
+                newScrollY = cellY - frozenRowsH;
             } else if (cellY + cellH - frozenRowsH > this.#scrollY + viewH) {
-                this.#scrollY = cellY + cellH - frozenRowsH - viewH;
+                newScrollY = cellY + cellH - frozenRowsH - viewH;
             }
         }
 
-        this.#scrollX = Math.max(0, Math.min(this.#maxScrollX, this.#scrollX));
-        this.#scrollY = Math.max(0, Math.min(this.#maxScrollY, this.#scrollY));
+        // ✅ 关键修复：使用 setScrollPosition 统一处理边界检查和视图更新
+        this.setScrollPosition(newScrollX, newScrollY);
     }
 
     /** @override */

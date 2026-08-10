@@ -5,15 +5,15 @@
  */
 import { describe, it, expect, beforeEach, jest } from "vitest";
 
-// Mock 依赖模块
-jest.mock("../../model/command/SetCellCommand.js");
-jest.mock("../../model/command/BatchCommand.js");
-jest.mock("../../model/store/Cell.js");
-
 import { SearchPlugin } from "../SearchPlugin.js";
 import { SetCellCommand } from "../../model/command/SetCellCommand.js";
 import { BatchCommand } from "../../model/command/BatchCommand.js";
 import { Cell } from "../../model/store/Cell.js";
+
+// Mock 依赖模块
+jest.mock("../../model/command/SetCellCommand.js");
+jest.mock("../../model/command/BatchCommand.js");
+jest.mock("../../model/store/Cell.js");
 
 describe("SearchPlugin Replace with Undo Support", () => {
     let workbook;
