@@ -114,6 +114,11 @@ export class SearchPlugin extends BasePlugin {
         const renderEngine = this.workbook.renderEngine || null;
         this.#navigator = new SearchNavigator(this.#state, this.workbook.activeSheet?.selection || null, renderEngine);
         this.#highlighter = new SearchResultHighlighter(renderEngine, this.options.highlightStyle);
+
+        // ✅ 注册搜索高亮器到 RenderEngine（使其参与渲染循环）
+        if (renderEngine?.setSearchHighlighter) {
+            renderEngine.setSearchHighlighter(this.#highlighter);
+        }
         this.#registerSearchStrategy();
         if (this.options.enabled) {
             this.enable();
@@ -452,6 +457,11 @@ export class SearchPlugin extends BasePlugin {
      */
     show() {
         this.#uiController.show();
+
+        // ✅ 重新注册高亮器到 RenderEngine（确保渲染循环能绘制高亮）
+        if (this.workbook?.renderEngine?.setSearchHighlighter && this.#highlighter) {
+            this.workbook.renderEngine.setSearchHighlighter(this.#highlighter);
+        }
     }
 
     /**
@@ -461,6 +471,11 @@ export class SearchPlugin extends BasePlugin {
         this.#uiController.hide();
         this.#clearHighlight();
         this.#state.clear();
+
+        // ✅ 从 RenderEngine 注销高亮器（停止渲染高亮）
+        if (this.workbook?.renderEngine?.setSearchHighlighter) {
+            this.workbook.renderEngine.setSearchHighlighter(null);
+        }
     }
 
     /**
@@ -530,9 +545,16 @@ export class SearchPlugin extends BasePlugin {
      * 再调用父类销毁，父类会自动清理所有注册的策略、钩子和事件监听。
      */
     destroy() {
-        this.hide();
+        this.hide(); // hide() 已包含注销高亮器的逻辑
+
         // 清理插件特有的引用（策略对象）
         this.#strategy = null;
+
+        // ✅ 确保从 RenderEngine 清除高亮器引用（双重保险）
+        if (this.workbook?.renderEngine?.setSearchHighlighter) {
+            this.workbook.renderEngine.setSearchHighlighter(null);
+        }
+
         super.destroy();
     }
 
