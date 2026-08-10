@@ -87,7 +87,7 @@ export class SearchUIController {
      * 2. 创建新的 SearchDropdown 实例
      * 3. 计算最佳显示位置（基于工作表元素位置）
      * 4. 调用 dropdown.show() 并注册到 PopupManager
-     * 5. 绑定三个核心回调：搜索、导航、关闭
+     * 5. 绑定五个核心回调：搜索、导航、替换、全部替换、关闭
      *
      * 位置计算策略：
      * - 优先在工作表右上角显示
@@ -108,12 +108,14 @@ export class SearchUIController {
 
         const position = this.#calculatePosition();
 
-        this.#popupId = this.#dropdown.show(
-            position,
-            (query, options) => this.#handleSearch(query, options),
-            (direction) => this.#handleNavigate(direction),
-            (reason) => this.#handleClose(reason),
-        );
+        // ✅ 使用对象形式的回调参数（支持替换功能）
+        this.#popupId = this.#dropdown.show(position, {
+            onSearch: (query, options) => this.#handleSearch(query, options),
+            onNavigate: (direction) => this.#handleNavigate(direction),
+            onReplace: async (replaceStr) => await this.#handleReplace(replaceStr),
+            onReplaceAll: async (replaceStr) => await this.#handleReplaceAll(replaceStr),
+            onClose: (reason) => this.#handleClose(reason),
+        });
     }
 
     /**
@@ -336,6 +338,88 @@ export class SearchUIController {
     }
 
     /**
+     * 处理单个替换请求回调
+     *
+     * 由 SearchDropdown 的"替换"按钮或 Enter 键触发。
+     * 调用 SearchPlugin.replace() 执行当前项的替换操作，
+     * 支持撤销（Ctrl+Z）。
+     *
+     * ### 替换流程
+     * 1. 获取当前选中的搜索结果
+     * 2. 使用 SetCellCommand 记录旧值/新值
+     * 3. 推入 HistoryStack 支持撤销
+     * 4. 执行实际的单元格赋值
+     * 5. 更新结果数据引用
+     *
+     * @private
+     * @async
+     * @param {string} replaceStr - 替换文本
+     * @returns {Promise<boolean>} 是否成功替换
+     *
+     * @example
+     * // 用户在替换框输入 "Hi" 并点击"替换"
+     * const success = await this.#handleReplace("Hi");
+     * // 如果成功，自动导航到下一个匹配项
+     */
+    async #handleReplace(replaceStr) {
+        try {
+            const success = await this.#plugin.replace(replaceStr);
+
+            if (success && this.#dropdown) {
+                // 刷新结果信息显示
+                this.#dropdown.updateResultInfo(this.#plugin.getState());
+            }
+
+            return success;
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
+            return false;
+        }
+    }
+
+    /**
+     * 处理全部替换请求回调
+     *
+     * 由 SearchDropdown 的"全部替换"按钮或 Ctrl+Enter 触发。
+     * 调用 SearchPlugin.replaceAll() 批量替换所有匹配项，
+     * 使用 BatchCommand 实现原子操作和一键撤销。
+     *
+     * ### 全部替换特性
+     * - **原子性**: 所有替换作为一个整体，仅占 1 个 undo 栈位
+     * - **智能跳过**: 自动跳过只读单元格和非主合并单元格
+     * - **性能优化**: 批量执行减少多次渲染刷新
+     * - **完整撤销**: Ctrl+Z 一键恢复所有更改
+     *
+     * @private
+     * @async
+     * @param {string} replaceStr - 替换文本
+     * @returns {Promise<number>} 成功替换的数量
+     *
+     * @example
+     * // 用户输入 "Hello" 并点击"全部替换"
+     * const count = await this.#handleReplaceAll("Hello");
+     * // 返回值如 15 表示替换了 15 个单元格
+     */
+    async #handleReplaceAll(replaceStr) {
+        try {
+            const count = await this.#plugin.replaceAll(replaceStr);
+
+            if (count > 0 && this.#dropdown) {
+                // 清空搜索结果（因为所有匹配项已被替换）
+                this.#dropdown.updateResultInfo(this.#plugin.getState());
+
+                // 可选：清空搜索输入框（根据需求决定）
+                // this.#dropdown.clearInput();
+            }
+
+            return count;
+        } catch (error) {
+            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
+            return 0;
+        }
+    }
+
+    /**
      * 显示错误信息（带自动消失的 Toast 提示）
      *
      * 两阶段处理：
@@ -399,6 +483,16 @@ export class SearchUIController {
 
         errorHandler.warn(ERROR_CODE.GENERIC_WARN, message);
         this.#dropdown.showWarning?.(message);
+    }
+
+    /**
+     * 获取当前显示的 SearchDropdown 实例（用于外部访问面板组件方法）
+     *
+     * @public
+     * @returns {SearchDropdown|null}
+     */
+    get dropdown() {
+        return this.#dropdown;
     }
 
     /**

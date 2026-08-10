@@ -118,11 +118,27 @@ export class SearchStrategy extends EventStrategy {
                     // 如果已打开，则关闭
                     this.#plugin.hide();
                 } else {
-                    // 否则打开搜索面板
-                    this.#showSearchPanel();
+                    // 否则打开搜索面板（纯查找模式）
+                    this.#showSearchPanel(false);
                 }
 
                 return false; // 阻止默认行为和其他策略处理
+            }
+
+            // ========== Ctrl+H / Cmd+H: 打开或关闭替换面板 ==========
+            if (ctrlOrCmd && key === "h") {
+                e.preventDefault();
+                e.stopPropagation();
+
+                if (this.#isSearchActive) {
+                    // 如果已打开，则关闭
+                    this.#plugin.hide();
+                } else {
+                    // 否则打开搜索面板并显示替换区域
+                    this.#showSearchPanel(true);
+                }
+
+                return false;
             }
 
             // ========== F3: 导航到下一个结果 ==========
@@ -178,11 +194,10 @@ export class SearchStrategy extends EventStrategy {
     /**
      * 显示搜索面板
      *
-     * 计算合适的屏幕位置（通常在视口顶部居中）
-     *
+     * @param {boolean} [showReplace=false] - 是否切换到替换标签页
      * @private
      */
-    #showSearchPanel() {
+    #showSearchPanel(showReplace = false) {
         if (!this.handler?.viewport || !this.handler?.canvasContext) {
             errorHandler.warn(ERROR_CODE.SEARCH_MISSING_CONTEXT, "缺少必要的上下文信息");
             return;
@@ -198,6 +213,13 @@ export class SearchStrategy extends EventStrategy {
         };
 
         this.#plugin.show(position);
+
+        // ✅ 如果请求切换到替换标签页，延迟执行（等待面板渲染完成）
+        if (showReplace) {
+            setTimeout(() => {
+                this.#plugin.uiController.dropdown?.switchTab("replace");
+            }, 150);
+        }
     }
 
     /**

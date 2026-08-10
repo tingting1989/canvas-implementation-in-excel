@@ -568,6 +568,16 @@ export class SearchPlugin extends BasePlugin {
     }
 
     /**
+     * 获取 UI 控制器实例（用于外部访问面板组件）
+     *
+     * @public
+     * @returns {SearchUIController}
+     */
+    get uiController() {
+        return this.#uiController;
+    }
+
+    /**
      * 获取需要搜索的单元格数据
      *
      * @private

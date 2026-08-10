@@ -288,31 +288,334 @@ template.innerHTML = `
     :host([data-theme="dark"]) .search-result-info.warning {
         color: #fbbf24 !important;
     }
+
+    /* ========== 标签页样式 (Excel 风格) ========== */
+
+    /* 标签页头部容器 */
+    .tab-header {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 12px;
+        padding: 0 4px;
+    }
+
+    /* 单个标签页按钮 */
+    .tab-btn {
+        position: relative;
+        padding: 8px 16px;
+        margin-right: 4px;
+        border: none;
+        background: transparent;
+        color: #666;
+        font-size: 13px;
+        font-weight: 400;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 2px solid transparent;
+    }
+
+    .tab-btn:hover {
+        color: #1890ff;
+        background: rgba(24,144,255,0.04);
+    }
+
+    .tab-btn.active {
+        color: #1890ff;
+        font-weight: 600;
+        border-bottom-color: #1890ff;
+    }
+
+    /* 标签页内容容器 */
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* 表单行（标签 + 输入框） */
+    .form-row {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 8px;
+    }
+
+    .form-label {
+        min-width: 70px;
+        font-size: 13px;
+        color: #333;
+        text-align: right;
+        flex-shrink: 0;
+    }
+
+    .form-input {
+        flex: 1;
+        height: 30px;
+        padding: 6px 10px;
+        border: 1px solid #d9d9d9;
+        border-radius: 4px;
+        background: white;
+        color: #333;
+        font-size: 13px;
+        outline: none;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        border-color: #1890ff;
+        box-shadow: 0 0 0 2px rgba(24,144,255,0.15);
+    }
+
+    .form-input::placeholder {
+        color: #bfbfbf;
+    }
+
+    :host-context(.dark) .form-label {
+        color: #d9d9d9;
+    }
+
+    :host-context(.dark) .form-input,
+    :host([data-theme="dark"]) .form-input {
+        background: #262626;
+        border-color: #434343;
+        color: #d9d9d9;
+    }
+
+    :host-context(.dark) .form-input:focus,
+    :host([data-theme="dark"]) .form-input:focus {
+        border-color: #177ddc;
+        box-shadow: 0 0 0 2px rgba(23,125,220,0.25);
+    }
+
+    :host-context(.dark) .form-input::placeholder,
+    :host([data-theme="dark"]) .form-input::placeholder {
+        color: #595959;
+    }
+
+    /* 选项行 */
+    .options-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .options-left {
+        display: flex;
+        gap: 6px;
+    }
+
+    /* 按钮组 */
+    .action-buttons {
+        display: flex;
+        gap: 6px;
+        margin-top: 16px;
+    }
+
+    .action-btn {
+        height: 30px;
+        padding: 0 16px;
+        border: 1px solid #d9d9d9;
+        border-radius: 4px;
+        background: white;
+        color: #333;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .action-btn:hover:not(:disabled) {
+        background: #f5f5f5;
+        border-color: #bfbfbf;
+        color: #1890ff;
+    }
+
+    .action-btn:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+
+    .action-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    .action-btn.primary {
+        background: #1890ff;
+        border-color: #1890ff;
+        color: white;
+        font-weight: 500;
+    }
+
+    .action-btn.primary:hover:not(:disabled) {
+        background: #40a9ff;
+        border-color: #40a9ff;
+    }
+
+    .action-btn.success {
+        background: #52c41a;
+        border-color: #52c41a;
+        color: white;
+        font-weight: 500;
+    }
+
+    .action-btn.success:hover:not(:disabled) {
+        background: #73d13d;
+        border-color: #73d13d;
+    }
+
+    :host-context(.dark) .action-btn,
+    :host([data-theme="dark"]) .action-btn {
+        background: #262626;
+        border-color: #434343;
+        color: #d9d9d9;
+    }
+
+    :host-context(.dark) .action-btn:hover:not(:disabled),
+    :host([data-theme="dark"]) .action-btn:hover:not(:disabled) {
+        background: #303030;
+        border-color: #595959;
+        color: #177ddc;
+    }
+
+    :host-context(.dark) .action-btn.primary,
+    :host([data-theme="dark"]) .action-btn.primary {
+        background: #177ddc;
+        border-color: #177ddc;
+        color: white;
+    }
+
+    :host-context(.dark) .action-btn.primary:hover:not(:disabled),
+    :host([data-theme="dark"]) .action-btn.primary:hover:not(:disabled) {
+        background: #3aa1ff;
+        border-color: #3aa1ff;
+    }
+
+    :host-context(.dark) .action-btn.success,
+    :host([data-theme="dark"]) .action-btn.success {
+        background: #389e0d;
+        border-color: #389e0d;
+        color: white;
+    }
+
+    :host-context(.dark) .action-btn.success:hover:not(:disabled),
+    :host([data-theme="dark"]) .action-btn.success:hover:not(:disabled) {
+        background: #49aa19;
+        border-color: #49aa19;
+    }
+
+    :host-context(.dark) .options-row,
+    :host([data-theme="dark"]) .options-row {
+        border-top-color: #303030;
+    }
+
+    :host-context(.dark) .tab-header,
+    :host([data-theme="dark"]) .tab-header {
+        border-bottom-color: #434343;
+    }
+
+    :host-context(.dark) .tab-btn,
+    :host([data-theme="dark"]) .tab-btn {
+        color: #8c8c8c;
+    }
+
+    :host-context(.dark) .tab-btn:hover,
+    :host([data-theme="dark")] .tab-btn:hover {
+        color: #177ddc;
+        background: rgba(23,125,220,0.08);
+    }
+
+    :host-context(.dark) .tab-btn.active,
+    :host([data-theme="dark"]) .tab-btn.active {
+        color: #177ddc;
+        border-bottom-color: #177ddc;
+    }
 </style>
 
 <div class="search-dropdown-panel">
-    <div class="search-input-wrapper">
-        <input type="text" 
-               class="search-input" 
-               placeholder="搜索..." 
-               autocomplete="off" 
-               spellcheck="false" />
+    <!-- 标签页头部 -->
+    <div class="tab-header">
+        <button class="tab-btn active" data-tab="find">查找(D)</button>
+        <button class="tab-btn" data-tab="replace">替换(P)</button>
     </div>
-    
-    <div class="search-options">
-        <button class="search-option-btn" data-option="caseSensitive" title="区分大小写 (Alt+C)">Aa</button>
-        <button class="search-option-btn" data-option="wholeWord" title="全字匹配 (Alt+W)">W</button>
-        <button class="search-option-btn" data-option="useRegex" title="使用正则 (Alt+R)">.*</button>
+
+    <!-- 查找标签页内容 -->
+    <div class="tab-content active" id="tab-find">
+        <div class="form-row">
+            <label class="form-label">查找内容(N)</label>
+            <input type="text"
+                   class="form-input search-input"
+                   placeholder="输入查找内容..."
+                   autocomplete="off"
+                   spellcheck="false" />
+        </div>
+
+        <div class="options-row">
+            <div class="options-left">
+                <button class="search-option-btn" data-option="caseSensitive" title="区分大小写 (Alt+C)">Aa</button>
+                <button class="search-option-btn" data-option="wholeWord" title="全字匹配 (Alt+W)">W</button>
+                <button class="search-option-btn" data-option="useRegex" title="使用正则 (Alt+R)">.*</button>
+            </div>
+            <div class="search-result-info">-</div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-btn" data-action="findAll" title="查找全部">查找全部(I)</button>
+            <button class="action-btn" data-action="prev" title="上一个 (Shift+F3)">上一个(V)</button>
+            <button class="action-btn primary" data-action="next" title="下一个 (F3)">下一个(F)</button>
+            <button class="action-btn" data-action="close" title="关闭 (Esc)">关闭</button>
+        </div>
     </div>
-    
-    <div class="search-navigation">
-        <button class="search-nav-btn" data-action="prev" title="上一个 (Shift+F3)">▲</button>
-        <button class="search-nav-btn" data-action="next" title="下一个 (F3)">▼</button>
+
+    <!-- 替换标签页内容 -->
+    <div class="tab-content" id="tab-replace">
+        <div class="form-row">
+            <label class="form-label">查找内容(N)</label>
+            <input type="text"
+                   class="form-input search-input"
+                   placeholder="输入查找内容..."
+                   autocomplete="off"
+                   spellcheck="false" />
+        </div>
+
+        <div class="form-row">
+            <label class="form-label">替换为(E)</label>
+            <input type="text"
+                   class="form-input replace-input"
+                   placeholder="输入替换内容..."
+                   autocomplete="off"
+                   spellcheck="false" />
+        </div>
+
+        <div class="options-row">
+            <div class="options-left">
+                <button class="search-option-btn" data-option="caseSensitive" title="区分大小写 (Alt+C)">Aa</button>
+                <button class="search-option-btn" data-option="wholeWord" title="全字匹配 (Alt+W)">W</button>
+                <button class="search-option-btn" data-option="useRegex" title="使用正则 (Alt+R)">.*</button>
+            </div>
+            <div class="search-result-info">-</div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-btn success" data-action="replaceAll" title="全部替换 (Ctrl+Enter)">全部替换(A)</button>
+            <button class="action-btn" data-action="replace" title="替换当前项 (Enter)">替换(R)</button>
+            <button class="action-btn" data-action="findAll" title="查找全部">查找全部(I)</button>
+            <button class="action-btn" data-action="prev" title="上一个 (Shift+F3)">上一个(V)</button>
+            <button class="action-btn primary" data-action="next" title="下一个 (F3)">下一个(F)</button>
+            <button class="action-btn" data-action="close" title="关闭 (Esc)">关闭</button>
+        </div>
     </div>
-    
-    <div class="search-result-info">-</div>
-    
-    <button class="search-close-btn" data-action="close" title="关闭 (Esc)">✕</button>
 </div>
 `;
 
@@ -338,6 +641,12 @@ export class SearchDropdown extends PopupPanel {
     /** @type {Function|null} 关闭回调函数 (reason: string) => void */
     #onCloseCallback = null;
 
+    /** @type {Function|null} 替换当前项回调 (replaceStr: string) => Promise<boolean> */
+    #onReplaceCallback = null;
+
+    /** @type {Function|null} 全部替换回调 (replaceStr: string) => Promise<number> */
+    #onReplaceAllCallback = null;
+
     /**
      * 防抖后的搜索函数引用
      *
@@ -347,6 +656,18 @@ export class SearchDropdown extends PopupPanel {
      * @type {Function}
      */
     #debouncedSearch = null;
+
+    /** @type {HTMLInputElement|null} 替换输入框 DOM 引用（替换页签） */
+    #replaceInputElement = null;
+
+    /** @type {NodeListOf<HTMLButtonElement>|null} 标签页按钮集合 */
+    #tabButtons = null;
+
+    /** @type {NodeListOf<HTMLElement>|null} 标签页内容集合 */
+    #tabContents = null;
+
+    /** @type {string} 当前激活的标签页 ('find' | 'replace') */
+    #activeTab = "find";
 
     /**
      * 创建搜索面板实例
@@ -448,30 +769,43 @@ export class SearchDropdown extends PopupPanel {
      * @public
      * @override
      * @param {{ x: number, y: number }} position - 屏幕绝对坐标（左上角位置）
-     * @param {Function} onSearch - 搜索回调
-     *   @param {string} onSearch.query - 用户输入的查询字符串
-     *   @param {Object} onSearch.options - 当前选项配置
+     * @param {Object} callbacks - 回调函数集合
+     * @param {Function} callbacks.onSearch - 搜索回调
+     *   @param {string} callbacks.onSearch.query - 用户输入的查询字符串
+     *   @param {Object} callbacks.onSearch.options - 当前选项配置
      *   @returns {void}
-     * @param {Function} onNavigate - 导航回调
-     *   @param {"next"|"prev"} onSearch.direction - 导航方向
+     * @param {Function} callbacks.onNavigate - 导航回调
+     *   @param {"next"|"prev"} callbacks.onNavigate.direction - 导航方向
      *   @returns {void}
-     * @param {Function} onClose - 关闭回调
-     *   @param {string} onClose.reason - 关闭原因标识
+     * @param {Function} [callbacks.onReplace] - 替换当前项回调（可选）
+     *   @param {string} callbacks.onReplace.replaceStr - 替换文本
+     *   @returns {Promise<boolean>}
+     * @param {Function} [callbacks.onReplaceAll] - 全部替换回调（可选）
+     *   @param {string} callbacks.onReplaceAll.replaceStr - 替换文本
+     *   @returns {Promise<number>} 替换数量
+     * @param {Function} callbacks.onClose - 关闭回调
+     *   @param {string} callbacks.onClose.reason - 关闭原因标识
      *   @returns {void}
      * @returns {Symbol} 唯一的面板标识符（用于 PopupManager 注册）
      *
      * @example
      * const popupId = dropdown.show(
      *   { x: 800, y: 100 },
-     *   (q, opts) => plugin.query(q, opts),
-     *   (dir) => dir === "next" ? plugin.findNext() : plugin.findPrevious(),
-     *   (reason) => console.log("关闭原因:", reason)
+     *   {
+     *     onSearch: (q, opts) => plugin.query(q, opts),
+     *     onNavigate: (dir) => dir === "next" ? plugin.findNext() : plugin.findPrevious(),
+     *     onReplace: (str) => plugin.replace(str),
+     *     onReplaceAll: (str) => plugin.replaceAll(str),
+     *     onClose: (reason) => console.log("关闭原因:", reason),
+     *   }
      * );
      */
-    show(position, onSearch, onNavigate, onClose) {
-        this.#onSearchCallback = onSearch;
-        this.#onNavigateCallback = onNavigate;
-        this.#onCloseCallback = onClose;
+    show(position, callbacks) {
+        this.#onSearchCallback = callbacks?.onSearch || null;
+        this.#onNavigateCallback = callbacks?.onNavigate || null;
+        this.#onCloseCallback = callbacks?.onClose || null;
+        this.#onReplaceCallback = callbacks?.onReplace || null;
+        this.#onReplaceAllCallback = callbacks?.onReplaceAll || null;
 
         super.show({
             position,
@@ -522,6 +856,8 @@ export class SearchDropdown extends PopupPanel {
      * - 用户从其他区域返回时恢复焦点
      * - 外部控制器调用以提升用户体验
      *
+     * 会自动聚焦到当前激活页签的搜索输入框。
+     *
      * 安全性保证：
      * - 即使 inputElement 为 null 也不会报错（可选链操作符）
      *
@@ -532,8 +868,9 @@ export class SearchDropdown extends PopupPanel {
      * dropdown.focusInput(); // 光标定位到输入框，已有文本被全选
      */
     focusInput() {
-        this.#inputElement?.focus();
-        this.#inputElement?.select();
+        const activeInput = this.#getActiveSearchInput();
+        activeInput?.focus();
+        activeInput?.select();
     }
 
     /**
@@ -543,6 +880,8 @@ export class SearchDropdown extends PopupPanel {
      * - **有结果**: 显示 "当前索引 / 总数" 格式（如 "3 / 10"）
      * - **无结果**: 显示红色 "无结果" 提示
      * - **导航状态**: 根据当前位置启用/禁用导航按钮
+     *
+     * 会同时更新两个页签的结果信息显示。
      *
      * 索引转换说明：
      * - 内部存储从 0 开始，但用户界面显示从 1 开始
@@ -554,21 +893,30 @@ export class SearchDropdown extends PopupPanel {
      *
      * @example
      * dropdown.updateResultInfo(plugin.getState());
-     * // UI 显示: "3 / 10" （假设在第 3 个结果，共 10 个）
+     // UI 显示: "3 / 10" （假设在第 3 个结果，共 10 个）
      */
     updateResultInfo(state) {
-        if (!this.#resultInfo) return;
+        if (!state) return;
 
         const total = state.getResults().length;
         const current = state.getCurrentIndex() + 1;
 
+        let text, className;
+
         if (total === 0) {
-            this.#resultInfo.textContent = "无结果";
-            this.#resultInfo.className = "search-result-info no-results";
+            text = "无结果";
+            className = "search-result-info no-results";
         } else {
-            this.#resultInfo.textContent = `${current} / ${total}`;
-            this.#resultInfo.className = "search-result-info";
+            text = `${current} / ${total}`;
+            className = "search-result-info";
         }
+
+        // ✅ 更新两个页签的结果信息（查找 + 替换）
+        const resultInfos = this.shadowRoot.querySelectorAll(".search-result-info");
+        resultInfos.forEach((info) => {
+            info.textContent = text;
+            info.className = className;
+        });
 
         this.#updateNavButtonStates(state);
     }
@@ -590,15 +938,41 @@ export class SearchDropdown extends PopupPanel {
      * @returns {void}
      */
     #cacheDOMReferences() {
-        this.#inputElement = this.shadowRoot.querySelector(".search-input");
-        this.#resultInfo = this.shadowRoot.querySelector(".search-result-info");
+        // ✅ 缓存所有搜索输入框（查找页签 + 替换页签）
+        const searchInputs = this.shadowRoot.querySelectorAll(".search-input");
+        this.#inputElement = searchInputs[0] || null; // 第一个搜索框（查找页签）
+
+        // ✅ 缓存替换输入框
+        this.#replaceInputElement = this.shadowRoot.querySelector(".replace-input");
+
+        // ✅ 缓存结果信息（两个页签各一个）
+        const resultInfos = this.shadowRoot.querySelectorAll(".search-result-info");
+        this.#resultInfo = resultInfos[0] || null;
+
+        // ✅ 缓存标签页按钮
+        this.#tabButtons = this.shadowRoot.querySelectorAll(".tab-btn");
+
+        // ✅ 缓存标签页内容
+        this.#tabContents = this.shadowRoot.querySelectorAll(".tab-content");
 
         this.shadowRoot.querySelectorAll("[data-option]").forEach((btn) => {
             this.#optionButtons.set(btn.dataset.option, btn);
         });
 
         this.shadowRoot.querySelectorAll("[data-action]").forEach((btn) => {
-            this.#navButtons.set(btn.dataset.action, btn);
+            const action = btn.dataset.action;
+
+            // ✅ 如果该 action 已存在，转换为数组存储多个按钮
+            if (this.#navButtons.has(action)) {
+                const existing = this.#navButtons.get(action);
+                if (Array.isArray(existing)) {
+                    existing.push(btn);
+                } else {
+                    this.#navButtons.set(action, [existing, btn]);
+                }
+            } else {
+                this.#navButtons.set(action, btn);
+            }
         });
     }
 
@@ -609,41 +983,58 @@ export class SearchDropdown extends PopupPanel {
      *
      * | 事件源 | 事件类型 | 处理逻辑 |
      * |--------|---------|---------|
-     * | 输入框 | `input` | 防抖搜索（300ms） |
-     * | 输入框 | `keydown` (Enter) | 导航到下一个/上一个 |
+     * | 搜索输入框（两个） | `input` | 防抖搜索（300ms） + 同步值 |
+     * | 搜索输入框（两个） | `keydown` (Enter) | 导航到下一个/上一个 |
      * | 选项按钮 | `click` | 切换激活态 + 重新搜索 |
      * | 上一个按钮 | `click` | 导航到上一个结果 |
      * | 下一个按钮 | `click` | 导航到下一个结果 |
      * | 关闭按钮 | `click` | 隐藏面板 |
+     * | 标签页按钮 | `click` | 切换标签页 |
+     * | 替换/全部替换按钮 | `click` | 执行替换操作 |
      *
      * ### 性能优化
      * - 所有回调使用箭头函数避免 `this` 绑定问题
      * - 使用可选链 (`?.`) 安全调用可能为空的回调
+     * - 搜索输入框值自动同步
      *
      * @private
      * @returns {void}
      */
     #bindEvents() {
-        if (!this.#inputElement) return;
+        // ✅ 绑定所有搜索输入框的事件（查找页签 + 替换页签）
+        const allSearchInputs = this.shadowRoot.querySelectorAll(".search-input");
 
-        this.#inputElement.addEventListener("input", (e) => {
-            const query = e.target.value.trim();
-            this.#debouncedSearch(query);
-        });
+        allSearchInputs.forEach((input) => {
+            input.addEventListener("input", (e) => {
+                const query = e.target.value.trim();
 
-        this.#inputElement.addEventListener("keydown", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault();
-                const direction = e.shiftKey ? "prev" : "next";
-                this.#onNavigateCallback?.(direction);
-            }
+                // ✅ 同步所有搜索输入框的值
+                allSearchInputs.forEach((otherInput) => {
+                    if (otherInput !== e.target) {
+                        otherInput.value = e.target.value;
+                    }
+                });
+
+                this.#debouncedSearch(query);
+            });
+
+            input.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    const direction = e.shiftKey ? "prev" : "next";
+                    this.#onNavigateCallback?.(direction);
+                }
+            });
         });
 
         this.#optionButtons.forEach((btn, option) => {
             btn.addEventListener("click", () => {
                 btn.classList.toggle("active");
 
-                const query = this.#inputElement.value.trim();
+                // ✅ 使用当前激活的搜索输入框获取查询内容
+                const activeInput = this.#getActiveSearchInput();
+                const query = activeInput?.value.trim() || "";
+
                 if (query) {
                     const options = this.#getCurrentOptions();
                     this.#onSearchCallback?.(query, options);
@@ -661,6 +1052,233 @@ export class SearchDropdown extends PopupPanel {
 
         this.#navButtons.get("close")?.addEventListener("click", () => {
             this.hide("close-button");
+        });
+
+        // ✅ 标签页切换事件绑定
+        this.#tabButtons?.forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const tabName = btn.dataset.tab;
+                if (tabName) {
+                    this.switchTab(tabName);
+                }
+            });
+        });
+
+        // ✅ 替换功能事件绑定
+        this.#navButtons.get("replace")?.addEventListener("click", async () => {
+            await this.#handleReplace();
+        });
+
+        this.#navButtons.get("replaceAll")?.addEventListener("click", async () => {
+            await this.#handleReplaceAll();
+        });
+
+        // ✅ 查找全部按钮（两个页签都有）
+        this.#navButtons.get("findAll")?.forEach?.((btn) => {
+            btn?.addEventListener("click", () => {
+                const query = this.#getActiveSearchInput()?.value.trim() || "";
+                if (query) {
+                    const options = this.#getCurrentOptions();
+                    this.#onSearchCallback?.(query, options);
+                }
+            });
+        }) ||
+            this.#navButtons.get("findAll")?.addEventListener("click", () => {
+                const query = this.#getActiveSearchInput()?.value.trim() || "";
+                if (query) {
+                    const options = this.#getCurrentOptions();
+                    this.#onSearchCallback?.(query, options);
+                }
+            });
+
+        // ✅ 替换输入框键盘事件（Enter 执行替换）
+        this.#replaceInputElement?.addEventListener("keydown", async (e) => {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (e.ctrlKey || e.metaKey) {
+                    await this.#handleReplaceAll();
+                } else {
+                    await this.#handleReplace();
+                }
+            }
+        });
+    }
+
+    /**
+     * 切换标签页
+     *
+     * @param {string} tabName - 目标标签页名称 ('find' | 'replace')
+     * @public
+     * @returns {void}
+     */
+    switchTab(tabName) {
+        if (!this.#tabButtons || !this.#tabContents) return;
+
+        // 更新标签页按钮状态
+        this.#tabButtons.forEach((btn) => {
+            if (btn.dataset.tab === tabName) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+
+        // 更新标签页内容显示
+        this.#tabContents.forEach((content) => {
+            if (content.id === `tab-${tabName}`) {
+                content.classList.add("active");
+                // 自动聚焦到对应页签的搜索框
+                setTimeout(() => {
+                    const input = content.querySelector(".search-input, .replace-input");
+                    input?.focus();
+                }, 100);
+            } else {
+                content.classList.remove("active");
+            }
+        });
+
+        this.#activeTab = tabName;
+
+        // 同步两个页签的搜索输入框值
+        this.#syncSearchInputs();
+    }
+
+    /**
+     * 同步两个页签的搜索输入框值
+     *
+     * 当用户在查找页签输入内容后切换到替换页签时，
+     * 自动将查找内容同步到替换页签的查找框。
+     *
+     * @private
+     * @returns {void}
+     */
+    #syncSearchInputs() {
+        if (!this.#inputElement) return;
+
+        const allSearchInputs = this.shadowRoot.querySelectorAll(".search-input");
+
+        // 将第一个搜索框的值同步到其他搜索框
+        const value = this.#inputElement.value;
+        allSearchInputs.forEach((input, index) => {
+            if (index > 0 && input !== this.#inputElement) {
+                input.value = value;
+            }
+        });
+    }
+
+    /**
+     * 获取当前激活页签的搜索输入框
+     *
+     * @private
+     * @returns {HTMLInputElement|null}
+     */
+    #getActiveSearchInput() {
+        if (this.#activeTab === "find") {
+            return this.shadowRoot.querySelector("#tab-find .search-input");
+        } else {
+            return this.shadowRoot.querySelector("#tab-replace .search-input");
+        }
+    }
+
+    /**
+     * 切换到替换标签页
+     *
+     * @public
+     * @returns {void}
+     */
+    showReplaceSection() {
+        this.switchTab("replace");
+    }
+
+    /**
+     * 切换到查找标签页
+     *
+     * @public
+     * @returns {void}
+     */
+    hideReplaceSection() {
+        this.switchTab("find");
+    }
+
+    /**
+     * 处理单个替换操作
+     *
+     * 读取替换输入框的值，调用 onReplaceCallback，
+     * 并在成功后自动导航到下一个匹配项。
+     *
+     * @private
+     * @returns {Promise<void>}
+     */
+    async #handleReplace() {
+        if (!this.#onReplaceCallback || !this.#replaceInputElement) return;
+
+        const replaceStr = this.#replaceInputElement.value.trim();
+        if (!replaceStr) return;
+
+        try {
+            // 禁用按钮防止重复点击
+            this.#setActionButtonsDisabled(true);
+
+            const success = await this.#onReplaceCallback(replaceStr);
+
+            if (success) {
+                // 替换成功后自动跳转到下一个
+                this.#onNavigateCallback?.("next");
+            }
+        } catch (error) {
+            console.error("[SearchDropdown] Replace error:", error);
+        } finally {
+            this.#setActionButtonsDisabled(false);
+        }
+    }
+
+    /**
+     * 处理全部替换操作
+     *
+     * 读取替换输入框的值，调用 onReplaceAllCallback，
+     * 并显示替换结果提示。
+     *
+     * @private
+     * @returns {Promise<void>}
+     */
+    async #handleReplaceAll() {
+        if (!this.#onReplaceAllCallback || !this.#replaceInputElement) return;
+
+        const replaceStr = this.#replaceInputElement.value.trim();
+        if (!replaceStr) return;
+
+        try {
+            // 禁用按钮防止重复点击
+            this.#setActionButtonsDisabled(true);
+
+            const count = await this.#onReplaceAllCallback(replaceStr);
+
+            // 显示替换结果提示
+            if (count > 0) {
+                this.showToast(`已替换 ${count} 个单元格`, "success");
+            } else {
+                this.showToast("没有可替换的内容", "warning");
+            }
+        } catch (error) {
+            console.error("[SearchDropdown] ReplaceAll error:", error);
+            this.showToast("替换失败", "error");
+        } finally {
+            this.#setActionButtonsDisabled(false);
+        }
+    }
+
+    /**
+     * 设置所有操作按钮的禁用状态（防重复点击）
+     *
+     * @private
+     * @param {boolean} disabled - 是否禁用
+     * @returns {void}
+     */
+    #setActionButtonsDisabled(disabled) {
+        // ✅ 替换页签的所有按钮
+        const actionBtns = this.shadowRoot.querySelectorAll("#tab-replace .action-btn");
+        actionBtns.forEach((btn) => {
+            btn.disabled = disabled;
         });
     }
 
