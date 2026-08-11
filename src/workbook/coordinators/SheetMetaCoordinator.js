@@ -330,7 +330,7 @@ export class SheetMetaCoordinator {
         try {
             return this.#sheet.cellsFn(r, c);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CELL_INVALID_DATA, `cellsFn execution failed at (${r},${c})`, { originalError: error });
+            errorHandler.error(ERROR_CODE.CELL_INVALID_DATA, `cellsFn execution failed at (${r},${c})`, { originalError: error });
             return null;
         }
     }

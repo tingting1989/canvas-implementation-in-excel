@@ -67,7 +67,7 @@
  * @class SearchState
  * @see {@link SearchPlugin} - 主要消费者
  * @see {@link SearchNavigator} - 读取 currentIndex 和 results
- * @see {@link SearchUIController} - 通过 updateUI 同步显示
+ * @see {@link SearchUIManager} - 通过 updateUI 同步显示
  */
 export class SearchState {
     /**

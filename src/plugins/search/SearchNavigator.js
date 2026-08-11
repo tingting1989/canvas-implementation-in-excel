@@ -265,7 +265,7 @@ export class SearchNavigator {
             this.#selectionManager.setActive(result.row, result.col);
             this.#scrollToVisible(result.row, result.col);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_SELECTION_SYNC_ERROR, "同步选区失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_SELECTION_SYNC_ERROR, "同步选区失败", { originalError: error });
         }
     }
 
@@ -290,7 +290,7 @@ export class SearchNavigator {
                 this.#renderEngine.scrollToCell(row, col);
             }
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_SCROLL_TO_CELL_ERROR, "滚动到单元格失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_SCROLL_TO_CELL_ERROR, "滚动到单元格失败", { originalError: error });
         }
     }
 

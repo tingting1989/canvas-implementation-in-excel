@@ -162,7 +162,7 @@ export class ReactiveStore {
             try {
                 e.run(newValue, oldValue);
             } catch (err) {
-                errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] sync watcher error on "${path}":`, err);
+                errorHandler.error(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] sync watcher error on "${path}":`, err);
             }
         }
 
@@ -177,7 +177,7 @@ export class ReactiveStore {
                         const currentVal = this._getValueByPath(this.state, path);
                         effectRef.run(currentVal, oldValue);
                     } catch (err) {
-                        errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] watcher error on "${path}":`, err);
+                        errorHandler.error(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] watcher error on "${path}":`, err);
                     }
                 },
             });

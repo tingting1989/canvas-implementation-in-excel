@@ -239,7 +239,7 @@ export class ComplexityAnalyzer {
 
             return result;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ComplexityAnalyzer] 分析过程异常`, { error, formula });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[ComplexityAnalyzer] 分析过程异常`, { error, formula });
 
             return this.#createResult(COMPLEXITY_THRESHOLD.MAX_COMPLEXITY_SCORE, false, [`分析异常: ${error.message}`], Infinity);
         }

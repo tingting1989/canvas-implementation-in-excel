@@ -165,7 +165,7 @@ export class LayerCompositor {
                     }
                 }
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.LAYER_RENDER_ERROR, `[LayerCompositor] Error rendering layer "${layer.name}":`, error);
+                errorHandler.error(ERROR_CODE.LAYER_RENDER_ERROR, `[LayerCompositor] Error rendering layer "${layer.name}":`, error);
             }
         }
 

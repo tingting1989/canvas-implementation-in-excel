@@ -21,13 +21,13 @@
  *
  * 使用示例：
  * ```javascript
- * const uiController = new SearchUIController(searchPlugin);
+ * const uiController = new SearchUIManager(searchPlugin);
  * uiController.show();           // 显示搜索面板
  * uiController.updateUI(state);  // 更新状态显示
  * uiController.hide();           // 隐藏并清理资源
  * ```
  *
- * @class SearchUIController
+ * @class SearchUIManager
  * @see {@link SearchPlugin} - 业务逻辑层
  * @see {@link SearchDropdown} - UI 渲染组件
  * @see {@link PopupManager} - 弹窗管理器
@@ -37,7 +37,7 @@ import { PopupManager } from "../../ui/components/PopupManager.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 
-export class SearchUIController {
+export class SearchUIManager {
     /** @type {import("./SearchPlugin.js")} 搜索插件实例引用 */
     #plugin = null;
 
@@ -73,7 +73,7 @@ export class SearchUIController {
      * @example
      * const plugin = new SearchPlugin(workbook);
      * plugin.init();
-     * const uiController = new SearchUIController(plugin);
+     * const uiController = new SearchUIManager(plugin);
      */
     constructor(plugin) {
         this.#plugin = plugin;
@@ -276,7 +276,7 @@ export class SearchUIController {
         try {
             await this.#plugin.query(query, options);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "搜索失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "搜索失败", { originalError: error });
         }
     }
 
@@ -299,7 +299,7 @@ export class SearchUIController {
                 await this.#plugin.findPrevious();
             }
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "导航失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "导航失败", { originalError: error });
         }
     }
 
@@ -372,7 +372,7 @@ export class SearchUIController {
 
             return success;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
             return false;
         }
     }
@@ -414,7 +414,7 @@ export class SearchUIController {
 
             return count;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
             return 0;
         }
     }
@@ -441,7 +441,7 @@ export class SearchUIController {
     showError(message, duration = 3000) {
         if (!this.#dropdown) return;
 
-        errorHandler.handle(ERROR_CODE.GENERIC_ERROR, message);
+        errorHandler.error(ERROR_CODE.GENERIC_ERROR, message);
 
         if (typeof this.#dropdown.showError === "function") {
             this.#dropdown.showError(message, duration);

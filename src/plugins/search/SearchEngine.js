@@ -54,7 +54,7 @@ export class SearchEngine {
                     }
                 }
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.SEARCH_CELL_SEARCH_ERROR, `[SearchEngine] 搜索单元格 (${cell.row},${cell.col}) 出错`, {
+                errorHandler.error(ERROR_CODE.SEARCH_CELL_SEARCH_ERROR, `[SearchEngine] 搜索单元格 (${cell.row},${cell.col}) 出错`, {
                     originalError: error,
                     cellRow: cell.row,
                     cellCol: cell.col,
@@ -126,7 +126,7 @@ export class SearchEngine {
                 return matches.length > 0 ? matches : null;
             };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_INVALID_REGEX, "[SearchEngine] 无效正则表达式", { originalError: error, query: query });
+            errorHandler.error(ERROR_CODE.SEARCH_INVALID_REGEX, "[SearchEngine] 无效正则表达式", { originalError: error, query: query });
             return () => null;
         }
     }

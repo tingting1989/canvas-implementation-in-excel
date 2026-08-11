@@ -97,7 +97,7 @@ export class ShadowEvaluator {
             if (error.message?.includes("[SECURITY]")) {
                 throw error;
             }
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ShadowEvaluator] 沙箱求值失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ShadowEvaluator] 沙箱求值失败:", error);
             throw error;
         }
     }

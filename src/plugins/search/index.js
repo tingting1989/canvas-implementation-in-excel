@@ -36,7 +36,7 @@
  * ### 分层架构
  * ```
  * ┌─────────────────────────────────────┐
- * │  SearchUIController (UI 控制层)      │ ← 面板显示/隐藏/位置计算
+ * │  SearchUIManager (UI 控制层)      │ ← 面板显示/隐藏/位置计算
  * ├─────────────────────────────────────┤
  * │  SearchPlugin        (业务逻辑层)    │ ← 公开 API / 钩子系统
  * │  ├─ SearchEngine     (算法层)       │ ← 高性能搜索算法
@@ -114,7 +114,7 @@
  * @see {@link SearchPlugin} - 主插件入口（必须导出）
  * @see {@link SearchState} - 状态管理器
  * @see {@link SearchEngine} - 搜索引擎核心算法
- * @see {@link SearchUIController} - UI 控制器
+ * @see {@link SearchUIManager} - UI 控制器
  * @see {@link SearchDropdown} - Web Component UI
  * @see {@link SearchNavigator} - 结果导航器
  * @see {@link SearchResultHighlighter} - Canvas 高亮渲染器
@@ -135,7 +135,7 @@ export { SearchState } from "./SearchState.js";
 export { SearchEngine } from "./SearchEngine.js";
 
 /** UI 控制器 - 管理搜索面板的显示、隐藏、定位 */
-export { SearchUIController } from "./SearchUIController.js";
+export { SearchUIManager } from "./SearchUIManager.js";
 
 /** 搜索下拉面板 - Web Component (继承 PopupPanel, 使用 Shadow DOM) */
 export { SearchDropdown } from "./SearchDropdown.js";

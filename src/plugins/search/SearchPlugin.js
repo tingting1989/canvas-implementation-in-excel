@@ -16,7 +16,7 @@
 import { BasePlugin } from "../BasePlugin.js";
 import { SearchState } from "./SearchState.js";
 import { SearchEngine } from "./SearchEngine.js";
-import { SearchUIController } from "./SearchUIController.js";
+import { SearchUIManager } from "./SearchUIManager.js";
 import { SearchNavigator } from "./SearchNavigator.js";
 import { SearchResultHighlighter } from "./SearchResultHighlighter.js";
 import { SearchStrategy } from "./SearchStrategy.js";
@@ -71,6 +71,16 @@ export class SearchPlugin extends BasePlugin {
             useRegex: false,
             searchScope: "all",
         },
+        /**
+         * 是否在全部替换时跳过合并非主单元格
+         *
+         * - false (默认): 允许替换合并区域中的任何单元格（推荐）
+         * - true: 仅替换合并区域的主单元格（左上角）
+         *
+         * 注意：设为 true 时，如果搜索结果包含大量合并非主单元格，
+         * 可能导致实际替换数量为 0。
+         */
+        skipNonTopLeftMergedCells: false,
     };
 
     /** @type {SearchState} */
@@ -79,7 +89,7 @@ export class SearchPlugin extends BasePlugin {
     /** @type {SearchEngine} */
     #engine = null;
 
-    /** @type {SearchUIController} */
+    /** @type {SearchUIManager} */
     #uiController = null;
 
     /** @type {SearchNavigator} */
@@ -110,7 +120,7 @@ export class SearchPlugin extends BasePlugin {
         super.init({ ...SearchPlugin.DEFAULT_OPTIONS, ...options });
         this.#state = new SearchState();
         this.#engine = new SearchEngine();
-        this.#uiController = new SearchUIController(this);
+        this.#uiController = new SearchUIManager(this);
         const renderEngine = this.workbook.renderEngine || null;
         this.#navigator = new SearchNavigator(this.#state, this.workbook.activeSheet?.selection || null, renderEngine);
         this.#highlighter = new SearchResultHighlighter(renderEngine, this.options.highlightStyle);
@@ -200,7 +210,7 @@ export class SearchPlugin extends BasePlugin {
 
             return results;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_EXECUTION_ERROR, "搜索出错", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_EXECUTION_ERROR, "搜索出错", { originalError: error });
             this.#state.setError(error);
 
             let userMessage = "搜索过程中发生未知错误";
@@ -358,7 +368,7 @@ export class SearchPlugin extends BasePlugin {
 
             return true;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
             return false;
         }
     }
@@ -374,33 +384,69 @@ export class SearchPlugin extends BasePlugin {
      * @returns {Promise<number>} 替换的数量
      */
     async replaceAll(replaceStr) {
+        console.log(`[SearchPlugin] replaceAll called with: "${replaceStr}"`);
+
         const results = this.#state.getResults();
-        if (results.length === 0) return 0;
+        console.log(`[SearchPlugin] Current search results: ${results.length} items`);
+
+        if (results.length === 0) {
+            console.warn("[SearchPlugin] No search results to replace! Please perform a search first.");
+            errorHandler.warn(ERROR_CODE.SEARCH_NO_RESULTS, "没有可替换的搜索结果，请先执行查找操作");
+            return 0;
+        }
 
         const sheet = this.sheet;
-        if (!sheet) return 0;
+        if (!sheet) {
+            console.error("[SearchPlugin] Sheet not available");
+            return 0;
+        }
 
         // 触发 beforeReplaceAll 钩子（可取消，同步调用）
         const canReplaceAll = this.hooks.runHooksUntil(HOOKS.BEFORE_SEARCH_REPLACE_ALL, { count: results.length, replaceValue: replaceStr });
 
-        if (canReplaceAll === false) return 0;
+        if (canReplaceAll === false) {
+            console.warn("[SearchPlugin] Replace all cancelled by hook");
+            return 0;
+        }
 
         try {
             // ✅ 收集所有替换命令（跳过不可编辑的单元格）
             const commands = [];
             let skippedCount = 0;
+            const skippedDetails = { readonly: 0, merged: 0 };
 
             for (const result of results) {
                 // ✅ 新增：跳过只读单元格（使用统一接口 isDisabled）
                 if (sheet.isDisabled?.(result.row, result.col)) {
                     skippedCount++;
+                    skippedDetails.readonly++;
+                    console.log(`[SearchPlugin] Skipping readonly cell at (${result.row}, ${result.col})`);
                     continue;
                 }
 
-                // ✅ 跳过合并单元格的非主单元格（使用 isTopLeft 判断是否为左上角）
-                if (sheet.mergeManager && !sheet.mergeManager.isTopLeft?.(result.row, result.col)) {
-                    skippedCount++;
-                    continue;
+                // 🔧 可选：根据配置决定是否跳过合并非主单元格
+                const skipMergedCells = this.options.skipNonTopLeftMergedCells;
+                console.log(`[SearchPlugin] skipNonTopLeftMergedCells config: ${skipMergedCells}`);
+
+                if (skipMergedCells && sheet.mergeManager && typeof sheet.mergeManager.isTopLeft === "function") {
+                    const isTopLeft = sheet.mergeManager.isTopLeft(result.row, result.col);
+
+                    if (isTopLeft === false) {
+                        skippedCount++;
+                        skippedDetails.merged++;
+                        console.log(
+                            `[SearchPlugin] Skipping non-top-left merged cell at (${result.row}, ${result.col}) (config: skipMergedCells=true)`,
+                        );
+                        continue;
+                    } else {
+                        console.log(`[SearchPlugin] Allowing merged cell at (${result.row}, ${result.col}) (isTopLeft=${isTopLeft})`);
+                    }
+                } else if (!skipMergedCells && sheet.mergeManager && typeof sheet.mergeManager.isTopLeft === "function") {
+                    // 即使在合并区域中，也允许替换（仅记录日志）
+                    const isTopLeft = sheet.mergeManager.isTopLeft(result.row, result.col);
+                    console.log(
+                        `[SearchPlugin] Processing merged cell at (${result.row}, ${result.col}) (isTopLeft=${isTopLeft}, config: allow all)`,
+                    );
                 }
 
                 // ✅ 获取旧值快照（使用 cellDataAccessor 统一接口）
@@ -409,6 +455,7 @@ export class SearchPlugin extends BasePlugin {
                 const newCell = new Cell(replaceStr, oldCell?.styleId || 0, oldCell?.disabled || false, null);
 
                 commands.push(new SetCellCommand(sheet.cellStore, result.row, result.col, oldCell, newCell));
+                console.log(`[SearchPlugin] Will replace cell (${result.row}, ${result.col}): "${oldCell?.data}" → "${replaceStr}"`);
             }
 
             // ✅ 创建 BatchCommand（原子批量操作）
@@ -422,7 +469,67 @@ export class SearchPlugin extends BasePlugin {
             // ✅ 执行所有替换（正序 redo）
             batchCmd.redo();
 
-            // 更新所有结果的数据引用
+            console.log(`[SearchPlugin] Executed batchCmd.redo(), now triggering view refresh...`);
+
+            // 🔧 关键！触发视图重新渲染（与单个 replace 保持一致的行为）
+            const renderEngine = this.workbook?.renderEngine;
+
+            if (renderEngine) {
+                // 方式1：使用 renderEngine 的 invalidateAll 方法
+                if (typeof renderEngine.invalidateAll === "function") {
+                    console.log("[SearchPlugin] Calling renderEngine.invalidateAll() to refresh view");
+                    renderEngine.invalidateAll();
+                }
+                // 方式2：如果存在 requestRender 方法
+                else if (typeof renderEngine.requestRender === "function") {
+                    console.log("[SearchPlugin] Calling renderEngine.requestRender() to refresh view");
+                    renderEngine.requestRender();
+                }
+                // 方式3：如果存在 markDirty 或类似方法
+                else if (typeof renderEngine.markDirty === "function") {
+                    console.log("[SearchPlugin] Calling renderEngine.markDirty() to refresh view");
+                    renderEngine.markDirty();
+                } else {
+                    console.warn("[SearchPlugin] No standard view refresh method found on renderEngine");
+                }
+            } else {
+                console.warn("[SearchPlugin] renderEngine not available for view refresh");
+            }
+
+            // 额外保险：通知 sheet 刷新（如果有相关方法）
+            if (sheet.refresh || sheet.invalidate) {
+                try {
+                    console.log("[SearchPlugin] Calling sheet refresh method as additional safeguard");
+                    sheet.refresh?.() || sheet.invalidate?.();
+                } catch (error) {
+                    console.warn("[SearchPlugin] Sheet refresh failed:", error.message);
+                }
+            }
+
+            // 更新 selection 状态（确保选区显示最新数据）
+            if (sheet.selection && typeof sheet.selection.refresh === "function") {
+                try {
+                    console.log("[SearchPlugin] Refreshing selection to show updated cell values");
+                    sheet.selection.refresh();
+                } catch (error) {
+                    console.warn("[SearchPlugin] Selection refresh failed:", error.message);
+                }
+            }
+
+            // 更新搜索高亮器（清除或更新高亮显示）
+            if (this.#highlighter) {
+                console.log("[SearchPlugin] Updating search highlighter after replace all");
+                this.#highlighter.updateHighlights([]); // 清除旧的高亮
+            }
+
+            // 更新 UI 状态（清空结果，因为内容已改变）
+            if (this.#uiController) {
+                console.log("[SearchDropdown] Updating UI state after replace all");
+                this.#state.clear(); // 清空搜索状态
+                this.#uiController.updateUI(this.#state); // 更新UI
+            }
+
+            // 更新所有结果的数据引用（虽然已经清空状态，但保留以防其他地方使用）
             for (const result of results) {
                 result.data = replaceStr;
             }
@@ -440,14 +547,42 @@ export class SearchPlugin extends BasePlugin {
                 })),
             });
 
-            // 记录跳过的单元格数量
+            console.log(`[SearchPlugin] Replace all summary: ${commands.length} replaced, ${skippedCount} skipped`);
+
+            // 记录跳过的单元格数量（提供详细信息）
             if (skippedCount > 0) {
-                errorHandler.warn(ERROR_CODE.SEARCH_CELLS_SKIPPED, `已跳过 ${skippedCount} 个不可编辑单元格（只读/合并/数据冲突）`);
+                const messages = [];
+
+                if (skippedDetails.readonly > 0) {
+                    messages.push(`${skippedDetails.readonly} 个只读单元格`);
+                }
+
+                if (skippedDetails.merged > 0) {
+                    messages.push(`${skippedDetails.merged} 个合并区域非主单元格`);
+                }
+
+                const detailMsg = messages.join("，");
+                const warningMsg = `已跳过 ${skippedCount} 个不可编辑单元格（${detailMsg}）`;
+
+                console.warn(`[SearchPlugin] ${warningMsg}`);
+                errorHandler.warn(ERROR_CODE.SEARCH_CELLS_SKIPPED, warningMsg);
+
+                // 如果所有单元格都被跳过，显示更明显的警告
+                if (commands.length === 0 && results.length > 0) {
+                    console.error("[SearchPlugin] ALL cells were skipped! No replacements performed.");
+                    errorHandler.warn(
+                        ERROR_CODE.SEARCH_REPLACE_ALL_SKIPPED,
+                        "所有匹配的单元格都不可编辑（只读或在合并区域内），无法执行替换。请检查单元格属性或尝试选择其他可编辑区域。",
+                        { totalResults: results.length, skippedCount, skippedDetails },
+                    );
+                }
+            } else if (commands.length === 0) {
+                console.warn("[SearchPlugin] No replacements performed and no cells skipped");
             }
 
             return commands.length;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
             return 0;
         }
     }
@@ -571,7 +706,7 @@ export class SearchPlugin extends BasePlugin {
      * 获取 UI 控制器实例（用于外部访问面板组件）
      *
      * @public
-     * @returns {SearchUIController}
+     * @returns {SearchUIManager}
      */
     get uiController() {
         return this.#uiController;

@@ -719,7 +719,7 @@ function getMergedCellStyle(sheet, row, col) {
 
         return null;
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `样式提取过程异常 (${row},${col})`, { error });
+        errorHandler.error(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `样式提取过程异常 (${row},${col})`, { error });
 
         return null;
     }
@@ -1160,7 +1160,7 @@ function exportDataMerges({ worksheet, sheet, range, dataStartRow }) {
             worksheet.mergeCells(excelStartRow, excelStartCol, excelEndRow, excelEndCol);
         }
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, { error });
+        errorHandler.error(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, { error });
     }
 }
 
@@ -1305,7 +1305,7 @@ function createThinBorder() {
  */
 async function generateXlsx(sheet, opts, range, pluginInstance) {
     if (!ExcelJS) {
-        errorHandler.handle(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED, "ExcelJS 库未安装。请执行: npm install exceljs");
+        errorHandler.error(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED, "ExcelJS 库未安装。请执行: npm install exceljs");
         throw new Error("ExcelJS is required for XLSX export. " + "Please install it with: npm install exceljs");
     }
 
@@ -1569,7 +1569,7 @@ async function exportChartsToExcel(workbook, worksheet, sheet, pluginInstance) {
             exportedCount++;
             errorHandler.debug(`📊 [Excel Export] 图表 ${chart.id} 导出成功`);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CHART_EXPORT_ERROR, "图表导出失败", { error, chartId: chart?.id });
+            errorHandler.error(ERROR_CODE.CHART_EXPORT_ERROR, "图表导出失败", { error, chartId: chart?.id });
         }
     }
 

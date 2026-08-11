@@ -291,7 +291,7 @@ export class ValidationEngine {
 
             return result;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] validateCell() 异常", { error, row, col, value });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] validateCell() 异常", { error, row, col, value });
 
             return ValidationResult.failure(`验证引擎异常: ${error.message}`, "warning", { error: error.message, row, col });
         }

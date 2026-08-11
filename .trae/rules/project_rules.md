@@ -147,7 +147,7 @@ static #CELL_KEY_RE = /^(.+)!(\d+),(\d+)$/;
 - 日志级别：`ERROR_LEVEL`，可选值：`DEBUG`, `WARN`, `ERROR`, `FATAL`
   - 调试：`errorHandler.debug(ERROR_CODE.XXX, "message")`
   - 警告：`errorHandler.warn(ERROR_CODE.XXX, "message")`
-  - 错误：`errorHandler.handle(ERROR_CODE.XXX, "message", meta)`
+  - 错误：`errorHandler.error(ERROR_CODE.XXX, "message", meta)`
   - 致命：`errorHandler.throw(ERROR_CODE.XXX, "message")`
 - **禁止**直接使用 `console.log`、`console.warn`、`console.error`，统一通过 `errorHandler` 输出
 

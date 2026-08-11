@@ -77,7 +77,7 @@ export class Scheduler {
             try {
                 job.run();
             } catch (err) {
-                errorHandler.handle(ERROR_CODE.GENERIC_ERROR, "[Scheduler] job error:", err);
+                errorHandler.error(ERROR_CODE.GENERIC_ERROR, "[Scheduler] job error:", err);
             }
         }
 

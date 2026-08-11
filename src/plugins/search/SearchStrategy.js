@@ -184,7 +184,7 @@ export class SearchStrategy extends EventStrategy {
             // ========== Enter: 在搜索框中导航（由 SearchDropdown 内部处理） ==========
             // 此处不需要额外处理，因为 SearchDropdown 已绑定 input 的 keydown
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_KEYBOARD_EVENT_ERROR, "键盘事件处理失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_KEYBOARD_EVENT_ERROR, "键盘事件处理失败", { originalError: error });
         }
 
         // 默认允许事件继续传播

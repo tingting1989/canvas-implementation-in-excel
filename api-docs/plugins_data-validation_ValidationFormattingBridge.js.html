@@ -221,7 +221,7 @@ export class ValidationFormattingBridge {
 
             errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationFormattingBridge] 应用错误格式 (${row},${col}) [${rule.type}]`);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 应用格式失败 (${row},${col}):`, error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 应用格式失败 (${row},${col}):`, error);
         }
     }
 
@@ -241,7 +241,7 @@ export class ValidationFormattingBridge {
 
             errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationFormattingBridge] 移除错误格式 (${row},${col})`);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 移除格式失败 (${row},${col}):`, error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 移除格式失败 (${row},${col}):`, error);
         }
     }
 
@@ -277,7 +277,7 @@ export class ValidationFormattingBridge {
             try {
                 this.#conditionalFormatPlugin.removeFormat(row, col, `validation_${ruleId}`);
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 清除格式失败 (${cellKey}):`, error);
+                errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[ValidationFormattingBridge] 清除格式失败 (${cellKey}):`, error);
             }
         }
 

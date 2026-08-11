@@ -166,6 +166,12 @@ export const ERROR_CODE = Object.freeze({
     /** Search Dropdown - 显示警告 */
     SEARCH_DROPDOWN_WARNING: "SEARCH_DROPDOWN_WARNING",
 
+    /** Search - 没有搜索结果可替换 */
+    SEARCH_NO_RESULTS: "SEARCH_NO_RESULTS",
+
+    /** Search - 所有匹配单元格都被跳过（不可编辑） */
+    SEARCH_REPLACE_ALL_SKIPPED: "SEARCH_REPLACE_ALL_SKIPPED",
+
     // ── 排序 ──
     /** 排序引擎未初始化 */
     SORT_ENGINE_NOT_INITIALIZED: "SORT_ENGINE_NOT_INITIALIZED",

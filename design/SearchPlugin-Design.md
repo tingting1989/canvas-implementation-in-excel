@@ -167,7 +167,7 @@
 | **SearchPlugin** | 生命周期管理、事件协调、API 暴露 | ⭐⭐⭐ | BasePlugin |
 | **SearchState** | 搜索状态、结果缓存、当前索引管理 | ⭐⭐ | 无 |
 | **SearchEngine** | 文本/正则匹配算法、性能优化 | ⭐⭐⭐⭐ | 无 |
-| **SearchUIController** | 弹窗生命周期、坐标计算、事件绑定 | ⭐⭐⭐ | PopupManager |
+| **SearchUIManager** | 弹窗生命周期、坐标计算、事件绑定 | ⭐⭐⭐ | PopupManager |
 | **SearchDropdown** | Web Component UI 组件、Shadow DOM | ⭐⭐⭐ | PopupPanel |
 | **SearchNavigator** | 结果跳转、选区同步、滚动定位 | ⭐⭐ | SelectionManager |
 | **SearchResultHighlighter** | Canvas 渲染、脏区域标记、可视裁剪 | ⭐⭐⭐⭐ | RenderEngine |
@@ -246,7 +246,7 @@ class SearchPlugin extends BasePlugin {
     // 子模块实例
     #state: SearchState;
     #engine: SearchEngine;
-    #uiController: SearchUIController;
+    #uiController: SearchUIManager;
     #navigator: SearchNavigator;
     
     // 公共 API
@@ -369,7 +369,7 @@ class SearchState {
    └──────────┘              └──────────┘
 ```
 
-### 4.4 SearchUIController UI控制器
+### 4.4 SearchUIManager UI控制器
 
 ```typescript
 /**
@@ -380,7 +380,7 @@ class SearchState {
  * - 继承 PopupPanel 基类
  * - 支持 closeAll(exceptId) 协调关闭
  */
-class SearchUIController {
+class SearchUIManager {
     #plugin: SearchPlugin;
     #dropdown: SearchDropdown | null;
     #popupId: Symbol | null;
@@ -1277,7 +1277,7 @@ KeyboardStrategy.#handleKeyDown(event)
 ```javascript
 import { PopupManager } from "../../ui/components/PopupManager.js";
 
-class SearchUIController {
+class SearchUIManager {
     show() {
         // 1. 创建下拉面板实例
         this.#dropdown = new SearchDropdown();
@@ -1314,7 +1314,7 @@ class SearchUIController {
 PopupManager.getInstance().closeAll(exceptId);
 
 // 当点击面板外部时，PopupManager 会调用 dropdown.hide("click-outside")
-// SearchUIController 监听此事件并清理状态
+// SearchUIManager 监听此事件并清理状态
 ```
 
 ### 8.4 Hook 系统集成
@@ -2041,7 +2041,7 @@ describe("SearchPlugin Replace with Undo Support", () => {
 
 #### Day 5-6: UI 组件开发
 - [ ] 实现 `SearchDropdown` Web Component
-- [ ] 实现 `SearchUIController` 控制器
+- [ ] 实现 `SearchUIManager` 控制器
 - [ ] 集成 `PopupManager` 生命周期管理
 - [ ] 实现基础样式（含暗色主题）
 

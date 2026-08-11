@@ -587,7 +587,7 @@ class TypeRegistry {
             try {
                 typeEntry.instance = new typeEntry.constructor();
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.TYPE_INSTANTIATION_ERROR, `无法实例化类型 "${typeName}"`, { originalError: error });
+                errorHandler.error(ERROR_CODE.TYPE_INSTANTIATION_ERROR, `无法实例化类型 "${typeName}"`, { originalError: error });
                 return null;
             }
             return typeEntry.instance;
@@ -596,7 +596,7 @@ class TypeRegistry {
         try {
             return new typeEntry.constructor(options);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.TYPE_INSTANTIATION_ERROR, `无法使用配置实例化类型 "${typeName}"`, { originalError: error });
+            errorHandler.error(ERROR_CODE.TYPE_INSTANTIATION_ERROR, `无法使用配置实例化类型 "${typeName}"`, { originalError: error });
             return null;
         }
     }
@@ -1459,7 +1459,7 @@ export function validateCellValue(cellType, value, colConfig) {
         try {
             return colConfig.validator(value);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.TYPE_PARSE_ERROR, "自定义验证器执行失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.TYPE_PARSE_ERROR, "自定义验证器执行失败", { originalError: error });
             return false;
         }
     }

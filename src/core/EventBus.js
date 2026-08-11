@@ -110,7 +110,7 @@ export class EventBus {
         }
         if (entry.emitters.length > 0 && !entry.emitters.includes(source)) {
             const msg = `[EventBus] 契约校验: 事件 "${event}" 的发射方 "${source}" 不在合法列表 [${entry.emitters.join(", ")}] 中`;
-            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, msg);
+            errorHandler.error(ERROR_CODE.GENERIC_ERROR, msg);
             throw new Error(msg);
         }
     }

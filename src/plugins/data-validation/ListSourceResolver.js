@@ -170,7 +170,7 @@ export class ListSourceResolver {
                 try {
                     cb();
                 } catch (e) {
-                    errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ListSourceResolver] watcher 回调执行失败:", e);
+                    errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ListSourceResolver] watcher 回调执行失败:", e);
                 }
             });
         }
@@ -256,7 +256,7 @@ export class ListSourceResolver {
 
             return values;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ListSourceResolver] 解析动态引用失败: "${rangeRef}"`, error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[ListSourceResolver] 解析动态引用失败: "${rangeRef}"`, error);
             return [];
         }
     }

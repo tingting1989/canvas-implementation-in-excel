@@ -284,7 +284,7 @@ export class FormulaValidator extends BaseValidator {
                 result = await this.#formulaEngine.evaluateForValidation(resolvedFormula, evaluationContext);
             } catch (evalError) {
                 // 处理求值错误（语法错误、循环引用等）
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[FormulaValidator] FormulaEngine 求值失败: ${resolvedFormula}`, {
+                errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[FormulaValidator] FormulaEngine 求值失败: ${resolvedFormula}`, {
                     error: evalError,
                     formula: resolvedFormula,
                     context,
@@ -354,7 +354,7 @@ export class FormulaValidator extends BaseValidator {
 
             return validationResult;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 异步验证过程异常", { error, value, rule, context });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 异步验证过程异常", { error, value, rule, context });
 
             return ValidationResult.failure(
                 `公式验证系统错误: ${error.message}`,
@@ -518,7 +518,7 @@ export class FormulaValidator extends BaseValidator {
                 estimatedTime: analysis.estimatedTime,
             });
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 同步快速通道异常", { error, value, rule });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 同步快速通道异常", { error, value, rule });
 
             // 异常情况降级处理，避免完全阻塞用户操作
             return ValidationResult.failure(
@@ -676,7 +676,7 @@ export class FormulaValidator extends BaseValidator {
         const errorStyle = rule.errorStyle || "stop";
 
         if (errorStyle === "stop") {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[FormulaValidator] 公式求值错误，已阻止输入`, {
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[FormulaValidator] 公式求值错误，已阻止输入`, {
                 formula: rule.formula,
                 value,
                 error: error.message,

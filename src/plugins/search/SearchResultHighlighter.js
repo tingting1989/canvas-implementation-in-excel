@@ -271,7 +271,7 @@ export class SearchResultHighlighter {
                 }
             }
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_HIGHLIGHT_RENDER_ERROR, "渲染高亮时出错", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_HIGHLIGHT_RENDER_ERROR, "渲染高亮时出错", { originalError: error });
         }
     }
 
@@ -399,7 +399,7 @@ export class SearchResultHighlighter {
                 endCol: rc.colAt(scrollX + viewW) + 1,
             };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_VISIBLE_RANGE_ERROR, "获取可视范围失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_VISIBLE_RANGE_ERROR, "获取可视范围失败", { originalError: error });
             return {
                 startRow: 0,
                 endRow: Infinity,
@@ -428,7 +428,7 @@ export class SearchResultHighlighter {
         try {
             this.#renderEngine.scrollToCell(row, col);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.SEARCH_SCROLL_TO_CELL_ERROR, "滚动到单元格失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_SCROLL_TO_CELL_ERROR, "滚动到单元格失败", { originalError: error });
         }
     }
 

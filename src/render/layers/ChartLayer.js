@@ -464,7 +464,7 @@ export class ChartLayer extends BaseLayer {
             const entry = this.#cache.get(chart.id);
             return entry?.canvas || null;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, `Failed to rebuild cache for chart ${chartId}`, {
+            errorHandler.error(ERROR_CODE.CHART_CACHE_REBUILD_FAILED, `Failed to rebuild cache for chart ${chartId}`, {
                 chartId,
                 error: error.message,
             });
@@ -528,7 +528,7 @@ export class ChartLayer extends BaseLayer {
 
             return canvas;
         } catch (e) {
-            errorHandler.handle(ERROR_CODE.CHART_RENDER_ERROR, "高清图表渲染异常", { error: e.message || e });
+            errorHandler.error(ERROR_CODE.CHART_RENDER_ERROR, "高清图表渲染异常", { error: e.message || e });
             return null;
         }
     }
@@ -826,7 +826,7 @@ export class ChartLayer extends BaseLayer {
             renderer.render(entry.ctx, chart, data, plotArea, chart.style);
             chart._cachedData = data;
         } catch (e) {
-            errorHandler.handle(ERROR_CODE.CHART_RENDER_ERROR, "图表渲染异常", { error: e });
+            errorHandler.error(ERROR_CODE.CHART_RENDER_ERROR, "图表渲染异常", { error: e });
         }
     }
 

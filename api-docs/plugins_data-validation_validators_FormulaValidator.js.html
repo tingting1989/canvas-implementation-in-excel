@@ -96,7 +96,7 @@ export class FormulaValidator extends BaseValidator {
                       metadata: { formula: rule.formula },
                   });
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 公式求值失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 公式求值失败:", error);
             return ValidationResult.failure(`公式验证错误: ${error.message}`, "warning", {
                 value,
                 ruleId: rule.id,
@@ -178,7 +178,7 @@ export class FormulaValidator extends BaseValidator {
 
             return !!result;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 降级求值失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 降级求值失败:", error);
             throw error;
         }
     }
