@@ -303,6 +303,32 @@ export class InputDetector {
 
         return false;
     }
+
+    /**
+     * 公共方法 - 检查文档中是否存在文本选区（非折叠的文本选择）
+     *
+     * 用于判断用户是否在普通 HTML 内容中选择了文本。
+     * 当存在文本选区时，Ctrl+C/X 应让浏览器原生处理（复制/剪切选中文本），
+     * 而非被 Canvas 的复制策略拦截。
+     *
+     * 技术说明：
+     * - `<input>`/`<textarea>` 的文本选择不会出现在 window.getSelection() 中
+     *   （它们使用自身的 selectionStart/selectionEnd API）
+     * - `<canvas>` 元素内部无法选择文本（像素渲染，非文本节点）
+     * - 因此，只要 window.getSelection() 返回非空文本，
+     *   说明用户在普通 HTML 内容（或 contentEditable）中选择了文本
+     *
+     * @returns {boolean}
+     *   - true: 存在非空文本选区，应让浏览器处理复制/剪切
+     *   - false: 无文本选区，可由 Canvas 策略处理
+     */
+    hasExternalTextSelection() {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) {
+            return false;
+        }
+        return selection.toString().length > 0;
+    }
 }
 
 export default InputDetector;

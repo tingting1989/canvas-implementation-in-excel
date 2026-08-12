@@ -1,12 +1,12 @@
-import { BasePlugin } from "./BasePlugin.js";
-import { HOOKS } from "../constants/hookNames.js";
-import { SHEET_EVENTS } from "../constants/sheetEvents.js";
-import { SortState } from "./sort/SortState.js";
-import { SortEngine } from "./sort/SortEngine.js";
-import { SortStrategy } from "../editor/strategies/SortStrategy.js";
-import { SortUIManager } from "./sort/SortUIManager.js";
-import { errorHandler } from "../core/ErrorHandler.js";
-import { ERROR_CODE } from "../constants/errorCodes.js";
+import { BasePlugin } from "../BasePlugin.js";
+import { HOOKS } from "../../constants/hookNames.js";
+import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
+import { SortState } from "./SortState.js";
+import { SortEngine } from "./SortEngine.js";
+import { SortStrategy } from "../../editor/strategies/SortStrategy.js";
+import { SortUIManager } from "./SortUIManager.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 /**
  * 排序插件（Sort Plugin）
@@ -137,7 +137,7 @@ export class SortPlugin extends BasePlugin {
     // ═══════════════════════════════════════════════════════════════
 
     /**
-     * @param {import("../workbook/Workbook.js").Workbook} workbook - Workbook 实例
+     * @param {import("../../workbook/Workbook.js").Workbook} workbook - Workbook 实例
      */
     constructor(workbook) {
         super(workbook);
@@ -197,7 +197,7 @@ export class SortPlugin extends BasePlugin {
 
     /**
      * 初始化/重新初始化排序引擎
-     * @param {import("../workbook/Sheet.js").Sheet} sheet - 目标工作表
+     * @param {import("../../workbook/Sheet.js").Sheet} sheet - 目标工作表
      * @private
      */
     #initSortEngine(sheet) {
@@ -252,7 +252,7 @@ export class SortPlugin extends BasePlugin {
      *
      * 使用 EventBus（内部模块通信）而非 Hooks（用户扩展接口）
      *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet - 当前工作表
+     * @param {import("../../workbook/Sheet.js").Sheet} sheet - 当前工作表
      * @private
      */
     #bindSheetSwitchListener(sheet) {
@@ -284,7 +284,7 @@ export class SortPlugin extends BasePlugin {
 
     /**
      * 工作表切换时的回调处理
-     * @param {import("../workbook/Sheet.js").Sheet} newSheet - 新的工作表
+     * @param {import("../../workbook/Sheet.js").Sheet} newSheet - 新的工作表
      * @private
      */
     #onSheetSwitched(newSheet) {

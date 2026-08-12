@@ -1,4 +1,4 @@
-﻿import { FilterPlugin } from "../../../src/plugins/FilterPlugin.js";
+﻿import { FilterPlugin } from "@/plugins/filter/FilterPlugin.js";
 import { NullValueHandler } from "../../../src/plugins/filter/NullValueTypes.js";
 
 describe("FilterPlugin 集成测试", () => {

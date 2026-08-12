@@ -195,6 +195,12 @@ export class SearchPlugin extends BasePlugin {
             const results = await this.#engine.executeQuery(cellData, queryStr, options);
 
             this.#state.setResults(results.slice(0, this.options.maxResults));
+
+            // ✅ 确保高亮器已注册到 RenderEngine（hide() 会注销，编程式调用 query 需重新注册）
+            if (this.workbook?.renderEngine?.setSearchHighlighter && this.#highlighter) {
+                this.workbook.renderEngine.setSearchHighlighter(this.#highlighter);
+            }
+
             this.#highlighter.updateHighlights(this.#state.getResults());
 
             // ✅ 动态更新依赖（确保 goToFirst 能正确同步选区）
@@ -242,7 +248,7 @@ export class SearchPlugin extends BasePlugin {
      *
      * @returns {Promise<SearchResult|null>}
      */
-    async findNext() {
+    findNext() {
         // ✅ 动态更新 SelectionManager（解决初始化时 selection 为 null 的问题）
         this.#updateNavigatorDependencies();
 
@@ -276,7 +282,7 @@ export class SearchPlugin extends BasePlugin {
      *
      * @returns {Promise<SearchResult|null>}
      */
-    async findPrevious() {
+    findPrevious() {
         // ✅ 动态更新 SelectionManager（解决初始化时 selection 为 null 的问题）
         this.#updateNavigatorDependencies();
 
@@ -313,7 +319,7 @@ export class SearchPlugin extends BasePlugin {
      * @param {string} replaceStr - 替换文本
      * @returns {Promise<boolean>} 是否成功替换
      */
-    async replace(replaceStr) {
+    replace(replaceStr) {
         const current = this.#state.getCurrentResult();
         if (!current) return false;
 
@@ -383,7 +389,7 @@ export class SearchPlugin extends BasePlugin {
      * @param {string} replaceStr - 替换文本
      * @returns {Promise<number>} 替换的数量
      */
-    async replaceAll(replaceStr) {
+    replaceAll(replaceStr) {
         const results = this.#state.getResults();
         if (results.length === 0) {
             errorHandler.warn(ERROR_CODE.SEARCH_NO_RESULTS, "没有可替换的搜索结果，请先执行查找操作");
@@ -396,7 +402,10 @@ export class SearchPlugin extends BasePlugin {
         }
 
         // 触发 beforeReplaceAll 钩子（可取消，同步调用）
-        const canReplaceAll = this.hooks.runHooksUntil(HOOKS.BEFORE_SEARCH_REPLACE_ALL, { count: results.length, replaceValue: replaceStr });
+        const canReplaceAll = this.hooks.runHooksUntil(HOOKS.BEFORE_SEARCH_REPLACE_ALL, {
+            count: results.length,
+            replaceValue: replaceStr,
+        });
 
         if (canReplaceAll === false) {
             return 0;

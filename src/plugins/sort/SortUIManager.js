@@ -33,7 +33,7 @@ export class SortUIManager {
 
     /**
      * 所属插件实例
-     * @type {import("../SortPlugin.js").SortPlugin}
+     * @type {import("./SortPlugin.js").SortPlugin}
      * @private
      */
     #plugin;

@@ -50,7 +50,7 @@ export class FilterUIManager {
     /** @type {FilterEngine} 筛选引擎实例 */
     #filterEngine = null;
 
-    /** @type {import("../FilterPlugin.js").FilterPlugin} 筛选插件实例引用 */
+    /** @type {import("./FilterPlugin.js").FilterPlugin} 筛选插件实例引用 */
     #filterPlugin = null;
 
     /** @type {PopupPanelNew|null} 弹窗容器 */
@@ -84,7 +84,7 @@ export class FilterUIManager {
      * @constructor
      * @param {import("../../workbook/Sheet.js").Sheet} sheet - 工作表实例
      * @param {import("./FilterState.js").FilterState} filterState - 筛选状态管理器
-     * @param {import("../FilterPlugin.js").FilterPlugin} filterPlugin - 筛选插件实例（用于触发渲染）
+     * @param {import("./FilterPlugin.js").FilterPlugin} filterPlugin - 筛选插件实例（用于触发渲染）
      */
     constructor(sheet, filterState, filterPlugin) {
         this.#sheet = sheet;
@@ -140,9 +140,12 @@ export class FilterUIManager {
                 onClear: () => this.#handleClear(col),
             });
 
-            // 4. 设置筛选数据（面板宽高使用 FilterDropdown :host 中的 CSS 变量默认值）
+            // 4. 设置筛选数据（从插件配置读取面板宽高、虚拟滚动阈值等）
+            const pluginOpts = this.#filterPlugin?.options || {};
             this.#dropdown.setData(col, uniqueValues, currentFilter, {
-                virtualScrollThreshold: 200,
+                dropdownWidth: pluginOpts.dropdownWidth,
+                dropdownMaxHeight: pluginOpts.dropdownMaxHeight,
+                virtualScrollThreshold: pluginOpts.virtualScrollThreshold,
                 columnType,
             });
 
@@ -150,11 +153,12 @@ export class FilterUIManager {
             this.#popupId = PopupManager.getInstance().register(this.#popupPanel);
 
             // 6. 显示容器（带位置和回调）
+            const columnName = this.#getColumnName(col);
             this.#popupPanel.show({
                 position,
                 placement: "bottom",
                 zIndex: 10001,
-                title: "筛选",
+                title: columnName ? `筛选 - ${columnName}` : "筛选",
                 closeOnClickOutside: true,
                 closeOnEscape: true,
                 content: this.#dropdown,

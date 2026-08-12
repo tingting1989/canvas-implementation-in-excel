@@ -1,9 +1,9 @@
-﻿import { BasePlugin } from "./BasePlugin.js";
-import { FilterState } from "./filter/FilterState.js";
-import { FilterUIManager } from "./filter/FilterUIManager.js";
-import { FilterStrategy } from "./filter/FilterStrategy.js";
-import { FilterIconRenderer } from "./filter/FilterIconRenderer.js";
-import { errorHandler } from "../core/ErrorHandler.js";
+﻿import { BasePlugin } from "../BasePlugin.js";
+import { FilterState } from "./FilterState.js";
+import { FilterUIManager } from "./FilterUIManager.js";
+import { FilterStrategy } from "./FilterStrategy.js";
+import { FilterIconRenderer } from "./FilterIconRenderer.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 
 /**
  * 筛选插件
@@ -25,7 +25,7 @@ export class FilterPlugin extends BasePlugin {
 
     static DEFAULT_OPTIONS = {
         enabled: true,
-        dropdownWidth: 240,
+        dropdownWidth: 300,
         dropdownMaxHeight: 360,
         virtualScrollThreshold: 200,
         nullValueHandling: {
@@ -37,7 +37,7 @@ export class FilterPlugin extends BasePlugin {
         },
         conditionOperators: ["eq", "neq", "contains", "notContains", "startsWith", "endsWith", "gt", "gte", "lt", "lte"],
         iconRenderer: {
-            iconSize: 12,
+            iconSize: 10,
             iconPadding: 6,
         },
         filterableColumns: null,
@@ -68,7 +68,7 @@ export class FilterPlugin extends BasePlugin {
      *
      * @param {Object} options - 筛选插件配置选项
      * @param {boolean} [options.enabled=true] - 是否启用筛选功能
-     * @param {number} [options.dropdownWidth=240] - 筛选下拉面板宽度（像素）
+     * @param {number} [options.dropdownWidth=300] - 筛选下拉面板宽度（像素）
      * @param {number} [options.dropdownMaxHeight=360] - 筛选下拉面板最大高度（像素），超出后可滚动
      * @param {number} [options.virtualScrollThreshold=200] - 虚拟滚动阈值，当唯一值数量超过此值时启用虚拟滚动
      * @param {Object} [options.nullValueHandling] - 空值处理配置
@@ -130,6 +130,8 @@ export class FilterPlugin extends BasePlugin {
     init(options = {}) {
         const mergedOptions = { ...FilterPlugin.DEFAULT_OPTIONS, ...options };
 
+        super.init(mergedOptions);
+
         if (!mergedOptions.enabled) return;
 
         this.#parseFilterableColumns(mergedOptions.filterableColumns);
@@ -140,11 +142,6 @@ export class FilterPlugin extends BasePlugin {
         this.#registerStrategies();
         this.#registerHeaderRenderer();
         this.#registerHooks();
-
-        errorHandler.info(
-            FilterPlugin.PLUGIN_NAME,
-            `[Filter] 初始化完成，允许过滤的列: ${this.#filterableColumns?.size > 0 ? [...this.#filterableColumns].join(", ") : "无"}`,
-        );
     }
 
     /**
@@ -212,14 +209,6 @@ export class FilterPlugin extends BasePlugin {
     }
 
     /**
-     * 获取图标渲染器
-     * @returns {FilterIconRenderer|null} 图标渲染器实例
-     */
-    getIconRenderer() {
-        return this.#iconRenderer;
-    }
-
-    /**
      * 打开指定列的筛选下拉面板
      *
      * @param {number} col - 列索引
@@ -258,42 +247,6 @@ export class FilterPlugin extends BasePlugin {
             filterState.clearAll();
             this.refreshAllHeaderIcons();
         }
-    }
-
-    /**
-     * 在指定列的表头容器中渲染筛选图标
-     *
-     * @param {HTMLElement} headerContainer - 列头容器元素
-     * @param {number} col - 列索引
-     * @param {boolean} hasActiveFilter - 该列是否有激活的筛选条件
-     * @returns {HTMLElement} 图标包装器元素
-     */
-    renderFilterIcon(headerContainer, col, hasActiveFilter) {
-        if (!this.#iconRenderer) return null;
-
-        const existingWrapper = headerContainer.querySelector(`.filter-icon-wrapper[data-col="${col}"]`);
-
-        if (existingWrapper) {
-            this.#iconRenderer.updateIconState(existingWrapper, hasActiveFilter);
-            return existingWrapper;
-        }
-
-        const wrapper = this.#iconRenderer.render(headerContainer, col, hasActiveFilter);
-
-        wrapper.addEventListener("click", (e) => {
-            e.stopPropagation();
-
-            const rect = wrapper.getBoundingClientRect();
-            const position = {
-                x: rect.left + rect.width / 2,
-                y: rect.bottom + 4,
-            };
-
-            this.openDropdown(col, position);
-        });
-
-        this.#headerRenderers.set(col, wrapper);
-        return wrapper;
     }
 
     /**

@@ -14,7 +14,7 @@ export { HiddenRowsPlugin } from "./HiddenRowsPlugin.js";
 export { RowMovePlugin } from "./RowMovePlugin.js";
 export { FreezePlugin } from "./FreezePlugin.js";
 export { FormulaPlugin } from "./FormulaPlugin.js";
-export { SortPlugin } from "./SortPlugin.js";
+export { SortPlugin } from "./sort/SortPlugin.js";
 export { DataValidationPlugin } from "./data-validation/DataValidationPlugin.js";
 export { ChartPlugin } from "./ChartPlugin.js";
 

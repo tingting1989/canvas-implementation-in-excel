@@ -306,6 +306,13 @@ export class CopyPasteStrategy extends EventStrategy {
 
         const ctrlOrMeta = e.ctrlKey || e.metaKey;
 
+        // ✅ 关键修复：存在文档文本选区时，Ctrl+C/X 让浏览器原生复制/剪切选中文本
+        // （<input>/<textarea> 的选区不在 window.getSelection() 中，<canvas> 无可选文本，
+        //   因此非空 getSelection 必定来自普通 HTML 内容，不应被 Canvas 策略拦截）
+        if (ctrlOrMeta && (e.key === "c" || e.key === "x") && this.#inputDetector.hasExternalTextSelection()) {
+            return undefined;
+        }
+
         switch (e.key) {
             case "c":
                 if (ctrlOrMeta) {
