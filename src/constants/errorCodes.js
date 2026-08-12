@@ -172,6 +172,31 @@ export const ERROR_CODE = Object.freeze({
     /** Search - 所有匹配单元格都被跳过（不可编辑） */
     SEARCH_REPLACE_ALL_SKIPPED: "SEARCH_REPLACE_ALL_SKIPPED",
 
+    // ── 筛选 ──
+    /** UI 控制器 - 注销 PopupManager 失败 */
+    FILTER_UI_POPUP_UNREGISTER_ERROR: "FILTER_UI_POPUP_UNREGISTER_ERROR",
+
+    /** UI 控制器 - 打开面板出错 */
+    FILTER_UI_OPEN_ERROR: "FILTER_UI_OPEN_ERROR",
+
+    /** UI 控制器 - 关闭面板出错 */
+    FILTER_UI_CLOSE_ERROR: "FILTER_UI_CLOSE_ERROR",
+
+    /** UI 控制器 - 应用筛选出错 */
+    FILTER_UI_APPLY_ERROR: "FILTER_UI_APPLY_ERROR",
+
+    /** UI 控制器 - 清除筛选出错 */
+    FILTER_UI_CLEAR_ERROR: "FILTER_UI_CLEAR_ERROR",
+
+    /** Dropdown - 渲染内容出错 */
+    FILTER_DROPDOWN_RENDER_ERROR: "FILTER_DROPDOWN_RENDER_ERROR",
+
+    /** Dropdown - 应用筛选时出错 */
+    FILTER_DROPDOWN_APPLY_ERROR: "FILTER_DROPDOWN_APPLY_ERROR",
+
+    /** VirtualValueList - 渲染可见项出错 */
+    FILTER_VIRTUAL_LIST_RENDER_ERROR: "FILTER_VIRTUAL_LIST_RENDER_ERROR",
+
     // ── 排序 ──
     /** 排序引擎未初始化 */
     SORT_ENGINE_NOT_INITIALIZED: "SORT_ENGINE_NOT_INITIALIZED",

@@ -4,7 +4,7 @@
  * 测试搜索策略的键盘快捷键处理和外部输入检测
  */
 import { describe, it, expect, beforeEach, jest } from "vitest";
-import { SearchStrategy } from "../SearchStrategy.js";
+import { SearchStrategy } from "@/plugins/search/SearchStrategy.js";
 
 describe("SearchStrategy", () => {
     let strategy;

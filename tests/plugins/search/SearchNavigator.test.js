@@ -4,8 +4,8 @@
  * 覆盖设计文档 10.1 章节的导航相关用例
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { SearchState } from "../SearchState.js";
-import { SearchNavigator } from "../SearchNavigator.js";
+import { SearchState } from "@/plugins/search/SearchState.js";
+import { SearchNavigator } from "@/plugins/search/SearchNavigator.js";
 
 describe("SearchNavigator", () => {
     let state;

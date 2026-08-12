@@ -5,7 +5,7 @@
  * 确保与 SortPlugin 保持一致的行为模式。
  */
 import { describe, it, expect, beforeEach, jest } from "vitest";
-import { SearchPlugin } from "../SearchPlugin.js";
+import { SearchPlugin } from "@/plugins/search/SearchPlugin.js";
 
 describe("SearchPlugin Lifecycle (enable/disable/active)", () => {
     let plugin;

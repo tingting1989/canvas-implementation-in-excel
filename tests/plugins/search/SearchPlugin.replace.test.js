@@ -5,7 +5,7 @@
  */
 import { describe, it, expect, beforeEach, jest } from "vitest";
 
-import { SearchPlugin } from "../SearchPlugin.js";
+import { SearchPlugin } from "@/plugins/search/SearchPlugin.js";
 import { SetCellCommand } from "../../model/command/SetCellCommand.js";
 import { BatchCommand } from "../../model/command/BatchCommand.js";
 import { Cell } from "../../model/store/Cell.js";

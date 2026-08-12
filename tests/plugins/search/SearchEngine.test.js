@@ -4,7 +4,7 @@
  * 覆盖设计文档 10.1 章节的所有用例
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { SearchEngine } from "../SearchEngine.js";
+import { SearchEngine } from "@/plugins/search/SearchEngine.js";
 
 describe("SearchEngine", () => {
     let engine;
