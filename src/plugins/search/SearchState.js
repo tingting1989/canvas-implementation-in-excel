@@ -374,7 +374,6 @@ export class SearchState {
         return this.#currentIndex >= 0 && this.#currentIndex < this.#results.length ? this.#results[this.#currentIndex] : null;
     }
 
-
     /**
      * 获取上次搜索使用的选项配置
      *
@@ -389,5 +388,4 @@ export class SearchState {
     getOptions() {
         return this.#options;
     }
-
 }

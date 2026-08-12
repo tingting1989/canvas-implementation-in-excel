@@ -32,11 +32,11 @@
  * @see {@link SearchDropdown} - UI 渲染组件
  * @see {@link PopupManager} - 弹窗管理器
  */
-import {SearchDropdown} from "./SearchDropdown.js";
-import {PopupPanelNew} from "../../ui/components/PopupPanelNew.js";
-import {PopupManager} from "../../ui/components/PopupManager.js";
-import {errorHandler} from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
+import { SearchDropdown } from "./SearchDropdown.js";
+import { PopupPanelNew } from "../../ui/components/PopupPanelNew.js";
+import { PopupManager } from "../../ui/components/PopupManager.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 export class SearchUIManager {
     /** @type {import("./SearchPlugin.js")} 搜索插件实例引用 */
@@ -180,7 +180,7 @@ export class SearchUIManager {
                 try {
                     PopupManager.getInstance().unregister(this.#popupId);
                 } catch (error) {
-                    errorHandler.warn(ERROR_CODE.SEARCH_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", {originalError: error});
+                    errorHandler.warn(ERROR_CODE.SEARCH_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", { originalError: error });
                 }
             }
 
@@ -245,7 +245,6 @@ export class SearchUIManager {
             x: Math.max(20, centerX),
             y: Math.max(60, centerY),
         };
-
     }
 
     /**
@@ -268,7 +267,7 @@ export class SearchUIManager {
         try {
             await this.#plugin.query(query, options);
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "搜索失败", {originalError: error});
+            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "搜索失败", { originalError: error });
         }
     }
 
@@ -291,7 +290,7 @@ export class SearchUIManager {
                 await this.#plugin.findPrevious();
             }
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "导航失败", {originalError: error});
+            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "导航失败", { originalError: error });
         }
     }
 
@@ -325,7 +324,7 @@ export class SearchUIManager {
         try {
             this.#plugin.hide();
         } catch (error) {
-            errorHandler.warn(ERROR_CODE.SEARCH_UI_CLOSE_ERROR, "关闭面板时出错", {originalError: error});
+            errorHandler.warn(ERROR_CODE.SEARCH_UI_CLOSE_ERROR, "关闭面板时出错", { originalError: error });
         }
     }
 
@@ -364,7 +363,7 @@ export class SearchUIManager {
 
             return success;
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", {originalError: error});
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
             return false;
         }
     }
@@ -406,7 +405,7 @@ export class SearchUIManager {
 
             return count;
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", {originalError: error});
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
             return 0;
         }
     }
