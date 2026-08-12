@@ -3,6 +3,7 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { InputDetector } from "../../utils/inputDetection.js";
 
 /**
  * 搜索策略 (Search Strategy)
@@ -36,6 +37,7 @@ export class SearchStrategy extends EventStrategy {
 
     #plugin = null;
     #isSearchActive = false;
+    #inputDetector = new InputDetector();
 
     /**
      * @param {Object} handler - 事件处理器
@@ -255,29 +257,36 @@ export class SearchStrategy extends EventStrategy {
      *
      * 当以下情况存在时，不拦截键盘事件：
      * - 用户正在编辑单元格（编辑器打开）
-     * - 焦点在 input/textarea/select 等表单元素上
+     * - 焦点在 input/textarea/select 等表单元素上（由 InputDetector 处理）
      * - 其他模态对话框打开
+     *
+     * 使用 InputDetector 进行通用外部输入检测，并保留 SearchStrategy 特有逻辑：
+     * - 搜索面板输入框排除
+     * - 模态弹窗检测
+     * - 编辑器活跃状态检查
      *
      * @returns {boolean} 是否存在外部输入
      * @private
      */
     #hasExternalInput() {
+        // 1️⃣ 使用 InputDetector 处理通用外部输入检测
+        // 包含：Canvas 编辑器排除、Shadow DOM 支持、缓存优化等
+        if (this.#inputDetector.isExternalInput()) {
+            return true;
+        }
+
         const activeElement = document.activeElement;
 
-        // ✅ 检查是否在表单元素中（排除搜索面板自己的输入框）
+        // 2️⃣ 排除搜索面板自己的输入框（SearchStrategy 特有逻辑）
         if (activeElement) {
-            const tagName = activeElement.tagName?.toLowerCase();
-            const isFormElement = ["input", "textarea", "select"].includes(tagName);
-
-            // 允许搜索面板自己的输入框接收按键（通过 data 属性标记）
             const isSearchInput = activeElement.closest?.("search-dropdown") !== null || activeElement.dataset?.searchInput === "true";
 
-            if (isFormElement && !isSearchInput) {
-                return true;
+            if (isSearchInput) {
+                return false; // 允许搜索面板的输入框接收按键
             }
         }
 
-        // ✅ 检查是否有其他模态弹窗打开（通过 z-index 或 class 判断）
+        // 3️⃣ 检查是否有其他模态弹窗打开（SearchStrategy 特有逻辑）
         const modals = document.querySelectorAll(".modal-overlay, .dialog-backdrop, [role='dialog']");
 
         for (const modal of modals) {
@@ -293,7 +302,7 @@ export class SearchStrategy extends EventStrategy {
             }
         }
 
-        // ✅ 可选：检查编辑器是否处于活跃状态
+        // 4️⃣ 检查 Canvas 单元格编辑器是否处于活跃状态（SearchStrategy 特有逻辑）
         if (this.handler?.sheet?.editor?.isActive?.()) {
             return true;
         }
