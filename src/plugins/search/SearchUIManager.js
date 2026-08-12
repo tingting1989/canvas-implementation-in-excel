@@ -33,6 +33,7 @@
  * @see {@link PopupManager} - 弹窗管理器
  */
 import { SearchDropdown } from "./SearchDropdown.js";
+import { PopupPanelNew } from "../../ui/components/PopupPanelNew.js";
 import { PopupManager } from "../../ui/components/PopupManager.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
@@ -41,7 +42,10 @@ export class SearchUIManager {
     /** @type {import("./SearchPlugin.js")} 搜索插件实例引用 */
     #plugin = null;
 
-    /** @type {SearchDropdown|null} 当前显示的搜索下拉面板 */
+    /** @type {PopupPanelNew|null} 弹窗容器 */
+    #popupPanel = null;
+
+    /** @type {SearchDropdown|null} 搜索面板内容组件 */
     #dropdown = null;
 
     /** @type {Symbol|null} PopupManager 分配的唯一标识符 */
@@ -104,18 +108,42 @@ export class SearchUIManager {
     show() {
         if (this.#dropdown) return;
 
+        // 1. 创建弹窗容器
+        this.#popupPanel = new PopupPanelNew();
+
+        // 2. 创建搜索面板内容组件
         this.#dropdown = new SearchDropdown();
 
-        const position = this.#calculatePosition();
-
-        // ✅ 使用对象形式的回调参数（支持替换功能）
-        this.#popupId = this.#dropdown.show(position, {
+        // 3. 初始化回调
+        this.#dropdown.initCallbacks({
             onSearch: (query, options) => this.#handleSearch(query, options),
             onNavigate: (direction) => this.#handleNavigate(direction),
             onReplace: async (replaceStr) => await this.#handleReplace(replaceStr),
             onReplaceAll: async (replaceStr) => await this.#handleReplaceAll(replaceStr),
             onClose: (reason) => this.#handleClose(reason),
         });
+
+        // 4. 组装：将搜索面板内容放入容器中
+        this.#popupPanel.appendChild(this.#dropdown);
+
+        // 5. 显示容器（带位置和回调）
+        const position = this.#calculatePosition();
+        this.#popupId = Symbol("search-popup");
+        this.#popupPanel.show({
+            position: this.#calculatePosition(),
+            title: "查找和替换", // ← 标题
+            draggable: true, // ← 可拖
+            mask: false,
+            closeOnClickOutside: true,
+            closeOnEscape: true,
+            content: this.#dropdown, // ← 内容注入（之前是 appendChild）
+            onClose: (reason) => this.#handleClose(reason),
+        });
+
+        // 6. 聚焦输入框
+        setTimeout(() => {
+            this.#dropdown?.focusInput();
+        }, 100);
     }
 
     /**
@@ -139,13 +167,15 @@ export class SearchUIManager {
      * uiController.hide(); // 关闭搜索面板
      */
     hide() {
-        if (this.#isHiding || !this.#dropdown) return;
+        if (this.#isHiding || !this.#popupPanel) return;
 
         this.#isHiding = true;
 
         try {
-            this.#dropdown.hide();
+            // 隐藏弹窗容器
+            this.#popupPanel.hide();
 
+            // 从 PopupManager 注销
             if (this.#popupId) {
                 try {
                     PopupManager.getInstance().unregister(this.#popupId);
@@ -154,30 +184,13 @@ export class SearchUIManager {
                 }
             }
 
+            // 清理引用
             this.#dropdown = null;
+            this.#popupPanel = null;
             this.#popupId = null;
         } finally {
             this.#isHiding = false;
         }
-    }
-
-    /**
-     * 将焦点聚焦到搜索输入框
-     *
-     * 通常用于以下场景：
-     * - 用户按 Ctrl+F 后需要立即输入
-     * - 从其他组件切换回来时恢复焦点
-     * - 快捷键触发的重新打开
-     *
-     * @public
-     * @returns {void}
-     *
-     * @example
-     * uiController.show();
-     * uiController.focusInput(); // 光标定位到输入框
-     */
-    focusInput() {
-        this.#dropdown?.focusInput();
     }
 
     /**
@@ -198,24 +211,6 @@ export class SearchUIManager {
      */
     updateUI(state) {
         this.#dropdown?.updateResultInfo(state);
-    }
-
-    /**
-     * 检查搜索面板是否正在显示
-     *
-     * 用于判断是否需要避免重复打开，
-     * 或根据面板状态调整其他组件行为。
-     *
-     * @public
-     * @returns {boolean} true 表示面板可见
-     *
-     * @example
-     * if (uiController.isOpen()) {
-     *   console.log("搜索面板已打开");
-     * }
-     */
-    isOpen() {
-        return this.#dropdown !== null;
     }
 
     /**
@@ -443,19 +438,8 @@ export class SearchUIManager {
 
         errorHandler.error(ERROR_CODE.GENERIC_ERROR, message);
 
-        if (typeof this.#dropdown.showError === "function") {
-            this.#dropdown.showError(message, duration);
-        } else {
-            const event = new CustomEvent("search:error", {
-                detail: { message, duration },
-                bubbles: true,
-            });
-            this.#dropdown.dispatchEvent(event);
-        }
-
-        if (process.env.NODE_ENV === "development") {
-            console.trace("[Search] 错误调用栈");
-        }
+        // 直接调用 SearchDropdown 的 showError 方法显示 Toast
+        this.#dropdown.showError(message);
     }
 
     /**

@@ -286,6 +286,12 @@ export class CopyPasteStrategy extends EventStrategy {
             return undefined;
         }
 
+        // ✅ 关键修复：检查焦点是否在外部输入框上（Shadow DOM 支持）
+        // 如果用户在 input/textarea 等元素上操作，应让浏览器原生处理复制/粘贴/剪切
+        if (this.#isFocusOnExternalInput()) {
+            return undefined;  // 让渡给浏览器默认行为
+        }
+
         const ctrlOrMeta = e.ctrlKey || e.metaKey;
 
         switch (e.key) {
@@ -318,6 +324,126 @@ export class CopyPasteStrategy extends EventStrategy {
                 break;
         }
         return undefined;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 外部输入框检测（防止劫持非 Canvas 输入框的快捷键）
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * @private 私有字段 - 上次焦点检查的 DOM 元素引用（缓存优化）
+     * @type {HTMLElement|null}
+     */
+    #lastCheckedElement = null;
+
+    /**
+     * @private 私有字段 - 上次焦点检查的结果（缓存优化）
+     * @type {boolean}
+     */
+    #lastCheckResult = false;
+
+    /**
+     * @private 私有方法 - 检查当前焦点是否在外部输入元素上
+     *
+     ** 与 KeyboardStrategy 的 #isFocusOnExternalInput() 保持一致，
+     ** 确保两个策略对"外部输入"的判断标准统一。
+     *
+     * @returns {boolean} true=外部输入, false=Canvas编辑器或非输入区域
+     */
+    #isFocusOnExternalInput() {
+        const activeElement = document.activeElement;
+        if (!activeElement) return false;
+
+        if (activeElement.tagName === "BODY" || activeElement.tagName === "HTML") {
+            return false;
+        }
+
+        if (this.#lastCheckedElement === activeElement) {
+            return this.#lastCheckResult;
+        }
+
+        const result = this.#performFullCheck(activeElement);
+        this.#lastCheckedElement = activeElement;
+        this.#lastCheckResult = result;
+        return result;
+    }
+
+    /**
+     * @private 私有方法 - 获取 Shadow DOM 内的实际焦点元素
+     * @param {HTMLElement} host - 可能是宿主元素的 DOM 元素
+     * @returns {HTMLElement|null}
+     */
+    #getEffectiveActiveElement(host) {
+        if (!host || !host.shadowRoot) return null;
+        const shadowRoot = host.shadowRoot;
+        if (!shadowRoot.activeElement) return null;
+        return shadowRoot.activeElement;
+    }
+
+    /**
+     * @private 私有方法 - 执行完整的焦点元素检查
+     * @param {HTMLElement} activeElement - 当前获得焦点的 DOM 元素
+     * @returns {boolean} true=外部输入, false=Canvas编辑器或非输入区域
+     */
+    #performFullCheck(activeElement) {
+        const effectiveElement = this.#getEffectiveActiveElement(activeElement);
+        if (effectiveElement && effectiveElement !== activeElement) {
+            return this.#performFullCheck(effectiveElement);
+        }
+
+        const tagName = activeElement.tagName.toLowerCase();
+        const INPUT_ELEMENTS = new Set(["input", "textarea", "select", "button"]);
+
+        if (!INPUT_ELEMENTS.has(tagName)) {
+            const isContentEditable = activeElement.isContentEditable ||
+                activeElement.getAttribute("contenteditable") === "true";
+            const hasAriaInputRole = this.#hasAriaInputRole(activeElement);
+            if (!isContentEditable && !hasAriaInputRole) {
+                return false;
+            }
+        }
+
+        if (
+            activeElement.disabled ||
+            activeElement.readOnly ||
+            activeElement.style.display === "none" ||
+            activeElement.style.visibility === "hidden" ||
+            activeElement.offsetParent === null
+        ) {
+            return false;
+        }
+
+        if (this.#isOurCellEditor(activeElement)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @private 私有方法 - 检查元素是否具有 ARIA 输入角色属性
+     * @param {HTMLElement} element - 待检查的 DOM 元素
+     * @returns {boolean}
+     */
+    #hasAriaInputRole(element) {
+        const role = element.getAttribute("role");
+        if (!role) return false;
+        const INPUT_ROLES = new Set(["textbox", "combobox", "searchbox", "spinbutton"]);
+        return INPUT_ROLES.has(role.toLowerCase());
+    }
+
+    /**
+     * @private 私有方法 - 检查元素是否是 Canvas 自己的单元格编辑器
+     * @param {HTMLElement} element - 待检查的 DOM 元素
+     * @returns {boolean}
+     */
+    #isOurCellEditor(element) {
+        if (element.classList.contains("cs-cell-editor")) return true;
+        if (element.closest("#wrap") && element.tagName.toLowerCase() === "input") {
+            const nearbyCanvas = element.closest("#wrap")?.querySelector("canvas");
+            if (nearbyCanvas && element.dataset.canvasEditor === "true") return true;
+        }
+        return false;
     }
 
     // ═══════════════════════════════════════════════════════════════
