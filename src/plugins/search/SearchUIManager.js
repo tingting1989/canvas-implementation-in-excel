@@ -32,11 +32,11 @@
  * @see {@link SearchDropdown} - UI 渲染组件
  * @see {@link PopupManager} - 弹窗管理器
  */
-import { SearchDropdown } from "./SearchDropdown.js";
-import { PopupPanelNew } from "../../ui/components/PopupPanelNew.js";
-import { PopupManager } from "../../ui/components/PopupManager.js";
-import { errorHandler } from "../../core/ErrorHandler.js";
-import { ERROR_CODE } from "../../constants/errorCodes.js";
+import {SearchDropdown} from "./SearchDropdown.js";
+import {PopupPanelNew} from "../../ui/components/PopupPanelNew.js";
+import {PopupManager} from "../../ui/components/PopupManager.js";
+import {errorHandler} from "../../core/ErrorHandler.js";
+import {ERROR_CODE} from "../../constants/errorCodes.js";
 
 export class SearchUIManager {
     /** @type {import("./SearchPlugin.js")} 搜索插件实例引用 */
@@ -180,7 +180,7 @@ export class SearchUIManager {
                 try {
                     PopupManager.getInstance().unregister(this.#popupId);
                 } catch (error) {
-                    errorHandler.warn(ERROR_CODE.SEARCH_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", { originalError: error });
+                    errorHandler.warn(ERROR_CODE.SEARCH_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", {originalError: error});
                 }
             }
 
@@ -214,41 +214,38 @@ export class SearchUIManager {
     }
 
     /**
-     * 计算搜索面板的最佳显示位置
+     * 计算搜索面板的最佳显示位置（居中显示）
      *
-     * 优先级策略：
-     * 1. 基于工作表 DOM 元素的位置计算（精确对齐）
-     * 2. 工作表不可用时回退到视口右上角
-     * 3. 确保不超出屏幕边界（通过 Math.min/max 约束）
+     * 策略：将搜索面板在视口中水平和垂直居中显示
+     * - 水平居中：(windowWidth - DEFAULT_WIDTH) / 2
+     * - 垂直居中：(windowHeight - DEFAULT_HEIGHT) / 2
      *
-     * 坐标系说明：
-     * - 使用屏幕绝对坐标（相对于 viewport）
-     * - x: 距离左边缘像素值
-     * - y: 距离顶部像素值
+     * 尺寸来源：
+     * - 优先从 SearchDropdown.getPanelSize() 获取实际渲染尺寸
+     * - 如果获取失败，回退到默认尺寸（460×380px）
+     *
+     * 边界保护：
+     * - 左边界：至少距离边缘 20px
+     * - 上边界：至少距离顶部 60px（考虑工具栏等 UI 元素）
      *
      * @private
      * @returns {{ x: number, y: number }} 推荐的面板左上角坐标
      *
      * @example
      * const pos = this.#calculatePosition();
-     * // 返回: { x: 1200, y: 80 } （假设工作表在右侧）
+     * // 返回: { x: 730, y: 320 } （1920x1080 屏幕居中）
      */
     #calculatePosition() {
-        const workbookEl = this.#plugin.workbook?.element;
-        if (!workbookEl) {
-            return { x: window.innerWidth - 450, y: 60 };
-        }
+        // 基于实测的默认尺寸（实际渲染：462×305px + 15px安全边距）
+        const DEFAULT_WIDTH = 462;
+        const DEFAULT_HEIGHT = 320;
+        const centerX = (window.innerWidth - DEFAULT_WIDTH) / 2;
+        const centerY = (window.innerHeight - DEFAULT_HEIGHT) / 2;
+        return {
+            x: Math.max(20, centerX),
+            y: Math.max(60, centerY),
+        };
 
-        try {
-            const rect = workbookEl.getBoundingClientRect();
-            return {
-                x: Math.min(rect.right - 20, window.innerWidth - 450),
-                y: Math.max(rect.top + 10, 60),
-            };
-        } catch (error) {
-            errorHandler.warn(ERROR_CODE.SEARCH_UI_POSITION_ERROR, "获取工作表位置失败，使用默认位置", { originalError: error });
-            return { x: window.innerWidth - 450, y: 60 };
-        }
     }
 
     /**
@@ -271,7 +268,7 @@ export class SearchUIManager {
         try {
             await this.#plugin.query(query, options);
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "搜索失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "搜索失败", {originalError: error});
         }
     }
 
@@ -294,7 +291,7 @@ export class SearchUIManager {
                 await this.#plugin.findPrevious();
             }
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "导航失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_UI_NAVIGATION_ERROR, "导航失败", {originalError: error});
         }
     }
 
@@ -328,7 +325,7 @@ export class SearchUIManager {
         try {
             this.#plugin.hide();
         } catch (error) {
-            errorHandler.warn(ERROR_CODE.SEARCH_UI_CLOSE_ERROR, "关闭面板时出错", { originalError: error });
+            errorHandler.warn(ERROR_CODE.SEARCH_UI_CLOSE_ERROR, "关闭面板时出错", {originalError: error});
         }
     }
 
@@ -367,7 +364,7 @@ export class SearchUIManager {
 
             return success;
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, "替换失败", {originalError: error});
             return false;
         }
     }
@@ -409,7 +406,7 @@ export class SearchUIManager {
 
             return count;
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", { originalError: error });
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, "全部替换失败", {originalError: error});
             return 0;
         }
     }

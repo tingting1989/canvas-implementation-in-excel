@@ -134,7 +134,9 @@ template.innerHTML = `
         margin-bottom: 6px;
         padding-left: 72px;
     }
-
+    .search-result-info{
+       padding-left: 72px;
+    }
     .opt-btn {
         width: 30px;
         height: 26px;

@@ -374,23 +374,6 @@ export class SearchState {
         return this.#currentIndex >= 0 && this.#currentIndex < this.#results.length ? this.#results[this.#currentIndex] : null;
     }
 
-    /**
-     * 检查是否正在执行异步搜索操作
-     *
-     * 用于 UI 层显示加载状态或禁用用户交互：
-     * ```javascript
-     * if (state.isSearching()) {
-     *   showLoadingSpinner();
-     *   disableSearchButton();
-     * }
-     * ```
-     *
-     * @public
-     * @returns {boolean} true 表示搜索进行中
-     */
-    isSearching() {
-        return this.#isSearching;
-    }
 
     /**
      * 获取上次搜索使用的选项配置
@@ -407,20 +390,4 @@ export class SearchState {
         return this.#options;
     }
 
-    /**
-     * 获取最近一次错误对象
-     *
-     * 如果没有错误（或已被清除）则返回 null。
-     *
-     * 典型用途：
-     * - 显示详细的错误堆栈给开发者
-     * - 构造用户友好的错误消息
-     * - 发送到远程日志收集系统
-     *
-     * @public
-     * @returns {Error|null} 错误对象，无错误时返回 null
-     */
-    getError() {
-        return this.#error;
-    }
 }
