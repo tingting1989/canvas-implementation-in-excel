@@ -1,6 +1,6 @@
-import {debounce} from "../../utils/helper.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
-import {errorHandler} from "../../core/ErrorHandler.js";
+import { debounce } from "../../utils/helper.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 
 const template = document.createElement("template");
 template.innerHTML = `
@@ -413,7 +413,7 @@ export class SearchDropdown extends HTMLElement {
 
     constructor() {
         super();
-        this.attachShadow({mode: "open"});
+        this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(template.content.cloneNode(true));
         this.#createDebouncedSearch();
     }
@@ -548,16 +548,13 @@ export class SearchDropdown extends HTMLElement {
     }
 
     #cacheDOMReferences() {
-
         const searchInputs = this.shadowRoot.querySelectorAll(".search-input");
         this.#inputElement = searchInputs[0] || null;
 
         const replaceInput = this.shadowRoot.querySelector(".replace-input");
         if (replaceInput) {
             this.#replaceInputElement = replaceInput;
-
         } else {
-
             this.#replaceInputElement = null;
         }
 
@@ -768,7 +765,6 @@ export class SearchDropdown extends HTMLElement {
 
     async #handleReplace() {
         if (!this.#onReplaceCallback) {
-
             return;
         }
 
@@ -793,7 +789,7 @@ export class SearchDropdown extends HTMLElement {
                 this.#onNavigateCallback?.("next");
             }
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, `替换操作失败: ${error.message}`, {error});
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ERROR, `替换操作失败: ${error.message}`, { error });
             this.showError(`替换失败: ${error.message}`);
         } finally {
             this.#setActionButtonsDisabled(false);
@@ -809,7 +805,6 @@ export class SearchDropdown extends HTMLElement {
     }
 
     async #handleReplaceAll() {
-
         if (!this.#onReplaceAllCallback) {
             this.showError("替换功能未初始化");
             return;
@@ -834,8 +829,7 @@ export class SearchDropdown extends HTMLElement {
                 }
             }
         } catch (error) {
-            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, `全部替换操作失败: ${error.message}`, {error});
-
+            errorHandler.error(ERROR_CODE.SEARCH_REPLACE_ALL_ERROR, `全部替换操作失败: ${error.message}`, { error });
         } finally {
             this.#setActionButtonsDisabled(false);
         }
