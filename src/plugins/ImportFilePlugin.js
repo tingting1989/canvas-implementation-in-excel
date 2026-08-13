@@ -1,10 +1,11 @@
-﻿import { BasePlugin } from "./BasePlugin.js";
-import ExcelJS from "exceljs";
-import { StyleConverter } from "@/shared/StyleConverter.js";
-import { ERROR_CODE, errorHandler } from "../core/index.js";
-import { HOOKS } from "@/constants/hookNames";
+﻿import ExcelJS from "exceljs";
+import { BasePlugin } from "./BasePlugin.js";
+import { StyleConverter } from "../shared/StyleConverter.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import { HOOKS } from "../constants/hookNames.js";
 import { colToIndex } from "../utils/cellRef.js";
-import { excelWidthToPixel, excelHeightToPixel, convertColumnWidthsToPixels, convertRowHeightsToPixels } from "../utils/excelUnits.js";
+import { excelWidthToPixel, excelHeightToPixel } from "../utils/excelUnits.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * 导入文件插件
@@ -221,7 +222,7 @@ export class ImportFilePlugin extends BasePlugin {
                         sheet.invalidateFreezeCache();
                     }
                 } catch (refreshError) {
-                    errorHandler.handle(ERROR_CODE.IMPORT_DIMENSION_WARNING, "导入后刷新视图时发生错误（不影响数据）", {
+                    errorHandler.error(ERROR_CODE.IMPORT_DIMENSION_WARNING, "导入后刷新视图时发生错误（不影响数据）", {
                         error: refreshError.message,
                     });
                 }
@@ -871,7 +872,7 @@ export class ImportFilePlugin extends BasePlugin {
     async #applyStyles(data, options, taskId) {
         const sheet = this.sheet;
         if (!sheet || !this.#styleConverter) {
-            errorHandler.handle(ERROR_CODE.IMPORT_STYLE_CONVERSION_ERROR, "#applyStyles 失败: 缺少必要的依赖", {
+            errorHandler.error(ERROR_CODE.IMPORT_STYLE_CONVERSION_ERROR, "#applyStyles 失败: 缺少必要的依赖", {
                 hasSheet: !!sheet,
                 hasStyleConverter: !!this.#styleConverter,
             });
@@ -1132,7 +1133,7 @@ export class ImportFilePlugin extends BasePlugin {
                 endCol: endPos.col,
             };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.IMPORT_RANGE_PARSE_ERROR, `无法解析单元格范围: ${range}`, {
+            errorHandler.error(ERROR_CODE.IMPORT_RANGE_PARSE_ERROR, `无法解析单元格范围: ${range}`, {
                 range,
                 error: error.message,
             });
@@ -1163,7 +1164,7 @@ export class ImportFilePlugin extends BasePlugin {
 
             return { row, col };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.IMPORT_RANGE_PARSE_ERROR, `无法解析单元格引用: ${cellRef}`, {
+            errorHandler.error(ERROR_CODE.IMPORT_RANGE_PARSE_ERROR, `无法解析单元格引用: ${cellRef}`, {
                 cellRef,
                 error: error.message,
             });

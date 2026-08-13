@@ -1,6 +1,7 @@
-import { HOOKS } from "@/constants/hookNames";
-import { errorHandler, ERROR_CODE } from "./ErrorHandler.js";
-import { isFunction } from "@/utils/helper";
+import { HOOKS } from "../constants/hookNames.js";
+import { errorHandler } from "./ErrorHandler.js";
+import { isFunction } from "../utils/helper.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * Hooks 系统
@@ -129,7 +130,7 @@ export class Hooks {
             try {
                 result = callback(...args);
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 
@@ -157,7 +158,7 @@ export class Hooks {
                     return result;
                 }
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 
@@ -184,7 +185,7 @@ export class Hooks {
             try {
                 result = invoker(callback);
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 
@@ -211,7 +212,7 @@ export class Hooks {
                     return result;
                 }
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 

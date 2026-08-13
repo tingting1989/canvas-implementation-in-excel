@@ -1,5 +1,6 @@
-import { colToIndex } from "@/utils/cellRef.js";
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { colToIndex } from "../../utils/cellRef.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { getValidationCache } from "./ValidationCache.js";
 
 /**
@@ -821,7 +822,7 @@ export class ValidationUIController {
 
             return { status: ICON_STATUS.PENDING, source: "async-scheduled" };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] determineIconStatus() 异常", { error, row, col });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] determineIconStatus() 异常", { error, row, col });
 
             return { status: ICON_STATUS.ERROR, source: "error" };
         }

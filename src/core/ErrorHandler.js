@@ -1,5 +1,5 @@
-import { ERROR_LEVEL, ERROR_CODE } from "@/constants/errorCodes";
-import { isFunction } from "@/utils/helper";
+import { ERROR_LEVEL } from "../constants/errorCodes.js";
+import { isFunction } from "../utils/helper.js";
 
 /**
  * 统一错误处理器
@@ -15,7 +15,7 @@ import { isFunction } from "@/utils/helper";
  * import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
  *
  * errorHandler.warn(ERROR_CODE.PLUGIN_ALREADY_LOADED, `Plugin "${name}" already loaded`);
- * errorHandler.handle(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin "${name}" not found`, { name });
+ * errorHandler.error(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin "${name}" not found`, { name });
  * errorHandler.throw(ERROR_CODE.HOOK_CALLBACK_INVALID, "Hook callback must be a function");
  * ```
  */
@@ -83,7 +83,7 @@ class ErrorHandler {
      * @param {string} message - 错误描述
      * @param {object} [meta]  - 附加元数据
      */
-    handle(code, message, meta) {
+    error(code, message, meta) {
         this.#report(ERROR_LEVEL.ERROR, code, message, meta);
     }
 
@@ -254,5 +254,3 @@ class ErrorHandler {
 
 /** 全局单例 */
 export const errorHandler = new ErrorHandler();
-
-export { ERROR_LEVEL, ERROR_CODE };

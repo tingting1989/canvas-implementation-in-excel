@@ -1,5 +1,6 @@
-import { ERROR_CODE, errorHandler } from "@/core/ErrorHandler.js";
-import { indexToCol } from "@/utils/cellRef.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { indexToCol } from "../../utils/cellRef.js";
 
 const VOLATILE_FUNCTIONS = Object.freeze(["INDIRECT", "OFFSET", "RAND", "RANDBETWEEN", "NOW", "TODAY"]);
 
@@ -96,7 +97,7 @@ export class ShadowEvaluator {
             if (error.message?.includes("[SECURITY]")) {
                 throw error;
             }
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ShadowEvaluator] 沙箱求值失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ShadowEvaluator] 沙箱求值失败:", error);
             throw error;
         }
     }

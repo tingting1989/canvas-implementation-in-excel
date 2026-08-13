@@ -115,7 +115,7 @@ export class PluginManager {
 
         const PluginClass = PluginManager.#registry.get(name);
         if (!PluginClass) {
-            errorHandler.handle(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin "${name}" is not registered. Use PluginManager.register() first.`);
+            errorHandler.error(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin "${name}" is not registered. Use PluginManager.register() first.`);
             return null;
         }
 

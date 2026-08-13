@@ -1,9 +1,8 @@
-import { CONFIG } from "@/constants/config";
-import { SHEET_EVENTS } from "@/constants/sheetEvents";
-import { EVENT_NAMES } from "@/constants/eventNames";
-import { isFunction } from "@/utils/helper";
-import { DOMComponent } from "@/core/DOMComponent";
-import { FONT_STYLE } from "@/constants/enums/FontStyle.js";
+import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { isFunction } from "../../utils/helper.js";
+import { DOMComponent } from "../../core/DOMComponent.js";
+import { FONT_STYLE } from "../../constants/enums/FontStyle.js";
 import "../editor.css";
 
 /**

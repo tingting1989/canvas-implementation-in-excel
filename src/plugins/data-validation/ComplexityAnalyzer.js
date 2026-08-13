@@ -16,8 +16,9 @@
  * @version 3.0.0
  */
 
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { isString, isNumber } from "@/utils/helper";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { isString } from "../../utils/helper.js";
 
 /**
  * 函数分类常量（冻结对象，防止运行时修改）
@@ -238,7 +239,7 @@ export class ComplexityAnalyzer {
 
             return result;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[ComplexityAnalyzer] 分析过程异常`, { error, formula });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[ComplexityAnalyzer] 分析过程异常`, { error, formula });
 
             return this.#createResult(COMPLEXITY_THRESHOLD.MAX_COMPLEXITY_SCORE, false, [`分析异常: ${error.message}`], Infinity);
         }

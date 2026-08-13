@@ -1,4 +1,15 @@
-﻿/**
+﻿import ExcelJS from "exceljs";
+import JSZip from "jszip";
+import { BasePlugin } from "./BasePlugin.js";
+import { indexToCol } from "../utils/cellRef";
+import { stylePool } from "../model/styles/index.js";
+import { HOOKS } from "../constants/hookNames.js";
+import { pixelToExcelHeight, pixelToExcelWidth } from "../utils/excelUnits.js";
+import { StyleConverter, toArgb } from "../shared/StyleConverter.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
+import { CONFIG } from "../constants/config.js";
+/**
  * @fileoverview 导出文件插件
  *
  * 功能概述：
@@ -39,17 +50,6 @@
  * @author Canvas-Sheet Team
  * @version 2.1.0 (优化版)
  */
-
-import { BasePlugin } from "./BasePlugin.js";
-import ExcelJS from "exceljs";
-import JSZip from "jszip";
-import { indexToCol } from "@/utils";
-import { stylePool } from "@/model/styles";
-import { ERROR_CODE, errorHandler } from "../core/index.js";
-import { CONFIG } from "@/constants/config";
-import { StyleConverter, toArgb } from "@/shared/StyleConverter.js";
-import { pixelToExcelHeight, pixelToExcelWidth } from "@/utils";
-import { HOOKS } from "@/constants/hookNames";
 
 // ============================================================================
 // [Section 1] 常量与配置
@@ -719,7 +719,7 @@ function getMergedCellStyle(sheet, row, col) {
 
         return null;
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `样式提取过程异常 (${row},${col})`, { error });
+        errorHandler.error(ERROR_CODE.EXPORT_STYLE_FETCH_FAILED, `样式提取过程异常 (${row},${col})`, { error });
 
         return null;
     }
@@ -1160,7 +1160,7 @@ function exportDataMerges({ worksheet, sheet, range, dataStartRow }) {
             worksheet.mergeCells(excelStartRow, excelStartCol, excelEndRow, excelEndCol);
         }
     } catch (error) {
-        errorHandler.handle(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, { error });
+        errorHandler.error(ERROR_CODE.EXPORT_MERGE_ERROR, `导出合并单元格时出错`, { error });
     }
 }
 
@@ -1305,7 +1305,7 @@ function createThinBorder() {
  */
 async function generateXlsx(sheet, opts, range, pluginInstance) {
     if (!ExcelJS) {
-        errorHandler.handle(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED, "ExcelJS 库未安装。请执行: npm install exceljs");
+        errorHandler.error(ERROR_CODE.EXPORT_FILE_GENERATE_FAILED, "ExcelJS 库未安装。请执行: npm install exceljs");
         throw new Error("ExcelJS is required for XLSX export. " + "Please install it with: npm install exceljs");
     }
 
@@ -1569,7 +1569,7 @@ async function exportChartsToExcel(workbook, worksheet, sheet, pluginInstance) {
             exportedCount++;
             errorHandler.debug(`📊 [Excel Export] 图表 ${chart.id} 导出成功`);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.CHART_EXPORT_ERROR, "图表导出失败", { error, chartId: chart?.id });
+            errorHandler.error(ERROR_CODE.CHART_EXPORT_ERROR, "图表导出失败", { error, chartId: chart?.id });
         }
     }
 

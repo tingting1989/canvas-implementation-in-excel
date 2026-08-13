@@ -1,4 +1,5 @@
-﻿import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { BasePlugin } from "../BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
@@ -6,13 +7,13 @@ import { ValidationUIController } from "./ValidationUIController.js";
 import { ValidationPortalManager } from "./ValidationPortalManager.js";
 import { ValidationDirtyFlagManager } from "./ValidationDirtyFlagManager.js";
 import { CopyPasteHandler, PASTE_OPTIONS } from "./CopyPasteHandler.js";
-import { initValidationCache, getValidationCache } from "./ValidationCache.js";
+import { initValidationCache } from "./ValidationCache.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
 import { stylePool } from "../../model/styles/index.js";
 import { ValidationStrategy } from "../../editor/strategies/ValidationStrategy.js";
-import { ValidationResult } from "@/plugins/data-validation/ValidationResult";
+import { ValidationResult } from "./ValidationResult.js";
 
 const VALIDATION_ERROR_STYLES = Object.freeze({
     stop: {
@@ -229,7 +230,7 @@ export class DataValidationPlugin extends BasePlugin {
                     this.#engine.addRule(rule);
                     successCount++;
                 } catch (e) {
-                    errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
+                    errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
                 }
             }
             errorHandler.info(ERROR_CODE.VALIDATION_INFO, `[DataValidation] ✅ 规则加载完成: ${successCount}/${options.rules.length}`);
@@ -458,7 +459,7 @@ export class DataValidationPlugin extends BasePlugin {
 
             this.#hookRenderEngine();
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[DataValidation] UI 控制器初始化失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[DataValidation] UI 控制器初始化失败:", error);
             this.#portalUI = null;
         }
     }
@@ -515,7 +516,7 @@ export class DataValidationPlugin extends BasePlugin {
                 const rule = new ValidationRule(ruleConfig);
                 this.#engine.addRule(rule);
             } catch (e) {
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 新 Sheet 加载规则失败:`, e);
+                errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 新 Sheet 加载规则失败:`, e);
             }
         }
     }
@@ -847,7 +848,7 @@ export class DataValidationPlugin extends BasePlugin {
                 const ruleId = this.setValidation(rule);
                 importedIds.push(ruleId);
             } catch (e) {
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 导入规则失败:`, e);
+                errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 导入规则失败:`, e);
             }
         }
 

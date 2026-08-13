@@ -1,4 +1,6 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "../core/ErrorHandler.js";
+﻿import { errorHandler } from "./ErrorHandler.js";
+import { EVENT_FLOW_REGISTRY } from "../constants/sheetEvents.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * 事件信封结构
@@ -13,8 +15,6 @@
  * @property {string} type      - 事件类型（对应 SHEET_EVENTS 常量值）
  * @property {*}      payload   - 业务数据（纯数据，不含 Sheet 对象引用）
  */
-
-import { EVENT_FLOW_REGISTRY } from "../constants/sheetEvents.js";
 
 export class EventBus {
     #listeners = new Map();
@@ -110,7 +110,7 @@ export class EventBus {
         }
         if (entry.emitters.length > 0 && !entry.emitters.includes(source)) {
             const msg = `[EventBus] 契约校验: 事件 "${event}" 的发射方 "${source}" 不在合法列表 [${entry.emitters.join(", ")}] 中`;
-            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, msg);
+            errorHandler.error(ERROR_CODE.GENERIC_ERROR, msg);
             throw new Error(msg);
         }
     }

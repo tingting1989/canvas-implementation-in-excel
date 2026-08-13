@@ -1,4 +1,5 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+﻿import { errorHandler } from "../../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 
@@ -92,7 +93,7 @@ export class UniqueValidator extends BaseValidator {
                       },
                   });
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[UniqueValidator] 验证失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[UniqueValidator] 验证失败:", error);
             return ValidationResult.failure(`唯一性校验失败: ${error.message}`, "warning", { value, ruleId: rule.id });
         }
     }
@@ -136,7 +137,7 @@ export class UniqueValidator extends BaseValidator {
 
             return ValidationResult.success();
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[UniqueValidator] 同步验证失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[UniqueValidator] 同步验证失败:", error);
             return ValidationResult.success();
         }
     }

@@ -1,4 +1,5 @@
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { ValidationRule } from "./ValidationRule.js";
 
 const PASTE_OPTIONS = Object.freeze({
@@ -114,7 +115,7 @@ export class CopyPasteHandler {
                     const ruleId = this.#validationPlugin.setValidation(newRule);
                     newRuleIds.push(ruleId);
                 } catch (e) {
-                    errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[CopyPasteHandler] 粘贴规则失败:", e);
+                    errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[CopyPasteHandler] 粘贴规则失败:", e);
                 }
             }
         }

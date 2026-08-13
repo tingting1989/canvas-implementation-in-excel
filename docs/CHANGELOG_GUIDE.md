@@ -242,7 +242,7 @@ npx release-it major/minor/patch
   - [x] 验证所有命名导出可访问
 - [x] ImportFilePlugin 运行时错误修复
   - [x] const → let 声明修复
-  - [x] errorHandler.error() → errorHandler.handle()
+  - [x] errorHandler.error() → errorHandler.error()
 
 #### 架构改进 ✅
 - [x] 提取 #calculateDataStartRow() 公共方法
@@ -406,7 +406,7 @@ actualDataStartRow = Math.max(0, ...);  // 正常工作
 errorHandler.error(ERROR_CODE.IMPORT_STYLE_CONVERSION_ERROR, "...");
 
 // ✅ 修复后 - 使用正确的 API
-errorHandler.handle(ERROR_CODE.IMPORT_STYLE_CONVERSION_ERROR, "...");
+errorHandler.error(ERROR_CODE.IMPORT_STYLE_CONVERSION_ERROR, "...");
 ```
 
 ---

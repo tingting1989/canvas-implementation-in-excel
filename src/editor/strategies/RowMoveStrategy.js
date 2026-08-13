@@ -1,8 +1,8 @@
-﻿import { HOOKS } from "@/constants/hookNames";
-import { HIT_TYPE } from "@/constants/hitType";
-import { EventStrategy } from "@/editor/strategies/EventStrategy";
-import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
-import { DELEGATE_KEYS } from "@/constants/eventNames";
+﻿import { HOOKS } from "../../constants/hookNames.js";
+import { HIT_TYPE } from "../../constants/hitType.js";
+import { EventStrategy } from "./EventStrategy.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
  * 行拖拽移动策略 (Row Move Strategy)

@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-import { BaseColumnType } from "@/types/BaseColumnType";
+import { BaseColumnType } from "./types/BaseColumnType.js";
 import { Workbook } from "./workbook/Workbook.js";
 import { FormulaEngine } from "./formula/FormulaEngine.js";
 import { HOOKS } from "./constants/hookNames.js";
 import { isFunction, isNumber } from "./utils/helper.js";
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "./core/ErrorHandler.js";
-import { registerColumnTypeClass } from "@/types";
+import { errorHandler } from "./core/ErrorHandler.js";
+import { registerColumnTypeClass } from "./types/index.js";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
-import { functionRegistry } from "@/formula/functions";
-
+import { functionRegistry } from "./formula/functions/index.js";
+import { ERROR_CODE, ERROR_LEVEL } from "./constants/errorCodes.js";
 const initApp = () => {
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 
@@ -181,6 +181,7 @@ const initApp = () => {
             //"dataValidation",
             "chart",
             "filter",
+            "search",
         ],
         pluginOptions: {
             contextMenu: {

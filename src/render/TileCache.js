@@ -1,5 +1,5 @@
 import { Tile } from "./Tile.js";
-import { CONFIG } from "../constants/config";
+import { CONFIG } from "../constants/config.js";
 
 /**
  * 瓦片缓存（TileCache）—— 管理所有瓦片的生命周期和缓存淘汰

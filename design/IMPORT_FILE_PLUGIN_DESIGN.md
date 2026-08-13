@@ -231,7 +231,7 @@ class ImportFilePlugin extends BasePlugin {
      * #registerCustomHooks(): void {
      *     // 可选：注册内部默认处理器（如日志记录）
      *     this.addHook(IMPORT_HOOKS.STYLE_WARNING, (warning) => {
-     *         errorHandler.handle(ERROR_CODE.IMPORT_STYLE_WARNING, warning.message);
+     *         errorHandler.error(ERROR_CODE.IMPORT_STYLE_WARNING, warning.message);
      *     });
      * }
      */

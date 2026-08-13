@@ -115,8 +115,8 @@
  * @license UNLICENSED
  */
 
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 // ════════════════════════════════════════════
 // 导入内置函数模块
 // ════════════════════════════════════════════
@@ -416,7 +416,7 @@ class FunctionRegistry {
             try {
                 return fn.apply(this, args);
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${upperName} 执行失败`, {
+                errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${upperName} 执行失败`, {
                     functionName: upperName,
                     error: error.message,
                     stack: error.stack,

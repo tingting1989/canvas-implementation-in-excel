@@ -139,7 +139,7 @@ export class DataValidationPlugin extends BasePlugin {
                         const rule = new ValidationRule(ruleConfig);
                         this.#engine.addRule(rule);
                     } catch (e) {
-                        errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
+                        errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
                     }
                 }
             }
@@ -239,7 +239,7 @@ export class DataValidationPlugin extends BasePlugin {
                 const rule = new ValidationRule(ruleConfig);
                 this.#engine.addRule(rule);
             } catch (e) {
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 新 Sheet 加载规则失败:`, e);
+                errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 新 Sheet 加载规则失败:`, e);
             }
         }
 
@@ -378,7 +378,7 @@ export class DataValidationPlugin extends BasePlugin {
                 const ruleId = this.setValidation(rule);
                 importedIds.push(ruleId);
             } catch (e) {
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 导入规则失败:`, e);
+                errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 导入规则失败:`, e);
             }
         }
 

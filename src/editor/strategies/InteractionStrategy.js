@@ -1,8 +1,9 @@
-﻿import { ERROR_CODE, errorHandler } from "@/core";
-import { debounce, isFunction } from "@/utils";
-import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
-import { EventStrategy } from "@/editor/strategies/EventStrategy";
-import { DELEGATE_KEYS } from "@/constants/eventNames";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
+import { debounce, isFunction } from "../../utils/helper.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { EventStrategy } from "./EventStrategy.js";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 /**
  * 交互式单元格策略 (Interactive Cell Strategy)
@@ -213,7 +214,7 @@ export class InteractionStrategy extends EventStrategy {
 
             return this.#dispatchHoverEvent(cellType, context, event, cellKey);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleMouseMove 错误: ${error.message}`, { error });
+            errorHandler.error(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleMouseMove 错误: ${error.message}`, { error });
             return true;
         }
     }
@@ -247,7 +248,7 @@ export class InteractionStrategy extends EventStrategy {
             const context = this.#buildFullContext(hit);
             return this.#dispatchClickEvent(cellType, context, event);
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleClick 错误: ${error.message}`, { error });
+            errorHandler.error(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleClick 错误: ${error.message}`, { error });
             return true;
         }
     }
@@ -287,7 +288,7 @@ export class InteractionStrategy extends EventStrategy {
                 return this.#dispatchClickEvent(cellType, context, event);
             }
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleDoubleClick 错误: ${error.message}`, { error });
+            errorHandler.error(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleDoubleClick 错误: ${error.message}`, { error });
         }
 
         return true; // 交给其他策略处理（如 MouseStrategy 弹出编辑器）
@@ -303,7 +304,7 @@ export class InteractionStrategy extends EventStrategy {
             if (!this.enabled || !this.handler.sheet) return;
             this.#clearAllHoverStates();
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleMouseLeave 错误: ${error.message}`, { error });
+            errorHandler.error(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#handleMouseLeave 错误: ${error.message}`, { error });
         }
     }
 
@@ -574,7 +575,7 @@ export class InteractionStrategy extends EventStrategy {
             this.#lastRenderTime = performance.now();
             this.handler.render();
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#doRender 错误: ${error.message}`, { error });
+            errorHandler.error(ERROR_CODE.GENERIC_ERROR, `InteractionStrategy#doRender 错误: ${error.message}`, { error });
         }
     }
 }

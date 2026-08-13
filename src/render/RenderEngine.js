@@ -59,6 +59,18 @@ export class RenderEngine extends DOMComponent {
     #afterRenderCallbacks = [];
 
     /**
+     * 搜索结果高亮渲染器实例
+     *
+     * 由 SearchPlugin 在初始化时注册，
+     * 在每帧渲染循环的最后阶段调用其 render() 方法，
+     * 在匹配单元格上绘制黄色/橙色高亮背景。
+     *
+     * @type {import('../plugins/search/SearchResultHighlighter.js').SearchResultHighlighter|null}
+     * @private
+     */
+    #searchHighlighter = null;
+
+    /**
      * @param {HTMLElement | string} element - Canvas 元素、元素 id 或容器元素
      */
     constructor(element) {
@@ -376,6 +388,15 @@ export class RenderEngine extends DOMComponent {
         // 合成并绘制所有图层
         this.compositor.compose(ctx, sheet, vt, viewW, viewH, composeOptions);
 
+        // ✅ 渲染搜索结果高亮（在图层之上叠加高亮层）
+        if (this.#searchHighlighter) {
+            try {
+                this.#searchHighlighter.render(ctx, { width: viewW, height: viewH }, sheet);
+            } catch (error) {
+                console.error("[RenderEngine] Search highlight render error:", error);
+            }
+        }
+
         // 更新滚动条位置和标签栏布局
         this.scrollMgr.updateScrollbars(this.#viewW, this.#viewH);
         this.sheetTabBar.updateLayout(this.scrollMgr.hasHScrollbar);
@@ -409,6 +430,38 @@ export class RenderEngine extends DOMComponent {
     removeAfterRenderCallback(callback) {
         const idx = this.#afterRenderCallbacks.indexOf(callback);
         if (idx !== -1) this.#afterRenderCallbacks.splice(idx, 1);
+    }
+
+    /**
+     * 设置搜索结果高亮渲染器
+     *
+     * 由 SearchPlugin.init() 调用，将高亮器实例注册到 RenderEngine。
+     * 注册后，每帧渲染循环会自动调用 highlighter.render() 绘制高亮。
+     *
+     * @public
+     * @param {import('../plugins/search/SearchResultHighlighter.js').SearchResultHighlighter|null} highlighter - 高亮器实例，传 null 可清除
+     * @returns {void}
+     *
+     * @example
+     * // SearchPlugin.init() 中注册
+     * renderEngine.setSearchHighlighter(this.#highlighter);
+     *
+     * // 搜索关闭时清除
+     * renderEngine.setSearchHighlighter(null);
+     */
+    setSearchHighlighter(highlighter) {
+        this.#searchHighlighter = highlighter;
+        this.requestRender();
+    }
+
+    /**
+     * 获取当前注册的搜索高亮渲染器
+     *
+     * @public
+     * @returns {import('../plugins/search/SearchResultHighlighter.js').SearchResultHighlighter|null}
+     */
+    getSearchHighlighter() {
+        return this.#searchHighlighter;
     }
 
     /**
@@ -636,13 +689,13 @@ export class RenderEngine extends DOMComponent {
     /**
      * 标记指定单元格为脏，请求局部重绘
      *
-     * @param {number} pageRow - 行索引
+     * @param {number} row - 行索引
      * @param {number} col - 列索引
      */
-    invalidateCell(pageRow, col) {
+    invalidateCell(row, col) {
         const rc = this.#currentSheet ? this.#currentSheet.rowColManager : null;
-        this.tileLayer.markCellDirty(pageRow, col, rc);
-        this.frozenLayer.markCellDirty(pageRow, col, rc);
+        this.tileLayer.markCellDirty(row, col, rc);
+        this.frozenLayer.markCellDirty(row, col, rc);
         this.chartLayer?.invalidateChartData();
         this.requestRender();
     }

@@ -1,6 +1,7 @@
 ﻿import { functionRegistry } from "./functions/index.js";
 import { isNumber, isString } from "../utils/helper.js";
-import { ERROR_CODE, errorHandler } from "../core/ErrorHandler.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * 公式求值器 (Formula Evaluator)
@@ -331,7 +332,7 @@ export class FormulaEvaluator {
         this.dependencies.add(key);
 
         if (this._callStack.has(key)) {
-            errorHandler.handle(ERROR_CODE.FORMULA_CIRCULAR_REFERENCE, `检测到循环引用: ${key}`, {
+            errorHandler.error(ERROR_CODE.FORMULA_CIRCULAR_REFERENCE, `检测到循环引用: ${key}`, {
                 circularCell: key,
                 callStack: [...this._callStack],
                 sheetName: targetSheet.name,
@@ -353,7 +354,7 @@ export class FormulaEvaluator {
                     return result;
                 } catch (error) {
                     this._callStack.delete(key);
-                    errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `循环引用求值失败: ${key}`, { circularCell: key, error });
+                    errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `循环引用求值失败: ${key}`, { circularCell: key, error });
                     return "#CIRCULAR!";
                 }
             }
@@ -549,7 +550,7 @@ export class FormulaEvaluator {
         try {
             return fn(args, { sheet, workbook: this.workbook });
         } catch (fnError) {
-            errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${node.name} 执行失败`, { functionName: node.name, args, error: fnError });
+            errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${node.name} 执行失败`, { functionName: node.name, args, error: fnError });
             return "#VALUE!";
         }
     }

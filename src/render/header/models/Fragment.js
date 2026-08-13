@@ -1,4 +1,4 @@
-import { CONFIG } from "@/constants/config";
+import { CONFIG } from "../../../constants/config.js";
 import { BorderMask } from "./BorderMask.js";
 import { PARTIAL_TYPE } from "./PartialType.js";
 

@@ -73,7 +73,7 @@
  * }
  */
 
-import { colToIndex, indexToCol } from "../utils/cellRef.js";
+import { colToIndex } from "../utils/cellRef.js";
 
 /**
  * Token 类型枚举

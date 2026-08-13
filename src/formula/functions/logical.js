@@ -14,7 +14,8 @@
  * @module formula/functions/logical
  */
 
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { _validateArgs } from "./utils/index.js";
 
 /**

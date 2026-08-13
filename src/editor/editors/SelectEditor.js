@@ -81,7 +81,6 @@
  * ```
  */
 import { CellEditor } from "./CellEditor.js";
-import { CONFIG } from "@/constants/config";
 
 export class SelectEditor extends CellEditor {
     /**
@@ -223,10 +222,6 @@ export class SelectEditor extends CellEditor {
             const maxAllowed = Math.max(0, viewH - editorTop);
             this.editor.style.maxHeight = maxAllowed + "px";
         }
-    }
-
-    getEditorCssClass() {
-        return "cs-cell-editor--select";
     }
 
     /**

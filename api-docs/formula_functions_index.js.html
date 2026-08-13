@@ -444,7 +444,7 @@ class FunctionRegistry {
             try {
                 return fn.apply(this, args);
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${upperName} 执行失败`, {
+                errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${upperName} 执行失败`, {
                     functionName: upperName,
                     error: error.message,
                     stack: error.stack,

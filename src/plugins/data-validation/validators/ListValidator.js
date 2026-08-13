@@ -1,7 +1,8 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { BaseValidator } from "./BaseValidator.js";
+﻿import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
 import { ListSourceResolver } from "../ListSourceResolver.js";
+import { errorHandler } from "../../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
 
 /**
  * 下拉列表验证器
@@ -115,7 +116,7 @@ export class ListValidator extends BaseValidator {
                 currentSheet: context.sheet || undefined,
             });
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] 动态数据源解析失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] 动态数据源解析失败:", error);
             return [];
         }
     }

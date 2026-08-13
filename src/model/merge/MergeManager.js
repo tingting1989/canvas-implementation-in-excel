@@ -1,4 +1,4 @@
-import { CONFIG } from "../../constants/config";
+import { CONFIG } from "../../constants/config.js";
 
 /**
  * 合并单元格管理器

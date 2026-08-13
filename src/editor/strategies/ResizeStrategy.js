@@ -1,6 +1,6 @@
 ﻿import { EventStrategy } from "./EventStrategy.js";
-import { CONFIG } from "../../constants/config";
-import { HIT_TYPE } from "../../constants/hitType";
+import { CONFIG } from "../../constants/config.js";
+import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 

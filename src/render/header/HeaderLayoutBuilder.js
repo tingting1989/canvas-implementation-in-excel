@@ -1,6 +1,6 @@
-import { CONFIG } from "@/constants/config";
-import { isObject, isString } from "@/utils/helper";
-import { calcCenteredTextY } from "@/utils/canvasUtils";
+import { CONFIG } from "../../constants/config.js";
+import { isObject, isString } from "../../utils/helper.js";
+import { calcCenteredTextY } from "../../utils/canvasUtils.js";
 import { LogicalCell } from "./models/LogicalCell.js";
 import { Fragment } from "./models/Fragment.js";
 import { BorderMask } from "./models/BorderMask.js";

@@ -9,8 +9,9 @@
  * @module formula/functions/utils/validation
  */
 
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler } from "../../../core/ErrorHandler.js";
 import { _toNum } from "./helpers.js";
+import { ERROR_CODE } from "../../../constants/errorCodes";
 
 /**
  * 统一的参数校验器
@@ -35,7 +36,7 @@ import { _toNum } from "./helpers.js";
  */
 export function _validateArgs(args, minArgs, maxArgs = Infinity, functionName) {
     if (!Array.isArray(args)) {
-        errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: 参数必须是数组`, {
+        errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: 参数必须是数组`, {
             receivedType: typeof args,
             functionName,
         });

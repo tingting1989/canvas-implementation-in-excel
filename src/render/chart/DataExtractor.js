@@ -12,7 +12,8 @@
  * const result = await extractor.extract(chart, sheet);
  * console.log(result.headers, result.data);
  */
-import { errorHandler, ERROR_CODE } from "../../core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 export class DataExtractor {
     /** @private Web Worker 实例，用于后台数据提取 */

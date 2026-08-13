@@ -12,9 +12,10 @@
  * @module formula/functions/conditional
  */
 
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 import { isString } from "../../utils/helper.js";
-import { _flatten, _toNum, _validateArgs, _matchCriteria, _matchWildcard } from "./utils/index.js";
+import { _toNum, _validateArgs, _matchCriteria, _flatten } from "./utils/index.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）
@@ -51,7 +52,7 @@ export const conditionalFunctions = {
         const flatSumRange = Array.isArray(sumRange) ? _flatten(sumRange) : [sumRange];
 
         if (flatRange.length !== flatSumRange.length) {
-            errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, "SUMIF: range 和 sum_range 长度不匹配", {
+            errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, "SUMIF: range 和 sum_range 长度不匹配", {
                 rangeLength: flatRange.length,
                 sumRangeLength: flatSumRange.length,
                 functionName: "SUMIF",
@@ -131,7 +132,7 @@ export const conditionalFunctions = {
 
         for (const pair of conditionPairs) {
             if (pair.range.length !== flatSumRange.length) {
-                errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `SUMIFS: 条件范围 ${pair.pairIndex + 1} 与 sum_range 长度不匹配`, {
+                errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `SUMIFS: 条件范围 ${pair.pairIndex + 1} 与 sum_range 长度不匹配`, {
                     expectedLength: flatSumRange.length,
                     actualLength: pair.range.length,
                     pairIndex: pair.pairIndex,
@@ -286,7 +287,7 @@ export const conditionalFunctions = {
         const referenceLength = conditionPairs[0].range.length;
         for (const pair of conditionPairs) {
             if (pair.range.length !== referenceLength) {
-                errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `COUNTIFS: 条件范围 ${pair.pairIndex + 1} 与条件范围 1 长度不匹配`, {
+                errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `COUNTIFS: 条件范围 ${pair.pairIndex + 1} 与条件范围 1 长度不匹配`, {
                     expectedLength: referenceLength,
                     actualLength: pair.range.length,
                     pairIndex: pair.pairIndex,

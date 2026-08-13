@@ -1,5 +1,6 @@
-﻿import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
-import { Scheduler } from "@/state/Scheduler";
+﻿import { errorHandler } from "../core/ErrorHandler.js";
+import { Scheduler } from "./Scheduler.js";
+import { ERROR_CODE } from "../constants/errorCodes";
 
 /**
  * 响应式状态管理器
@@ -161,7 +162,7 @@ export class ReactiveStore {
             try {
                 e.run(newValue, oldValue);
             } catch (err) {
-                errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] sync watcher error on "${path}":`, err);
+                errorHandler.error(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] sync watcher error on "${path}":`, err);
             }
         }
 
@@ -176,7 +177,7 @@ export class ReactiveStore {
                         const currentVal = this._getValueByPath(this.state, path);
                         effectRef.run(currentVal, oldValue);
                     } catch (err) {
-                        errorHandler.handle(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] watcher error on "${path}":`, err);
+                        errorHandler.error(ERROR_CODE.GENERIC_ERROR, `[ReactiveStore] watcher error on "${path}":`, err);
                     }
                 },
             });

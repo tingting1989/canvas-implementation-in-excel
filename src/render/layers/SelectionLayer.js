@@ -1,8 +1,8 @@
 import { BaseLayer } from "../BaseLayer.js";
 import { OverlayRenderer } from "../OverlayRenderer.js";
-import { CONFIG } from "../../constants/config";
-import { SELECTION_CONFIG } from "../../constants/selectionConfig";
-import { LAYER_Z_INDEX } from "@/constants/layerZIndex";
+import { CONFIG } from "../../constants/config.js";
+import { SELECTION_CONFIG } from "../../constants/selectionConfig.js";
+import { LAYER_Z_INDEX } from "../../constants/layerZIndex.js";
 
 export class SelectionLayer extends BaseLayer {
     #columnMoveState = null;

@@ -1,6 +1,7 @@
 import { stylePool } from "../model/styles/index.js";
 import { darkThemeConfig, defaultThemeConfig, styleTypes } from "./config.js";
-import { ERROR_CODE, errorHandler } from "../core/ErrorHandler.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 /**
  * 主题管理器类
  *

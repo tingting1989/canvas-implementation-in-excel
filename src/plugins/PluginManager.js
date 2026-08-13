@@ -1,5 +1,6 @@
 import { BasePlugin } from "./BasePlugin.js";
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js";
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
 
 /**
  * 插件管理器
@@ -87,7 +88,7 @@ export class PluginManager {
 
         const PluginClass = PluginManager.#registry.get(name);
         if (!PluginClass) {
-            errorHandler.handle(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin "${name}" is not registered. Use PluginManager.register() first.`);
+            errorHandler.error(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin "${name}" is not registered. Use PluginManager.register() first.`);
             return null;
         }
 

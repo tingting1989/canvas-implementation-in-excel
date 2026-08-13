@@ -10,10 +10,11 @@ import { HiddenRowsPlugin } from "./HiddenRowsPlugin.js";
 import { RowMovePlugin } from "./RowMovePlugin.js";
 import { FreezePlugin } from "./FreezePlugin.js";
 import { FormulaPlugin } from "./FormulaPlugin.js";
-import { SortPlugin } from "./SortPlugin.js";
-import { DataValidationPlugin } from "@/plugins/data-validation";
-import { ChartPlugin } from "@/plugins/ChartPlugin";
-import { FilterPlugin } from "@/plugins/FilterPlugin";
+import { SortPlugin } from "./sort/SortPlugin.js";
+import { DataValidationPlugin } from "./data-validation/DataValidationPlugin.js";
+import { ChartPlugin } from "./ChartPlugin.js";
+import { FilterPlugin } from "./filter/FilterPlugin.js";
+import { SearchPlugin } from "./search/SearchPlugin.js";
 
 const builtinPlugins = [
     ["autoFill", AutoFillPlugin],
@@ -31,6 +32,7 @@ const builtinPlugins = [
     ["dataValidation", DataValidationPlugin],
     ["chart", ChartPlugin],
     ["filter", FilterPlugin],
+    ["search", SearchPlugin],
 ];
 
 export function registerBuiltinPlugins() {

@@ -27,8 +27,9 @@
  * @version 3.0.0
  */
 
-import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { isString } from "@/utils/helper";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { isString } from "../../utils/helper.js";
 
 /**
  * 缓存配置常量
@@ -341,7 +342,7 @@ export class ValidationCache {
             this.stats.misses++;
             return { result: null, source: null };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] get() 操作异常", { error, key });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] get() 操作异常", { error, key });
             return { result: null, source: null };
         }
     }
@@ -405,7 +406,7 @@ export class ValidationCache {
 
             this.stats.writes++;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] set() 操作异常", { error, key });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] set() 操作异常", { error, key });
         }
     }
 

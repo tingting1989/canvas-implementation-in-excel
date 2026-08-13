@@ -67,8 +67,8 @@
  * ```
  */
 import { CellEditor } from "./CellEditor.js";
-import { EVENT_NAMES } from "@/constants/eventNames";
-import { CONFIG } from "@/constants/config";
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { CONFIG } from "../../constants/config.js";
 
 export class TextareaEditor extends CellEditor {
     /**

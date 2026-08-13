@@ -1,9 +1,9 @@
-﻿import { CONFIG } from "@/constants/config";
-import { NativeChartRenderer } from "@/render/chart/NativeChartRenderer";
-import { HIT_TYPE } from "@/constants/hitType";
-import { STRATEGY_PRIORITY } from "@/constants/strategyPriority";
-import { EventStrategy } from "@/editor/strategies/EventStrategy";
-import { DELEGATE_KEYS } from "@/constants/eventNames";
+﻿import { CONFIG } from "../../constants/config.js";
+import { NativeChartRenderer } from "../../render/chart/NativeChartRenderer.js";
+import { HIT_TYPE } from "../../constants/hitType.js";
+import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { EventStrategy } from "./EventStrategy.js";
+import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 
 /**
  * 图表选区交互策略 (Chart Selection Strategy)

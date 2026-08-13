@@ -26,7 +26,7 @@
  * @module render/OverlayRenderer
  */
 
-import { CONFIG } from "../constants/config";
+import { CONFIG } from "../constants/config.js";
 
 /**
  * 叠加层渲染器

@@ -1,4 +1,5 @@
-﻿import { errorHandler, ERROR_LEVEL, ERROR_CODE } from "@/core/ErrorHandler.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { NumberValidator } from "./validators/NumberValidator.js";
 import { TextLengthValidator } from "./validators/TextLengthValidator.js";
 import { ListValidator } from "./validators/ListValidator.js";
@@ -290,7 +291,7 @@ export class ValidationEngine {
 
             return result;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] validateCell() 异常", { error, row, col, value });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] validateCell() 异常", { error, row, col, value });
 
             return ValidationResult.failure(`验证引擎异常: ${error.message}`, "warning", { error: error.message, row, col });
         }

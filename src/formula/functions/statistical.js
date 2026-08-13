@@ -16,8 +16,9 @@
  */
 
 import { isNumber } from "../../utils/helper.js";
-import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
 import { _flatten, _isBlank, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils/index.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
 
 /**
  * 函数定义集合（导出给主注册表使用）

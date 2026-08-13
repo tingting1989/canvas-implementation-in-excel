@@ -1,5 +1,5 @@
-import { BasePlugin } from "@/plugins/BasePlugin";
-import { AutoFillStrategy } from "@/editor/strategies";
+import { BasePlugin } from "./BasePlugin.js";
+import { AutoFillStrategy } from "../editor/strategies/AutoFillStrategy.js";
 
 /**
  * 自动填充插件 (Auto Fill Plugin)

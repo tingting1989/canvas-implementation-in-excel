@@ -13,7 +13,7 @@
  * @see {@link BaseChartStrategy} 基类定义
  */
 
-import { BaseChartStrategy, HIT_RADIUS } from "../BaseChartStrategy.js";
+import { BaseChartStrategy } from "../BaseChartStrategy.js";
 import { CONFIG } from "../../../constants/config.js";
 import { errorHandler } from "../../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../../constants/errorCodes.js";

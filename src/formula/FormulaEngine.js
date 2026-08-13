@@ -76,7 +76,8 @@ import { indexToCol } from "../utils/cellRef.js"; // 列索引转换工具
 import { FormulaEvaluator } from "./FormulaEvaluator.js"; // 公式求值器
 import { isString } from "../utils/helper.js"; // 类型检查工具
 import { functionRegistry } from "./functions/index.js"; // 函数注册中心
-import { errorHandler, ERROR_CODE } from "../core/ErrorHandler.js"; // 错误处理系统
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js"; // 错误处理系统
 
 export class FormulaEngine {
     /**
@@ -379,7 +380,7 @@ export class FormulaEngine {
         try {
             ast = parseFormula(raw);
         } catch (parseError) {
-            errorHandler.handle(ERROR_CODE.FORMULA_PARSE_ERROR, `公式解析失败: ${formulaStr}`, {
+            errorHandler.error(ERROR_CODE.FORMULA_PARSE_ERROR, `公式解析失败: ${formulaStr}`, {
                 formulaStr,
                 sheetName: sheet.name,
                 row,
@@ -396,7 +397,7 @@ export class FormulaEngine {
         try {
             result = this.evaluator.evaluate(ast, sheet, key);
         } catch (evalError) {
-            errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `公式求值失败: ${formulaStr}`, {
+            errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `公式求值失败: ${formulaStr}`, {
                 formulaStr,
                 sheetName: sheet.name,
                 row,
@@ -551,7 +552,7 @@ export class FormulaEngine {
         try {
             ast = parseFormula(raw);
         } catch (parseError) {
-            errorHandler.handle(ERROR_CODE.FORMULA_PARSE_ERROR, `公式解析失败: ${formulaStr}`, {
+            errorHandler.error(ERROR_CODE.FORMULA_PARSE_ERROR, `公式解析失败: ${formulaStr}`, {
                 formulaStr,
                 sheetName: sheet.name,
                 row,

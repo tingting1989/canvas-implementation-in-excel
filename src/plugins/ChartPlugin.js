@@ -46,12 +46,13 @@
  */
 
 import { BasePlugin } from "./BasePlugin.js";
-import { ChartModel, CHART_TYPE } from "@/model/chart/ChartModel";
-import { ChartManager } from "@/model/chart/ChartManager";
-import { ChartSelectionStrategy } from "@/editor/strategies";
-import { HOOKS } from "@/constants/hookNames";
-import { SHEET_EVENTS } from "@/constants/sheetEvents";
-import { CONFIG } from "@/constants/config.js";
+import { ChartModel } from "../model/chart/ChartModel.js";
+import { ChartManager } from "../model/chart/ChartManager.js";
+import { ChartSelectionStrategy } from "../editor/strategies/ChartSelectionStrategy.js";
+import { HOOKS } from "../constants/hookNames.js";
+import { SHEET_EVENTS } from "../constants/sheetEvents.js";
+import { CONFIG } from "../constants/config.js";
+import { CHART_TYPE } from "../constants/enums/ChartType.js";
 
 /**
  * 图表插件类

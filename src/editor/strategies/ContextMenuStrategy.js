@@ -1,5 +1,5 @@
 ﻿import { EventStrategy } from "./EventStrategy.js";
-import { HIT_TYPE } from "../../constants/hitType";
+import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import "./contextMenu.css";

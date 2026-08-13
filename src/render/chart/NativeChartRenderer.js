@@ -1,4 +1,4 @@
-﻿import { BaseChartStrategy, HIT_RADIUS } from "./BaseChartStrategy.js";
+﻿import { BaseChartStrategy } from "./BaseChartStrategy.js";
 import { getAllStrategies } from "./strategies/index.js";
 import { CONFIG } from "../../constants/config.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
