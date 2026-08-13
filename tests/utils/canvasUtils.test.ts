@@ -1,11 +1,9 @@
-// tests/utils/canvasUtils.test.js
 import { describe, it, expect } from "vitest";
 import { calcCenteredTextY, extractFontSize, getAreaCenter } from "@/utils/canvasUtils";
 
 describe('Canvas 工具函数', () => {
     describe('calcCenteredTextY()', () => {
         it('应该正确计算垂直居中的基线位置', () => {
-            // 区域：y=0, height=48, 字体14px
             const result = calcCenteredTextY(0, 48, "14px Microsoft YaHei");
 
             // centerY = 0 + 24 = 24
@@ -32,8 +30,8 @@ describe('Canvas 工具函数', () => {
         });
 
         it('应该在无法解析时返回默认值', () => {
-            expect(extractFontSize("")).toBe(14);  // CONFIG.DEFAULT_FONT_SIZE
-            expect(extractFontSize(null)).toBe(14);
+            expect(extractFontSize("")).toBe(14);
+            expect(extractFontSize(null as unknown as string)).toBe(14);
             expect(extractFontSize("invalid-font")).toBe(14);
         });
     });

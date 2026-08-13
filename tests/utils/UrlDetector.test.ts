@@ -157,15 +157,15 @@ describe('UrlDetector - extractUrls() 提取测试', () => {
 
     describe('非字符串输入处理', () => {
         it('null 返回空数组', () => {
-            expect(extractUrls(null)).toEqual([]);
+            expect(extractUrls(null as unknown as string)).toEqual([]);
         });
 
         it('undefined 返回空数组', () => {
-            expect(extractUrls(undefined)).toEqual([]);
+            expect(extractUrls(undefined as unknown as string)).toEqual([]);
         });
 
         it('数字返回空数组', () => {
-            expect(extractUrls(123)).toEqual([]);
+            expect(extractUrls(123 as unknown as string)).toEqual([]);
         });
     });
 });
@@ -248,7 +248,7 @@ describe('UrlDetector - openUrl() 打开链接测试', () => {
     describe('正常打开', () => {
         it('使用 window.open 打开 URL', () => {
             const mockOpen = vi.fn();
-            global.window = { open: mockOpen };
+            global.window = { open: mockOpen } as unknown as typeof window;
 
             openUrl('https://example.com');
 
@@ -261,7 +261,7 @@ describe('UrlDetector - openUrl() 打开链接测试', () => {
 
         it('支持自定义 target', () => {
             const mockOpen = vi.fn();
-            global.window = { open: mockOpen };
+            global.window = { open: mockOpen } as unknown as typeof window;
 
             openUrl('https://example.com', '_self');
 
@@ -274,7 +274,7 @@ describe('UrlDetector - openUrl() 打开链接测试', () => {
 
         it('支持自定义 windowFeatures', () => {
             const mockOpen = vi.fn();
-            global.window = { open: mockOpen };
+            global.window = { open: mockOpen } as unknown as typeof window;
 
             openUrl('https://example.com', '_blank', 'width=800,height=600');
 
@@ -289,6 +289,7 @@ describe('UrlDetector - openUrl() 打开链接测试', () => {
     describe('安全性处理', () => {
         it('window 不存在时不报错', () => {
             const originalWindow = global.window;
+            // @ts-expect-error 测试 window 不存在的场景
             delete global.window;
 
             expect(() => openUrl('https://example.com')).not.toThrow();
@@ -301,7 +302,7 @@ describe('UrlDetector - openUrl() 打开链接测试', () => {
             const mockOpen = vi.fn().mockImplementation(() => {
                 throw new Error('Popup blocked');
             });
-            global.window = { open: mockOpen };
+            global.window = { open: mockOpen } as unknown as typeof window;
 
             openUrl('https://blocked.com');
 
@@ -386,7 +387,7 @@ describe('UrlDetector - 集成测试', () => {
         });
 
         it('与单元格数据场景集成', () => {
-            const cellValues = [
+            const cellValues: Array<{ value: unknown; expected: boolean }> = [
                 { value: 'https://api.example.com/v1/users', expected: true },
                 { value: '普通文本内容', expected: false },
                 { value: '', expected: false },
@@ -493,7 +494,7 @@ describe('UrlDetector - URL Hooks 集成测试', () => {
 
         it('可用于实现域名白名单过滤', () => {
             const allowedDomains = ['github.com', 'npmjs.com'];
-            const whitelistHandler = (row, col, url) => {
+            const whitelistHandler = (row: number, col: number, url: string): boolean => {
                 try {
                     const hostname = new URL(url).hostname;
                     return allowedDomains.some(domain => hostname === domain || hostname.endsWith('.' + domain));
@@ -508,8 +509,8 @@ describe('UrlDetector - URL Hooks 集成测试', () => {
         });
 
         it('可用于记录 URL 访问日志', () => {
-            const logEntries = [];
-            const loggingHandler = (row, col, url) => {
+            const logEntries: Array<{ timestamp: number; row: number; col: number; url: string }> = [];
+            const loggingHandler = (row: number, col: number, url: string): boolean => {
                 logEntries.push({ timestamp: Date.now(), row, col, url });
                 return true;
             };
@@ -543,8 +544,8 @@ describe('UrlDetector - URL Hooks 集成测试', () => {
         });
 
         it('可用于统计点击次数', () => {
-            const clickStats = {};
-            const statsHandler = (row, col, url) => {
+            const clickStats: Record<string, number> = {};
+            const statsHandler = (row: number, col: number, url: string): void => {
                 clickStats[url] = (clickStats[url] || 0) + 1;
             };
 
@@ -557,8 +558,8 @@ describe('UrlDetector - URL Hooks 集成测试', () => {
         });
 
         it('可用于发送分析事件', () => {
-            const analyticsEvents = [];
-            const analyticsHandler = (row, col, url) => {
+            const analyticsEvents: Array<{ event: string; url: string; cellPosition: { row: number; col: number }; timestamp: string }> = [];
+            const analyticsHandler = (row: number, col: number, url: string): void => {
                 analyticsEvents.push({
                     event: 'url_opened',
                     url,
@@ -577,8 +578,8 @@ describe('UrlDetector - URL Hooks 集成测试', () => {
 
     describe('完整工作流模拟', () => {
         it('检测 → 确认 → 打开 → 统计 的完整流程', () => {
-            const events = [];
-            const mockRunHooks = vi.fn((hookName, ...args) => {
+            const events: Array<{ hook: string; args: unknown[] }> = [];
+            const mockRunHooks = vi.fn((hookName: string, ...args: unknown[]) => {
                 events.push({ hook: hookName, args });
                 if (hookName === HOOKS.BEFORE_OPEN_URL) return true;
             });
@@ -604,8 +605,8 @@ describe('UrlDetector - URL Hooks 集成测试', () => {
         });
 
         it('BEFORE_OPEN_URL 返回 false 时中断流程', () => {
-            const events = [];
-            const mockRunHooks = vi.fn((hookName) => {
+            const events: string[] = [];
+            const mockRunHooks = vi.fn((hookName: string) => {
                 events.push(hookName);
                 if (hookName === HOOKS.BEFORE_OPEN_URL) return false;
             });

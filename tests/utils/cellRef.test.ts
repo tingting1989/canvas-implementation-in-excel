@@ -40,7 +40,7 @@ describe("cellRef 工具函数", () => {
         });
 
         it("CR-10: 与 HeaderLabelManager 新增列一致 — 递增序列", () => {
-            const cases = [
+            const cases: [number, string][] = [
                 [0, "A"], [1, "B"], [2, "C"],
                 [24, "Y"], [25, "Z"],
                 [26, "AA"], [27, "AB"],
