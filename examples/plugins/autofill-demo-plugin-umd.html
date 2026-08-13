@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 AutoFillPlugin 功能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+        .nav-bar a {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .nav-bar a:hover, .nav-bar a.active {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .canvas-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            min-height: 500px;
+        }
+
+        #spreadsheet {
+            width: 100%;
+            height: 450px;
+            background: white;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 1.3em;
+            color: #495057;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #11998e;
+            font-weight: 600;
+        }
+
+        .status-display {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #11998e;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .preset-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+
+        .preset-chip {
+            display: flex;
+            align-items: center;
+            padding: 6px 12px;
+            background: #e9ecef;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .preset-chip:hover {
+            background: #dee2e6;
+        }
+
+        .preset-chip.selected {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(250, 112, 154, 0.6);
+        }
+
+        .log-panel {
+            grid-column: 1 / -1;
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+
+        .log-title {
+            color: #4facfe;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .log-content {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #d4d4d4;
+        }
+
+        .log-entry {
+            padding: 6px 10px;
+            margin: 4px 0;
+            border-radius: 4px;
+            border-left: 4px solid transparent;
+        }
+
+        .log-success {
+            background: rgba(56, 239, 125, 0.1);
+            border-left-color: #38ef7d;
+            color: #38ef7d;
+        }
+
+        .log-error {
+            background: rgba(255, 107, 107, 0.1);
+            border-left-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .log-info {
+            background: rgba(79, 172, 254, 0.1);
+            border-left-color: #4facfe;
+            color: #4facfe;
+        }
+
+        .log-warn {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            color: #ffc107;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .info-section {
+            padding: 30px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+        .info-section h2 {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .shortcut-card {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 12px 16px;
+            border-radius: 10px;
+        }
+        .shortcut-card .key {
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3748;
+            background: rgba(255,255,255,0.6);
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .shortcut-card .desc {
+            font-size: 12px;
+            color: #4a5568;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .api-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #11998e;
+            transition: transform 0.2s ease;
+        }
+        .api-card:hover { transform: translateY(-2px); }
+        .api-card .category { font-size: 12px; font-weight: 600; color: #11998e; margin-bottom: 8px; }
+        .api-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .api-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #11998e;
+            background: rgba(17,153,142,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .api-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .api-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #667eea;
+            background: rgba(102,126,234,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #667eea; white-space: pre;
+        }
+
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .config-table th {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+        }
+        .config-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .config-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .config-example {
+            margin-top: 16px;
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+        .config-example pre {
+            margin-top: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        .pattern-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+        .pattern-table th {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+        }
+        .pattern-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .pattern-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔄 AutoFillPlugin 功能演示</h1>
+            <p>Excel 风格的拖拽自动填充 —— 智能识别等差数列、文本+数字、纯文本复制</p>
+        </div>
+
+        <div class="nav-bar">
+            <a href="data-validation-plugin-demo-umd.html">数据验证</a>
+            <a href="filter-demo-plugin-umd.html">筛选</a>
+            <a href="sort-demo-plugin-umd.html">排序</a>
+            <a href="search-demo-plugin-umd.html">搜索</a>
+            <a href="autofill-demo-plugin-umd.html" class="active">自动填充</a>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="spreadsheet"></canvas>
+            </div>
+
+            <div class="control-panel">
+                <h3 class="panel-title">⚙️ 自动填充控制台</h3>
+
+                <div class="status-display">
+                    <div class="status-row">
+                        <span class="status-label">插件状态</span>
+                        <span class="status-value" id="pluginStatus">-</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">策略状态</span>
+                        <span class="status-value" id="strategyStatus">-</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">事件优先级</span>
+                        <span class="status-value">90</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>📋 选择演示数据预设</label>
+                    <div class="preset-selector" id="presetSelector">
+                        <label class="preset-chip selected" data-preset="arithmetic">
+                            等差数列 (1,2,3)
+                        </label>
+                        <label class="preset-chip" data-preset="textNumber">
+                            文本+数字 (Item1,Item2)
+                        </label>
+                        <label class="preset-chip" data-preset="pureText">
+                            纯文本复制
+                        </label>
+                        <label class="preset-chip" data-preset="mixed">
+                            混合数据
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="loadPreset()">
+                    <span class="icon">📥</span>
+                    加载预设数据
+                </button>
+
+                <button class="btn btn-info" onclick="togglePlugin()">
+                    <span class="icon">🔌</span>
+                    <span id="toggleBtnText">禁用插件</span>
+                </button>
+
+                <button class="btn btn-secondary" onclick="undoLastAction()">
+                    <span class="icon">↩️</span>
+                    撤销上一步
+                </button>
+
+                <button class="btn btn-warning" onclick="clearAllData()">
+                    <span class="icon">🧹</span>
+                    清空所有数据
+                </button>
+            </div>
+
+            <div class="log-panel">
+                <h3 class="log-title">📋 操作日志</h3>
+                <div class="log-content" id="logContent">
+                    <div class="log-entry log-info">[系统] 页面加载完成，等待初始化...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ 交互说明 ═══ -->
+        <div class="info-section">
+            <h2>🖱️ 交互操作说明</h2>
+            <div class="shortcut-grid">
+                <div class="shortcut-card">
+                    <div class="key">选中单元格</div>
+                    <div class="desc">点击单元格选中，选区右下角出现绿色填充手柄</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">悬停填充手柄</div>
+                    <div class="desc">鼠标移到选区右下角绿色方块，光标变为十字形</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">向下拖拽</div>
+                    <div class="desc">按住左键向下拖拽，自动扩展序列（最常用）</div>
+                </div>
+
+                <div class="shortcut-card">
+                    <div class="key">向右拖拽</div>
+                    <div class="desc">按住左键向右拖拽，横向扩展序列</div>
+                </div>
+
+                <div class="shortcut-card">
+                    <div class="key">Ctrl+Z</div>
+                    <div class="desc">撤销填充操作（由 UndoManager 提供支持）</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ 填充模式说明 ═══ -->
+        <div class="info-section">
+            <h2>🧠 智能序列识别</h2>
+            <p style="color:#666; font-size:13px; margin-bottom:16px;">
+                AutoFillStrategy 会自动分析源数据模式，智能推断填充规则。以下是支持的序列类型：
+            </p>
+            <div style="overflow-x: auto;">
+                <table class="pattern-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 180px;">序列类型</th>
+                            <th style="width: 200px;">源数据示例</th>
+                            <th>填充结果示例</th>
+                            <th style="width: 200px;">识别规则</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-weight: 600; color: #11998e;">等差数列</td>
+                            <td><code>1, 2, 3</code></td>
+                            <td><code>4, 5, 6, 7, ...</code></td>
+                            <td>检测步长 step=1，线性递增</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; color: #11998e;">等差数列（大步长）</td>
+                            <td><code>10, 20, 30</code></td>
+                            <td><code>40, 50, 60, ...</code></td>
+                            <td>检测步长 step=10</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-weight: 600; color: #11998e;">文本+数字</td>
+                            <td><code>Item1, Item2</code></td>
+                            <td><code>Item3, Item4, Item5, ...</code></td>
+                            <td>分离文本前缀和数字后缀，数字递增</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; color: #11998e;">纯文本复制</td>
+                            <td><code>"已完成"</code></td>
+                            <td><code>"已完成", "已完成", ...</code></td>
+                            <td>无可识别模式，直接复制源值</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-weight: 600; color: #11998e;">单值数列</td>
+                            <td><code>5</code></td>
+                            <td><code>5, 5, 5, ...</code>（步长=0）</td>
+                            <td>单个数值视为步长=0，复制</td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; color: #11998e;">负步长数列</td>
+                            <td><code>10, 8, 6</code></td>
+                            <td><code>4, 2, 0, -2, ...</code></td>
+                            <td>检测步长 step=-2，线性递减</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ═══ API 参考 ═══ -->
+        <div class="info-section">
+            <h2>📚 AutoFillPlugin API 参考</h2>
+            <div class="api-grid">
+                <div class="api-card">
+                    <div class="category">生命周期</div>
+                    <div class="name">init(options)</div>
+                    <div class="syntax">init(options?: { enabled?: boolean }): void</div>
+                    <div class="desc">初始化插件，创建 AutoFillStrategy 并注册到 EventHandler（优先级 90）。设为 enabled: false 可初始禁用。</div>
+                    <div class="example">workbook.loadPlugin('autoFill', {
+  enabled: false
+});</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">生命周期</div>
+                    <div class="name">destroy()</div>
+                    <div class="syntax">destroy(): void</div>
+                    <div class="desc">销毁插件，释放策略引用，从 EventHandler 移除策略。销毁后不可再使用。</div>
+                    <div class="example">plugin.destroy();</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">状态控制</div>
+                    <div class="name">enable()</div>
+                    <div class="syntax">enable(): void</div>
+                    <div class="desc">启用插件及关联策略。启用后填充手柄响应拖拽事件。</div>
+                    <div class="example">plugin.enable();
+console.log(plugin.isEnabled); // true</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">状态控制</div>
+                    <div class="name">disable()</div>
+                    <div class="syntax">disable(): void</div>
+                    <div class="desc">禁用插件及关联策略。禁用后填充手柄仍可见但不响应拖拽，不影响其他鼠标操作。</div>
+                    <div class="example">plugin.disable();
+console.log(plugin.isEnabled); // false</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">状态查询</div>
+                    <div class="name">isEnabled (getter)</div>
+                    <div class="syntax">get isEnabled(): boolean</div>
+                    <div class="desc">获取插件当前启用状态。继承自 BasePlugin。</div>
+                    <div class="example">if (plugin.isEnabled) {
+  console.log('自动填充已激活');
+}</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">状态查询</div>
+                    <div class="name">PLUGIN_NAME (static)</div>
+                    <div class="syntax">static get PLUGIN_NAME(): "autoFill"</div>
+                    <div class="desc">插件唯一标识符，用于 PluginManager 注册和 workbook.getPlugin() 查询。</div>
+                    <div class="example">const plugin = workbook.getPlugin(
+  AutoFillPlugin.PLUGIN_NAME
+);</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">架构</div>
+                    <div class="name">addStrategy(name, strategy)</div>
+                    <div class="syntax">addStrategy(name: string, strategy: Strategy): void</div>
+                    <div class="desc">将策略注册到 EventHandler。继承自 BasePlugin。AutoFillPlugin 内部注册名为 "autoFill" 的策略。</div>
+                    <div class="example">// 内部调用（通常无需手动调用）
+this.addStrategy('autoFill', strategy);</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">架构</div>
+                    <div class="name">eventHandler (getter)</div>
+                    <div class="syntax">get eventHandler(): EventHandler</div>
+                    <div class="desc">获取工作表的事件处理器实例。继承自 BasePlugin，用于策略创建时传入。</div>
+                    <div class="example">const eh = plugin.eventHandler;
+// AutoFillStrategy 依赖此实例</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ 配置选项说明 ═══ -->
+        <div class="info-section">
+            <h2>⚙️ AutoFillPlugin 配置选项 (pluginOptions.autoFill)</h2>
+            <p style="color:#666; font-size:13px; margin-bottom:16px;">
+                通过 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">pluginOptions.autoFill</code> 传入 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">init(options)</code>。当前版本支持以下选项，未来可扩展自定义填充模式。
+            </p>
+            <div style="overflow-x: auto;">
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 260px;">选项路径</th>
+                            <th style="width: 120px;">类型</th>
+                            <th style="width: 160px;">默认值</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #11998e;">enabled</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>插件是否默认启用。设为 false 时插件加载但不激活，需手动调用 <code>enable()</code>。</td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td colspan="4" style="font-weight: 700; color: #d97706;">🔮 未来可扩展选项（当前版本未实现）</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">customPatterns</td>
+                            <td><code>Array</code></td>
+                            <td style="font-family: monospace;">[]</td>
+                            <td>自定义填充模式列表，用于扩展内置的序列识别规则。</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">maxFillSize</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">10000</td>
+                            <td>最大填充数量限制，防止误操作填充过多单元格。</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">animationDuration</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">200</td>
+                            <td>填充动画时长（毫秒）。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="config-example">
+                <strong>配置示例：</strong>
+                <pre>pluginOptions: {
+    autoFill: {
+        enabled: true,
+        // 未来扩展：
+        // customPatterns: [...],
+        // maxFillSize: 10000,
+        // animationDuration: 200,
+    }
+}</pre>
+            </div>
+        </div>
+
+        <!-- ═══ 架构说明 ═══ -->
+        <div class="info-section">
+            <h2>🏗️ 架构设计</h2>
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 20px; font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.8; color: #495057; overflow-x: auto;">
+<pre style="margin:0;">┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│  AutoFillPlugin   │ →  │ AutoFillStrategy │ →  │  EventHandler    │
+│  (生命周期管理)   │    │  (交互逻辑)      │    │  (事件分发)      │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+        ↓                       ↓                      ↓
+   BasePlugin              优先级: 90            canvas/document
+   (标准接口)            MouseStrategy(50)      DOM事件监听
+                          ResizeStrategy(100)
+
+状态机:  idle → hover(悬停手柄) → dragging(拖拽中) → fill(执行填充) → idle</pre>
+            </div>
+            <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+                <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #11998e;">
+                    <strong style="color: #11998e;">✅ 单一职责</strong>
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">插件只负责生命周期，策略负责业务逻辑</p>
+                </div>
+                <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #11998e;">
+                    <strong style="color: #11998e;">✅ 开闭原则</strong>
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">可通过配置扩展填充规则，无需修改源码</p>
+                </div>
+                <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #11998e;">
+                    <strong style="color: #11998e;">✅ 组合优于继承</strong>
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">通过组合 Strategy 实现功能复用</p>
+                </div>
+                <div style="background: #ecfdf5; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #11998e;">
+                    <strong style="color: #11998e;">✅ 撤销支持</strong>
+                    <p style="font-size: 12px; color: #666; margin-top: 4px;">填充操作记录到 UndoManager，支持 Ctrl+Z</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>系统就绪</span>
+            </div>
+            <div>
+                CanvasSheet v2.1.0 | AutoFillPlugin Demo
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入依赖 -->
+    <script src="../../dist/canvas-sheet.umd.js"></script>
+
+    <script>
+        let workbook = null;
+        let autoFillPlugin = null;
+        let currentPreset = 'arithmetic';
+
+        const PRESETS = {
+            arithmetic: {
+                name: '等差数列',
+                data: [
+                    ['序号', '数值', '说明'],
+                    [1, 10, '向下拖拽填充手柄'],
+                    [2, 20, '自动识别步长'],
+                    [3, 30, '继续序列'],
+                ]
+            },
+            textNumber: {
+                name: '文本+数字',
+                data: [
+                    ['编号', '产品名', '备注'],
+                    ['Item1', '产品A', '测试'],
+                    ['Item2', '产品B', '测试'],
+                    ['Item3', '产品C', '测试'],
+                ]
+            },
+            pureText: {
+                name: '纯文本复制',
+                data: [
+                    ['状态', '操作人', '备注'],
+                    ['已完成', '张三', '复制文本'],
+                    ['', '', ''],
+                    ['', '', ''],
+                ]
+            },
+            mixed: {
+                name: '混合数据',
+                data: [
+                    ['序号', '月份', '销售额', '状态'],
+                    [1, '1月', 10000, '正常'],
+                    [2, '2月', 15000, '正常'],
+                    [3, '3月', 20000, '正常'],
+                    [4, '4月', 25000, '正常'],
+                ]
+            }
+        };
+
+        function log(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        async function initSpreadsheet() {
+            try {
+                log('开始初始化 Workbook...', 'info');
+
+                const container = document.getElementById('spreadsheet');
+                workbook = new CanvasSheet.Workbook(container, {
+                    width: 900,
+                    height: 530,
+                    plugins: [
+                        "autoFill",
+                        "contextMenu",
+                        "copyPaste",
+                        "undo",
+                        "selection",
+                    ],
+                    pluginOptions: {
+                        autoFill: {
+                            enabled: true
+                        }
+                    },
+                    sheets: [{
+                        name: "自动填充演示",
+                        data: PRESETS.arithmetic.data,
+                        rowHeaderWidth: 80,
+                        columns: [
+                            { type: "numeric", width: 100, numericFormat: { pattern: "0" } },
+                            { type: "text", width: 120 },
+                            { type: "text", width: 200 },
+                        ],
+                    }]
+                });
+
+                autoFillPlugin = workbook.getPlugin('autoFill');
+
+                if (!autoFillPlugin) {
+                    throw new Error('AutoFillPlugin 未找到');
+                }
+
+                log('✅ Workbook 初始化成功', 'success');
+                log('✅ AutoFillPlugin 已加载 (优先级: 90)', 'success');
+                log('💡 提示: 选中单元格，拖拽右下角绿色手柄进行填充', 'info');
+
+                updateStatusDisplay();
+
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function loadPreset() {
+            const preset = PRESETS[currentPreset];
+            if (!preset || !workbook) return;
+
+            try {
+                const sheet = workbook.getActiveSheet();
+                const data = preset.data;
+
+                for (let r = 0; r < data.length; r++) {
+                    for (let c = 0; c < data[r].length; c++) {
+                        sheet.setCell(r, c, data[r][c]);
+                    }
+                }
+
+                sheet.viewport?.invalidateAll();
+                log(`📥 已加载预设数据: ${preset.name}`, 'success');
+                log(`💡 选中数据区域，拖拽填充手柄体验自动填充`, 'info');
+            } catch (error) {
+                log(`❌ 加载预设失败: ${error.message}`, 'error');
+            }
+        }
+
+        function togglePlugin() {
+            if (!autoFillPlugin) return;
+
+            try {
+                if (autoFillPlugin.isEnabled) {
+                    autoFillPlugin.disable();
+                    document.getElementById('toggleBtnText').textContent = '启用插件';
+                    log('🔌 AutoFillPlugin 已禁用，填充手柄不响应拖拽', 'warn');
+                } else {
+                    autoFillPlugin.enable();
+                    document.getElementById('toggleBtnText').textContent = '禁用插件';
+                    log('✅ AutoFillPlugin 已启用，可正常拖拽填充', 'success');
+                }
+                updateStatusDisplay();
+            } catch (error) {
+                log(`❌ 切换状态失败: ${error.message}`, 'error');
+            }
+        }
+
+        function undoLastAction() {
+            if (!workbook) return;
+
+            try {
+                const undoPlugin = workbook.getPlugin('undo');
+                if (undoPlugin && undoPlugin.canUndo && undoPlugin.canUndo()) {
+                    undoPlugin.undo();
+                    log('↩️ 已撤销上一步操作', 'info');
+                } else if (undoPlugin && undoPlugin.undo) {
+                    undoPlugin.undo();
+                    log('↩️ 已撤销上一步操作', 'info');
+                } else {
+                    log('⚠️ 没有可撤销的操作，或 UndoPlugin 未加载', 'warn');
+                }
+            } catch (error) {
+                log(`❌ 撤销失败: ${error.message}`, 'error');
+            }
+        }
+
+        function clearAllData() {
+            if (!workbook) return;
+
+            try {
+                const sheet = workbook.getActiveSheet();
+                for (let r = 0; r < 20; r++) {
+                    for (let c = 0; c < 10; c++) {
+                        sheet.setCell(r, c, '');
+                    }
+                }
+                sheet.viewport?.invalidateAll();
+                log('🧹 已清空所有数据', 'info');
+            } catch (error) {
+                log(`❌ 清空失败: ${error.message}`, 'error');
+            }
+        }
+
+        function updateStatusDisplay() {
+            if (!autoFillPlugin) return;
+
+            const enabled = autoFillPlugin.isEnabled;
+            document.getElementById('pluginStatus').textContent = enabled ? '已启用' : '已禁用';
+            document.getElementById('strategyStatus').textContent = enabled ? '已激活 (优先级:90)' : '已停用';
+        }
+
+        document.querySelectorAll('.preset-chip').forEach(chip => {
+            chip.addEventListener('click', (e) => {
+                document.querySelectorAll('.preset-chip').forEach(c => c.classList.remove('selected'));
+                chip.classList.add('selected');
+                currentPreset = chip.dataset.preset;
+                log(`📋 已选择预设: ${PRESETS[currentPreset].name}，点击"加载预设数据"应用`, 'info');
+            });
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initSpreadsheet, 500);
+        });
+
+        window.addEventListener('error', (event) => {
+            log(`💥 全局错误: ${event.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

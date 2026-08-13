@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>❄️ FreezePlugin 功能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196F3 0%, #00BCD4 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+        .nav-bar a {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(33, 150, 243, 0.1);
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .nav-bar a:hover, .nav-bar a.active {
+            background: linear-gradient(135deg, #2196F3 0%, #00BCD4 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 20px;
+            padding: 30px;
+        }
+
+        .canvas-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            min-height: 500px;
+        }
+
+        #spreadsheet {
+            width: 100%;
+            height: 450px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .control-panel {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+            height: fit-content;
+        }
+
+        .panel-title {
+            font-size: 1.3em;
+            color: #495057;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #2196F3;
+            font-weight: 600;
+        }
+
+        .status-display {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #2196F3;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .control-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .control-group input[type="number"]:focus {
+            outline: none;
+            border-color: #2196F3;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #2196F3 0%, #00BCD4 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(33, 150, 243, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .log-panel {
+            grid-column: 1 / -1;
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #333;
+        }
+
+        .log-title {
+            color: #4facfe;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .log-content {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            color: #d4d4d4;
+        }
+
+        .log-entry {
+            padding: 6px 10px;
+            margin: 4px 0;
+            border-radius: 4px;
+            border-left: 4px solid transparent;
+        }
+
+        .log-success {
+            background: rgba(56, 239, 125, 0.1);
+            border-left-color: #38ef7d;
+            color: #38ef7d;
+        }
+
+        .log-error {
+            background: rgba(255, 107, 107, 0.1);
+            border-left-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .log-info {
+            background: rgba(79, 172, 254, 0.1);
+            border-left-color: #4facfe;
+            color: #4facfe;
+        }
+
+        .log-warn {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            color: #ffc107;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+
+        .info-section {
+            padding: 30px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+        .info-section h2 {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .api-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #2196F3;
+            transition: transform 0.2s ease;
+        }
+        .api-card:hover { transform: translateY(-2px); }
+        .api-card .category { font-size: 12px; font-weight: 600; color: #2196F3; margin-bottom: 8px; }
+        .api-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .api-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #2196F3;
+            background: rgba(33,150,243,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .api-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .api-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e; white-space: pre;
+        }
+
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .config-table th {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            background: linear-gradient(135deg, #2196F3, #00BCD4);
+            color: white;
+        }
+        .config-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .config-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .hook-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+        .hook-table th {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            background: linear-gradient(135deg, #2196F3, #00BCD4);
+            color: white;
+        }
+        .hook-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .hook-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .freeze-diagram {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            grid-template-rows: auto 1fr;
+            gap: 2px;
+            margin: 16px 0;
+            font-size: 13px;
+            text-align: center;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .freeze-diagram .cell {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .freeze-diagram .corner {
+            background: linear-gradient(135deg, #2196F3 0%, #00BCD4 100%);
+            color: white;
+            font-weight: 700;
+        }
+        .freeze-diagram .frozen-row {
+            background: rgba(33, 150, 243, 0.15);
+            color: #1565C0;
+            font-weight: 600;
+        }
+        .freeze-diagram .frozen-col {
+            background: rgba(0, 188, 212, 0.15);
+            color: #00838F;
+            font-weight: 600;
+        }
+        .freeze-diagram .scrollable {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>❄️ FreezePlugin 功能演示</h1>
+            <p>冻结行/列在滚动时保持固定 —— 支持 freeze / unfreeze / setFixedRowsTop / setFixedColumnsStart</p>
+        </div>
+
+        <div class="nav-bar">
+            <a href="data-validation-plugin-demo-umd.html">数据验证</a>
+            <a href="filter-demo-plugin-umd.html">筛选</a>
+            <a href="sort-demo-plugin-umd.html">排序</a>
+            <a href="search-demo-plugin-umd.html">搜索</a>
+            <a href="autofill-demo-plugin-umd.html">自动填充</a>
+            <a href="rowmove-demo-plugin-umd.html">行移动</a>
+            <a href="freeze-demo-plugin-umd.html" class="active">冻结窗格</a>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <h3 style="margin-bottom: 15px; color: #495057;">📊 电子表格预览</h3>
+                <canvas id="spreadsheet"></canvas>
+            </div>
+
+            <div class="control-panel">
+                <h3 class="panel-title">⚙️ 冻结控制台</h3>
+
+                <div class="status-display">
+                    <div class="status-row">
+                        <span class="status-label">插件状态</span>
+                        <span class="status-value" id="pluginStatus">-</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">冻结行数 (fixedRowsTop)</span>
+                        <span class="status-value" id="frozenRowsDisplay">0</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">冻结列数 (fixedColumnsStart)</span>
+                        <span class="status-value" id="frozenColsDisplay">0</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">是否冻结</span>
+                        <span class="status-value" id="isFrozenDisplay">否</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>🔢 冻结行数 (fixedRowsTop)</label>
+                    <input type="number" id="rowsInput" min="0" max="10" value="1" step="1">
+                </div>
+
+                <div class="control-group">
+                    <label>🔢 冻结列数 (fixedColumnsStart)</label>
+                    <input type="number" id="colsInput" min="0" max="10" value="0" step="1">
+                </div>
+
+                <button class="btn btn-primary" onclick="applyFreeze()">
+                    <span class="icon">❄️</span>
+                    freeze(rows, cols) — 同时冻结
+                </button>
+
+                <button class="btn btn-secondary" onclick="setRowsOnly()">
+                    <span class="icon">↕️</span>
+                    setFixedRowsTop() — 仅冻结行
+                </button>
+
+                <button class="btn btn-info" onclick="setColsOnly()">
+                    <span class="icon">↔️</span>
+                    setFixedColumnsStart() — 仅冻结列
+                </button>
+
+                <button class="btn btn-warning" onclick="unfreezeAll()">
+                    <span class="icon">🔓</span>
+                    unfreeze() — 取消所有冻结
+                </button>
+
+                <button class="btn btn-primary" onclick="togglePlugin()">
+                    <span class="icon">🔌</span>
+                    enable() / disable() 切换
+                </button>
+            </div>
+
+            <div class="log-panel">
+                <h3 class="log-title">📋 操作日志</h3>
+                <div class="log-content" id="logContent">
+                    <div class="log-entry log-info">[系统] 页面加载完成，等待初始化...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ 冻结区域图解 ═══ -->
+        <div class="info-section">
+            <h2><span>🧊</span> 冻结区域图解</h2>
+            <p style="color: #666; margin-bottom: 12px; font-size: 14px;">
+                冻结行固定在视口顶部，冻结列固定在视口左侧。滚动时四个区域独立渲染：
+            </p>
+            <div class="freeze-diagram">
+                <div class="cell corner">冻结行 × 冻结列<br>(scrollX=0, scrollY=0)</div>
+                <div class="cell frozen-row">冻结行 × 可滚动列<br>(scrollY=0, 仅水平滚动)</div>
+                <div class="cell frozen-col">可滚动行 × 冻结列<br>(scrollX=0, 仅垂直滚动)</div>
+                <div class="cell scrollable">可滚动区域<br>(正常滚动)</div>
+            </div>
+        </div>
+
+        <!-- ═══ API 参考 ═══ -->
+        <div class="info-section" style="border-top: none;">
+            <h2><span>📚</span> FreezePlugin API 参考</h2>
+            <div class="api-grid">
+                <div class="api-card">
+                    <div class="category">冻结设置</div>
+                    <div class="name">freeze(rows, cols)</div>
+                    <div class="syntax">freeze(rows: number, cols: number): void</div>
+                    <div class="desc">同时设置冻结行数和列数。便捷方法，一次调用同时修改行和列的冻结状态。始终触发 AFTER_FREEZE 钩子。</div>
+                    <div class="example">const freeze = workbook.getPlugin('freeze');
+freeze.freeze(2, 1); // 冻结前2行 + 前1列</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">冻结设置</div>
+                    <div class="name">setFixedRowsTop(count)</div>
+                    <div class="syntax">setFixedRowsTop(count: number): void</div>
+                    <div class="desc">设置顶部冻结行数。0 表示取消行冻结，负值自动归零。修改后自动触发重绘和钩子通知。</div>
+                    <div class="example">freeze.setFixedRowsTop(3); // 冻结前3行
+freeze.setFixedRowsTop(0); // 取消行冻结</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">冻结设置</div>
+                    <div class="name">setFixedColumnsStart(count)</div>
+                    <div class="syntax">setFixedColumnsStart(count: number): void</div>
+                    <div class="desc">设置左侧冻结列数。0 表示取消列冻结，负值自动归零。修改后自动触发重绘和钩子通知。</div>
+                    <div class="example">freeze.setFixedColumnsStart(2); // 冻结前2列
+freeze.setFixedColumnsStart(0); // 取消列冻结</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">取消冻结</div>
+                    <div class="name">unfreeze()</div>
+                    <div class="syntax">unfreeze(): void</div>
+                    <div class="desc">取消所有冻结，将冻结行数和列数同时归零。仅在之前存在冻结时触发 AFTER_UNFREEZE 钩子。</div>
+                    <div class="example">freeze.unfreeze(); // 一键取消所有冻结</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">状态查询</div>
+                    <div class="name">isFrozen()</div>
+                    <div class="syntax">isFrozen(): boolean</div>
+                    <div class="desc">判断当前是否存在冻结（行或列任一 > 0 即返回 true）。</div>
+                    <div class="example">if (freeze.isFrozen()) {
+    console.log('当前有冻结');
+}</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">只读属性</div>
+                    <div class="name">fixedRowsTop / fixedColumnsStart</div>
+                    <div class="syntax">get fixedRowsTop(): number &nbsp; get fixedColumnsStart(): number</div>
+                    <div class="desc">获取当前顶部冻结行数 / 左侧冻结列数。无冻结时返回 0。</div>
+                    <div class="example">console.log(freeze.fixedRowsTop);      // 2
+console.log(freeze.fixedColumnsStart); // 1</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">生命周期</div>
+                    <div class="name">enable() / disable()</div>
+                    <div class="syntax">enable(): void &nbsp; disable(): void</div>
+                    <div class="desc">启用/禁用插件。禁用时清除所有冻结状态（行和列归零）并重新渲染。启用时恢复激活状态。</div>
+                    <div class="example">freeze.disable(); // 清除冻结，禁用插件
+freeze.enable();  // 恢复激活（不自动恢复冻结配置）</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">生命周期</div>
+                    <div class="name">destroy()</div>
+                    <div class="syntax">destroy(): void</div>
+                    <div class="desc">销毁插件。先禁用（清除冻结状态），再调用父类销毁清理所有注册资源。</div>
+                    <div class="example">freeze.destroy(); // 完全销毁</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ 配置选项 ═══ -->
+        <div class="info-section" style="border-top: none;">
+            <h2><span>⚙️</span> FreezePlugin 配置选项 (pluginOptions.freeze)</h2>
+            <table class="config-table">
+                <thead>
+                    <tr>
+                        <th style="width: 240px;">选项路径</th>
+                        <th style="width: 120px;">类型</th>
+                        <th style="width: 160px;">默认值</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: #f8f9fa;">
+                        <td><code>fixedRowsTop</code></td>
+                        <td><code>number</code></td>
+                        <td><code>0</code></td>
+                        <td>顶部冻结行数。仅接受正整数，0 或负值将被忽略。</td>
+                    </tr>
+                    <tr>
+                        <td><code>fixedColumnsStart</code></td>
+                        <td><code>number</code></td>
+                        <td><code>0</code></td>
+                        <td>左侧冻结列数。仅接受正整数，0 或负值将被忽略。</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 16px; background: #f0f9ff; border-left: 4px solid #2196F3; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #1e40af;">
+                <strong>配置示例：</strong>
+                <pre style="margin-top: 8px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap;">plugins: ["freeze"],
+pluginOptions: {
+    freeze: {
+        fixedRowsTop: 1,
+        fixedColumnsStart: 2
+    }
+}</pre>
+            </div>
+        </div>
+
+        <!-- ═══ 钩子说明 ═══ -->
+        <div class="info-section" style="border-top: none;">
+            <h2><span>🪝</span> 钩子 (Hooks)</h2>
+            <table class="hook-table">
+                <thead>
+                    <tr>
+                        <th style="width: 200px;">钩子名称</th>
+                        <th style="width: 120px;">类型</th>
+                        <th style="width: 200px;">参数</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: #f8f9fa;">
+                        <td><code>afterFreeze</code></td>
+                        <td>after</td>
+                        <td><code>(fixedRowsTop, fixedColumnsStart)</code></td>
+                        <td>冻结变更后触发，传递当前冻结行数和列数。</td>
+                    </tr>
+                    <tr>
+                        <td><code>afterUnfreeze</code></td>
+                        <td>after</td>
+                        <td>无</td>
+                        <td>取消所有冻结后触发。</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div style="margin-top: 16px; background: #fff7ed; border-left: 4px solid #fda085; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #9a3412;">
+                <strong>钩子使用示例：</strong>
+                <pre style="margin-top: 8px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap;">workbook.addHook('afterFreeze', (rows, cols) => {
+    console.log(`冻结: ${rows} 行, ${cols} 列`);
+});
+
+workbook.addHook('afterUnfreeze', () => {
+    console.log('已取消所有冻结');
+});</pre>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>系统就绪</span>
+            </div>
+            <div>
+                CanvasSheet | FreezePlugin Demo
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入依赖 -->
+    <script src="../../dist/canvas-sheet.umd.js"></script>
+
+    <script>
+        let workbook = null;
+        let freezePlugin = null;
+
+        function log(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateStatusDisplay() {
+            if (!freezePlugin) return;
+
+            const statusEl = document.getElementById('pluginStatus');
+            statusEl.textContent = freezePlugin.enabled ? '已激活' : '已禁用';
+            statusEl.style.color = freezePlugin.enabled ? '#28a745' : '#dc3545';
+
+            document.getElementById('frozenRowsDisplay').textContent = freezePlugin.fixedRowsTop;
+            document.getElementById('frozenColsDisplay').textContent = freezePlugin.fixedColumnsStart;
+            document.getElementById('isFrozenDisplay').textContent = freezePlugin.isFrozen() ? '是' : '否';
+            document.getElementById('isFrozenDisplay').style.color = freezePlugin.isFrozen() ? '#28a745' : '#6c757d';
+        }
+
+        async function initSpreadsheet() {
+            try {
+                log('开始初始化 Workbook...', 'info');
+
+                const container = document.getElementById('spreadsheet');
+                workbook = new CanvasSheet.Workbook(container, {
+                    width: 900,
+                    height: 530,
+                    plugins: [
+                        "autoFill",
+                        "contextMenu",
+                        "columnMove",
+                        "copyPaste",
+                        "exportFile",
+                        "importFile",
+                        "hiddenColumns",
+                        "hiddenRows",
+                        "rowMove",
+                        "freeze",
+                        "formula",
+                        "sort",
+                        "dataValidation",
+                    ],
+                    pluginOptions: {
+                        freeze: {
+                            fixedRowsTop: 1,
+                            fixedColumnsStart: 0
+                        }
+                    },
+                    sheets: [{
+                        name: "销售数据",
+                        data: [
+                            ["序号", "产品名称", "类别", "单价", "销量", "销售额", "地区", "销售员", "日期", "备注"],
+                            [1, "笔记本电脑", "电子产品", 5999, 120, 719880, "华东", "张三", "2024-01-15", "热销"],
+                            [2, "无线鼠标", "配件", 129, 350, 45150, "华北", "李四", "2024-01-20", "促销中"],
+                            [3, "机械键盘", "配件", 399, 200, 79800, "华南", "王五", "2024-02-01", "新品"],
+                            [4, "显示器27寸", "电子产品", 1899, 80, 151920, "华东", "赵六", "2024-02-10", "缺货预警"],
+                            [5, "USB-C集线器", "配件", 199, 500, 99500, "西南", "孙七", "2024-02-15", ""],
+                            [6, "平板电脑", "电子产品", 2999, 90, 269910, "华北", "周八", "2024-03-01", "热销"],
+                            [7, "蓝牙耳机", "配件", 299, 280, 83720, "华南", "吴九", "2024-03-05", "促销中"],
+                            [8, "智能手表", "穿戴设备", 1599, 150, 239850, "华东", "郑十", "2024-03-10", "新品"],
+                            [9, "移动硬盘1TB", "存储", 459, 180, 82620, "西北", "王二", "2024-03-15", ""],
+                            [10, "摄像头", "配件", 249, 220, 54780, "华北", "李三", "2024-03-20", "促销中"],
+                            [11, "路由器", "网络设备", 349, 160, 55840, "华南", "赵四", "2024-04-01", ""],
+                            [12, "打印机", "办公设备", 1299, 40, 51960, "华东", "孙五", "2024-04-05", "缺货预警"],
+                            [13, "音箱", "配件", 599, 100, 59900, "西南", "周六", "2024-04-10", "热销"],
+                            [14, "显卡RTX4060", "电子产品", 2999, 60, 179940, "华北", "钱七", "2024-04-15", "新品"],
+                            [15, "内存条16GB", "配件", 349, 300, 104700, "华南", "吴八", "2024-04-20", ""],
+                        ],
+                        columns: [
+                            { type: "numeric", width: 60, numericFormat: { pattern: "0" } },
+                            { type: "text", width: 130 },
+                            { type: "text", width: 90 },
+                            { type: "numeric", width: 90, numericFormat: { pattern: "$0,0" } },
+                            { type: "numeric", width: 70, numericFormat: { pattern: "0" } },
+                            { type: "numeric", width: 100, numericFormat: { pattern: "$0,0" } },
+                            { type: "text", width: 80 },
+                            { type: "text", width: 80 },
+                            { type: "date", width: 110 },
+                            { type: "text", width: 90 },
+                        ],
+                    }]
+                });
+
+                freezePlugin = workbook.getPlugin('freeze');
+
+                if (!freezePlugin) {
+                    throw new Error('FreezePlugin 未找到');
+                }
+
+                workbook.addHook('afterFreeze', (rows, cols) => {
+                    log(`🪝 afterFreeze 触发: 冻结 ${rows} 行, ${cols} 列`, 'success');
+                    updateStatusDisplay();
+                });
+
+                workbook.addHook('afterUnfreeze', () => {
+                    log(`🪝 afterUnfreeze 触发: 已取消所有冻结`, 'warn');
+                    updateStatusDisplay();
+                });
+
+                log('✅ Workbook 初始化成功', 'success');
+                log('✅ FreezePlugin 已加载 (fixedRowsTop=1, fixedColumnsStart=0)', 'success');
+                log('💡 提示：滚动表格观察冻结行固定在顶部的效果', 'info');
+
+                updateStatusDisplay();
+
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function applyFreeze() {
+            if (!freezePlugin || !freezePlugin.enabled) return;
+            const rows = parseInt(document.getElementById('rowsInput').value) || 0;
+            const cols = parseInt(document.getElementById('colsInput').value) || 0;
+            log(`❄️ freeze(${rows}, ${cols}) — 同时冻结 ${rows} 行 + ${cols} 列`, 'info');
+            freezePlugin.freeze(rows, cols);
+            updateStatusDisplay();
+        }
+
+        function setRowsOnly() {
+            if (!freezePlugin) return;
+            const rows = parseInt(document.getElementById('rowsInput').value) || 0;
+            log(`↕️ setFixedRowsTop(${rows}) — 仅修改冻结行数`, 'info');
+            freezePlugin.setFixedRowsTop(rows);
+            updateStatusDisplay();
+        }
+
+        function setColsOnly() {
+            if (!freezePlugin) return;
+            const cols = parseInt(document.getElementById('colsInput').value) || 0;
+            log(`↔️ setFixedColumnsStart(${cols}) — 仅修改冻结列数`, 'info');
+            freezePlugin.setFixedColumnsStart(cols);
+            updateStatusDisplay();
+        }
+
+        function unfreezeAll() {
+            if (!freezePlugin) return;
+            log(`🔓 unfreeze() — 取消所有冻结`, 'info');
+            freezePlugin.unfreeze();
+            updateStatusDisplay();
+        }
+
+        function togglePlugin() {
+            if (!freezePlugin) return;
+            if (freezePlugin.enabled) {
+                log(`🔌 disable() — 禁用插件（清除冻结）`, 'warn');
+                freezePlugin.disable();
+            } else {
+                log(`🔌 enable() — 启用插件`, 'success');
+                freezePlugin.enable();
+            }
+            updateStatusDisplay();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initSpreadsheet, 500);
+        });
+
+        window.addEventListener('error', (event) => {
+            log(`💥 全局错误: ${event.message}`, 'error');
+        });
+    </script>
+</body>
+</html>
