@@ -11,11 +11,11 @@ export class DateTimeParser {
      * 通用解析方法 - 自动识别并解析各种类型的输入值
      * 按照优先级尝试不同的解析策略：时间 -> 日期 -> 日期时间 -> 原生Date构造函数
      *
-     * @param {*} value - 待解析的值，可以是：
+     * @param value - 待解析的值，可以是：
      *   - Date对象：直接返回
      *   - 数字（时间戳）：转换为Date对象
      *   - 字符串：尝试按时间、日期、日期时间的顺序解析
-     * @returns {Date|null} 解析成功返回Date对象，失败返回null
+     * @returns 解析成功返回Date对象，失败返回null
      *
      * @example
      * // Date对象直接返回
@@ -31,7 +31,7 @@ export class DateTimeParser {
      * DateTimeParser.parseAny("14:30:00")         // => 时间
      * DateTimeParser.parseAny("2024-01-15 14:30") // => 日期时间
      */
-    static parseAny(value) {
+    static parseAny(value: unknown): Date | null {
         if (value instanceof Date) return value;
         if (isNumber(value)) return new Date(value);
 
@@ -55,13 +55,13 @@ export class DateTimeParser {
      * 根据指定模式解析日期时间值
      * 提供精确的解析控制，适用于需要明确解析类型的场景
      *
-     * @param {*} value - 待解析的值（Date对象、数字或字符串）
-     * @param {string} mode - 解析模式，可选值：
+     * @param value - 待解析的值（Date对象、数字或字符串）
+     * @param mode - 解析模式，可选值：
      *   - "time": 仅解析时间格式（如"14:30:00"）
      *   - "date": 优先解析日期格式，失败则回退到通用解析
      *   - "datetime": 优先解析日期时间格式，失败则回退到通用解析
      *   - 其他值：使用通用解析方法parseAny
-     * @returns {Date|null} 解析成功返回Date对象，失败返回null
+     * @returns 解析成功返回Date对象，失败返回null
      *
      * @example
      * // 按时间模式解析
@@ -75,7 +75,7 @@ export class DateTimeParser {
      * // 按日期时间模式解析
      * DateTimeParser.parseByMode("2024-01-15 14:30", "datetime") // => 完整的日期时间
      */
-    static parseByMode(value, mode) {
+    static parseByMode(value: unknown, mode: string): Date | null {
         if (value instanceof Date) return value;
         if (!isString(value) && !isNumber(value)) return null;
 
@@ -97,11 +97,11 @@ export class DateTimeParser {
      * 解析纯日期字符串（不包含时间部分）
      * 支持多种日期格式，自动处理月份和日期的顺序歧义
      *
-     * @param {string} str - 日期字符串，支持以下格式：
+     * @param str - 日期字符串，支持以下格式：
      *   - ISO格式：YYYY-MM-DD 或 YYYY/MM/DD（如"2024-01-15"）
      *   - 斜杠格式：MM/DD/YYYY 或 DD/MM/YYYY（如"01/15/2024"）
      *   - 中文格式：YYYY年MM月DD日（如"2024年1月15日"）
-     * @returns {Date|null} 解析成功返回Date对象（时间部分为00:00:00），失败返回null
+     * @returns 解析成功返回Date对象（时间部分为00:00:00），失败返回null
      *
      * @example
      * // ISO格式
@@ -117,7 +117,7 @@ export class DateTimeParser {
      * // 中文格式
      * DateTimeParser.parseDateString("2024年1月15日") // => 2024-01-15T00:00:00
      */
-    static parseDateString(str) {
+    static parseDateString(str: string): Date | null {
         const iso = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
         if (iso) {
             const y = parseInt(iso[1], 10);
@@ -164,11 +164,11 @@ export class DateTimeParser {
      * 解析纯时间字符串（不包含日期部分）
      * 返回的Date对象使用当前日期，仅设置时间部分
      *
-     * @param {string} str - 时间字符串，支持以下格式：
+     * @param str - 时间字符串，支持以下格式：
      *   - 24小时制完整格式：HH:mm:ss（如"14:30:00"）
      *   - 24小时制简短格式：HH:mm（如"14:30"，秒数默认为0）
      *   - 12小时制格式：H:mm:ss AM/PM 或 H:mm AM/PM（如"2:30 PM"、"2:30:00 pm"）
-     * @returns {Date|null} 解析成功返回Date对象（日期部分为当前日期），失败返回null
+     * @returns 解析成功返回Date对象（日期部分为当前日期），失败返回null
      *
      * @example
      * // 24小时制完整格式
@@ -186,7 +186,7 @@ export class DateTimeParser {
      * DateTimeParser.parseTimeString("12:00 AM")  // => 今天00:00:00（午夜）
      * DateTimeParser.parseTimeString("12:00 PM")  // => 今天12:00:00（正午）
      */
-    static parseTimeString(str) {
+    static parseTimeString(str: string): Date | null {
         const h24Full = str.match(/^(\d{1,2}):(\d{1,2}):(\d{1,2})$/);
         if (h24Full) {
             const h = parseInt(h24Full[1], 10);
@@ -239,13 +239,13 @@ export class DateTimeParser {
      * 解析完整的日期时间字符串（同时包含日期和时间部分）
      * 支持多种国际化和本地化格式
      *
-     * @param {string} str - 日期时间字符串，支持以下格式：
+     * @param str - 日期时间字符串，支持以下格式：
      *   - ISO完整格式：YYYY-MM-DDTHH:mm:ss 或 YYYY-MM-DD HH:mm:ss（如"2024-01-15T14:30:00"）
      *   - ISO简短格式：YYYY-MM-DDTHH:mm 或 YYYY-MM-DD HH:mm（秒数默认为0）
      *   - 斜杠格式：MM/DD/YYYY HH:mm:ss（如"01/15/2024 14:30:00"）
      *   - 中文完整格式：YYYY年MM月DD日 HH:mm:ss（如"2024年1月15日 14:30:00"）
      *   - 中文简短格式：YYYY年MM月DD日 HH:mm（秒数默认为0）
-     * @returns {Date|null} 解析成功返回完整的Date对象，失败返回null
+     * @returns 解析成功返回完整的Date对象，失败返回null
      *
      * @example
      * // ISO格式（支持T或空格分隔）
@@ -261,7 +261,7 @@ export class DateTimeParser {
      * DateTimeParser.parseDateTimeString("2024年1月15日 14:30:00") // => 2024-01-15T14:30:00
      * DateTimeParser.parseDateTimeString("2024年1月15日 14:30")    // => 2024-01-15T14:30:00
      */
-    static parseDateTimeString(str) {
+    static parseDateTimeString(str: string): Date | null {
         const isoFull = str.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})[T\s](\d{1,2}):(\d{1,2}):(\d{1,2})$/);
         if (isoFull) {
             const y = parseInt(isoFull[1], 10);
@@ -299,7 +299,7 @@ export class DateTimeParser {
             const h = parseInt(slashFull[4], 10);
             const mi = parseInt(slashFull[5], 10);
             const s = parseInt(slashFull[6], 10);
-            let date;
+            let date: Date;
 
             if (part1 > 12) {
                 date = new Date(y, part2 - 1, part1, h, mi, s);
@@ -348,8 +348,8 @@ export class DateTimeParser {
      * 获取一天中的时间（从午夜开始的毫秒数）
      * 用于时间比较或计算时间差
      *
-     * @param {Date} date - Date对象
-     * @returns {number} 从午夜00:00:00开始的毫秒数（0-86399999）
+     * @param date - Date对象
+     * @returns 从午夜00:00:00开始的毫秒数（0-86399999）
      *
      * @example
      * // 午夜
@@ -360,7 +360,7 @@ export class DateTimeParser {
      * DateTimeParser.getTimeOfDay(new Date(2024, 0, 1, 14, 30, 15)) // => 52215000
      * // 计算过程：14*3600000 + 30*60000 + 15*1000 = 50400000 + 1800000 + 15000 = 52215000
      */
-    static getTimeOfDay(date) {
+    static getTimeOfDay(date: Date): number {
         return date.getHours() * 3600000 + date.getMinutes() * 60000 + date.getSeconds() * 1000;
     }
 
@@ -368,8 +368,8 @@ export class DateTimeParser {
      * 根据指定的模式格式化Date对象为字符串
      * 支持灵活的格式化模式，包括国际化、本地化和自定义格式
      *
-     * @param {Date} date - 要格式化的Date对象
-     * @param {string} pattern - 格式化模式字符串，支持以下占位符：
+     * @param date - 要格式化的Date对象
+     * @param pattern - 格式化模式字符串，支持以下占位符：
      *
      *   **日期部分：**
      *   - YYYY: 四位年份（如2024）
@@ -395,7 +395,7 @@ export class DateTimeParser {
      *   - A: AM/PM标识（大写）
      *   - a: am/pm标识（小写）
      *
-     * @returns {string} 格式化后的日期时间字符串
+     * @returns 格式化后的日期时间字符串
      *
      * @example
      * // ISO标准格式
@@ -422,7 +422,7 @@ export class DateTimeParser {
      * DateTimeParser.formatDate(new Date(2024, 0, 15, 14, 30, 5), "Mon DD, YYYY HH:mm")
      * // => "Jan 15, 2024 14:30"
      */
-    static formatDate(date, pattern) {
+    static formatDate(date: Date, pattern: string): string {
         const y = date.getFullYear();
         const mo = String(date.getMonth() + 1).padStart(2, "0");
         const d = String(date.getDate()).padStart(2, "0");
@@ -436,7 +436,7 @@ export class DateTimeParser {
 
         const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-        const tokens = {
+        const tokens: Record<string, string> = {
             YYYY: String(y),
             YY: String(y).slice(-2),
             MM: mo,

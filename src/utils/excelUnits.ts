@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Excel 单位转换工具函数
  *
  * 提供 Excel 特有单位与标准像素单位之间的双向转换：
@@ -46,6 +46,52 @@ const DEFAULT_EXCEL_COL_WIDTH = 8.43;
 /** Excel默认行高（磅） */
 const DEFAULT_EXCEL_ROW_HEIGHT = 15;
 
+/** 最小字体大小（像素） */
+const MIN_FONT_SIZE_PX = 8;
+
+/** 默认字体大小（像素） */
+const DEFAULT_FONT_SIZE_PX = 12;
+
+/** Excel默认字体大小（磅） */
+const DEFAULT_EXCEL_FONT_SIZE = 11;
+
+/** 最大字体大小（像素） */
+const MAX_FONT_SIZE_PX = 200;
+
+// ============================================================================
+// [类型定义]
+// ============================================================================
+
+interface WidthOptions {
+    minWidth?: number;
+    defaultValue?: number;
+}
+
+interface HeightOptions {
+    minHeight?: number;
+    defaultValue?: number;
+    MIN_FONT_SIZE_PX?: number;
+    DEFAULT_FONT_SIZE_PX?: number;
+    DEFAULT_EXCEL_FONT_SIZE?: number;
+    MAX_FONT_SIZE_PX?: number;
+}
+
+interface FontSizeOptions {
+    minSize?: number;
+    maxSize?: number;
+    defaultValue?: number;
+}
+
+interface ColumnWidthEntry {
+    col: number;
+    width: number;
+}
+
+interface RowHeightEntry {
+    row: number;
+    height: number;
+}
+
 // ============================================================================
 // [列宽转换]
 // ============================================================================
@@ -57,18 +103,18 @@ const DEFAULT_EXCEL_ROW_HEIGHT = 15;
  * - MAX_DIGIT_WIDTH: 7 (Calibri 11 at 96 DPI)
  * - COLUMN_PADDING: 5px (左右各2px + 网格线1px)
  *
- * @param {number} charWidth - Excel字符宽度
- * @param {Object} [options] - 配置选项
- * @param {number} [options.minWidth=20] - 最小像素宽度
- * @param {number} [options.defaultValue=100] - 无效输入时的默认值
- * @returns {number} 像素宽度
+ * @param charWidth - Excel字符宽度
+ * @param options - 配置选项
+ * @param options.minWidth - 最小像素宽度
+ * @param options.defaultValue - 无效输入时的默认值
+ * @returns 像素宽度
  *
  * @example
  * excelWidthToPixel(15)    // => 110
  * excelWidthToPixel(8.43)  // => 64  (Excel默认列宽)
  * excelWidthToPixel(0)     // => 100 (返回默认值)
  */
-export function excelWidthToPixel(charWidth, options = {}) {
+export function excelWidthToPixel(charWidth: number, options: WidthOptions = {}): number {
     const { minWidth = MIN_COL_WIDTH_PX, defaultValue = DEFAULT_COL_WIDTH_PX } = options;
 
     if (!charWidth || typeof charWidth !== "number" || charWidth <= 0) {
@@ -84,18 +130,18 @@ export function excelWidthToPixel(charWidth, options = {}) {
  *
  * 反向转换公式：charWidth = (pixels - COLUMN_PADDING) / MAX_DIGIT_WIDTH
  *
- * @param {number} pixelWidth - 像素宽度
- * @param {Object} [options] - 配置选项
- * @param {number} [options.minWidth=1] - 最小字符宽度
- * @param {number} [options.defaultValue=8.43] - 无效输入时的默认值
- * @returns {number} Excel字符宽度
+ * @param pixelWidth - 像素宽度
+ * @param options - 配置选项
+ * @param options.minWidth - 最小字符宽度
+ * @param options.defaultValue - 无效输入时的默认值
+ * @returns Excel字符宽度
  *
  * @example
  * pixelToExcelWidth(110)   // => 15
  * pixelToExcelWidth(64)    // => 8.43 (约等于Excel默认)
  * pixelToExcelWidth(100)   // => 13.57
  */
-export function pixelToExcelWidth(pixelWidth, options = {}) {
+export function pixelToExcelWidth(pixelWidth: number, options: WidthOptions = {}): number {
     const { minWidth = 1, defaultValue = DEFAULT_EXCEL_COL_WIDTH } = options;
 
     if (!pixelWidth || typeof pixelWidth !== "number" || pixelWidth <= 0) {
@@ -116,11 +162,11 @@ export function pixelToExcelWidth(pixelWidth, options = {}) {
  * 转换公式：pixels = points × (DPI / POINTS_PER_INCH)
  * - 基于96 DPI: pixels = points × 1.3333
  *
- * @param {number} heightInPoints - Excel行高（磅）
- * @param {Object} [options] - 配置选项
- * @param {number} [options.minHeight=15] - 最小像素高度
- * @param {number} [options.defaultValue=28] - 无效输入时的默认值
- * @returns {number} 像素高度
+ * @param heightInPoints - Excel行高（磅）
+ * @param options - 配置选项
+ * @param options.minHeight - 最小像素高度
+ * @param options.defaultValue - 无效输入时的默认值
+ * @returns 像素高度
  *
  * @example
  * excelHeightToPixel(15)   // => 20  (Excel默认行高)
@@ -128,7 +174,7 @@ export function pixelToExcelWidth(pixelWidth, options = {}) {
  * excelHeightToPixel(30)   // => 40
  * excelHeightToPixel(0)    // => 28  (返回默认值)
  */
-export function excelHeightToPixel(heightInPoints, options = {}) {
+export function excelHeightToPixel(heightInPoints: number, options: HeightOptions = {}): number {
     const { minHeight = MIN_ROW_HEIGHT_PX, defaultValue = DEFAULT_ROW_HEIGHT_PX } = options;
 
     if (!heightInPoints || typeof heightInPoints !== "number" || heightInPoints <= 0) {
@@ -145,11 +191,11 @@ export function excelHeightToPixel(heightInPoints, options = {}) {
  * 反向转换公式：points = pixels / (DPI / POINTS_PER_INCH)
  * - 基于96 DPI: points = pixels / 1.3333
  *
- * @param {number} pixelHeight - 像素高度
- * @param {Object} [options] - 配置选项
- * @param {number} [options.minHeight=1] - 最小磅值
- * @param {number} [options.defaultValue=15] - 无效输入时的默认值
- * @returns {number} Excel行高（磅）
+ * @param pixelHeight - 像素高度
+ * @param options - 配置选项
+ * @param options.minHeight - 最小磅值
+ * @param options.defaultValue - 无效输入时的默认值
+ * @returns Excel行高（磅）
  *
  * @example
  * pixelToExcelHeight(20)   // => 15  (Excel默认)
@@ -157,14 +203,10 @@ export function excelHeightToPixel(heightInPoints, options = {}) {
  * pixelToExcelHeight(40)   // => 30
  * pixelToExcelHeight(28)   // => 21
  */
-export function pixelToExcelHeight(pixelHeight, options = {}) {
+export function pixelToExcelHeight(pixelHeight: number, options: HeightOptions = {}): number {
     const {
         minHeight = 1,
         defaultValue = DEFAULT_EXCEL_ROW_HEIGHT,
-        MIN_FONT_SIZE_PX,
-        DEFAULT_FONT_SIZE_PX,
-        DEFAULT_EXCEL_FONT_SIZE,
-        MAX_FONT_SIZE_PX,
     } = options;
 
     if (!pixelHeight || typeof pixelHeight !== "number" || pixelHeight <= 0) {
@@ -182,15 +224,15 @@ export function pixelToExcelHeight(pixelHeight, options = {}) {
 /**
  * 批量将Excel列宽数组转换为像素
  *
- * @param {Array<{col: number, width: number}>} columnWidths - Excel列宽数组
- * @param {Object} [options] - 配置选项（传递给 excelWidthToPixel）
- * @returns {Array<{col: number, width: number}>} 转换后的列宽数组
+ * @param columnWidths - Excel列宽数组
+ * @param options - 配置选项（传递给 excelWidthToPixel）
+ * @returns 转换后的列宽数组
  *
  * @example
  * convertColumnWidthsToPixels([{col: 0, width: 15}, {col: 1, width: 10}])
  * // => [{col: 0, width: 110}, {col: 1, width: 75}]
  */
-export function convertColumnWidthsToPixels(columnWidths, options = {}) {
+export function convertColumnWidthsToPixels(columnWidths: ColumnWidthEntry[], options: WidthOptions = {}): ColumnWidthEntry[] {
     if (!Array.isArray(columnWidths)) return [];
 
     return columnWidths.map(({ col, width }) => ({
@@ -202,15 +244,15 @@ export function convertColumnWidthsToPixels(columnWidths, options = {}) {
 /**
  * 批量将Excel行高数组转换为像素
  *
- * @param {Array<{row: number, height: number}>} rowHeights - Excel行高数组
- * @param {Object} [options] - 配置选项（传递给 excelHeightToPixel）
- * @returns {Array<{row: number, height: number}>} 转换后的行高数组
+ * @param rowHeights - Excel行高数组
+ * @param options - 配置选项（传递给 excelHeightToPixel）
+ * @returns 转换后的行高数组
  *
  * @example
  * convertRowHeightsToPixels([{row: 0, height: 15}, {row: 1, height: 18}])
  * // => [{row: 0, height: 20}, {row: 1, height: 24}]
  */
-export function convertRowHeightsToPixels(rowHeights, options = {}) {
+export function convertRowHeightsToPixels(rowHeights: RowHeightEntry[], options: HeightOptions = {}): RowHeightEntry[] {
     if (!Array.isArray(rowHeights)) return [];
 
     return rowHeights.map(({ row, height }) => ({
@@ -222,11 +264,11 @@ export function convertRowHeightsToPixels(rowHeights, options = {}) {
 /**
  * 批量将像素列宽数组转换为Excel格式
  *
- * @param {Array<{col: number, width: number}>} columnWidths - 像素列宽数组
- * @param {Object} [options] - 配置选项（传递给 pixelToExcelWidth）
- * @returns {Array<{col: number, width: number}>} 转换后的Excel列宽数组
+ * @param columnWidths - 像素列宽数组
+ * @param options - 配置选项（传递给 pixelToExcelWidth）
+ * @returns 转换后的Excel列宽数组
  */
-export function convertColumnWidthsToExcel(columnWidths, options = {}) {
+export function convertColumnWidthsToExcel(columnWidths: ColumnWidthEntry[], options: WidthOptions = {}): ColumnWidthEntry[] {
     if (!Array.isArray(columnWidths)) return [];
 
     return columnWidths.map(({ col, width }) => ({
@@ -238,11 +280,11 @@ export function convertColumnWidthsToExcel(columnWidths, options = {}) {
 /**
  * 批量将像素行高数组转换为Excel格式
  *
- * @param {Array<{row: number, height: number}>} rowHeights - 像素行高数组
- * @param {Object} [options] - 配置选项（传递给 pixelToExcelHeight）
- * @returns {Array<{row: number, height: number}>} 转换后的Excel行高数组
+ * @param rowHeights - 像素行高数组
+ * @param options - 配置选项（传递给 pixelToExcelHeight）
+ * @returns 转换后的Excel行高数组
  */
-export function convertRowHeightsToExcel(rowHeights, options = {}) {
+export function convertRowHeightsToExcel(rowHeights: RowHeightEntry[], options: HeightOptions = {}): RowHeightEntry[] {
     if (!Array.isArray(rowHeights)) return [];
 
     return rowHeights.map(({ row, height }) => ({
@@ -252,24 +294,8 @@ export function convertRowHeightsToExcel(rowHeights, options = {}) {
 }
 
 // ============================================================================
-// [导出常量]
-// ============================================================================
-
-// ============================================================================
 // [字体大小转换]
 // ============================================================================
-
-/** 最小字体大小（像素） */
-const MIN_FONT_SIZE_PX = 8;
-
-/** 默认字体大小（像素） */
-const DEFAULT_FONT_SIZE_PX = 12;
-
-/** Excel默认字体大小（磅） */
-const DEFAULT_EXCEL_FONT_SIZE = 11;
-
-/** 最大字体大小（像素） */
-const MAX_FONT_SIZE_PX = 200;
 
 /**
  * 将Excel字体大小（磅）转换为像素
@@ -280,12 +306,12 @@ const MAX_FONT_SIZE_PX = 200;
  * 转换公式：pixels = points × (DPI / POINTS_PER_INCH)
  * - 基于96 DPI: pixels = points × 1.3333
  *
- * @param {number} fontSizeInPoints - Excel字体大小（磅）
- * @param {Object} [options] - 配置选项
- * @param {number} [options.minSize=8] - 最小像素值
- * @param {number} [options.maxSize=200] - 最大像素值
- * @param {number} [options.defaultValue=12] - 无效输入时的默认值
- * @returns {number} 像素字体大小
+ * @param fontSizeInPoints - Excel字体大小（磅）
+ * @param options - 配置选项
+ * @param options.minSize - 最小像素值
+ * @param options.maxSize - 最大像素值
+ * @param options.defaultValue - 无效输入时的默认值
+ * @returns 像素字体大小
  *
  * @example
  * excelFontSizeToPixel(11)    // => 15 (Excel默认)
@@ -293,7 +319,7 @@ const MAX_FONT_SIZE_PX = 200;
  * excelFontSizeToPixel(14)    // => 19
  * excelFontSizeToPixel(0)     // => 12 (返回默认值)
  */
-export function excelFontSizeToPixel(fontSizeInPoints, options = {}) {
+export function excelFontSizeToPixel(fontSizeInPoints: number, options: FontSizeOptions = {}): number {
     const { minSize = MIN_FONT_SIZE_PX, maxSize = MAX_FONT_SIZE_PX, defaultValue = DEFAULT_FONT_SIZE_PX } = options;
 
     if (!fontSizeInPoints || typeof fontSizeInPoints !== "number" || fontSizeInPoints <= 0) {
@@ -310,19 +336,19 @@ export function excelFontSizeToPixel(fontSizeInPoints, options = {}) {
  * 反向转换公式：points = pixels / (DPI / POINTS_PER_INCH)
  * - 基于96 DPI: points = pixels / 1.3333
  *
- * @param {number} pixelSize - 像素字体大小
- * @param {Object} [options] - 配置选项
- * @param {number} [options.minSize=1] - 最小磅值
- * @param {number} [options.maxSize=200] - 最大磅值
- * @param {number} [options.defaultValue=11] - 无效输入时的默认值
- * @returns {number} Excel字体大小（磅）
+ * @param pixelSize - 像素字体大小
+ * @param options - 配置选项
+ * @param options.minSize - 最小磅值
+ * @param options.maxSize - 最大磅值
+ * @param options.defaultValue - 无效输入时的默认值
+ * @returns Excel字体大小（磅）
  *
  * @example
  * pixelToExcelFontSize(12)   // => 9 (约等于)
  * pixelToExcelFontSize(15)   // => 11.25 ≈ 11 (Excel默认)
  * pixelToExcelFontSize(0)    // => 11 (返回默认值)
  */
-export function pixelToExcelFontSize(pixelSize, options = {}) {
+export function pixelToExcelFontSize(pixelSize: number, options: FontSizeOptions = {}): number {
     const { minSize = 1, maxSize = 200, defaultValue = DEFAULT_EXCEL_FONT_SIZE } = options;
 
     if (!pixelSize || typeof pixelSize !== "number" || pixelSize <= 0) {

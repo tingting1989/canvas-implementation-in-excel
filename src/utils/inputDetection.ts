@@ -50,10 +50,8 @@ export class InputDetector {
      * - 无缓存时：每次 ~50-100μs（DOM 查询开销）
      * - 有缓存时：~0.1μs（对象引用比较）
      * - 在快速连续输入场景下（60fps），可减少 99.9% 的查询时间
-     *
-     * @type {HTMLElement|null}
      */
-    #lastCheckedElement = null;
+    #lastCheckedElement: Element | null = null;
 
     /**
      * @private 私有字段 - 上次焦点检查的结果（缓存优化）
@@ -63,10 +61,8 @@ export class InputDetector {
      * 可能的值：
      * - true: 焦点在外部输入元素上（应让渡给浏览器处理）
      * - false: 焦点在 Canvas 编辑器或非输入区域（应由调用方处理）
-     *
-     * @type {boolean}
      */
-    #lastCheckResult = false;
+    #lastCheckResult: boolean = false;
 
     /**
      * 公共方法 - 检查当前焦点是否在外部输入元素上
@@ -88,14 +84,14 @@ export class InputDetector {
      * 返回结果并缓存
      * ```
      *
-     * @returns {boolean}
+     * @returns
      *   - true: 焦点在外部输入元素上 → 应让渡给浏览器处理
      *   - false: 焦点在 Canvas 编辑器或非输入区域 → 应由调用方处理
      *
      * @see #performFullCheck - 完整检查逻辑的实现
      * @see #getEffectiveActiveElement - Shadow DOM 支持
      */
-    isExternalInput() {
+    isExternalInput(): boolean {
         const activeElement = document.activeElement;
 
         if (!activeElement) return false;
@@ -108,7 +104,7 @@ export class InputDetector {
             return this.#lastCheckResult;
         }
 
-        const result = this.#performFullCheck(activeElement);
+        const result = this.#performFullCheck(activeElement as HTMLElement);
 
         this.#lastCheckedElement = activeElement;
         this.#lastCheckResult = result;
@@ -127,7 +123,7 @@ export class InputDetector {
      * - Shadow DOM 内容变化后
      * - 测试环境中需要确保最新状态
      */
-    clearCache() {
+    clearCache(): void {
         this.#lastCheckedElement = null;
         this.#lastCheckResult = false;
     }
@@ -143,8 +139,8 @@ export class InputDetector {
      *
      * 支持嵌套的 Shadow DOM（Web Component 内部再包含其他 Web Component）。
      *
-     * @param {HTMLElement} host - 可能是宿主元素的 DOM 元素
-     * @returns {HTMLElement|null}
+     * @param host - 可能是宿主元素的 DOM 元素
+     * @returns
      *   - HTMLElement: 在 Shadow DOM 中找到的实际焦点元素
      *   - null: 不是 Shadow DOM 或无焦点元素（应使用原 activeElement）
      *
@@ -157,7 +153,7 @@ export class InputDetector {
      * </my-date-picker>
      * ```
      */
-    #getEffectiveActiveElement(host) {
+    #getEffectiveActiveElement(host: Element): Element | null {
         if (!host || !host.shadowRoot) {
             return null;
         }
@@ -201,17 +197,17 @@ export class InputDetector {
      * 第4层：确认外部输入
      * - 通过所有检查 → 确实是外部输入框 → 返回 true
      *
-     * @param {HTMLElement} activeElement - 当前获得焦点的 DOM 元素
-     * @returns {boolean} true=外部输入, false=Canvas编辑器或非输入区域
+     * @param activeElement - 当前获得焦点的 DOM 元素
+     * @returns true=外部输入, false=Canvas编辑器或非输入区域
      *
      * @see #isExternalInput - 调用此方法的入口
      * @see #isOurCellEditor - Canvas 编辑器识别逻辑
      * @see #hasAriaInputRole - ARIA 角色检查
-     **/
-    #performFullCheck(activeElement) {
+     */
+    #performFullCheck(activeElement: HTMLElement): boolean {
         const effectiveElement = this.#getEffectiveActiveElement(activeElement);
         if (effectiveElement && effectiveElement !== activeElement) {
-            return this.#performFullCheck(effectiveElement);
+            return this.#performFullCheck(effectiveElement as HTMLElement);
         }
 
         const tagName = activeElement.tagName.toLowerCase();
@@ -229,8 +225,8 @@ export class InputDetector {
         }
 
         if (
-            activeElement.disabled ||
-            activeElement.readOnly ||
+            (activeElement as HTMLInputElement).disabled ||
+            (activeElement as HTMLInputElement).readOnly ||
             activeElement.style.display === "none" ||
             activeElement.style.visibility === "hidden" ||
             activeElement.offsetParent === null
@@ -260,12 +256,12 @@ export class InputDetector {
      * | searchbox | 搜索框 | 带搜索图标的输入框 |
      * | spinbutton | 数字调节器 | 日期/数字选择器 |
      *
-     * @param {HTMLElement} element - 待检查的 DOM 元素
-     * @returns {boolean}
+     * @param element - 待检查的 DOM 元素
+     * @returns
      *   - true: 元素具有文本输入相关的 ARIA 角色
      *   - false: 无 ARIA 角色或角色不是输入类型
      */
-    #hasAriaInputRole(element) {
+    #hasAriaInputRole(element: Element): boolean {
         const role = element.getAttribute("role");
         if (!role) return false;
 
@@ -285,19 +281,19 @@ export class InputDetector {
      * - CellEditor.createEditor() 会自动为所有编辑器添加 'cs-cell-editor' 类名
      * - 因此无需通过 DOM 位置（如父容器 ID）来判断，避免硬编码动态变化的容器
      *
-     * @param {HTMLElement} element - 待检查的 DOM 元素
-     * @returns {boolean}
+     * @param element - 待检查的 DOM 元素
+     * @returns
      *   - true: 是 Canvas 的单元格编辑器（不应拦截）
      *   - false: 不是 Canvas 编辑器
      *
      * @see CellEditor.createEditor() - 编辑器创建时添加 cs-cell-editor 类名
-     **/
-    #isOurCellEditor(element) {
+     */
+    #isOurCellEditor(element: Element): boolean {
         if (element.classList.contains("cs-cell-editor")) {
             return true;
         }
 
-        if (element.dataset.canvasEditor === "true") {
+        if ((element as HTMLElement).dataset.canvasEditor === "true") {
             return true;
         }
 
@@ -318,11 +314,11 @@ export class InputDetector {
      * - 因此，只要 window.getSelection() 返回非空文本，
      *   说明用户在普通 HTML 内容（或 contentEditable）中选择了文本
      *
-     * @returns {boolean}
+     * @returns
      *   - true: 存在非空文本选区，应让浏览器处理复制/剪切
      *   - false: 无文本选区，可由 Canvas 策略处理
      */
-    hasExternalTextSelection() {
+    hasExternalTextSelection(): boolean {
         const selection = window.getSelection();
         if (!selection || selection.isCollapsed) {
             return false;

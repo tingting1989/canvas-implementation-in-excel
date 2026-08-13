@@ -17,7 +17,7 @@ const URL_PATTERN = /^https?:\/\/[^\s/$.?#][^\s]*/i;
 
 const URL_IN_TEXT_PATTERN = /https?:\/\/[^\s/$.?#][^\s]*/gi;
 
-const PROTOCOLS = ["http://", "https://", "ftp://", "mailto:", "tel:"];
+const PROTOCOLS: string[] = ["http://", "https://", "ftp://", "mailto:", "tel:"];
 
 /**
  * 检测值是否为纯 URL
@@ -27,10 +27,10 @@ const PROTOCOLS = ["http://", "https://", "ftp://", "mailto:", "tel:"];
  * 2. 去除首尾空白后以已知协议开头
  * 3. 匹配 URL 格式正则
  *
- * @param {*} value 待检测的值
- * @returns {boolean} 是否为有效 URL
+ * @param value 待检测的值
+ * @returns 是否为有效 URL
  */
-export function isUrl(value) {
+export function isUrl(value: unknown): boolean {
     if (typeof value !== "string") return false;
     const trimmed = value.trim();
     if (trimmed.length === 0) return false;
@@ -43,13 +43,13 @@ export function isUrl(value) {
  * 支持从包含普通文本和 URL 的混合内容中提取 URL。
  * 例如："访问 https://example.com 获取更多信息" → ["https://example.com"]
  *
- * @param {string} text 待搜索的文本
- * @returns {string[]} 找到的 URL 数组（去重，保持出现顺序）
+ * @param text 待搜索的文本
+ * @returns 找到的 URL 数组（去重，保持出现顺序）
  */
-export function extractUrls(text) {
+export function extractUrls(text: string): string[] {
     if (typeof text !== "string") return [];
 
-    const urls = [];
+    const urls: string[] = [];
     const matches = text.match(URL_IN_TEXT_PATTERN);
 
     if (!matches) return [];
@@ -68,10 +68,10 @@ export function extractUrls(text) {
  *
  * 比 isUrl 更宽松，只要文本中任何位置出现 URL 即返回 true。
  *
- * @param {*} value 待检测的值
- * @returns {boolean} 是否包含 URL
+ * @param value 待检测的值
+ * @returns 是否包含 URL
  */
-export function containsUrl(value) {
+export function containsUrl(value: unknown): boolean {
     if (typeof value !== "string") return false;
     return URL_IN_TEXT_PATTERN.test(value);
 }
@@ -83,11 +83,11 @@ export function containsUrl(value) {
  * - 移除协议前缀（http:// 或 https://）
  * - 超过 maxLength 时截断并添加省略号
  *
- * @param {string} url 原始 URL
- * @param {number} [maxLength=50] 最大显示长度
- * @returns {string} 简化后的显示文本
+ * @param url 原始 URL
+ * @param maxLength 最大显示长度
+ * @returns 简化后的显示文本
  */
-export function getUrlDisplayText(url, maxLength = 50) {
+export function getUrlDisplayText(url: string, maxLength: number = 50): string {
     let display = url.replace(/^https?:\/\//i, "");
 
     if (display.length > maxLength) {
@@ -104,11 +104,11 @@ export function getUrlDisplayText(url, maxLength = 50) {
  * 使用 window.open 打开链接，支持配置 target。
  * 在非浏览器环境（如 Node.js 测试）中不会报错。
  *
- * @param {string} url 要打开的 URL
- * @param {string} [target="_blank"] 打开方式
- * @param {Object} [windowFeatures] window.open 的特性参数
+ * @param url 要打开的 URL
+ * @param target 打开方式
+ * @param windowFeatures window.open 的特性参数
  */
-export function openUrl(url, target = "_blank", windowFeatures = null) {
+export function openUrl(url: string, target: string = "_blank", windowFeatures: string | null = null): void {
     if (typeof window === "undefined") return;
     try {
         if (windowFeatures) {

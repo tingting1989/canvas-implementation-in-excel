@@ -9,10 +9,10 @@
 
 /**
  * 列字母转列索引：A→0, B→1, ..., Z→25, AA→26
- * @param {string} colStr - 列字母（不区分大小写）
- * @returns {number} 列索引（0-based）
+ * @param colStr - 列字母（不区分大小写）
+ * @returns 列索引（0-based）
  */
-export function colToIndex(colStr) {
+export function colToIndex(colStr: string): number {
     let result = 0;
     for (let i = 0; i < colStr.length; i++) {
         result = result * 26 + (colStr.toUpperCase().charCodeAt(i) - 65 + 1);
@@ -22,10 +22,10 @@ export function colToIndex(colStr) {
 
 /**
  * 列索引转列字母：0→A, 1→B, ..., 25→Z, 26→AA
- * @param {number} index - 列索引（0-based）
- * @returns {string} 列字母
+ * @param index - 列索引（0-based）
+ * @returns 列字母
  */
-export function indexToCol(index) {
+export function indexToCol(index: number): string {
     let result = "";
     let n = index + 1;
     while (n > 0) {
