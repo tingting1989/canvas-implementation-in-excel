@@ -33,13 +33,34 @@ import { InputDetector } from "../../utils/inputDetection.js";
  * @extends EventStrategy
  */
 export class SearchStrategy extends EventStrategy {
+    /**
+     * 策略优先级
+     * 使用语义化常量 POPUP_UI (500)，Layer 2 标准交互层
+     * @type {number}
+     */
     priority = STRATEGY_PRIORITY.POPUP_UI;
 
+    /**
+     * @private 私有字段 - 搜索插件实例引用
+     * @type {SearchPlugin|null}
+     */
     #plugin = null;
+
+    /**
+     * @private 私有字段 - 搜索面板是否处于激活状态
+     * @type {boolean}
+     */
     #isSearchActive = false;
+
+    /**
+     * @private 私有字段 - 外部输入检测器
+     * @type {InputDetector}
+     */
     #inputDetector = new InputDetector();
 
     /**
+     * 创建搜索策略实例
+     *
      * @param {Object} handler - 事件处理器
      * @param {SearchPlugin} plugin - 搜索插件实例
      */
@@ -54,9 +75,11 @@ export class SearchStrategy extends EventStrategy {
     }
 
     /**
-     * 绑定插件生命周期事件
+     * @private 私有方法 - 绑定插件生命周期事件
      *
-     * @private
+     * 通过猴子补丁（Monkey Patch）监听 SearchPlugin 的
+     * show/hide 方法调用，以同步更新 #isSearchActive 状态。
+     * 这种方式避免了引入额外的事件系统耦合。
      */
     #bindPluginEvents() {
         // 监听搜索面板打开
@@ -77,6 +100,9 @@ export class SearchStrategy extends EventStrategy {
     /**
      * 获取事件处理器映射
      *
+     * 注册 DOCUMENT_KEYDOWN 事件处理器，
+     * 用于拦截搜索相关的键盘快捷键。
+     *
      * @returns {Object} 事件名称到处理函数的映射
      */
     getEventHandlers() {
@@ -86,7 +112,7 @@ export class SearchStrategy extends EventStrategy {
     }
 
     /**
-     * 处理键盘按下事件
+     * @private 私有方法 - 处理键盘按下事件
      *
      * 快捷键映射：
      * - Ctrl+F / Cmd+F: 打开/关闭搜索面板
@@ -96,7 +122,6 @@ export class SearchStrategy extends EventStrategy {
      *
      * @param {KeyboardEvent} e - 键盘事件
      * @returns {boolean} 是否允许事件继续传播
-     * @private
      */
     async #handleKeyDown(e) {
         if (!this.enabled || !this.#plugin?.enabled) return true;
@@ -194,10 +219,13 @@ export class SearchStrategy extends EventStrategy {
     }
 
     /**
-     * 显示搜索面板
+     * @private 私有方法 - 显示搜索面板
+     *
+     * 计算 Canvas 元素位置并调用 SearchPlugin.show() 打开面板，
+     * 可选切换到替换标签页。
      *
      * @param {boolean} [showReplace=false] - 是否切换到替换标签页
-     * @private
+     * @returns {void}
      */
     #showSearchPanel(showReplace = false) {
         if (!this.handler?.viewport || !this.handler?.canvasContext) {
@@ -225,10 +253,13 @@ export class SearchStrategy extends EventStrategy {
     }
 
     /**
-     * 重新打开上次的搜索（当用户按 F3 但面板已关闭时）
+     * @private 私有方法 - 重新打开上次的搜索
+     *
+     * 当用户按 F3 但搜索面板已关闭时，尝试重新执行上次搜索。
+     * 如果没有历史查询记录，则打开空面板。
      *
      * @param {boolean} [reverse=false] - 是否反向导航到上一个
-     * @private
+     * @returns {Promise<void>}
      */
     async #reopenLastSearch(reverse = false) {
         const lastQuery = this.#plugin.getLastQuery?.();
@@ -253,7 +284,7 @@ export class SearchStrategy extends EventStrategy {
     }
 
     /**
-     * 检测是否存在外部输入源
+     * @private 私有方法 - 检测是否存在外部输入源
      *
      * 当以下情况存在时，不拦截键盘事件：
      * - 用户正在编辑单元格（编辑器打开）
@@ -266,7 +297,6 @@ export class SearchStrategy extends EventStrategy {
      * - 编辑器活跃状态检查
      *
      * @returns {boolean} 是否存在外部输入
-     * @private
      */
     #hasExternalInput() {
         // 1️⃣ 使用 InputDetector 处理通用外部输入检测
@@ -313,7 +343,10 @@ export class SearchStrategy extends EventStrategy {
     /**
      * 销毁策略实例
      *
-     * 清理所有引用和监听器
+     * 清理所有引用和监听器，防止内存泄漏。
+     * 调用父类 destroy() 完成基类清理。
+     *
+     * @returns {void}
      */
     destroy() {
         super.destroy();

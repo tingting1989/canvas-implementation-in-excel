@@ -367,50 +367,112 @@ template.innerHTML = `
     </div>
 </div>`;
 
+/**
+ * 搜索下拉面板 Web Component
+ *
+ * 提供搜索/替换功能的 UI 交互界面，使用 Shadow DOM 封装样式。
+ * 支持"查找"和"替换"两个标签页，包含输入框、选项按钮和操作按钮。
+ *
+ * ## 功能特性
+ * - **双标签页**: 查找(D) 和 替换(P) 两种模式切换
+ * - **搜索选项**: 大小写敏感(Aa)、全词匹配(W)、正则表达式(.*)
+ * - **结果导航**: 上一个/下一个按钮，支持 Enter/Shift+Enter 快捷键
+ * - **替换操作**: 单个替换和全部替换，支持 Ctrl+Enter 快捷全部替换
+ * - **错误提示**: Toast 样式的错误/警告信息显示
+ * - **主题适配**: 自动适配深色/浅色主题
+ *
+ * ## 生命周期
+ * 1. `constructor()`: 创建 Shadow DOM，克隆模板，初始化防抖搜索
+ * 2. `connectedCallback()`: 缓存 DOM 引用，绑定事件
+ * 3. `disconnectedCallback()`: 取消防抖搜索
+ *
+ * @class SearchDropdown
+ * @extends HTMLElement
+ * @see {@link SearchUIManager} - 控制此组件的显示/隐藏和回调绑定
+ */
 export class SearchDropdown extends HTMLElement {
-    /** @type {HTMLInputElement|null} 搜索输入框 DOM 引用 */
+    /**
+     * @private 私有字段 - 搜索输入框 DOM 引用
+     * @type {HTMLInputElement|null}
+     */
     #inputElement = null;
 
-    /** @type {HTMLElement|null} 结果计数显示区域 */
+    /**
+     * @private 私有字段 - 结果计数显示区域
+     * @type {HTMLElement|null}
+     */
     #resultInfo = null;
 
-    /** @type {Map<string, HTMLButtonElement>} 选项按钮映射（key: option name） */
+    /**
+     * @private 私有字段 - 选项按钮映射（key: option name）
+     * @type {Map<string, HTMLButtonElement>}
+     */
     #optionButtons = new Map();
 
-    /** @type {Map<string, HTMLButtonElement>} 导航按钮映射（key: action name） */
+    /**
+     * @private 私有字段 - 导航按钮映射（key: action name）
+     * @type {Map<string, HTMLButtonElement>}
+     */
     #navButtons = new Map();
 
-    /** @type {Function|null} 搜索回调函数 (query, options) => void */
+    /**
+     * @private 私有字段 - 搜索回调函数
+     * @type {Function|null}
+     */
     #onSearchCallback = null;
 
-    /** @type {Function|null} 导航回调函数 (direction: "next"|"prev") => void */
+    /**
+     * @private 私有字段 - 导航回调函数
+     * @type {Function|null}
+     */
     #onNavigateCallback = null;
 
-    /** @type {Function|null} 关闭回调函数 (reason: string) => void */
+    /**
+     * @private 私有字段 - 关闭回调函数
+     * @type {Function|null}
+     */
     #onCloseCallback = null;
 
-    /** @type {Function|null} 替换当前项回调 (replaceStr: string) => Promise<boolean> */
+    /**
+     * @private 私有字段 - 替换当前项回调
+     * @type {Function|null}
+     */
     #onReplaceCallback = null;
 
-    /** @type {Function|null} 全部替换回调 (replaceStr: string) => Promise<number> */
+    /**
+     * @private 私有字段 - 全部替换回调
+     * @type {Function|null}
+     */
     #onReplaceAllCallback = null;
 
     /**
-     * 防抖后的搜索函数引用
+     * @private 私有字段 - 防抖后的搜索函数引用
      * @type {Function}
      */
     #debouncedSearch = null;
 
-    /** @type {HTMLInputElement|null} 替换输入框 DOM 引用（替换页签） */
+    /**
+     * @private 私有字段 - 替换输入框 DOM 引用（替换页签）
+     * @type {HTMLInputElement|null}
+     */
     #replaceInputElement = null;
 
-    /** @type {NodeListOf<HTMLButtonElement>|null} 标签页按钮集合 */
+    /**
+     * @private 私有字段 - 标签页按钮集合
+     * @type {NodeListOf<HTMLButtonElement>|null}
+     */
     #tabButtons = null;
 
-    /** @type {NodeListOf<HTMLElement>|null} 标签页内容集合 */
+    /**
+     * @private 私有字段 - 标签页内容集合
+     * @type {NodeListOf<HTMLElement>|null}
+     */
     #tabContents = null;
 
-    /** @type {string} 当前激活的标签页 ('find' | 'replace') */
+    /**
+     * @private 私有字段 - 当前激活的标签页
+     * @type {string}
+     */
     #activeTab = "find";
 
     constructor() {
@@ -420,15 +482,37 @@ export class SearchDropdown extends HTMLElement {
         this.#createDebouncedSearch();
     }
 
+    /**
+     * Web Component 生命周期 - 元素挂载到 DOM 时调用
+     *
+     * 缓存 Shadow DOM 内部元素的引用并绑定事件监听器。
+     *
+     * @returns {void}
+     */
     connectedCallback() {
         this.#cacheDOMReferences();
         this.#bindEvents();
     }
 
+    /**
+     * Web Component 生命周期 - 元素从 DOM 移除时调用
+     *
+     * 取消防抖搜索函数，避免内存泄漏。
+     *
+     * @returns {void}
+     */
     disconnectedCallback() {
         this.#debouncedSearch?.cancel?.();
     }
 
+    /**
+     * @private 私有方法 - 创建防抖搜索函数
+     *
+     * 使用 300ms 防抖包装搜索回调，避免用户快速输入时频繁触发搜索。
+     * 空查询时重置结果信息显示为默认状态。
+     *
+     * @returns {void}
+     */
     #createDebouncedSearch() {
         this.#debouncedSearch = debounce((query) => {
             if (query) {
@@ -441,6 +525,20 @@ export class SearchDropdown extends HTMLElement {
         }, 300);
     }
 
+    /**
+     * 初始化回调函数集合
+     *
+     * 由 SearchUIManager 在创建面板后调用，
+     * 绑定搜索、导航、替换、关闭等核心回调。
+     *
+     * @param {Object} callbacks - 回调函数集合
+     * @param {Function} [callbacks.onSearch] - 搜索回调 (query, options) => void
+     * @param {Function} [callbacks.onNavigate] - 导航回调 (direction: "next"|"prev") => void
+     * @param {Function} [callbacks.onClose] - 关闭回调 (reason: string) => void
+     * @param {Function} [callbacks.onReplace] - 替换回调 (replaceStr: string) => Promise<boolean>
+     * @param {Function} [callbacks.onReplaceAll] - 全部替换回调 (replaceStr: string) => Promise<number>
+     * @returns {void}
+     */
     initCallbacks(callbacks) {
         this.#onSearchCallback = callbacks?.onSearch || null;
         this.#onNavigateCallback = callbacks?.onNavigate || null;
@@ -449,12 +547,28 @@ export class SearchDropdown extends HTMLElement {
         this.#onReplaceAllCallback = callbacks?.onReplaceAll || null;
     }
 
+    /**
+     * 聚焦当前激活标签页的搜索输入框
+     *
+     * 同时选中输入框中的文本，方便用户直接输入新内容。
+     *
+     * @returns {void}
+     */
     focusInput() {
         const activeInput = this.#getActiveSearchInput();
         activeInput?.focus();
         activeInput?.select();
     }
 
+    /**
+     * 更新搜索结果显示信息
+     *
+     * 根据当前搜索状态更新结果计数（如 "3 / 10"），
+     * 无结果时显示红色"无结果"提示，并同步更新导航按钮状态。
+     *
+     * @param {import("./SearchState.js")} state - 搜索状态管理器实例
+     * @returns {void}
+     */
     updateResultInfo(state) {
         if (!state) return;
 
@@ -480,6 +594,15 @@ export class SearchDropdown extends HTMLElement {
         this.#updateNavButtonStates(state);
     }
 
+    /**
+     * 显示错误信息 Toast 提示
+     *
+     * 以红色样式显示错误信息，3 秒后自动消失。
+     * 用于正则表达式语法错误、替换失败等场景。
+     *
+     * @param {string} message - 错误消息文本
+     * @returns {void}
+     */
     showError(message) {
         const toast = this.shadowRoot.getElementById?.("errorToast") || this.shadowRoot.querySelector("#errorToast");
         if (!toast) return;
@@ -499,6 +622,15 @@ export class SearchDropdown extends HTMLElement {
         }, 3000);
     }
 
+    /**
+     * 显示警告信息 Toast 提示
+     *
+     * 以橙色样式显示警告信息，3 秒后自动消失。
+     * 用于搜索范围为空、结果被截断等场景。
+     *
+     * @param {string} message - 警告消息文本
+     * @returns {void}
+     */
     showWarning(message) {
         const toast = this.shadowRoot.getElementById?.("errorToast") || this.shadowRoot.querySelector("#errorToast");
         if (!toast) return;
@@ -518,6 +650,15 @@ export class SearchDropdown extends HTMLElement {
         }, 3000);
     }
 
+    /**
+     * 切换标签页（查找 / 替换）
+     *
+     * 切换激活的标签页，更新按钮高亮状态和面板可见性，
+     * 自动聚焦新标签页的输入框，并同步搜索输入框内容。
+     *
+     * @param {"find"|"replace"} tabName - 目标标签页名称
+     * @returns {void}
+     */
     switchTab(tabName) {
         if (!this.#tabButtons || !this.#tabContents) return;
 
@@ -549,6 +690,15 @@ export class SearchDropdown extends HTMLElement {
         this.#syncSearchInputs();
     }
 
+    /**
+     * @private 私有方法 - 缓存 Shadow DOM 内部元素的引用
+     *
+     * 在 connectedCallback 中调用，将常用的 DOM 元素引用
+     * 缓存到私有字段中，避免后续频繁查询 DOM。
+     * 包括：输入框、结果信息区、标签页按钮、选项按钮、操作按钮。
+     *
+     * @returns {void}
+     */
     #cacheDOMReferences() {
         const searchInputs = this.shadowRoot.querySelectorAll(".search-input");
         this.#inputElement = searchInputs[0] || null;
@@ -587,6 +737,19 @@ export class SearchDropdown extends HTMLElement {
         });
     }
 
+    /**
+     * @private 私有方法 - 绑定所有 DOM 事件监听器
+     *
+     * 在 connectedCallback 中调用，为以下元素注册事件：
+     * - 搜索输入框: input 事件（防抖搜索）、keydown 事件（Enter 导航/Ctrl+Enter 全部替换）
+     * - 选项按钮: click 事件（切换大小写/全词/正则选项）
+     * - 导航按钮: click 事件（上一个/下一个/关闭）
+     * - 标签页按钮: click 事件（切换查找/替换标签页）
+     * - 替换按钮: click 事件（单个替换/全部替换）
+     * - 替换输入框: keydown 事件（Enter 替换/Ctrl+Enter 全部替换）
+     *
+     * @returns {void}
+     */
     #bindEvents() {
         const allSearchInputs = this.shadowRoot.querySelectorAll(".search-input");
 
@@ -723,6 +886,14 @@ export class SearchDropdown extends HTMLElement {
         }
     }
 
+    /**
+     * @private 私有方法 - 同步所有搜索输入框的值
+     *
+     * 查找和替换标签页各有一个搜索输入框，
+     * 此方法确保两个输入框的内容保持一致。
+     *
+     * @returns {void}
+     */
     #syncSearchInputs() {
         if (!this.#inputElement) return;
 
@@ -736,6 +907,13 @@ export class SearchDropdown extends HTMLElement {
         });
     }
 
+    /**
+     * @private 私有方法 - 获取当前激活标签页的搜索输入框
+     *
+     * 根据当前标签页（find/replace）返回对应的搜索输入框元素。
+     *
+     * @returns {HTMLInputElement|null} 当前激活的搜索输入框
+     */
     #getActiveSearchInput() {
         if (this.#activeTab === "find") {
             return this.shadowRoot.querySelector("#panel-find .search-input");
@@ -744,6 +922,13 @@ export class SearchDropdown extends HTMLElement {
         }
     }
 
+    /**
+     * @private 私有方法 - 获取替换输入框元素
+     *
+     * 优先使用缓存的引用，未缓存时从 Shadow DOM 查询并缓存。
+     *
+     * @returns {HTMLInputElement|null} 替换输入框元素
+     */
     #getReplaceInput() {
         if (this.#replaceInputElement) {
             return this.#replaceInputElement;
@@ -757,6 +942,14 @@ export class SearchDropdown extends HTMLElement {
         return replaceInput;
     }
 
+    /**
+     * @private 私有方法 - 获取当前搜索选项配置
+     *
+     * 读取选项按钮的激活状态，构建搜索选项对象。
+     * 选项包括：大小写敏感(caseSensitive)、全词匹配(wholeWord)、正则表达式(useRegex)。
+     *
+     * @returns {{caseSensitive: boolean, wholeWord: boolean, useRegex: boolean}} 当前搜索选项
+     */
     #getCurrentOptions() {
         return {
             caseSensitive: this.#optionButtons.get("caseSensitive")?.classList.contains("on") || false,
@@ -765,6 +958,18 @@ export class SearchDropdown extends HTMLElement {
         };
     }
 
+    /**
+     * @private 私有方法 - 处理单个替换操作
+     *
+     * 执行流程：
+     * 1. 验证替换回调和输入框是否存在
+     * 2. 获取替换文本并校验非空
+     * 3. 禁用操作按钮防止重复点击
+     * 4. 调用替换回调执行实际替换
+     * 5. 替换成功后自动导航到下一个结果
+     *
+     * @returns {Promise<void>}
+     */
     async #handleReplace() {
         if (!this.#onReplaceCallback) {
             return;
@@ -798,6 +1003,15 @@ export class SearchDropdown extends HTMLElement {
         }
     }
 
+    /**
+     * @private 私有方法 - 自动切换到替换标签页后执行全部替换
+     *
+     * 如果当前在查找标签页，先切换到替换标签页，
+     * 等待 150ms 渲染完成后再执行全部替换操作。
+     * 用于支持 Ctrl+Enter 快捷键在查找页签触发全部替换。
+     *
+     * @returns {Promise<void>}
+     */
     async #handleReplaceAllWithAutoSwitch() {
         if (this.#activeTab !== "replace") {
             this.switchTab("replace");
@@ -806,6 +1020,18 @@ export class SearchDropdown extends HTMLElement {
         await this.#handleReplaceAll();
     }
 
+    /**
+     * @private 私有方法 - 处理全部替换操作
+     *
+     * 执行流程：
+     * 1. 验证全部替换回调是否存在
+     * 2. 获取替换文本
+     * 3. 禁用操作按钮防止重复点击
+     * 4. 调用全部替换回调执行批量替换
+     * 5. 替换成功后重新执行搜索以更新结果
+     *
+     * @returns {Promise<void>}
+     */
     async #handleReplaceAll() {
         if (!this.#onReplaceAllCallback) {
             this.showError("替换功能未初始化");
@@ -837,6 +1063,16 @@ export class SearchDropdown extends HTMLElement {
         }
     }
 
+    /**
+     * @private 私有方法 - 设置所有操作按钮的禁用状态
+     *
+     * 在替换操作进行中禁用按钮防止重复点击，
+     * 操作完成后恢复按钮可用状态。
+     * 支持单个按钮和按钮数组两种格式。
+     *
+     * @param {boolean} disabled - 是否禁用所有操作按钮
+     * @returns {void}
+     */
     #setActionButtonsDisabled(disabled) {
         this.#navButtons.forEach((btnOrArray) => {
             if (Array.isArray(btnOrArray)) {
@@ -849,6 +1085,16 @@ export class SearchDropdown extends HTMLElement {
         });
     }
 
+    /**
+     * @private 私有方法 - 更新导航按钮的启用/禁用状态
+     *
+     * 根据搜索结果数量控制上一个/下一个按钮的可用性：
+     * - 结果数 <= 1 时禁用导航按钮（无意义导航）
+     * - 结果数 > 1 时启用导航按钮
+     *
+     * @param {import("./SearchState.js")} state - 搜索状态管理器实例
+     * @returns {void}
+     */
     #updateNavButtonStates(state) {
         const total = state.getResults().length;
         const current = state.getCurrentIndex();

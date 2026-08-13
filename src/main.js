@@ -839,12 +839,6 @@ const initApp = () => {
             }
             return weight / (height * height);
         });
-        const registeredFunctions = functionRegistry.list().length;
-        errorHandler.debug(ERROR_CODE.VALIDATION_INFO, `✅ 已注册的验证函数: ${registeredFunctions}`);
-        errorHandler.info(
-            ERROR_CODE.VALIDATION_INFO,
-            "[main] ✅ 自定义验证函数注册完成 | ISPRIME | ISPOSITIVE | ISBETWEEN | GETLETTERGRADE | VALIDATEEMAIL | CALCULATEBMI",
-        );
     };
 
     // 执行自定义函数注册

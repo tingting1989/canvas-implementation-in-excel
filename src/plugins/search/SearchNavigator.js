@@ -49,34 +49,31 @@ import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 export class SearchNavigator {
     /**
-     * 搜索状态管理器引用
+     * @private 私有字段 - 搜索状态管理器引用
      *
      * 用于读取当前结果列表和更新当前索引。
      *
      * @type {import("./SearchState.js")}
-     * @private
      */
     #state = null;
 
     /**
-     * 选区管理器实例
+     * @private 私有字段 - 选区管理器实例
      *
      * 用于将导航目标设置为活动单元格，
      * 触发 UI 高亮显示和焦点跟随。
      *
      * @type {Object|null}
-     * @private
      */
     #selectionManager = null;
 
     /**
-     * 渲染引擎实例
+     * @private 私有字段 - 渲染引擎实例
      *
      * 提供 scrollToCell 方法，
      * 确保导航目标单元格滚动到视口可见区域。
      *
      * @type {Object|null}
-     * @private
      */
     #renderEngine = null;
 
@@ -244,7 +241,7 @@ export class SearchNavigator {
     }
 
     /**
-     * 同步选区到当前结果位置
+     * @private 私有方法 - 同步选区到当前结果位置
      *
      * 这是导航的核心副作用方法，负责：
      * 1. 通过 SelectionManager 设置活动单元格
@@ -254,7 +251,6 @@ export class SearchNavigator {
      * - 即使选区同步失败也不抛出异常（通过 errorHandler 记录）
      * - 保证导航操作的原子性（要么完全成功，要么静默失败）
      *
-     * @private
      * @param {import("./SearchPlugin.js").SearchResult} result - 当前要跳转到的结果对象
      * @returns {void}
      */
@@ -270,7 +266,7 @@ export class SearchNavigator {
     }
 
     /**
-     * 滚动到指定单元格使其可见
+     * @private 私有方法 - 滚动到指定单元格使其可见
      *
      * 调用 RenderEngine 的 scrollToCell 方法，
      * 该方法会计算最佳滚动位置并执行平滑滚动。
@@ -279,7 +275,6 @@ export class SearchNavigator {
      * - 检查 renderEngine 和 scrollToCell 方法是否存在
      * - 失败时不影响主流程（仅记录错误日志）
      *
-     * @private
      * @param {number} row - 目标行号
      * @param {number} col - 目标列号
      * @returns {void}
@@ -295,7 +290,7 @@ export class SearchNavigator {
     }
 
     /**
-     * 动态更新依赖项（SelectionManager 和 RenderEngine）
+     * @private 私有方法 - 动态更新依赖项（SelectionManager 和 RenderEngine）
      *
      * 解决问题场景：
      * 1. **初始化时序问题**：插件 init() 时 activeSheet 可能未就绪

@@ -14,8 +14,13 @@ import { ERROR_CODE } from "../../constants/errorCodes.js";
  * 2. 大小写敏感 → toLowerCase + indexOf
  * 3. 正则表达式 → RegExp.exec() + /g 标志
  * 4. 全词匹配 → indexOf + 边界检查
+ *
+ * @class SearchEngine
  */
 export class SearchEngine {
+    /**
+     * 创建搜索引擎实例
+     */
     constructor() {}
 
     /**
@@ -67,9 +72,16 @@ export class SearchEngine {
     }
 
     /**
-     * 创建文本匹配器
+     * @private 私有方法 - 创建文本匹配器
      *
-     * @private
+     * 根据搜索选项构建基于 indexOf 的文本匹配函数，
+     * 支持大小写敏感和全词匹配模式。
+     *
+     * @param {string} query - 查询字符串
+     * @param {Object} options - 搜索选项
+     * @param {boolean} options.caseSensitive - 是否区分大小写
+     * @param {boolean} options.wholeWord - 是否全词匹配
+     * @returns {Function} 匹配函数，接收 cellValue 返回匹配结果数组或 null
      */
     #createTextMatcher(query, options) {
         const searchStr = options.caseSensitive ? query : query.toLowerCase();
@@ -95,9 +107,17 @@ export class SearchEngine {
     }
 
     /**
-     * 创建正则匹配器
+     * @private 私有方法 - 创建正则匹配器
      *
-     * @private
+     * 根据搜索选项构建基于 RegExp.exec 的正则匹配函数，
+     * 支持大小写敏感和全词匹配模式。
+     * 正则表达式无效时返回空匹配函数（不抛出异常）。
+     *
+     * @param {string} query - 正则表达式字符串
+     * @param {Object} options - 搜索选项
+     * @param {boolean} options.caseSensitive - 是否区分大小写
+     * @param {boolean} options.wholeWord - 是否全词匹配
+     * @returns {Function} 匹配函数，接收 cellValue 返回匹配结果数组或 null
      */
     #createRegexMatcher(query, options) {
         try {
@@ -132,13 +152,15 @@ export class SearchEngine {
     }
 
     /**
-     * 检查是否为完整单词
+     * @private 私有方法 - 检查是否为完整单词匹配
      *
-     * @private
+     * 通过检查匹配位置前后的字符是否为单词边界（\W），
+     * 判断当前匹配是否构成一个完整单词。
+     *
      * @param {string} text - 完整文本
      * @param {number} position - 匹配起始位置
      * @param {number} length - 匹配长度
-     * @returns {boolean}
+     * @returns {boolean} 是否为完整单词
      */
     #isWholeWord(text, position, length) {
         const beforeChar = position > 0 ? text[position - 1] : " ";

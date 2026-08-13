@@ -158,7 +158,7 @@ export class FilterUIManager {
                 position,
                 placement: "bottom",
                 zIndex: 10001,
-                title: columnName ? `筛选 - ${columnName}` : "筛选",
+                title: "筛选",
                 closeOnClickOutside: true,
                 closeOnEscape: true,
                 content: this.#dropdown,

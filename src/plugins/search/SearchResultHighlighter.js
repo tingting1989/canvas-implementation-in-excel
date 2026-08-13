@@ -55,7 +55,7 @@ import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 export class SearchResultHighlighter {
     /**
-     * 渲染引擎实例引用
+     * @private 私有字段 - 渲染引擎实例引用
      *
      * 用于：
      * - 调用 getCellRect() 获取单元格屏幕坐标
@@ -63,41 +63,37 @@ export class SearchResultHighlighter {
      * - 调用 requestRender()/invalidateCell() 标记脏区域
      *
      * @type {Object|null}
-     * @private
      */
     #renderEngine = null;
 
     /**
-     * 高亮样式配置对象
+     * @private 私有字段 - 高亮样式配置对象
      *
      * 包含两种状态的颜色定义：
      * - 普通匹配项的背景色
      * - 当前选中项的背景色和边框
      *
      * @type {Object}
-     * @private
      */
     #styles = {};
 
     /**
-     * 所有需要高亮的单元格位置集合
+     * @private 私有字段 - 所有需要高亮的单元格位置集合
      *
      * 使用 `"row:col"` 格式的字符串作为键，
      * 利用 Set 数据结构实现 O(1) 的查找性能。
      *
      * @type {Set<string>}
-     * @private
      */
     #highlights = new Set();
 
     /**
-     * 当前导航选中的高亮位置
+     * @private 私有字段 - 当前导航选中的高亮位置
      *
      * 与其他高亮使用不同的视觉样式（边框 + 深色背景），
      * 帮助用户识别当前位置。
      *
      * @type {string|null} 格式同 #highlights: "row:col"
-     * @private
      */
     #currentHighlight = null;
 
@@ -276,7 +272,7 @@ export class SearchResultHighlighter {
     }
 
     /**
-     * 绘制单个高亮矩形到 Canvas
+     * @private 私有方法 - 绘制单个高亮矩形到 Canvas
      *
      * 根据 isCurrent 参数选择不同的绘制样式：
      * - **普通匹配**: 仅填充半透明背景色
@@ -287,7 +283,6 @@ export class SearchResultHighlighter {
      * - 边框向内收缩半个线宽（避免被 Canvas 边缘裁剪）
      * - 支持透明度叠加（不影响底层单元格内容显示）
      *
-     * @private
      * @param {CanvasRenderingContext2D} ctx - Canvas 2D 渲染上下文
      * @param {{x: number, y: number, w: number, h: number}} rect - 单元格屏幕坐标矩形
      * @param {boolean} isCurrent - 是否为当前导航选中的结果
@@ -319,7 +314,7 @@ export class SearchResultHighlighter {
     }
 
     /**
-     * 获取单元格的屏幕坐标矩形
+     * @private 私有方法 - 获取单元格的屏幕坐标矩形
      *
      * 复用 RenderEngine 的 `getCellRect()` 方法获取准确的位置信息，
      * 并支持合并单元格的特殊处理。
@@ -338,7 +333,6 @@ export class SearchResultHighlighter {
      * // w, h: 宽度和高度（像素）
      * ```
      *
-     * @private
      * @param {number} row - 目标行索引（从 0 开始）
      * @param {number} col - 目标列索引（从 0 开始）
      * @param {Object} [sheet] - 工作表实例（用于查询合并信息）
@@ -363,7 +357,7 @@ export class SearchResultHighlighter {
     }
 
     /**
-     * 计算当前可视区域的行列范围
+     * @private 私有方法 - 计算当前可视区域的行列范围
      *
      * 用于优化渲染性能：仅绘制可视区域内的匹配项，
      * 避免遍历和绘制不可见的高亮（减少 90%+ 的无用绘制调用）。
@@ -378,7 +372,6 @@ export class SearchResultHighlighter {
      * - 如果计算失败（如 RowColManager 不可用），返回全范围 (0~Infinity)
      * - 保证即使出错也能正常渲染（只是性能下降）
      *
-     * @private
      * @param {Object} viewport - 视口信息对象（预留参数，当前未使用）
      * @param {Object} [sheet] - 工作表实例（用于访问 RowColManager）
      * @returns {{startRow: number, endRow: number, startCol: number, endCol: number}} 可见范围
@@ -410,7 +403,7 @@ export class SearchResultHighlighter {
     }
 
     /**
-     * 滚动到指定单元格使其可见
+     * @private 私有方法 - 滚动到指定单元格使其可见
      *
      * 通常在 `setCurrentHighlight()` 中自动调用，
      * 确保用户导航到的目标单元格在视口内可见。
@@ -419,7 +412,6 @@ export class SearchResultHighlighter {
      * - 检查 scrollToCell 方法是否存在
      * - 失败时不抛出异常（仅记录日志）
      *
-     * @private
      * @param {number} row - 目标行号
      * @param {number} col - 目标列号
      * @returns {void}
@@ -433,7 +425,7 @@ export class SearchResultHighlighter {
     }
 
     /**
-     * 标记整个画布为脏区域（触发完全重绘）
+     * @private 私有方法 - 标记整个画布为脏区域（触发完全重绘）
      *
      * 在以下场景调用：
      * - `updateHighlights()`: 高亮列表整体更新后
@@ -441,7 +433,6 @@ export class SearchResultHighlighter {
      *
      * 调用 RenderEngine 的 `requestRender()` 请求下一帧重绘。
      *
-     * @private
      * @returns {void}
      */
     #markDirty() {
@@ -455,7 +446,7 @@ export class SearchResultHighlighter {
     }
 
     /**
-     * 标记单个单元格为脏区域（局部重绘优化）
+     * @private 私有方法 - 标记单个单元格为脏区域（局部重绘优化）
      *
      * 在 `setCurrentHighlight()` 中调用，
      * 仅标记新旧两个位置的单元格为脏，
@@ -465,7 +456,6 @@ export class SearchResultHighlighter {
      * - 全屏重绘: O(总单元格数) → 可能数千次绘制调用
      * - 局部重绘: O(2) → 仅重绘 2 个单元格
      *
-     * @private
      * @param {string} key - 格式为 "row:col" 的位置标识符
      * @returns {void}
      */

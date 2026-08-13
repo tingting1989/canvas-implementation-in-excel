@@ -45,12 +45,16 @@ import { ERROR_CODE } from "../../constants/errorCodes.js";
  */
 
 export class SearchPlugin extends BasePlugin {
+    /**
+     * @static 静态公共方法 - 获取插件唯一标识名称
+     * @returns {string} 插件名称 "search"
+     */
     static get PLUGIN_NAME() {
         return "search";
     }
 
     /**
-     * 默认配置项
+     * @static 静态公共字段 - 默认配置项
      * @type {Object}
      */
     static DEFAULT_OPTIONS = {
@@ -87,26 +91,47 @@ export class SearchPlugin extends BasePlugin {
         skipNonTopLeftMergedCells: false,
     };
 
-    /** @type {SearchState} */
+    /**
+     * @private 私有字段 - 搜索状态管理器
+     * @type {SearchState}
+     */
     #state = null;
 
-    /** @type {SearchEngine} */
+    /**
+     * @private 私有字段 - 搜索引擎实例
+     * @type {SearchEngine}
+     */
     #engine = null;
 
-    /** @type {SearchUIManager} */
+    /**
+     * @private 私有字段 - 搜索 UI 控制器
+     * @type {SearchUIManager}
+     */
     #uiController = null;
 
-    /** @type {SearchNavigator} */
+    /**
+     * @private 私有字段 - 搜索结果导航器
+     * @type {SearchNavigator}
+     */
     #navigator = null;
 
-    /** @type {SearchResultHighlighter} */
+    /**
+     * @private 私有字段 - 搜索结果高亮渲染器
+     * @type {SearchResultHighlighter}
+     */
     #highlighter = null;
 
-    /** @type {SearchStrategy} */
-    #strategy = null; // ✅ 新增：搜索策略实例
+    /**
+     * @private 私有字段 - 搜索策略实例（处理键盘快捷键）
+     * @type {SearchStrategy}
+     */
+    #strategy = null;
 
-    /** @type {boolean} */
-    #active = false; // 插件激活状态
+    /**
+     * @private 私有字段 - 插件激活状态标志
+     * @type {boolean}
+     */
+    #active = false;
 
     constructor(workbook) {
         super(workbook);
@@ -140,8 +165,10 @@ export class SearchPlugin extends BasePlugin {
     }
 
     /**
-     * 注册搜索策略（处理键盘快捷键）
-     * @private
+     * @private 私有方法 - 注册搜索策略（处理键盘快捷键）
+     *
+     * 创建 SearchStrategy 实例并注册到事件处理器，
+     * 使搜索快捷键（Ctrl+F、F3、Esc 等）生效。
      */
     #registerSearchStrategy() {
         if (!this.eventHandler) return;
@@ -503,6 +530,11 @@ export class SearchPlugin extends BasePlugin {
 
     /**
      * 显示搜索 UI
+     *
+     * 打开搜索面板并重新注册高亮器到渲染引擎，
+     * 确保搜索结果的 Canvas 高亮绘制生效。
+     *
+     * @returns {void}
      */
     show() {
         this.#uiController.show();
@@ -515,6 +547,11 @@ export class SearchPlugin extends BasePlugin {
 
     /**
      * 隐藏搜索 UI 并清除高亮
+     *
+     * 关闭搜索面板、清除所有高亮标记、重置搜索状态，
+     * 并从渲染引擎注销高亮器以停止渲染。
+     *
+     * @returns {void}
      */
     hide() {
         this.#uiController.hide();
@@ -530,7 +567,7 @@ export class SearchPlugin extends BasePlugin {
     /**
      * 获取当前搜索状态（只读）
      *
-     * @returns {Readonly<SearchState>}
+     * @returns {Readonly<SearchState>} 搜索状态管理器实例
      */
     getState() {
         return this.#state;
@@ -611,6 +648,13 @@ export class SearchPlugin extends BasePlugin {
      * 获取上一次的搜索查询（供 SearchStrategy 使用）
      *
      * @returns {string|null} 上次的搜索关键词，如果没有则返回 null
+     *
+     * @example
+     * const lastQuery = plugin.getLastQuery();
+     * if (lastQuery) {
+     *   // 重新执行上次搜索
+     *   await plugin.query(lastQuery);
+     * }
      */
     getLastQuery() {
         return this.#state?.getQuery?.() || null;
@@ -627,11 +671,13 @@ export class SearchPlugin extends BasePlugin {
     }
 
     /**
-     * 获取需要搜索的单元格数据
+     * @private 私有方法 - 获取需要搜索的单元格数据
      *
-     * @private
-     * @param {string} scope - 搜索范围
-     * @returns {Array<{row: number, col: number, value: string}>}
+     * 根据搜索范围从 CellDataAccessor 读取单元格数据，
+     * 支持 "all"（全表）和 "selection"（选区）两种范围。
+     *
+     * @param {string} scope - 搜索范围: "all" | "selection" | "column" | "row"
+     * @returns {Array<{row: number, col: number, value: string}>} 单元格数据数组
      */
     #getCellData(scope) {
         const sheet = this.sheet;
@@ -679,7 +725,7 @@ export class SearchPlugin extends BasePlugin {
     }
 
     /**
-     * 动态更新 SearchNavigator 的依赖项
+     * @private 私有方法 - 动态更新 SearchNavigator 的依赖项
      *
      * 解决问题：
      * - 插件初始化时 activeSheet 可能未就绪，导致 selectionManager 为 null
@@ -691,7 +737,6 @@ export class SearchPlugin extends BasePlugin {
      * - findPrevious() 调用前
      * - query() 首次搜索后（goToFirst）
      *
-     * @private
      * @returns {void}
      */
     #updateNavigatorDependencies() {
@@ -704,10 +749,13 @@ export class SearchPlugin extends BasePlugin {
     }
 
     /**
-     * 更新当前高亮位置
+     * @private 私有方法 - 更新当前高亮位置
      *
-     * @private
-     * @param {SearchResult} result - 当前结果
+     * 将导航到的搜索结果设置为高亮器的当前选中项，
+     * 使其在 Canvas 上以特殊样式（橙色边框）显示。
+     *
+     * @param {SearchResult} result - 当前导航到的搜索结果
+     * @returns {void}
      */
     #updateCurrentHighlight(result) {
         if (result) {
@@ -716,9 +764,12 @@ export class SearchPlugin extends BasePlugin {
     }
 
     /**
-     * 清除所有高亮
+     * @private 私有方法 - 清除所有搜索高亮
      *
-     * @private
+     * 调用高亮器的 clearHighlights 方法，
+     * 移除 Canvas 上所有搜索结果的黄色/橙色高亮绘制。
+     *
+     * @returns {void}
      */
     #clearHighlight() {
         this.#highlighter.clearHighlights();

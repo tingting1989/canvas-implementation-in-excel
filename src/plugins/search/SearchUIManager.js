@@ -39,20 +39,32 @@ import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 
 export class SearchUIManager {
-    /** @type {import("./SearchPlugin.js")} 搜索插件实例引用 */
+    /**
+     * @private 私有字段 - 搜索插件实例引用
+     * @type {import("./SearchPlugin.js")}
+     */
     #plugin = null;
 
-    /** @type {PopupPanelNew|null} 弹窗容器 */
+    /**
+     * @private 私有字段 - 弹窗容器
+     * @type {PopupPanelNew|null}
+     */
     #popupPanel = null;
 
-    /** @type {SearchDropdown|null} 搜索面板内容组件 */
+    /**
+     * @private 私有字段 - 搜索面板内容组件
+     * @type {SearchDropdown|null}
+     */
     #dropdown = null;
 
-    /** @type {Symbol|null} PopupManager 分配的唯一标识符 */
+    /**
+     * @private 私有字段 - PopupManager 分配的唯一标识符
+     * @type {Symbol|null}
+     */
     #popupId = null;
 
     /**
-     * @private 防重入标志 - 防止关闭时的无限递归
+     * @private 私有字段 - 防重入标志，防止关闭时的无限递归
      *
      * 当用户按 Esc 键时，会同时触发：
      * 1. SearchStrategy 调用 plugin.hide()
@@ -215,7 +227,7 @@ export class SearchUIManager {
     }
 
     /**
-     * 计算搜索面板的最佳显示位置（居中显示）
+     * @private 私有方法 - 计算搜索面板的最佳显示位置（居中显示）
      *
      * 策略：将搜索面板在视口中水平和垂直居中显示
      * - 水平居中：(windowWidth - DEFAULT_WIDTH) / 2
@@ -249,7 +261,7 @@ export class SearchUIManager {
     }
 
     /**
-     * 处理搜索请求回调
+     * @private 私有方法 - 处理搜索请求回调
      *
      * 由 SearchDropdown 的输入事件触发（带 300ms 防抖）。
      * 将用户输入的查询字符串和选项传递给 SearchPlugin 执行实际搜索。
@@ -273,7 +285,7 @@ export class SearchUIManager {
     }
 
     /**
-     * 处理导航请求回调
+     * @private 私有方法 - 处理导航请求回调
      *
      * 由 SearchDropdown 的导航按钮点击触发。
      * 根据 direction 参数调用 findNext 或 findPrevious。
@@ -296,7 +308,7 @@ export class SearchUIManager {
     }
 
     /**
-     * 处理面板关闭回调
+     * @private 私有方法 - 处理面板关闭回调
      *
      * 由 SearchDropdown 的关闭按钮或 Esc 键触发。
      * 通知 SearchPlugin 执行完整的关闭流程（包括清除高亮等）。
@@ -330,7 +342,7 @@ export class SearchUIManager {
     }
 
     /**
-     * 处理单个替换请求回调
+     * @private 私有方法 - 处理单个替换请求回调
      *
      * 由 SearchDropdown 的"替换"按钮或 Enter 键触发。
      * 调用 SearchPlugin.replace() 执行当前项的替换操作，
@@ -343,7 +355,6 @@ export class SearchUIManager {
      * 4. 执行实际的单元格赋值
      * 5. 更新结果数据引用
      *
-     * @private
      * @async
      * @param {string} replaceStr - 替换文本
      * @returns {Promise<boolean>} 是否成功替换
@@ -370,7 +381,7 @@ export class SearchUIManager {
     }
 
     /**
-     * 处理全部替换请求回调
+     * @private 私有方法 - 处理全部替换请求回调
      *
      * 由 SearchDropdown 的"全部替换"按钮或 Ctrl+Enter 触发。
      * 调用 SearchPlugin.replaceAll() 批量替换所有匹配项，
@@ -382,7 +393,6 @@ export class SearchUIManager {
      * - **性能优化**: 批量执行减少多次渲染刷新
      * - **完整撤销**: Ctrl+Z 一键恢复所有更改
      *
-     * @private
      * @async
      * @param {string} replaceStr - 替换文本
      * @returns {Promise<number>} 成功替换的数量

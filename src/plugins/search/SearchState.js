@@ -71,29 +71,27 @@
  */
 export class SearchState {
     /**
-     * 当前搜索关键词或正则表达式
+     * @private 私有字段 - 当前搜索关键词或正则表达式
      *
      * 由用户在搜索面板输入框中键入的内容。
      * 每次调用 `setQuery()` 时更新。
      *
      * @type {string}
-     * @private
      */
     #query = "";
 
     /**
-     * 搜索引擎返回的结果数组
+     * @private 私有字段 - 搜索引擎返回的结果数组
      *
      * 元素类型为 `SearchResult`（定义在 SearchPlugin.js 中）。
      * 数组顺序由 SearchEngine 决定（通常按行列升序排列）。
      *
      * @type {Array<import("./SearchPlugin.js").SearchResult>}
-     * @private
      */
     #results = [];
 
     /**
-     * 当前导航选中的结果索引
+     * @private 私有字段 - 当前导航选中的结果索引
      *
      * 基于数组的索引值（从 0 开始）。
      * 特殊值：
@@ -101,12 +99,11 @@ export class SearchState {
      * - `0 ~ length-1`: 有效索引，指向 `#results` 数组的某个元素
      *
      * @type {number}
-     * @private
      */
     #currentIndex = -1;
 
     /**
-     * 上次搜索使用的选项配置
+     * @private 私有字段 - 上次搜索使用的选项配置
      *
      * 在 `setQuery()` 时保存，用于：
      * - UI 显示当前选项状态
@@ -114,24 +111,22 @@ export class SearchState {
      * - 日志记录和调试
      *
      * @type {import("./SearchPlugin.js").SearchOptions|null}
-     * @private
      */
     #options = null;
 
     /**
-     * 异步搜索操作的进行状态
+     * @private 私有字段 - 异步搜索操作的进行状态
      *
      * 用于防止重复提交和 UI 反馈：
      * - `true`: 正在等待 SearchEngine 返回结果
      * - `false`: 空闲状态（可接受新的搜索请求）
      *
      * @type {boolean}
-     * @private
      */
     #isSearching = false;
 
     /**
-     * 最近一次操作产生的错误对象
+     * @private 私有字段 - 最近一次操作产生的错误对象
      *
      * 仅在有错误时非 null，成功操作后会重置为 null。
      * 用于：
@@ -139,7 +134,6 @@ export class SearchState {
      * - 开发环境下的详细日志输出
      *
      * @type {Error|null}
-     * @private
      */
     #error = null;
 

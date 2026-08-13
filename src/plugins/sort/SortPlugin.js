@@ -188,11 +188,6 @@ export class SortPlugin extends BasePlugin {
         this.#active = true;
         this.renderEngine?.invalidateAll();
         this.render();
-
-        errorHandler.info(
-            ERROR_CODE.SORT_INFO,
-            `[Sort] 初始化完成，允许排序的列: ${this.#sortableColumns?.size > 0 ? [...this.#sortableColumns].join(", ") : "无"}`,
-        );
     }
 
     /**
