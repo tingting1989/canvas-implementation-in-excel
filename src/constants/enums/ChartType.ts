@@ -3,17 +3,7 @@
  * @description 定义支持的图表可视化类型，用于数据分析和展示
  * @constant
  */
-export type ChartTypeValue =
-    | "line"
-    | "bar"
-    | "pie"
-    | "area"
-    | "scatter"
-    | "candlestick"
-    | "gauge"
-    | "funnel"
-    | "radar"
-    | "heatmap";
+export type ChartTypeValue = "line" | "bar" | "pie" | "area" | "scatter" | "candlestick" | "gauge" | "funnel" | "radar" | "heatmap";
 
 export interface ChartType {
     /** 折线图，适合展示数据随时间的变化趋势和连续性数据 */

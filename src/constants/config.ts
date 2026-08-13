@@ -36,16 +36,16 @@ import { STRATEGY_PRIORITY, type StrategyPriority } from "./strategyPriority";
  */
 export type Config = Readonly<
     CoreConfig &
-    HeaderConfig &
-    SelectionConfig &
-    UiConfig &
-    ChartConfig &
-    SortConfig &
-    CellTypeConfig &
-    Omit<StyleLevel, "CELL"> &
-    Omit<LayerZIndex, "CHART"> &
-    HitType &
-    StrategyPriority
+        HeaderConfig &
+        SelectionConfig &
+        UiConfig &
+        ChartConfig &
+        SortConfig &
+        CellTypeConfig &
+        Omit<StyleLevel, "CELL"> &
+        Omit<LayerZIndex, "CHART"> &
+        HitType &
+        StrategyPriority
 >;
 
 export const CONFIG: Config = Object.freeze({

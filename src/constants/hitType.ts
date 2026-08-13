@@ -21,14 +21,7 @@
  *
  * @module constants/hitType
  */
-export type HitTypeValue =
-    | "corner"
-    | "col-header"
-    | "row-header"
-    | "cell"
-    | "col-resize"
-    | "row-resize"
-    | "chart";
+export type HitTypeValue = "corner" | "col-header" | "row-header" | "cell" | "col-resize" | "row-resize" | "chart";
 
 export interface HitType {
     /** 左上角全选按钮区域 */

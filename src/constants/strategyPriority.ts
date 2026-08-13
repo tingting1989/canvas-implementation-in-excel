@@ -74,11 +74,7 @@ export const PriorityUtils = {
     /**
      * 在两个主锚点之间生成新的优先级值
      */
-    between(
-        lowerPriority: number,
-        higherPriority: number,
-        position: PositionHint = "middle",
-    ): number {
+    between(lowerPriority: number, higherPriority: number, position: PositionHint = "middle"): number {
         const range = higherPriority - lowerPriority;
 
         switch (position) {

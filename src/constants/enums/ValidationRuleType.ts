@@ -3,16 +3,7 @@
  * @description 定义单元格数据验证的规则类型，用于限制和校验用户输入的数据格式和范围
  * @constant
  */
-export type ValidationRuleTypeValue =
-    | "number"
-    | "text"
-    | "list"
-    | "formula"
-    | "date"
-    | "time"
-    | "datetime"
-    | "regex"
-    | "unique";
+export type ValidationRuleTypeValue = "number" | "text" | "list" | "formula" | "date" | "time" | "datetime" | "regex" | "unique";
 
 export interface ValidationRuleType {
     /** 数字验证，限制输入必须为数字，可设定取值范围（大于、小于、介于等） */
