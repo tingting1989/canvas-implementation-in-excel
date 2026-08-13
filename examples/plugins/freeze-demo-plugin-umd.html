@@ -468,6 +468,7 @@
             <a href="autofill-demo-plugin-umd.html">自动填充</a>
             <a href="rowmove-demo-plugin-umd.html">行移动</a>
             <a href="freeze-demo-plugin-umd.html" class="active">冻结窗格</a>
+
         </div>
 
         <div class="main-content">
@@ -755,19 +756,9 @@ workbook.addHook('afterUnfreeze', () => {
                     width: 900,
                     height: 530,
                     plugins: [
-                        "autoFill",
-                        "contextMenu",
-                        "columnMove",
-                        "copyPaste",
-                        "exportFile",
-                        "importFile",
-                        "hiddenColumns",
-                        "hiddenRows",
-                        "rowMove",
+
                         "freeze",
-                        "formula",
-                        "sort",
-                        "dataValidation",
+
                     ],
                     pluginOptions: {
                         freeze: {
@@ -848,7 +839,7 @@ workbook.addHook('afterUnfreeze', () => {
         }
 
         function setRowsOnly() {
-            if (!freezePlugin) return;
+            if (!freezePlugin || !freezePlugin.enabled) return;
             const rows = parseInt(document.getElementById('rowsInput').value) || 0;
             log(`↕️ setFixedRowsTop(${rows}) — 仅修改冻结行数`, 'info');
             freezePlugin.setFixedRowsTop(rows);
@@ -856,7 +847,7 @@ workbook.addHook('afterUnfreeze', () => {
         }
 
         function setColsOnly() {
-            if (!freezePlugin) return;
+            if (!freezePlugin || !freezePlugin.enabled  ) return;
             const cols = parseInt(document.getElementById('colsInput').value) || 0;
             log(`↔️ setFixedColumnsStart(${cols}) — 仅修改冻结列数`, 'info');
             freezePlugin.setFixedColumnsStart(cols);

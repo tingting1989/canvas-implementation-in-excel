@@ -127,16 +127,17 @@ export class SearchUIManager {
         this.#popupPanel.appendChild(this.#dropdown);
 
         // 5. 显示容器（带位置和回调）
-        const position = this.#calculatePosition();
         this.#popupId = Symbol("search-popup");
+        const { draggable, mask, closeOnClickOutside, closeOnEscape } = this.#plugin.options;
+
         this.#popupPanel.show({
             position: this.#calculatePosition(),
-            title: "查找和替换", // ← 标题
-            draggable: true, // ← 可拖
-            mask: false,
-            closeOnClickOutside: true,
-            closeOnEscape: true,
-            content: this.#dropdown, // ← 内容注入（之前是 appendChild）
+            title: "查找和替换",
+            draggable,
+            mask,
+            closeOnClickOutside,
+            closeOnEscape,
+            content: this.#dropdown,
             onClose: (reason) => this.#handleClose(reason),
         });
 

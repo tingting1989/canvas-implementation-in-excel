@@ -71,6 +71,10 @@ export class SearchPlugin extends BasePlugin {
             useRegex: false,
             searchScope: "all",
         },
+        draggable: true,
+        mask: false,
+        closeOnClickOutside: true,
+        closeOnEscape: true,
         /**
          * 是否在全部替换时跳过合并非主单元格
          *

@@ -308,6 +308,30 @@ plugin.enable();   // 恢复启用</div>
                         <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">false</td>
                         <td style="padding: 8px; border: 1px solid #ddd;">全部替换时是否跳过合并非主单元格。false=允许替换合并区任意单元格（推荐）；true=仅替换左上角主单元格。</td>
                     </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">draggable</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">true</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">搜索面板是否可拖拽。设为 false 时面板固定在初始位置，不可通过鼠标拖动移动。</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">mask</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">false</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">是否显示遮罩层。设为 true 时面板背后会出现半透明遮罩，阻止与底层表格交互。</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">closeOnClickOutside</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">true</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">点击面板外部区域时是否自动关闭搜索面板。设为 false 时仅能通过关闭按钮或 Esc 键关闭。</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">closeOnEscape</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">true</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">按 Esc 键时是否自动关闭搜索面板。设为 false 时 Esc 键不触发关闭行为。</td>
+                    </tr>
                     <tr style="background: #fef3c7;">
                         <td colspan="4" style="padding: 10px; border: 1px solid #ddd; font-weight: 700; color: #d97706;">🎨 highlightStyle — 搜索结果高亮样式</td>
                     </tr>
@@ -367,10 +391,8 @@ plugin.enable();   // 恢复启用</div>
         </div>
         <div style="margin-top: 16px; background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #1e40af;">
             <strong>配置示例：</strong>
-            <pre style="margin-top: 8px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap;">   plugins: [
-            "search",
-        ],
-                pluginOptions: {
+            <pre style="margin-top: 8px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap;">   plugins: ["search",],
+            pluginOptions: {
     search: {
         enabled: true,
         shortcutKey: "Control+f",
@@ -378,6 +400,10 @@ plugin.enable();   // 恢复启用</div>
         findPrevKey: "Shift+F3",
         maxResults: 10000,
         skipNonTopLeftMergedCells: false,
+        draggable: true,
+        mask: false,
+        closeOnClickOutside: true,
+        closeOnEscape: true,
         highlightStyle: {
             backgroundColor: "rgba(255, 255, 0, 0.3)",
             currentBackgroundColor: "rgba(255, 165, 0, 0.5)",

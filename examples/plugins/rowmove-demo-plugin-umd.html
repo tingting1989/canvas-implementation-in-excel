@@ -636,7 +636,7 @@ workbook.addHook('afterRowMove', (sourceRow, targetRow) => {
                     <div class="syntax">enable(): void</div>
                     <div class="desc">启用插件及关联策略。启用后行头可响应拖拽移动事件。</div>
                     <div class="example">plugin.enable();
-console.log(plugin.isEnabled); // true</div>
+console.log(plugin.enabled); // true</div>
                 </div>
                 <div class="api-card">
                     <div class="category">状态控制</div>
@@ -646,15 +646,7 @@ console.log(plugin.isEnabled); // true</div>
                     <div class="example">plugin.disable();
 console.log(plugin.isEnabled); // false</div>
                 </div>
-                <div class="api-card">
-                    <div class="category">状态查询</div>
-                    <div class="name">isEnabled (getter)</div>
-                    <div class="syntax">get isEnabled(): boolean</div>
-                    <div class="desc">获取插件当前启用状态。继承自 BasePlugin。</div>
-                    <div class="example">if (plugin.isEnabled) {
-  console.log('行移动已激活');
-}</div>
-                </div>
+
                 <div class="api-card">
                     <div class="category">状态查询</div>
                     <div class="name">PLUGIN_NAME (static)</div>
