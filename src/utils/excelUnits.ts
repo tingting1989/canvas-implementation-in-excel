@@ -204,10 +204,7 @@ export function excelHeightToPixel(heightInPoints: number, options: HeightOption
  * pixelToExcelHeight(28)   // => 21
  */
 export function pixelToExcelHeight(pixelHeight: number, options: HeightOptions = {}): number {
-    const {
-        minHeight = 1,
-        defaultValue = DEFAULT_EXCEL_ROW_HEIGHT,
-    } = options;
+    const { minHeight = 1, defaultValue = DEFAULT_EXCEL_ROW_HEIGHT } = options;
 
     if (!pixelHeight || typeof pixelHeight !== "number" || pixelHeight <= 0) {
         return defaultValue;
