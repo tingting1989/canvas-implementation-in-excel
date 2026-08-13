@@ -1,0 +1,65 @@
+/**
+ * 选区与交互、拖拽常量配置
+ */
+export interface SelectionConfig {
+    // ═══ 选区与交互 ═══
+
+    /** 选区边框及手柄颜色 */
+    readonly SELECTION_COLOR: "#217346";
+    /** 选区线宽度 */
+    readonly SELECTION_LINE_WIDTH: 2;
+    /** 填充手柄尺寸（px），选区右下角的拖拽手柄 */
+    readonly FILL_HANDLE_SIZE: 5;
+    /** 选区填充手柄命中检测尺寸（px） */
+    readonly FILL_HANDLE_HIT_SIZE: 6;
+    /** 选区行列指示器线宽（px） */
+    readonly INDICATOR_WIDTH: 3;
+    /** 选区行列指示器半宽（px） */
+    readonly INDICATOR_HALF: 1;
+    /** 边框虚线模式（dashed 样式） */
+    readonly BORDER_DASH_SOLID: readonly [4, 2];
+    /** 边框点划线模式（dotted 样式） */
+    readonly BORDER_DASH_DOTTED: readonly [1, 2];
+    /** 交互元素虚线模式（调整线、选择框等） */
+    readonly UI_DASH_PATTERN: readonly [4, 3];
+    /** 选区高亮范围填充色（极低透明度） */
+    readonly RANGE_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.08)";
+    /** 选区行列头高亮填充色（中等透明度） */
+    readonly HEADER_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.18)";
+    /** 活动单元格高亮填充色 */
+    readonly ACTIVE_CELL_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.12)";
+    /** 交互层 hover 填充色 */
+    readonly INTERACTION_HOVER_FILL: "rgba(76, 139, 245, 0.06)";
+    /** 错误提示填充色 */
+    readonly ERROR_HIGHLIGHT_FILL: "rgba(255, 0, 0, 0.8)";
+
+    // ═══ 拖拽 ═══
+
+    /** 拖拽源行头/列头的半透明高亮色 */
+    readonly MOVE_SOURCE_FILL: "rgba(76, 139, 245, 0.3)";
+    /** 拖拽 ghost 填充色 */
+    readonly GHOST_FILL: "rgba(76, 139, 245, 0.15)";
+    /** Ghost 文字颜色 */
+    readonly GHOST_TEXT_COLOR: "#fff";
+}
+
+export const SELECTION_CONFIG: SelectionConfig = Object.freeze({
+    SELECTION_COLOR: "#217346",
+    SELECTION_LINE_WIDTH: 2,
+    FILL_HANDLE_SIZE: 5,
+    FILL_HANDLE_HIT_SIZE: 6,
+    INDICATOR_WIDTH: 3,
+    INDICATOR_HALF: 1,
+    BORDER_DASH_SOLID: [4, 2] as const,
+    BORDER_DASH_DOTTED: [1, 2] as const,
+    UI_DASH_PATTERN: [4, 3] as const,
+    RANGE_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.08)",
+    HEADER_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.18)",
+    ACTIVE_CELL_HIGHLIGHT_FILL: "rgba(76, 139, 245, 0.12)",
+    INTERACTION_HOVER_FILL: "rgba(76, 139, 245, 0.06)",
+    ERROR_HIGHLIGHT_FILL: "rgba(255, 0, 0, 0.8)",
+
+    MOVE_SOURCE_FILL: "rgba(76, 139, 245, 0.3)",
+    GHOST_FILL: "rgba(76, 139, 245, 0.15)",
+    GHOST_TEXT_COLOR: "#fff",
+});

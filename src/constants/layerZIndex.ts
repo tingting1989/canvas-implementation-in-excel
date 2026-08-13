@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 图层 Z-Index 常量定义
  *
  * 定义所有渲染图层的 z-index 值，用于控制图层叠加顺序。
@@ -14,16 +14,20 @@
  *
  * @module constants/layerZIndex
  */
-export const LAYER_Z_INDEX = Object.freeze({
+export interface LayerZIndex {
+    readonly TILE: 100;
+    readonly SELECTION: 200;
+    readonly FROZEN: 300;
+    readonly CHART: 400;
+    readonly INTERACTION: 500;
+    readonly HEADER: 600;
+}
+
+export const LAYER_Z_INDEX: LayerZIndex = Object.freeze({
     TILE: 100,
-
     SELECTION: 200,
-
     FROZEN: 300,
-
     CHART: 400,
-
     INTERACTION: 500,
-
     HEADER: 600,
 });

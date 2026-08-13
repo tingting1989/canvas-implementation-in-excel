@@ -14,13 +14,10 @@ const shared = {
         },
     },
     resolve: {
-        alias: {
-            "@": path.resolve(__dirname, "src"),
-            "@store": path.resolve(__dirname, "src/store"),
-            "@render": path.resolve(__dirname, "src/render"),
-            "@plugin": path.resolve(__dirname, "src/plugins"),
-        },
         extensions: [".js",'.ts', '.tsx'],
+        extensionAlias: {
+            ".js": [".ts", ".js"],
+        },
     },
     module: {
         rules: [

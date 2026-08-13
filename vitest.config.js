@@ -19,11 +19,12 @@ export default defineConfig({
         alias: {
             "@": path.resolve(__dirname, "src"),
         },
+        extensions: [".ts", ".js", ".mjs", ".json"],
     },
     test: {
         globals: true,
         environment: "jsdom",
-        include: ["tests/**/*.test.js"],
+        include: ["tests/**/*.test.{js,ts}"],
         setupFiles: ["./tests/setup.js"],
         coverage: {
             provider: "v8",

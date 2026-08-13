@@ -19,6 +19,9 @@ module.exports = {
             "@plugin": path.resolve(__dirname, "src/plugins"),
         },
         extensions: [".js", ".ts", ".tsx"],
+        extensionAlias: {
+            ".js": [".ts", ".js"],
+        },
     },
     module: {
         rules: [
