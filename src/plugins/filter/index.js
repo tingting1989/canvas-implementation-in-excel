@@ -22,5 +22,3 @@ export { FilterDropdown } from "./FilterDropdown.js";
 export { VirtualValueList } from "./VirtualValueList.js";
 export { NullValueHandler, NULL_VALUE_TYPES } from "./NullValueTypes.js";
 export { FilterIconRenderer } from "./FilterIconRenderer.js";
-export { FilterPerformanceUtils } from "./FilterPerformanceUtils.js";
-export { FilterEdgeCases } from "./FilterEdgeCases.js";

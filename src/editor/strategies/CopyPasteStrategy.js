@@ -1,6 +1,7 @@
 ﻿import { EventStrategy } from "./EventStrategy.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { InputDetector } from "../../utils/inputDetection.js";
 
 /**
  * 复制/粘贴策略 (Copy/Paste Strategy)
@@ -94,6 +95,17 @@ export class CopyPasteStrategy extends EventStrategy {
      * 防止被键盘策略的默认分支（字符输入处理）捕获。
      */
     priority = STRATEGY_PRIORITY.SHORTCUT_KEY;
+
+    /**
+     * @private 私有字段 - 外部输入框检测器实例
+     *
+     * 使用公共工具 InputDetector 避免代码重复，
+     * 与 KeyboardStrategy 共享相同的检测逻辑。
+     *
+     * @type {InputDetector}
+     * @see InputDetector - 公共外部输入框检测器
+     */
+    #inputDetector = new InputDetector();
 
     /**
      * @private 私有字段 - 隐藏的 contentEditable div，用于接收浏览器 paste 事件
@@ -286,7 +298,20 @@ export class CopyPasteStrategy extends EventStrategy {
             return undefined;
         }
 
+        // ✅ 关键修复：检查焦点是否在外部输入框上（使用公共工具 InputDetector）
+        // 如果用户在 input/textarea 等元素上操作，应让浏览器原生处理复制/粘贴/剪切
+        if (this.#inputDetector.isExternalInput()) {
+            return undefined; // 让渡给浏览器默认行为
+        }
+
         const ctrlOrMeta = e.ctrlKey || e.metaKey;
+
+        // ✅ 关键修复：存在文档文本选区时，Ctrl+C/X 让浏览器原生复制/剪切选中文本
+        // （<input>/<textarea> 的选区不在 window.getSelection() 中，<canvas> 无可选文本，
+        //   因此非空 getSelection 必定来自普通 HTML 内容，不应被 Canvas 策略拦截）
+        if (ctrlOrMeta && (e.key === "c" || e.key === "x") && this.#inputDetector.hasExternalTextSelection()) {
+            return undefined;
+        }
 
         switch (e.key) {
             case "c":

@@ -1,5 +1,4 @@
-﻿// import { errorHandler, ERROR_CODE } from "@/core/ErrorHandler.js";
-import { errorHandler } from "../../core/ErrorHandler.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 const BATCH_EVENTS = {
     BATCH_START: "validation:batch:start",
@@ -140,7 +139,7 @@ export class BatchValidationCoordinator {
         try {
             report = await this.#processBatch();
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[BatchValidation] 批量验证失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[BatchValidation] 批量验证失败:", error);
             this.#emit(BATCH_EVENTS.BATCH_ERROR, { error, operation: this.#currentOperation });
 
             const duration = performance.now() - startTime;
@@ -265,7 +264,7 @@ export class BatchValidationCoordinator {
                     ...result.toJSON(),
                 });
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, `[BatchValidation] 单元格 (${item.row},${item.col}) 验证失败:`, error);
+                errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[BatchValidation] 单元格 (${item.row},${item.col}) 验证失败:`, error);
                 results.push({
                     row: item.row,
                     col: item.col,

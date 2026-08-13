@@ -1173,7 +1173,7 @@ class FormulaValidator extends BaseValidator {
       return ValidationResult.success({ pendingValidation: true });
       
     } catch (error) {
-      errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, 
+      errorHandler.error(ERROR_CODE.VALIDATION_ERROR, 
         `[FormulaValidator] 同步验证失败: ${rule.formula}`, { error });
       
       return ValidationResult.failure(
@@ -2446,7 +2446,7 @@ class FormulaEngineAdapter {
   }
   
   handleError(error, formula) {
-    errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, 
+    errorHandler.error(ERROR_CODE.VALIDATION_ERROR, 
       `[FormulaAdapter] 验证执行失败: ${formula}`, { error });
     
     return {

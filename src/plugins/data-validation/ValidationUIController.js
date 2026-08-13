@@ -822,7 +822,7 @@ export class ValidationUIController {
 
             return { status: ICON_STATUS.PENDING, source: "async-scheduled" };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] determineIconStatus() 异常", { error, row, col });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] determineIconStatus() 异常", { error, row, col });
 
             return { status: ICON_STATUS.ERROR, source: "error" };
         }

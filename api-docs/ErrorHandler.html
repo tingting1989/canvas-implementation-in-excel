@@ -42,7 +42,7 @@
 <pre class="prettyprint source lang-js"><code>import { errorHandler, ERROR_LEVEL, ERROR_CODE } from &quot;../core/ErrorHandler.js&quot;;
 
 errorHandler.warn(ERROR_CODE.PLUGIN_ALREADY_LOADED, `Plugin &quot;${name}&quot; already loaded`);
-errorHandler.handle(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin &quot;${name}&quot; not found`, { name });
+errorHandler.error(ERROR_CODE.PLUGIN_NOT_REGISTERED, `Plugin &quot;${name}&quot; not found`, { name });
 errorHandler.throw(ERROR_CODE.HOOK_CALLBACK_INVALID, &quot;Hook callback must be a function&quot;);
 </code></pre></div>
         

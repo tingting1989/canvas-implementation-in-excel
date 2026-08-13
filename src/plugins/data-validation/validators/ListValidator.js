@@ -116,7 +116,7 @@ export class ListValidator extends BaseValidator {
                 currentSheet: context.sheet || undefined,
             });
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] 动态数据源解析失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ListValidator] 动态数据源解析失败:", error);
             return [];
         }
     }

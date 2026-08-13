@@ -31,23 +31,4 @@
             }
         }
     }
-
-    getTopPopup() {
-        let topPopup = null;
-        let maxZIndex = -1;
-
-        for (const [, popup] of this.#activePopups) {
-            const zIndex = parseInt(popup.style.zIndex) || 0;
-            if (zIndex > maxZIndex) {
-                maxZIndex = zIndex;
-                topPopup = popup;
-            }
-        }
-
-        return topPopup;
-    }
-
-    getActiveCount() {
-        return this.#activePopups.size;
-    }
 }

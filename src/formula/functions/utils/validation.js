@@ -36,7 +36,7 @@ import { ERROR_CODE } from "../../../constants/errorCodes";
  */
 export function _validateArgs(args, minArgs, maxArgs = Infinity, functionName) {
     if (!Array.isArray(args)) {
-        errorHandler.handle(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: 参数必须是数组`, {
+        errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `${functionName}: 参数必须是数组`, {
             receivedType: typeof args,
             functionName,
         });

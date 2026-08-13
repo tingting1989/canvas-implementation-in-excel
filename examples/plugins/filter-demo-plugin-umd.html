@@ -318,6 +318,136 @@
         .icon {
             font-size: 1.2em;
         }
+
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+        .nav-bar a {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .nav-bar a:hover, .nav-bar a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .info-section {
+            padding: 30px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+        .info-section h2 {
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .shortcut-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+        }
+        .shortcut-card {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 12px 16px;
+            border-radius: 10px;
+        }
+        .shortcut-card .key {
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: #2d3748;
+            background: rgba(255,255,255,0.6);
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 6px;
+        }
+        .shortcut-card .desc {
+            font-size: 12px;
+            color: #4a5568;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .api-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s ease;
+        }
+        .api-card:hover { transform: translateY(-2px); }
+        .api-card .category { font-size: 12px; font-weight: 600; color: #667eea; margin-bottom: 8px; }
+        .api-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .api-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .api-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .api-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e; white-space: pre;
+        }
+
+        .config-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .config-table th {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        .config-table td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        .config-table code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .config-example {
+            margin-top: 16px;
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #1e40af;
+        }
+        .config-example pre {
+            margin-top: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -325,6 +455,13 @@
         <div class="header">
             <h1>🔍 FilterPlugin 功能演示</h1>
             <p>通过 filterableColumns 配置控制哪些列可以参与过滤</p>
+        </div>
+
+        <div class="nav-bar">
+            <a href="data-validation-plugin-demo-umd.html">数据验证</a>
+            <a href="filter-demo-plugin-umd.html" class="active">筛选</a>
+            <a href="sort-demo-plugin-umd.html">排序</a>
+            <a href="search-demo-plugin-umd.html">搜索</a>
         </div>
 
         <div class="main-content">
@@ -383,6 +520,250 @@
                 <div class="log-content" id="logContent">
                     <div class="log-entry log-info">[系统] 页面加载完成，等待初始化...</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- ═══ 快捷键说明 ═══ -->
+        <div class="info-section">
+            <h2>⌨️ 快捷键说明</h2>
+            <div class="shortcut-grid">
+                <div class="shortcut-card">
+                    <div class="key">点击表头筛选图标</div>
+                    <div class="desc">打开该列的筛选下拉面板</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">勾选 / 取消勾选</div>
+                    <div class="desc">在值列表中切换某值的选中状态</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">全选 / 全不选</div>
+                    <div class="desc">一键勾选或取消所有值</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">搜索框输入</div>
+                    <div class="desc">在值列表中过滤显示匹配项</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">确定</div>
+                    <div class="desc">应用当前勾选的筛选条件（面板保持打开）</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">清除筛选</div>
+                    <div class="desc">移除该列的筛选条件，恢复显示所有行</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">Esc / 点击外部</div>
+                    <div class="desc">关闭筛选下拉面板</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ API 参考 ═══ -->
+        <div class="info-section">
+            <h2>📚 FilterPlugin API 参考</h2>
+            <div class="api-grid">
+                <div class="api-card">
+                    <div class="category">配置</div>
+                    <div class="name">filterableColumns (getter/setter)</div>
+                    <div class="syntax">get filterableColumns(): number[] | null
+set filterableColumns(cols: number[] | null)</div>
+                    <div class="desc">获取或设置允许过滤的列索引数组。设为 null 表示允许所有列过滤；设为空数组 [] 表示禁用所有列过滤。</div>
+                    <div class="example">plugin.filterableColumns = [0, 2, 4];
+const cols = plugin.filterableColumns;</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">面板控制</div>
+                    <div class="name">openDropdown(col, position)</div>
+                    <div class="syntax">openDropdown(col: number, position: {x: number, y: number}): void</div>
+                    <div class="desc">在指定位置打开某列的筛选下拉面板。通常由表头筛选图标点击自动触发，也可编程式调用。</div>
+                    <div class="example">plugin.openDropdown(2, { x: 300, y: 80 });</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">面板控制</div>
+                    <div class="name">closeDropdown()</div>
+                    <div class="syntax">closeDropdown(): void</div>
+                    <div class="desc">关闭当前打开的筛选下拉面板。</div>
+                    <div class="example">plugin.closeDropdown();</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">面板控制</div>
+                    <div class="name">isDropdownOpen()</div>
+                    <div class="syntax">isDropdownOpen(): boolean</div>
+                    <div class="desc">检查筛选下拉面板是否处于打开状态。</div>
+                    <div class="example">if (plugin.isDropdownOpen()) { ... }</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">筛选管理</div>
+                    <div class="name">clearAllFilters()</div>
+                    <div class="syntax">clearAllFilters(): void</div>
+                    <div class="desc">清除所有列的筛选条件，恢复显示所有数据行。</div>
+                    <div class="example">plugin.clearAllFilters();</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">列信息</div>
+                    <div class="name">getColumnType(colIndex)</div>
+                    <div class="syntax">getColumnType(colIndex: number): "text" | "numeric" | "date"</div>
+                    <div class="desc">获取指定列的类型，默认为 "text"。列类型影响筛选值列表的排序方式（数值列按数值排序，日期列按日期排序）。</div>
+                    <div class="example">const type = plugin.getColumnType(1); // "numeric"</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">列信息</div>
+                    <div class="name">isColumnFilterable(colIndex)</div>
+                    <div class="syntax">isColumnFilterable(colIndex: number): boolean</div>
+                    <div class="desc">检查指定列是否允许过滤。受 filterableColumns 配置控制。</div>
+                    <div class="example">if (plugin.isColumnFilterable(0)) { ... }</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">表头渲染</div>
+                    <div class="name">renderFilterIcon(container, col, hasActiveFilter)</div>
+                    <div class="syntax">renderFilterIcon(container: HTMLElement, col: number, hasActiveFilter: boolean): HTMLElement</div>
+                    <div class="desc">在指定表头容器中渲染筛选图标。hasActiveFilter 控制图标是否显示为激活状态（漏斗高亮）。</div>
+                    <div class="example">plugin.renderFilterIcon(headerEl, 2, false);</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ 配置选项说明 ═══ -->
+        <div class="info-section">
+            <h2>⚙️ FilterPlugin 配置选项 (pluginOptions.filter)</h2>
+            <p style="color:#666; font-size:13px; margin-bottom:16px;">
+                通过 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">pluginOptions.filter</code> 传入 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">init(options)</code>，与 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">FilterPlugin.DEFAULT_OPTIONS</code> 合并后生效。未传则使用默认值。
+            </p>
+            <div style="overflow-x: auto;">
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 260px;">选项路径</th>
+                            <th style="width: 120px;">类型</th>
+                            <th style="width: 180px;">默认值</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">enabled</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>插件是否启用。设为 false 时插件加载但不激活。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">dropdownWidth</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">240</td>
+                            <td>筛选下拉面板宽度（像素）。</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">dropdownMaxHeight</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">360</td>
+                            <td>筛选下拉面板最大高度（像素），超出后内容区可滚动。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">virtualScrollThreshold</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">200</td>
+                            <td>虚拟滚动阈值。当唯一值数量超过此值时启用虚拟滚动以优化性能。</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">filterableColumns</td>
+                            <td><code>number[] | null</code></td>
+                            <td style="font-family: monospace;">null</td>
+                            <td>允许过滤的列索引数组。null 表示允许所有列；空数组 [] 表示禁用所有列。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">columnTypes</td>
+                            <td><code>Object</code></td>
+                            <td style="font-family: monospace;">{}</td>
+                            <td>列类型映射表，键为列索引，值为 "text" / "numeric" / "date"。</td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td colspan="4" style="font-weight: 700; color: #d97706;">🕳️ nullValueHandling — 空值处理配置</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">nullValueHandling.displayAs</td>
+                            <td><code>string</code></td>
+                            <td style="font-family: monospace;">"(空白)"</td>
+                            <td>空值在筛选值列表中的显示文本。</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">nullValueHandling.alwaysShowInList</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>是否始终在值列表中显示空值项（即使该列无空值）。</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">nullValueHandling.sortToEnd</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>是否将空值排序到值列表末尾。</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">nullValueHandling.treatBlankAsNull</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>是否将空白字符串视为空值。</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706; padding-left: 24px;">nullValueHandling.trimWhitespace</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>比较前是否去除值的首尾空白字符。</td>
+                        </tr>
+                        <tr style="background: #dbeafe;">
+                            <td colspan="4" style="font-weight: 700; color: #2563eb;">🔧 conditionOperators — 条件模式操作符列表</td>
+                        </tr>
+                        <tr style="background: #eff6ff;">
+                            <td style="font-family: monospace; color: #2563eb;">conditionOperators</td>
+                            <td><code>string[]</code></td>
+                            <td style="font-family: monospace; font-size: 11px;">["eq","neq","contains",...]</td>
+                            <td>条件模式下可用的操作符数组。包含：eq（等于）、neq（不等于）、contains（包含）、notContains（不包含）、startsWith（开头是）、endsWith（结尾是）、gt（大于）、gte（大于等于）、lt（小于）、lte（小于等于）。</td>
+                        </tr>
+                        <tr style="background: #d1fae5;">
+                            <td colspan="4" style="font-weight: 700; color: #059669;">🎨 iconRenderer — 筛选图标渲染配置</td>
+                        </tr>
+                        <tr style="background: #ecfdf5;">
+                            <td style="font-family: monospace; color: #059669; padding-left: 24px;">iconRenderer.iconSize</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">12</td>
+                            <td>筛选图标的尺寸（像素）。</td>
+                        </tr>
+                        <tr style="background: #ecfdf5;">
+                            <td style="font-family: monospace; color: #059669; padding-left: 24px;">iconRenderer.iconPadding</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">6</td>
+                            <td>筛选图标与列头文本的间距（像素）。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="config-example">
+                <strong>配置示例：</strong>
+                <pre>pluginOptions: {
+    filter: {
+        enabled: true,
+        dropdownWidth: 240,
+        dropdownMaxHeight: 360,
+        virtualScrollThreshold: 200,
+        filterableColumns: [0, 2, 4],
+        columnTypes: {
+                    0: "text",
+                    1: "text",
+                    2: "numeric",
+        },
+        nullValueHandling: {
+            displayAs: "(空白)",
+            alwaysShowInList: true,
+            sortToEnd: true,
+            treatBlankAsNull: true,
+            trimWhitespace: true,
+        },
+        conditionOperators: ["eq", "neq", "contains", "notContains", "startsWith", "endsWith", "gt", "gte", "lt", "lte"],
+        iconRenderer: {
+            iconSize: 12,
+            iconPadding: 6,
+        }
+    }
+}</pre>
             </div>
         </div>
 

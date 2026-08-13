@@ -90,7 +90,7 @@ export class RegexValidator extends BaseValidator {
                       metadata: { pattern: rule.pattern },
                   });
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[RegexValidator] 正则表达式执行失败:", error);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[RegexValidator] 正则表达式执行失败:", error);
             return ValidationResult.failure(`正则表达式错误: ${error.message}`, "warning", {
                 value,
                 ruleId: rule.id,
@@ -123,7 +123,7 @@ export class RegexValidator extends BaseValidator {
             this.#patternCache.set(pattern, regex);
             return regex;
         } catch (e) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[RegexValidator] 编译正则表达式失败:", e);
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[RegexValidator] 编译正则表达式失败:", e);
             return null;
         }
     }

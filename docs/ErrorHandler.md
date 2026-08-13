@@ -138,7 +138,7 @@ errorHandler.configure({
 记录 ERROR 级别错误，不抛出异常。用于可恢复的业务错误。
 
 ```js
-errorHandler.handle(
+errorHandler.error(
     ERROR_CODE.PLUGIN_NOT_REGISTERED,
     `Plugin "${name}" is not registered`,
     { name }
@@ -198,7 +198,7 @@ errorHandler.throw(
 
 #### `guard(fn, code, message?, meta?)`
 
-包装同步函数，捕获异常后通过 `errorHandler.handle()` 记录，返回 `undefined`。
+包装同步函数，捕获异常后通过 `errorHandler.error()` 记录，返回 `undefined`。
 
 ```js
 const result = errorHandler.guard(
@@ -213,7 +213,7 @@ const result = errorHandler.guard(
 
 #### `guardAsync(promise, code, message?, meta?)`
 
-包装异步 Promise，捕获 reject 后通过 `errorHandler.handle()` 记录，返回 `undefined`。
+包装异步 Promise，捕获 reject 后通过 `errorHandler.error()` 记录，返回 `undefined`。
 
 ```js
 const data = await errorHandler.guardAsync(
@@ -275,7 +275,7 @@ errorHandler.configure({
 errorHandler.warn(ERROR_CODE.TYPE_NOT_REGISTERED, `Type "${name}" not found`);
 
 // 记录错误
-errorHandler.handle(ERROR_CODE.CLIPBOARD_WRITE_ERROR, "Clipboard write failed", { err });
+errorHandler.error(ERROR_CODE.CLIPBOARD_WRITE_ERROR, "Clipboard write failed", { err });
 
 // 抛出不可恢复错误
 errorHandler.throw(ERROR_CODE.HOOK_CALLBACK_INVALID, "Hook callback must be a function");
@@ -357,15 +357,15 @@ navigator.clipboard.writeText(text).catch((err) => {
 
 | 文件 | 原模式 | 新模式 |
 |------|--------|--------|
-| `editor/Hooks.js` | `throw new Error()` / `console.error()` | `errorHandler.throw()` / `errorHandler.handle()` |
+| `editor/Hooks.js` | `throw new Error()` / `console.error()` | `errorHandler.throw()` / `errorHandler.error()` |
 | `plugins/PluginManager.js` | `throw new Error()` / `console.error/warn()` | `errorHandler.throw()/handle()/warn()` |
 | `plugins/BasePlugin.js` | `throw new Error()` | `errorHandler.throw()` |
 | `plugins/BaseHidePlugin.js` | 3 处 `throw new Error()` | `errorHandler.throw()` |
 | `plugins/BaseMovePlugin.js` | `throw new Error()` | `errorHandler.throw()` |
 | `types/index.js` | `console.warn()` / `catch {}` | `errorHandler.warn()/handle()` |
 | `editor/ClipboardManager.js` | `console.warn()` / `.catch(){}` / `catch(_){}` | `errorHandler.warn()` |
-| `workbook/Sheet.js` | `catch { return null }` | `errorHandler.handle()` |
-| `workbook/ColumnTypeManager.js` | `catch { continue }` | `errorHandler.handle()` |
+| `workbook/Sheet.js` | `catch { return null }` | `errorHandler.error()` |
+| `workbook/ColumnTypeManager.js` | `catch { continue }` | `errorHandler.error()` |
 
 ## 扩展指南
 

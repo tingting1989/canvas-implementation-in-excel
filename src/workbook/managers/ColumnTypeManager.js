@@ -142,7 +142,7 @@ export class ColumnTypeManager {
                 try {
                     config = config(c);
                 } catch (error) {
-                    errorHandler.handle(ERROR_CODE.TYPE_PARSE_ERROR, `Column config function failed at column ${c}`, { originalError: error });
+                    errorHandler.error(ERROR_CODE.TYPE_PARSE_ERROR, `Column config function failed at column ${c}`, { originalError: error });
                     continue;
                 }
             }

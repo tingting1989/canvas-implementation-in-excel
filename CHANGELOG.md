@@ -455,7 +455,7 @@ grep -o "module.exports\|exports\." canvas-sheet.umd.js | head -20
 #### Fix: `errorHandler.error()` Method Not Found
 - **Location**: [`ImportFilePlugin.js#L865`](src/plugins/ImportFilePlugin.js#L865)
 - **Issue**: Called non-existent method (correct method is `handle()`)
-- **Fix**: Replaced with `errorHandler.handle()`
+- **Fix**: Replaced with `errorHandler.error()`
 - **Impact**: Fixes error logging during style conversion
 
 ---
@@ -503,7 +503,7 @@ grep -o "module.exports\|exports\." canvas-sheet.umd.js | head -20
   errorHandler.debug: 0 → 25+ (new)
   errorHandler.info: 0 → 10+ (new)
   errorHandler.warn: 0 → 5+ (new)
-  errorHandler.handle: 0 → 10+ (new)
+  errorHandler.error: 0 → 10+ (new)
   ```
 
 **4. Typed Error Codes**

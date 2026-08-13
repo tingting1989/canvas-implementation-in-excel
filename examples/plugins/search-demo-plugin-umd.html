@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 SearchPlugin 功能演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container { max-width: 1600px; margin: 0 auto; }
+        h1 { text-align: center; color: white; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); font-size: 2.5em; }
+        .nav { text-align: center; margin-bottom: 20px; }
+        .nav a {
+            display: inline-block; padding: 8px 16px; margin: 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.2); color: white; text-decoration: none;
+            font-weight: 600; transition: all 0.3s;
+        }
+        .nav a:hover, .nav a.active { background: rgba(255,255,255,0.4); transform: translateY(-2px); }
+
+        .demo-section {
+            background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .section-title { font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+        .canvas-container { overflow: auto; background: #fff; position: relative; border: 2px solid #e0e0e0; border-radius: 8px; }
+        canvas { display: block; }
+
+        .api-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 20px; }
+        .api-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #667eea; transition: transform 0.2s ease;
+        }
+        .api-card:hover { transform: translateY(-2px); }
+        .api-card .category { font-size: 12px; font-weight: 600; color: #667eea; margin-bottom: 8px; }
+        .api-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .api-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .api-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .api-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e; white-space: pre;
+        }
+
+        .control-bar {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center;
+        }
+        .control-bar label { font-size: 13px; font-weight: 600; color: #4a5568; }
+        .control-bar select, .control-bar input[type="text"] {
+            padding: 6px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 13px; min-width: 120px;
+        }
+        .btn {
+            padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5a67d8; transform: translateY(-1px); }
+        .btn-danger { background: #fc5c65; color: white; }
+        .btn-danger:hover { background: #eb3b5a; transform: translateY(-1px); }
+        .btn-success { background: #26de81; color: white; }
+        .btn-success:hover { background: #20bf6b; transform: translateY(-1px); }
+        .btn-warning { background: #fed330; color: #333; }
+        .btn-warning:hover { background: #f7b731; transform: translateY(-1px); }
+        .btn-info { background: #45aaf2; color: white; }
+        .btn-info:hover { background: #2d98da; transform: translateY(-1px); }
+
+        .log-container {
+            margin-top: 20px; max-height: 300px; overflow-y: auto;
+            border: 2px solid #e0e0e0; border-radius: 8px; padding: 12px;
+            background: #282c34; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px;
+        }
+        .log-entry { padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; color: #abb2bf; }
+        .log-entry.log-success { background: rgba(56,239,125,0.1); color: #38ef7d; }
+        .log-entry.log-info { background: rgba(79,172,254,0.1); color: #4facfe; }
+        .log-entry.log-error { background: rgba(255,107,107,0.1); color: #ff6b6b; }
+        .log-entry.log-warn { background: rgba(254,211,48,0.1); color: #fed330; }
+
+        .status-bar {
+            display: flex; gap: 16px; margin-top: 12px; font-size: 13px; color: #718096; flex-wrap: wrap;
+        }
+        .status-bar .badge {
+            display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 600;
+        }
+        .badge-active { background: #c6f6d5; color: #22543d; }
+        .badge-inactive { background: #fed7d7; color: #822727; }
+
+        .shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px; }
+        .shortcut-card {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 12px 16px; border-radius: 10px;
+        }
+        .shortcut-card .key {
+            font-family: 'Consolas', monospace; font-size: 14px; font-weight: 700; color: #2d3748;
+            background: rgba(255,255,255,0.6); padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px;
+        }
+        .shortcut-card .desc { font-size: 12px; color: #4a5568; }
+
+        .options-row { display: flex; flex-wrap: wrap; gap: 16px; margin: 12px 0; }
+        .option-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4a5568; }
+        .option-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔍 SearchPlugin 功能演示</h1>
+    <div class="nav">
+        <a href="data-validation-plugin-demo-umd.html">数据验证</a>
+        <a href="filter-demo-plugin-umd.html">筛选</a>
+        <a href="sort-demo-plugin-umd.html">排序</a>
+        <a href="search-demo-plugin-umd.html" class="active">搜索</a>
+    </div>
+
+    <!-- ═══ 演示表格 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>📊</span> 搜索演示表格</h2>
+        <div class="control-bar">
+            <button class="btn btn-primary" onclick="showSearchUI()">🔍 打开搜索 (Ctrl+F)</button>
+            <button class="btn btn-info" onclick="findNext()">⏭ 查找下一个 (F3)</button>
+            <button class="btn btn-info" onclick="findPrev()">⏮ 查找上一个 (Shift+F3)</button>
+            <button class="btn btn-success" onclick="replaceAllDemo()">🔁 全部替换</button>
+            <button class="btn btn-warning" onclick="hideSearchUI()">❌ 关闭搜索</button>
+            <button class="btn btn-danger" onclick="clearHighlights()">🧹 清除高亮</button>
+        </div>
+        <div class="canvas-container"><canvas id="sheet"></canvas></div>
+        <div class="status-bar">
+            <span>插件状态: <span id="pluginStatus" class="badge badge-inactive">未激活</span></span>
+            <span>当前查询: <strong id="queryDisplay">-</strong></span>
+            <span>结果数: <strong id="resultCount">0</strong></span>
+            <span>当前索引: <strong id="currentIndex">-1</strong></span>
+            <span>搜索范围: <strong id="scopeDisplay">all</strong></span>
+        </div>
+    </div>
+
+    <!-- ═══ 编程式 API 调用 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>🛠</span> 编程式 API 调用</h2>
+        <div class="control-bar">
+            <label>查询内容:</label>
+            <input type="text" id="apiQuery" value="技术部" style="min-width:160px">
+            <label>替换为:</label>
+            <input type="text" id="apiReplace" value="研发部" style="min-width:160px">
+            <label>搜索范围:</label>
+            <select id="apiScope">
+                <option value="all">全部 (all)</option>
+                <option value="selection">选区 (selection)</option>
+                <option value="column">当前列 (column)</option>
+                <option value="row">当前行 (row)</option>
+            </select>
+        </div>
+        <div class="options-row">
+            <label class="option-item"><input type="checkbox" id="optCaseSensitive"> 区分大小写 (caseSensitive)</label>
+            <label class="option-item"><input type="checkbox" id="optWholeWord"> 全词匹配 (wholeWord)</label>
+            <label class="option-item"><input type="checkbox" id="optUseRegex"> 正则表达式 (useRegex)</label>
+        </div>
+        <div class="control-bar">
+            <button class="btn btn-primary" onclick="apiQuery()">▶ 执行 query()</button>
+            <button class="btn btn-success" onclick="apiReplaceOne()">▶ replace() 替换当前</button>
+            <button class="btn btn-success" onclick="apiReplaceAll()">▶ replaceAll() 全部替换</button>
+            <button class="btn btn-info" onclick="apiGetState()">▶ getState() 读取状态</button>
+        </div>
+    </div>
+
+    <!-- ═══ 快捷键说明 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>⌨️</span> 键盘快捷键</h2>
+        <div class="shortcut-grid">
+            <div class="shortcut-card"><span class="key">Ctrl + F</span><div class="desc">打开搜索面板</div></div>
+            <div class="shortcut-card"><span class="key">F3</span><div class="desc">查找下一个匹配项</div></div>
+            <div class="shortcut-card"><span class="key">Shift + F3</span><div class="desc">查找上一个匹配项</div></div>
+            <div class="shortcut-card"><span class="key">Enter</span><div class="desc">在搜索框中：查找下一个</div></div>
+            <div class="shortcut-card"><span class="key">Shift + Enter</span><div class="desc">在搜索框中：查找上一个</div></div>
+            <div class="shortcut-card"><span class="key">Esc</span><div class="desc">关闭搜索面板</div></div>
+            <div class="shortcut-card"><span class="key">Ctrl + Z</span><div class="desc">撤销替换操作（支持全部替换撤销）</div></div>
+        </div>
+    </div>
+
+    <!-- ═══ API 参考 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>📚</span> SearchPlugin API 参考</h2>
+        <div class="api-grid">
+            <div class="api-card">
+                <div class="category">搜索</div>
+                <div class="name">query(queryStr, options)</div>
+                <div class="syntax">async query(queryStr: string, options?: SearchOptions): Promise&lt;SearchResult[]&gt;</div>
+                <div class="desc">执行搜索，返回匹配结果数组。支持大小写敏感、全词匹配、正则表达式及搜索范围选项。</div>
+                <div class="example">const results = await plugin.query('技术部', {
+    caseSensitive: false,
+    wholeWord: false,
+    useRegex: false,
+    searchScope: 'all'
+});</div>
+            </div>
+            <div class="api-card">
+                <div class="category">导航</div>
+                <div class="name">findNext()</div>
+                <div class="syntax"> findNext(): Promise&lt;SearchResult|null&gt;</div>
+                <div class="desc">导航到下一个搜索结果，自动滚动到对应单元格并高亮。对应快捷键 F3。</div>
+                <div class="example">const result = await plugin.findNext();
+console.log(result.row, result.col);</div>
+            </div>
+            <div class="api-card">
+                <div class="category">导航</div>
+                <div class="name">findPrevious()</div>
+                <div class="syntax"> findPrevious(): Promise&lt;SearchResult|null&gt;</div>
+                <div class="desc">导航到上一个搜索结果。对应快捷键 Shift+F3。</div>
+                <div class="example">const result = await plugin.findPrevious();</div>
+            </div>
+            <div class="api-card">
+                <div class="category">替换</div>
+                <div class="name">replace(replaceStr)</div>
+                <div class="syntax"> replace(replaceStr: string): Promise&lt;boolean&gt;</div>
+                <div class="desc">替换当前选中的搜索结果。使用 SetCellCommand 记录历史，支持 Ctrl+Z 撤销。</div>
+                <div class="example">const ok = await plugin.replace('研发部');</div>
+            </div>
+            <div class="api-card">
+                <div class="category">替换</div>
+                <div class="name">replaceAll(replaceStr)</div>
+                <div class="syntax"> replaceAll(replaceStr: string): Promise&lt;number&gt;</div>
+                <div class="desc">替换所有匹配结果。使用 BatchCommand 组合为原子操作，仅占 1 个 undo 栈位置，支持一键 Ctrl+Z 撤销全部。</div>
+                <div class="example">const count = await plugin.replaceAll('研发部');
+console.log(`已替换 ${count} 处`);</div>
+            </div>
+            <div class="api-card">
+                <div class="category">UI 控制</div>
+                <div class="name">show() / hide()</div>
+                <div class="syntax">show(): void &nbsp;&nbsp; hide(): void</div>
+                <div class="desc">显示/隐藏搜索面板。hide() 同时清除高亮和搜索状态。</div>
+                <div class="example">plugin.show();   // 打开面板
+plugin.hide();   // 关闭并清除</div>
+            </div>
+            <div class="api-card">
+                <div class="category">状态</div>
+                <div class="name">getState()</div>
+                <div class="syntax">getState(): Readonly&lt;SearchState&gt;</div>
+                <div class="desc">获取只读搜索状态，包含 query、results、currentIndex、options 等。</div>
+                <div class="example">const state = plugin.getState();
+state.getQuery();        // 当前查询字符串
+state.getResults();      // 结果数组
+state.getCurrentIndex(); // 当前索引</div>
+            </div>
+            <div class="api-card">
+                <div class="category">生命周期</div>
+                <div class="name">enable() / disable()</div>
+                <div class="syntax">enable(): void &nbsp;&nbsp; disable(): void</div>
+                <div class="desc">启用/禁用插件。禁用后快捷键不再响应，高亮被清除。</div>
+                <div class="example">plugin.disable();  // 临时禁用
+plugin.enable();   // 恢复启用</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ 配置选项说明 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>⚙️</span> SearchPlugin 配置选项 (pluginOptions.search)</h2>
+        <p style="color:#666; font-size:13px; margin-bottom:16px;">
+            通过 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">pluginOptions.search</code> 传入 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">init(options)</code>，与 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">SearchPlugin.DEFAULT_OPTIONS</code> 合并后生效。未传则使用默认值。
+        </p>
+        <div style="overflow-x: auto;">
+            <table style="width:100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align:left; width: 240px;">选项路径</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align:left; width: 120px;">类型</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align:left; width: 160px;">默认值</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align:left;">说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">enabled</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">true</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">插件是否启用。设为 false 时插件加载但不激活，需手动调用 <code>enable()</code>。</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">shortcutKey</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>string</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">"Control+f"</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">打开搜索面板的快捷键。使用 KeyboardEvent.code 格式，支持 "Control+f" / "Meta+f"（macOS）。</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">findNextKey</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>string</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">"F3"</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">查找下一个结果的快捷键。</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">findPrevKey</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>string</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">"Shift+F3"</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">查找上一个结果的快捷键。</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">maxResults</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>number</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">10000</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">最大返回结果数。超出部分被截断，防止超大数据集导致性能问题。</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">skipNonTopLeftMergedCells</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">false</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">全部替换时是否跳过合并非主单元格。false=允许替换合并区任意单元格（推荐）；true=仅替换左上角主单元格。</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">draggable</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">true</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">搜索面板是否可拖拽。设为 false 时面板固定在初始位置，不可通过鼠标拖动移动。</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">mask</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">false</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">是否显示遮罩层。设为 true 时面板背后会出现半透明遮罩，阻止与底层表格交互。</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">closeOnClickOutside</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">true</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">点击面板外部区域时是否自动关闭搜索面板。设为 false 时仅能通过关闭按钮或 Esc 键关闭。</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #667eea;">closeOnEscape</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">true</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">按 Esc 键时是否自动关闭搜索面板。设为 false 时 Esc 键不触发关闭行为。</td>
+                    </tr>
+                    <tr style="background: #fef3c7;">
+                        <td colspan="4" style="padding: 10px; border: 1px solid #ddd; font-weight: 700; color: #d97706;">🎨 highlightStyle — 搜索结果高亮样式</td>
+                    </tr>
+                    <tr style="background: #fffbeb;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #d97706; padding-left: 24px;">highlightStyle.backgroundColor</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>string</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">"rgba(255,255,0,0.3)"</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">所有匹配结果的背景色（半透明黄色）。</td>
+                    </tr>
+                    <tr style="background: #fffbeb;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #d97706; padding-left: 24px;">highlightStyle.currentBackgroundColor</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>string</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">"rgba(255,165,0,0.5)"</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">当前导航到的结果背景色（半透明橙色，突出显示）。</td>
+                    </tr>
+                    <tr style="background: #fffbeb;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #d97706; padding-left: 24px;">highlightStyle.borderColor</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>string</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">"#ff9800"</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">当前结果边框颜色。</td>
+                    </tr>
+                    <tr style="background: #fffbeb;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #d97706; padding-left: 24px;">highlightStyle.borderWidth</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>number</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">2</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">当前结果边框宽度（px）。</td>
+                    </tr>
+                    <tr style="background: #dbeafe;">
+                        <td colspan="4" style="padding: 10px; border: 1px solid #ddd; font-weight: 700; color: #2563eb;">🔍 defaultOptions — 搜索默认选项（可被 query() 的 searchOptions 覆盖）</td>
+                    </tr>
+                    <tr style="background: #eff6ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #2563eb; padding-left: 24px;">defaultOptions.caseSensitive</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">false</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">是否区分大小写。</td>
+                    </tr>
+                    <tr style="background: #eff6ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #2563eb; padding-left: 24px;">defaultOptions.wholeWord</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">false</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">是否全词匹配（仅匹配完整单词，非子串）。</td>
+                    </tr>
+                    <tr style="background: #eff6ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #2563eb; padding-left: 24px;">defaultOptions.useRegex</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>boolean</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">false</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">是否将查询字符串作为正则表达式解析。</td>
+                    </tr>
+                    <tr style="background: #eff6ff;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace; color: #2563eb; padding-left: 24px;">defaultOptions.searchScope</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>string</code></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">"all"</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">搜索范围：<code>"all"</code> 全表 | <code>"selection"</code> 选区 | <code>"column"</code> 当前列 | <code>"row"</code> 当前行。</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div style="margin-top: 16px; background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #1e40af;">
+            <strong>配置示例：</strong>
+            <pre style="margin-top: 8px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap;">   plugins: ["search",],
+            pluginOptions: {
+    search: {
+        enabled: true,
+        shortcutKey: "Control+f",
+        findNextKey: "F3",
+        findPrevKey: "Shift+F3",
+        maxResults: 10000,
+        skipNonTopLeftMergedCells: false,
+        draggable: true,
+        mask: false,
+        closeOnClickOutside: true,
+        closeOnEscape: true,
+        highlightStyle: {
+            backgroundColor: "rgba(255, 255, 0, 0.3)",
+            currentBackgroundColor: "rgba(255, 165, 0, 0.5)",
+            borderColor: "#ff9800",
+            borderWidth: 2,
+        },
+        defaultOptions: {
+            caseSensitive: false,
+            wholeWord: false,
+            useRegex: false,
+            searchScope: "all",
+        }
+    }
+}</pre>
+        </div>
+    </div>
+
+    <!-- ═══ 日志 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>📜</span> 操作日志</h2>
+        <div class="log-container" id="logContainer">
+            <div class="log-entry log-info">[等待] 初始化中...</div>
+        </div>
+    </div>
+
+    <div style="text-align:center; color:white; padding: 20px; opacity: 0.8;">
+        Canvas-Sheet | SearchPlugin Demo — 文本搜索 / 正则匹配 / 结果高亮 / 替换撤销
+    </div>
+</div>
+
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+    let workbook = null;
+    let searchPlugin = null;
+
+    const sampleData = [
+        ["姓名", "年龄", "城市", "部门", "薪资", "入职日期"],
+        ["张三", 25, "北京", "技术部", 15000, "2020-03-15"],
+        ["李四", 30, "上海", "市场部", 18000, "2019-07-01"],
+        ["王五", 28, "广州", "技术部", 16000, "2021-01-10"],
+        ["赵六", 35, "深圳", "人事部", 20000, "2018-05-20"],
+        ["孙七", 27, "杭州", "技术部", 14000, "2022-02-28"],
+        ["周八", 32, "南京", "财务部", 17000, "2017-11-15"],
+        ["吴九", 29, "成都", "市场部", 15500, "2020-08-10"],
+        ["郑十", 31, "武汉", "技术部", 19000, "2019-03-25"],
+        ["王二", 26, "西安", "市场部", 14500, "2021-05-20"],
+        ["李三", 33, "苏州", "财务部", 18500, "2018-09-12"],
+        ["赵四", 29, "重庆", "技术部", 16500, "2020-11-30"],
+        ["孙五", 34, "天津", "人事部", 19500, "2017-06-08"],
+    ];
+
+    function log(msg, type) {
+        type = type || 'info';
+        const container = document.getElementById('logContainer');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry log-' + type;
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        container.insertBefore(entry, container.firstChild);
+    }
+
+    function updateStatus() {
+        if (!searchPlugin) return;
+        const statusEl = document.getElementById('pluginStatus');
+        statusEl.textContent = searchPlugin.active ? '已激活' : '未激活';
+        statusEl.className = 'badge ' + (searchPlugin.active ? 'badge-active' : 'badge-inactive');
+
+        const state = searchPlugin.getState();
+        document.getElementById('queryDisplay').textContent = state.getQuery() || '-';
+        document.getElementById('resultCount').textContent = state.getResults().length;
+        document.getElementById('currentIndex').textContent = state.getCurrentIndex();
+        document.getElementById('scopeDisplay').textContent = state.getOptions()?.searchScope || 'all';
+    }
+
+    async function initWorkbook() {
+        try {
+            log('初始化搜索演示...', 'info');
+            const container = document.getElementById('sheet');
+            container.width = 1400;
+            container.height = 400;
+
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1400, height: 400,
+                sheets: [{
+                    name: '员工信息',
+                    data: sampleData,
+                    columns: [
+                        { type: 'text', width: 100, title: '姓名' },
+                        { type: 'numeric', width: 80, title: '年龄', numericFormat: { pattern: "0" } },
+                        { type: 'text', width: 100, title: '城市' },
+                        { type: 'text', width: 100, title: '部门' },
+                        { type: 'numeric', width: 110, title: '薪资', numericFormat: { pattern: "$0,0" } },
+                        { type: 'date', width: 120, title: '入职日期' },
+                    ],
+                    cellPadding: 8
+                }],
+                plugins: [
+                    "autoFill",
+                    "contextMenu",
+                    "columnMove",
+                    "copyPaste",
+                    "exportFile",
+                    "importFile",
+                    "hiddenColumns",
+                    "hiddenRows",
+                    "rowMove",
+                    "freeze",
+                    "formula",
+                    "search",
+                ],
+                pluginOptions: {
+                    search: {
+                        shortcutKey: "Control+f",
+                        findNextKey: "F3",
+                        findPrevKey: "Shift+F3",
+                        maxResults: 10000,
+                        defaultOptions: {
+                            caseSensitive: false,
+                            wholeWord: false,
+                            useRegex: false,
+                            searchScope: "all",
+                        }
+                    }
+                }
+            });
+
+            searchPlugin = workbook.getPlugin('search');
+
+            if (!searchPlugin) {
+                throw new Error('SearchPlugin 未找到');
+            }
+
+            log('✅ Workbook 初始化成功', 'success');
+            log('✅ SearchPlugin 已加载', 'success');
+            log('💡 提示：按 Ctrl+F 打开搜索面板，或点击上方按钮', 'info');
+            log('💡 提示：替换操作支持 Ctrl+Z 撤销（含全部替换）', 'info');
+
+            updateStatus();
+            setInterval(updateStatus, 500);
+        } catch (error) {
+            log(`❌ 初始化失败: ${error.message}`, 'error');
+            console.error(error);
+        }
+    }
+
+    function showSearchUI() {
+        if (!searchPlugin) return;
+        searchPlugin.show();
+        log('🔍 已打开搜索面板', 'info');
+    }
+
+    function hideSearchUI() {
+        if (!searchPlugin) return;
+        searchPlugin.hide();
+        log('❌ 已关闭搜索面板', 'info');
+        updateStatus();
+    }
+
+    async function findNext() {
+        if (!searchPlugin) return;
+        const result = await searchPlugin.findNext();
+        if (result) {
+            log(`⏭ 跳转到下一个结果: [${result.row}, ${result.col}] = "${result.data}"`, 'info');
+        } else {
+            log('⏭ 没有更多结果', 'warn');
+        }
+        updateStatus();
+    }
+
+    async function findPrev() {
+        if (!searchPlugin) return;
+        const result = await searchPlugin.findPrevious();
+        if (result) {
+            log(`⏮ 跳转到上一个结果: [${result.row}, ${result.col}] = "${result.data}"`, 'info');
+        } else {
+            log('⏮ 没有更多结果', 'warn');
+        }
+        updateStatus();
+    }
+
+    function clearHighlights() {
+        if (!searchPlugin) return;
+        searchPlugin.hide();
+        log('🧹 已清除所有高亮', 'info');
+        updateStatus();
+    }
+
+    async function replaceAllDemo() {
+        if (!searchPlugin) return;
+        const state = searchPlugin.getState();
+        if (state.getResults().length === 0) {
+            log('🔁 请先执行搜索（如 query("技术部")）再进行全部替换', 'warn');
+            return;
+        }
+        const replaceStr = document.getElementById('apiReplace').value;
+        const count = await searchPlugin.replaceAll(replaceStr);
+        log(`🔁 全部替换完成：共替换 ${count} 处为 "${replaceStr}"（可 Ctrl+Z 撤销）`, 'success');
+        updateStatus();
+    }
+
+    function buildOptions() {
+        return {
+            caseSensitive: document.getElementById('optCaseSensitive').checked,
+            wholeWord: document.getElementById('optWholeWord').checked,
+            useRegex: document.getElementById('optUseRegex').checked,
+            searchScope: document.getElementById('apiScope').value,
+        };
+    }
+
+    async function apiQuery() {
+        if (!searchPlugin) return;
+        const queryStr = document.getElementById('apiQuery').value;
+        const options = buildOptions();
+        const results = await searchPlugin.query(queryStr, options);
+        log(`▶ query("${queryStr}", ${JSON.stringify(options)}) → 命中 ${results.length} 处`, 'success');
+        if (results.length > 0) {
+            log(`   首个结果: [${results[0].row}, ${results[0].col}] = "${results[0].data}"`, 'info');
+        }
+        updateStatus();
+    }
+
+    async function apiReplaceOne() {
+        if (!searchPlugin) return;
+        const state = searchPlugin.getState();
+        if (state.getResults().length === 0) {
+            log('▶ 请先执行搜索再替换当前项', 'warn');
+            return;
+        }
+        const replaceStr = document.getElementById('apiReplace').value;
+        const ok = await searchPlugin.replace(replaceStr);
+        if (ok) {
+            log(`▶ replace("${replaceStr}") 替换成功（可 Ctrl+Z 撤销）`, 'success');
+        } else {
+            log(`▶ replace("${replaceStr}") 替换失败`, 'error');
+        }
+        updateStatus();
+    }
+
+    async function apiReplaceAll() {
+        if (!searchPlugin) return;
+        const state = searchPlugin.getState();
+        if (state.getResults().length === 0) {
+            const queryStr = document.getElementById('apiQuery').value;
+            const options = buildOptions();
+            await searchPlugin.query(queryStr, options);
+        }
+        const replaceStr = document.getElementById('apiReplace').value;
+        const count = await searchPlugin.replaceAll(replaceStr);
+        log(`▶ replaceAll("${replaceStr}") → 替换 ${count} 处（可 Ctrl+Z 撤销全部）`, 'success');
+        updateStatus();
+    }
+
+    function apiGetState() {
+        if (!searchPlugin) return;
+        const state = searchPlugin.getState();
+        const results = state.getResults();
+        log(`▶ getState() 查询="${state.getQuery()}" 结果数=${results.length} 当前索引=${state.getCurrentIndex()}`, 'info');
+        log(`   选项: ${JSON.stringify(state.getOptions())}`, 'info');
+        if (results.length > 0) {
+            const cur = state.getCurrentResult();
+            if (cur) {
+                log(`   当前结果: [${cur.row}, ${cur.col}] = "${cur.data}"`, 'info');
+            }
+        }
+    }
+
+    initWorkbook();
+</script>
+</body>
+</html>

@@ -342,7 +342,7 @@ export class ValidationCache {
             this.stats.misses++;
             return { result: null, source: null };
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] get() 操作异常", { error, key });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] get() 操作异常", { error, key });
             return { result: null, source: null };
         }
     }
@@ -406,7 +406,7 @@ export class ValidationCache {
 
             this.stats.writes++;
         } catch (error) {
-            errorHandler.handle(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] set() 操作异常", { error, key });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationCache] set() 操作异常", { error, key });
         }
     }
 

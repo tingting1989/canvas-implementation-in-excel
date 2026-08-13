@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { SortPlugin } from '../../src/plugins/SortPlugin.js';
+import { SortPlugin } from '@/plugins/sort/SortPlugin.js';
 import { SortState } from '../../src/plugins/sort/SortState.js';
 import { ChunkedCellStore } from '../../src/model/store/ChunkedCellStore.js';
 

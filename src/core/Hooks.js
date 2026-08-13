@@ -130,7 +130,7 @@ export class Hooks {
             try {
                 result = callback(...args);
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 
@@ -158,7 +158,7 @@ export class Hooks {
                     return result;
                 }
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 
@@ -185,7 +185,7 @@ export class Hooks {
             try {
                 result = invoker(callback);
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 
@@ -212,7 +212,7 @@ export class Hooks {
                     return result;
                 }
             } catch (error) {
-                errorHandler.handle(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
+                errorHandler.error(ERROR_CODE.HOOK_EXECUTION_ERROR, `Hook "${hookName}" execution failed`, { originalError: error });
             }
         }
 

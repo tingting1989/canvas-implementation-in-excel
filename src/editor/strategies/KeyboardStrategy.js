@@ -4,6 +4,7 @@ import { CONFIG } from "../../constants/config";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 import { isFunction } from "../../utils/helper.js";
+import { InputDetector } from "../../utils/inputDetection.js";
 
 /**
  * 键盘交互策略 (Keyboard Interaction Strategy)
@@ -86,21 +87,15 @@ export class KeyboardStrategy extends EventStrategy {
     #lastCheckedElement = null;
 
     /**
-     * @private 私有字段 - 上次焦点检查的结果（缓存优化）
+     * @private 私有字段 - 外部输入框检测器实例
      *
-     * 与 #lastCheckedElement 配对使用，存储对应元素的检查结果。
-     * 当 activeElement === #lastCheckedElement 时直接返回此值，跳过完整检查流程。
+     * 使用公共工具 InputDetector 避免代码重复，
+     * 与 CopyPasteStrategy 共享相同的检测逻辑。
      *
-     * **可能的值**：
-     * - true: 焦点在外部输入元素上（应让渡给浏览器处理）
-     * - false: 焦点在 Canvas 编辑器或非输入区域（应由本策略处理）
-     *
-     * **初始值**：false（假设初始状态不在外部输入上）
-     *
-     * @type {boolean}
-     * @see #lastCheckedElement - 配套的缓存键
+     * @type {InputDetector}
+     * @see InputDetector - 公共外部输入框检测器
      */
-    #lastCheckResult = false;
+    #inputDetector = new InputDetector();
 
     /**
      * 构造函数 - 初始化键盘交互策略
@@ -204,7 +199,7 @@ export class KeyboardStrategy extends EventStrategy {
         // ✅ 关键修复：检查当前焦点是否在非Canvas的输入元素上
         // 如果焦点在 input、textarea、select 或 contenteditable 元素上，
         // 则不处理键盘事件，让浏览器默认行为生效
-        if (this.#isFocusOnExternalInput()) {
+        if (this.#inputDetector.isExternalInput()) {
             return; // 让input/textarea正常接收输入
         }
 
@@ -286,301 +281,6 @@ export class KeyboardStrategy extends EventStrategy {
      * @see #lastCheckedElement - 缓存的元素引用
      * @see #lastCheckResult - 缓存的结果值
      */
-    #isFocusOnExternalInput() {
-        const activeElement = document.activeElement;
-
-        if (!activeElement) return false;
-
-        // ✅ 快速路径1：检查是否是body/html本身（非输入元素）
-        if (activeElement.tagName === "BODY" || activeElement.tagName === "HTML") {
-            return false;
-        }
-
-        // ✅ 快速路径2：缓存检查（避免重复DOM查询）
-        if (this.#lastCheckedElement === activeElement) {
-            return this.#lastCheckResult;
-        }
-
-        const result = this.#performFullCheck(activeElement);
-
-        // 缓存结果（下次同一元素直接返回）
-        this.#lastCheckedElement = activeElement;
-        this.#lastCheckResult = result;
-
-        return result;
-    }
-
-    /**
-     * @private 私有方法 - 获取实际焦点的元素（处理 Shadow DOM 情况）
-     *
-     ** 技术背景：**
-     * Web Components 使用 Shadow DOM 封装内部实现。
-     * 当用户在 Shadow DOM 内的 input 元素上输入时：
-     * - document.activeElement 返回的是**宿主元素**（host element）
-     * - 真正获得焦点的元素在 host.shadowRoot.activeElement
-     *
-     ** 作用：**
-     * 此方法递归查找真正的焦点元素，确保能正确检测到 Web Component 内部的输入框。
-     *
-     ** 示例场景：**
-     * ```html
-     * <!-- 自定义日期选择器组件 -->
-     * <my-date-picker>  ← document.activeElement 指向这里
-     *   #shadow-root
-     *     <input type="date">  ← 实际焦点在这里
-     * </my-date-picker>
-     * ```
-     *
-     ** 递归策略：**
-     * 支持嵌套的 Shadow DOM（Web Component 内部再包含其他 Web Component）。
-     *
-     * @param {HTMLElement} host - 可能是宿主元素的 DOM 元素
-     * @returns {HTMLElement|null}
-     *   - HTMLElement: 在 Shadow DOM 中找到的实际焦点元素
-     *   - null: 不是 Shadow DOM 或无焦点元素（应使用原 activeElement）
-     */
-    #getEffectiveActiveElement(host) {
-        if (!host || !host.shadowRoot) {
-            return null;
-        }
-
-        const shadowRoot = host.shadowRoot;
-        if (!shadowRoot.activeElement) {
-            return null;
-        }
-
-        return shadowRoot.activeElement;
-    }
-
-    /**
-     * @private 私有方法 - 执行完整的焦点元素检查（核心检测逻辑）
-     *
-     ** 4层过滤架构：**
-     *
-     * **第0层：Shadow DOM 处理**
-     * - 检测是否在 Shadow DOM 内
-     * - 递归调用自身查找真实焦点元素
-     *
-     * **第1层：快速排除非输入元素**
-     * - 白名单匹配：input/textarea/select/button
-     * - contentEditable 属性检查
-     * - ARIA 角色检查（textbox/combobox/searchbox/spinbutton）
-     * - 如果完全不是输入元素 → 返回 false
-     *
-     * **第2层：无效状态过滤**
-     * - disabled: 禁用状态
-     * - readOnly: 只读状态
-     * - display:none: 不可见
-     * - visibility:hidden: 隐藏
-     * - offsetParent === null: 不在渲染树中
-     * - 如果无法交互 → 返回 false
-     *
-     * **第3层：Canvas 编辑器识别（关键！）**
-     * - CSS 类名匹配：.cs-cell-editor
-     * - DOM 位置检查：#wrap 容器内 + 附近有 canvas
-     * - 数据属性标记：data-canvas-editor="true"
-     * - 如果是自己的编辑器 → 返回 false（不拦截）
-     *
-     * **第4层：确认外部输入**
-     * - 通过所有检查 → 确实是外部输入框 → 返回 true
-     *
-     * @param {HTMLElement} activeElement - 当前获得焦点的 DOM 元素
-     * @returns {boolean} true=外部输入, false=Canvas编辑器或非输入区域
-     *
-     * @see #isFocusOnExternalInput() - 调用此方法的入口
-     * @see #isOurCellEditor() - Canvas 编辑器识别逻辑
-     * @see #hasAriaInputRole() - ARIA 角色检查
-     */
-    #performFullCheck(activeElement) {
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 0️⃣ 特殊处理：Shadow DOM 情况
-        // 当焦点在 Shadow DOM 内的 input 时，document.activeElement 是宿主元素
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const effectiveElement = this.#getEffectiveActiveElement(activeElement);
-        if (effectiveElement && effectiveElement !== activeElement) {
-            // 递归检查 shadow DOM 内的实际焦点元素
-            return this.#performFullCheck(effectiveElement);
-        }
-
-        const tagName = activeElement.tagName.toLowerCase();
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 1️⃣ 第一层：快速排除非输入元素
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        // 常见的文本输入元素白名单
-        const INPUT_ELEMENTS = new Set([
-            "input",
-            "textarea",
-            "select",
-            // 可能的扩展元素
-            "button", // 按钮也可能需要键盘响应
-        ]);
-
-        if (!INPUT_ELEMENTS.has(tagName)) {
-            // 非标准输入元素，检查 contenteditable 和 ARIA 角色
-            const isContentEditable = activeElement.isContentEditable || activeElement.getAttribute("contenteditable") === "true";
-
-            const hasAriaInputRole = this.#hasAriaInputRole(activeElement);
-
-            if (!isContentEditable && !hasAriaInputRole) {
-                return false; // 完全不是输入元素
-            }
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 2️⃣ 第二层：过滤无效状态
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        // 排除禁用、只读、隐藏的元素
-        if (
-            activeElement.disabled ||
-            activeElement.readOnly ||
-            activeElement.style.display === "none" ||
-            activeElement.style.visibility === "hidden" ||
-            activeElement.offsetParent === null // 不在渲染树中
-        ) {
-            return false; // 虽然是input但无法交互
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 3️⃣ 第三层：识别Canvas编辑器（关键！）
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        if (this.#isOurCellEditor(activeElement)) {
-            return false; // 是我们自己的编辑器，不拦截
-        }
-
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // 4️⃣ 第四层：确认是外部输入元素
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-        return true; // 通过所有检查 → 确实是外部输入框
-    }
-
-    /**
-     * @private 私有方法 - 检查元素是否具有 ARIA 输入角色属性
-     *
-     ** WAI-ARIA 规范支持：**
-     *
-     * 根据 Web 无障碍倡议（WAI-ARIA）规范，
-     * 某些自定义组件通过 role 属性声明其语义角色。
-     * 此方法识别以下文本输入相关的角色：
-     *
-     * | 角色 | 说明 | 典型使用场景 |
-     * |------|------|-------------|
-     * | textbox | 文本输入框 | 自定义富文本编辑器 |
-     * | combobox | 组合框（输入+下拉） | 自动完成搜索框 |
-     * | searchbox | 搜索框 | 带搜索图标的输入框 |
-     * | spinbutton | 数字调节器 | 日期/数字选择器 |
-     *
-     ** 实现细节：**
-     * - 使用 Set 数据结构进行 O(1) 查找（性能优化）
-     * - 大小写不敏感匹配（role="TextBox" 和 role="textbox" 等效）
-     * - 空值快速返回（无 role 属性时直接返回 false）
-     *
-     ** 为什么需要此检查：**
-     * 许多现代前端框架（React、Vue、Angular）的 UI 组件库
-     * 使用自定义 div + ARIA role 实现输入框，而非原生 input 元素。
-     * 如果不检测这些角色，会导致键盘事件被错误拦截。
-     *
-     * @param {HTMLElement} element - 待检查的 DOM 元素
-     * @returns {boolean}
-     *   - true: 元素具有文本输入相关的 ARIA 角色
-     *   - false: 无 ARIA 角色或角色不是输入类型
-     */
-    #hasAriaInputRole(element) {
-        const role = element.getAttribute("role");
-        if (!role) return false;
-
-        const INPUT_ROLES = new Set(["textbox", "combobox", "searchbox", "spinbutton"]);
-
-        return INPUT_ROLES.has(role.toLowerCase());
-    }
-
-    /**
-     * @private 私有方法 - 判断是否是 Canvas 自己的单元格编辑器（关键识别逻辑）
-     *
-     ** 🎯 核心目的：**
-     * 防止将 Canvas 的编辑器误判为"外部输入框"。
-     * 如果判断错误，会导致用户在编辑单元格时键盘事件被忽略。
-     *
-     ** ✅ Bug 修复历史：**
-     * 原代码使用 `.cell-editor` 类名，但实际渲染时使用的是 `.cs-cell-editor`。
-     * 此方法已修正为正确的类名，并增加了多层识别机制提高可靠性。
-     *
-     ** 多层识别策略（按可靠性排序）：**
-     *
-     * **第1层：CSS 类名匹配**（最可靠，推荐）
-     * ```javascript
-     * element.classList.contains("cs-cell-editor")
-     * ```
-     * - 直接检查元素是否有我们定义的编辑器类名
-     * - 可靠性：⭐⭐⭐⭐⭐（100%准确）
-     *
-     * **第2层：DOM 位置推断**（备用方案）
-     * ```javascript
-     * element.closest("#wrap") && wrap.contains(canvas)
-     * ```
-     * - 检查元素是否在 Canvas 容器 (#wrap) 内
-     * - 进一步验证容器内确实有 canvas 元素
-     * - 使用 compareDocumentPosition 确认层级关系
-     * - 可靠性：⭐⭐⭐⭐（可能误判其他#wrap内的元素）
-     *
-     * **第3层：数据属性标记**（未来扩展）
-     * ```javascript
-     * element.getAttribute("data-canvas-editor") === "true"
-     * ```
-     * - 在创建编辑器时添加自定义数据属性
-     * - 便于调试和未来扩展
-     * - 可靠性：⭐⭐⭐（需要额外实现支持）
-     *
-     * **第4层：实例引用检查**（最可靠但未实现）
-     * TODO: 可以考虑在 CellEditor 创建时注册到全局映射表，
-     * 通过实例引用直接比对（O(1) 时间复杂度）。
-     *
-     ** 为什么需要多层策略：**
-     * - 类名可能被外部样式覆盖或修改
-     * - DOM 结构可能因重构而变化
-     * - 数据属性需要额外的初始化逻辑
-     * - 多层冗余确保在各种边界情况下都能正确识别
-     *
-     * @param {HTMLElement} element - 待检测的 DOM 元素
-     * @returns {boolean}
-     *   - true: 是 Canvas 自己的单元格编辑器 → 不拦截键盘事件
-     *   - false: 不是我们的编辑器 → 继续后续检查
-     */
-    #isOurCellEditor(element) {
-        // 方式1：CSS类名匹配（最准确）
-        if (element.classList.contains("cs-cell-editor")) {
-            return true;
-        }
-
-        // 方式2：检查父级容器（兼容性方案）
-        // 注意：#wrap 是canvas的容器，编辑器被appendChild到这里
-        const wrapContainer = element.closest("#wrap");
-        if (wrapContainer && wrapContainer.querySelector("canvas")) {
-            // 确认这个wrap里确实有canvas（避免误判其他#wrap）
-
-            // 进一步验证：检查是否在canvas附近（z-index层级关系）
-            const canvas = wrapContainer.querySelector("canvas");
-            if (canvas && element.compareDocumentPosition(canvas) & Node.DOCUMENT_POSITION_CONTAINS) {
-                return true;
-            }
-        }
-
-        // 方式3：数据属性标记（未来扩展）
-        if (element.getAttribute("data-canvas-editor") === "true") {
-            return true;
-        }
-
-        // 方式4：实例引用检查（最可靠但需要额外实现）
-        // TODO: 可以考虑在CellEditor创建时注册到全局映射表
-        // const editorManager = this.handler.editor;
-        // if (editorManager?.isOurEditor(element)) return true;
-
-        return false;
-    }
 
     /**
      * @private 私有方法 - 编辑状态下的按键处理（预留扩展接口）

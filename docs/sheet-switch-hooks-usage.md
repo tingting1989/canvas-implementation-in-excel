@@ -431,7 +431,7 @@ analytics.onSheetSwitch((prev, curr) => {
 - [EventBus 系统设计](./eventbus-design.md)
 - [Hooks 系统设计](./hooks-design.md)
 - [插件开发指南](./plugin-development-guide.md)
-- [SortPlugin 实现](../src/plugins/SortPlugin.js)
+- [SortPlugin 实现](../src/plugins/sort/SortPlugin.js)
 - [FreezePlugin 实现](../src/plugins/FreezePlugin.js)
 
 ---

@@ -1,19 +1,42 @@
-﻿import { WebComponent } from "../../core/WebComponent.js";
-import { EVENT_NAMES } from "../../constants/eventNames.js";
-import { NullValueHandler } from "../../plugins/filter/NullValueTypes.js";
-
-/**
- * 虚拟值列表组件
+﻿/**
+ * 虚拟值列表组件 (Virtual Value List)
  *
- * 用于大数据量时的虚拟滚动优化，只渲染可见区域的选项。
- * 支持：
+ * 职责：大数据量时的虚拟滚动优化，只渲染可见区域的选项。
+ *
+ * 功能支持：
  * - 虚拟滚动（只渲染可见项）
  * - 复选框勾选状态管理
- * - 全选/取消全选
  * - 空值显示
  *
- * @extends WebComponent
+ * 设计原则：
+ * 1. **纯内容组件**:
+ *    - 继承 HTMLElement，由 FilterDropdown 创建和管理
+ *    - 通过 init() 接收数据和回调
+ *
+ * 2. **防御性编程**:
+ *    - 渲染失败时通过 errorHandler 记录错误
+ *    - 不向上抛出异常（避免影响主流程）
+ *
+ * 3. **性能优化**:
+ *    - 仅渲染可见区域 + 缓冲项
+ *    - 滚动时复用 DOM 节点（通过 innerHTML 批量更新）
+ *
+ * 使用示例：
+ * ```javascript
+ * const list = document.createElement("virtual-value-list");
+ * list.init(items, uncheckedValues, (value, checked) => { ... });
+ * container.appendChild(list);
+ * ```
+ *
+ * @class VirtualValueList
+ * @extends HTMLElement
+ * @see {@link FilterDropdown} - 父组件
  */
+import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { NullValueHandler } from "./NullValueTypes.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+
 const template = document.createElement("template");
 template.innerHTML = `
     <style>
@@ -54,33 +77,107 @@ template.innerHTML = `
     </div>
 `;
 
-export class VirtualValueList extends WebComponent {
+export class VirtualValueList extends HTMLElement {
+    /** @type {string[]} 所有可选值列表 */
     #items = [];
+
+    /** @type {Set<string>} 未勾选的值集合 */
     #uncheckedValues = new Set();
+
+    /** @type {Function|null} 值切换时的回调函数 */
     #onToggle = null;
+
+    /** @type {number} 单项高度（px） */
     #itemHeight = 28;
+
+    /** @type {number} 可见项数量 */
     #visibleCount = 10;
+
+    /** @type {number} 当前滚动位置 */
     #scrollTop = 0;
+
+    /** @type {HTMLElement|null} 渲染区域 DOM 引用 */
     #renderZone = null;
+
+    /** @type {boolean} 数据是否已就绪（init 已调用） */
+    #dataReady = false;
+
+    /** @type {boolean} 事件是否已绑定 */
     #eventsBound = false;
+
+    /**
+     * 创建虚拟值列表实例
+     *
+     * 初始化时仅创建 Shadow DOM，不立即渲染内容。
+     * 需要调用 init() 后才会渲染。
+     *
+     * @constructor
+     */
+    constructor() {
+        super();
+        this.attachShadow({ mode: "open" });
+        this.shadowRoot.appendChild(template.content.cloneNode(true));
+    }
+
+    /**
+     * 组件连接到 DOM 时调用
+     *
+     * 执行流程：
+     * 1. 缓存渲染区域 DOM 引用
+     * 2. 绑定事件
+     * 3. 如果数据已就绪，渲染可见项
+     */
+    connectedCallback() {
+        this.#renderZone = this.shadowRoot.querySelector(".virtual-render-zone");
+        this.#bindEvents();
+
+        if (this.#dataReady) {
+            this.#renderVisibleItems();
+        }
+    }
+
+    /**
+     * 组件断开连接时调用
+     *
+     * 清理内部状态和引用
+     */
+    disconnectedCallback() {
+        this.#items = [];
+        this.#uncheckedValues.clear();
+        this.#onToggle = null;
+        this.#renderZone = null;
+        this.#eventsBound = false;
+    }
 
     /**
      * 初始化组件
      *
+     * 由 FilterDropdown 在创建组件后调用。
+     * 如果组件已连接到 DOM，立即渲染；否则在 connectedCallback 时渲染。
+     *
+     * @public
      * @param {string[]} items - 所有可选值列表
      * @param {Set<string>} uncheckedValues - 未勾选的值集合
-     * @param {Function} onToggle - 值切换时的回调函数
+     * @param {Function} onToggle - 值切换时的回调函数 (value, checked) => void
      */
     init(items, uncheckedValues, onToggle) {
         this.#items = items;
         this.#uncheckedValues = new Set(uncheckedValues);
         this.#onToggle = onToggle;
-        this.#renderVisibleItems();
+        this.#dataReady = true;
+
+        if (this.isConnected) {
+            this.#renderVisibleItems();
+        }
     }
 
     /**
      * 更新列表数据
      *
+     * 当数据变化时调用，会重新渲染可见区域。
+     * 如果列表内容变化，重置滚动位置到顶部。
+     *
+     * @public
      * @param {string[]} items - 新值列表
      * @param {Set<string>} uncheckedValues - 未勾选的值集合
      */
@@ -90,59 +187,49 @@ export class VirtualValueList extends WebComponent {
         this.#items = items;
         this.#uncheckedValues = new Set(uncheckedValues);
 
-        if (itemsChanged && this.shadowRoot) {
+        if (itemsChanged && this.isConnected) {
             this.#scrollTop = 0;
             this.scrollTop = 0;
         }
 
-        this.#renderVisibleItems();
-    }
-
-    /**
-     * 渲染组件
-     *
-     * 创建 Shadow DOM 结构并绑定事件
-     */
-    render() {
-        if (!this.shadowRoot.querySelector(".virtual-container")) {
-            this.shadowRoot.appendChild(template.content.cloneNode(true));
-            this.#applyDynamicStyles();
+        if (this.isConnected) {
+            this.#renderVisibleItems();
         }
-        this.#renderZone = this.shadowRoot.querySelector(".virtual-render-zone");
-        this.#eventsBound = false;
-        this.#bindRenderZoneEvents();
     }
 
     /**
-     * 应用动态样式
+     * 销毁组件
      *
-     * 设置 CSS 变量 --item-height
-     * @private
-     */
-    #applyDynamicStyles() {
-        const host = this.shadowRoot.host;
-        host.style.setProperty("--item-height", `${this.#itemHeight}px`);
-    }
-
-    /**
-     * 组件连接时调用
+     * 清理内部状态，断开连接后由 Web Components 自动回收 DOM
      *
-     * @param {Object} disposable - 可追踪事件的对象
+     * @public
      */
-    onConnect(disposable) {
-        disposable.trackEvent(this, EVENT_NAMES.SCROLL, this.#handleScroll);
-        this.#renderVisibleItems();
-    }
-
-    /**
-     * 组件断开连接时调用
-     */
-    onDisconnect() {
+    destroy() {
         this.#items = [];
         this.#uncheckedValues.clear();
         this.#onToggle = null;
         this.#renderZone = null;
         this.#eventsBound = false;
+
+        if (this.isConnected) {
+            this.remove();
+        }
+    }
+
+    /**
+     * 绑定事件监听器
+     *
+     * - 滚动事件：触发可见区域重新渲染
+     * - 点击事件：切换勾选状态
+     *
+     * @private
+     */
+    #bindEvents() {
+        if (!this.#renderZone || this.#eventsBound) return;
+
+        this.addEventListener(EVENT_NAMES.SCROLL, this.#handleScroll);
+        this.#renderZone.addEventListener(EVENT_NAMES.CLICK, this.#handleRenderZoneClick);
+        this.#eventsBound = true;
     }
 
     /**
@@ -151,92 +238,108 @@ export class VirtualValueList extends WebComponent {
      * @param {Event} e - 滚动事件
      * @private
      */
-    #handleScroll(e) {
+    #handleScroll = (e) => {
         this.#scrollTop = e.target?.scrollTop || 0;
         this.#renderVisibleItems();
-    }
+    };
+
+    /**
+     * 处理渲染区域点击事件
+     *
+     * 切换对应项的勾选状态
+     *
+     * @param {Event} e - 点击事件
+     * @private
+     */
+    #handleRenderZoneClick = (e) => {
+        const valueItem = e.target.closest(".virtual-item");
+        if (!valueItem) return;
+
+        const key = valueItem.dataset.value;
+        const checkbox = valueItem.querySelector('input[type="checkbox"]');
+
+        if (e.target === checkbox) {
+            if (checkbox.checked) {
+                this.#uncheckedValues.delete(key);
+            } else {
+                this.#uncheckedValues.add(key);
+            }
+            this.#onToggle?.(key, !this.#uncheckedValues.has(key));
+        } else {
+            checkbox.checked = !checkbox.checked;
+            if (checkbox.checked) {
+                this.#uncheckedValues.delete(key);
+            } else {
+                this.#uncheckedValues.add(key);
+            }
+            this.#onToggle?.(key, checkbox.checked);
+        }
+    };
 
     /**
      * 渲染可见区域的列表项
      *
-     * 根据当前滚动位置计算可见范围，只渲染该范围内的项
+     * 根据当前滚动位置计算可见范围，只渲染该范围内的项。
+     * 可见范围 = [startIndex, startIndex + visibleCount + 2]（含缓冲）
+     *
      * @private
      */
     #renderVisibleItems() {
         if (!this.#renderZone) return;
 
-        const container = this.shadowRoot.querySelector(".virtual-container");
-        if (container) {
-            container.style.height = `${this.#items.length * this.#itemHeight}px`;
-        }
-
-        const startIndex = Math.floor(this.#scrollTop / this.#itemHeight);
-        const endIndex = Math.min(startIndex + this.#visibleCount + 2, this.#items.length);
-
-        let html = "";
-
-        for (let i = startIndex; i < endIndex; i++) {
-            const value = this.#items[i];
-            const isBlank = value === NullValueHandler.NULL_KEY;
-            const checked = !this.#uncheckedValues.has(value);
-            const top = i * this.#itemHeight;
-
-            if (isBlank) {
-                html += `
-                    <div class="virtual-item virtual-blank-item" style="top: ${top}px;" data-value="${value}">
-                        <input type="checkbox" ${checked ? "checked" : ""}>
-                        <span>${NullValueHandler.BLANK_DISPLAY}</span>
-                    </div>
-                `;
-            } else {
-                html += `
-                    <div class="virtual-item" style="top: ${top}px;" data-value="${this.escapeHtml(value)}">
-                        <input type="checkbox" ${checked ? "checked" : ""}>
-                        <span>${this.escapeHtml(value)}</span>
-                    </div>
-                `;
+        try {
+            const container = this.shadowRoot.querySelector(".virtual-container");
+            if (container) {
+                container.style.height = `${this.#items.length * this.#itemHeight}px`;
             }
-        }
 
-        this.#renderZone.innerHTML = html;
+            const startIndex = Math.floor(this.#scrollTop / this.#itemHeight);
+            const endIndex = Math.min(startIndex + this.#visibleCount + 2, this.#items.length);
+
+            let html = "";
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const value = this.#items[i];
+                const isBlank = value === NullValueHandler.NULL_KEY;
+                const checked = !this.#uncheckedValues.has(value);
+                const top = i * this.#itemHeight;
+
+                if (isBlank) {
+                    html += `
+                        <div class="virtual-item virtual-blank-item" style="top: ${top}px;" data-value="${value}">
+                            <input type="checkbox" ${checked ? "checked" : ""}>
+                            <span>${NullValueHandler.BLANK_DISPLAY}</span>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="virtual-item" style="top: ${top}px;" data-value="${this.#escapeHtml(value)}">
+                            <input type="checkbox" ${checked ? "checked" : ""}>
+                            <span>${this.#escapeHtml(value)}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            this.#renderZone.innerHTML = html;
+        } catch (error) {
+            errorHandler.error(ERROR_CODE.FILTER_VIRTUAL_LIST_RENDER_ERROR, "渲染虚拟列表失败", { originalError: error });
+        }
     }
 
     /**
-     * 绑定渲染区域的事件
+     * HTML 转义
      *
-     * 处理列表项的点击事件，切换勾选状态
+     * 将特殊 HTML 字符转换为实体表示，防止 XSS
+     *
+     * @param {string} text - 待转义的文本
+     * @returns {string} 转义后的安全文本
      * @private
      */
-    #bindRenderZoneEvents() {
-        if (!this.#renderZone || this.#eventsBound) return;
-
-        const handler = (e) => {
-            const valueItem = e.target.closest(".virtual-item");
-            if (!valueItem) return;
-
-            const key = valueItem.dataset.value;
-            const checkbox = valueItem.querySelector('input[type="checkbox"]');
-
-            if (e.target === checkbox) {
-                if (checkbox.checked) {
-                    this.#uncheckedValues.delete(key);
-                } else {
-                    this.#uncheckedValues.add(key);
-                }
-                this.#onToggle?.(key, !this.#uncheckedValues.has(key));
-            } else {
-                checkbox.checked = !checkbox.checked;
-                if (checkbox.checked) {
-                    this.#uncheckedValues.delete(key);
-                } else {
-                    this.#uncheckedValues.add(key);
-                }
-                this.#onToggle?.(key, checkbox.checked);
-            }
-        };
-
-        this.#renderZone.addEventListener(EVENT_NAMES.CLICK, handler);
-        this.#eventsBound = true;
+    #escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
     }
 }
 

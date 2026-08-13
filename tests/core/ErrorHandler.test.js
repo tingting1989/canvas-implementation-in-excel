@@ -35,7 +35,7 @@ describe("ErrorHandler - handle", () => {
 
     it("should call console.error for handle()", () => {
         const spy = vi.spyOn(console, "error").mockImplementation(() => {});
-        errorHandler.handle(ERROR_CODE.PLUGIN_NOT_REGISTERED, "test message");
+        errorHandler.error(ERROR_CODE.PLUGIN_NOT_REGISTERED, "test message");
         expect(spy).toHaveBeenCalled();
         spy.mockRestore();
     });
@@ -43,7 +43,7 @@ describe("ErrorHandler - handle", () => {
     it("should notify listeners on handle()", () => {
         const listener = vi.fn();
         errorHandler.onError(listener);
-        errorHandler.handle("CODE", "msg", { key: "val" });
+        errorHandler.error("CODE", "msg", { key: "val" });
         expect(listener).toHaveBeenCalledWith("CODE", "msg", ERROR_LEVEL.ERROR, { key: "val" });
         errorHandler.offError(listener);
     });
@@ -134,7 +134,7 @@ describe("ErrorHandler - Listeners", () => {
     it("should register and call listener", () => {
         const listener = vi.fn();
         errorHandler.onError(listener);
-        errorHandler.handle("CODE", "msg");
+        errorHandler.error("CODE", "msg");
         expect(listener).toHaveBeenCalledTimes(1);
         errorHandler.offError(listener);
     });
@@ -143,7 +143,7 @@ describe("ErrorHandler - Listeners", () => {
         const listener = vi.fn();
         errorHandler.onError(listener);
         errorHandler.offError(listener);
-        errorHandler.handle("CODE", "msg");
+        errorHandler.error("CODE", "msg");
         expect(listener).not.toHaveBeenCalled();
     });
 
@@ -155,7 +155,7 @@ describe("ErrorHandler - Listeners", () => {
         const goodListener = vi.fn();
         errorHandler.onError(goodListener);
         vi.spyOn(console, "error").mockImplementation(() => {});
-        expect(() => errorHandler.handle("CODE", "msg")).not.toThrow();
+        expect(() => errorHandler.error("CODE", "msg")).not.toThrow();
         expect(goodListener).toHaveBeenCalled();
         errorHandler.offError(badListener);
         errorHandler.offError(goodListener);
@@ -165,7 +165,7 @@ describe("ErrorHandler - Listeners", () => {
         errorHandler.onError("not a function");
         errorHandler.onError(null);
         vi.spyOn(console, "error").mockImplementation(() => {});
-        expect(() => errorHandler.handle("CODE", "msg")).not.toThrow();
+        expect(() => errorHandler.error("CODE", "msg")).not.toThrow();
     });
 });
 
