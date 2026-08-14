@@ -6,7 +6,11 @@ import { DateEditor } from "@/editor/editors/DateEditor";
 import { SelectEditor } from "@/editor/editors/SelectEditor";
 import { EventBus } from "@/core/EventBus";
 
-function createMockRenderEngine(overrides = {}) {
+type MockRenderEngine = ReturnType<typeof createMockRenderEngine>;
+type MockSheet = ReturnType<typeof createMockSheet>;
+type MockDOMElement = ReturnType<typeof createMockDOMElement>;
+
+function createMockRenderEngine(overrides: Record<string, unknown> = {}) {
     const mockCanvas = { parentElement: { appendChild: vi.fn() } };
     return {
         canvas: mockCanvas,
@@ -19,19 +23,19 @@ function createMockRenderEngine(overrides = {}) {
     };
 }
 
-function createMockSheet(opts = {}) {
+function createMockSheet(opts: Record<string, unknown> = {}) {
     return {
-        isDisabled: vi.fn(() => false),
-        getMerge: vi.fn(() => null),
+        isDisabled: vi.fn((_r?: number, _c?: number) => false),
+        getMerge: vi.fn((_r?: number, _c?: number) => null),
         resolveStyle: vi.fn(() => ({})),
         cellStore: { get: vi.fn(() => ({ value: opts.cellValue ?? "test", styleId: 0 })) },
-        parseCellValue: vi.fn((r, c, v) => v),
+        parseCellValue: vi.fn((_r: number, _c: number, v: unknown) => v),
         validateCellValue: vi.fn(() => true),
         setCell: vi.fn(),
         selection: { setActive: vi.fn(), setRange: vi.fn() },
-        rowColManager: { rowCount: opts.rowCount ?? 100, colCount: opts.colCount ?? 26 },
+        rowColManager: { rowCount: opts.rowCount ?? 100, realColCount: opts.colCount ?? 26 },
         getCellTypeInstance: vi.fn(() => null),
-        _batchFillRange: null,
+        _batchFillRange: null as unknown,
         beginBatch: vi.fn(),
         endBatch: vi.fn(),
         bus: new EventBus(),
@@ -41,10 +45,10 @@ function createMockSheet(opts = {}) {
 function createMockDOMElement() {
     return {
         id: "",
-        style: { cssText: "", display: "none" },
+        style: { cssText: "", display: "none" } as Record<string, string>,
         value: "",
         innerHTML: "",
-        options: [],
+        options: [] as HTMLOptionElement[],
         selectedIndex: 0,
         setAttribute: vi.fn(),
         addEventListener: vi.fn(),
@@ -58,23 +62,23 @@ function createMockDOMElement() {
     };
 }
 
-function createEditorWithDOM(EditorClass, engine, sheet) {
-    const editor = new EditorClass(engine, sheet);
+function createEditorWithDOM(EditorClass: typeof CellEditor, engine: MockRenderEngine, sheet: MockSheet | null) {
+    const editor = new EditorClass(engine as unknown as ConstructorParameters<typeof EditorClass>[0], sheet as unknown as ConstructorParameters<typeof EditorClass>[1]);
     const domElement = createMockDOMElement();
-    editor.editor = domElement;
+    editor.editor = domElement as unknown as HTMLInputElement;
     return { editor, domElement };
 }
 
-function setupEditorWithHandlers(EditorClass, engine, sheet) {
-    const ed = new EditorClass(engine, sheet);
-    const handlers = {};
+function setupEditorWithHandlers(EditorClass: typeof CellEditor, engine: MockRenderEngine, sheet: MockSheet) {
+    const ed = new EditorClass(engine as unknown as ConstructorParameters<typeof EditorClass>[0], sheet as unknown as ConstructorParameters<typeof EditorClass>[1]);
+    const handlers: Record<string, (...args: unknown[]) => void> = {};
 
     const domElement = createMockDOMElement();
-    domElement.addEventListener = vi.fn((event, handler) => {
+    domElement.addEventListener = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
         handlers[event] = handler;
     });
 
-    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(domElement);
+    const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(domElement as unknown as HTMLElement);
 
     ed.createEditor();
 
@@ -87,7 +91,7 @@ describe("CellEditor - Template Method Defaults", () => {
     it("should provide default values for all template methods", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.getElementType()).toBe("input");
         expect(editor.getEditorCssClass()).toBe("");
@@ -101,7 +105,7 @@ describe("CellEditor - Template Method Defaults", () => {
     it("should initialize common state", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.activeRow).toBe(-1);
         expect(editor.activeCol).toBe(-1);
@@ -113,7 +117,7 @@ describe("CellEditor - Template Method Defaults", () => {
     it("readCellValue should read from cellStore", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet({ cellValue: "hello" });
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         const val = editor.readCellValue(0, 0);
         expect(sheet.cellStore.get).toHaveBeenCalledWith(0, 0);
@@ -123,7 +127,7 @@ describe("CellEditor - Template Method Defaults", () => {
     it("formatValueForEditor should handle various types", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.formatValueForEditor("abc")).toBe("abc");
         expect(editor.formatValueForEditor(123)).toBe("123");
@@ -136,7 +140,7 @@ describe("CellEditor - Template Method Defaults", () => {
     it("areValuesEqual should use strict equality by default", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.areValuesEqual(0, 0)).toBe(true);
         expect(editor.areValuesEqual(0, "0")).toBe(false);
@@ -147,7 +151,7 @@ describe("CellEditor - Template Method Defaults", () => {
     it("getEditorValue should return empty string when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.getEditorValue()).toBe("");
     });
@@ -155,8 +159,8 @@ describe("CellEditor - Template Method Defaults", () => {
     it("getEditorValue should return editor value when editor exists", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
-        editor.editor = { value: "hello" };
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
+        editor.editor = { value: "hello" } as unknown as HTMLInputElement;
 
         expect(editor.getEditorValue()).toBe("hello");
     });
@@ -166,7 +170,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("TextEditor should read cell value correctly", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new TextEditor(engine, sheet);
+        const editor = new TextEditor(engine as unknown as ConstructorParameters<typeof TextEditor>[0], sheet as unknown as ConstructorParameters<typeof TextEditor>[1]);
 
         editor.readCellValue(5, 3);
         expect(sheet.cellStore.get).toHaveBeenCalledWith(5, 3);
@@ -175,7 +179,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("TextEditor should use batch in batchFill", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new TextEditor(engine, sheet);
+        const editor = new TextEditor(engine as unknown as ConstructorParameters<typeof TextEditor>[0], sheet as unknown as ConstructorParameters<typeof TextEditor>[1]);
 
         expect(editor.useBatchInBatchFill()).toBe(true);
     });
@@ -183,7 +187,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("TextEditor should inherit default getEditorCssClass from base", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new TextEditor(engine, sheet);
+        const editor = new TextEditor(engine as unknown as ConstructorParameters<typeof TextEditor>[0], sheet as unknown as ConstructorParameters<typeof TextEditor>[1]);
 
         expect(editor.getEditorCssClass()).toBe("");
     });
@@ -191,7 +195,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("NumericEditor should have numeric CSS class and trim value", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
 
         expect(editor.getEditorCssClass()).toBe("cs-cell-editor--numeric");
         expect(editor.getEditorAttributes()).toEqual({ type: "text", inputmode: "decimal" });
@@ -200,8 +204,8 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("NumericEditor should trim editor value", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
-        editor.editor = { value: "  123  " };
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
+        editor.editor = { value: "  123  " } as unknown as HTMLInputElement;
 
         expect(editor.getEditorValue()).toBe("123");
     });
@@ -209,7 +213,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("NumericEditor should validate before commit", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
         editor.activeRow = 0;
         editor.activeCol = 0;
 
@@ -223,7 +227,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("DateEditor should have date CSS class", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         expect(editor.getEditorCssClass()).toBe("cs-cell-editor--date");
     });
@@ -231,7 +235,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("DateEditor should compare Date objects by timestamp", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const d1 = new Date(2024, 0, 1);
         const d2 = new Date(2024, 0, 1);
@@ -244,7 +248,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("DateEditor should format Date for editor", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const date = new Date(2024, 0, 15);
         expect(editor.formatValueForEditor(date)).toBe("2024-01-15");
@@ -253,7 +257,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("SelectEditor should use select element type", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new SelectEditor(engine, sheet);
+        const editor = new SelectEditor(engine as unknown as ConstructorParameters<typeof SelectEditor>[0], sheet as unknown as ConstructorParameters<typeof SelectEditor>[1]);
 
         expect(editor.getElementType()).toBe("select");
         expect(editor.getEditorCssClass()).toBe("cs-cell-editor--select");
@@ -262,7 +266,7 @@ describe("CellEditor - Subclass Differentiation", () => {
     it("SelectEditor setCursorMode should be no-op", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new SelectEditor(engine, sheet);
+        const editor = new SelectEditor(engine as unknown as ConstructorParameters<typeof SelectEditor>[0], sheet as unknown as ConstructorParameters<typeof SelectEditor>[1]);
 
         expect(editor.setCursorMode("select")).toBeUndefined();
         expect(editor.setCursorMode("end")).toBeUndefined();
@@ -308,7 +312,7 @@ describe("CellEditor - show / hide lifecycle", () => {
     it("show should not activate when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         editor.show(2, 3);
 
@@ -331,7 +335,7 @@ describe("CellEditor - show / hide lifecycle", () => {
     it("hide should be safe when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(() => editor.hide()).not.toThrow();
     });
@@ -397,7 +401,7 @@ describe("CellEditor - Scroll Handling", () => {
     it("hideForScroll should do nothing if editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
         editor.activeRow = 5;
         editor.activeCol = 3;
 
@@ -430,7 +434,7 @@ describe("CellEditor - Scroll Handling", () => {
     it("restoreFromScroll should do nothing if editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
         editor.activeRow = 5;
         editor.activeCol = 3;
 
@@ -451,7 +455,7 @@ describe("CellEditor - Public API", () => {
     it("getValue should return empty string when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.getValue()).toBe("");
     });
@@ -468,7 +472,7 @@ describe("CellEditor - Public API", () => {
     it("setValue should do nothing when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(() => editor.setValue("test")).not.toThrow();
     });
@@ -485,7 +489,7 @@ describe("CellEditor - Public API", () => {
     it("focus should be safe when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(() => editor.focus()).not.toThrow();
     });
@@ -493,22 +497,20 @@ describe("CellEditor - Public API", () => {
     it("destroy should clean up references", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const { editor, domElement } = createEditorWithDOM(CellEditor, engine, sheet);
+        const { editor } = createEditorWithDOM(CellEditor, engine, sheet);
 
         editor.destroy();
 
         expect(editor.editor).toBeNull();
         expect(editor.renderEngine).toBeNull();
         expect(editor.sheet).toBeNull();
-        // DOM 移除由 DOMComponent 基类通过 createElement 跟踪管理
-        // 手动赋值的 editor 不会被基类跟踪，但引用会被清空
     });
 
     it("destroy should be safe when editor has no parentElement", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
-        editor.editor = { parentElement: null };
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
+        editor.editor = { parentElement: null } as unknown as HTMLInputElement;
 
         expect(() => editor.destroy()).not.toThrow();
         expect(editor.editor).toBeNull();
@@ -557,7 +559,7 @@ describe("CellEditor - setCursorMode", () => {
     it("should be safe when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(() => editor.setCursorMode("select")).not.toThrow();
         expect(() => editor.setCursorMode("end")).not.toThrow();
@@ -577,7 +579,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("should format ISO date string", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         expect(editor.formatValueForEditor("2024-03-15")).toBe("2024-03-15");
     });
@@ -585,7 +587,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("should format Date object", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const date = new Date(2024, 0, 15);
         expect(editor.formatValueForEditor(date)).toBe("2024-01-15");
@@ -594,7 +596,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("should handle empty string", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         expect(editor.formatValueForEditor("")).toBe("");
     });
@@ -602,7 +604,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("should handle null and undefined", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         expect(editor.formatValueForEditor(null)).toBe("");
         expect(editor.formatValueForEditor(undefined)).toBe("");
@@ -611,7 +613,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("areValuesEqual should handle mixed Date and non-Date", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const d = new Date(2024, 0, 1);
         expect(editor.areValuesEqual(d, d.getTime())).toBe(true);
@@ -622,7 +624,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("areValuesEqual should handle null/undefined", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         expect(editor.areValuesEqual(null, null)).toBe(true);
         expect(editor.areValuesEqual(undefined, undefined)).toBe(true);
@@ -632,7 +634,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("should format single-digit month/day with padding", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const date = new Date(2024, 0, 5);
         expect(editor.formatValueForEditor(date)).toBe("2024-01-05");
@@ -641,7 +643,7 @@ describe("DateEditor - Date Parsing and Formatting", () => {
     it("should handle leap year date", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const date = new Date(2024, 1, 29);
         expect(editor.formatValueForEditor(date)).toBe("2024-02-29");
@@ -692,7 +694,7 @@ describe("SelectEditor - Options Building", () => {
     it("validateBeforeCommit should delegate to sheet", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new SelectEditor(engine, sheet);
+        const editor = new SelectEditor(engine as unknown as ConstructorParameters<typeof SelectEditor>[0], sheet as unknown as ConstructorParameters<typeof SelectEditor>[1]);
         editor.activeRow = 0;
         editor.activeCol = 0;
 
@@ -726,19 +728,17 @@ describe("SelectEditor - Options Building", () => {
 
         editor.bindEditorEvents();
 
-        // trackEvent 内部调用 target.addEventListener(type, handler, options)
-        // options 未传递时为 undefined，需要精确匹配三个参数
         expect(domElement.addEventListener).toHaveBeenCalledWith("change", expect.any(Function), undefined);
     });
 });
 
 describe("CellEditor - Event Handling", () => {
-    let engine, sheet, editor, domElement, handlers;
+    let engine: MockRenderEngine, sheet: MockSheet, editor: CellEditor, domElement: MockDOMElement, handlers: Record<string, (...args: unknown[]) => void>;
 
     beforeEach(() => {
         engine = createMockRenderEngine();
         sheet = createMockSheet();
-        sheet.rowColManager = { rowCount: 100, realColCount: 26 };
+        sheet.rowColManager = { rowCount: 100, colCount: 26 };
 
         const result = setupEditorWithHandlers(CellEditor, engine, sheet);
         editor = result.editor;
@@ -835,12 +835,12 @@ describe("CellEditor - Event Handling", () => {
 });
 
 describe("CellEditor - Blur Commit Logic", () => {
-    let engine, sheet, editor, domElement, handlers;
+    let engine: MockRenderEngine, sheet: MockSheet, editor: CellEditor, domElement: MockDOMElement, handlers: Record<string, (...args: unknown[]) => void>;
 
     beforeEach(() => {
         engine = createMockRenderEngine();
         sheet = createMockSheet();
-        sheet.rowColManager = { rowCount: 100, realColCount: 26 };
+        sheet.rowColManager = { rowCount: 100, colCount: 26 };
 
         const result = setupEditorWithHandlers(CellEditor, engine, sheet);
         editor = result.editor;
@@ -936,12 +936,12 @@ describe("CellEditor - Blur Commit Logic", () => {
 });
 
 describe("CellEditor - Navigation Logic", () => {
-    let engine, sheet, editor, domElement, handlers;
+    let engine: MockRenderEngine, sheet: MockSheet, editor: CellEditor, domElement: MockDOMElement, handlers: Record<string, (...args: unknown[]) => void>;
 
     beforeEach(() => {
         engine = createMockRenderEngine();
         sheet = createMockSheet();
-        sheet.rowColManager = { rowCount: 100, realColCount: 26 };
+        sheet.rowColManager = { rowCount: 100, colCount: 26 };
 
         const result = setupEditorWithHandlers(CellEditor, engine, sheet);
         editor = result.editor;
@@ -995,7 +995,7 @@ describe("CellEditor - Navigation Logic", () => {
     });
 
     it("Enter should skip past merged cell bottom", () => {
-        sheet.getMerge.mockImplementation((r, c) => {
+        sheet.getMerge.mockImplementation((r: number, c: number) => {
             if (r === 5 && c === 3) return { topRow: 5, topCol: 3, bottomRow: 7, bottomCol: 5 };
             return null;
         });
@@ -1006,7 +1006,7 @@ describe("CellEditor - Navigation Logic", () => {
     });
 
     it("Tab should skip past merged cell right edge", () => {
-        sheet.getMerge.mockImplementation((r, c) => {
+        sheet.getMerge.mockImplementation((r: number, c: number) => {
             if (r === 5 && c === 3) return { topRow: 5, topCol: 3, bottomRow: 7, bottomCol: 5 };
             return null;
         });
@@ -1018,7 +1018,7 @@ describe("CellEditor - Navigation Logic", () => {
 
     it("Shift+Tab should skip past merged cell left edge", () => {
         editor.activeCol = 5;
-        sheet.getMerge.mockImplementation((r, c) => {
+        sheet.getMerge.mockImplementation((r: number, c: number) => {
             if (r === 5 && c === 5) return { topRow: 5, topCol: 3, bottomRow: 7, bottomCol: 5 };
             return null;
         });
@@ -1029,7 +1029,7 @@ describe("CellEditor - Navigation Logic", () => {
     });
 
     it("Enter should select merge range if target is merged", () => {
-        sheet.getMerge.mockImplementation((r, c) => {
+        sheet.getMerge.mockImplementation((r: number, c: number) => {
             if (r === 5 && c === 3) return null;
             if (r === 6 && c === 3) return { topRow: 6, topCol: 3, bottomRow: 8, bottomCol: 5 };
             return null;
@@ -1041,7 +1041,7 @@ describe("CellEditor - Navigation Logic", () => {
     });
 
     it("Tab should select merge range if target is merged", () => {
-        sheet.getMerge.mockImplementation((r, c) => {
+        sheet.getMerge.mockImplementation((r: number, c: number) => {
             if (r === 5 && c === 3) return null;
             if (r === 5 && c === 4) return { topRow: 5, topCol: 4, bottomRow: 7, bottomCol: 6 };
             return null;
@@ -1069,15 +1069,15 @@ describe("CellEditor - Navigation Logic", () => {
 });
 
 describe("CellEditor - Batch Fill Logic", () => {
-    let engine, sheet, editor, domElement, handlers;
+    let engine: MockRenderEngine, sheet: MockSheet, editor: TextEditor, domElement: MockDOMElement, handlers: Record<string, (...args: unknown[]) => void>;
 
     beforeEach(() => {
         engine = createMockRenderEngine();
         sheet = createMockSheet();
-        sheet.rowColManager = { rowCount: 100, realColCount: 26 };
+        sheet.rowColManager = { rowCount: 100, colCount: 26 };
 
         const result = setupEditorWithHandlers(TextEditor, engine, sheet);
-        editor = result.editor;
+        editor = result.editor as TextEditor;
         domElement = result.domElement;
         handlers = result.handlers;
 
@@ -1100,7 +1100,7 @@ describe("CellEditor - Batch Fill Logic", () => {
         sheet._batchFillRange = { topRow: 0, topCol: 0, bottomRow: 2, bottomCol: 2 };
         sheet.cellStore.get.mockReturnValue({ value: "", styleId: 0 });
         sheet.parseCellValue.mockReturnValue("fillval");
-        sheet.isDisabled.mockImplementation((r, c) => r === 1 && c === 1);
+        sheet.isDisabled.mockImplementation((r: number, c: number) => r === 1 && c === 1);
         domElement.value = "fillval";
 
         handlers.blur();
@@ -1158,7 +1158,7 @@ describe("CellEditor - Batch Fill Logic", () => {
         sheet._batchFillRange = { topRow: 0, topCol: 0, bottomRow: 0, bottomCol: 0 };
         sheet.cellStore.get.mockReturnValue({ value: "", styleId: 0 });
         sheet.parseCellValue.mockReturnValue("fillval");
-        baseEditor.editor.value = "fillval";
+        (baseEditor.editor as HTMLInputElement).value = "fillval";
 
         baseHandlers.blur();
 
@@ -1171,15 +1171,15 @@ describe("CellEditor - createEditor", () => {
     it("should create DOM element and append to canvas parent", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         const mockElement = createMockDOMElement();
-        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement);
+        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement as unknown as HTMLElement);
 
         editor.createEditor();
 
         expect(createElementSpy).toHaveBeenCalledWith("input");
-        expect(engine.canvas.parentElement.appendChild).toHaveBeenCalledWith(mockElement);
+        expect(engine.canvasParent.appendChild).toHaveBeenCalledWith(mockElement);
         expect(mockElement.addEventListener).toHaveBeenCalled();
 
         createElementSpy.mockRestore();
@@ -1188,11 +1188,11 @@ describe("CellEditor - createEditor", () => {
     it("should call afterCreateEditor hook", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
         const afterCreateSpy = vi.spyOn(editor, "afterCreateEditor");
 
         const mockElement = createMockDOMElement();
-        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement);
+        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement as unknown as HTMLElement);
 
         editor.createEditor();
 
@@ -1204,11 +1204,11 @@ describe("CellEditor - createEditor", () => {
     it("should call bindEditorEvents hook", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
         const bindEventsSpy = vi.spyOn(editor, "bindEditorEvents");
 
         const mockElement = createMockDOMElement();
-        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement);
+        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement as unknown as HTMLElement);
 
         editor.createEditor();
 
@@ -1220,10 +1220,10 @@ describe("CellEditor - createEditor", () => {
     it("should set editor attributes from getEditorAttributes", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
 
         const mockElement = createMockDOMElement();
-        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement);
+        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement as unknown as HTMLElement);
 
         editor.createEditor();
 
@@ -1236,16 +1236,16 @@ describe("CellEditor - createEditor", () => {
     it("should skip null/undefined attribute values", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
         vi.spyOn(editor, "getEditorAttributes").mockReturnValue({
             type: "text",
-            placeholder: null,
-            name: undefined,
+            placeholder: null as unknown as string,
+            name: undefined as unknown as string,
             required: "true",
         });
 
         const mockElement = createMockDOMElement();
-        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement);
+        const createElementSpy = vi.spyOn(document, "createElement").mockReturnValue(mockElement as unknown as HTMLElement);
 
         editor.createEditor();
 
@@ -1262,7 +1262,7 @@ describe("CellEditor - Aggressive: Null Safety", () => {
     it("show() should not throw when editor is null (graceful return)", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(() => editor.show(0, 0)).not.toThrow();
         expect(editor.activeRow).toBe(-1);
@@ -1271,7 +1271,7 @@ describe("CellEditor - Aggressive: Null Safety", () => {
     it("hideForScroll() should not throw when editor is null but activeRow >= 0", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
         editor.activeRow = 5;
         editor.activeCol = 3;
 
@@ -1281,7 +1281,7 @@ describe("CellEditor - Aggressive: Null Safety", () => {
     it("restoreFromScroll() should not throw when editor is null but activeRow >= 0", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
         editor.activeRow = 5;
         editor.activeCol = 3;
 
@@ -1291,7 +1291,7 @@ describe("CellEditor - Aggressive: Null Safety", () => {
     it("getEditorValue() should return empty string when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.getEditorValue()).toBe("");
     });
@@ -1299,7 +1299,7 @@ describe("CellEditor - Aggressive: Null Safety", () => {
     it("setCursorMode() should not throw when editor is null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(() => editor.setCursorMode("select")).not.toThrow();
         expect(() => editor.setCursorMode("end")).not.toThrow();
@@ -1317,8 +1317,8 @@ describe("CellEditor - Aggressive: Null Safety", () => {
     it("destroy() should handle editor with null parentElement", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
-        editor.editor = { parentElement: null };
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
+        editor.editor = { parentElement: null } as unknown as HTMLInputElement;
 
         expect(() => editor.destroy()).not.toThrow();
         expect(editor.editor).toBeNull();
@@ -1327,18 +1327,18 @@ describe("CellEditor - Aggressive: Null Safety", () => {
     it("destroy() should handle editor with undefined parentElement", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
-        editor.editor = { parentElement: undefined };
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
+        editor.editor = { parentElement: undefined } as unknown as HTMLInputElement;
 
         expect(() => editor.destroy()).not.toThrow();
     });
 });
 
 describe("CellEditor - Aggressive: Type Coercion", () => {
-    it("areValuesEqual uses === so 0 !== '0' - potential type coercion issue", () => {
+    it("areValuesEqual uses === so 0 !== '0'", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.areValuesEqual(0, "0")).toBe(false);
         expect(editor.areValuesEqual(1, "1")).toBe(false);
@@ -1347,10 +1347,10 @@ describe("CellEditor - Aggressive: Type Coercion", () => {
         expect(editor.areValuesEqual(null, undefined)).toBe(false);
     });
 
-    it("formatValueForEditor(false) returns 'false' string - may be unexpected", () => {
+    it("formatValueForEditor(false) returns 'false' string", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.formatValueForEditor(false)).toBe("false");
         expect(editor.formatValueForEditor(0)).toBe("0");
@@ -1360,7 +1360,7 @@ describe("CellEditor - Aggressive: Type Coercion", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
         sheet.cellStore.get.mockReturnValue(undefined);
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         const val = editor.readCellValue(0, 0);
         expect(val).toBe("");
@@ -1501,7 +1501,7 @@ describe("CellEditor - Aggressive: Boundary Conditions", () => {
     it("validateBeforeCommit default should accept any value including undefined", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(editor.validateBeforeCommit(undefined)).toBe(true);
         expect(editor.validateBeforeCommit(null)).toBe(true);
@@ -1513,8 +1513,8 @@ describe("CellEditor - Aggressive: Boundary Conditions", () => {
     it("NumericEditor getEditorValue should handle whitespace-only input", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
-        editor.editor = { value: "   " };
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
+        editor.editor = { value: "   " } as unknown as HTMLInputElement;
 
         expect(editor.getEditorValue()).toBe("");
     });
@@ -1522,8 +1522,8 @@ describe("CellEditor - Aggressive: Boundary Conditions", () => {
     it("NumericEditor getEditorValue should handle tab and newline", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
-        editor.editor = { value: "\t123\n" };
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
+        editor.editor = { value: "\t123\n" } as unknown as HTMLInputElement;
 
         expect(editor.getEditorValue()).toBe("123");
     });
@@ -1531,7 +1531,7 @@ describe("CellEditor - Aggressive: Boundary Conditions", () => {
     it("NumericEditor getEditorValue should handle null editor", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
 
         expect(editor.getEditorValue()).toBe("");
     });
@@ -1541,7 +1541,7 @@ describe("CellEditor - Aggressive: DateEditor Edge Cases", () => {
     it("areValuesEqual with NaN Date", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const invalidDate = new Date("invalid");
         expect(editor.areValuesEqual(invalidDate, invalidDate)).toBe(true);
@@ -1551,7 +1551,7 @@ describe("CellEditor - Aggressive: DateEditor Edge Cases", () => {
     it("formatValueForEditor with Invalid Date", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const invalidDate = new Date("invalid");
         expect(editor.formatValueForEditor(invalidDate)).toBe("");
@@ -1560,7 +1560,7 @@ describe("CellEditor - Aggressive: DateEditor Edge Cases", () => {
     it("formatValueForEditor with far future date", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const date = new Date(9999, 11, 31);
         expect(editor.formatValueForEditor(date)).toBe("9999-12-31");
@@ -1569,7 +1569,7 @@ describe("CellEditor - Aggressive: DateEditor Edge Cases", () => {
     it("areValuesEqual with Date vs number timestamp", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
 
         const d = new Date(2024, 0, 1);
         expect(editor.areValuesEqual(d, d.getTime())).toBe(true);
@@ -1578,7 +1578,7 @@ describe("CellEditor - Aggressive: DateEditor Edge Cases", () => {
     it("validateBeforeCommit should delegate to sheet", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new DateEditor(engine, sheet);
+        const editor = new DateEditor(engine as unknown as ConstructorParameters<typeof DateEditor>[0], sheet as unknown as ConstructorParameters<typeof DateEditor>[1]);
         editor.activeRow = 0;
         editor.activeCol = 0;
 
@@ -1594,7 +1594,7 @@ describe("CellEditor - Aggressive: SelectEditor Edge Cases", () => {
     it("getEditorCssClass should return select variant", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new SelectEditor(engine, sheet);
+        const editor = new SelectEditor(engine as unknown as ConstructorParameters<typeof SelectEditor>[0], sheet as unknown as ConstructorParameters<typeof SelectEditor>[1]);
 
         expect(editor.getEditorCssClass()).toBe("cs-cell-editor--select");
     });
@@ -1642,7 +1642,7 @@ describe("CellEditor - Aggressive: NumericEditor Edge Cases", () => {
     it("getEditorCssClass should return numeric variant", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
 
         expect(editor.getEditorCssClass()).toBe("cs-cell-editor--numeric");
     });
@@ -1650,7 +1650,7 @@ describe("CellEditor - Aggressive: NumericEditor Edge Cases", () => {
     it("getEditorAttributes should return correct attributes", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
 
         const attrs = editor.getEditorAttributes();
         expect(attrs).toEqual({ type: "text", inputmode: "decimal" });
@@ -1659,7 +1659,7 @@ describe("CellEditor - Aggressive: NumericEditor Edge Cases", () => {
     it("validateBeforeCommit should handle validateCellValue returning undefined", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
         editor.activeRow = 0;
         editor.activeCol = 0;
 
@@ -1670,7 +1670,7 @@ describe("CellEditor - Aggressive: NumericEditor Edge Cases", () => {
     it("validateBeforeCommit should handle validateCellValue returning null", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
         editor.activeRow = 0;
         editor.activeCol = 0;
 
@@ -1681,7 +1681,7 @@ describe("CellEditor - Aggressive: NumericEditor Edge Cases", () => {
     it("validateBeforeCommit should reject when validateCellValue returns false", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new NumericEditor(engine, sheet);
+        const editor = new NumericEditor(engine as unknown as ConstructorParameters<typeof NumericEditor>[0], sheet as unknown as ConstructorParameters<typeof NumericEditor>[1]);
         editor.activeRow = 0;
         editor.activeCol = 0;
 
@@ -1823,7 +1823,7 @@ describe("CellEditor - Aggressive: _batchFillRange Code Smell", () => {
     it("BUG: _batchFillRange is accessed via private property on sheet - fragile coupling", () => {
         const engine = createMockRenderEngine();
         const sheet = createMockSheet();
-        const editor = new CellEditor(engine, sheet);
+        const editor = new CellEditor(engine as unknown as ConstructorParameters<typeof CellEditor>[0], sheet as unknown as ConstructorParameters<typeof CellEditor>[1]);
 
         expect(sheet._batchFillRange).toBeNull();
     });

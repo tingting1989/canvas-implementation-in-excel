@@ -25,6 +25,7 @@ export interface EventNames {
     readonly COMPOSITIONEND: "compositionend";
     readonly COMPOSITIONUPDATE: "compositionupdate";
     readonly INPUT: "input";
+    readonly PASTE: "paste";
 }
 
 export const EVENT_NAMES: EventNames = Object.freeze({
@@ -45,6 +46,7 @@ export const EVENT_NAMES: EventNames = Object.freeze({
     COMPOSITIONEND: "compositionend",
     COMPOSITIONUPDATE: "compositionupdate",
     INPUT: "input",
+    PASTE: "paste",
 });
 
 /**
