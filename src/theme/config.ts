@@ -1,7 +1,43 @@
-/**
- * 默认主题配置
- */
-export const defaultThemeConfig = {
+/** 单元格样式配置 */
+interface CellStyleConfig {
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    color?: string;
+    backgroundColor?: string;
+    textAlign?: string;
+    verticalAlign?: string;
+    textDecoration?: string;
+    cursor?: string;
+}
+
+/** 主题配置结构 */
+interface ThemeConfig {
+    name: string;
+    displayName: string;
+    version: string;
+    config: {
+        cell: Record<string, CellStyleConfig>;
+        font: {
+            family: string;
+            sizes: {
+                small: number;
+                medium: number;
+                large: number;
+            };
+        };
+        colors: {
+            primary: string;
+            success: string;
+            warning: string;
+            error: string;
+            info: string;
+        };
+    };
+}
+
+/** 默认主题配置 */
+export const defaultThemeConfig: ThemeConfig = {
     name: "default",
     displayName: "默认主题",
     version: "1.0.0",
@@ -117,10 +153,8 @@ export const defaultThemeConfig = {
     },
 };
 
-/**
- * 暗色主题配置
- */
-export const darkThemeConfig = {
+/** 暗色主题配置 */
+export const darkThemeConfig: ThemeConfig = {
     name: "dark",
     displayName: "暗色主题",
     version: "1.0.0",
@@ -236,7 +270,8 @@ export const darkThemeConfig = {
     },
 };
 
-export const styleTypes = [
+/** 样式类型列表 */
+export const styleTypes: string[] = [
     "cell.default",
     "cell.numeric",
     "cell.text",
@@ -247,3 +282,5 @@ export const styleTypes = [
     "cell.header",
     "cell.selected",
 ];
+
+export type { ThemeConfig, CellStyleConfig };
