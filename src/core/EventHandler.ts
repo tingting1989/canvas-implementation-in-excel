@@ -23,18 +23,29 @@ interface StrategyEntry {
 }
 
 /**
- * 事件策略类型（待具体策略接口定义后替换 any）
+ * 事件策略接口
  *
- * 策略必须实现以下方法：
- * - init(): 初始化
- * - destroy(): 销毁
- * - enable(): 启用
- * - disable(): 禁用
- * - getEventHandlers(): 返回事件处理函数映射
- * - enabled: 是否启用（getter）
- * - priority: 优先级（可选）
+ * 所有交互策略必须实现此接口，以支持策略模式的事件委托机制。
+ * 基类实现见 {@link ../editor/strategies/EventStrategy.js|EventStrategy}。
+ *
+ * @property {number} priority - 策略优先级（数值越大越先处理事件，默认 0）
+ * @property {boolean} enabled - 策略是否启用
  */
-type EventStrategy = any;
+export interface IEventStrategy {
+    priority?: number;
+    enabled: boolean;
+    handler?: unknown;
+    init(): void;
+    destroy(): void;
+    enable(): void;
+    disable(): void;
+    getEventHandlers(): Record<string, (e: Event) => unknown>;
+}
+
+/**
+ * @deprecated 使用 IEventStrategy 代替，保留 any 以兼容现有 JS 策略实现
+ */
+type EventStrategy = IEventStrategy | any;
 
 /**
  * EventHandler — 事件处理器（策略模式 + 委托模式的核心调度器）
@@ -91,28 +102,28 @@ export class EventHandler {
      *
      * 提供对 Sheet 数据模型和事件总线的访问。
      */
-    sheet: any;
+    sheet: unknown;
 
     /**
      * 渲染引擎实例引用
      *
      * 用于触发重渲染操作。
      */
-    renderEngine: any;
+    renderEngine: unknown;
 
     /**
      * 编辑器实例引用
      *
      * 提供单元格编辑能力（进入/退出编辑模式等）。
      */
-    editor: any;
+    editor: unknown;
 
     /**
      * 剪贴板实例引用（可选）
      *
      * 提供复制/粘贴/剪切能力。
      */
-    clipboard: any;
+    clipboard: unknown;
 
     /**
      * 主画布元素引用
@@ -133,14 +144,14 @@ export class EventHandler {
      *
      * 提供坐标转换和视口信息查询能力。
      */
-    viewport: any;
+    viewport: unknown;
 
     /**
      * 画布上下文服务实例
      *
      * 提供画布绘制上下文的访问和操作能力。
      */
-    canvasContext: any;
+    canvasContext: unknown;
 
     /**
      * 钩子系统实例
@@ -156,7 +167,7 @@ export class EventHandler {
      * 键为策略名称，值为策略实例。
      * 内置策略：resize, mouse, keyboard, interaction。
      */
-    strategies = new Map<string, EventStrategy>();
+    strategies = new Map<string, IEventStrategy>();
 
     /**
      * 创建 EventHandler 实例
@@ -168,24 +179,24 @@ export class EventHandler {
      * 4. 注册内置策略（resize, mouse, keyboard, interaction）
      * 5. 订阅编辑器生命周期事件
      *
-     * @param {any} sheet - 工作表实例
-     * @param {any} renderEngine - 渲染引擎实例
-     * @param {any} editor - 编辑器实例
-     * @param {any} [clipboard] - 剪贴板实例（可选）
+     * @param {unknown} sheet - 工作表实例
+     * @param {unknown} renderEngine - 渲染引擎实例
+     * @param {unknown} editor - 编辑器实例
+     * @param {unknown} [clipboard] - 剪贴板实例（可选）
      */
-    constructor(sheet: any, renderEngine: any, editor: any, clipboard?: any) {
+    constructor(sheet: unknown, renderEngine: unknown, editor: unknown, clipboard?: unknown) {
         this.sheet = sheet;
         this.renderEngine = renderEngine;
         this.editor = editor;
         this.clipboard = clipboard || null;
-        this.canvas = renderEngine.canvas;
-        this.wrap = renderEngine.canvas.parentElement;
+        this.canvas = (renderEngine as any).canvas;
+        this.wrap = (renderEngine as any).canvas.parentElement;
 
-        this.viewport = new RenderEngineViewportService(renderEngine);
-        this.canvasContext = new RenderEngineCanvasContext(renderEngine);
+        this.viewport = new RenderEngineViewportService(renderEngine as any);
+        this.canvasContext = new RenderEngineCanvasContext(renderEngine as any);
 
-        this.hooks = sheet.hooks || new Hooks();
-        if (!sheet.hooks) {
+        this.hooks = (sheet as any).hooks || new Hooks();
+        if (!(sheet as any).hooks) {
             this.hooks.init();
         }
 
@@ -203,7 +214,7 @@ export class EventHandler {
      * @returns {void}
      */
     #subscribeEditorEvents(): void {
-        const bus = this.sheet.bus;
+        const bus = (this.sheet as any)?.bus;
         if (!bus) return;
 
         bus.on(SHEET_EVENTS.EDITOR_BEFORE_BEGIN, (envelope: any) => {
@@ -232,7 +243,7 @@ export class EventHandler {
             for (const change of changes) {
                 const { row, col, newValue } = change;
 
-                const validationStrategy = this.strategies.get("validation");
+                const validationStrategy = this.strategies.get("validation") as any;
                 if (validationStrategy) {
                     const canProceed = validationStrategy.interceptBeforeSetValue(row, col, newValue);
                     if (!canProceed) return false;
@@ -250,17 +261,17 @@ export class EventHandler {
         bus.on(SHEET_EVENTS.AFTER_CHANGE, (envelope: any) => {
             const [changes] = envelope.payload;
 
-            const validationStrategy = this.strategies.get("validation");
+            const validationStrategy = this.strategies.get("validation") as any;
             if (validationStrategy) {
                 for (const change of changes) {
                     validationStrategy.handleAfterSetValue(change.row, change.col, change.newValue);
                 }
             }
 
-            const filterStrategy = this.strategies.get("filterClick");
+            const filterStrategy = this.strategies.get("filterClick") as any;
             if (filterStrategy && typeof filterStrategy.handleAfterSetCellData === "function") {
                 for (const change of changes) {
-                    const oldValue = this.sheet?.cellStore?.get(change.row, change.col)?.value;
+                    const oldValue = (this.sheet as any)?.cellStore?.get(change.row, change.col)?.value;
                     filterStrategy.handleAfterSetCellData(change.row, change.col, oldValue, change.newValue);
                 }
             }
@@ -385,7 +396,7 @@ export class EventHandler {
      */
     render(): void {
         if (this.sheet && this.renderEngine) {
-            this.renderEngine.render(this.sheet);
+            (this.renderEngine as any).render(this.sheet);
         }
     }
 
@@ -651,9 +662,9 @@ export class EventHandler {
         }
         this.strategies.clear();
         this.hooks.clearAllHooks();
-        this.sheet = null;
-        this.renderEngine = null;
-        this.editor = null;
+        this.sheet = null as unknown;
+        this.renderEngine = null as unknown;
+        this.editor = null as unknown;
         this.canvas = null as any;
         this.wrap = null;
     }

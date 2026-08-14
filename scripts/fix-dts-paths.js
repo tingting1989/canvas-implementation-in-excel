@@ -1,46 +1,52 @@
 const fs = require("fs");
 const path = require("path");
 
-const rootDir = path.resolve(__dirname, "..");
-const typesDir = path.join(rootDir, "dist", "types");
-
-function fixAliasesInFile(filePath) {
-    let content = fs.readFileSync(filePath, "utf-8");
-    const fileDir = path.dirname(filePath);
-    let changed = false;
-
-    const regex = /from\s+["']@\/([^"']+)["']/g;
-    content = content.replace(regex, (match, importPath) => {
-        changed = true;
-        const targetPath = path.join(typesDir, importPath);
-        let relativePath = path.relative(fileDir, targetPath).replace(/\\/g, "/");
-        if (!relativePath.startsWith(".")) {
-            relativePath = "./" + relativePath;
-        }
-        return `from "${relativePath}"`;
-    });
-
-    if (changed) {
-        fs.writeFileSync(filePath, content, "utf-8");
-        console.log(`Fixed: ${path.relative(rootDir, filePath)}`);
-    }
-}
+const DIST_TYPES = path.resolve(__dirname, "..", "dist", "types");
 
 function walkDir(dir) {
+    const results = [];
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-            walkDir(fullPath);
-        } else if (entry.name.endsWith(".d.ts")) {
-            fixAliasesInFile(fullPath);
+            results.push(...walkDir(fullPath));
+        } else if (entry.isFile() && entry.name.endsWith(".d.ts")) {
+            results.push(fullPath);
         }
     }
+    return results;
 }
 
-if (fs.existsSync(typesDir)) {
-    walkDir(typesDir);
-    console.log("\nDone fixing .d.ts path aliases.");
-} else {
-    console.log("No dist/types directory found. Run 'tsc --emitDeclarationOnly' first.");
+function fixDtsPaths() {
+    if (!fs.existsSync(DIST_TYPES)) {
+        console.warn(`[fix-dts-paths] 目录不存在: ${DIST_TYPES}`);
+        console.warn("[fix-dts-paths] 请先运行 tsc --emitDeclarationOnly");
+        return;
+    }
+
+    const dtsFiles = walkDir(DIST_TYPES);
+    let totalFixes = 0;
+    let filesModified = 0;
+
+    for (const filePath of dtsFiles) {
+        const content = fs.readFileSync(filePath, "utf-8");
+
+        const newContent = content.replace(
+            /((?:export\s+(?:\*\s+from|{[^}]*}\s+from)|import\s+(?:.*\s+from)?)\s+["'])([^"']+)\.d\.ts(["'])/g,
+            (match, prefix, modulePath, suffix) => {
+                return `${prefix}${modulePath}.js${suffix}`;
+            }
+        );
+
+        if (newContent !== content) {
+            const fixCount = (content.match(/\.d\.ts["']/g) || []).length;
+            totalFixes += fixCount;
+            filesModified++;
+            fs.writeFileSync(filePath, newContent, "utf-8");
+        }
+    }
+
+    console.log(`[fix-dts-paths] 处理了 ${dtsFiles.length} 个 .d.ts 文件，修改了 ${filesModified} 个，修复了 ${totalFixes} 处路径`);
 }
+
+fixDtsPaths();

@@ -43,7 +43,7 @@ type ErrorListener = (code: string, message: string, level: number, meta?: Recor
  * errorHandler.onError((code, msg, level) => sendToSentry(code, msg, level));
  * errorHandler.guard(() => riskyOperation(), 'OPS_001', '操作失败');
  */
-class ErrorHandler {
+export class ErrorHandler {
     /**
      * @private 私有字段 - 最低报告级别（低于此级别的错误将被静默忽略）
      */
