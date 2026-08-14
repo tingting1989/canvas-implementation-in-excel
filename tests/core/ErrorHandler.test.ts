@@ -151,19 +151,19 @@ describe("ErrorHandler - Listeners", () => {
         const badListener = () => {
             throw new Error("listener error");
         };
-        errorHandler.onError(badListener);
+        errorHandler.onError(badListener as any);
         const goodListener = vi.fn();
         errorHandler.onError(goodListener);
         vi.spyOn(console, "error").mockImplementation(() => {});
         expect(() => errorHandler.error("CODE", "msg")).not.toThrow();
         expect(goodListener).toHaveBeenCalled();
-        errorHandler.offError(badListener);
+        errorHandler.offError(badListener as any);
         errorHandler.offError(goodListener);
     });
 
     it("should ignore non-function listeners", () => {
-        errorHandler.onError("not a function");
-        errorHandler.onError(null);
+        errorHandler.onError("not a function" as any);
+        errorHandler.onError(null as any);
         vi.spyOn(console, "error").mockImplementation(() => {});
         expect(() => errorHandler.error("CODE", "msg")).not.toThrow();
     });

@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, vi, beforeAll, afterEach } from 'vitest';
-import { HOOKS } from '@/constants/hookNames.js';
-import { Workbook } from '@/workbook/Workbook.js';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { HOOKS } from '@/constants/hookNames';
+import { Workbook } from '@/workbook/Workbook';
 
 describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
-    let container;
+    let container: HTMLDivElement;
 
     beforeEach(() => {
         container = document.createElement('div');
@@ -23,37 +23,30 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
 
     describe('Bug: options.hooks 配置不生效', () => {
         it('应该在 initRender 后正确加载配置的 hooks', () => {
-            // 这个测试会验证修复后的行为
-            // 在修复前，这个测试会失败
-
             const onCellClickSpy = vi.fn();
             const afterChangeSpy = vi.fn();
 
-            // 模拟 main.js 中的配置方式
             const wb = new Workbook(container, {
                 sheets: [{
                     name: 'TestSheet',
                     data: [['A1', 'B1'], ['A2', 'B2']],
                 }],
                 hooks: {
-                    [HOOKS.ON_CELL_CLICK]: (row, col) => {
+                    [HOOKS.ON_CELL_CLICK]: (row: number, col: number) => {
                         onCellClickSpy(row, col);
                     },
-                    [HOOKS.AFTER_CHANGE]: (changes) => {
+                    [HOOKS.AFTER_CHANGE]: (changes: any) => {
                         afterChangeSpy(changes);
                     },
                 },
             });
 
-            // 初始化渲染引擎（这应该触发 hooks 加载）
             wb.initRender();
 
-            // ✅ 关键断言：hooks 应该被正确注册
             expect(wb.eventHandler).not.toBeNull();
             expect(wb.eventHandler.hooks.hasHook(HOOKS.ON_CELL_CLICK)).toBe(true);
             expect(wb.eventHandler.hooks.hasHook(HOOKS.AFTER_CHANGE)).toBe(true);
 
-            // 清理
             wb.destroy();
         });
 
@@ -64,15 +57,10 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
                 sheets: [{ name: 'TestSheet' }],
             });
 
-            // 在 initRender 前添加 hook
             wb.addHook(HOOKS.ON_CELL_CLICK, callback);
-
-            // 此时 eventHandler 可能还是 null
-            // 但 initRender 后应该恢复
 
             wb.initRender();
 
-            // ✅ hook 应该存在
             if (wb.eventHandler) {
                 expect(wb.eventHandler.hooks.hasHook(HOOKS.ON_CELL_CLICK)).toBe(true);
             }
@@ -82,7 +70,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
     });
 
     describe('Hooks 触发时机测试', () => {
-        let wb;
+        let wb: Workbook;
 
         beforeEach(() => {
             wb = new Workbook(container, {
@@ -111,15 +99,13 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
             const clickSpy = vi.fn();
             wb.addHook(HOOKS.ON_CELL_CLICK, clickSpy);
 
-            // 模拟点击事件（需要实际的 DOM 环境）
-            // 这里仅验证 hook 注册成功
             expect(wb.eventHandler.hooks.hasHook(HOOKS.ON_CELL_CLICK)).toBe(true);
         });
 
         it('BEFORE_CHANGE 应该能阻止数据变更', () => {
-            const blockNegative = (changes) => {
+            const blockNegative = (changes: any) => {
                 if (changes.newValue < 0) {
-                    return false; // 拒绝负数
+                    return false;
                 }
             };
 
@@ -137,7 +123,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
 
     describe('多 Hook 协作测试', () => {
         it('多个 before* hook 应该按顺序执行', () => {
-            const order = [];
+            const order: number[] = [];
 
             const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
@@ -151,22 +137,20 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
 
             wb.initRender();
 
-            // 动态添加第二个 hook
             wb.addHook(HOOKS.BEFORE_CHANGE, () => order.push(2));
 
-            // 验证两个 hook 都已注册
             expect(wb.eventHandler.hooks.getHooks(HOOKS.BEFORE_CHANGE)).toHaveLength(2);
 
             wb.destroy();
         });
 
         it('hook 回调中的 this 上下文', () => {
-            let context = null;
+            let context: any = null;
 
             const wb = new Workbook(container, {
                 sheets: [{ name: 'TestSheet' }],
                 hooks: {
-                    [HOOKS.INIT]: function() {
+                    [HOOKS.INIT]: function(this: any) {
                         context = this;
                     },
                 },
@@ -174,7 +158,6 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
 
             wb.initRender();
 
-            // 验证回调可以访问正确的上下文
             expect(context).toBeDefined();
 
             wb.destroy();
@@ -223,7 +206,7 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
             wb.clearHook(HOOKS.ON_CELL_CLICK);
 
             expect(wb.eventHandler.hooks.hasHook(HOOKS.ON_CELL_CLICK)).toBe(false);
-            expect(wb.eventHandler.hooks.hasHook(HOOKS.AFTER_CHANGE)).toBe(true); // 不受影响
+            expect(wb.eventHandler.hooks.hasHook(HOOKS.AFTER_CHANGE)).toBe(true);
 
             wb.destroy();
         });
@@ -241,11 +224,8 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
 
             wb.initRender();
 
-            // 插件可能会注册自己的 hooks
-            // 验证系统稳定
             expect(wb.eventHandler).not.toBeNull();
 
-            // 手动添加 hook 测试兼容性
             wb.addHook(HOOKS.AFTER_FREEZE, pluginHookSpy);
             expect(wb.eventHandler.hooks.hasHook(HOOKS.AFTER_FREEZE)).toBe(true);
 
@@ -255,11 +235,11 @@ describe('Workbook Hooks 集成测试 - Bug 复现与验证', () => {
 });
 
 describe('Hooks 完整生命周期测试', () => {
-    let container;
-    let canvasId;
+    let container: HTMLDivElement;
+    let canvasId: string;
 
     beforeEach(() => {
-        canvasId = 'test-canvas-' + Math.random().toString(36).substr(2, 9);
+        canvasId = 'test-canvas-' + Math.random().toString(36).substring(2, 11);
         container = document.createElement('div');
         container.style.width = '800px';
         container.style.height = '600px';
@@ -277,7 +257,7 @@ describe('Hooks 完整生命周期测试', () => {
     });
 
     it('从创建到销毁的完整流程', () => {
-        const lifecycleEvents = [];
+        const lifecycleEvents: string[] = [];
 
         const wb = new Workbook(container, {
             sheets: [{ name: 'LifecycleTest' }],
@@ -286,35 +266,29 @@ describe('Hooks 完整生命周期测试', () => {
             },
         });
 
-        // 注意：Workbook 构造函数会调用 initRender()（autoInit 默认为 true）
-        // 所以 init hook 在构造函数中就会被触发
         expect(lifecycleEvents).toContain('init');
 
-        // 验证所有子系统就绪
         expect(wb.renderEngine).not.toBeNull();
         expect(wb.eventHandler).not.toBeNull();
         expect(wb.editor).not.toBeNull();
 
-        // 添加运行时 hooks
         const runtimeCallback = vi.fn();
         wb.addHook(HOOKS.ON_CELL_CLICK, runtimeCallback);
         expect(wb.eventHandler.hooks.hasHook(HOOKS.ON_CELL_CLICK)).toBe(true);
 
-        // 销毁
         wb.destroy();
 
-        // 销毁后不应该有内存泄漏风险
         expect(wb.eventHandler).toBeNull();
         expect(wb.renderEngine).toBeNull();
     });
 });
 
 describe('性能压力测试 - Hooks 系统', () => {
-    let container;
-    let canvasId;
+    let container: HTMLDivElement;
+    let canvasId: string;
 
     beforeEach(() => {
-        canvasId = 'test-canvas-' + Math.random().toString(36).substr(2, 9);
+        canvasId = 'test-canvas-' + Math.random().toString(36).substring(2, 11);
         container = document.createElement('div');
         container.style.width = '800px';
         container.style.height = '600px';
@@ -333,7 +307,7 @@ describe('性能压力测试 - Hooks 系统', () => {
 
     it('大量 hooks 注册和触发的性能', () => {
         const HOOK_COUNT = 500;
-        const callbacks = [];
+        const callbacks: ReturnType<typeof vi.fn>[] = [];
 
         const wb = new Workbook(container, {
             sheets: [{ name: 'PerfTest' }],
@@ -341,7 +315,6 @@ describe('性能压力测试 - Hooks 系统', () => {
 
         wb.initRender();
 
-        // 批量注册 hooks
         for (let i = 0; i < HOOK_COUNT; i++) {
             const cb = vi.fn();
             callbacks.push(cb);
@@ -350,15 +323,12 @@ describe('性能压力测试 - Hooks 系统', () => {
 
         expect(wb.eventHandler.hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(HOOK_COUNT);
 
-        // 性能测试：触发所有 hooks
         const startTime = performance.now();
         wb.eventHandler.hooks.runHooks(HOOKS.ON_CELL_CLICK, 1, 2);
         const endTime = performance.now();
 
-        // 500 个回调应该在 100ms 内完成
         expect(endTime - startTime).toBeLessThan(100);
 
-        // 验证所有回调都被调用
         callbacks.forEach(cb => {
             expect(cb).toHaveBeenCalledWith(1, 2);
         });
@@ -373,14 +343,12 @@ describe('性能压力测试 - Hooks 系统', () => {
 
         wb.initRender();
 
-        // 模拟频繁操作
         for (let i = 0; i < 100; i++) {
             const cb = vi.fn();
             wb.addHook(HOOKS.AFTER_CHANGE, cb);
             wb.removeHook(HOOKS.AFTER_CHANGE, cb);
         }
 
-        // 最终应该是空的
         expect(wb.eventHandler.hooks.hasHook(HOOKS.AFTER_CHANGE)).toBe(false);
 
         wb.destroy();

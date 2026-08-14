@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { EventBus } from "../../src/core/EventBus.js";
+import { EventBus } from "@/core/EventBus";
+import type { EventEnvelope } from "@/core/EventBus";
 
 describe("EventBus", () => {
-    let bus;
+    let bus: EventBus;
 
     beforeEach(() => {
         bus = new EventBus("TestSource", "instance1");
@@ -17,7 +18,7 @@ describe("EventBus", () => {
         });
 
         it("should pass envelope to listener with payload", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             bus.emit("test", { a: 1, b: "hello" });
             expect(fn).toHaveBeenCalledOnce();
@@ -30,7 +31,7 @@ describe("EventBus", () => {
         });
 
         it("should call multiple listeners in order", () => {
-            const order = [];
+            const order: number[] = [];
             bus.on("test", () => order.push(1));
             bus.on("test", () => order.push(2));
             bus.on("test", () => order.push(3));
@@ -123,7 +124,7 @@ describe("EventBus", () => {
         });
 
         it("should pass envelope correctly", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.once("test", fn);
             bus.emit("test", "arg1");
             expect(fn).toHaveBeenCalledOnce();
@@ -224,7 +225,7 @@ describe("EventBus", () => {
 });
 
 describe("EventBus - Aggressive Tests", () => {
-    let bus;
+    let bus: EventBus;
 
     beforeEach(() => {
         bus = new EventBus("AggSource", "agg1");
@@ -232,7 +233,7 @@ describe("EventBus - Aggressive Tests", () => {
 
     describe("Null Safety", () => {
         it("should handle emit with null payload", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             bus.emit("test", null);
             expect(fn).toHaveBeenCalledOnce();
@@ -241,7 +242,7 @@ describe("EventBus - Aggressive Tests", () => {
         });
 
         it("should handle emit with undefined payload (defaults to empty object)", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             bus.emit("test");
             expect(fn).toHaveBeenCalledOnce();
@@ -258,7 +259,7 @@ describe("EventBus - Aggressive Tests", () => {
 
     describe("Stress Tests", () => {
         it("should handle 1000 listeners on one event", () => {
-            const fns = [];
+            const fns: ReturnType<typeof vi.fn>[] = [];
             for (let i = 0; i < 1000; i++) {
                 const fn = vi.fn();
                 fns.push(fn);
@@ -333,12 +334,40 @@ describe("EventBus - Aggressive Tests", () => {
 
         it("should handle symbol event name", () => {
             const sym = Symbol("test");
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on(sym, fn);
             bus.emit(sym, 42);
             expect(fn).toHaveBeenCalledOnce();
             const envelope = fn.mock.calls[0][0];
             expect(envelope.payload).toBe(42);
+        });
+
+        it("should preserve symbol in envelope.type for symbol events", () => {
+            const sym = Symbol("mySymbol");
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
+            bus.on(sym, fn);
+            bus.emit(sym, { data: 1 });
+            const envelope = fn.mock.calls[0][0];
+            expect(envelope.type).toBe(sym);
+            expect(typeof envelope.type).toBe("symbol");
+        });
+
+        it("should preserve string in envelope.type for string events", () => {
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
+            bus.on("myEvent", fn);
+            bus.emit("myEvent");
+            const envelope = fn.mock.calls[0][0];
+            expect(envelope.type).toBe("myEvent");
+            expect(typeof envelope.type).toBe("string");
+        });
+
+        it("should skip contract validation for symbol events in strict mode", () => {
+            const strictBus = new EventBus("TestSource", "s1", { strict: true });
+            const sym = Symbol("unregistered");
+            const fn = vi.fn();
+            strictBus.on(sym, fn);
+            expect(() => strictBus.emit(sym, "data")).not.toThrow();
+            expect(fn).toHaveBeenCalledOnce();
         });
     });
 
@@ -360,35 +389,35 @@ describe("EventBus - Aggressive Tests", () => {
 
     describe("Event Envelope", () => {
         it("should include source from constructor by default", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             bus.emit("test");
             expect(fn.mock.calls[0][0].source).toBe("AggSource");
         });
 
         it("should include sheetId from constructor by default", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             bus.emit("test");
             expect(fn.mock.calls[0][0].sheetId).toBe("agg1");
         });
 
         it("should allow source override via options", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             bus.emit("test", {}, { source: "CellEditor" });
             expect(fn.mock.calls[0][0].source).toBe("CellEditor");
         });
 
         it("should allow sheetId override via options", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             bus.emit("test", {}, { sheetId: "Sheet2" });
             expect(fn.mock.calls[0][0].sheetId).toBe("Sheet2");
         });
 
         it("should generate timestamp automatically", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("test", fn);
             const before = Date.now();
             bus.emit("test");
@@ -399,7 +428,7 @@ describe("EventBus - Aggressive Tests", () => {
         });
 
         it("should set type to event name", () => {
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             bus.on("myEvent", fn);
             bus.emit("myEvent");
             expect(fn.mock.calls[0][0].type).toBe("myEvent");
@@ -407,7 +436,7 @@ describe("EventBus - Aggressive Tests", () => {
 
         it("should default source and sheetId to empty string when constructor has no args", () => {
             const defaultBus = new EventBus();
-            const fn = vi.fn();
+            const fn = vi.fn<(envelope: EventEnvelope) => void>();
             defaultBus.on("test", fn);
             defaultBus.emit("test");
             const envelope = fn.mock.calls[0][0];
@@ -463,7 +492,7 @@ describe("EventBus - Aggressive Tests", () => {
             expect(warnSpy).toHaveBeenCalledWith(
                 expect.stringContaining("未在 EVENT_FLOW_REGISTRY 中声明")
             );
-            expect(fn).not.toHaveBeenCalled();  // 未注册事件不会触发监听器
+            expect(fn).not.toHaveBeenCalled();
             warnSpy.mockRestore();
         });
 

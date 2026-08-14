@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { HOOKS } from '@/constants/hookNames.js';
-import { Hooks } from '@/core/Hooks.js';
+import { HOOKS } from '@/constants/hookNames';
+import { Hooks } from '@/core/Hooks';
 
 describe('Hooks 系统 - 单元测试', () => {
-    let hooks;
+    let hooks: Hooks;
 
     beforeEach(() => {
         hooks = new Hooks();
@@ -14,7 +14,7 @@ describe('Hooks 系统 - 单元测试', () => {
         it('应该正确初始化所有默认钩子类型', () => {
             const hookNames = hooks.getHookNames();
             const expectedCount = Object.keys(HOOKS).length;
-            
+
             expect(hookNames.length).toBe(expectedCount);
             expect(hookNames).toContain(HOOKS.ON_CELL_CLICK);
             expect(hookNames).toContain(HOOKS.BEFORE_CHANGE);
@@ -60,19 +60,19 @@ describe('Hooks 系统 - 单元测试', () => {
 
         it('非函数回调应该抛出错误', () => {
             expect(() => {
-                hooks.addHook(HOOKS.ON_CELL_CLICK, 'not a function');
+                hooks.addHook(HOOKS.ON_CELL_CLICK, 'not a function' as any);
             }).toThrow();
 
             expect(() => {
-                hooks.addHook(HOOKS.ON_CELL_CLICK, null);
+                hooks.addHook(HOOKS.ON_CELL_CLICK, null as any);
             }).toThrow();
 
             expect(() => {
-                hooks.addHook(HOOKS.ON_CELL_CLICK, undefined);
+                hooks.addHook(HOOKS.ON_CELL_CLICK, undefined as any);
             }).toThrow();
 
             expect(() => {
-                hooks.addHook(HOOKS.ON_CELL_CLICK, 123);
+                hooks.addHook(HOOKS.ON_CELL_CLICK, 123 as any);
             }).toThrow();
         });
     });
@@ -82,13 +82,11 @@ describe('Hooks 系统 - 单元测试', () => {
             const callback = vi.fn();
             hooks.addHookOnce(HOOKS.ON_CELL_CLICK, callback);
 
-            // 第一次触发
             hooks.runHooks(HOOKS.ON_CELL_CLICK, 1, 2);
             expect(callback).toHaveBeenCalledTimes(1);
 
-            // 第二次触发 - 应该不再调用
             hooks.runHooks(HOOKS.ON_CELL_CLICK, 3, 4);
-            expect(callback).toHaveBeenCalledTimes(1); // 仍然是 1 次
+            expect(callback).toHaveBeenCalledTimes(1);
 
             expect(hooks.hasHook(HOOKS.ON_CELL_CLICK)).toBe(false);
         });
@@ -120,7 +118,7 @@ describe('Hooks 系统 - 单元测试', () => {
 
         it('移除不存在的回调不应报错', () => {
             const callback = vi.fn();
-            
+
             expect(() => {
                 hooks.removeHook(HOOKS.ON_CELL_CLICK, callback);
             }).not.toThrow();
@@ -154,7 +152,7 @@ describe('Hooks 系统 - 单元测试', () => {
 
     describe('runHooks - 触发钩子', () => {
         it('应该按注册顺序执行所有回调', () => {
-            const order = [];
+            const order: number[] = [];
             const callback1 = vi.fn(() => order.push(1));
             const callback2 = vi.fn(() => order.push(2));
             const callback3 = vi.fn(() => order.push(3));
@@ -199,21 +197,19 @@ describe('Hooks 系统 - 单元测试', () => {
             hooks.addHook(HOOKS.ON_CELL_CLICK, callback1);
             hooks.addHook(HOOKS.ON_CELL_CLICK, callback2);
 
-            // 不应该抛出异常
             expect(() => {
                 hooks.runHooks(HOOKS.ON_CELL_CLICK);
             }).not.toThrow();
 
-            // 第二个回调仍然应该被执行
             expect(callback2).toHaveBeenCalledTimes(1);
         });
     });
 
     describe('runHooksUntil - 条件触发', () => {
         it('应该返回第一个非 undefined 的返回值', () => {
-            hooks.addHook(HOOKS.BEFORE_CHANGE, () => undefined); // 跳过
-            hooks.addHook(HOOKS.BEFORE_CHANGE, () => false);     // 返回这个
-            hooks.addHook(HOOKS.BEFORE_CHANGE, () => true);      // 不应该执行到
+            hooks.addHook(HOOKS.BEFORE_CHANGE, () => undefined);
+            hooks.addHook(HOOKS.BEFORE_CHANGE, () => false);
+            hooks.addHook(HOOKS.BEFORE_CHANGE, () => true);
 
             const result = hooks.runHooksUntil(HOOKS.BEFORE_CHANGE);
 
@@ -230,19 +226,17 @@ describe('Hooks 系统 - 单元测试', () => {
         });
 
         it('适用于 before* 类型的拦截操作', () => {
-            let canProceed = true;
-
-            hooks.addHook(HOOKS.BEFORE_CHANGE, (changes) => {
+            hooks.addHook(HOOKS.BEFORE_CHANGE, (changes: any) => {
                 if (changes.value < 0) {
-                    return false; // 拒绝负数
+                    return false;
                 }
             });
 
             const result1 = hooks.runHooksUntil(HOOKS.BEFORE_CHANGE, { value: -5 });
             const result2 = hooks.runHooksUntil(HOOKS.BEFORE_CHANGE, { value: 10 });
 
-            expect(result1).toBe(false);  // 被拦截
-            expect(result2).toBeUndefined(); // 放行
+            expect(result1).toBe(false);
+            expect(result2).toBeUndefined();
         });
     });
 
@@ -259,9 +253,8 @@ describe('Hooks 系统 - 单元测试', () => {
             hooks.addHook(HOOKS.ON_CELL_CLICK, callback);
 
             const hooksArray = hooks.getHooks(HOOKS.ON_CELL_CLICK);
-            hooksArray.push(vi.fn()); // 修改副本
+            hooksArray.push(vi.fn());
 
-            // 原始数据不应受影响
             expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(1);
         });
 
@@ -270,7 +263,7 @@ describe('Hooks 系统 - 单元测试', () => {
             hooks.addHook('custom2', vi.fn());
 
             const names = hooks.getHookNames();
-            
+
             expect(names).toContain('custom1');
             expect(names).toContain('custom2');
             expect(names).toContain(HOOKS.ON_CELL_CLICK);
@@ -279,7 +272,7 @@ describe('Hooks 系统 - 单元测试', () => {
 });
 
 describe('Hooks 系统 - 边界条件测试', () => {
-    let hooks;
+    let hooks: Hooks;
 
     beforeEach(() => {
         hooks = new Hooks();
@@ -288,7 +281,7 @@ describe('Hooks 系统 - 边界条件测试', () => {
 
     it('大量钩子性能测试', () => {
         const CALLBACK_COUNT = 1000;
-        
+
         for (let i = 0; i < CALLBACK_COUNT; i++) {
             hooks.addHook(HOOKS.ON_CELL_CLICK, vi.fn());
         }
@@ -299,13 +292,12 @@ describe('Hooks 系统 - 边界条件测试', () => {
         hooks.runHooks(HOOKS.ON_CELL_CLICK, 1, 2);
         const endTime = performance.now();
 
-        // 1000 个回调应该在合理时间内完成 (< 50ms)
         expect(endTime - startTime).toBeLessThan(50);
     });
 
     it('空字符串作为钩子名称', () => {
         const callback = vi.fn();
-        
+
         expect(() => {
             hooks.addHook('', callback);
         }).not.toThrow();
@@ -316,18 +308,17 @@ describe('Hooks 系统 - 边界条件测试', () => {
     it('特殊字符作为钩子名称', () => {
         const callback = vi.fn();
         const specialName = 'hook-with-special.chars!@#$%';
-        
+
         hooks.addHook(specialName, callback);
-        
+
         expect(hooks.hasHook(specialName)).toBe(true);
         hooks.runHooks(specialName, 'test');
         expect(callback).toHaveBeenCalledWith('test');
     });
 
     it('循环引用检测', () => {
-        // 在回调中移除自身
         let callCount = 0;
-        const selfRemovingCallback = (...args) => {
+        const selfRemovingCallback = () => {
             callCount++;
             hooks.removeHook(HOOKS.ON_CELL_CLICK, selfRemovingCallback);
         };
@@ -346,17 +337,15 @@ describe('Hooks 系统 - 边界条件测试', () => {
         });
 
         hooks.addHook(HOOKS.AFTER_CHANGE, asyncCallback);
-        
-        // runHooks 是同步的，但不会等待异步完成
+
         const result = hooks.runHooks(HOOKS.AFTER_CHANGE);
-        
+
         expect(asyncCallback).toHaveBeenCalled();
-        // 结果可能是 Promise 或 undefined，取决于实现
     });
 });
 
 describe('Hooks 系统 - 攻击性测试', () => {
-    let hooks;
+    let hooks: Hooks;
 
     beforeEach(() => {
         hooks = new Hooks();
@@ -364,7 +353,7 @@ describe('Hooks 系统 - 攻击性测试', () => {
     });
 
     it('恶意回调：修改参数对象', () => {
-        const maliciousCallback = (args) => {
+        const maliciousCallback = (args: any) => {
             args.row = 99999;
             args.col = -1;
         };
@@ -374,21 +363,18 @@ describe('Hooks 系统 - 攻击性测试', () => {
         const testArgs = { row: 1, col: 2 };
         hooks.runHooks(HOOKS.ON_CELL_CLICK, testArgs);
 
-        // JavaScript 对象是引用传递，所以会被修改
-        // 这是一个已知行为，文档中应提醒用户注意
         expect(testArgs.row).toBe(99999);
     });
 
     it('恶意回调：抛出特殊类型的错误', () => {
         class CustomError extends Error {}
-        
+
         const maliciousCallback = () => {
             throw new CustomError('Malicious error');
         };
 
         hooks.addHook(HOOKS.ON_CELL_CLICK, maliciousCallback);
 
-        // 应该捕获并处理，不影响其他回调
         const safeCallback = vi.fn();
         hooks.addHook(HOOKS.ON_CELL_CLICK, safeCallback);
 
@@ -400,31 +386,26 @@ describe('Hooks 系统 - 攻击性测试', () => {
     });
 
     it('内存泄漏风险：大量添加不移除', () => {
-        // 验证可以添加大量 hooks 而不崩溃
         for (let i = 0; i < 10000; i++) {
             hooks.addHook(HOOKS.ON_CELL_CLICK, vi.fn());
         }
 
         expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(10000);
 
-        // 清理后应该完全释放
         hooks.clearHook(HOOKS.ON_CELL_CLICK);
         expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(0);
 
-        // 重新添加少量 hooks 验证系统恢复正常
         hooks.addHook(HOOKS.ON_CELL_CLICK, vi.fn());
         expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(1);
     });
 
     it('原型链污染尝试', () => {
         const maliciousCallback = vi.fn();
-        
-        // 尝试覆盖原型方法
+
         expect(() => {
             hooks.addHook('__proto__', maliciousCallback);
         }).not.toThrow();
 
-        // 验证正常功能未受影响
         expect(typeof hooks.addHook).toBe('function');
         expect(typeof hooks.runHooks).toBe('function');
     });
@@ -436,12 +417,10 @@ describe('Hooks 系统 - 攻击性测试', () => {
 
         hooks.addHook(HOOKS.ON_CELL_CLICK, dynamicAdder);
 
-        // 第一次运行会添加新回调
         hooks.runHooks(HOOKS.ON_CELL_CLICK);
-        expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(2); // dynamicAdder + 新添加的
+        expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(2);
 
-        // 第二次运行又会添加一个
         hooks.runHooks(HOOKS.ON_CELL_CLICK);
-        expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(3); // +1
+        expect(hooks.getHooks(HOOKS.ON_CELL_CLICK)).toHaveLength(3);
     });
 });

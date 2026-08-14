@@ -1,40 +1,40 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { WebComponent } from "@/core/WebComponent.js";
+import { WebComponent } from "@/core/WebComponent";
 
 class TestElement extends WebComponent {
-    static get observedAttributes() {
+    static get observedAttributes(): string[] {
         return ["label"];
     }
 
-    renderCalls = [];
+    renderCalls: (string | null)[] = [];
     connectCalls = 0;
     disconnectCalls = 0;
 
-    render(changedAttr) {
+    render(changedAttr: string | null): void {
         this.renderCalls.push(changedAttr);
         if (!this.shadowRoot.querySelector(".content")) {
             this.shadowRoot.innerHTML = `<span class="content">${this.getAttribute("label") || ""}</span>`;
         } else {
-            this.shadowRoot.querySelector(".content").textContent = this.getAttribute("label") || "";
+            this.shadowRoot.querySelector(".content")!.textContent = this.getAttribute("label") || "";
         }
     }
 
-    onConnect(disposable) {
+    onConnect(_disposable: any): void {
         this.connectCalls++;
     }
 
-    onDisconnect() {
+    onDisconnect(): void {
         this.disconnectCalls++;
     }
 }
 
-customElements.define("test-wc", TestElement);
+customElements.define("test-wc-ts", TestElement);
 
 describe("WebComponent 基类", () => {
-    let element;
+    let element: TestElement;
 
     beforeEach(() => {
-        element = document.createElement("test-wc");
+        element = document.createElement("test-wc-ts") as TestElement;
         document.body.appendChild(element);
     });
 
@@ -102,10 +102,10 @@ describe("WebComponent 基类", () => {
     describe("emit 方法", () => {
         it("WC-10: emit 默认 bubbles: true", () => {
             const spy = vi.fn();
-            element.parentNode.addEventListener("my-event", spy);
+            element.parentNode!.addEventListener("my-event", spy);
             element.emit("my-event", { x: 1 });
             expect(spy).toHaveBeenCalledTimes(1);
-            element.parentNode.removeEventListener("my-event", spy);
+            element.parentNode!.removeEventListener("my-event", spy);
         });
 
         it("WC-11: emit 默认 composed: true — 穿透 Shadow DOM", () => {
@@ -136,12 +136,12 @@ describe("WebComponent 基类", () => {
 
         it("WC-14: emit options 覆盖 — bubbles: false", () => {
             const parentSpy = vi.fn();
-            element.parentNode.addEventListener("no-bubble", parentSpy);
+            element.parentNode!.addEventListener("no-bubble", parentSpy);
 
             element.emit("no-bubble", {}, { bubbles: false });
 
             expect(parentSpy).not.toHaveBeenCalled();
-            element.parentNode.removeEventListener("no-bubble", parentSpy);
+            element.parentNode!.removeEventListener("no-bubble", parentSpy);
         });
 
         it("WC-15: emit options 覆盖 — composed: false", () => {

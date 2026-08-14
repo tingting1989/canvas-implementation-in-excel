@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { DOMComponent } from "@/core/DOMComponent.js";
+import { DOMComponent } from "@/core/DOMComponent";
 
 describe("DOMComponent 基类", () => {
     it("DC-01: createElement 跟踪 — 创建 div 并 append 到 parent", () => {
@@ -29,7 +29,6 @@ describe("DOMComponent 基类", () => {
         comp.injectStyle("test-css-dc03", ".a{color:blue}");
         const styles = document.querySelectorAll("#test-css-dc03");
         expect(styles.length).toBe(1);
-        // 内容应该是第一次注入的
         expect(styles[0].textContent).toBe(".a{color:red}");
         comp.destroy();
     });
@@ -101,7 +100,7 @@ describe("DOMComponent 基类", () => {
 
     it("继承 Disposable 的 trackEvent 能力", () => {
         const comp = new DOMComponent();
-        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() } as any;
         const handler = vi.fn();
         comp.trackEvent(target, "click", handler);
         expect(target.addEventListener).toHaveBeenCalled();

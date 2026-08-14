@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { Disposable } from "@/core/Disposable.js";
+import { Disposable } from "@/core/Disposable";
 
 describe("Disposable 基类", () => {
     it("D-01: destroy 幂等 — 连续调用两次不抛异常，onDestroy 仅调用一次", () => {
@@ -18,7 +18,7 @@ describe("Disposable 基类", () => {
 
     it("D-02: trackEvent 自动清理 — destroy 时调用 removeEventListener", () => {
         const d = new Disposable();
-        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() } as any;
         const handler = vi.fn();
         d.trackEvent(target, "click", handler);
         expect(target.addEventListener).toHaveBeenCalledWith("click", handler, undefined);
@@ -38,7 +38,7 @@ describe("Disposable 基类", () => {
     });
 
     it("D-04: 多层级联销毁 — A → B → C 三层", () => {
-        const order = [];
+        const order: string[] = [];
         class A extends Disposable {
             onDestroy() { order.push("A"); }
         }
@@ -61,14 +61,14 @@ describe("Disposable 基类", () => {
     });
 
     it("D-05: onDestroy 子类钩子 — 在事件清理和子对象销毁之前被调用", () => {
-        const calls = [];
+        const calls: string[] = [];
         class Child extends Disposable {
             onDestroy() {
                 calls.push("onDestroy");
             }
         }
         const d = new Child();
-        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() } as any;
         d.trackEvent(target, "click", () => calls.push("event"));
         class SubChild extends Disposable {
             onDestroy() { calls.push("child-destroy"); }
@@ -82,13 +82,13 @@ describe("Disposable 基类", () => {
     it("D-06: 已销毁实例 trackEvent/trackChild 不抛异常", () => {
         const d = new Disposable();
         d.destroy();
-        expect(() => d.trackEvent({ addEventListener: vi.fn() }, "x", () => {})).not.toThrow();
+        expect(() => d.trackEvent({ addEventListener: vi.fn() } as any, "x", () => {})).not.toThrow();
         expect(() => d.trackChild(new Disposable())).not.toThrow();
     });
 
     it("trackEvent 支持 options 参数", () => {
         const d = new Disposable();
-        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() };
+        const target = { addEventListener: vi.fn(), removeEventListener: vi.fn() } as any;
         const handler = vi.fn();
         const options = { capture: true };
         d.trackEvent(target, "scroll", handler, options);
@@ -98,7 +98,7 @@ describe("Disposable 基类", () => {
     });
 
     it("D-07: 原型链自动调用父类 onDestroy — 子类无需 super.onDestroy()", () => {
-        const order = [];
+        const order: string[] = [];
         class Parent extends Disposable {
             onDestroy() { order.push("Parent"); }
         }
@@ -111,7 +111,7 @@ describe("Disposable 基类", () => {
     });
 
     it("D-08: 三层继承链 onDestroy 调用顺序 — 子 → 中 → 父", () => {
-        const order = [];
+        const order: string[] = [];
         class A extends Disposable {
             onDestroy() { order.push("A"); }
         }
@@ -127,7 +127,7 @@ describe("Disposable 基类", () => {
     });
 
     it("D-09: 中间层未覆写 onDestroy 时不影响链式调用", () => {
-        const order = [];
+        const order: string[] = [];
         class A extends Disposable {
             onDestroy() { order.push("A"); }
         }
