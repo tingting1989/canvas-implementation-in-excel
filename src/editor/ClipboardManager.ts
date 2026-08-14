@@ -1,8 +1,75 @@
-﻿/**
- * 剪贴板管理器
+import { errorHandler } from "../core/ErrorHandler.js";
+import { ERROR_CODE } from "../constants/errorCodes.js";
+
+/** 剪贴板数据结构 */
+interface ClipboardData {
+    /** 源工作表名称 */
+    sourceSheetName: string;
+    /** 源选区起始行号 */
+    topRow: number;
+    /** 源选区起始列号 */
+    topCol: number;
+    /** 选区行数 */
+    rows: number;
+    /** 选区列数 */
+    cols: number;
+    /** 单元格数据矩阵 */
+    cells: (CellCopyData | null)[][];
+    /** 每列的类型名称 */
+    columnTypes: string[];
+}
+
+/** 复制的单元格数据 */
+interface CellCopyData {
+    /** 单元格值 */
+    value: unknown;
+    /** 样式ID */
+    styleId: number;
+}
+
+/** 单元格富内容信息 */
+interface CellContentEntry {
+    /** 内容类型（如 "image"） */
+    type: string;
+    /** Blob 数据 */
+    blob: Blob;
+    /** Object URL */
+    objectUrl: string;
+}
+
+/** 类型不匹配详情 */
+interface TypeMismatch {
+    /** 源列索引 */
+    srcCol: number;
+    /** 目标列索引 */
+    targetCol: number;
+    /** 源列类型 */
+    srcType: string;
+    /** 目标列类型 */
+    targetType: string;
+}
+
+/** 类型检查结果 */
+interface TypeCheckResult {
+    /** 不匹配列表 */
+    mismatches: TypeMismatch[];
+}
+
+/** 插入图片选项 */
+interface InsertImageOptions {
+    /** 目标行号 */
+    row?: number;
+    /** 目标列号 */
+    col?: number;
+    /** 完成回调 */
+    onComplete?: (success: boolean) => void;
+}
+
+/**
+ * 剪贴板管理器 (Clipboard Manager)
  *
  * 负责复制/粘贴的核心逻辑，不依赖插件系统，保持纯数据操作。
- * 由 CopyPastePlugin 持有和调用，也可独立使用。
+ * 由 CopyPasteStrategy 持有和调用，也可独立使用。
  *
  * 剪贴板策略：
  * - 复制：内部存储（含样式ID + 列类型）+ 系统剪贴板（TSV 纯文本）
@@ -11,50 +78,39 @@
  *
  * 图片粘贴：
  * - 从 ClipboardEvent.clipboardData 中提取 image/png、image/jpeg 等 MIME 类型
- * - 图片 Blob 转换为 Object URL，存入内部 #cellContent Map（不侵入 Cell 模型）
+ * - 图片 Blob 转为 Object URL，存入内部 #cellContent Map（不侵入 Cell 模型）
  * - 由 TileRenderer 通过 getCellContent() 查询并渲染
- */
-
-import { errorHandler } from "../core/ErrorHandler.js";
-import { ERROR_CODE } from "../constants/errorCodes.js";
-
-/**
- * 富内容管理：
- * - 图片、图表等富内容通过 #cellContent Map 独立管理，key 为 "sheetName,realR,col"
- * - Cell 类保持纯粹，不需要感知具体内容类型
- * - 未来新增内容类型（图表、附件等）只需扩展此模块，不修改 Cell
+ *
+ * @class ClipboardManager
  */
 export class ClipboardManager {
-    /** @type {{ sourceSheetName:string, topRow:number, topCol:number, rows:number, cols:number, cells:Array, columnTypes:Array<string> }|null} */
-    #data = null;
+    /** 内部剪贴板数据 */
+    #data: ClipboardData | null = null;
 
     /**
      * 单元格富内容缓存：key = "sheetName,realR,col", value = { type, blob, objectUrl }
      * 与 Cell 模型解耦，由外部模块独立管理
-     * @type {Map<string, {type:string, blob:Blob, objectUrl:string}>}
      */
-    #cellContent = new Map();
+    #cellContent: Map<string, CellContentEntry> = new Map();
 
     /**
      * 复制当前选区到剪贴板
      * 同时写入内部存储（保留样式）和系统剪贴板（TSV 纯文本）
-     *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param sheet - 工作表实例
      */
-    copy(sheet) {
+    copy(sheet: any): void {
         const range = sheet.selection.getRange();
         const accessor = sheet.cellDataAccessor;
 
-        // 记录每个复制列的类型名称，用于粘贴时的类型一致性检查
-        const columnTypes = [];
+        const columnTypes: string[] = [];
         for (let c = range.topCol; c <= range.bottomCol; c++) {
             const cellType = sheet.getCellTypeInstance(range.topRow, c);
             columnTypes.push(cellType ? cellType.name : "text");
         }
         const valueMatrix = accessor.getValueMatrix(range.topRow, range.topCol, range.bottomRow, range.bottomCol);
 
-        const cells = valueMatrix.map((row, rIdx) =>
-            row.map((value, cIdx) => {
+        const cells = valueMatrix.map((row: unknown[], rIdx: number) =>
+            row.map((value: unknown, cIdx: number) => {
                 const cell = accessor.get(range.topRow + rIdx, range.topCol + cIdx);
                 return cell ? { value, styleId: cell.styleId || 0 } : null;
             }),
@@ -79,14 +135,13 @@ export class ClipboardManager {
      * 支持文本（text/plain、text/html）和图片（image/png、image/jpeg 等）。
      * 无需 navigator.clipboard 权限弹窗。
      *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {ClipboardEvent} clipboardEvent - 浏览器原生 paste 事件
-     * @returns {boolean} 是否成功处理了粘贴
+     * @param sheet - 工作表实例
+     * @param clipboardEvent - 浏览器原生 paste 事件
+     * @returns 是否成功处理了粘贴
      */
-    pasteFromEvent(sheet, clipboardEvent) {
+    pasteFromEvent(sheet: any, clipboardEvent: ClipboardEvent): boolean {
         const items = clipboardEvent.clipboardData?.items;
         if (!items || items.length === 0) {
-            // fallback 到内部数据
             if (this.#data) {
                 this.pasteInternal(sheet);
                 return true;
@@ -95,9 +150,8 @@ export class ClipboardManager {
         }
 
         let hasImage = false;
-        let textContent = null;
+        let textContent: DataTransferItem | null = null;
 
-        // 遍历剪贴板 items，优先处理图片，其次文本
         for (let i = 0; i < items.length; i++) {
             const item = items[i];
             if (item.type.startsWith("image/")) {
@@ -111,21 +165,18 @@ export class ClipboardManager {
             }
         }
 
-        // 如果有图片，粘贴图片（不再处理文本）
         if (hasImage) {
             sheet.render();
             return true;
         }
 
-        // 处理文本粘贴
         if (textContent) {
-            textContent.getAsString((text) => {
+            textContent.getAsString((text: string) => {
                 this.pasteText(sheet, text);
             });
             return true;
         }
 
-        // 既无文本也无图片，fallback 到内部数据
         if (this.#data) {
             this.pasteInternal(sheet);
             return true;
@@ -136,18 +187,15 @@ export class ClipboardManager {
     /**
      * 粘贴剪贴板内容到当前活动单元格位置（异步方式，兼容旧 API）
      * 优先读取系统剪贴板，fallback 到内部数据
-     *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param sheet - 工作表实例
      * @deprecated 推荐使用 pasteFromEvent() 替代，以避免权限弹窗
      */
-    paste(sheet) {
+    paste(sheet: any): void {
         this.#readSystemClipboard(sheet);
     }
 
-    /**
-     * 清空内部剪贴板数据（不影响已粘贴到单元格的图片）
-     */
-    clear() {
+    /** 清空内部剪贴板数据（不影响已粘贴到单元格的图片） */
+    clear(): void {
         this.#data = null;
     }
 
@@ -156,28 +204,26 @@ export class ClipboardManager {
      * 仅当目标列明确配置了不同类型时才阻止粘贴；
      * 目标列无类型配置（默认 text）时允许任意类型粘贴。
      *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet - 目标工作表
-     * @param {number} targetRow - 目标起始行
-     * @param {number} targetCol - 目标起始列
-     * @param {number} [srcCols] - 源数据列数（仅 #pasteInternal 使用，#pasteText 从文本推断）
-     * @returns {{ mismatches: Array<{srcCol:number, targetCol:number, srcType:string, targetType:string}> }|null}
+     * @param sheet - 目标工作表
+     * @param targetRow - 目标起始行
+     * @param targetCol - 目标起始列
+     * @param srcCols - 源数据列数（可选）
+     * @returns 类型不匹配结果，无问题返回 null
      */
-    #checkTypeMismatch(sheet, targetRow, targetCol, srcCols) {
+    #checkTypeMismatch(sheet: any, targetRow: number, targetCol: number, srcCols?: number): TypeCheckResult | null {
         if (!this.#data) return null;
         const cols = srcCols != null ? srcCols : this.#data.cols;
         const columnTypes = this.#data.columnTypes;
-        const mismatches = [];
+        const mismatches: TypeMismatch[] = [];
 
         for (let c = 0; c < cols; c++) {
             const srcType = columnTypes[c] || "text";
             const tc = targetCol + c;
 
-            // 检查目标列是否有显式类型配置
             const colConfig = sheet.getColumnConfig(tc);
             const hasExplicitColType = colConfig?.type != null;
             const hasCellType = sheet.cellTypes?.has(`${targetRow},${tc}`);
 
-            // 仅当目标列/单元格有显式类型配置且与源类型不同时才拒绝
             if (hasExplicitColType || hasCellType) {
                 const targetCellType = sheet.getCellTypeInstance(targetRow, tc);
                 const targetType = targetCellType ? targetCellType.name : "text";
@@ -191,15 +237,15 @@ export class ClipboardManager {
     }
 
     /**
-     * 获取内部剪贴板数据（供 CopyPastePlugin 在 beforePaste 钩子中使用）
-     * @returns {object|null}
+     * 获取内部剪贴板数据（供 CopyPasteStrategy 在 beforePaste 钩子中使用）
+     * @returns 剪贴板数据或 null
      */
-    getClipboardData() {
+    getClipboardData(): ClipboardData | null {
         return this.#data;
     }
 
-    #writeSystemClipboard(sheet, range, cells) {
-        // 使用 sheet.formatCellValue() 格式化显示值，避免 Date 等对象被 String() 转为冗长字符串
+    /** 写入系统剪贴板（TSV 纯文本） */
+    #writeSystemClipboard(sheet: any, range: any, cells: (CellCopyData | null)[][]): void {
         const text = cells
             .map((row, ri) =>
                 row
@@ -214,7 +260,7 @@ export class ClipboardManager {
             .join("\n");
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).catch((err) => {
+            navigator.clipboard.writeText(text).catch((err: Error) => {
                 errorHandler.warn(ERROR_CODE.CLIPBOARD_WRITE_ERROR, "System clipboard write failed, using fallback", { originalError: err });
                 this.#fallbackWriteText(text);
             });
@@ -223,7 +269,8 @@ export class ClipboardManager {
         }
     }
 
-    #fallbackWriteText(text) {
+    /** 降级方式写入剪贴板（使用 document.execCommand） */
+    #fallbackWriteText(text: string): void {
         const ta = document.createElement("textarea");
         ta.value = text;
         ta.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0";
@@ -237,18 +284,19 @@ export class ClipboardManager {
         document.body.removeChild(ta);
     }
 
-    #readSystemClipboard(sheet) {
+    /** 异步读取系统剪贴板 */
+    #readSystemClipboard(sheet: any): void {
         if (navigator.clipboard && navigator.clipboard.readText) {
             navigator.clipboard
                 .readText()
-                .then((text) => {
+                .then((text: string) => {
                     if (text) {
                         this.pasteText(sheet, text);
                     } else if (this.#data) {
                         this.pasteInternal(sheet);
                     }
                 })
-                .catch((err) => {
+                .catch((err: Error) => {
                     errorHandler.warn(ERROR_CODE.CLIPBOARD_READ_ERROR, "System clipboard read failed, using internal data", { originalError: err });
                     if (this.#data) {
                         this.pasteInternal(sheet);
@@ -261,14 +309,13 @@ export class ClipboardManager {
 
     /**
      * 粘贴文本到当前活动单元格（公开方法，供 CopyPasteStrategy 调用）
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {string} text - TSV 格式文本
+     * @param sheet - 工作表实例
+     * @param text - TSV 格式文本
      */
-    pasteText(sheet, text) {
+    pasteText(sheet: any, text: string): void {
         const [targetRow, targetCol] = sheet.selection.getActive();
         const rows = text.split("\n");
 
-        // 计算源列数（取最长行的列数）
         let srcCols = 0;
         for (let r = 0; r < rows.length; r++) {
             if (rows[r] === "" && r === rows.length - 1) continue;
@@ -276,7 +323,6 @@ export class ClipboardManager {
             if (colCount > srcCols) srcCols = colCount;
         }
 
-        // 检查类型一致性：源列类型与目标列类型不一致时阻止粘贴
         const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol, srcCols);
         if (mismatch) {
             const details = mismatch.mismatches.map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`).join("; ");
@@ -292,7 +338,6 @@ export class ClipboardManager {
                 const tr = targetRow + r;
                 const tc = targetCol + c;
                 if (!sheet.isDisabled(tr, tc)) {
-                    // 使用类型系统解析粘贴的值，确保日期等类型正确存储
                     const parsedValue = sheet.parseCellValue(tr, tc, cols[c]);
                     sheet.setCell(tr, tc, parsedValue);
                 }
@@ -300,20 +345,18 @@ export class ClipboardManager {
         }
         sheet.endBatch();
 
-        // 标记所有瓦片为脏，确保粘贴内容被完整重绘
         sheet.invalidateAll();
         sheet.render();
     }
 
     /**
      * 粘贴内部剪贴板数据（公开方法，供 CopyPasteStrategy 调用）
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
+     * @param sheet - 工作表实例
      */
-    pasteInternal(sheet) {
+    pasteInternal(sheet: any): void {
         if (!this.#data) return;
         const [targetRow, targetCol] = sheet.selection.getActive();
 
-        // 检查类型一致性：源列类型与目标列类型不一致时阻止粘贴
         const mismatch = this.#checkTypeMismatch(sheet, targetRow, targetCol);
         if (mismatch) {
             const details = mismatch.mismatches.map((m) => `列${m.targetCol}: 源类型"${m.srcType}" ≠ 目标类型"${m.targetType}"`).join("; ");
@@ -330,7 +373,6 @@ export class ClipboardManager {
                 const tc = targetCol + c;
                 if (sheet.isDisabled(tr, tc)) continue;
 
-                // 先用源列格式化为显示字符串，再用目标列的类型系统解析
                 const srcR = this.#data.topRow + r;
                 const srcC = this.#data.topCol + c;
                 const displayText = sheet.formatCellValue(srcR, srcC, cellData.value);
@@ -340,40 +382,26 @@ export class ClipboardManager {
         }
         sheet.endBatch();
 
-        // 标记所有瓦片为脏，确保粘贴内容被完整重绘
         sheet.invalidateAll();
         sheet.render();
     }
 
-    // ============================================================
-    // 富内容管理（图片、图表等，与 Cell 模型解耦）
-    // ============================================================
-
-    /**
-     * 生成单元格富内容的唯一 key
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {number} realR - 实际行号
-     * @param {number} col - 列号
-     * @returns {string}
-     */
-    #cellKey(sheet, realR, col) {
+    /** 生成单元格富内容的唯一 key */
+    #cellKey(sheet: any, realR: number, col: number): string {
         return `${sheet.name},${realR},${col}`;
     }
 
     /**
      * 为指定单元格设置图片内容
      * 将 Blob 转为 Object URL，存入 #cellContent Map。
-     * 图片信息不写入 Cell 模型，由渲染层通过 getCellContent() 查询。
-     *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {number} r - 行号（页面行号）
-     * @param {number} c - 列号
-     * @param {Blob} blob - 图片 Blob 数据
+     * @param sheet - 工作表实例
+     * @param r - 行号
+     * @param c - 列号
+     * @param blob - 图片 Blob 数据
      */
-    setCellImage(sheet, r, c, blob) {
+    setCellImage(sheet: any, r: number, c: number, blob: Blob): void {
         const key = this.#cellKey(sheet, r, c);
 
-        // 撤销旧图片的 Object URL
         const old = this.#cellContent.get(key);
         if (old) {
             URL.revokeObjectURL(old.objectUrl);
@@ -382,7 +410,6 @@ export class ClipboardManager {
         const objectUrl = URL.createObjectURL(blob);
         this.#cellContent.set(key, { type: "image", blob, objectUrl });
 
-        // 确保单元格存在（值为空，仅占位）
         if (!sheet.cellStore.get(r, c)) {
             sheet.setCell(r, c, "");
         }
@@ -392,14 +419,12 @@ export class ClipboardManager {
 
     /**
      * 获取指定单元格的富内容信息
-     * 渲染层通过此方法查询单元格是否有图片等内容需要渲染。
-     *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {number} realR - 实际行号
-     * @param {number} col - 列号
-     * @returns {{type:string, objectUrl:string}|null} 富内容信息，无则返回 null
+     * @param sheet - 工作表实例
+     * @param realR - 实际行号
+     * @param col - 列号
+     * @returns 富内容信息，无则返回 null
      */
-    getCellContent(sheet, realR, col) {
+    getCellContent(sheet: any, realR: number, col: number): { type: string; objectUrl: string } | null {
         const key = this.#cellKey(sheet, realR, col);
         const content = this.#cellContent.get(key);
         if (!content) return null;
@@ -408,11 +433,11 @@ export class ClipboardManager {
 
     /**
      * 清除指定单元格的富内容
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {number} realR - 实际行号
-     * @param {number} col - 列号
+     * @param sheet - 工作表实例
+     * @param realR - 实际行号
+     * @param col - 列号
      */
-    removeCellContent(sheet, realR, col) {
+    removeCellContent(sheet: any, realR: number, col: number): void {
         const key = this.#cellKey(sheet, realR, col);
         const content = this.#cellContent.get(key);
         if (content) {
@@ -421,37 +446,20 @@ export class ClipboardManager {
         }
     }
 
-    // ============================================================
-    // 图片粘贴（内部）
-    // ============================================================
-
-    /**
-     * 粘贴图片到当前活动单元格
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {Blob} blob - 图片 Blob 数据
-     */
-    #pasteImage(sheet, blob) {
+    /** 粘贴图片到当前活动单元格 */
+    #pasteImage(sheet: any, blob: Blob): void {
         const [targetRow, targetCol] = sheet.selection.getActive();
         if (sheet.isDisabled(targetRow, targetCol)) return;
 
         this.setCellImage(sheet, targetRow, targetCol, blob);
     }
 
-    // ============================================================
-    // 文件选择插入图片（右键菜单 / 工具栏）
-    // ============================================================
-
     /**
      * 通过文件选择器插入图片到当前活动单元格
-     * 创建一个隐藏的 <input type="file"> 触发文件选择，选中后调用 setCellImage
-     *
-     * @param {import("../workbook/Sheet.js").Sheet} sheet
-     * @param {object} [options]
-     * @param {number} [options.row] - 目标行号（不传则使用当前选区活动单元格）
-     * @param {number} [options.col] - 目标列号
-     * @param {Function} [options.onComplete] - 完成回调 (success: boolean) => void
+     * @param sheet - 工作表实例
+     * @param options - 插入选项
      */
-    insertImageFromFile(sheet, options = {}) {
+    insertImageFromFile(sheet: any, options: InsertImageOptions = {}): void {
         const targetRow = options.row ?? sheet.selection.getActive()[0];
         const targetCol = options.col ?? sheet.selection.getActive()[1];
 
@@ -476,7 +484,6 @@ export class ClipboardManager {
             input.remove();
         });
 
-        // 取消选择时清理
         input.addEventListener("cancel", () => {
             options.onComplete?.(false);
             input.remove();
@@ -486,10 +493,8 @@ export class ClipboardManager {
         input.click();
     }
 
-    /**
-     * 销毁剪贴板管理器，释放所有资源
-     */
-    destroy() {
+    /** 销毁剪贴板管理器，释放所有资源 */
+    destroy(): void {
         this.#data = null;
         for (const [, content] of this.#cellContent) {
             URL.revokeObjectURL(content.objectUrl);
