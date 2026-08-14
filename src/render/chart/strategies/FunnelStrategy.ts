@@ -14,7 +14,6 @@ export class FunnelStrategy extends BaseChartStrategy {
     }
 
     render(ctx: CanvasRenderingContext2D, data: ChartData, area: PlotArea, style: ChartStyle): void {
-
         if (!data.data || data.data.length === 0) {
             errorHandler.warn(ERROR_CODE.CHART_DATA_EMPTY, `Funnel 数据为空`);
             return;

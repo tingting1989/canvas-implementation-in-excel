@@ -173,7 +173,14 @@ export class DataExtractor {
         return filteredMatrix;
     }
 
-    async #filterHiddenRowsAndColsAsync(matrix: unknown[][], startRow: number, endRow: number, startCol: number, endCol: number, sheet: SheetLike): Promise<unknown[][]> {
+    async #filterHiddenRowsAndColsAsync(
+        matrix: unknown[][],
+        startRow: number,
+        endRow: number,
+        startCol: number,
+        endCol: number,
+        sheet: SheetLike,
+    ): Promise<unknown[][]> {
         const rowColManager = sheet.rowColManager;
         const CHUNK_SIZE = 50;
 
@@ -197,7 +204,9 @@ export class DataExtractor {
                 count++;
 
                 if (count % CHUNK_SIZE === 0) {
-                    await new Promise<void>((resolve) => { requestAnimationFrame(() => resolve()); });
+                    await new Promise<void>((resolve) => {
+                        requestAnimationFrame(() => resolve());
+                    });
                 }
             }
 

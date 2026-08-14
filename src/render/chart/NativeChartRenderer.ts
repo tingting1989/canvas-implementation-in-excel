@@ -40,7 +40,14 @@ export class NativeChartRenderer {
         errorHandler.configure({ level });
     }
 
-    static renderWithPixelRatio(ctx: CanvasRenderingContext2D, chart: { type: string }, data: ChartData, plotArea: PlotArea, style: ChartStyle, pixelRatio: number): void {
+    static renderWithPixelRatio(
+        ctx: CanvasRenderingContext2D,
+        chart: { type: string },
+        data: ChartData,
+        plotArea: PlotArea,
+        style: ChartStyle,
+        pixelRatio: number,
+    ): void {
         ctx.save();
 
         let yScale: YScale | null = null;
@@ -116,7 +123,16 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
-    static hitTest(px: number, py: number, chart: { type: string }, data: ChartData, plotArea: PlotArea, seriesCount: number, catCount: number, yScale?: YScale | null): HitInfo | null {
+    static hitTest(
+        px: number,
+        py: number,
+        chart: { type: string },
+        data: ChartData,
+        plotArea: PlotArea,
+        seriesCount: number,
+        catCount: number,
+        yScale?: YScale | null,
+    ): HitInfo | null {
         const strategy = this.get(chart.type);
         if (strategy) {
             return strategy.hitTest(px, py, data, plotArea, seriesCount, catCount, yScale);
@@ -209,7 +225,14 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
-    static renderAxes(ctx: CanvasRenderingContext2D, data: ChartData, area: PlotArea, yScale: YScale, style: ChartStyle, pixelRatio: number = 1): void {
+    static renderAxes(
+        ctx: CanvasRenderingContext2D,
+        data: ChartData,
+        area: PlotArea,
+        yScale: YScale,
+        style: ChartStyle,
+        pixelRatio: number = 1,
+    ): void {
         ctx.save();
         ctx.strokeStyle = CONFIG.CHART_AXIS_COLOR;
         ctx.lineWidth = CONFIG.CHART_AXIS_LINE_WIDTH * pixelRatio;

@@ -5,7 +5,19 @@ import { ERROR_CODE } from "../../../constants/errorCodes";
 import type { ChartData, PlotArea, ChartStyle, HitInfo, RgbColor } from "../types";
 
 export class HeatmapStrategy extends BaseChartStrategy {
-    static #defaultColors: string[] = ["#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026"];
+    static #defaultColors: string[] = [
+        "#313695",
+        "#4575b4",
+        "#74add1",
+        "#abd9e9",
+        "#e0f3f8",
+        "#ffffbf",
+        "#fee090",
+        "#fdae61",
+        "#f46d43",
+        "#d73027",
+        "#a50026",
+    ];
 
     constructor() {
         super("heatmap", "热力图");
