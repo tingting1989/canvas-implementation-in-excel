@@ -1,11 +1,11 @@
-﻿import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ChartPlugin } from "@/plugins/ChartPlugin";
-import { CHART_TYPE } from "@/model/chart/ChartModel";
+import { CHART_TYPE } from "@/constants/enums/ChartType";
 
 function createMockBus() {
-    const listeners = {};
+    const listeners: Record<string, ((...args: unknown[]) => void)[]> = {};
     return {
-        on: vi.fn((event, cb) => {
+        on: vi.fn((event: string, cb: (...args: unknown[]) => void) => {
             if (!listeners[event]) listeners[event] = [];
             listeners[event].push(cb);
             return vi.fn();
@@ -16,11 +16,11 @@ function createMockBus() {
     };
 }
 
-function createMockSheet(name) {
+function createMockSheet(name: string) {
     return {
         name,
         bus: createMockBus(),
-        chartManager: null,
+        chartManager: null as unknown,
         cellStore: { on: vi.fn() },
         reactiveStore: { on: vi.fn() },
         rowColManager: {
@@ -78,29 +78,29 @@ const mockCtx = {
     strokeStyle: "#000",
     lineWidth: 1,
     font: "12px sans-serif",
-    textAlign: "left",
-    textBaseline: "alphabetic",
+    textAlign: "left" as CanvasTextAlign,
+    textBaseline: "alphabetic" as CanvasTextBaseline,
     globalAlpha: 1,
 };
 
 describe("ChartPlugin", () => {
-    let plugin;
-    let workbook;
-    let origCreateElement;
+    let plugin: ChartPlugin;
+    let workbook: ReturnType<typeof createMockWorkbook>;
+    let origCreateElement: typeof document.createElement;
 
     beforeEach(() => {
         origCreateElement = document.createElement.bind(document);
-        vi.spyOn(document, "createElement").mockImplementation((tag) => {
+        vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
             const el = origCreateElement(tag);
             if (tag === "canvas") {
-                el.getContext = vi.fn(() => mockCtx);
+                el.getContext = vi.fn(() => mockCtx) as any;
                 el.toDataURL = vi.fn(() => "data:image/png;base64,mock");
             }
             return el;
         });
 
         workbook = createMockWorkbook();
-        plugin = new ChartPlugin(workbook);
+        plugin = new ChartPlugin(workbook as any);
         plugin.init();
     });
 
@@ -108,7 +108,7 @@ describe("ChartPlugin", () => {
         if (plugin) {
             plugin.destroy();
         }
-        document.createElement.mockRestore();
+        vi.restoreAllMocks();
     });
 
     describe("init", () => {
@@ -197,7 +197,7 @@ describe("ChartPlugin", () => {
             });
             const removed = plugin.removeChart(chart.id);
             expect(removed).toBeDefined();
-            expect(removed.id).toBe(chart.id);
+            expect(removed!.id).toBe(chart.id);
             expect(plugin.getChart(chart.id)).toBeNull();
         });
 
