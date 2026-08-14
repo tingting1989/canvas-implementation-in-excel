@@ -1,135 +1,88 @@
-﻿import { EventStrategy } from "./EventStrategy.js";
+import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import "./contextMenu.css";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 
+/** 菜单项配置接口（用于自定义菜单项） */
+interface MenuItemConfig {
+    /** 菜单项显示文本 */
+    label?: string;
+    /** 点击回调函数 */
+    action?: (row: number, col: number, sheet: any) => void;
+    /** 菜单项唯一标识键 */
+    key?: string;
+    /** 出现的上下文类型列表，如 ["cell", "rowHeader"] */
+    contexts?: string[];
+    /** 类型，"separator" 表示分隔线 */
+    type?: string;
+}
+
+/** 内部菜单项条目 */
+interface MenuItemEntry {
+    /** 显示文本 */
+    label: string;
+    /** 点击回调 */
+    action: (row: number, col: number, sheet: any) => void;
+}
+
+/** 右键菜单配置选项 */
+interface ContextMenuOptions {
+    /** 自定义菜单项列表 */
+    customItems?: MenuItemConfig[];
+    /** 禁用的菜单项键列表 */
+    disabledItems?: string[];
+}
+
 /**
  * 右键上下文菜单策略 (Context Menu Strategy)
  *
  * 处理Canvas表格中的右键菜单显示和命令执行。
- * 根据右键点击的位置类型显示不同的上下文菜单。
+ * 根据右键点击的位置类型（单元格/行标头/列标头）显示不同的上下文菜单。
  *
- * 优先级：0（STRATEGY_PRIORITY.POPUP_UI）
- * - contextmenu事件通常不会与其他策略冲突
- * - 使用弹出式UI的优先级常量
+ * 优先级：STRATEGY_PRIORITY.POPUP_UI
  *
- * 菜单类型及适用场景：
- * ┌────────────────┬─────────────────────────────────────────────┐
- * │ 点击位置       │ 显示的菜单内容                              │
- * ├────────────────┼─────────────────────────────────────────────┤
- * │ cell           │ 完整菜单：行/列操作、合并、清空、自定义项   │
- * │ rowHeader      │ 行操作：插入行、删除行、清空行内容         │
- * │ colHeader      │ 列操作：插入列、删除列、清空列内容         │
- * │ corner         │ 不弹出菜单                                 │
- * └────────────────┴─────────────────────────────────────────────┘
+ * 核心功能：
+ * 1. **上下文感知菜单**：根据右键位置显示不同菜单项
+ * 2. **内置菜单操作**：插入/删除行列、合并/取消合并、隐藏/显示、冻结等
+ * 3. **自定义菜单项**：支持通过配置添加自定义菜单项
+ * 4. **禁用控制**：支持禁用特定菜单项，只读模式下自动禁用修改操作
+ * 5. **自动定位**：菜单自动调整位置避免超出视口
+ * 6. **点击外部关闭**：点击菜单外部区域自动关闭
  *
- * 架构设计特点：
- *
- * **1. 事件委托模式**：
- * - hover效果由CSS :hover伪类处理（零JS开销）
- * - click事件委托到#menuEl容器（单个监听器）
- * - 通过data-key属性和menuItemMap查找目标项
- * - 菜单项增减不影响监听器数量
- *
- * **2. 高度可定制性**：
- * - 支持添加自定义菜单项（customItems）
- * - 支持禁用内置菜单项（disabledItems）
- * - 支持分隔线（type: "separator"）
- * - 支持上下文过滤（contexts数组）
- *
- * **3. 内置菜单项列表**：
- * - 插入行/列、删除行/列
- * - 合并单元格/取消合并
- * - 清空内容
- * - 复制/粘贴等（可扩展）
- *
- * 配置选项说明：
- * ```js
- * {
- *   customItems: [        // 自定义菜单项数组
- *     {
- *       label: "菜单文本",
- *       action: (row, col, sheet) => {},  // 点击回调
- *       key: "unique_id",                 // 可选唯一标识
- *       contexts: ["cell"],               // 显示的上下文
- *       type: "separator"                 // 可选：分隔线
- *     }
- *   ],
- *   disabledItems: ["mergeCells"]  // 要禁用的内置项key数组
- * }
- * ```
- *
- * 性能优化：
- * - 菜单DOM元素复用（创建一次，重复使用）
- * - CSS动画过渡（避免JS动画的性能开销）
- * - 延迟销毁（隐藏后保留DOM，下次直接显示）
+ * 菜单上下文类型：
+ * - cell: 单元格右键菜单（最完整）
+ * - rowHeader: 行标头右键菜单（行操作为主）
+ * - colHeader: 列标头右键菜单（列操作为主）
  *
  * @class ContextMenuStrategy
  * @extends EventStrategy
- *
- * @example
- * // 创建带自定义菜单项的策略
- * const contextMenu = new ContextMenuStrategy(handler, {
- *   customItems: [
- *     {
- *       label: "高亮行",
- *       contexts: ["cell", "rowHeader"],
- *       action: (row, col, sheet) => {
- *         sheet.setRowStyle(row, { backgroundColor: "yellow" });
- *       }
- *     },
- *     { type: "separator" },  // 分隔线
- *     {
- *       label: "导出数据",
- *       contexts: ["cell"],
- *       action: (row, col, sheet) => {
- *         exportToCSV(sheet);
- *       }
- *     }
- *   ],
- *   disabledItems: ["mergeCells", "unmergeCells"]
- * });
- *
- * editor.addStrategy(contextMenu);
  */
 export class ContextMenuStrategy extends EventStrategy {
-    /**
-     * 策略优先级
-     * 右键菜单触发器，使用弹出式 UI 优先级
-     * @type {number}
-     */
-    priority = STRATEGY_PRIORITY.POPUP_UI;
-    /** 右键菜单 DOM 容器 */
-    #menuEl = null;
+    /** 策略优先级：弹出UI */
+    priority: number = STRATEGY_PRIORITY.POPUP_UI;
 
-    /** 右键点击时的行号 */
-    #row = -1;
-
-    /** 右键点击时的列号 */
-    #col = -1;
-
-    /** 当前右击上下文：cell / rowHeader / colHeader */
-    #context = "cell";
-
-    /**
-     * 所有菜单项 key → {label, action} 映射
-     * 包含内置项（未被 disabledItems 过滤）和自定义项
-     * 用于 click 委托时 O(1) 查找目标菜单项
-     */
-    #menuItemMap = new Map();
-
-    /** 被禁用的内置菜单项 key 集合 */
-    #disabledKeys = new Set();
-
-    /** 自定义菜单项原始配置（保留 contexts 等信息用于按上下文过滤） */
-    #customItems = [];
+    /** 菜单DOM元素 */
+    #menuEl: HTMLDivElement | null = null;
+    /** 右键点击的行号 */
+    #row: number = -1;
+    /** 右键点击的列号 */
+    #col: number = -1;
+    /** 当前上下文类型：cell/rowHeader/colHeader */
+    #context: string = "cell";
+    /** 菜单项映射表（键 → 菜单条目） */
+    #menuItemMap: Map<string, MenuItemEntry> = new Map();
+    /** 被禁用的菜单项键集合 */
+    #disabledKeys: Set<string> = new Set();
+    /** 自定义菜单项列表 */
+    #customItems: MenuItemConfig[] = [];
 
     /**
-     * 只读模式下禁用的内置菜单项 key
+     * 只读模式下禁用的菜单项键集合
+     * 包括所有会修改数据的操作：插入/删除行列、合并、清空、隐藏、冻结等
      */
-    static #READONLY_DISABLED = new Set([
+    static #READONLY_DISABLED: Set<string> = new Set([
         "insertRowAbove",
         "insertRowBelow",
         "insertColLeft",
@@ -150,11 +103,8 @@ export class ContextMenuStrategy extends EventStrategy {
         "unfreeze",
     ]);
 
-    /**
-     * 各上下文对应的内置菜单项排列顺序
-     * null 表示分隔线，字符串为 #menuItemMap 中的 key
-     */
-    static #CONTEXT_ITEMS = {
+    /** 各上下文类型对应的菜单项顺序（null表示分隔线） */
+    static #CONTEXT_ITEMS: Record<string, (string | null)[]> = {
         cell: [
             "insertRowAbove",
             "insertRowBelow",
@@ -213,24 +163,12 @@ export class ContextMenuStrategy extends EventStrategy {
         ],
     };
 
-    /**
-     * @param {EventHandler} handler - 事件处理器实例
-     * @param {object} [options={}] - 菜单配置
-     * @param {Array} [options.customItems=[]] - 自定义菜单项
-     * @param {string[]} [options.disabledItems=[]] - 禁用的内置菜单项 key
-     */
-    constructor(handler, options = {}) {
+    constructor(handler: any, options: ContextMenuOptions = {}) {
         super(handler);
         this.#buildMenuItems(options);
     }
 
-    /**
-     * 构建菜单项映射
-     * 将内置项和自定义项统一注册到 #menuItemMap，供委托查找
-     *
-     * @param {object} options - 同构造函数 options
-     */
-    #buildMenuItems(options) {
+    #buildMenuItems(options: ContextMenuOptions): void {
         const builtIn = this._buildBuiltInItems();
         const disabledItems = options.disabledItems || [];
         this.#customItems = options.customItems || [];
@@ -239,65 +177,49 @@ export class ContextMenuStrategy extends EventStrategy {
             this.#disabledKeys.add(key);
         }
 
-        // 注册未被禁用的内置菜单项
         for (const [key, item] of Object.entries(builtIn)) {
             if (!this.#disabledKeys.has(key)) {
                 this.#menuItemMap.set(key, item);
             }
         }
 
-        // 注册自定义菜单项（分隔线不需要注册，仅保留在 #customItems 中用于渲染）
         for (let i = 0; i < this.#customItems.length; i++) {
             const ci = this.#customItems[i];
             if (ci.type === "separator") continue;
             const key = ci.key || `custom_${i}`;
-            this.#menuItemMap.set(key, { label: ci.label, action: ci.action });
+            this.#menuItemMap.set(key, { label: ci.label!, action: ci.action! });
         }
     }
 
-    /** 初始化：创建菜单 DOM 容器 */
-    init() {
+    init(): void {
         this.#createMenu();
     }
 
-    /** 销毁：移除菜单 DOM */
-    destroy() {
+    destroy(): void {
         this.#menuEl?.remove();
         this.#menuEl = null;
     }
 
-    /**
-     * 注册 canvas 级别的事件处理器
-     * - contextmenu：右键弹出菜单
-     * - mousedown：点击菜单外部关闭
-     */
-    getEventHandlers() {
+    getEventHandlers(): Record<string, (e: Event) => boolean | void> {
         return {
-            [DELEGATE_KEYS.CANVAS_CONTEXTMENU]: (e) => this.#handleContextMenu(e),
-            [DELEGATE_KEYS.DOCUMENT_MOUSEDOWN]: (e) => this.#handleDismiss(e),
+            [DELEGATE_KEYS.CANVAS_CONTEXTMENU]: (e: Event) => this.#handleContextMenu(e as MouseEvent),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEDOWN]: (e: Event) => this.#handleDismiss(e as MouseEvent),
         };
     }
 
-    /**
-     * 构建内置菜单项定义
-     * 每个 action 签名为 (row, col, sheet) => void
-     * row/col 为右击位置，sheet 为当前工作表
-     *
-     * @returns {Object<string, {label: string, action: Function}>}
-     */
-    _buildBuiltInItems() {
+    _buildBuiltInItems(): Record<string, MenuItemEntry> {
         return {
             insertRowAbove: {
                 label: "在上方插入行",
-                action: (r, c, sheet) => sheet.insertRow(r),
+                action: (r, _c, sheet) => sheet.insertRow(r),
             },
             insertRowBelow: {
                 label: "在下方插入行",
-                action: (r, c, sheet) => sheet.insertRow(r + 1),
+                action: (r, _c, sheet) => sheet.insertRow(r + 1),
             },
             deleteRow: {
                 label: "删除行",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const range = sheet.selection.getRange();
                     for (let i = range.bottomRow; i >= range.topRow; i--) {
                         sheet.deleteRow(i);
@@ -306,15 +228,15 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             insertColLeft: {
                 label: "在左侧插入列",
-                action: (r, c, sheet) => sheet.insertCol(c),
+                action: (_r, c, sheet) => sheet.insertCol(c),
             },
             insertColRight: {
                 label: "在右侧插入列",
-                action: (r, c, sheet) => sheet.insertCol(c + 1),
+                action: (_r, c, sheet) => sheet.insertCol(c + 1),
             },
             deleteCol: {
                 label: "删除列",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const range = sheet.selection.getRange();
                     for (let i = range.bottomCol; i >= range.topCol; i--) {
                         sheet.deleteCol(i);
@@ -323,7 +245,7 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             mergeCells: {
                 label: "合并单元格",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const range = sheet.selection.getRange();
                     sheet.mergeCells(range.topRow, range.topCol, range.bottomRow, range.bottomCol);
                 },
@@ -342,7 +264,7 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             clearContent: {
                 label: "清空内容",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const range = sheet.selection.getRange();
                     sheet.beginBatch();
                     for (let row = range.topRow; row <= range.bottomRow; row++) {
@@ -359,11 +281,11 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             hideRow: {
                 label: "隐藏行",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const hiddenRows = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenRows" }, { source: "ContextMenuStrategy" });
                     if (!hiddenRows) return;
                     const range = sheet.selection.getRange();
-                    const rows = [];
+                    const rows: number[] = [];
                     for (let row = range.topRow; row <= range.bottomRow; row++) {
                         rows.push(row);
                     }
@@ -372,12 +294,12 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             showRow: {
                 label: "显示行",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const hiddenRows = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenRows" }, { source: "ContextMenuStrategy" });
                     if (!hiddenRows) return;
                     const rc = sheet.rowColManager;
                     const range = sheet.selection.getRange();
-                    const rows = [];
+                    const rows: number[] = [];
                     for (let row = Math.max(0, range.topRow - 1); row <= range.bottomRow + 1; row++) {
                         if (rc.isRowHidden(row)) rows.push(row);
                     }
@@ -386,11 +308,11 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             hideColumn: {
                 label: "隐藏列",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const hiddenCols = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenColumns" }, { source: "ContextMenuStrategy" });
                     if (!hiddenCols) return;
                     const range = sheet.selection.getRange();
-                    const cols = [];
+                    const cols: number[] = [];
                     for (let col = range.topCol; col <= range.bottomCol; col++) {
                         cols.push(col);
                     }
@@ -399,12 +321,12 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             showColumn: {
                 label: "显示列",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const hiddenCols = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "hiddenColumns" }, { source: "ContextMenuStrategy" });
                     if (!hiddenCols) return;
                     const rc = sheet.rowColManager;
                     const range = sheet.selection.getRange();
-                    const cols = [];
+                    const cols: number[] = [];
                     for (let col = Math.max(0, range.topCol - 1); col <= range.bottomCol + 1; col++) {
                         if (rc.isColumnHidden(col)) cols.push(col);
                     }
@@ -421,7 +343,7 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             freezeRow: {
                 label: "冻结首行",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.freeze(1, freeze.fixedColumnsStart);
@@ -429,7 +351,7 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             freezeCol: {
                 label: "冻结首列",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.freeze(freeze.fixedRowsTop, 1);
@@ -437,7 +359,7 @@ export class ContextMenuStrategy extends EventStrategy {
             },
             unfreeze: {
                 label: "取消冻结",
-                action: (r, c, sheet) => {
+                action: (_r, _c, sheet) => {
                     const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.unfreeze();
@@ -446,20 +368,15 @@ export class ContextMenuStrategy extends EventStrategy {
         };
     }
 
-    /**
-     * 创建右键菜单 DOM 容器（一次性）
-     * - 内嵌 <style> 处理 .ctx-item:hover 效果，替代 JS mouseenter/mouseleave
-     * - click 事件委托到容器，通过 data-key 查找 #menuItemMap
-     */
-    #createMenu() {
+    #createMenu(): void {
         this.#menuEl = document.createElement("div");
         this.#menuEl.className = "ctx-menu";
 
-        // 事件委托：所有菜单项的 click 统一由容器处理
-        this.#menuEl.addEventListener("click", (e) => {
-            const el = e.target.closest(".ctx-item");
+        this.#menuEl.addEventListener("click", (e: Event) => {
+            const target = e.target as HTMLElement;
+            const el = target.closest(".ctx-item") as HTMLElement | null;
             if (!el) return;
-            const item = this.#menuItemMap.get(el.dataset.key);
+            const item = this.#menuItemMap.get(el.dataset.key!);
             if (!item?.action) return;
             item.action(this.#row, this.#col, this.handler.sheet);
             this.handler.render();
@@ -469,26 +386,16 @@ export class ContextMenuStrategy extends EventStrategy {
         document.body.appendChild(this.#menuEl);
     }
 
-    /**
-     * 根据当前上下文 (#context) 动态渲染菜单项
-     * 每次显示菜单时调用，清空旧内容后重新构建
-     *
-     * 渲染顺序：
-     * 1. 按 #CONTEXT_ITEMS[context] 定义的顺序渲染内置项
-     * 2. 过滤出当前上下文匹配的自定义项，追加到末尾
-     */
-    #renderMenuItems() {
-        this.#menuEl.innerHTML = "";
+    #renderMenuItems(): void {
+        this.#menuEl!.innerHTML = "";
 
         const isReadOnly = this.handler.sheet?.readOnly;
 
-        // 渲染当前上下文的内置菜单项
         const order = ContextMenuStrategy.#CONTEXT_ITEMS[this.#context] || ContextMenuStrategy.#CONTEXT_ITEMS.cell;
         for (const key of order) {
             if (key === null) {
                 this.#appendSeparator();
             } else {
-                // 只读模式下跳过编辑类菜单项
                 if (isReadOnly && ContextMenuStrategy.#READONLY_DISABLED.has(key)) continue;
                 const item = this.#menuItemMap.get(key);
                 if (item) this.#appendItem(key, item.label);
@@ -509,47 +416,31 @@ export class ContextMenuStrategy extends EventStrategy {
                 hasCustom = true;
             }
             const key = ci.key || `custom_${i}`;
-            this.#appendItem(key, ci.label);
+            this.#appendItem(key, ci.label!);
         }
     }
 
-    /** 追加分隔线到菜单容器 */
-    #appendSeparator() {
+    #appendSeparator(): void {
         const sep = document.createElement("div");
         sep.className = "ctx-separator";
-        this.#menuEl.appendChild(sep);
+        this.#menuEl!.appendChild(sep);
     }
 
-    /**
-     * 追加菜单项到菜单容器
-     * @param {string} key - 菜单项 key（对应 #menuItemMap）
-     * @param {string} label - 显示文本
-     */
-    #appendItem(key, label) {
+    #appendItem(key: string, label: string): void {
         const el = document.createElement("div");
         el.className = "ctx-item";
         el.dataset.key = key;
         el.textContent = label;
-        this.#menuEl.appendChild(el);
+        this.#menuEl!.appendChild(el);
     }
 
-    /**
-     * 点击菜单外部自动关闭
-     * @param {MouseEvent} e
-     */
-    #handleDismiss(e) {
-        if (this.#menuEl && !this.#menuEl.contains(e.target)) {
+    #handleDismiss(e: MouseEvent): void {
+        if (this.#menuEl && !this.#menuEl.contains(e.target as Node)) {
             this.#hideMenu();
         }
     }
 
-    /**
-     * 右键菜单事件入口
-     * 阻止浏览器默认右键菜单，根据 hit 类型分发处理
-     *
-     * @param {MouseEvent} e - contextmenu 事件
-     */
-    #handleContextMenu(e) {
+    #handleContextMenu(e: MouseEvent): void {
         if (!this.enabled || !this.handler.sheet) return;
         e.preventDefault();
 
@@ -563,18 +454,9 @@ export class ContextMenuStrategy extends EventStrategy {
         } else if (hit.type === HIT_TYPE.COL_HEADER) {
             this.#handleColHeaderHit(hit, e);
         }
-
-        // HIT_TYPE.CORNER（左上角）不弹出菜单
     }
 
-    /**
-     * 处理单元格右击
-     * 如果右击的单元格不在当前选区内，先选中它（合并单元格则选中整个合并区）
-     *
-     * @param {object} hit - hitTest 结果 {type, row, col}
-     * @param {MouseEvent} e - 原始事件（用于获取坐标）
-     */
-    #handleCellHit(hit, e) {
+    #handleCellHit(hit: { row: number; col: number }, e: MouseEvent): void {
         const sheet = this.handler.sheet;
         const merge = sheet.getMerge(hit.row, hit.col);
         const row = merge ? merge.topRow : hit.row;
@@ -593,14 +475,7 @@ export class ContextMenuStrategy extends EventStrategy {
         this.#showMenu(e.clientX, e.clientY, row, col);
     }
 
-    /**
-     * 处理行头右击
-     * 自动选中整行（从第 0 列到最后一列）
-     *
-     * @param {object} hit - hitTest 结果 {type, index}
-     * @param {MouseEvent} e - 原始事件
-     */
-    #handleRowHeaderHit(hit, e) {
+    #handleRowHeaderHit(hit: { index: number }, e: MouseEvent): void {
         const sheet = this.handler.sheet;
         const row = hit.index;
         const totalCols = sheet.rowColManager.colCount;
@@ -614,14 +489,7 @@ export class ContextMenuStrategy extends EventStrategy {
         this.#showMenu(e.clientX, e.clientY, row, 0);
     }
 
-    /**
-     * 处理列头右击
-     * 自动选中整列（从第 0 行到最后一行）
-     *
-     * @param {object} hit - hitTest 结果 {type, index}
-     * @param {MouseEvent} e - 原始事件
-     */
-    #handleColHeaderHit(hit, e) {
+    #handleColHeaderHit(hit: { index: number }, e: MouseEvent): void {
         const sheet = this.handler.sheet;
         const col = hit.index;
         const totalRows = sheet.rowColManager.rowCount;
@@ -635,26 +503,15 @@ export class ContextMenuStrategy extends EventStrategy {
         this.#showMenu(e.clientX, e.clientY, 0, col);
     }
 
-    /**
-     * 显示右键菜单
-     * 先根据上下文渲染菜单项，再计算位置（自动调整防止超出视口）
-     *
-     * @param {number} clientX - 鼠标 X 坐标
-     * @param {number} clientY - 鼠标 Y 坐标
-     * @param {number} row - 右击行号
-     * @param {number} col - 右击列号
-     */
-    #showMenu(clientX, clientY, row, col) {
+    #showMenu(clientX: number, clientY: number, row: number, col: number): void {
         this.#row = row;
         this.#col = col;
 
-        // 根据上下文动态渲染菜单内容
         this.#renderMenuItems();
 
-        // 计算菜单位置，防止超出视口
-        this.#menuEl.style.display = "block";
-        const menuW = this.#menuEl.offsetWidth;
-        const menuH = this.#menuEl.offsetHeight;
+        this.#menuEl!.style.display = "block";
+        const menuW = this.#menuEl!.offsetWidth;
+        const menuH = this.#menuEl!.offsetHeight;
         const winW = window.innerWidth;
         const winH = window.innerHeight;
 
@@ -663,12 +520,11 @@ export class ContextMenuStrategy extends EventStrategy {
         if (x + menuW > winW) x = winW - menuW;
         if (y + menuH > winH) y = winH - menuH;
 
-        this.#menuEl.style.left = x + "px";
-        this.#menuEl.style.top = y + "px";
+        this.#menuEl!.style.left = x + "px";
+        this.#menuEl!.style.top = y + "px";
     }
 
-    /** 隐藏右键菜单 */
-    #hideMenu() {
+    #hideMenu(): void {
         if (this.#menuEl) {
             this.#menuEl.style.display = "none";
         }

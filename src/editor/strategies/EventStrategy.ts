@@ -84,6 +84,9 @@
  * editor.addStrategy(new MyCustomStrategy(handler));
  * ```
  */
+
+type EventHandlerFunction = (e: Event) => boolean | void;
+
 export class EventStrategy {
     /**
      * 策略优先级（数值越大越先处理事件）
@@ -97,10 +100,9 @@ export class EventStrategy {
      * - 51-100: 高优先级（如核心功能）
      * - 101+: 最高优先级（如系统级拦截）
      *
-     * @type {number}
      * @default 0
      */
-    priority = 0;
+    priority: number = 0;
 
     /**
      * 创建事件策略实例
@@ -109,22 +111,30 @@ export class EventStrategy {
      * - 保存 EventHandler 引用（用于访问工作簿、工作表等）
      * - 默认启用状态为 true
      *
-     * @param {import("../../core/EventHandler.js").EventHandler} handler - 事件处理器实例
+     * @param handler - 事件处理器实例
      *        提供对工作簿、工作表、渲染引擎等的访问
      */
-    constructor(handler) {
+    constructor(handler: any) {
         /**
          * 事件处理器引用
-         * @type {import("../../core/EventHandler.js").EventHandler}
          */
         this.handler = handler;
 
         /**
          * 策略是否启用
-         * @type {boolean}
          */
         this.enabled = true;
     }
+
+    /**
+     * 事件处理器引用
+     */
+    handler: any;
+
+    /**
+     * 策略是否启用
+     */
+    enabled: boolean;
 
     /**
      * 初始化策略（生命周期钩子）
@@ -141,7 +151,7 @@ export class EventStrategy {
      *
      * @virtual
      */
-    init() {}
+    init(): void {}
 
     /**
      * 销毁策略（生命周期钩子）
@@ -158,7 +168,7 @@ export class EventStrategy {
      *
      * @virtual
      */
-    destroy() {}
+    destroy(): void {}
 
     /**
      * 启用策略
@@ -169,7 +179,7 @@ export class EventStrategy {
      * 可以在运行时动态切换策略的启用状态，
      * 实现条件性功能开关。
      */
-    enable() {
+    enable(): void {
         this.enabled = true;
     }
 
@@ -185,7 +195,7 @@ export class EventStrategy {
      * - 性能优化（暂时不需要时禁用）
      * - 调试时排除某个策略的影响
      */
-    disable() {
+    disable(): void {
         this.enabled = false;
     }
 
@@ -218,29 +228,13 @@ export class EventStrategy {
      *   - undefined/true: 允许后续策略继续处理
      *   - false: 阻止后续策略处理此事件（事件消费）
      *
-     * @returns {Object<string, Function>} 事件处理器映射表
+     * @returns 事件处理器映射表
      *          键格式: "目标元素:事件类型"
      *          值: 事件处理函数
      *
-     * @example
-     * ```js
-     * getEventHandlers() {
-     *   return {
-     *     // Canvas上的鼠标按下事件
-     *     'canvas:mousedown': (e) => this.onMouseDown(e),
-     *
-     *     // 文档级别的鼠标移动（用于拖拽跟踪）
-     *     'document:mousemove': (e) => this.onMouseMove(e),
-     *
-     *     // 窗口大小改变
-     *     'window:resize': () => this.onResize()
-     *   };
-     * }
-     * ```
-     *
      * @virtual
      */
-    getEventHandlers() {
+    getEventHandlers(): Record<string, EventHandlerFunction> {
         return {};
     }
 }

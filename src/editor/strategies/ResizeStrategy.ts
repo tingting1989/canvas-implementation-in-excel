@@ -1,4 +1,4 @@
-﻿import { EventStrategy } from "./EventStrategy.js";
+import { EventStrategy } from "./EventStrategy.js";
 import { CONFIG } from "../../constants/config.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
@@ -8,78 +8,74 @@ import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
  * 尺寸调整策略 (Resize Strategy)
  *
  * 处理Canvas表格中行高和列宽的拖拽调整操作。
- * 拥有最高优先级（100），确保调整手柄的事件不被其他策略拦截。
- *
- * 优先级：100（STRATEGY_PRIORITY.RESIZE_LAYOUT）
- * - 最高优先级，确保调整操作始终优先响应
- * - 在 MouseStrategy (50) 和 AutoFillStrategy (90) 之前执行
+ * 拥有最高优先级（STRATEGY_PRIORITY.RESIZE_LAYOUT），确保调整手柄的事件不被其他策略拦截。
  *
  * 核心功能：
- * ┌────────────────────┬─────────────────────────────────────────┐
- * │ 操作               │ 行为                                    │
- * ├────────────────────┼─────────────────────────────────────────┤
- * │ 悬停列边界         │ 光标变为 ↔（水平调整）                │
- * │ 悬停行边界         │ 光标变为 ↕（垂直调整）                  │
- * │ 拖拽列边界         │ 实时调整列宽，显示参考线               │
- * │ 拖拽行边界         │ 实时调整行高，显示参考线               │
- * │ 双击列/行边界      │ 自动适应内容宽度/高度                   │
- * └────────────────────┴─────────────────────────────────────────┘
+ * 1. **列宽拖拽调整**：拖拽列标头右边缘调整列宽
+ * 2. **行高拖拽调整**：拖拽行标头下边缘调整行高
+ * 3. **调整线预览**：拖拽时显示实时调整参考线
+ * 4. **悬停光标**：悬停在调整手柄上显示 col-resize/row-resize 光标
+ * 5. **最小尺寸约束**：确保行高/列宽不小于配置的最小值
  *
- * 技术实现：
- * - 使用 headerHitTest() 检测是否点击在调整区域
- * - 通过 CSS cursor 属性提供视觉反馈
- * - 绘制临时参考线辅助用户对齐
- * - 支持像素级精确调整和网格吸附
- * - 最小尺寸限制防止过度压缩
- *
- * 状态机：
- * ```
- * idle → hover(悬停) → dragging(拖拽) → idle
- *                     ↓
- *              autoFit(双击自适应)
- * ```
- *
- * 与其他组件协作：
- * - RowColManager: 获取/设置实际的行列尺寸
- * - Viewport: 坐标转换和命中测试
- * - RenderEngine: 绘制参考线和更新光标
+ * 交互流程：
+ * ┌──────────┐    ┌──────────────┐    ┌──────────────┐
+ * │ 悬停手柄  │ →  │ 显示调整光标  │ →  │ 拖拽调整尺寸  │
+ * └──────────┘    └──────────────┘    └──────────────┘
+ * ┌──────────┐    ┌──────────────┐
+ * │ mouseup  │ →  │ 清除调整线    │
+ * └──────────┘    └──────────────┘
  *
  * @class ResizeStrategy
  * @extends EventStrategy
- *
- * @see EventStrategy - 基类
- * @see MouseStrategy - 低优先级的鼠标交互策略
  */
 export class ResizeStrategy extends EventStrategy {
-    priority = STRATEGY_PRIORITY.RESIZE_LAYOUT;
+    /** 策略优先级：布局调整（高优先级，优先捕获事件） */
+    priority: number = STRATEGY_PRIORITY.RESIZE_LAYOUT;
 
-    #resizing = false;
-    #resizeType = null;
-    #resizeIndex = -1;
-    #startPos = 0;
-    #startSize = 0;
+    /** 是否正在拖拽调整尺寸 */
+    #resizing: boolean = false;
+    /** 调整类型：COL_RESIZE 或 ROW_RESIZE */
+    #resizeType: string | null = null;
+    /** 正在调整的行/列索引 */
+    #resizeIndex: number = -1;
+    /** 拖拽起始位置（像素） */
+    #startPos: number = 0;
+    /** 拖拽起始尺寸（像素） */
+    #startSize: number = 0;
 
-    #hoverType = null;
+    /** 当前悬停的调整手柄类型 */
+    #hoverType: string | null = null;
 
-    constructor(handler) {
+    constructor(handler: any) {
         super(handler);
     }
 
-    init() {}
+    /** 初始化策略（本策略无需额外初始化） */
+    init(): void {}
 
-    destroy() {
+    /** 销毁策略，清除调整参考线 */
+    destroy(): void {
         this.#clearResizeLine();
     }
 
-    getEventHandlers() {
+    /**
+     * 声明监听的DOM事件
+     * @returns 事件映射：canvas的mousedown + document的mousemove/mouseup
+     */
+    getEventHandlers(): Record<string, (e: Event) => boolean | void> {
         return {
-            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e) => this.#onMouseDown(e),
-            [DELEGATE_KEYS.DOCUMENT_MOUSEMOVE]: (e) => this.#onMouseMove(e),
-            [DELEGATE_KEYS.DOCUMENT_MOUSEUP]: (e) => this.#onMouseUp(e),
+            [DELEGATE_KEYS.CANVAS_MOUSEDOWN]: (e: Event) => this.#onMouseDown(e as MouseEvent),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEMOVE]: (e: Event) => this.#onMouseMove(e as MouseEvent),
+            [DELEGATE_KEYS.DOCUMENT_MOUSEUP]: (e: Event) => this.#onMouseUp(e as MouseEvent),
         };
     }
 
-    #onMouseDown(e) {
+    /**
+     * 处理鼠标按下：检测是否点击了调整手柄，进入调整状态
+     * @param e - 鼠标事件
+     * @returns false 表示消费此事件，阻止其他策略处理
+     */
+    #onMouseDown(e: MouseEvent): false | void {
         if (!this.enabled || !this.handler.sheet) return;
 
         const hit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
@@ -103,7 +99,11 @@ export class ResizeStrategy extends EventStrategy {
         return false;
     }
 
-    #onMouseMove(e) {
+    /**
+     * 处理鼠标移动：拖拽调整或悬停光标切换
+     * @param e - 鼠标事件
+     */
+    #onMouseMove(e: MouseEvent): false | void {
         if (this.#resizing) {
             this.#handleDrag(e);
             return false;
@@ -112,7 +112,8 @@ export class ResizeStrategy extends EventStrategy {
         return this.#handleHover(e);
     }
 
-    #handleDrag(e) {
+    /** 拖拽调整尺寸：计算新尺寸并更新，显示调整参考线 */
+    #handleDrag(e: MouseEvent): void {
         const sheet = this.handler.sheet;
         const rc = sheet.rowColManager;
         const viewport = this.handler.viewport;
@@ -143,14 +144,8 @@ export class ResizeStrategy extends EventStrategy {
         }
     }
 
-    /**
-     * 光标悬停检测
-     *
-     * 光标所有权机制：
-     * - 设置光标时 return false 阻止低优先级策略覆盖
-     * - 仅在本策略曾设置光标时才清除，避免误清其他策略的光标
-     */
-    #handleHover(e) {
+    /** 悬停检测：在调整手柄上显示对应光标 */
+    #handleHover(e: MouseEvent): false | void {
         const hit = this.handler.viewport.headerHitTest(e.clientX, e.clientY);
 
         if (hit) {
@@ -165,7 +160,8 @@ export class ResizeStrategy extends EventStrategy {
         }
     }
 
-    #onMouseUp(e) {
+    /** 处理鼠标松开：结束调整状态，清除参考线 */
+    #onMouseUp(_e: MouseEvent): void {
         if (!this.#resizing) return;
         this.#resizing = false;
         this.#resizeType = null;
@@ -174,7 +170,8 @@ export class ResizeStrategy extends EventStrategy {
         this.handler.render();
     }
 
-    #clearResizeLine() {
+    /** 清除视口中的调整参考线 */
+    #clearResizeLine(): void {
         if (this.handler.viewport) {
             this.handler.viewport.clearResizeLine();
         }
