@@ -5,6 +5,7 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
 import { isFunction } from "../../utils/helper.js";
 import { InputDetector } from "../../utils/inputDetection.js";
+import type { CellRange } from "../../model/types";
 
 /**
  * 键盘交互策略 (Keyboard Interaction Strategy)
@@ -50,17 +51,8 @@ import { InputDetector } from "../../utils/inputDetection.js";
  * @extends EventStrategy
  */
 
-/** 选区范围接口 */
-interface SelectionRange {
-    /** 起始行号 */
-    topRow: number;
-    /** 起始列号 */
-    topCol: number;
-    /** 结束行号 */
-    bottomRow: number;
-    /** 结束列号 */
-    bottomCol: number;
-}
+/** 选区范围（别名，语义化） */
+type SelectionRange = CellRange;
 
 export class KeyboardStrategy extends EventStrategy {
     /** 策略优先级：键盘基础交互 */

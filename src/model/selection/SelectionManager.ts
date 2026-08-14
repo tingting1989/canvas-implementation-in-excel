@@ -12,24 +12,24 @@
  */
 export class SelectionManager {
     /** 锚点行号 */
-    #anchorRow = 0;
+    #anchorRow: number = 0;
 
     /** 锚点列号 */
-    #anchorCol = 0;
+    #anchorCol: number = 0;
 
     /** 焦点行号 */
-    #focusRow = 0;
+    #focusRow: number = 0;
 
     /** 焦点列号 */
-    #focusCol = 0;
+    #focusCol: number = 0;
 
     /**
      * 设置单个活动单元格（锚点 = 焦点 = 同一位置）
      *
-     * @param {number} r - 行号
-     * @param {number} c - 列号
+     * @param r - 行号
+     * @param c - 列号
      */
-    setActive(r, c) {
+    setActive(r: number, c: number): void {
         this.#anchorRow = r;
         this.#anchorCol = c;
         this.#focusRow = r;
@@ -39,12 +39,12 @@ export class SelectionManager {
     /**
      * 设置范围选区（锚点和焦点可以不同）
      *
-     * @param {number} anchorRow - 锚点行号
-     * @param {number} anchorCol - 锚点列号
-     * @param {number} focusRow - 焦点行号
-     * @param {number} focusCol - 焦点列号
+     * @param anchorRow - 锚点行号
+     * @param anchorCol - 锚点列号
+     * @param focusRow - 焦点行号
+     * @param focusCol - 焦点列号
      */
-    setRange(anchorRow, anchorCol, focusRow, focusCol) {
+    setRange(anchorRow: number, anchorCol: number, focusRow: number, focusCol: number): void {
         this.#anchorRow = anchorRow;
         this.#anchorCol = anchorCol;
         this.#focusRow = focusRow;
@@ -55,27 +55,27 @@ export class SelectionManager {
      * 获取活动单元格位置（即锚点）
      * 兼容旧接口
      *
-     * @returns {[number, number]} [行号, 列号]
+     * @returns [行号, 列号]
      */
-    getActive() {
+    getActive(): [number, number] {
         return [this.#anchorRow, this.#anchorCol];
     }
 
     /**
      * 获取锚点位置
      *
-     * @returns {[number, number]} [行号, 列号]
+     * @returns [行号, 列号]
      */
-    getAnchor() {
+    getAnchor(): [number, number] {
         return [this.#anchorRow, this.#anchorCol];
     }
 
     /**
      * 获取焦点位置
      *
-     * @returns {[number, number]} [行号, 列号]
+     * @returns [行号, 列号]
      */
-    getFocus() {
+    getFocus(): [number, number] {
         return [this.#focusRow, this.#focusCol];
     }
 
@@ -83,9 +83,9 @@ export class SelectionManager {
      * 获取归一化的选区范围
      * 自动将锚点和焦点归一化为 top ≤ bottom, left ≤ right
      *
-     * @returns {{ topRow: number, topCol: number, bottomRow: number, bottomCol: number }}
+     * @returns 包含 topRow, topCol, bottomRow, bottomCol 的范围对象
      */
-    getRange() {
+    getRange(): { topRow: number; topCol: number; bottomRow: number; bottomCol: number } {
         return {
             topRow: Math.min(this.#anchorRow, this.#focusRow),
             topCol: Math.min(this.#anchorCol, this.#focusCol),
@@ -97,20 +97,20 @@ export class SelectionManager {
     /**
      * 判断当前选区是否为单个单元格
      *
-     * @returns {boolean}
+     * @returns 是否为单个单元格
      */
-    isSingleCell() {
+    isSingleCell(): boolean {
         return this.#anchorRow === this.#focusRow && this.#anchorCol === this.#focusCol;
     }
 
     /**
      * 判断指定单元格是否在当前选区内
      *
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @returns {boolean}
+     * @param row - 行号
+     * @param col - 列号
+     * @returns 是否在选区内
      */
-    contains(row, col) {
+    contains(row: number, col: number): boolean {
         const range = this.getRange();
         return row >= range.topRow && row <= range.bottomRow && col >= range.topCol && col <= range.bottomCol;
     }
@@ -118,10 +118,10 @@ export class SelectionManager {
     /**
      * 全选：选中整个工作表
      *
-     * @param {number} maxRow - 最大行号
-     * @param {number} maxCol - 最大列号
+     * @param maxRow - 最大行号
+     * @param maxCol - 最大列号
      */
-    selectAll(maxRow, maxCol) {
+    selectAll(maxRow: number, maxCol: number): void {
         this.#anchorRow = 0;
         this.#anchorCol = 0;
         this.#focusRow = maxRow;
@@ -131,10 +131,10 @@ export class SelectionManager {
     /**
      * 选中整行
      *
-     * @param {number} row - 行号
-     * @param {number} maxCol - 最大列号
+     * @param row - 行号
+     * @param maxCol - 最大列号
      */
-    selectRow(row, maxCol) {
+    selectRow(row: number, maxCol: number): void {
         this.#anchorRow = row;
         this.#anchorCol = 0;
         this.#focusRow = row;
@@ -144,10 +144,10 @@ export class SelectionManager {
     /**
      * 选中整列
      *
-     * @param {number} col - 列号
-     * @param {number} maxRow - 最大行号
+     * @param col - 列号
+     * @param maxRow - 最大行号
      */
-    selectCol(col, maxRow) {
+    selectCol(col: number, maxRow: number): void {
         this.#anchorRow = 0;
         this.#anchorCol = col;
         this.#focusRow = maxRow;

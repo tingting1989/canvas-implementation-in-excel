@@ -1,4 +1,5 @@
 import { CHART_TYPE } from "../../constants/enums/ChartType.js";
+import type { Rect } from "../types";
 
 /** 默认系列颜色数组（9色） */
 const DEFAULT_COLORS: string[] = ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de", "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc"];
@@ -28,13 +29,8 @@ interface ChartStyle {
     indicators?: unknown[];
 }
 
-/** 边界矩形 */
-interface Bounds {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-}
+/** 边界矩形（别名，语义化） */
+type Bounds = Rect;
 
 /** 图表模型配置选项 */
 interface ChartModelOptions {

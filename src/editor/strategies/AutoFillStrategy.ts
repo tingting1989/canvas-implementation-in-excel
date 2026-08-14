@@ -3,18 +3,10 @@ import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { isNumber } from "../../utils/helper.js";
 import { AUTO_FILL_DIR } from "../../constants/enums/AutoFillDir.js";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import type { CellRange } from "../../model/types";
 
-/** 选区范围接口 */
-interface SelectionRange {
-    /** 起始行号 */
-    topRow: number;
-    /** 起始列号 */
-    topCol: number;
-    /** 结束行号 */
-    bottomRow: number;
-    /** 结束列号 */
-    bottomCol: number;
-}
+/** 选区范围（别名，语义化） */
+type SelectionRange = CellRange;
 
 /**
  * 自动填充策略 (Auto Fill Strategy)

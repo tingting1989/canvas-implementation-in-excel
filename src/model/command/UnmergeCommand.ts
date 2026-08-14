@@ -1,10 +1,4 @@
-/** 合并区域信息 */
-interface MergeInfo {
-    topRow: number;
-    topCol: number;
-    bottomRow: number;
-    bottomCol: number;
-}
+import type { MergeInfo } from "../types";
 
 /** 合并管理器最小接口（含 getMerge） */
 interface MergeManagerWithGet {

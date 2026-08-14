@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Cell } from "../../src/model/store/Cell.js";
+import { Cell } from "@/model/store/Cell";
 
 describe("Cell", () => {
     it("should create with default values", () => {
@@ -38,5 +38,11 @@ describe("Cell", () => {
         expect(cell.styleId).toBe(3);
         expect(cell.disabled).toBe(true);
         expect(cell.formula).toBe("=A1+B1");
+    });
+
+    it("should accept various value types", () => {
+        expect(new Cell(null).value).toBeNull();
+        expect(new Cell(true).value).toBe(true);
+        expect(new Cell({ key: "val" }).value).toEqual({ key: "val" });
     });
 });

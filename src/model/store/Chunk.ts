@@ -23,25 +23,29 @@
  *   优化方向：可考虑内部改用按行分组的二级 Map 或有序结构，以支持按行范围查询。
  */
 import { CONFIG } from "../../constants/config";
+import { Cell } from "./Cell";
 
 export class Chunk {
+    /** Chunk 在逻辑坐标系中的起始行号 */
+    rowStart: number;
+
+    /** Chunk 在逻辑坐标系中的起始列号 */
+    colStart: number;
+
     /**
-     * @param {number} rowStart - Chunk 在逻辑坐标系中的起始行号（含）
-     * @param {number} colStart - Chunk 在逻辑坐标系中的起始列号（含）
+     * 单元格存储 Map
+     * key: 整数编码 rowOffset * CHUNK_COL_SIZE + colOffset
+     * value: Cell 实例
      */
-    constructor(rowStart, colStart) {
-        /** @type {number} Chunk 在逻辑坐标系中的起始行号 */
+    cells: Map<number, Cell>;
+
+    /**
+     * @param rowStart - Chunk 在逻辑坐标系中的起始行号（含）
+     * @param colStart - Chunk 在逻辑坐标系中的起始列号（含）
+     */
+    constructor(rowStart: number, colStart: number) {
         this.rowStart = rowStart;
-
-        /** @type {number} Chunk 在逻辑坐标系中的起始列号 */
         this.colStart = colStart;
-
-        /**
-         * 单元格存储 Map
-         * key: 整数编码 rowOffset * CHUNK_COL_SIZE + colOffset
-         * value: Cell 实例
-         * @type {Map<number, import("../Cell.js").Cell>}
-         */
         this.cells = new Map();
     }
 
@@ -51,33 +55,33 @@ export class Chunk {
      * 编码公式：rowOffset * CHUNK_COL_SIZE + colOffset
      * 示例：Chunk(1024, 0) 中，逻辑行 1050, 列 5 → key = 26*256 + 5 = 6661
      *
-     * @param {number} row - 逻辑行号
-     * @param {number} col - 逻辑列号
-     * @returns {number} 整数编码
+     * @param row - 逻辑行号
+     * @param col - 逻辑列号
+     * @returns 整数编码
      */
-    #key(row, col) {
+    #key(row: number, col: number): number {
         return (row - this.rowStart) * CONFIG.CHUNK_COL_SIZE + (col - this.colStart);
     }
 
     /**
      * 获取指定逻辑位置的单元格
      *
-     * @param {number} row - 逻辑行号
-     * @param {number} col - 逻辑列号
-     * @returns {import("../Cell.js").Cell|undefined} 若该位置无数据则返回 undefined
+     * @param row - 逻辑行号
+     * @param col - 逻辑列号
+     * @returns 若该位置无数据则返回 undefined
      */
-    get(row, col) {
+    get(row: number, col: number): Cell | undefined {
         return this.cells.get(this.#key(row, col));
     }
 
     /**
      * 设置指定逻辑位置的单元格
      *
-     * @param {number} row - 逻辑行号
-     * @param {number} col - 逻辑列号
-     * @param {import("../Cell.js").Cell} cell - 单元格实例
+     * @param row - 逻辑行号
+     * @param col - 逻辑列号
+     * @param cell - 单元格实例
      */
-    set(row, col, cell) {
+    set(row: number, col: number, cell: Cell): void {
         this.cells.set(this.#key(row, col), cell);
     }
 
@@ -86,10 +90,10 @@ export class Chunk {
      *
      * 注意：该方法不检查 key 是否存在，调用 Map.delete() 对不存在的 key 为无操作。
      *
-     * @param {number} row - 逻辑行号
-     * @param {number} col - 逻辑列号
+     * @param row - 逻辑行号
+     * @param col - 逻辑列号
      */
-    delete(row, col) {
+    delete(row: number, col: number): void {
         this.cells.delete(this.#key(row, col));
     }
 
@@ -104,9 +108,9 @@ export class Chunk {
      * 在 ChunkedCellStore 的行列操作中，如果只需要操作 Chunk 内某几行的 Cell，
      * 当前实现仍会遍历 Chunk 全部 Cell 后再在外部过滤——这是已知的性能优化空间。
      *
-     * @yields {{row: number, col: number, cell: import("../Cell.js").Cell}}
+     * @yields 包含逻辑坐标和单元格的对象
      */
-    *iterate() {
+    *iterate(): Generator<{ row: number; col: number; cell: Cell }> {
         const colSize = CONFIG.CHUNK_COL_SIZE;
         for (const [key, cell] of this.cells) {
             const rowOffset = (key / colSize) | 0;

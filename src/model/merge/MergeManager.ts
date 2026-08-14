@@ -1,4 +1,7 @@
-import { CONFIG } from "../../constants/config.js";
+import { CONFIG } from "../../constants/config";
+import type { MergeInfo } from "../types";
+
+export type { MergeInfo };
 
 /**
  * 合并单元格管理器
@@ -13,25 +16,28 @@ import { CONFIG } from "../../constants/config.js";
  * 合并区域编码：使用 row * MAX_COLS + col 将二维坐标编码为唯一整数 key
  */
 export class MergeManager {
+    /** 合并区域映射表 */
+    merges: Map<number, MergeInfo>;
+
+    /** 每个单元格 → 其所属合并区域左上角的 key */
+    cellMap: Map<number, number>;
+
     /**
      * 初始化合并管理器
      */
     constructor() {
-        /** @type {Map<number, {topRow:number, topCol:number, bottomRow:number, bottomCol:number, rowSpan:number, colSpan:number}>} 合并区域映射表 */
         this.merges = new Map();
-
-        /** @type {Map<number, number>} 每个单元格 → 其所属合并区域左上角的 key */
         this.cellMap = new Map();
     }
 
     /**
      * 将 (row, col) 编码为唯一整数 key
      * 公式：row * MAX_COLS + col，最大约 7×10^11，安全在 Number.MAX_SAFE_INTEGER 内
-     * @param {number} r
-     * @param {number} c
-     * @returns {number}
+     * @param r - 行号
+     * @param c - 列号
+     * @returns 编码后的整数 key
      */
-    #encodeKey(r, c) {
+    #encodeKey(r: number, c: number): number {
         return r * CONFIG.MAX_COLS + c;
     }
 
@@ -39,13 +45,13 @@ export class MergeManager {
      * 合并指定矩形区域的单元格
      * 校验区域有效性（起始不大于结束）和与已有合并区域是否重叠
      * 合并成功后更新 merges 和 cellMap
-     * @param {number} topRow - 合并区域起始行号
-     * @param {number} topCol - 合并区域起始列号
-     * @param {number} bottomRow - 合并区域结束行号
-     * @param {number} bottomCol - 合并区域结束列号
-     * @returns {boolean} 合并是否成功
+     * @param topRow - 合并区域起始行号
+     * @param topCol - 合并区域起始列号
+     * @param bottomRow - 合并区域结束行号
+     * @param bottomCol - 合并区域结束列号
+     * @returns 合并是否成功
      */
-    merge(topRow, topCol, bottomRow, bottomCol) {
+    merge(topRow: number, topCol: number, bottomRow: number, bottomCol: number): boolean {
         if (topRow > bottomRow || topCol > bottomCol) {
             return false;
         }
@@ -55,7 +61,7 @@ export class MergeManager {
         }
 
         const key = this.#encodeKey(topRow, topCol);
-        const mergeInfo = {
+        const mergeInfo: MergeInfo = {
             topRow,
             topCol,
             bottomRow,
@@ -78,13 +84,13 @@ export class MergeManager {
     /**
      * 检查指定区域是否与已有合并区域重叠
      * 使用矩形不相交条件取反判断：两个矩形不重叠当且仅当一个在另一个的上下左右之外
-     * @param {number} topRow - 区域起始行号
-     * @param {number} topCol - 区域起始列号
-     * @param {number} bottomRow - 区域结束行号
-     * @param {number} bottomCol - 区域结束列号
-     * @returns {boolean} 是否存在重叠
+     * @param topRow - 区域起始行号
+     * @param topCol - 区域起始列号
+     * @param bottomRow - 区域结束行号
+     * @param bottomCol - 区域结束列号
+     * @returns 是否存在重叠
      */
-    #hasOverlap(topRow, topCol, bottomRow, bottomCol) {
+    #hasOverlap(topRow: number, topCol: number, bottomRow: number, bottomCol: number): boolean {
         for (const [, info] of this.merges) {
             if (!(bottomRow < info.topRow || topRow > info.bottomRow) && !(bottomCol < info.topCol || topCol > info.bottomCol)) {
                 return true;
@@ -96,11 +102,11 @@ export class MergeManager {
     /**
      * 取消指定单元格所在的合并区域
      * 通过 cellMap 查找所属合并区域，然后清除 merges 和 cellMap 中的相关条目
-     * @param {number} row - 单元格行号（可以是合并区域内的任意单元格）
-     * @param {number} col - 单元格列号
-     * @returns {boolean} 是否成功取消合并
+     * @param row - 单元格行号（可以是合并区域内的任意单元格）
+     * @param col - 单元格列号
+     * @returns 是否成功取消合并
      */
-    unmerge(row, col) {
+    unmerge(row: number, col: number): boolean {
         const key = this.cellMap.get(this.#encodeKey(row, col));
         if (key === undefined) return false;
 
@@ -119,11 +125,11 @@ export class MergeManager {
 
     /**
      * 获取指定单元格所属的合并区域信息
-     * @param {number} row - 单元格行号
-     * @param {number} col - 单元格列号
-     * @returns {object|null} 合并区域信息，若不在合并区域内则返回 null
+     * @param row - 单元格行号
+     * @param col - 单元格列号
+     * @returns 合并区域信息，若不在合并区域内则返回 null
      */
-    getMerge(row, col) {
+    getMerge(row: number, col: number): MergeInfo | null {
         const key = this.cellMap.get(this.#encodeKey(row, col));
         if (key === undefined) return null;
         return this.merges.get(key) || null;
@@ -131,11 +137,11 @@ export class MergeManager {
 
     /**
      * 判断指定单元格是否为合并区域的左上角
-     * @param {number} row - 单元格行号
-     * @param {number} col - 单元格列号
-     * @returns {boolean} 是否为合并区域左上角
+     * @param row - 单元格行号
+     * @param col - 单元格列号
+     * @returns 是否为合并区域左上角
      */
-    isTopLeft(row, col) {
+    isTopLeft(row: number, col: number): boolean {
         const key = this.cellMap.get(this.#encodeKey(row, col));
         if (key === undefined) return false;
         return key === this.#encodeKey(row, col);
@@ -143,11 +149,11 @@ export class MergeManager {
 
     /**
      * 判断指定单元格是否被合并（即属于某合并区域但不是左上角）
-     * @param {number} row - 单元格行号
-     * @param {number} col - 单元格列号
-     * @returns {boolean} 是否为被合并的单元格
+     * @param row - 单元格行号
+     * @param col - 单元格列号
+     * @returns 是否为被合并的单元格
      */
-    isMerged(row, col) {
+    isMerged(row: number, col: number): boolean {
         const key = this.cellMap.get(this.#encodeKey(row, col));
         if (key === undefined) return false;
         return key !== this.#encodeKey(row, col);
@@ -155,38 +161,38 @@ export class MergeManager {
 
     /**
      * 获取所有合并区域信息
-     * @returns {object[]} 合并区域信息数组
+     * @returns 合并区域信息数组
      */
-    getAllMerges() {
+    getAllMerges(): MergeInfo[] {
         return Array.from(this.merges.values());
     }
 
     /**
      * 清空所有合并区域和单元格映射
      */
-    clear() {
+    clear(): void {
         this.merges.clear();
         this.cellMap.clear();
     }
 
     /**
      * 获取当前合并区域数量
-     * @returns {number} 合并区域数量
+     * @returns 合并区域数量
      */
-    getCount() {
+    getCount(): number {
         return this.merges.size;
     }
 
     /**
      * 判断指定矩形区域是否完全包含在某个合并区域内
      * 即左上角属于某合并区域，且该区域不超出合并区域的范围
-     * @param {number} topRow - 区域起始行号
-     * @param {number} topCol - 区域起始列号
-     * @param {number} bottomRow - 区域结束行号
-     * @param {number} bottomCol - 区域结束列号
-     * @returns {boolean} 是否完全包含在某个合并区域内
+     * @param topRow - 区域起始行号
+     * @param topCol - 区域起始列号
+     * @param bottomRow - 区域结束行号
+     * @param bottomCol - 区域结束列号
+     * @returns 是否完全包含在某个合并区域内
      */
-    isRegionMerged(topRow, topCol, bottomRow, bottomCol) {
+    isRegionMerged(topRow: number, topCol: number, bottomRow: number, bottomCol: number): boolean {
         const topLeftMerge = this.getMerge(topRow, topCol);
         if (!topLeftMerge) return false;
 
@@ -197,15 +203,14 @@ export class MergeManager {
      * 插入行：将 atRow 及以下的合并区域下移一行
      * 如果合并区域跨越 atRow（topRow < atRow ≤ bottomRow），则扩展一行
      *
-     * @param {number} atRow - 插入位置的行号
+     * @param atRow - 插入位置的行号
      */
-    insertRow(atRow) {
-        const toUpdate = [];
-        const toRemove = [];
+    insertRow(atRow: number): void {
+        const toUpdate: Array<{ topRow: number; topCol: number; bottomRow: number; bottomCol: number }> = [];
+        const toRemove: number[] = [];
 
         for (const [key, info] of this.merges) {
             if (info.topRow >= atRow) {
-                /** 合并区域完全在插入位置下方 → 整体下移 */
                 toRemove.push(key);
                 toUpdate.push({
                     topRow: info.topRow + 1,
@@ -214,7 +219,6 @@ export class MergeManager {
                     bottomCol: info.bottomCol,
                 });
             } else if (info.bottomRow >= atRow) {
-                /** 合并区域跨越插入位置 → 扩展一行 */
                 toRemove.push(key);
                 toUpdate.push({
                     topRow: info.topRow,
@@ -226,7 +230,7 @@ export class MergeManager {
         }
 
         for (const key of toRemove) {
-            const info = this.merges.get(key);
+            const info = this.merges.get(key)!;
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
                     this.cellMap.delete(this.#encodeKey(r, c));
@@ -244,11 +248,11 @@ export class MergeManager {
      * 插入列：将 atCol 及右侧的合并区域右移一列
      * 如果合并区域跨越 atCol（topCol < atCol ≤ bottomCol），则扩展一列
      *
-     * @param {number} atCol - 插入位置的列号
+     * @param atCol - 插入位置的列号
      */
-    insertCol(atCol) {
-        const toUpdate = [];
-        const toRemove = [];
+    insertCol(atCol: number): void {
+        const toUpdate: Array<{ topRow: number; topCol: number; bottomRow: number; bottomCol: number }> = [];
+        const toRemove: number[] = [];
 
         for (const [key, info] of this.merges) {
             if (info.topCol >= atCol) {
@@ -271,7 +275,7 @@ export class MergeManager {
         }
 
         for (const key of toRemove) {
-            const info = this.merges.get(key);
+            const info = this.merges.get(key)!;
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
                     this.cellMap.delete(this.#encodeKey(r, c));
@@ -290,21 +294,19 @@ export class MergeManager {
      * 如果合并区域跨越 atRow，则收缩一行
      * 如果合并区域只有一行，则取消合并
      *
-     * @param {number} atRow - 要删除的行号
+     * @param atRow - 要删除的行号
      */
-    deleteRow(atRow) {
-        const toUpdate = [];
-        const toRemove = [];
+    deleteRow(atRow: number): void {
+        const toUpdate: Array<{ topRow: number; topCol: number; bottomRow: number; bottomCol: number }> = [];
+        const toRemove: number[] = [];
 
         for (const [key, info] of this.merges) {
             if (info.topRow === atRow && info.bottomRow === atRow) {
-                /** 合并区域只有一行且就是要删除的行 → 取消合并 */
                 toRemove.push(key);
                 continue;
             }
 
             if (info.topRow > atRow) {
-                /** 合并区域完全在删除位置下方 → 整体上移 */
                 toRemove.push(key);
                 toUpdate.push({
                     topRow: info.topRow - 1,
@@ -313,7 +315,6 @@ export class MergeManager {
                     bottomCol: info.bottomCol,
                 });
             } else if (info.bottomRow >= atRow && info.topRow <= atRow) {
-                /** 合并区域跨越删除位置 → 收缩一行 */
                 toRemove.push(key);
                 toUpdate.push({
                     topRow: info.topRow,
@@ -325,7 +326,7 @@ export class MergeManager {
         }
 
         for (const key of toRemove) {
-            const info = this.merges.get(key);
+            const info = this.merges.get(key)!;
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
                     this.cellMap.delete(this.#encodeKey(r, c));
@@ -344,11 +345,11 @@ export class MergeManager {
      * 如果合并区域跨越 atCol，则收缩一列
      * 如果合并区域只有一列，则取消合并
      *
-     * @param {number} atCol - 要删除的列号
+     * @param atCol - 要删除的列号
      */
-    deleteCol(atCol) {
-        const toUpdate = [];
-        const toRemove = [];
+    deleteCol(atCol: number): void {
+        const toUpdate: Array<{ topRow: number; topCol: number; bottomRow: number; bottomCol: number }> = [];
+        const toRemove: number[] = [];
 
         for (const [key, info] of this.merges) {
             if (info.topCol === atCol && info.bottomCol === atCol) {
@@ -376,7 +377,7 @@ export class MergeManager {
         }
 
         for (const key of toRemove) {
-            const info = this.merges.get(key);
+            const info = this.merges.get(key)!;
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
                     this.cellMap.delete(this.#encodeKey(r, c));
@@ -396,12 +397,12 @@ export class MergeManager {
      * - 被移动元素本身：直接移到目标位置
      * - 向后移动（from < to）：区间 (from, to] 内的元素前移一位
      * - 向前移动（from > to）：区间 [to, from) 内的元素后移一位
-     * @param {number} idx - 原始索引
-     * @param {number} from - 源位置
-     * @param {number} to - 目标位置
-     * @returns {number} 移动后的新索引
+     * @param idx - 原始索引
+     * @param from - 源位置
+     * @param to - 目标位置
+     * @returns 移动后的新索引
      */
-    #shiftIndex(idx, from, to) {
+    #shiftIndex(idx: number, from: number, to: number): number {
         if (idx === from) return to;
         if (from < to) {
             return idx > from && idx <= to ? idx - 1 : idx;
@@ -415,18 +416,18 @@ export class MergeManager {
      * - 移动列在合并区域内：整个合并区域平移 offset
      * - 移动列不在合并区域内：使用 #shiftIndex 计算边界列的新位置
      * 移动后若 topCol > bottomCol 则丢弃该合并区域
-     * @param {number} fromCol - 源列位置
-     * @param {number} toCol - 目标列位置
+     * @param fromCol - 源列位置
+     * @param toCol - 目标列位置
      */
-    moveCol(fromCol, toCol) {
+    moveCol(fromCol: number, toCol: number): void {
         if (fromCol === toCol) return;
 
-        const toUpdate = [];
-        const toRemove = [];
+        const toUpdate: Array<{ topRow: number; topCol: number; bottomRow: number; bottomCol: number }> = [];
+        const toRemove: number[] = [];
 
         for (const [key, info] of this.merges) {
             toRemove.push(key);
-            let newTopCol, newBottomCol;
+            let newTopCol: number, newBottomCol: number;
 
             if (info.topCol <= fromCol && fromCol <= info.bottomCol) {
                 const offset = toCol - fromCol;
@@ -446,7 +447,7 @@ export class MergeManager {
         }
 
         for (const key of toRemove) {
-            const info = this.merges.get(key);
+            const info = this.merges.get(key)!;
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
                     this.cellMap.delete(this.#encodeKey(r, c));
@@ -468,18 +469,18 @@ export class MergeManager {
      * - 移动行在合并区域内：整个合并区域平移 offset
      * - 移动行不在合并区域内：使用 #shiftIndex 计算边界行的新位置
      * 移动后若 topRow > bottomRow 则丢弃该合并区域
-     * @param {number} fromRow - 源行位置
-     * @param {number} toRow - 目标行位置
+     * @param fromRow - 源行位置
+     * @param toRow - 目标行位置
      */
-    moveRow(fromRow, toRow) {
+    moveRow(fromRow: number, toRow: number): void {
         if (fromRow === toRow) return;
 
-        const toUpdate = [];
-        const toRemove = [];
+        const toUpdate: Array<{ topRow: number; topCol: number; bottomRow: number; bottomCol: number }> = [];
+        const toRemove: number[] = [];
 
         for (const [key, info] of this.merges) {
             toRemove.push(key);
-            let newTopRow, newBottomRow;
+            let newTopRow: number, newBottomRow: number;
 
             if (info.topRow <= fromRow && fromRow <= info.bottomRow) {
                 const offset = toRow - fromRow;
@@ -499,7 +500,7 @@ export class MergeManager {
         }
 
         for (const key of toRemove) {
-            const info = this.merges.get(key);
+            const info = this.merges.get(key)!;
             for (let r = info.topRow; r <= info.bottomRow; r++) {
                 for (let c = info.topCol; c <= info.bottomCol; c++) {
                     this.cellMap.delete(this.#encodeKey(r, c));

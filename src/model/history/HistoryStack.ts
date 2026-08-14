@@ -1,3 +1,5 @@
+import { Command } from "../command/Command";
+
 /**
  * 历史栈（撤销/重做管理器）
  *
@@ -20,22 +22,26 @@
  * history.redo(); // 重做赋值
  */
 export class HistoryStack {
+    /** 撤销栈，存放已执行但尚未撤销的命令 */
+    undoStack: Command[];
+
+    /** 重做栈，存放已撤销但可重做的命令 */
+    redoStack: Command[];
+
     /**
      * 初始化双栈结构
      */
     constructor() {
-        /** @type {Command[]} 撤销栈，存放已执行但尚未撤销的命令 */
         this.undoStack = [];
-        /** @type {Command[]} 重做栈，存放已撤销但可重做的命令 */
         this.redoStack = [];
     }
 
     /**
      * 将新执行的命令压入撤销栈
      * 同时清空重做栈，因为新操作会使之前的撤销路径失效
-     * @param {Command} cmd - 已执行的命令实例，需提供 undo() 和 redo() 方法
+     * @param cmd - 已执行的命令实例，需提供 undo() 和 redo() 方法
      */
-    push(cmd) {
+    push(cmd: Command): void {
         this.undoStack.push(cmd);
         this.redoStack = [];
     }
@@ -45,7 +51,7 @@ export class HistoryStack {
      * 从 undoStack 弹出栈顶命令，执行其 undo() 方法，并压入 redoStack
      * 若 undoStack 为空则不执行任何操作
      */
-    undo() {
+    undo(): void {
         const cmd = this.undoStack.pop();
         if (cmd) {
             cmd.undo();
@@ -58,7 +64,7 @@ export class HistoryStack {
      * 从 redoStack 弹出栈顶命令，执行其 redo() 方法，并压入 undoStack
      * 若 redoStack 为空则不执行任何操作
      */
-    redo() {
+    redo(): void {
         const cmd = this.redoStack.pop();
         if (cmd) {
             cmd.redo();

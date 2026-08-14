@@ -1,5 +1,23 @@
 import { CONFIG } from "../../constants/config";
-import { isNumber, isObject } from "../../utils/helper.js";
+import { isNumber, isObject } from "../../utils/helper";
+
+/** 嵌套表头项类型 */
+type NestedHeaderItem = string | { label?: string; colspan?: number; style?: Record<string, unknown> };
+
+/** Sheet 最小接口（仅 RowColSync 所需） */
+interface SheetLike {
+    rowHeaders: string[];
+    colHeaders: string[];
+    rowStyles: Map<number, unknown>;
+    columnsConfig: Map<number, unknown>;
+    colStyles: Map<number, unknown>;
+    dataBindings: Map<number, unknown>;
+    cellTypes: Map<string, unknown>;
+    nestedHeaders: NestedHeaderItem[][];
+}
+
+/** 轴类型 */
+type Axis = "row" | "col";
 
 /**
  * 行列同步器
@@ -17,28 +35,25 @@ import { isNumber, isObject } from "../../utils/helper.js";
  * 替代原来 6 套独立的移位代码。
  */
 export class RowColSync {
-    /** @type {import("../../workbook/Sheet.js").Sheet} */
-    #sheet;
-
-    /** @type {"row"|"col"} */
-    #axis;
+    #sheet: SheetLike;
+    #axis: Axis;
 
     /**
-     * @param {import("../../workbook/Sheet.js").Sheet} sheet - 所属工作表
-     * @param {"row"|"col"} axis - 同步轴
+     * @param sheet - 所属工作表
+     * @param axis - 同步轴
      */
-    constructor(sheet, axis) {
+    constructor(sheet: SheetLike, axis: Axis) {
         this.#sheet = sheet;
         this.#axis = axis;
     }
 
     /** 行头或列头标签数组（取决于 axis） */
-    get #headers() {
+    get #headers(): string[] {
         return this.#axis === CONFIG.AXIS_ROW ? this.#sheet.rowHeaders : this.#sheet.colHeaders;
     }
 
-    /** 需要同步的 Map 集合（行：rowStyles；列：columnsConfig + colStyles + dataBindings） */
-    get #maps() {
+    /** 需要同步的 Map 集合 */
+    get #maps(): Map<number, unknown>[] {
         return this.#axis === CONFIG.AXIS_ROW
             ? [this.#sheet.rowStyles]
             : [this.#sheet.columnsConfig, this.#sheet.colStyles, this.#sheet.dataBindings];
@@ -46,9 +61,9 @@ export class RowColSync {
 
     /**
      * 在指定位置插入行/列，同步所有附属状态
-     * @param {number} atIndex - 插入位置
+     * @param atIndex - 插入位置
      */
-    insert(atIndex) {
+    insert(atIndex: number): void {
         this.#insertArrayAt(this.#headers, atIndex);
         for (const map of this.#maps) {
             this.#remapMapKeys(map, (k) => (k >= atIndex ? k + 1 : k));
@@ -59,9 +74,9 @@ export class RowColSync {
 
     /**
      * 删除指定位置的行/列，同步所有附属状态
-     * @param {number} atIndex - 删除位置
+     * @param atIndex - 删除位置
      */
-    delete(atIndex) {
+    delete(atIndex: number): void {
         this.#deleteArrayAt(this.#headers, atIndex);
         for (const map of this.#maps) {
             map.delete(atIndex);
@@ -73,10 +88,10 @@ export class RowColSync {
 
     /**
      * 移动行/列，从 from 位置移到 to 位置，同步所有附属状态
-     * @param {number} from - 源位置
-     * @param {number} to - 目标位置
+     * @param from - 源位置
+     * @param to - 目标位置
      */
-    move(from, to) {
+    move(from: number, to: number): void {
         this.#shiftArray(this.#headers, from, to);
         for (const map of this.#maps) {
             this.#remapMapKeys(map, (k) => this.#calcShiftedIndex(k, from, to));
@@ -89,34 +104,31 @@ export class RowColSync {
 
     /**
      * 在数组指定位置插入空字符串元素
-     * 用于插入行/列时在标签数组中添加新标签位
-     * @param {string[]} arr - 标签数组
-     * @param {number} atIndex - 插入位置索引
+     * @param arr - 标签数组
+     * @param atIndex - 插入位置索引
      */
-    #insertArrayAt(arr, atIndex) {
+    #insertArrayAt(arr: string[], atIndex: number): void {
         if (!Array.isArray(arr) || atIndex < 0 || atIndex >= CONFIG.MAX_COLS) return;
         arr.splice(atIndex, 0, "");
     }
 
     /**
      * 删除数组指定位置的元素
-     * 用于删除行/列时从标签数组中移除对应标签
-     * @param {string[]} arr - 标签数组
-     * @param {number} atIndex - 删除位置索引
+     * @param arr - 标签数组
+     * @param atIndex - 删除位置索引
      */
-    #deleteArrayAt(arr, atIndex) {
+    #deleteArrayAt(arr: string[], atIndex: number): void {
         if (!Array.isArray(arr) || atIndex < 0 || atIndex >= arr.length) return;
         arr.splice(atIndex, 1);
     }
 
     /**
      * 将数组元素从 from 位置移到 to 位置
-     * 用于移动行/列时调整标签数组中元素的顺序
-     * @param {string[]} arr - 标签数组
-     * @param {number} from - 源位置
-     * @param {number} to - 目标位置
+     * @param arr - 标签数组
+     * @param from - 源位置
+     * @param to - 目标位置
      */
-    #shiftArray(arr, from, to) {
+    #shiftArray(arr: string[], from: number, to: number): void {
         if (!Array.isArray(arr) || arr.length <= Math.max(from, to)) return;
         const [item] = arr.splice(from, 1);
         arr.splice(to, 0, item);
@@ -126,13 +138,11 @@ export class RowColSync {
 
     /**
      * 重映射 Map 的所有键
-     * 遍历 Map 中所有条目，对每个键应用 shiftFn 得到新键，
-     * 若新键与旧键不同则先删除旧键再设置新键，避免键冲突
-     * @param {Map<number, *>} map - 需要重映射键的 Map
-     * @param {(key: number) => number} shiftFn - 键映射函数，接收旧键返回新键
+     * @param map - 需要重映射键的 Map
+     * @param shiftFn - 键映射函数
      */
-    #remapMapKeys(map, shiftFn) {
-        const moved = [];
+    #remapMapKeys(map: Map<number, unknown>, shiftFn: (key: number) => number): void {
+        const moved: Array<{ old: number; new: number; val: unknown }> = [];
         for (const [key, val] of map) {
             const newKey = shiftFn(key);
             if (newKey !== key) moved.push({ old: key, new: newKey, val });
@@ -143,15 +153,12 @@ export class RowColSync {
 
     /**
      * 重映射 cellTypes Map 的键
-     * cellTypes 的键格式为 "row,col" 字符串，需要根据轴类型（行/列）提取对应索引并重映射
-     * - 若映射结果为 -1，表示该条目应被删除（对应行/列已被删除）
-     * - 若映射结果与原值不同，则更新键中的行号或列号
-     * @param {(key: number) => number} shiftFn - 键映射函数，接收旧行/列索引返回新索引
-     * @param {boolean} [deleteOnMinusOne=false] - 是否在映射结果为 -1 时删除该条目（删除操作时为 true）
+     * @param shiftFn - 键映射函数
+     * @param deleteOnMinusOne - 是否在映射结果为 -1 时删除该条目
      */
-    #remapCellTypesKeys(shiftFn, deleteOnMinusOne = false) {
-        const toDelete = [];
-        const moved = [];
+    #remapCellTypesKeys(shiftFn: (key: number) => number, deleteOnMinusOne: boolean = false): void {
+        const toDelete: string[] = [];
+        const moved: Array<{ oldKey: string; newKey: string; val: unknown }> = [];
         for (const [key, val] of this.#sheet.cellTypes) {
             const [r, c] = key.split(",").map(Number);
             const oldVal = this.#axis === CONFIG.AXIS_ROW ? r : c;
@@ -172,16 +179,12 @@ export class RowColSync {
 
     /**
      * 计算移动操作后的新索引
-     * 处理三种情况：
-     * - 被移动元素本身：直接移到目标位置
-     * - 向后移动（from < to）：区间 (from, to] 内的元素前移一位
-     * - 向前移动（from > to）：区间 [to, from) 内的元素后移一位
-     * @param {number} index - 原始索引
-     * @param {number} from - 源位置
-     * @param {number} to - 目标位置
-     * @returns {number} 移动后的新索引
+     * @param index - 原始索引
+     * @param from - 源位置
+     * @param to - 目标位置
+     * @returns 移动后的新索引
      */
-    #calcShiftedIndex(index, from, to) {
+    #calcShiftedIndex(index: number, from: number, to: number): number {
         if (index === from) return to;
         if (from < to) return index > from && index <= to ? index - 1 : index;
         return index >= to && index < from ? index + 1 : index;
@@ -191,13 +194,9 @@ export class RowColSync {
 
     /**
      * 插入列时扩展嵌套表头的 colspan
-     * 遍历每一层嵌套表头，找到插入列所在的表头项：
-     * - 若该项有 colspan，则 colspan +1
-     * - 若该项为简单字符串且 colspan=1，则在该位置插入空字符串项
-     * 若插入位置超出所有表头项的范围，则在末尾追加空字符串
-     * @param {number} atCol - 插入列的位置
+     * @param atCol - 插入列的位置
      */
-    #insertNestedHeaderColumn(atCol) {
+    #insertNestedHeaderColumn(atCol: number): void {
         const nh = this.#sheet.nestedHeaders;
         if (!Array.isArray(nh) || nh.length === 0) return;
         for (const layer of nh) {
@@ -227,12 +226,9 @@ export class RowColSync {
 
     /**
      * 删除列时缩减嵌套表头的 colspan
-     * 遍历每一层嵌套表头，找到删除列所在的表头项：
-     * - 若 colspan > 1，则 colspan -1（减为 1 时退化为简单字符串）
-     * - 若 colspan = 1，则直接移除该项
-     * @param {number} atCol - 删除列的位置
+     * @param atCol - 删除列的位置
      */
-    #deleteNestedHeaderColumn(atCol) {
+    #deleteNestedHeaderColumn(atCol: number): void {
         const nh = this.#sheet.nestedHeaders;
         if (!Array.isArray(nh) || nh.length === 0) return;
         for (const layer of nh) {
@@ -259,26 +255,22 @@ export class RowColSync {
 
     /**
      * 移动列时平移嵌套表头的标签和样式
-     * 处理步骤：
-     * 1. 将每一层嵌套表头展开为扁平数组（每个单元格对应一个条目）
-     * 2. 在扁平数组中执行 from → to 的移动操作
-     * 3. 重新打包：将相邻且标签和样式相同的条目合并为带 colspan 的对象
-     * @param {number} fromCol - 源列位置
-     * @param {number} toCol - 目标列位置
+     * @param fromCol - 源列位置
+     * @param toCol - 目标列位置
      */
-    #shiftNestedHeaders(fromCol, toCol) {
+    #shiftNestedHeaders(fromCol: number, toCol: number): void {
         const nh = this.#sheet.nestedHeaders;
         if (!Array.isArray(nh) || nh.length === 0) return;
         for (let li = 0; li < nh.length; li++) {
             const layer = nh[li];
             if (!Array.isArray(layer) || layer.length === 0) continue;
 
-            const flat = [];
+            const flat: Array<{ label: string; style: Record<string, unknown> | null }> = [];
             for (const item of layer) {
                 const isObj = isObject(item);
                 const label = isObj ? (item.label ?? "") : String(item);
                 const colspan = isObj && isNumber(item.colspan) ? item.colspan : 1;
-                const style = isObj ? item.style : null;
+                const style = isObj ? (item.style as Record<string, unknown>) : null;
                 for (let i = 0; i < colspan; i++) {
                     flat.push({ label, style });
                 }
@@ -289,7 +281,7 @@ export class RowColSync {
                 flat.splice(toCol, 0, moved);
             }
 
-            const repacked = [];
+            const repacked: NestedHeaderItem[] = [];
             let i = 0;
             while (i < flat.length) {
                 const { label, style } = flat[i];
@@ -317,13 +309,11 @@ export class RowColSync {
 
     /**
      * 浅比较两个样式对象是否相等
-     * 两个 null 引用视为相等，null 与非 null 视为不等
-     * 比较所有自有属性的数量和值
-     * @param {object|null} a - 第一个样式对象
-     * @param {object|null} b - 第二个样式对象
-     * @returns {boolean} 两个样式对象是否浅相等
+     * @param a - 第一个样式对象
+     * @param b - 第二个样式对象
+     * @returns 两个样式对象是否浅相等
      */
-    #stylesEqual(a, b) {
+    #stylesEqual(a: Record<string, unknown> | null, b: Record<string, unknown> | null): boolean {
         if (a === b) return true;
         if (!a || !b) return false;
         const keysA = Object.keys(a);

@@ -3,23 +3,14 @@ import { EVENT_NAMES } from "../../constants/eventNames.js";
 import { isFunction } from "../../utils/helper.js";
 import { DOMComponent } from "../../core/DOMComponent.js";
 import { FONT_STYLE } from "../../constants/enums/FontStyle.js";
+import type { Rect, CellRange } from "../../model/types";
 import "../editor.css";
 
-/** 单元格矩形区域信息 */
-interface CellRect {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-}
+/** 单元格矩形区域信息（别名，语义化） */
+type CellRect = Rect;
 
-/** 合并单元格区域范围 */
-interface MergeArea {
-    topRow: number;
-    topCol: number;
-    bottomRow: number;
-    bottomCol: number;
-}
+/** 合并单元格区域范围（别名，语义化） */
+type MergeArea = CellRange;
 
 /** 单元格变更数据项 */
 interface ChangeDataItem {

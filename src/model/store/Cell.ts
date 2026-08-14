@@ -23,23 +23,28 @@
  * - 删除单元格时 Chunk.delete() 移除 Map 条目，Cell 实例随之被 GC。
  */
 export class Cell {
+    /** 单元格的值 */
+    value: unknown;
+
+    /** 样式 ID，引用 StyleManager 中的样式表 */
+    styleId: number;
+
+    /** 是否禁用（禁用后不可编辑，渲染灰色背景） */
+    disabled: boolean;
+
+    /** 公式字符串，非公式单元格为 null */
+    formula: string | null;
+
     /**
-     * @param {*} value - 单元格值（字符串、数字等）
-     * @param {number} [styleId=0] - 样式 ID，0 表示默认样式
-     * @param {boolean} [disabled=false] - 是否禁用
-     * @param {string|null} [formula=null] - 公式字符串（如 "=SUM(A1:A10)"），非公式单元格为 null
+     * @param value - 单元格值（字符串、数字等）
+     * @param styleId - 样式 ID，0 表示默认样式
+     * @param disabled - 是否禁用
+     * @param formula - 公式字符串（如 "=SUM(A1:A10)"），非公式单元格为 null
      */
-    constructor(value = "", styleId = 0, disabled = false, formula = null) {
-        /** @type {*} 单元格的值 */
+    constructor(value: unknown = "", styleId: number = 0, disabled: boolean = false, formula: string | null = null) {
         this.value = value;
-
-        /** @type {number} 样式 ID，引用 StyleManager 中的样式表 */
         this.styleId = styleId;
-
-        /** @type {boolean} 是否禁用（禁用后不可编辑，渲染灰色背景） */
         this.disabled = disabled;
-
-        /** @type {string|null} 公式字符串，非公式单元格为 null */
         this.formula = formula;
     }
 }

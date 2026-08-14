@@ -1,5 +1,6 @@
-import { Chunk } from "./Chunk.js";
-import { CONFIG } from "../../constants/config.js";
+import { Chunk } from "./Chunk";
+import { Cell } from "./Cell";
+import { CONFIG } from "../../constants/config";
 
 /**
  * 分块单元格存储（Chunked Cell Store）
@@ -37,21 +38,18 @@ export class ChunkedCellStore {
      * 块映射表
      * key: "chunkRowIndex:chunkColIndex"（块网格坐标，非逻辑行列号）
      * value: Chunk 实例
-     * @type {Map<string, Chunk>}
      */
-    #chunks = new Map();
+    #chunks: Map<string, Chunk> = new Map();
 
     /**
      * 缓存的最大行号（-1 表示未初始化或无效）
-     * @type {number}
      */
-    #cachedMaxRow = -1;
+    #cachedMaxRow: number = -1;
 
     /**
      * 缓存的最大列号（-1 表示未初始化或无效）
-     * @type {number}
      */
-    #cachedMaxCol = -1;
+    #cachedMaxCol: number = -1;
 
     /**
      * 构造分块单元格存储
@@ -70,11 +68,11 @@ export class ChunkedCellStore {
      *
      * 块键用于 Map 索引，确保 O(1) 定位到目标 Chunk。
      *
-     * @param {number} row - 逻辑行号
-     * @param {number} col - 逻辑列号
-     * @returns {string} 格式 "chunkRowIndex:chunkColIndex"
+     * @param row - 逻辑行号
+     * @param col - 逻辑列号
+     * @returns 格式 "chunkRowIndex:chunkColIndex"
      */
-    #chunkKey(row, col) {
+    #chunkKey(row: number, col: number): string {
         return `${Math.floor(row / CONFIG.CHUNK_ROW_SIZE)}:${Math.floor(col / CONFIG.CHUNK_COL_SIZE)}`;
     }
 
@@ -86,17 +84,17 @@ export class ChunkedCellStore {
      *   rowStart = chunkRowIndex × CHUNK_ROW_SIZE
      *   colStart = chunkColIndex × CHUNK_COL_SIZE
      *
-     * @param {number} row - 逻辑行号
-     * @param {number} col - 逻辑列号
-     * @returns {Chunk}
+     * @param row - 逻辑行号
+     * @param col - 逻辑列号
+     * @returns Chunk 实例
      */
-    #getChunk(row, col) {
+    #getChunk(row: number, col: number): Chunk {
         const key = this.#chunkKey(row, col);
         if (!this.#chunks.has(key)) {
             const [r, c] = key.split(":").map(Number);
             this.#chunks.set(key, new Chunk(r * CONFIG.CHUNK_ROW_SIZE, c * CONFIG.CHUNK_COL_SIZE));
         }
-        return this.#chunks.get(key);
+        return this.#chunks.get(key)!;
     }
 
     // ============================================================
@@ -106,30 +104,28 @@ export class ChunkedCellStore {
     /**
      * 获取指定位置的单元格
      *
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @returns {import("../Cell.js").Cell|undefined}
+     * @param row - 行号
+     * @param col - 列号
+     * @returns 单元格实例或 undefined
      */
-    get(row, col) {
+    get(row: number, col: number): Cell | undefined {
         return this.#getChunk(row, col).get(row, col);
     }
 
     /**
      * 设置指定位置的单元格
      *
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @param {import("../Cell.js").Cell} cell
+     * @param row - 行号
+     * @param col - 列号
+     * @param cell - 单元格实例
      */
-    set(row, col, cell) {
+    set(row: number, col: number, cell: Cell): void {
         const chunk = this.#getChunk(row, col);
         chunk.set(row, col, cell);
 
-        // ✅ O(1) 更新缓存：如果新行号/列号更大，直接更新
         if (row > this.#cachedMaxRow) {
             this.#cachedMaxRow = row;
         }
-        // getMaxCol 返回 chunk 的最大列号（colStart + CHUNK_COL_SIZE - 1），而非实际列号
         const chunkMaxCol = chunk.colStart + CONFIG.CHUNK_COL_SIZE - 1;
         if (chunkMaxCol > this.#cachedMaxCol) {
             this.#cachedMaxCol = chunkMaxCol;
@@ -139,23 +135,17 @@ export class ChunkedCellStore {
     /**
      * 删除指定位置的单元格
      *
-     * @param {number} row - 行号
-     * @param {number} col - 列号
+     * @param row - 行号
+     * @param col - 列号
      */
-    delete(row, col) {
+    delete(row: number, col: number): void {
         const chunk = this.#getChunk(row, col);
         chunk.delete(row, col);
 
-        // ⚠️ 删除操作可能影响最大行号/列号，标记缓存待验证
-        // 如果删除的是最大行/列所在的 chunk，且删除后 chunk 变空，则缓存失效
         if (chunk.cells.size === 0) {
-            // 对于 getMaxRow：如果删除的行所在的 chunk 变空，需要重算
-            // chunk.rowStart <= row <= chunk.rowStart + CHUNK_ROW_SIZE - 1
             if (row >= chunk.rowStart && row < chunk.rowStart + CONFIG.CHUNK_ROW_SIZE) {
                 this.#cachedMaxRow = -1;
             }
-            // 对于 getMaxCol：如果删除的列所在的 chunk 变空，需要重算
-            // chunk.colStart <= col <= chunk.colStart + CHUNK_COL_SIZE - 1
             if (col >= chunk.colStart && col < chunk.colStart + CONFIG.CHUNK_COL_SIZE) {
                 this.#cachedMaxCol = -1;
             }
@@ -169,22 +159,10 @@ export class ChunkedCellStore {
     /**
      * 插入行：在 atRow 位置插入一行，atRow 及以下的 Cell 全部下移一行。
      *
-     * 实现策略：
-     * 1. 收集所有 Chunk，筛选 rowStart >= atRow 的受影响 Chunk。
-     * 2. 从下往上处理（避免数据覆盖），遍历每个受影响 Chunk 的全部 Cell。
-     * 3. 清空 Chunk 后，将每个 Cell 写入 row+1 位置（通过 this.set() 自动路由到正确的 Chunk）。
-     *
-     * 性能：
-     * - 仅遍历 rowStart >= atRow 的 Chunk（而非所有 Chunk）。
-     * - 典型场景（100 Chunk，atRow 在中间）：遍历约 50 个 Chunk，减少 50% 遍历量。
-     * - 已知限制：Chunk 内遍历全部 Cell 而非仅 row >= atRow 的 Cell。
-     *
-     * 注意：newRow 本身不存储数据，插入后 atRow 位置为空行。
-     *
-     * @param {number} atRow - 插入位置的行号（新行将占据此位置）
+     * @param atRow - 插入位置的行号（新行将占据此位置）
      */
-    insertRow(atRow) {
-        const cellsToMove = [];
+    insertRow(atRow: number): void {
+        const cellsToMove: Array<{ row: number; col: number; cell: Cell }> = [];
 
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= atRow) continue;
@@ -210,14 +188,10 @@ export class ChunkedCellStore {
     /**
      * 插入列：在 atCol 位置插入一列，atCol 及右侧的 Cell 全部右移一列。
      *
-     * 实现策略与 insertRow 对称：筛选 colStart >= atCol 的 Chunk，从右往左逐 Cell 移动。
-     *
-     * 注意：newCol 本身不存储数据，插入后 atCol 位置为空列。
-     *
-     * @param {number} atCol - 插入位置的列号（新列将占据此位置）
+     * @param atCol - 插入位置的列号（新列将占据此位置）
      */
-    insertCol(atCol) {
-        const cellsToMove = [];
+    insertCol(atCol: number): void {
+        const cellsToMove: Array<{ row: number; col: number; cell: Cell }> = [];
 
         for (const [, chunk] of this.#chunks) {
             if (chunk.colStart + CONFIG.CHUNK_COL_SIZE <= atCol) continue;
@@ -249,11 +223,9 @@ export class ChunkedCellStore {
      * 1. 删除 atRow 上的所有 Cell（仅遍历包含 atRow 的 Chunk）。
      * 2. 将 atRow 下方的 Cell 全部上移一行（仅遍历 rowStart > atRow 的 Chunk）。
      *
-     * 第一步的 Chunk 筛选使用区间判定（而非精确匹配），因为一个 Chunk 覆盖 1024 行。
-     *
-     * @param {number} atRow - 要删除的行号
+     * @param atRow - 要删除的行号
      */
-    deleteRow(atRow) {
+    deleteRow(atRow: number): void {
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart > atRow + CONFIG.CHUNK_ROW_SIZE) continue;
             if (chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= atRow) continue;
@@ -264,7 +236,7 @@ export class ChunkedCellStore {
             }
         }
 
-        const cellsToMove = [];
+        const cellsToMove: Array<{ row: number; col: number; cell: Cell }> = [];
 
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= atRow + 1) continue;
@@ -292,9 +264,9 @@ export class ChunkedCellStore {
      * 1. 删除 atCol 上的所有 Cell。
      * 2. 将 atCol 右侧的 Cell 全部左移一列。
      *
-     * @param {number} atCol - 要删除的列号
+     * @param atCol - 要删除的列号
      */
-    deleteCol(atCol) {
+    deleteCol(atCol: number): void {
         for (const [, chunk] of this.#chunks) {
             if (chunk.colStart > atCol + CONFIG.CHUNK_COL_SIZE) continue;
             if (chunk.colStart + CONFIG.CHUNK_COL_SIZE <= atCol) continue;
@@ -305,7 +277,7 @@ export class ChunkedCellStore {
             }
         }
 
-        const cellsToMove = [];
+        const cellsToMove: Array<{ row: number; col: number; cell: Cell }> = [];
 
         for (const [, chunk] of this.#chunks) {
             if (chunk.colStart + CONFIG.CHUNK_COL_SIZE <= atCol + 1) continue;
@@ -335,21 +307,13 @@ export class ChunkedCellStore {
     /**
      * 移动列：将 fromCol 整列移动到 toCol 位置，中间列顺移。
      *
-     * 三步操作：
-     * 1. 收集 fromCol 上的所有 Cell，从原位置删除。
-     * 2. 移动中间列（fromCol+1 到 toCol 逐列左移，或 fromCol-1 到 toCol 逐列右移）。
-     * 3. 将收集的 Cell 写入 toCol 位置。
-     *
-     * 中间列移动通过 #shiftColLeft / #shiftColRight 实现，每次只处理包含目标列的 Chunk。
-     *
-     * @param {number} fromCol - 源列号
-     * @param {number} toCol - 目标列号
+     * @param fromCol - 源列号
+     * @param toCol - 目标列号
      */
-    moveCol(fromCol, toCol) {
+    moveCol(fromCol: number, toCol: number): void {
         if (fromCol === toCol) return;
 
-        // 收集 fromCol 上的所有 Cell
-        const colCells = new Map();
+        const colCells = new Map<number, Cell>();
         for (const [, chunk] of this.#chunks) {
             if (chunk.colStart > fromCol || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= fromCol) continue;
             for (const { row, col, cell } of chunk.iterate()) {
@@ -360,7 +324,6 @@ export class ChunkedCellStore {
             }
         }
 
-        // 移动中间列
         if (fromCol < toCol) {
             for (let c = fromCol + 1; c <= toCol; c++) {
                 this.#shiftColLeft(c);
@@ -371,7 +334,6 @@ export class ChunkedCellStore {
             }
         }
 
-        // 写入目标列
         for (const [row, cell] of colCells) {
             this.set(row, toCol, cell);
         }
@@ -380,16 +342,13 @@ export class ChunkedCellStore {
     /**
      * 移动行：将 fromRow 整行移动到 toRow 位置，中间行顺移。
      *
-     * 实现策略与 moveCol 对称，通过 #shiftRowUp / #shiftRowDown 移动中间行。
-     *
-     * @param {number} fromRow - 源行号
-     * @param {number} toRow - 目标行号
+     * @param fromRow - 源行号
+     * @param toRow - 目标行号
      */
-    moveRow(fromRow, toRow) {
+    moveRow(fromRow: number, toRow: number): void {
         if (fromRow === toRow) return;
 
-        // 收集 fromRow 上的所有 Cell
-        const rowCells = new Map();
+        const rowCells = new Map<number, Cell>();
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart > fromRow || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= fromRow) continue;
             for (const { row, col, cell } of chunk.iterate()) {
@@ -400,7 +359,6 @@ export class ChunkedCellStore {
             }
         }
 
-        // 移动中间行
         if (fromRow < toRow) {
             for (let r = fromRow + 1; r <= toRow; r++) {
                 this.#shiftRowUp(r);
@@ -411,7 +369,6 @@ export class ChunkedCellStore {
             }
         }
 
-        // 写入目标行
         for (const [col, cell] of rowCells) {
             this.set(toRow, col, cell);
         }
@@ -419,12 +376,12 @@ export class ChunkedCellStore {
 
     /**
      * 将指定列的所有 Cell 左移一列（用于 moveCol 中间列的移动）
-     * @param {number} targetCol - 要左移的列号
+     * @param targetCol - 要左移的列号
      */
-    #shiftColLeft(targetCol) {
+    #shiftColLeft(targetCol: number): void {
         for (const [, chunk] of this.#chunks) {
             if (chunk.colStart > targetCol || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= targetCol) continue;
-            const cellsInCol = [];
+            const cellsInCol: Array<{ row: number; cell: Cell }> = [];
             for (const { row, col, cell } of chunk.iterate()) {
                 if (col === targetCol) {
                     cellsInCol.push({ row, cell });
@@ -439,12 +396,12 @@ export class ChunkedCellStore {
 
     /**
      * 将指定列的所有 Cell 右移一列（用于 moveCol 中间列的移动）
-     * @param {number} targetCol - 要右移的列号
+     * @param targetCol - 要右移的列号
      */
-    #shiftColRight(targetCol) {
+    #shiftColRight(targetCol: number): void {
         for (const [, chunk] of this.#chunks) {
             if (chunk.colStart > targetCol || chunk.colStart + CONFIG.CHUNK_COL_SIZE <= targetCol) continue;
-            const cellsInCol = [];
+            const cellsInCol: Array<{ row: number; cell: Cell }> = [];
             for (const { row, col, cell } of chunk.iterate()) {
                 if (col === targetCol) {
                     cellsInCol.push({ row, cell });
@@ -459,12 +416,12 @@ export class ChunkedCellStore {
 
     /**
      * 将指定行的所有 Cell 上移一行（用于 moveRow 中间行的移动）
-     * @param {number} targetRow - 要上移的行号
+     * @param targetRow - 要上移的行号
      */
-    #shiftRowUp(targetRow) {
+    #shiftRowUp(targetRow: number): void {
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart > targetRow || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= targetRow) continue;
-            const cellsInRow = [];
+            const cellsInRow: Array<{ col: number; cell: Cell }> = [];
             for (const { row, col, cell } of chunk.iterate()) {
                 if (row === targetRow) {
                     cellsInRow.push({ col, cell });
@@ -479,12 +436,12 @@ export class ChunkedCellStore {
 
     /**
      * 将指定行的所有 Cell 下移一行（用于 moveRow 中间行的移动）
-     * @param {number} targetRow - 要下移的行号
+     * @param targetRow - 要下移的行号
      */
-    #shiftRowDown(targetRow) {
+    #shiftRowDown(targetRow: number): void {
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart > targetRow || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= targetRow) continue;
-            const cellsInRow = [];
+            const cellsInRow: Array<{ col: number; cell: Cell }> = [];
             for (const { row, col, cell } of chunk.iterate()) {
                 if (row === targetRow) {
                     cellsInRow.push({ col, cell });
@@ -500,14 +457,6 @@ export class ChunkedCellStore {
     /**
      * 批量移动行（Batch Move Rows）— 高效的多行重排
      *
-     * ⚠️ 旧实现问题（已废弃）：
-     * ```javascript
-     * // ❌ 错误的链式移动（会导致数据覆盖！）
-     * for (const [from, to] of mapping) {
-     *     this.moveRow(from, to);  // 每次都读取/写入，数据会被覆盖！
-     * }
-     * ```
-     *
      * ✅ 新实现：基于快照的链条安全移动算法
      *
      * 核心原理：
@@ -517,31 +466,17 @@ export class ChunkedCellStore {
      *    b. 再按目标位置回填快照数据
      * 3. 链条间互不影响，可并行处理
      *
-     * 示例（mapping: {0→2, 1→0, 2→1}）：
-     * - 分解为单条链条：[0 → 2 → 1 → 0]
-     * - 快照提取：[row0_data, row2_data, row1_data]
-     * - 回填位置：row2=row0_data, row1=row2_data, row0=row1_data
-     *
-     * 性能特征：
-     * - 时间复杂度：O(n × m)，n=移动行数，m=平均每行列数
-     * - 空间复杂度：O(k × m)，k=最长链条长度
-     * - IO次数：2次（1次提取 + 1次回填），非 n 次 moveRow
-     *
-     * @param {Map<number, number>} mapping - 行映射表 (originalRow → targetRow)
-     * @param {object} [options={}] - 选项
-     * @param {number} [options.fixedRows=0] - 冻结行数
-     * @param {Array<number>} [options.hiddenRows=[]] - 隐藏行数组
-     * @returns {number} 实际移动的行数
+     * @param mapping - 行映射表 (originalRow → targetRow)
+     * @param options - 选项
+     * @returns 实际移动的行数
      */
-    batchMoveRows(mapping, options = {}) {
+    batchMoveRows(mapping: Map<number, number>, options: { fixedRows?: number; hiddenRows?: number[] } = {}): number {
         if (!mapping || mapping.size === 0) return 0;
 
-        // 1️⃣ 分解为独立链条
         const chains = this.#decomposeMappingToChains(mapping);
 
         if (chains.length === 0) return 0;
 
-        // 2️⃣ 逐个链条安全移动
         let totalSwapped = 0;
         for (const chain of chains) {
             const swapped = this.#moveChainSafely(chain, mapping);
@@ -554,30 +489,26 @@ export class ChunkedCellStore {
     /**
      * 将映射表分解为独立的移动链条
      *
-     * 链条定义：一系列行形成闭环 A→B→C→...→A
-     * 不同链条之间完全独立，可以分别处理
-     *
-     * @private
-     * @param {Map<number, number>} mapping - 行映射表
-     * @returns {Array<Array<number>>} 链条数组
+     * @param mapping - 行映射表
+     * @returns 链条数组
      */
-    #decomposeMappingToChains(mapping) {
-        const visited = new Set();
-        const chains = [];
+    #decomposeMappingToChains(mapping: Map<number, number>): number[][] {
+        const visited = new Set<number>();
+        const chains: number[][] = [];
 
         for (const [source] of mapping) {
             if (visited.has(source)) continue;
 
-            const chain = [];
+            const chain: number[] = [];
             let current = source;
 
             while (!visited.has(current)) {
                 visited.add(current);
                 chain.push(current);
-                current = mapping.get(current);
+                current = mapping.get(current)!;
 
                 if (current === undefined || chain.length > mapping.size) {
-                    break; // 异常情况保护
+                    break;
                 }
             }
 
@@ -592,27 +523,13 @@ export class ChunkedCellStore {
     /**
      * 安全地移动单个链条（基于快照机制）
      *
-     * ⚠️ 关键改进：解决链式移动的数据覆盖问题
-     *
-     * ❌ 旧方案（错误）：
-     *   直接复制行数据，导致源数据被覆盖
-     *   链条越长，数据丢失越严重
-     *
-     * ✅ 新方案（正确）：
-     *   1. 先提取所有行的完整快照
-     *   2. 再按目标位置回填快照数据
-     *   确保数据完整性
-     *
-     * @private
-     * @param {Array<number>} chain - 行号链条 [source, target1, target2, ...]
-     * @param {Map<number, number>} mapping - 完整的行映射表
-     * @returns {number} 实际移动的行数
+     * @param chain - 行号链条
+     * @param mapping - 完整的行映射表
+     * @returns 实际移动的行数
      */
-    #moveChainSafely(chain, mapping) {
-        // Step 1: 提取所有行的完整快照
+    #moveChainSafely(chain: number[], mapping: Map<number, number>): number {
         const snapshots = chain.map((row) => this.#extractRowSnapshot(row));
 
-        // Step 2: 按目标位置回填快照数据
         for (let i = 0; i < chain.length; i++) {
             const sourceRow = chain[i];
             const targetRow = mapping.get(sourceRow);
@@ -622,7 +539,6 @@ export class ChunkedCellStore {
             }
         }
 
-        // 统计实际发生位移的行数（排除原地不动的行）
         return chain.filter((row, i) => {
             const target = chain[(i + 1) % chain.length];
             return row !== target;
@@ -632,12 +548,11 @@ export class ChunkedCellStore {
     /**
      * 提取指定行的完整数据快照
      *
-     * @private
-     * @param {number} row - 行号
-     * @returns {Map<number, import("../Cell.js").Cell>} 列→单元格 映射
+     * @param row - 行号
+     * @returns 列→单元格 映射
      */
-    #extractRowSnapshot(row) {
-        const snapshot = new Map();
+    #extractRowSnapshot(row: number): Map<number, Cell> {
+        const snapshot = new Map<number, Cell>();
 
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
@@ -655,15 +570,12 @@ export class ChunkedCellStore {
     /**
      * 从快照恢复整行数据到目标行
      *
-     * @private
-     * @param {number} targetRow - 目标行号
-     * @param {Map<number, import("../Cell.js").Cell>} snapshot - 行快照
+     * @param targetRow - 目标行号
+     * @param snapshot - 行快照
      */
-    #restoreRowFromSnapshot(targetRow, snapshot) {
-        // 先清除目标行现有数据
+    #restoreRowFromSnapshot(targetRow: number, snapshot: Map<number, Cell>): void {
         this.#clearRow(targetRow);
 
-        // 从快照恢复数据
         for (const [col, cell] of snapshot) {
             this.set(targetRow, col, cell);
         }
@@ -672,14 +584,13 @@ export class ChunkedCellStore {
     /**
      * 清除指定行的所有数据
      *
-     * @private
-     * @param {number} row - 行号
+     * @param row - 行号
      */
-    #clearRow(row) {
+    #clearRow(row: number): void {
         for (const [, chunk] of this.#chunks) {
             if (chunk.rowStart > row || chunk.rowStart + CONFIG.CHUNK_ROW_SIZE <= row) continue;
 
-            const cellsToDelete = [];
+            const cellsToDelete: number[] = [];
             for (const { row: r, col } of chunk.iterate()) {
                 if (r === row) {
                     cellsToDelete.push(col);
@@ -693,34 +604,15 @@ export class ChunkedCellStore {
     }
 
     /**
-     * 遍历所有块（生成器方法）
-     *
-     * @yields {Chunk}
-     */
-    *chunks() {
-        for (const chunk of this.#chunks.values()) {
-            yield chunk;
-        }
-    }
-
-    /**
      * 获取当前数据区域的最大行号（带缓存优化）
      *
-     * 使用缓存机制优化性能：
-     * - 缓存有效时：O(1) 直接返回（99%的场景）
-     * - 缓存失效时：O(k) 遍历所有 cell 重新计算（仅在删除操作后可能触发）
-     *
-     * 无数据时返回 -1。
-     *
-     * @returns {number} 最大行号，-1 表示无数据
+     * @returns 最大行号，-1 表示无数据
      */
-    getMaxRow() {
-        // ✅ 缓存命中：O(1) 直接返回
+    getMaxRow(): number {
         if (this.#cachedMaxRow >= 0) {
             return this.#cachedMaxRow;
         }
 
-        // ⚠️ 缓存失效：需要重新计算（仅在某些 delete 操作后）
         let maxRow = -1;
         for (const chunk of this.#chunks.values()) {
             if (chunk.cells.size > 0) {
@@ -730,7 +622,6 @@ export class ChunkedCellStore {
             }
         }
 
-        // 更新缓存
         this.#cachedMaxRow = maxRow;
         return maxRow;
     }
@@ -738,20 +629,13 @@ export class ChunkedCellStore {
     /**
      * 获取当前数据区域的最大列号
      *
-     * 与 getMaxRow 对称，返回非空 Chunk 中 colStart + CHUNK_COL_SIZE - 1 的最大值。
-     * 无数据时返回 -1。
-     *
-     * ✅ 性能优化：使用缓存机制，O(1) 返回（与 getMaxRow 一致）
-     *
-     * @returns {number} 最大列号，-1 表示无数据
+     * @returns 最大列号，-1 表示无数据
      */
-    getMaxCol() {
-        // ✅ 缓存命中：O(1) 直接返回
+    getMaxCol(): number {
         if (this.#cachedMaxCol >= 0) {
             return this.#cachedMaxCol;
         }
 
-        // ⚠️ 缓存失效：需要重新计算
         let maxCol = -1;
         for (const chunk of this.#chunks.values()) {
             if (chunk.cells.size > 0) {
@@ -760,7 +644,6 @@ export class ChunkedCellStore {
             }
         }
 
-        // 更新缓存
         this.#cachedMaxCol = maxCol;
         return maxCol;
     }
@@ -768,17 +651,9 @@ export class ChunkedCellStore {
     /**
      * 清空所有单元格数据（Clear All Cell Data）
      *
-     * 释放所有 Chunk 实例，重置内部状态。
-     * 这是最高效的清空方式，时间复杂度 O(1)。
-     *
-     * ⚠️ 注意：
-     * - 此方法不触发任何事件或撤销历史
-     * - 调用方需自行管理事件通知和历史记录
-     * - 典型用途：Sheet.clearData() 内部调用
-     *
-     * @returns {number} 被清空的 Chunk 数量
+     * @returns 被清空的 Chunk 数量
      */
-    clear() {
+    clear(): number {
         const size = this.#chunks.size;
         this.#chunks.clear();
         this.#cachedMaxRow = -1;
@@ -789,17 +664,9 @@ export class ChunkedCellStore {
     /**
      * 遍历所有非空单元格（Iterator for All Cells）
      *
-     * 用于批量操作前收集数据快照（如 clearAll 的撤销支持）。
-     * 生成器模式，惰性求值，节省内存。
-     *
-     * ⚠️ 兼容性提示：
-     * - 此方法使用 ES6 生成器函数 + Symbol.iterator
-     * - 在 UMD 构建或旧版浏览器中可能存在兼容性问题
-     * - 推荐使用 `chunks` getter 代替 for...of 直接遍历实例
-     *
-     * @yields {{row: number, col: number, cell: import("../Cell.js").Cell}}
+     * @yields 包含逻辑坐标和单元格的对象
      */
-    *[Symbol.iterator]() {
+    *[Symbol.iterator](): Generator<{ row: number; col: number; cell: Cell }> {
         for (const [, chunk] of this.#chunks) {
             yield* chunk.iterate();
         }
@@ -808,18 +675,9 @@ export class ChunkedCellStore {
     /**
      * 获取所有 Chunk 的迭代器（推荐用于遍历）
      *
-     * ✅ 兼容性优于直接 for...of 遍历 ChunkedCellStore 实例
-     * 返回 Map.entries() 迭代器，兼容所有环境
-     *
-     * @returns {IterableIterator<[string, import("./Chunk.js").Chunk]>}
-     *
-     * @example
-     * // 推荐用法（避免迭代器兼容性问题）
-     * for (const [key, chunk] of cellStore.chunks) {
-     *     console.log(key, chunk);
-     * }
+     * @returns Map entries 迭代器
      */
-    get chunks() {
+    get chunks(): IterableIterator<[string, Chunk]> {
         return this.#chunks.entries();
     }
 }

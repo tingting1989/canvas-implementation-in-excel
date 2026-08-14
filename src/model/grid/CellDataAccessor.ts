@@ -1,3 +1,11 @@
+import { Cell } from "../store/Cell";
+import { ChunkedCellStore } from "../store/ChunkedCellStore";
+
+/** Sheet 最小接口（仅 CellDataAccessor 所需） */
+interface SheetLike {
+    cellStore: ChunkedCellStore;
+}
+
 /**
  * 单元格数据访问代理（CellDataAccessor）
  *
@@ -6,7 +14,7 @@
  *
  * ## 使用场景
  *
- * ```js
+ * ```ts
  * const accessor = sheet.cellDataAccessor;
  *
  * // 1. 获取非空单元格（用于验证、删除、剪切）
@@ -21,7 +29,7 @@
  * });
  *
  * // 4. 迭代器模式（节省内存）
- * for (const {row, col, cell} of accessor[Symbol.iterator](0, 0, 1000, 20)) {
+ * for (const {row, col, cell} of accessor.iterate(0, 0, 1000, 20)) {
  *     if (cell) process(cell);
  * }
  *
@@ -30,43 +38,37 @@
  * ```
  */
 export class CellDataAccessor {
-    /** @type {import("../workbook/Sheet.js").Sheet} */
-    #sheet;
+    #sheet: SheetLike;
 
-    constructor(sheet) {
+    constructor(sheet: SheetLike) {
         this.#sheet = sheet;
     }
 
-    get #cellStore() {
+    get #cellStore(): ChunkedCellStore {
         return this.#sheet.cellStore;
     }
 
     /**
      * 获取单个单元格数据（基础读取方法）
-     * @param {number} row - 行号
-     * @param {number} col - 列号
-     * @returns {import("../store/Cell.js").Cell|null}
+     * @param row - 行号
+     * @param col - 列号
+     * @returns 单元格实例或 null
      */
-    get(row, col) {
-        return this.#cellStore.get(row, col);
+    get(row: number, col: number): Cell | null {
+        return this.#cellStore.get(row, col) ?? null;
     }
 
     /**
      * 获取区域内所有非空单元格及其坐标
      *
-     * 适用场景：
-     * - 数据验证（检查重复值、唯一性）
-     * - 批量删除/剪切前收集目标
-     * - 条件格式计算
-     *
-     * @param {number} topRow - 左上角行号
-     * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角行号
-     * @param {number} bottomCol - 右下角列号
-     * @returns {Array<{row:number, col:number, cell: import("../store/Cell.js").Cell}>}
+     * @param topRow - 左上角行号
+     * @param topCol - 左上角列号
+     * @param bottomRow - 右下角行号
+     * @param bottomCol - 右下角列号
+     * @returns 非空单元格数组
      */
-    getNonEmptyCells(topRow, topCol, bottomRow, bottomCol) {
-        const result = [];
+    getNonEmptyCells(topRow: number, topCol: number, bottomRow: number, bottomCol: number): Array<{ row: number; col: number; cell: Cell }> {
+        const result: Array<{ row: number; col: number; cell: Cell }> = [];
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
                 const cell = this.get(r, c);
@@ -81,24 +83,18 @@ export class CellDataAccessor {
     /**
      * 提取区域内的值矩阵（纯值二维数组）
      *
-     * 适用场景：
-     * - 导出 Excel/CSV
-     * - 复制/剪贴板操作
-     * - 公式计算（SUM, AVERAGE等聚合函数）
-     * - 自动填充源数据获取
-     *
      * 特点：空单元格自动填充空字符串 ""
      *
-     * @param {number} topRow - 左上角行号
-     * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角行号
-     * @param {number} bottomCol - 右下角列号
-     * @returns {Array<Array<*>>} 二维值数组
+     * @param topRow - 左上角行号
+     * @param topCol - 左上角列号
+     * @param bottomRow - 右下角行号
+     * @param bottomCol - 右下角列号
+     * @returns 二维值数组
      */
-    getValueMatrix(topRow, topCol, bottomRow, bottomCol) {
-        const matrix = [];
+    getValueMatrix(topRow: number, topCol: number, bottomRow: number, bottomCol: number): unknown[][] {
+        const matrix: unknown[][] = [];
         for (let r = topRow; r <= bottomRow; r++) {
-            const rowData = [];
+            const rowData: unknown[] = [];
             for (let c = topCol; c <= bottomCol; c++) {
                 const cell = this.get(r, c);
                 rowData.push(cell ? cell.value : "");
@@ -111,21 +107,19 @@ export class CellDataAccessor {
     /**
      * 遍历区域内的每个单元格（回调模式）
      *
-     * 适用场景：
-     * - 批量样式修改
-     * - 合并单元格检测与处理
-     * - 条件判断与标记
-     * - 数据统计与汇总
-     *
-     * 性能提示：对于 >1000 行的大范围，优先使用迭代器模式 [Symbol.iterator]
-     *
-     * @param {number} topRow - 左上角行号
-     * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角行号
-     * @param {number} bottomCol - 右下角列号
-     * @param {function} callback - 回调函数 (row, col, cell) => void
+     * @param topRow - 左上角行号
+     * @param topCol - 左上角列号
+     * @param bottomRow - 右下角行号
+     * @param bottomCol - 右下角列号
+     * @param callback - 回调函数 (row, col, cell) => void
      */
-    forEach(topRow, topCol, bottomRow, bottomCol, callback) {
+    forEach(
+        topRow: number,
+        topCol: number,
+        bottomRow: number,
+        bottomCol: number,
+        callback: (row: number, col: number, cell: Cell | null) => void,
+    ): void {
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
                 callback(r, c, this.get(r, c));
@@ -136,26 +130,13 @@ export class CellDataAccessor {
     /**
      * 区域迭代器（生成器模式，惰性求值）
      *
-     * 适用场景：
-     * - 大范围数据遍历（>1000行）时节省内存
-     * - 需要提前终止遍历的场景
-     * - 流式数据处理
-     *
-     * 使用示例：
-     * ```js
-     * for (const {row, col, cell} of accessor[Symbol.iterator](0, 0, 10000, 20)) {
-     *     if (!cell) continue;
-     *     if (foundTarget(cell)) break;  // 可提前退出
-     * }
-     * ```
-     *
-     * @param {number} topRow - 左上角行号
-     * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角行号
-     * @param {number} bottomCol - 右下角列号
-     * @yields {{row:number, col:number, cell: import("../store/Cell.js").Cell|null}}
+     * @param topRow - 左上角行号
+     * @param topCol - 左上角列号
+     * @param bottomRow - 右下角行号
+     * @param bottomCol - 右下角列号
+     * @yields 包含行列号和单元格的对象
      */
-    *[Symbol.iterator](topRow, topCol, bottomRow, bottomCol) {
+    *iterate(topRow: number, topCol: number, bottomRow: number, bottomCol: number): Generator<{ row: number; col: number; cell: Cell | null }> {
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
                 yield { row: r, col: c, cell: this.get(r, c) };
@@ -166,19 +147,14 @@ export class CellDataAccessor {
     /**
      * 批量写入矩形区域的数据
      *
-     * 适用场景：
-     * - 导入外部数据（Excel、CSV解析后）
-     * - 粘贴操作
-     * - 批量初始化
-     *
      * ⚠️ 注意：此方法直接操作 cellStore，不触发事件和撤销历史。
      * 如需完整功能，请使用 sheet.setCell() 循环调用
      *
-     * @param {number} topRow - 左上角起始行号
-     * @param {number} topCol - 左上角起始列号
-     * @param {Array<Array<import("../store/Cell.js").Cell>>} cells - 二维单元格数组
+     * @param topRow - 左上角起始行号
+     * @param topCol - 左上角起始列号
+     * @param cells - 二维单元格数组
      */
-    setRange(topRow, topCol, cells) {
+    setRange(topRow: number, topCol: number, cells: Cell[][]): void {
         for (let r = 0; r < cells.length; r++) {
             for (let c = 0; c < cells[r].length; c++) {
                 if (cells[r][c]) {
@@ -193,19 +169,13 @@ export class CellDataAccessor {
      *
      * 收集当前所有非空单元格的信息（用于撤销），然后清空整个存储。
      *
-     * 适用场景：
-     * - 工作表重置
-     * - 数据导入前清理
-     * - 内存释放
-     *
      * ⚠️ 注意：返回值用于撤销支持，调用方应保存并在需要时恢复
      *
-     * @returns {{ changes: Array<{row:number, col:number, oldValue:*, styleId:number}>, clearedCount: number }}
+     * @returns 包含变更信息和清空数量的对象
      */
-    clearAll() {
-        const changes = [];
+    clearAll(): { changes: Array<{ row: number; col: number; oldValue: unknown; styleId: number }>; clearedCount: number } {
+        const changes: Array<{ row: number; col: number; oldValue: unknown; styleId: number }> = [];
 
-        // ✅ 使用显式的 chunks getter 避免迭代器兼容性问题
         for (const [, chunk] of this.#cellStore.chunks) {
             for (const { row, col, cell } of chunk.iterate()) {
                 if (cell && cell.value !== "" && cell.value != null) {
@@ -229,14 +199,19 @@ export class CellDataAccessor {
      *
      * 与 clearAll() 类似，但仅处理指定矩形范围内的单元格。
      *
-     * @param {number} topRow - 左上角行号
-     * @param {number} topCol - 左上角列号
-     * @param {number} bottomRow - 右下角行号
-     * @param {number} bottomCol - 右下角列号
-     * @returns {{ changes: Array<{row:number, col:number, oldValue:*, styleId:number}>, clearedCount: number }}
+     * @param topRow - 左上角行号
+     * @param topCol - 左上角列号
+     * @param bottomRow - 右下角行号
+     * @param bottomCol - 右下角列号
+     * @returns 包含变更信息和清空数量的对象
      */
-    clearRange(topRow, topCol, bottomRow, bottomCol) {
-        const changes = [];
+    clearRange(
+        topRow: number,
+        topCol: number,
+        bottomRow: number,
+        bottomCol: number,
+    ): { changes: Array<{ row: number; col: number; oldValue: unknown; styleId: number }>; clearedCount: number } {
+        const changes: Array<{ row: number; col: number; oldValue: unknown; styleId: number }> = [];
 
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
