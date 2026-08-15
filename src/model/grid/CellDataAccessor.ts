@@ -146,7 +146,12 @@ export class CellDataAccessor {
      * @param bottomCol - 右下角列号
      * @yields 包含行列号和单元格的对象
      */
-    *[Symbol.iterator](topRow: number, topCol: number, bottomRow: number, bottomCol: number): Generator<{ row: number; col: number; cell: Cell | null }> {
+    *[Symbol.iterator](
+        topRow: number,
+        topCol: number,
+        bottomRow: number,
+        bottomCol: number,
+    ): Generator<{ row: number; col: number; cell: Cell | null }> {
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
                 yield { row: r, col: c, cell: this.get(r, c) };
