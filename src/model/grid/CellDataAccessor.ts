@@ -28,8 +28,8 @@ interface SheetLike {
  *     console.log(`[${r},${c}] =`, cell?.value);
  * });
  *
- * // 4. 迭代器模式（节省内存）
- * for (const {row, col, cell} of accessor.iterate(0, 0, 1000, 20)) {
+ * * 4. 迭代器模式（节省内存）
+ * for (const {row, col, cell} of accessor[Symbol.iterator](0, 0, 1000, 20)) {
  *     if (cell) process(cell);
  * }
  *
@@ -55,7 +55,7 @@ export class CellDataAccessor {
      * @returns 单元格实例或 null
      */
     get(row: number, col: number): Cell | null {
-        return this.#cellStore.get(row, col) ?? null;
+        return this.#cellStore.get(row, col);
     }
 
     /**
@@ -107,6 +107,8 @@ export class CellDataAccessor {
     /**
      * 遍历区域内的每个单元格（回调模式）
      *
+     * 性能提示：对于 >1000 行的大范围，优先使用迭代器模式 [Symbol.iterator]
+     *
      * @param topRow - 左上角行号
      * @param topCol - 左上角列号
      * @param bottomRow - 右下角行号
@@ -130,13 +132,21 @@ export class CellDataAccessor {
     /**
      * 区域迭代器（生成器模式，惰性求值）
      *
+     * 使用示例：
+     * ```ts
+     * for (const {row, col, cell} of accessor[Symbol.iterator](0, 0, 10000, 20)) {
+     *     if (!cell) continue;
+     *     if (foundTarget(cell)) break;  // 可提前退出
+     * }
+     * ```
+     *
      * @param topRow - 左上角行号
      * @param topCol - 左上角列号
      * @param bottomRow - 右下角行号
      * @param bottomCol - 右下角列号
      * @yields 包含行列号和单元格的对象
      */
-    *iterate(topRow: number, topCol: number, bottomRow: number, bottomCol: number): Generator<{ row: number; col: number; cell: Cell | null }> {
+    *[Symbol.iterator](topRow: number, topCol: number, bottomRow: number, bottomCol: number): Generator<{ row: number; col: number; cell: Cell | null }> {
         for (let r = topRow; r <= bottomRow; r++) {
             for (let c = topCol; c <= bottomCol; c++) {
                 yield { row: r, col: c, cell: this.get(r, c) };
@@ -176,6 +186,7 @@ export class CellDataAccessor {
     clearAll(): { changes: Array<{ row: number; col: number; oldValue: unknown; styleId: number }>; clearedCount: number } {
         const changes: Array<{ row: number; col: number; oldValue: unknown; styleId: number }> = [];
 
+        // ✅ 使用显式的 chunks getter 避免迭代器兼容性问题
         for (const [, chunk] of this.#cellStore.chunks) {
             for (const { row, col, cell } of chunk.iterate()) {
                 if (cell && cell.value !== "" && cell.value != null) {

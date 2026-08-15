@@ -651,7 +651,7 @@ export class RowColManager {
      * @param sizes - 尺寸数组
      * @returns 前缀和数组及总分配值
      */
-    #rebuildPrefix(sizes: number[]): { prefix: Float64Array; allocated: number } {
+    #rebuildPrefix(sizes: number[], dirtyFlag: boolean): { prefix: Float64Array; allocated: number } {
         const n = sizes.length;
         if (n > 0) {
             const prefix = new Float64Array(n);
@@ -670,7 +670,7 @@ export class RowColManager {
      */
     #ensureRowPrefix(): void {
         if (!this.#rowPrefixDirty) return;
-        const { prefix, allocated } = this.#rebuildPrefix(this.#rowHeights);
+        const { prefix, allocated } = this.#rebuildPrefix(this.#rowHeights, this.#rowPrefixDirty);
         this.#rowPrefixSum = prefix;
         this.#allocatedHeight = allocated;
         this.#rowPrefixDirty = false;
@@ -681,7 +681,7 @@ export class RowColManager {
      */
     #ensureColPrefix(): void {
         if (!this.#colPrefixDirty) return;
-        const { prefix, allocated } = this.#rebuildPrefix(this.#colWidths);
+        const { prefix, allocated } = this.#rebuildPrefix(this.#colWidths, this.#colPrefixDirty);
         this.#colPrefixSum = prefix;
         this.#allocatedWidth = allocated;
         this.#colPrefixDirty = false;
