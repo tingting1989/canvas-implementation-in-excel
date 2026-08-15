@@ -1,3 +1,11 @@
+0/**
+ * @fileoverview 原生 Canvas 图表渲染器
+ * @description 图表渲染的核心调度器，采用策略模式管理所有图表类型。
+ *              负责完整的渲染管线：网格线 → 坐标轴 → 图表主体 → 标题 → 图例 → Tooltip。
+ *              同时提供 Y 轴刻度计算、数值格式化、命中测试等静态工具方法。
+ * @module render/chart/NativeChartRenderer
+ */
+
 import { BaseChartStrategy } from "./BaseChartStrategy";
 import { getAllStrategies } from "./strategies/index";
 import { CONFIG } from "../../constants/config";
@@ -7,8 +15,13 @@ import type { ChartData, PlotArea, ChartStyle, YScale, HitInfo } from "./types";
 import type { Rect } from "../../model/types";
 
 export class NativeChartRenderer {
+    /** 策略注册表，type → strategy 实例 */
     static #registry: Map<string, BaseChartStrategy> = new Map();
 
+    /**
+     * 注册一个渲染策略到注册表
+     * 非法策略会通过 errorHandler 记录错误日志
+     */
     static register(strategy: BaseChartStrategy): void {
         if (!(strategy instanceof BaseChartStrategy)) {
             errorHandler.error(ERROR_CODE.CHART_INVALID_STRATEGY, `Invalid strategy:`, strategy);
@@ -19,27 +32,38 @@ export class NativeChartRenderer {
         errorHandler.info(ERROR_CODE.CHART_STRATEGY_REGISTERED, `Registered chart strategy: ${strategy.type} (${strategy.name})`);
     }
 
+    /** 根据类型标识获取已注册的策略实例 */
     static get(type: string): BaseChartStrategy | undefined {
         return this.#registry.get(type);
     }
 
+    /** 获取所有已注册的图表类型标识列表 */
     static getTypes(): string[] {
         return Array.from(this.#registry.keys());
     }
 
+    /** 获取所有已注册策略的显示名称列表 */
     static getNames(): string[] {
         return Array.from(this.#registry.values()).map((s) => s.name);
     }
 
+    /** 初始化：注册所有内置策略 */
     static init(): void {
         const strategies = getAllStrategies();
         strategies.forEach((strategy) => this.register(strategy));
     }
 
+    /** 设置全局日志级别 */
     static setLogLevel(level: number): void {
         errorHandler.configure({ level });
     }
 
+    /**
+     * 高清导出渲染入口
+     * 与 render() 不同的是，pixelRatio 由外部显式传入，
+     * 并在渲染前后通过 setPixelRatio/clearPixelRatio 确保策略内部也使用正确的缩放比。
+     * 使用 try/finally 保证 pixelRatio 一定会被清除。
+     */
     static renderWithPixelRatio(
         ctx: CanvasRenderingContext2D,
         chart: { type: string },
@@ -89,6 +113,11 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
+    /**
+     * 标准渲染入口
+     * 执行完整渲染管线：网格线 → 坐标轴 → 图表主体 → 标题 → 图例
+     * pixelRatio 根据 Canvas 物理宽度自动推算
+     */
     static render(ctx: CanvasRenderingContext2D, chart: { type: string }, data: ChartData, plotArea: PlotArea, style: ChartStyle): void {
         ctx.save();
 
@@ -123,6 +152,7 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
+    /** 命中测试：委托给对应策略的 hitTest 方法 */
     static hitTest(
         px: number,
         py: number,
@@ -140,6 +170,7 @@ export class NativeChartRenderer {
         return null;
     }
 
+    /** 命中测试便捷方法：自动从 data 中推导 seriesCount 和 catCount */
     static hitTestDataPoint(px: number, py: number, chartType: string, data: ChartData, plotArea: PlotArea, yScale: YScale): HitInfo | null {
         const strategy = this.get(chartType);
         if (!strategy) return null;
@@ -151,6 +182,10 @@ export class NativeChartRenderer {
         return strategy.hitTest(px, py, data, plotArea, seriesCount, catCount, yScale);
     }
 
+    /**
+     * 渲染 Tooltip 浮层
+     * 深色半透明背景 + 白色文字 + 圆角矩形 + 自动边界钳位
+     */
     static renderTooltip(ctx: CanvasRenderingContext2D, hoverInfo: HitInfo, bounds: Rect, style: ChartStyle): void {
         if (!hoverInfo || !bounds) return;
 
@@ -201,12 +236,14 @@ export class NativeChartRenderer {
         ctx.restore();
     }
 
+    /** 渲染网格线（自动推算 pixelRatio） */
     static renderGrid(ctx: CanvasRenderingContext2D, area: PlotArea): void {
         const pixelRatio = ctx.canvas.width / (area.x + area.w + 56);
 
         this.renderGridWithPixelRatio(ctx, area, pixelRatio);
     }
 
+    /** 渲染网格线（指定 pixelRatio），绘制 5 条水平等距网格线 */
     static renderGridWithPixelRatio(ctx: CanvasRenderingContext2D, area: PlotArea, pixelRatio: number): void {
         ctx.save();
         ctx.strokeStyle = CONFIG.CHART_GRID_COLOR;
