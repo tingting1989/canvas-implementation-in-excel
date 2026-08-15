@@ -17,10 +17,12 @@ import { isString } from "../../utils/helper.js";
 import { _toNum, _validateArgs, _matchCriteria, _flatten } from "./utils/index.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 
+type FormulaResult = number | string | unknown;
+
 /**
  * 函数定义集合（导出给主注册表使用）
  */
-export const conditionalFunctions = {
+export const conditionalFunctions: Record<string, (args: unknown[]) => FormulaResult> = {
     /**
      * SUMIF - 单条件求和
      *
@@ -28,8 +30,8 @@ export const conditionalFunctions = {
      *
      * 语法: SUMIF(range, criteria, [sum_range])
      *
-     * @param {Array} args - [条件范围, 条件表达式, 求和范围(可选)]
-     * @returns {number|String} 满足条件的数值之和，错误时返回 #VALUE!
+     * @param args - [条件范围, 条件表达式, 求和范围(可选)]
+     * @returns 满足条件的数值之和，错误时返回 #VALUE!
      *
      * 支持的条件格式：
      * - 数值比较: ">100", "<=50", "=200"
@@ -63,7 +65,7 @@ export const conditionalFunctions = {
         let sum = 0;
         for (let i = 0; i < flatRange.length; i++) {
             try {
-                if (_matchCriteria(flatRange[i], criteria)) {
+                if (_matchCriteria(flatRange[i], criteria as string | number)) {
                     const num = _toNum(flatSumRange[i]);
                     if (!isNaN(num)) {
                         sum += num;
@@ -71,7 +73,7 @@ export const conditionalFunctions = {
                 }
             } catch (e) {
                 errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `SUMIF: 条件匹配失败 at index ${i}`, {
-                    error: e.message,
+                    error: (e as Error).message,
                     index: i,
                     functionName: "SUMIF",
                 });
@@ -89,20 +91,12 @@ export const conditionalFunctions = {
      *
      * 语法: SUMIFS(sum_range, criteria_range1, criteria1, [criteria_range2, criteria2], ...)
      *
-     * @param {Array} args - [求和范围, 条件范围1, 条件1, 条件范围2, 条件2, ...]
-     * @returns {number|String} 同时满足所有条件的数值之和，错误时返回 #VALUE!
-     *
-     * 特点：
-     * - 参数数量必须为奇数（sum_range + 成对的条件）
-     * - 所有条件范围的长度必须与 sum_range 一致
-     * - 条件之间是 AND 关系（必须同时满足）
+     * @param args - [求和范围, 条件范围1, 条件1, 条件范围2, 条件2, ...]
+     * @returns 同时满足所有条件的数值之和，错误时返回 #VALUE!
      *
      * @example
      * =SUMIFS(C2:C100, B2:B100, "北京", D2:D100, ">10000")
-     *   // 北京地区且销售额>10000的订单总和
-     *
      * =SUMIFS(A1:A10, B1:B10, ">=2024-01-01", B1:B10, "<=2024-12-31")
-     *   // 2024年数据总和
      */
     SUMIFS: (args) => {
         if (!_validateArgs(args, 3, Infinity, "SUMIFS")) return "#VALUE!";
@@ -118,7 +112,7 @@ export const conditionalFunctions = {
         const sumRange = args[0];
         const flatSumRange = Array.isArray(sumRange) ? _flatten(sumRange) : [sumRange];
 
-        const conditionPairs = [];
+        const conditionPairs: { range: unknown[]; criteria: unknown; pairIndex: number }[] = [];
         for (let i = 1; i < args.length; i += 2) {
             const criteriaRange = args[i];
             const criteria = args[i + 1];
@@ -148,13 +142,13 @@ export const conditionalFunctions = {
 
             for (const pair of conditionPairs) {
                 try {
-                    if (!_matchCriteria(pair.range[i], pair.criteria)) {
+                    if (!_matchCriteria(pair.range[i], pair.criteria as string | number)) {
                         allMatch = false;
                         break;
                     }
                 } catch (e) {
                     errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `SUMIFS: 条件 ${pair.pairIndex + 1} 匹配失败 at index ${i}`, {
-                        error: e.message,
+                        error: (e as Error).message,
                         index: i,
                         pairIndex: pair.pairIndex,
                         functionName: "SUMIFS",
@@ -182,27 +176,12 @@ export const conditionalFunctions = {
      *
      * 语法: COUNTIF(range, criteria)
      *
-     * 特点：
-     * - 支持多种条件格式（比较运算符、通配符、精确匹配）
-     * - 自动忽略空值（除非条件是统计空值）
-     * - 对文本、数值都有效
-     *
-     * @param {Array} args - [统计范围, 条件表达式]
-     * @returns {number|String} 满足条件的单元格数量，错误时返回 #VALUE!
-     *
-     * 支持的条件格式：
-     * - 数值比较: ">100", "<=50", "=200", "<>0"(不等于)
-     * - 文本匹配: "苹果", "*张*"(包含), "张?"(以张开头+1字符)
-     * - 通配符: "*" (任意多个字符), "?" (单个字符)
-     * - 精确匹配: 100 (数值), "文本" (字符串)
-     * - 空值统计: "" (空字符串)
+     * @param args - [统计范围, 条件表达式]
+     * @returns 满足条件的单元格数量，错误时返回 #VALUE!
      *
      * @example
      * =COUNTIF(A1:A10, ">100")              // 统计大于100的单元格数量
      * =COUNTIF(B1:B20, "已完成")             // 统计状态为"已完成"的数量
-     * =COUNTIF(C1:C15, "*北京*")             // 统计包含"北京"的数量
-     * =COUNTIF(D1:D100, "")                  // 统计空单元格数量
-     * =COUNTIF(E1:E50, "<>")                 // 统计非空单元格数量
      */
     COUNTIF: (args) => {
         if (!_validateArgs(args, 2, 2, "COUNTIF")) return "#VALUE!";
@@ -215,12 +194,12 @@ export const conditionalFunctions = {
         let count = 0;
         for (let i = 0; i < flatRange.length; i++) {
             try {
-                if (_matchCriteria(flatRange[i], criteria)) {
+                if (_matchCriteria(flatRange[i], criteria as string | number)) {
                     count++;
                 }
             } catch (e) {
                 errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `COUNTIF: 条件匹配失败 at index ${i}`, {
-                    error: e.message,
+                    error: (e as Error).message,
                     index: i,
                     value: flatRange[i],
                     criteria: criteria,
@@ -240,29 +219,16 @@ export const conditionalFunctions = {
      *
      * 语法: COUNTIFS(criteria_range1, criteria1, [criteria_range2, criteria2], ...)
      *
-     * 特点：
-     * - 参数数量必须为偶数（成对的 criteria_range 和 criteria）
-     * - 所有条件范围的长度必须一致
-     * - 条件之间是 AND 关系（必须同时满足所有条件）
-     * - 每个条件范围可以不同（与 SUMIFS 不同，没有单独的 sum_range）
-     *
-     * @param {Array} args - [条件范围1, 条件1, 条件范围2, 条件2, ...]
-     * @returns {number|String} 同时满足所有条件的单元格数量，错误时返回 #VALUE!
+     * @param args - [条件范围1, 条件1, 条件范围2, 条件2, ...]
+     * @returns 同时满足所有条件的单元格数量，错误时返回 #VALUE!
      *
      * @example
      * =COUNTIFS(A1:A100, ">18", B1:B100, "男")
      *   // 统计年龄>18且性别为"男"的数量
-     *
-     * =COUNTIFS(C2:C50, ">=2024-01-01", C2:C50, "<=2024-03-31", D2:D50, "已完成")
-     *   // 统计2024年Q1且状态为"已完成"的项目数
-     *
-     * =COUNTIFS(E1:E200, "<>北京", F1:F200, ">50000")
-     *   // 统计非北京地区且金额>50000的记录数
      */
     COUNTIFS: (args) => {
         if (!_validateArgs(args, 2, Infinity, "COUNTIFS")) return "#VALUE!";
 
-        // 参数数量必须是偶数（成对的条件范围和条件）
         if (args.length % 2 !== 0) {
             errorHandler.warn(ERROR_CODE.FORMULA_ARGUMENT_COUNT_INVALID, "COUNTIFS 需要偶数个参数（成对的 criteria_range 和 criteria）", {
                 received: args.length,
@@ -271,7 +237,7 @@ export const conditionalFunctions = {
             return "#VALUE!";
         }
 
-        const conditionPairs = [];
+        const conditionPairs: { range: unknown[]; criteria: unknown; pairIndex: number }[] = [];
         for (let i = 0; i < args.length; i += 2) {
             const criteriaRange = args[i];
             const criteria = args[i + 1];
@@ -283,7 +249,6 @@ export const conditionalFunctions = {
             });
         }
 
-        // 验证所有条件范围长度一致
         const referenceLength = conditionPairs[0].range.length;
         for (const pair of conditionPairs) {
             if (pair.range.length !== referenceLength) {
@@ -303,13 +268,13 @@ export const conditionalFunctions = {
 
             for (const pair of conditionPairs) {
                 try {
-                    if (!_matchCriteria(pair.range[i], pair.criteria)) {
+                    if (!_matchCriteria(pair.range[i], pair.criteria as string | number)) {
                         allMatch = false;
                         break;
                     }
                 } catch (e) {
                     errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, `COUNTIFS: 条件 ${pair.pairIndex + 1} 匹配失败 at index ${i}`, {
-                        error: e.message,
+                        error: (e as Error).message,
                         index: i,
                         pairIndex: pair.pairIndex,
                         functionName: "COUNTIFS",
@@ -334,8 +299,8 @@ export const conditionalFunctions = {
      *
      * 语法: IFERROR(value, value_if_error)
      *
-     * @param {Array} args - [计算值, 错误时的替代值]
-     * @returns {*} 正常结果或错误替代值
+     * @param args - [计算值, 错误时的替代值]
+     * @returns 正常结果或错误替代值
      *
      * @example
      * =IFERROR(A1/B1, 0)            // 除零时返回 0
@@ -361,8 +326,8 @@ export const conditionalFunctions = {
      *
      * 语法: IFNA(value, value_if_na)
      *
-     * @param {Array} args - [计算值, N/A时的替代值]
-     * @returns {*} 正常结果或 N/A 替代值
+     * @param args - [计算值, N/A时的替代值]
+     * @returns 正常结果或 N/A 替代值
      *
      * @example
      * =IFNA(VLOOKUP(...), "不存在")   // 查找返回 #N/A 时显示"不存在"

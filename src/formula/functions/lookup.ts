@@ -15,10 +15,12 @@ import { isString } from "../../utils/helper.js";
 import { _flatten, _toNum, _validateArgs } from "./utils/index.js";
 import { errorHandler } from "../../core/ErrorHandler";
 
+type FormulaResult = number | string;
+
 /**
  * 函数定义集合（导出给主注册表使用）
  */
-export const lookupFunctions = {
+export const lookupFunctions: Record<string, (args: unknown[]) => FormulaResult> = {
     /**
      * VLOOKUP - 垂直查找函数
      *
@@ -26,8 +28,8 @@ export const lookupFunctions = {
      *
      * 语法: VLOOKUP(lookup_value, table_array, col_index_num, [range_lookup])
      *
-     * @param {Array} args - [查找值, 表格范围, 列序号, 匹配模式]
-     * @returns {*} 找到的值，未找到时返回 #N/A 或 #VALUE!
+     * @param args - [查找值, 表格范围, 列序号, 匹配模式]
+     * @returns 找到的值，未找到时返回 #N/A 或 #VALUE!
      *
      * @example
      * =VLOOKUP("苹果", A1:D10, 3, FALSE)    // 精确匹配查找"苹果"，返回第3列
@@ -41,16 +43,14 @@ export const lookupFunctions = {
         const colIndex = Math.floor(_toNum(args[2]));
         const rangeLookup = args[3] !== undefined ? args[3] : true;
 
-        // 参数校验
         if (isNaN(colIndex) || colIndex < 1) {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "VLOOKUP: col_index_num 必须是 >=1 的整数", { value: args[2], functionName: "VLOOKUP" });
             return "#VALUE!";
         }
 
-        // 展平表格（假设是二维数组）
-        let flatTable;
+        let flatTable: unknown[][];
         if (Array.isArray(tableArray)) {
-            flatTable = Array.isArray(tableArray[0]) ? tableArray : [tableArray]; // 一维数组转二维
+            flatTable = Array.isArray(tableArray[0]) ? (tableArray as unknown[][]) : [tableArray];
         } else {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "VLOOKUP: table_array 必须是数组", { functionName: "VLOOKUP" });
             return "#VALUE!";
@@ -65,27 +65,23 @@ export const lookupFunctions = {
             return "#REF!";
         }
 
-        // 查找逻辑
         for (let i = 0; i < flatTable.length; i++) {
             const row = flatTable[i];
             const firstColValue = row[0];
 
             if (rangeLookup === false || rangeLookup === 0) {
-                // 精确匹配
                 if (firstColValue === lookupValue) {
-                    return row[colIndex - 1];
+                    return row[colIndex - 1] as FormulaResult;
                 }
             } else {
-                // 近似匹配（查找 <= lookupValue 的最大值）
                 if (_toNum(firstColValue) <= _toNum(lookupValue)) {
                     if (i === flatTable.length - 1 || _toNum(flatTable[i + 1][0]) > _toNum(lookupValue)) {
-                        return row[colIndex - 1];
+                        return row[colIndex - 1] as FormulaResult;
                     }
                 }
             }
         }
 
-        // 未找到
         errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "VLOOKUP: 未找到匹配值", { lookupValue, functionName: "VLOOKUP" });
         return "#N/A";
     },
@@ -97,8 +93,8 @@ export const lookupFunctions = {
      *
      * 语法: HLOOKUP(lookup_value, table_array, row_index_num, [range_lookup])
      *
-     * @param {Array} args - [查找值, 表格范围, 行序号, 匹配模式(可选)]
-     * @returns {*} 找到的值，未找到时返回 #N/A 或 #VALUE!
+     * @param args - [查找值, 表格范围, 行序号, 匹配模式(可选)]
+     * @returns 找到的值，未找到时返回 #N/A 或 #VALUE!
      *
      * @example
      * =HLOOKUP("Q2", A1:E5, 3, FALSE)    // 精确匹配查找"Q2"，返回第3行
@@ -117,9 +113,9 @@ export const lookupFunctions = {
             return "#VALUE!";
         }
 
-        let flatTable;
+        let flatTable: unknown[][];
         if (Array.isArray(tableArray)) {
-            flatTable = Array.isArray(tableArray[0]) ? tableArray : [tableArray];
+            flatTable = Array.isArray(tableArray[0]) ? (tableArray as unknown[][]) : [tableArray];
         } else {
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "HLOOKUP: table_array 必须是数组", { functionName: "HLOOKUP" });
             return "#VALUE!";
@@ -141,12 +137,12 @@ export const lookupFunctions = {
 
             if (rangeLookup === false || rangeLookup === 0) {
                 if (firstRowValue === lookupValue) {
-                    return flatTable[rowIndex - 1][c];
+                    return flatTable[rowIndex - 1][c] as FormulaResult;
                 }
             } else {
                 if (_toNum(firstRowValue) <= _toNum(lookupValue)) {
                     if (c === firstRow.length - 1 || _toNum(firstRow[c + 1]) > _toNum(lookupValue)) {
-                        return flatTable[rowIndex - 1][c];
+                        return flatTable[rowIndex - 1][c] as FormulaResult;
                     }
                 }
             }
@@ -163,8 +159,8 @@ export const lookupFunctions = {
      *
      * 语法: INDEX(array, row_num, [column_num])
      *
-     * @param {Array} args - [数组或范围, 行号, 列号(可选)]
-     * @returns {*} 指定位置的值，越界时返回 #REF!
+     * @param args - [数组或范围, 行号, 列号(可选)]
+     * @returns 指定位置的值，越界时返回 #REF!
      *
      * @example
      * =INDEX(A1:C5, 2, 3)    // 返回第2行第3列的值
@@ -197,18 +193,18 @@ export const lookupFunctions = {
             const r = Math.floor(rowNum) - 1;
             const c = colNum !== undefined ? Math.floor(colNum) - 1 : 0;
 
-            if (r >= array.length || c >= array[0].length) {
+            if (r >= array.length || c >= (array as unknown[][])[0].length) {
                 errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "INDEX: 索引越界", { rowNum, colNum, functionName: "INDEX" });
                 return "#REF!";
             }
-            return array[r][c];
+            return (array as unknown[][])[r][c] as FormulaResult;
         } else {
             const idx = Math.floor(rowNum) - 1;
             if (idx >= array.length) {
                 errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "INDEX: 索引越界", { rowNum, functionName: "INDEX" });
                 return "#REF!";
             }
-            return array[idx];
+            return array[idx] as FormulaResult;
         }
     },
 
@@ -224,8 +220,8 @@ export const lookupFunctions = {
      * - 1（默认）: 查找 <= lookup_value 的最大值（数组需升序）
      * - -1: 查找 >= lookup_value 的最小值（数组需降序）
      *
-     * @param {Array} args - [查找值, 查找范围, 匹配类型(可选)]
-     * @returns {number|String} 位置（从1开始），未找到时返回 #N/A
+     * @param args - [查找值, 查找范围, 匹配类型(可选)]
+     * @returns 位置（从1开始），未找到时返回 #N/A
      *
      * @example
      * =MATCH("苹果", A1:A10, 0)     // 精确匹配，返回位置
@@ -243,7 +239,7 @@ export const lookupFunctions = {
             return "#VALUE!";
         }
 
-        let flat;
+        let flat: unknown[];
         if (Array.isArray(lookupArray)) {
             flat = Array.isArray(lookupArray[0]) ? _flatten(lookupArray) : lookupArray;
         } else {
@@ -254,7 +250,8 @@ export const lookupFunctions = {
         if (matchType === 0) {
             for (let i = 0; i < flat.length; i++) {
                 if (flat[i] === lookupValue) return i + 1;
-                if (isString(flat[i]) && isString(lookupValue) && flat[i].toLowerCase() === lookupValue.toLowerCase()) return i + 1;
+                if (isString(flat[i]) && isString(lookupValue) && (flat[i] as string).toLowerCase() === (lookupValue as string).toLowerCase())
+                    return i + 1;
             }
             errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "MATCH: 未找到精确匹配", { lookupValue, functionName: "MATCH" });
             return "#N/A";

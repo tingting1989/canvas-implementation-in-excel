@@ -18,6 +18,8 @@ import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { _validateArgs } from "./utils/index.js";
 
+type FormulaResult = boolean | string | number | unknown;
+
 /**
  * 将值转换为布尔值（用于逻辑运算）
  *
@@ -29,10 +31,10 @@ import { _validateArgs } from "./utils/index.js";
  * - null/undefined → false
  * - 错误值 (#VALUE! 等) → 保持原样传播
  *
- * @param {*} value - 要转换的值
- * @returns {boolean|*} 布尔值或错误值
+ * @param value - 要转换的值
+ * @returns 布尔值或错误值
  */
-function _toBoolean(value) {
+function _toBoolean(value: unknown): boolean | string {
     if (typeof value === "boolean") return value;
 
     if (typeof value === "number") {
@@ -70,7 +72,7 @@ function _toBoolean(value) {
 /**
  * 函数定义集合（导出给主注册表使用）
  */
-export const logicalFunctions = {
+export const logicalFunctions: Record<string, (args: unknown[]) => FormulaResult> = {
     /**
      * IF - 条件判断函数
      *
@@ -78,8 +80,8 @@ export const logicalFunctions = {
      *
      * 语法: IF(logical_test, value_if_true, [value_if_false])
      *
-     * @param {Array} args - [条件表达式, 条件为真时的值, 条件为假时的值]
-     * @returns {*} 根据条件返回对应的值，默认 false 值为 false
+     * @param args - [条件表达式, 条件为真时的值, 条件为假时的值]
+     * @returns 根据条件返回对应的值，默认 false 值为 false
      *
      * @example
      * =IF(A1>100, "优秀", "一般")      // A1>100 返回 "优秀"，否则 "一般"
@@ -109,8 +111,8 @@ export const logicalFunctions = {
      * - 参数数量：1 到 255 个
      * - 自动类型转换（数值、字符串等）
      *
-     * @param {Array} args - 逻辑表达式数组
-     * @returns {boolean|String} 所有为真返回 true，否则返回 false；错误时返回 #VALUE!
+     * @param args - 逻辑表达式数组
+     * @returns 所有为真返回 true，否则返回 false；错误时返回 #VALUE!
      *
      * @example
      * =AND(TRUE, TRUE)                // 返回 TRUE
@@ -157,8 +159,8 @@ export const logicalFunctions = {
      * - 参数数量：1 到 255 个
      * - 自动类型转换（数值、字符串等）
      *
-     * @param {Array} args - 逻辑表达式数组
-     * @returns {boolean|String} 任一为真返回 true，否则返回 false；错误时返回 #VALUE!
+     * @param args - 逻辑表达式数组
+     * @returns 任一为真返回 true，否则返回 false；错误时返回 #VALUE!
      *
      * @example
      * =OR(FALSE, FALSE)              // 返回 FALSE
@@ -204,8 +206,8 @@ export const logicalFunctions = {
      * - 支持多种输入类型的转换
      * - 与 AND/OR 配合使用实现复杂逻辑
      *
-     * @param {Array} args - 包含一个逻辑值的数组
-     * @returns {boolean|String} 反转后的逻辑值；错误时返回 #VALUE!
+     * @param args - 包含一个逻辑值的数组
+     * @returns 反转后的逻辑值；错误时返回 #VALUE!
      *
      * @example
      * =NOT(TRUE)                     // 返回 FALSE
@@ -250,8 +252,8 @@ export const logicalFunctions = {
      * - 奇偶校验
      * - 复杂逻辑组合
      *
-     * @param {Array} args - 逻辑表达式数组
-     * @returns {boolean|String} 奇数个TRUE返回true，否则返回false；错误时返回 #VALUE!
+     * @param args - 逻辑表达式数组
+     * @returns 奇数个TRUE返回true，否则返回false；错误时返回 #VALUE!
      *
      * @example
      * =XOR(TRUE)                     // 返回 TRUE（1个TRUE，奇数）
@@ -299,8 +301,8 @@ export const logicalFunctions = {
      * - 始终返回布尔值 true
      * - 与 FALSE() 形成对称
      *
-     * @param {Array} args - 空数组（不接受参数）
-     * @returns {boolean} 始终返回 true；如果提供了参数则返回 #VALUE!
+     * @param args - 空数组（不接受参数）
+     * @returns 始终返回 true；如果提供了参数则返回 #VALUE!
      *
      * @example
      * =TRUE()                        // 返回 TRUE
@@ -332,8 +334,8 @@ export const logicalFunctions = {
      * - 始终返回布尔值 false
      * - 与 TRUE() 形成对称
      *
-     * @param {Array} args - 空数组（不接受参数）
-     * @returns {boolean} 始终返回 false；如果提供了参数则返回 #VALUE!
+     * @param args - 空数组（不接受参数）
+     * @returns 始终返回 false；如果提供了参数则返回 #VALUE!
      *
      * @example
      * =FALSE()                       // 返回 FALSE

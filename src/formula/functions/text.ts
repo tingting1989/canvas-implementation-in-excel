@@ -24,10 +24,12 @@ import { _validateArgs, _toNum } from "./utils/index.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes";
 
+type FormulaResult = number | string;
+
 /**
  * 函数定义集合（导出给主注册表使用）
  */
-export const textFunctions = {
+export const textFunctions: Record<string, (args: unknown[]) => FormulaResult> = {
     /**
      * UPPER - 转大写字母
      *
@@ -35,8 +37,8 @@ export const textFunctions = {
      *
      * 语法: UPPER(text)
      *
-     * @param {Array} args - 包含一个文本的数组
-     * @returns {String|String} 大写形式的文本，失败时返回 #VALUE!
+     * @param args - 包含一个文本的数组
+     * @returns 大写形式的文本，失败时返回 #VALUE!
      *
      * @example
      * =UPPER("hello world")      // 返回 "HELLO WORLD"
@@ -48,7 +50,7 @@ export const textFunctions = {
         try {
             return String(args[0] ?? "").toUpperCase();
         } catch (e) {
-            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "UPPER: 无法转换为大写", { error: e.message, functionName: "UPPER" });
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "UPPER: 无法转换为大写", { error: (e as Error).message, functionName: "UPPER" });
             return "#VALUE!";
         }
     },
@@ -60,8 +62,8 @@ export const textFunctions = {
      *
      * 语法: LOWER(text)
      *
-     * @param {Array} args - 包含一个文本的数组
-     * @returns {String|String} 小写形式的文本，失败时返回 #VALUE!
+     * @param args - 包含一个文本的数组
+     * @returns 小写形式的文本，失败时返回 #VALUE!
      *
      * @example
      * =LOWER("HELLO WORLD")      // 返回 "hello world"
@@ -73,7 +75,7 @@ export const textFunctions = {
         try {
             return String(args[0] ?? "").toLowerCase();
         } catch (e) {
-            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "LOWER: 无法转换为小写", { error: e.message, functionName: "LOWER" });
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "LOWER: 无法转换为小写", { error: (e as Error).message, functionName: "LOWER" });
             return "#VALUE!";
         }
     },
@@ -86,8 +88,8 @@ export const textFunctions = {
      *
      * 语法: CONCAT(text1, [text2], ...)
      *
-     * @param {Array} args - 要连接的文本或范围数组
-     * @returns {String|String} 连接后的字符串，失败时返回 #VALUE!
+     * @param args - 要连接的文本或范围数组
+     * @returns 连接后的字符串，失败时返回 #VALUE!
      *
      * @example
      * =CONCAT("Hello", " ", "World")   // 返回 "Hello World"
@@ -100,7 +102,7 @@ export const textFunctions = {
         try {
             return args.map((v) => String(v ?? "")).join("");
         } catch (e) {
-            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "CONCAT: 字符串拼接失败", { error: e.message, functionName: "CONCAT" });
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "CONCAT: 字符串拼接失败", { error: (e as Error).message, functionName: "CONCAT" });
             return "#VALUE!";
         }
     },
@@ -113,8 +115,8 @@ export const textFunctions = {
      *
      * 语法: CONCATENATE(text1, [text2], ...)
      *
-     * @param {Array} args - 要连接的文本或范围数组
-     * @returns {String|String} 连接后的字符串，失败时返回 #VALUE!
+     * @param args - 要连接的文本或范围数组
+     * @returns 连接后的字符串，失败时返回 #VALUE!
      *
      * @example
      * =CONCATENATE("Hello", " ", "World")   // 返回 "Hello World"
@@ -126,7 +128,10 @@ export const textFunctions = {
         try {
             return args.map((v) => String(v ?? "")).join("");
         } catch (e) {
-            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "CONCATENATE: 字符串拼接失败", { error: e.message, functionName: "CONCATENATE" });
+            errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, "CONCATENATE: 字符串拼接失败", {
+                error: (e as Error).message,
+                functionName: "CONCATENATE",
+            });
             return "#VALUE!";
         }
     },
@@ -138,8 +143,8 @@ export const textFunctions = {
      *
      * 语法: LEFT(text, [num_chars])
      *
-     * @param {Array} args - [文本, 截取字符数(可选，默认1)]
-     * @returns {String|String} 截取的子串，参数无效时返回 #VALUE!
+     * @param args - [文本, 截取字符数(可选，默认1)]
+     * @returns 截取的子串，参数无效时返回 #VALUE!
      *
      * @example
      * =LEFT("Hello World", 5)   // 返回 "Hello"
@@ -166,8 +171,8 @@ export const textFunctions = {
      *
      * 语法: RIGHT(text, [num_chars])
      *
-     * @param {Array} args - [文本, 截取字符数(可选，默认1)]
-     * @returns {String|String} 截取的子串，参数无效时返回 #VALUE!
+     * @param args - [文本, 截取字符数(可选，默认1)]
+     * @returns 截取的子串，参数无效时返回 #VALUE!
      *
      * @example
      * =RIGHT("Hello World", 5)  // 返回 "World"
@@ -195,8 +200,8 @@ export const textFunctions = {
      *
      * 语法: MID(text, start_num, num_chars)
      *
-     * @param {Array} args - [文本, 起始位置(从1开始), 截取字符数]
-     * @returns {String|String} 截取的子串，参数无效时返回 #VALUE!
+     * @param args - [文本, 起始位置(从1开始), 截取字符数]
+     * @returns 截取的子串，参数无效时返回 #VALUE!
      *
      * @example
      * =MID("Hello World", 7, 5)  // 返回 "World"
@@ -224,8 +229,8 @@ export const textFunctions = {
      *
      * 语法: LEN(text)
      *
-     * @param {Array} args - 包含一个文本的数组
-     * @returns {number} 字符串长度
+     * @param args - 包含一个文本的数组
+     * @returns 字符串长度
      *
      * @example
      * =LEN("Hello")    // 返回 5
@@ -244,8 +249,8 @@ export const textFunctions = {
      *
      * 语法: TRIM(text)
      *
-     * @param {Array} args - 包含一个文本的数组
-     * @returns {String} 去除首尾空格后的文本
+     * @param args - 包含一个文本的数组
+     * @returns 去除首尾空格后的文本
      *
      * @example
      * =TRIM("  Hello  ")   // 返回 "Hello"
@@ -264,8 +269,8 @@ export const textFunctions = {
      *
      * 语法: FIND(find_text, within_text, [start_num])
      *
-     * @param {Array} args - [查找文本, 被查找文本, 起始位置(可选，默认1)]
-     * @returns {number|String} 子串位置，未找到时返回 #VALUE!
+     * @param args - [查找文本, 被查找文本, 起始位置(可选，默认1)]
+     * @returns 子串位置，未找到时返回 #VALUE!
      *
      * @example
      * =FIND("World", "Hello World")    // 返回 7
@@ -299,8 +304,8 @@ export const textFunctions = {
      *
      * 语法: SEARCH(find_text, within_text, [start_num])
      *
-     * @param {Array} args - [查找文本, 被查找文本, 起始位置(可选，默认1)]
-     * @returns {number|String} 子串位置，未找到时返回 #VALUE!
+     * @param args - [查找文本, 被查找文本, 起始位置(可选，默认1)]
+     * @returns 子串位置，未找到时返回 #VALUE!
      *
      * @example
      * =SEARCH("world", "Hello World")   // 返回 7（不区分大小写）
@@ -336,8 +341,8 @@ export const textFunctions = {
      *
      * 语法: SUBSTITUTE(text, old_text, new_text, [instance_num])
      *
-     * @param {Array} args - [原文本, 旧文本, 新文本, 替换第几次(可选)]
-     * @returns {String} 替换后的文本
+     * @param args - [原文本, 旧文本, 新文本, 替换第几次(可选)]
+     * @returns 替换后的文本
      *
      * @example
      * =SUBSTITUTE("2024-01-01", "-", "/")         // 返回 "2024/01/01"
@@ -384,8 +389,8 @@ export const textFunctions = {
      *
      * 语法: TEXT(value, [format_text])
      *
-     * @param {Array} args - [数值, 格式字符串(可选，默认"0")]
-     * @returns {String} 格式化后的文本
+     * @param args - [数值, 格式字符串(可选，默认"0")]
+     * @returns 格式化后的文本
      *
      * @example
      * =TEXT(1234.567, "#,##0.00")   // 返回 "1,234.57"
@@ -413,11 +418,11 @@ export const textFunctions = {
  *
  * 支持的格式：0, #,##0, 0.00, #,##0.00, 百分比格式
  *
- * @param {number} num - 要格式化的数值
- * @param {string} format - 格式字符串
- * @returns {string} 格式化后的文本
+ * @param num - 要格式化的数值
+ * @param format - 格式字符串
+ * @returns 格式化后的文本
  */
-function _formatNumber(num, format) {
+function _formatNumber(num: number, format: string): string {
     if (format === "0") return String(Math.round(num));
     if (format === "#,##0") return Math.round(num).toLocaleString();
     if (format === "0.00") return num.toFixed(2);

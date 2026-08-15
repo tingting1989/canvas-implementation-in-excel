@@ -14,16 +14,16 @@
  *
  * 将多维数组递归展平为一维数组
  *
- * @param {Array} arr - 要展平的数组（可包含任意层级的嵌套）
- * @returns {Array} 展平后的一维数组
+ * @param arr - 要展平的数组（可包含任意层级的嵌套）
+ * @returns 展平后的一维数组
  *
  * @example
  * _flatten([1, [2, [3, 4]], 5])        // [1, 2, 3, 4, 5]
  * _flatten([[1, 2], [3, [4, 5]]])      // [1, 2, 3, 4, 5]
  */
-export function _flatten(arr) {
-    const result = [];
-    const stack = [{ arr: arr, index: 0 }];
+export function _flatten(arr: unknown[]): unknown[] {
+    const result: unknown[] = [];
+    const stack: { arr: unknown[]; index: number }[] = [{ arr: arr, index: 0 }];
 
     while (stack.length > 0) {
         const frame = stack[stack.length - 1];
@@ -37,7 +37,7 @@ export function _flatten(arr) {
         frame.index++;
 
         if (Array.isArray(item)) {
-            stack.push({ arr: item, index: 0 });
+            stack.push({ arr: item as unknown[], index: 0 });
         } else {
             result.push(item);
         }
@@ -54,8 +54,8 @@ export function _flatten(arr) {
  * - 字符串类型：尝试解析为浮点数
  * - 其他类型：返回 NaN
  *
- * @param {*} v - 要转换的值
- * @returns {number} 转换后的数值，无法转换时返回 NaN
+ * @param v - 要转换的值
+ * @returns 转换后的数值，无法转换时返回 NaN
  *
  * @example
  * _toNum(123)         // 123
@@ -65,7 +65,7 @@ export function _flatten(arr) {
  * _toNum(null)        // NaN
  * _toNum(undefined)   // NaN
  */
-export function _toNum(v) {
+export function _toNum(v: unknown): number {
     if (typeof v === "number") return v;
     if (typeof v === "boolean") return v ? 1 : 0;
     if (typeof v === "string" && v.trim() !== "") {
@@ -86,8 +86,8 @@ export function _toNum(v) {
  * - undefined → 空白
  * - 其他值 → 非空白（包括 0、false、空格等）
  *
- * @param {*} value - 要检查的值
- * @returns {boolean} 是否为空白
+ * @param value - 要检查的值
+ * @returns 是否为空白
  *
  * @example
  * _isBlank("")          // true
@@ -98,7 +98,7 @@ export function _toNum(v) {
  * _isBlank(" ")         // false (空格不算空)
  * _isBlank("Hello")     // false
  */
-export function _isBlank(value) {
+export function _isBlank(value: unknown): boolean {
     return value === "" || value === null || value === undefined;
 }
 
@@ -113,14 +113,14 @@ export function _isBlank(value) {
  * 此函数直接遍历所有叶子值，调用 callback(value)，
  * 避免 _flatten() 创建中间数组带来的内存和 GC 开销。
  *
- * @param {Array} args - 公式函数的参数数组
- * @param {function(*): void} callback - 对每个叶子值调用的回调
+ * @param args - 公式函数的参数数组
+ * @param callback - 对每个叶子值调用的回调
  *
  * @example
  * // 替代: const flat = _flatten(args); for (const v of flat) { ... }
  * _forEachLeaf(args, (v) => { const n = _toNum(v); if (!isNaN(n)) sum += n; });
  */
-export function _forEachLeaf(args, callback) {
+export function _forEachLeaf(args: unknown[], callback: (value: unknown) => void): void {
     for (let i = 0; i < args.length; i++) {
         const item = args[i];
         if (Array.isArray(item)) {
@@ -146,11 +146,11 @@ export function _forEachLeaf(args, callback) {
  * 遍历所有叶子值，将有效数值直接收集到输出数组。
  * 比 _flatten(args).map(_toNum).filter(v => !isNaN(v)) 减少 2 次中间数组创建。
  *
- * @param {Array} args - 公式函数的参数数组
- * @returns {number[]} 有效数值数组
+ * @param args - 公式函数的参数数组
+ * @returns 有效数值数组
  */
-export function _collectNums(args) {
-    const nums = [];
+export function _collectNums(args: unknown[]): number[] {
+    const nums: number[] = [];
     _forEachLeaf(args, (v) => {
         const n = _toNum(v);
         if (!isNaN(n)) nums.push(n);

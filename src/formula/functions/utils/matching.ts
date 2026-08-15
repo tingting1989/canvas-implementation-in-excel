@@ -25,9 +25,9 @@ import { _isBlank, _toNum } from "./helpers.js";
  * 4. 文本精确匹配: "苹果", "北京"
  * 5. 空值判断: "" 匹配空白单元格
  *
- * @param {*} value - 要检查的单元格值
- * @param {string|number} criteria - 条件表达式
- * @returns {boolean} 是否满足条件
+ * @param value - 要检查的单元格值
+ * @param criteria - 条件表达式
+ * @returns 是否满足条件
  *
  * @example
  * _matchCriteria(150, ">100")        // true
@@ -37,7 +37,7 @@ import { _isBlank, _toNum } from "./helpers.js";
  * _matchCriteria("", "")             // true (空值匹配)
  * _matchCriteria("张三", "*张*")     // true (通配符)
  */
-export function _matchCriteria(value, criteria) {
+export function _matchCriteria(value: unknown, criteria: string | number): boolean {
     if (criteria === undefined || criteria === null) {
         return value === undefined || value === null;
     }
@@ -48,11 +48,11 @@ export function _matchCriteria(value, criteria) {
         return _isBlank(value);
     }
 
-    const operators = [">=", "<=", "<>", ">", "<", "="];
+    const operators = [">=", "<=", "<>", ">", "<", "="] as const;
     for (const op of operators) {
         if (criteriaStr.startsWith(op)) {
             const conditionValue = criteriaStr.substring(op.length).trim();
-            if (conditionValue === "" && [">=", "<=", ">", "<"].includes(op)) {
+            if (conditionValue === "" && ([">=", "<=", ">", "<"] as readonly string[]).includes(op)) {
                 return false;
             }
             return _compareWithOperator(value, op, conditionValue);
@@ -99,12 +99,12 @@ export function _matchCriteria(value, criteria) {
  *
  * 自动检测条件值的类型（数值或文本）并选择合适的比较策略
  *
- * @param {*} value - 要比较的值
- * @param {string} operator - 比较运算符
- * @param {string} conditionValue - 条件值（字符串形式）
- * @returns {boolean} 比较结果
+ * @param value - 要比较的值
+ * @param operator - 比较运算符
+ * @param conditionValue - 条件值（字符串形式）
+ * @returns 比较结果
  */
-function _compareWithOperator(value, operator, conditionValue) {
+function _compareWithOperator(value: unknown, operator: string, conditionValue: string): boolean {
     const numCondition = parseFloat(conditionValue);
 
     if (!isNaN(numCondition) && conditionValue.trim() !== "") {
@@ -173,9 +173,9 @@ function _compareWithOperator(value, operator, conditionValue) {
  *
  * 将通配符模式转换为正则表达式进行匹配
  *
- * @param {string} text - 要匹配的文本
- * @param {string} pattern - 通配符模式
- * @returns {boolean} 是否匹配
+ * @param text - 要匹配的文本
+ * @param pattern - 通配符模式
+ * @returns 是否匹配
  *
  * @example
  * _matchWildcard("苹果", "*果")       // true
@@ -183,7 +183,7 @@ function _compareWithOperator(value, operator, conditionValue) {
  * _matchWildcard("ABCD", "A?D")      // false (? 只匹配一个字符)
  * _matchWildcard("Hello123", "*")    // true (* 可以匹配所有内容)
  */
-export function _matchWildcard(text, pattern) {
+export function _matchWildcard(text: string, pattern: string): boolean {
     if (!pattern || pattern.length === 0) return text === "" || text === null || text === undefined;
 
     if (pattern === "*") return true;

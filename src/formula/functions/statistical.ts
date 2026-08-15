@@ -20,10 +20,12 @@ import { _flatten, _isBlank, _toNum, _validateArgs, _forEachLeaf, _collectNums }
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 
+type FormulaResult = number | string;
+
 /**
  * 函数定义集合（导出给主注册表使用）
  */
-export const statisticalFunctions = {
+export const statisticalFunctions: Record<string, (args: unknown[]) => FormulaResult> = {
     /**
      * COUNT - 统计数值个数
      *
@@ -31,8 +33,8 @@ export const statisticalFunctions = {
      *
      * 语法: COUNT(value1, [value2], ...)
      *
-     * @param {Array} args - 值或范围数组
-     * @returns {number} 数值型数据的个数
+     * @param args - 值或范围数组
+     * @returns 数值型数据的个数
      *
      * @example
      * =COUNT(1, "a", 3, "", 5)   // 返回 3 (只统计 1, 3, 5)
@@ -55,8 +57,8 @@ export const statisticalFunctions = {
      *
      * 语法: COUNTA(value1, [value2], ...)
      *
-     * @param {Array} args - 值或范围数组
-     * @returns {number} 非空单元格的个数
+     * @param args - 值或范围数组
+     * @returns 非空单元格的个数
      *
      * @example
      * =COUNTA(1, "", "text", null)  // 返回 2 (统计 1 和 "text")
@@ -84,8 +86,8 @@ export const statisticalFunctions = {
      *
      * 语法: COUNTBLANK(range)
      *
-     * @param {Array} args - 包含一个范围的数组
-     * @returns {number} 空单元格的数量
+     * @param args - 包含一个范围的数组
+     * @returns 空单元格的数量
      *
      * @example
      * =COUNTBLANK(A1:A10)              // 计算 A1:A10 中空单元格数
@@ -108,8 +110,8 @@ export const statisticalFunctions = {
      *
      * 语法: STDEV(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number|String} 样本标准差，数据不足时返回 #DIV/0!
+     * @param args - 数值或范围数组
+     * @returns 样本标准差，数据不足时返回 #DIV/0!
      *
      * @example
      * =STDEV(2, 4, 4, 4, 5, 5, 7, 9)   // 返回约 2.138
@@ -136,8 +138,8 @@ export const statisticalFunctions = {
      *
      * 语法: STDEVP(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number|String} 总体标准差，无数据时返回 #DIV/0!
+     * @param args - 数值或范围数组
+     * @returns 总体标准差，无数据时返回 #DIV/0!
      *
      * @example
      * =STDEVP(2, 4, 4, 4, 5, 5, 7, 9)  // 返回约 1.987
@@ -164,8 +166,8 @@ export const statisticalFunctions = {
      *
      * 语法: VAR(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number|String} 样本方差，数据不足时返回 #DIV/0!
+     * @param args - 数值或范围数组
+     * @returns 样本方差，数据不足时返回 #DIV/0!
      *
      * @example
      * =VAR(1, 2, 3, 4, 5)    // 返回 2.5
@@ -192,8 +194,8 @@ export const statisticalFunctions = {
      *
      * 语法: VARP(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number|String} 总体方差，无数据时返回 #DIV/0!
+     * @param args - 数值或范围数组
+     * @returns 总体方差，无数据时返回 #DIV/0!
      *
      * @example
      * =VARP(1, 2, 3, 4, 5)   // 返回 2
@@ -220,8 +222,8 @@ export const statisticalFunctions = {
      *
      * 语法: MEDIAN(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number|String} 中位数，无数据时返回 #NUM!
+     * @param args - 数值或范围数组
+     * @returns 中位数，无数据时返回 #NUM!
      *
      * @example
      * =MEDIAN(1, 2, 3, 4, 5)    // 返回 3
@@ -253,8 +255,8 @@ export const statisticalFunctions = {
      *
      * 语法: RANK(number, ref, [order])
      *
-     * @param {Array} args - [数值, 数据范围, 排序方式(可选，0=降序，1=升序)]
-     * @returns {number|String} 排名位置，数值不在范围中时返回 #N/A
+     * @param args - [数值, 数据范围, 排序方式(可选，0=降序，1=升序)]
+     * @returns 排名位置，数值不在范围中时返回 #N/A
      *
      * @example
      * =RANK(5, A1:A10)          // 降序排名（默认）
@@ -270,7 +272,7 @@ export const statisticalFunctions = {
             return "#VALUE!";
         }
 
-        const ref = _flatten(args[1])
+        const ref = _flatten(args[1] as unknown[])
             .map(_toNum)
             .filter((v) => !isNaN(v));
         const order = args[2] !== undefined ? _toNum(args[2]) : 0;

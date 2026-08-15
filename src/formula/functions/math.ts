@@ -23,10 +23,12 @@ import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { _flatten, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils/index.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 
+type FormulaResult = number | string;
+
 /**
  * 函数定义集合（导出给主注册表使用）
  */
-export const mathFunctions = {
+export const mathFunctions: Record<string, (args: unknown[]) => FormulaResult> = {
     /**
      * SUM - 求和函数
      *
@@ -34,8 +36,8 @@ export const mathFunctions = {
      *
      * 语法: SUM(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number} 所有数值的总和
+     * @param args - 数值或范围数组
+     * @returns 所有数值的总和
      *
      * @example
      * =SUM(1, 2, 3)           // 返回 6
@@ -60,8 +62,8 @@ export const mathFunctions = {
      *
      * 语法: AVERAGE(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number|String} 平均值，无有效数值时返回 #DIV/0!
+     * @param args - 数值或范围数组
+     * @returns 平均值，无有效数值时返回 #DIV/0!
      *
      * @example
      * =AVERAGE(1, 2, 3, 4, 5)   // 返回 3
@@ -95,8 +97,8 @@ export const mathFunctions = {
      *
      * 语法: MAX(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number} 最大值，无有效数值时返回 0
+     * @param args - 数值或范围数组
+     * @returns 最大值，无有效数值时返回 0
      *
      * @example
      * =MAX(1, 5, 3, 9, 2)      // 返回 9
@@ -130,8 +132,8 @@ export const mathFunctions = {
      *
      * 语法: MIN(number1, [number2], ...)
      *
-     * @param {Array} args - 数值或范围数组
-     * @returns {number} 最小值，无有效数值时返回 0
+     * @param args - 数值或范围数组
+     * @returns 最小值，无有效数值时返回 0
      *
      * @example
      * =MIN(1, 5, 3, 9, 2)      // 返回 1
@@ -165,8 +167,8 @@ export const mathFunctions = {
      *
      * 语法: ABS(number)
      *
-     * @param {Array} args - 包含一个数值的数组
-     * @returns {number|String} 绝对值，无法转换时返回 #VALUE!
+     * @param args - 包含一个数值的数组
+     * @returns 绝对值，无法转换时返回 #VALUE!
      *
      * @example
      * =ABS(-100)               // 返回 100
@@ -193,8 +195,8 @@ export const mathFunctions = {
      *
      * 语法: ROUND(number, num_digits)
      *
-     * @param {Array} args - [要四舍五入的数值, 小数位数]
-     * @returns {number|String} 四舍五入后的数值，参数无效时返回 #VALUE!
+     * @param args - [要四舍五入的数值, 小数位数]
+     * @returns 四舍五入后的数值，参数无效时返回 #VALUE!
      *
      * @example
      * =ROUND(3.14159, 2)       // 返回 3.14
@@ -227,8 +229,8 @@ export const mathFunctions = {
      *
      * 语法: ROUNDUP(number, num_digits)
      *
-     * @param {Array} args - [要舍入的数值, 小数位数]
-     * @returns {number|String} 向上舍入后的数值，参数无效时返回 #VALUE!
+     * @param args - [要舍入的数值, 小数位数]
+     * @returns 向上舍入后的数值，参数无效时返回 #VALUE!
      *
      * @example
      * =ROUNDUP(3.14159, 2)     // 返回 3.15
@@ -261,8 +263,8 @@ export const mathFunctions = {
      *
      * 语法: ROUNDDOWN(number, num_digits)
      *
-     * @param {Array} args - [要舍入的数值, 小数位数]
-     * @returns {number|String} 向下舍入后的数值，参数无效时返回 #VALUE!
+     * @param args - [要舍入的数值, 小数位数]
+     * @returns 向下舍入后的数值，参数无效时返回 #VALUE!
      *
      * @example
      * =ROUNDDOWN(3.14159, 2)   // 返回 3.14
@@ -295,8 +297,8 @@ export const mathFunctions = {
      *
      * 语法: INT(number)
      *
-     * @param {Array} args - 包含一个数值的数组
-     * @returns {number|String} 向下取整后的整数，参数无效时返回 #VALUE!
+     * @param args - 包含一个数值的数组
+     * @returns 向下取整后的整数，参数无效时返回 #VALUE!
      *
      * @example
      * =INT(8.9)     // 返回 8
@@ -321,8 +323,8 @@ export const mathFunctions = {
      *
      * 语法: MOD(number, divisor)
      *
-     * @param {Array} args - [被除数, 除数]
-     * @returns {number|String} 余数，除数为 0 时返回 #DIV/0!
+     * @param args - [被除数, 除数]
+     * @returns 余数，除数为 0 时返回 #DIV/0!
      *
      * @example
      * =MOD(7, 3)      // 返回 1
@@ -354,8 +356,8 @@ export const mathFunctions = {
      *
      * 语法: POWER(base, exponent)
      *
-     * @param {Array} args - [底数, 指数]
-     * @returns {number|String} 幂运算结果，溢出时返回 #NUM!
+     * @param args - [底数, 指数]
+     * @returns 幂运算结果，溢出时返回 #NUM!
      *
      * @example
      * =POWER(2, 10)    // 返回 1024
@@ -388,8 +390,8 @@ export const mathFunctions = {
      *
      * 语法: SUMPRODUCT(array1, [array2], ...)
      *
-     * @param {Array} args - 一个或多个数组
-     * @returns {number|String} 乘积之和，数组长度不一致时返回 #VALUE!
+     * @param args - 一个或多个数组
+     * @returns 乘积之和，数组长度不一致时返回 #VALUE!
      *
      * @example
      * =SUMPRODUCT({1,2;3,4})           // 返回 10（单数组求和）
@@ -446,8 +448,8 @@ export const mathFunctions = {
      * - 10: VAR（样本方差）
      * - 11: VARP（总体方差）
      *
-     * @param {Array} args - [函数编号, 数据范围1, 数据范围2, ...]
-     * @returns {number|String} 分类汇总结果，参数无效时返回 #VALUE!
+     * @param args - [函数编号, 数据范围1, 数据范围2, ...]
+     * @returns 分类汇总结果，参数无效时返回 #VALUE!
      *
      * @example
      * =SUBTOTAL(9, A1:A10)     // 对 A1:A10 求和
@@ -498,11 +500,11 @@ export const mathFunctions = {
 /**
  * 计算标准差
  *
- * @param {number[]} arr - 数值数组
- * @param {boolean} [isSample=false] - 是否为样本标准差（true=样本，false=总体）
- * @returns {number|String} 标准差，数据不足时返回 #DIV/0!
+ * @param arr - 数值数组
+ * @param isSample - 是否为样本标准差（true=样本，false=总体）
+ * @returns 标准差，数据不足时返回 #DIV/0!
  */
-function _stdev(arr, isSample) {
+function _stdev(arr: number[], isSample?: boolean): FormulaResult {
     const n = arr.length;
     if (n < (isSample ? 2 : 1)) {
         errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, isSample ? "样本标准差至少需要2个数据" : "总体标准差至少需要1个数据", {
@@ -520,11 +522,11 @@ function _stdev(arr, isSample) {
 /**
  * 计算方差
  *
- * @param {number[]} arr - 数值数组
- * @param {boolean} [isSample=false] - 是否为样本方差（true=样本，false=总体）
- * @returns {number|String} 方差，数据不足时返回 #DIV/0!
+ * @param arr - 数值数组
+ * @param isSample - 是否为样本方差（true=样本，false=总体）
+ * @returns 方差，数据不足时返回 #DIV/0!
  */
-function _variance(arr, isSample) {
+function _variance(arr: number[], isSample?: boolean): FormulaResult {
     const n = arr.length;
     if (n < (isSample ? 2 : 1)) {
         errorHandler.warn(ERROR_CODE.FORMULA_EVAL_ERROR, isSample ? "样本方差至少需要2个数据" : "总体方差至少需要1个数据", {
