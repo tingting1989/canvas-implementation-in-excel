@@ -93,6 +93,9 @@ interface HandlePositions {
  * @see ChartCacheManager 缓存管理器
  */
 export class ChartLayer extends BaseLayer {
+    /** 图表内容就绪回调（由 RenderEngine 设置，触发重绘） */
+    onContentReady: (() => void) | null = null;
+
     /** @private 私有字段 - 图表渲染缓存实例（离屏 Canvas 存储） */
     #cache = new ChartCache();
 
