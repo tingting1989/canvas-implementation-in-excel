@@ -113,7 +113,12 @@ export class TileLayer extends BaseLayer {
      * @param options.scrollX - 水平滚动偏移（覆盖 viewport.scrollX）
      * @param options.scrollY - 垂直滚动偏移（覆盖 viewport.scrollY）
      */
-    render(ctx: CanvasRenderingContext2D, sheet: Sheet, viewport: ViewportTransform, options: { viewW?: number; viewH?: number; scrollX?: number; scrollY?: number } = {}): void {
+    render(
+        ctx: CanvasRenderingContext2D,
+        sheet: Sheet,
+        viewport: ViewportTransform,
+        options: { viewW?: number; viewH?: number; scrollX?: number; scrollY?: number } = {},
+    ): void {
         if (!this.enabled) return;
 
         const scrollX = options.scrollX ?? viewport.scrollX;

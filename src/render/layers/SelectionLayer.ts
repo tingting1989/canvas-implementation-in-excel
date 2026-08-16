@@ -370,7 +370,14 @@ export class SelectionLayer extends BaseLayer {
         // 幽灵行表头区域
         ctx.fillStyle = CONFIG.MOVE_SOURCE_FILL;
         ctx.fillRect(0, ghostTop, headerW, state.rowH);
-        this.#drawHeaderText(ctx, String(state.sourceRow + 1), (sheet as any).cellPadding, ghostTop + state.rowH - 8, CONFIG.GHOST_TEXT_COLOR, headerFont);
+        this.#drawHeaderText(
+            ctx,
+            String(state.sourceRow + 1),
+            (sheet as any).cellPadding,
+            ghostTop + state.rowH - 8,
+            CONFIG.GHOST_TEXT_COLOR,
+            headerFont,
+        );
 
         // 插入指示器
         if (state.targetRow >= 0 && state.targetRow !== state.sourceRow) {

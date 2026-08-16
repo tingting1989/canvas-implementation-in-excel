@@ -118,7 +118,12 @@ export class InteractionLayer extends BaseLayer {
      * @param options.viewH - 视口高度
      * @param options.layers - 图层数组（调试模式使用）
      */
-    render(ctx: CanvasRenderingContext2D, sheet: Sheet, viewport: ViewportTransform, options: { viewW?: number; viewH?: number; layers?: BaseLayer[] } = {}): void {
+    render(
+        ctx: CanvasRenderingContext2D,
+        sheet: Sheet,
+        viewport: ViewportTransform,
+        options: { viewW?: number; viewH?: number; layers?: BaseLayer[] } = {},
+    ): void {
         if (!this.enabled) return;
 
         const { viewW, viewH } = options;

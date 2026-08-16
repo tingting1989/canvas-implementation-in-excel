@@ -775,7 +775,12 @@ export class ChartLayer extends BaseLayer {
      * @param vt - 视口转换器
      * @returns 命中信息，未命中返回 null
      */
-    hitTest(px: number, py: number, sheet: Sheet, vt: ViewportTransform): { type: string; chartId: string; chart: ChartModel; bounds: { x: number; y: number; w: number; h: number }; vt: ViewportTransform } | null {
+    hitTest(
+        px: number,
+        py: number,
+        sheet: Sheet,
+        vt: ViewportTransform,
+    ): { type: string; chartId: string; chart: ChartModel; bounds: { x: number; y: number; w: number; h: number }; vt: ViewportTransform } | null {
         if (!sheet || !(sheet as any).chartManager) return null;
         const charts: ChartModel[] = (sheet as any).chartManager.getAll();
 

@@ -37,7 +37,7 @@ export class HeaderLayer extends BaseLayer {
     /**
      * @private 私有字段 - 选区层引用（用于拖拽指示器渲染）
      */
-    #selectionLayer: object | null = null;
+    #selectionLayer: any = null;
 
     /** 表头渲染器，负责行列头的实际绘制 */
     headerRenderer: HeaderRenderer;
@@ -61,7 +61,7 @@ export class HeaderLayer extends BaseLayer {
      *
      * @param layer - 选区层实例
      */
-    setDragIndicator(layer: object | null): void {
+    setDragIndicator(layer: any): void {
         this.#selectionLayer = layer;
     }
 

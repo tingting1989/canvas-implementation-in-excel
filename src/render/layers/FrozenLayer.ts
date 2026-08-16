@@ -145,7 +145,12 @@ export class FrozenLayer extends BaseLayer {
      * @param options.scrollX - 水平滚动偏移（覆盖 viewport.scrollX）
      * @param options.scrollY - 垂直滚动偏移（覆盖 viewport.scrollY）
      */
-    render(ctx: CanvasRenderingContext2D, sheet: Sheet, viewport: ViewportTransform, options: { viewW?: number; viewH?: number; scrollX?: number; scrollY?: number } = {}): void {
+    render(
+        ctx: CanvasRenderingContext2D,
+        sheet: Sheet,
+        viewport: ViewportTransform,
+        options: { viewW?: number; viewH?: number; scrollX?: number; scrollY?: number } = {},
+    ): void {
         if (!this.enabled) return;
 
         const frozenColsW = sheet.frozenColsWidth;
@@ -242,7 +247,19 @@ export class FrozenLayer extends BaseLayer {
      * @param viewH - 视口高度（用于 overlay 计算）
      * @param viewport - 视口坐标转换器
      */
-    #renderClippedRegion(ctx: CanvasRenderingContext2D, sheet: Sheet, clipX: number, clipY: number, clipW: number, clipH: number, scrollX: number, scrollY: number, viewW: number, viewH: number, viewport: ViewportTransform): void {
+    #renderClippedRegion(
+        ctx: CanvasRenderingContext2D,
+        sheet: Sheet,
+        clipX: number,
+        clipY: number,
+        clipW: number,
+        clipH: number,
+        scrollX: number,
+        scrollY: number,
+        viewW: number,
+        viewH: number,
+        viewport: ViewportTransform,
+    ): void {
         ctx.save();
         ctx.beginPath();
         ctx.rect(clipX, clipY, clipW, clipH);
