@@ -25,32 +25,68 @@ import type { ColumnConfig } from "../interfaces/ISheet";
  *
  * 类型解析优先级（getCellTypeInstance）：
  *   单元格级别类型（cellTypes） → 列级别类型（columnsConfig） → 默认 text 类型
+ *
+ * @class ColumnTypeManager
  */
 export class ColumnTypeManager {
+    /** 工作表引用 */
     #sheet: Sheet;
+    /** 列配置映射表（列号 → 配置对象） */
     #columnsConfig: Map<number, ColumnConfig & Record<string, unknown>> = new Map();
+    /** 单元格类型映射表（"r,c" → { name, options }） */
     #cellTypes: Map<string, { name: string; options: Record<string, unknown> }> = new Map();
 
+    /**
+     * @param sheet - 工作表实例
+     */
     constructor(sheet: Sheet) {
         this.#sheet = sheet;
     }
 
+    /**
+     * 获取列配置映射表
+     * @returns 列号到配置对象的 Map
+     */
     get columnsConfig(): Map<number, ColumnConfig & Record<string, unknown>> {
         return this.#columnsConfig;
     }
 
+    /**
+     * 获取单元格类型映射表
+     * @returns "r,c" 到类型信息的 Map
+     */
     get cellTypes(): Map<string, { name: string; options: Record<string, unknown> }> {
         return this.#cellTypes;
     }
 
+    /**
+     * 获取列配置
+     * @param col - 列号
+     * @returns 列配置对象，未配置返回 null
+     */
     getColumnConfig(col: number): (ColumnConfig & Record<string, unknown>) | null {
         return this.#columnsConfig.get(col) || null;
     }
 
+    /**
+     * 获取列类型名称
+     * @param col - 列号
+     * @returns 类型名称，默认 "text"
+     */
     getColumnType(col: number): string {
         return this.#columnsConfig.get(col)?.type || "text";
     }
 
+    /**
+     * 检查列类型一致性
+     *
+     * 遍历 [topCol, bottomCol] 范围，检查所有列是否为同一类型。
+     * 用于合并单元格前置校验。
+     *
+     * @param topCol - 起始列号
+     * @param bottomCol - 结束列号
+     * @returns 是否一致
+     */
     checkColumnTypeConsistency(topCol: number, bottomCol: number): boolean {
         const firstType = this.getColumnType(topCol);
         for (let c = topCol + 1; c <= bottomCol; c++) {
@@ -59,10 +95,31 @@ export class ColumnTypeManager {
         return true;
     }
 
+    /**
+     * 获取列类型实例
+     *
+     * 根据列配置创建对应的 BaseColumnType 子类实例。
+     *
+     * @param col - 列号
+     * @returns 列类型实例
+     */
     getColumnTypeInstance(col: number): BaseColumnType {
         return resolveColumnTypeFromConfig(this.#columnsConfig.get(col));
     }
 
+    /**
+     * 获取单元格类型实例
+     *
+     * 查找优先级：
+     * 1. 动态属性（cellsFn）的 type 字段
+     * 2. 单元格级类型（cellTypes Map）
+     * 3. 列级类型（columnsConfig Map）
+     * 4. 默认 text 类型
+     *
+     * @param r - 行号
+     * @param c - 列号
+     * @returns 类型实例
+     */
     getCellTypeInstance(r: number, c: number): BaseColumnType {
         const cellProps = this.#sheet.resolveCellProperties(r, c);
         if (cellProps?.type) {
@@ -73,6 +130,19 @@ export class ColumnTypeManager {
         return resolveCellTypeFromPosition(r, c, this.#cellTypes, this.#columnsConfig);
     }
 
+    /**
+     * 应用列配置数组
+     *
+     * 解析 columns 数组，逐列设置：
+     * - 列配置对象（存入 columnsConfig）
+     * - 列宽（rowColManager.setColWidth）
+     * - 列样式（sheet.setColStyle）
+     * - 禁用/只读标记
+     *
+     * 支持函数式配置：columns[i] 可以是 (col) => config 的函数。
+     *
+     * @param columnsConfig - 列配置数组，元素为配置对象或函数
+     */
     applyColumnsConfig(columnsConfig: (Record<string, unknown> | ((col: number) => Record<string, unknown>))[]): void {
         if (!Array.isArray(columnsConfig)) return;
 
@@ -106,14 +176,44 @@ export class ColumnTypeManager {
         }
     }
 
+    /**
+     * 格式化单元格值为显示文本
+     *
+     * 通过 getCellTypeInstance 获取类型实例，调用其 format() 方法。
+     *
+     * @param r - 行号
+     * @param c - 列号
+     * @param value - 原始值
+     * @returns 格式化后的字符串
+     */
     formatCellValue(r: number, c: number, value: unknown): string {
         return formatCellValueInternal(this.getCellTypeInstance(r, c), value);
     }
 
+    /**
+     * 验证单元格值
+     *
+     * 通过类型实例的 validate() 方法和列配置的 validator 函数检查。
+     *
+     * @param r - 行号
+     * @param c - 列号
+     * @param value - 待验证值
+     * @returns true 表示通过，string 表示错误消息
+     */
     validateCellValue(r: number, c: number, value: unknown): boolean | string {
         return validateCellValueInternal(this.getCellTypeInstance(r, c), value, this.#columnsConfig.get(c));
     }
 
+    /**
+     * 解析用户输入为目标类型值
+     *
+     * 通过类型实例的 parse() 方法转换。
+     *
+     * @param r - 行号
+     * @param c - 列号
+     * @param input - 用户输入字符串
+     * @returns 解析后的值
+     */
     parseCellValue(r: number, c: number, input: string): unknown {
         return parseCellValueInternal(this.getCellTypeInstance(r, c), input);
     }

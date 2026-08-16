@@ -60,6 +60,11 @@ export class SheetStyleManager {
         });
     }
 
+    /**
+     * 销毁样式管理器
+     *
+     * 取消主题订阅，避免内存泄漏。Sheet 销毁时调用。
+     */
     destroy(): void {
         if (this.#unsubscribeTheme) {
             this.#unsubscribeTheme();
@@ -79,10 +84,16 @@ export class SheetStyleManager {
         return this.#defaultStyleId;
     }
 
+    /** 使样式缓存失效（递增版本号，下次 resolveStyle 时清空缓存） */
     invalidateCache(): void {
         this.#styleCacheVersion++;
     }
 
+    /**
+     * 设置行样式 ID
+     * @param row - 行号
+     * @param styleId - 样式 ID
+     */
     setRowStyle(row: number, styleId: number): void {
         const oldStyleId = this.#rowStyles.get(row) || 0;
         this.#recorder.record("row", String(row), oldStyleId, styleId);
@@ -90,6 +101,11 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /**
+     * 设置列样式 ID
+     * @param col - 列号
+     * @param styleId - 样式 ID
+     */
     setColStyle(col: number, styleId: number): void {
         const oldStyleId = this.#colStyles.get(col) || 0;
         this.#recorder.record("col", String(col), oldStyleId, styleId);
@@ -97,6 +113,10 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /**
+     * 设置默认样式（与已有默认样式合并）
+     * @param styleObj - 样式对象
+     */
     setDefaultStyle(styleObj: StyleObject): void {
         const current = this.#defaultStyleId ? stylePool.getStyle(this.#defaultStyleId) : {};
         const merged = { ...current, ...styleObj };
@@ -104,10 +124,20 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /**
+     * 获取默认样式
+     * @returns 默认样式对象
+     */
     getDefaultStyle(): StyleObject {
         return stylePool.getStyle(this.#defaultStyleId);
     }
 
+    /**
+     * 设置单元格样式（与已有样式合并）
+     * @param r - 行号
+     * @param c - 列号
+     * @param styleObj - 样式对象
+     */
     setCellStyle(r: number, c: number, styleObj: StyleObject): void {
         this.#sheet.rowColManager.ensureSize(r + 1, c + 1);
         const cell = this.#sheet.cellStore.get(r, c);
@@ -124,6 +154,11 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /**
+     * 清除单元格样式
+     * @param r - 行号
+     * @param c - 列号
+     */
     clearCellStyle(r: number, c: number): void {
         const cell = this.#sheet.cellStore.get(r, c);
         if (!cell || cell.styleId === 0) return;
@@ -131,18 +166,31 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /** 清除行样式 @param row - 行号 */
     clearRowStyle(row: number): void {
         if (!this.#rowStyles.has(row)) return;
         this.#rowStyles.delete(row);
         this.invalidateCache();
     }
 
+    /** 清除列样式 @param col - 列号 */
     clearColStyle(col: number): void {
         if (!this.#colStyles.has(col)) return;
         this.#colStyles.delete(col);
         this.invalidateCache();
     }
 
+    /**
+     * 设置区域样式
+     *
+     * 智能分派：
+     * - 选区覆盖整行 → 设置行样式
+     * - 选区覆盖整列 → 设置列样式
+     * - 否则 → 逐单元格设置
+     *
+     * @param range - 单元格区域
+     * @param styleObj - 样式对象
+     */
     setRangeStyle(range: CellRange, styleObj: StyleObject): void {
         const { topRow, topCol, bottomRow, bottomCol } = range;
         const rowColManager = this.#sheet.rowColManager;
@@ -182,6 +230,10 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /**
+     * 清除区域样式（行样式 + 单元格样式）
+     * @param range - 单元格区域
+     */
     clearRangeStyle(range: CellRange): void {
         const { topRow, topCol, bottomRow, bottomCol } = range;
         const accessor = this.#sheet.cellDataAccessor;
@@ -196,6 +248,15 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /**
+     * 根据列类型名称获取主题样式
+     *
+     * 将列类型名映射到主题样式键（如 hyperlink → "cell.hyperlink"），
+     * 未匹配时使用 "cell.default"。
+     *
+     * @param cellType - 列类型实例（含 name 属性）
+     * @returns 主题样式对象
+     */
     #getThemeStyleByCellType(cellType: { name?: string } | null): StyleObject {
         const typeToStyleMap: Record<string, string> = {
             hyperlink: "cell.hyperlink",
@@ -210,6 +271,20 @@ export class SheetStyleManager {
         return themeStyleProvider.getStyle(styleType);
     }
 
+    /**
+     * 解析单元格最终样式
+     *
+     * 按 9 层优先级从低到高合并：
+     * 1. defaultStyle → 2. themeStyle → 3. colStyle → 4. rowStyle
+     * → 5. cellStyle → 6. typeDefaultStyle → 7. cellProps.style
+     * → 8. conditionalFormat → 9. dataBinding
+     *
+     * 带缓存：同一渲染帧内版本号一致时直接返回缓存结果。
+     *
+     * @param r - 行号
+     * @param c - 列号
+     * @returns 合并后的最终样式对象
+     */
     resolveStyle(r: number, c: number): StyleObject {
         const key = `${r},${c}`;
 
@@ -276,6 +351,13 @@ export class SheetStyleManager {
         return style;
     }
 
+    /**
+     * 应用样式 ID 到指定范围（撤销/重做时调用）
+     *
+     * @param type - 范围类型："row" | "col" | "cell"
+     * @param key - 行号/列号/"r,c" 字符串
+     * @param styleId - 样式 ID，0 表示清除
+     */
     applyStyleId(type: string, key: number | string, styleId: number): void {
         if (type === STYLE_SCOPE.ROW) {
             if (styleId === 0) {
@@ -299,10 +381,15 @@ export class SheetStyleManager {
         this.invalidateCache();
     }
 
+    /**
+     * 构建样式变更命令（用于撤销/重做）
+     * @returns 样式变更命令，无变更返回 null
+     */
     buildStyleCommand(): StyleChangeCommand | null {
         return this.#recorder.buildCommand(this);
     }
 
+    /** 重置样式变更记录器 */
     resetRecorder(): void {
         this.#recorder.reset();
     }

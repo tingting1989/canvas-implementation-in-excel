@@ -30,22 +30,44 @@ import type { Cell } from "../../model/store/Cell";
  *                                       │ getBinding(r, c)
  *                                       ▼
  *                            resolveStyle() 合并到最终样式
+ *
+ * @class ConditionalFormatManager
  */
 export class ConditionalFormatManager {
+    /** 工作表引用（用于数据绑定中读取单元格值） */
     #sheet: Sheet;
+    /** 条件格式规则列表 */
     #rules: ConditionalRule[] = [];
+    /** 数据绑定映射表（列号 → 值到样式ID的映射函数） */
     #bindings: Map<number, (value: unknown) => number> = new Map();
 
+    /**
+     * @param sheet - 工作表实例
+     */
     constructor(sheet: Sheet) {
         this.#sheet = sheet;
     }
 
+    /**
+     * 添加条件格式规则
+     *
+     * @param range - 规则生效的单元格范围
+     * @param conditionFn - 条件判断函数，返回 true 时应用样式
+     * @param styleId - 满足条件时应用的样式 ID
+     * @returns 创建的规则实例（可用于后续删除）
+     */
     addRule(range: CellRange, conditionFn: (value: unknown, cell?: unknown) => boolean, styleId: number): ConditionalRule {
         const rule = new ConditionalRule(range, conditionFn, styleId);
         this.#rules.push(rule);
         return rule;
     }
 
+    /**
+     * 移除条件格式规则
+     *
+     * @param rule - 要移除的规则实例
+     * @returns 是否移除成功
+     */
     removeRule(rule: ConditionalRule): boolean {
         const index = this.#rules.indexOf(rule);
         if (index === -1) return false;
@@ -53,6 +75,17 @@ export class ConditionalFormatManager {
         return true;
     }
 
+    /**
+     * 匹配条件格式样式
+     *
+     * 遍历所有规则，返回第一个匹配的样式 ID。
+     * 规则按添加顺序匹配，先添加的优先。
+     *
+     * @param r - 行号
+     * @param c - 列号
+     * @param cell - 单元格数据（用于条件判断）
+     * @returns 匹配的样式 ID，未匹配返回 null
+     */
     match(r: number, c: number, cell: Cell | null | undefined): number | null {
         for (const rule of this.#rules) {
             if (rule.match(r, c, cell)) return rule.styleId;
@@ -60,10 +93,27 @@ export class ConditionalFormatManager {
         return null;
     }
 
+    /**
+     * 绑定数据样式映射
+     *
+     * 为指定列注册映射函数，将单元格值转换为样式 ID。
+     *
+     * @param col - 列号
+     * @param mapperFn - 值到样式 ID 的映射函数
+     */
     bind(col: number, mapperFn: (value: unknown) => number): void {
         this.#bindings.set(col, mapperFn);
     }
 
+    /**
+     * 获取数据绑定样式 ID
+     *
+     * 读取指定列的映射函数，将单元格值转换为样式 ID。
+     *
+     * @param r - 行号
+     * @param c - 列号
+     * @returns 样式 ID，未绑定返回 null
+     */
     getBinding(r: number, c: number): number | null {
         const fn = this.#bindings.get(c);
         if (!fn) return null;
@@ -71,14 +121,26 @@ export class ConditionalFormatManager {
         return fn(cell?.value);
     }
 
+    /**
+     * 获取数据绑定映射表
+     * @returns 列号到映射函数的 Map
+     */
     get bindings(): Map<number, (value: unknown) => number> {
         return this.#bindings;
     }
 
+    /**
+     * 是否存在条件格式规则
+     * @returns 是否存在规则
+     */
     hasRules(): boolean {
         return this.#rules.length > 0;
     }
 
+    /**
+     * 是否存在数据绑定
+     * @returns 是否存在绑定
+     */
     hasBindings(): boolean {
         return this.#bindings.size > 0;
     }

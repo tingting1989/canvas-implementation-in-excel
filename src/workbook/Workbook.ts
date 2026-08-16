@@ -11,18 +11,25 @@ import { SHEET_EVENTS } from "../constants/sheetEvents";
 import { HOOKS } from "../constants/hookNames";
 import type { StyleObject } from "./interfaces/ISheet";
 
+/**
+ * 待加载插件（按名称）
+ */
 interface PendingPluginByName {
     type: "name";
     name: string;
     options: Record<string, unknown>;
 }
 
+/**
+ * 待加载插件（按类）
+ */
 interface PendingPluginByClass {
     type: "class";
     PluginClass: typeof BasePlugin;
     options: Record<string, unknown>;
 }
 
+/** 待加载插件联合类型 */
 type PendingPlugin = PendingPluginByName | PendingPluginByClass;
 
 /**
@@ -30,6 +37,17 @@ type PendingPlugin = PendingPluginByName | PendingPluginByClass;
  *
  * 顶层管理对象，作为 Facade 协调 Sheet、RenderEngine、EventHandler、
  * EditorManager、PluginManager 等子系统。
+ *
+ * 核心职责：
+ * - 工作表生命周期管理（addSheet / removeSheet / switchTo）
+ * - 渲染引擎初始化与协调
+ * - 插件系统管理（loadPlugin / unloadPlugin）
+ * - 钩子系统（addHook / runHooks / runHooksUntil）
+ * - 样式 API 代理（setCellStyle / setRangeStyle / setDefaultStyle 等）
+ * - 操作 API 代理（undo / redo / copy / paste / mergeCells 等）
+ * - 配置应用（updateSettings / SettingsApplier）
+ *
+ * @class Workbook
  */
 export class Workbook {
     #containerElement: HTMLElement | string;
@@ -62,14 +80,29 @@ export class Workbook {
         }
     }
 
+    /**
+     * 静态注册插件类（全局）
+     * @param name - 插件名称
+     * @param PluginClass - 插件类
+     */
     static registerPlugin(name: string, PluginClass: typeof BasePlugin): void {
         PluginManager.register(name, PluginClass);
     }
 
+    /** 静态反注册插件类（全局） @param name - 插件名称 */
     static unregisterPlugin(name: string): void {
         PluginManager.unregister(name);
     }
 
+    /**
+     * 按名称加载插件
+     *
+     * 若 PluginManager 尚未初始化，暂存到 pendingPlugins 队列。
+     *
+     * @param name - 插件名称
+     * @param options - 插件选项
+     * @returns 插件实例，暂存时返回 null
+     */
     loadPlugin(name: string, options: Record<string, unknown> = {}): unknown | null {
         if (!this.pluginManager) {
             this.#pendingPlugins.push({ type: "name", name, options });
@@ -78,6 +111,12 @@ export class Workbook {
         return this.pluginManager.loadPlugin(name, options);
     }
 
+    /**
+     * 按类加载插件
+     * @param PluginClass - 插件类
+     * @param options - 插件选项
+     * @returns 插件实例，暂存时返回 null
+     */
     loadPluginClass(PluginClass: typeof BasePlugin, options: Record<string, unknown> = {}): unknown | null {
         if (!this.pluginManager) {
             this.#pendingPlugins.push({ type: "class", PluginClass, options });
@@ -102,6 +141,20 @@ export class Workbook {
         this.pluginManager?.disablePlugin(name);
     }
 
+    /**
+     * 初始化渲染引擎及所有子系统
+     *
+     * 处理流程：
+     * 1. 创建工作表（从配置或默认）
+     * 2. 创建 RenderEngine
+     * 3. 创建 EditorManager / EventHandler / PluginManager
+     * 4. 绑定工作表事件到渲染引擎
+     * 5. 刷新待加载插件
+     * 6. 应用初始化选项
+     * 7. 设置滚动回调
+     * 8. 设置工作表标签栏
+     * 9. 触发 WORKBOOK_INIT 事件
+     */
     initRender(): void {
         if (this.renderEngine) return;
 
@@ -380,6 +433,14 @@ export class Workbook {
         this.#pendingPlugins = [];
     }
 
+    /**
+     * 添加工作表
+     *
+     * 触发 BEFORE_SHEET_ADD / AFTER_SHEET_ADD 钩子。
+     *
+     * @param name - 工作表名称
+     * @returns 新工作表，被钩子取消返回 null
+     */
     addSheet(name: string): Sheet | null {
         const cancelled = this.runHooksUntil(HOOKS.BEFORE_SHEET_ADD, name);
         if (cancelled === false) return null;
@@ -406,6 +467,14 @@ export class Workbook {
         return sheet;
     }
 
+    /**
+     * 删除工作表
+     *
+     * 至少保留一个工作表。触发 BEFORE_SHEET_REMOVE / AFTER_SHEET_REMOVE 钩子。
+     *
+     * @param name - 工作表名称
+     * @returns 是否删除成功
+     */
     removeSheet(name: string): boolean {
         if (!this.sheets.has(name) || this.sheets.size <= 1) return false;
 
@@ -425,6 +494,13 @@ export class Workbook {
         return true;
     }
 
+    /**
+     * 重命名工作表
+     *
+     * @param oldName - 原名称
+     * @param newName - 新名称
+     * @returns 是否重命名成功
+     */
     renameSheet(oldName: string, newName: string): boolean {
         if (!this.sheets.has(oldName)) return false;
         newName = (newName || "").trim();
@@ -444,6 +520,14 @@ export class Workbook {
         return true;
     }
 
+    /**
+     * 切换到指定工作表
+     *
+     * 触发 BEFORE_SHEET_SWITCH / AFTER_SHEET_SWITCH 钩子，
+     * 并在原工作表上触发 SHEET_SWITCHED 事件。
+     *
+     * @param name - 工作表名称
+     */
     switchTo(name: string): void {
         const sheet = this.sheets.get(name);
         if (!sheet || this.activeSheet === sheet) return;
@@ -478,10 +562,12 @@ export class Workbook {
         this.runHooks(HOOKS.AFTER_SHEET_SWITCH, previousSheet, sheet);
     }
 
+    /** 获取当前活动工作表 @returns 活动工作表或 null */
     getActiveSheet(): Sheet | null {
         return this.activeSheet;
     }
 
+    /** 渲染当前活动工作表 */
     render(): void {
         if (this.renderEngine && this.activeSheet) {
             this.renderEngine.render(this.activeSheet);
@@ -579,6 +665,14 @@ export class Workbook {
         });
     }
 
+    /**
+     * 添加钩子
+     *
+     * 若 EventHandler 尚未初始化，暂存到 earlyHooks。
+     *
+     * @param hookName - 钩子名称
+     * @param callback - 回调函数
+     */
     addHook(hookName: string, callback: (...args: unknown[]) => unknown): void {
         if (this.eventHandler) {
             this.eventHandler.addHook(hookName, callback);
@@ -590,6 +684,11 @@ export class Workbook {
         }
     }
 
+    /**
+     * 添加一次性钩子（触发一次后自动移除）
+     * @param hookName - 钩子名称
+     * @param callback - 回调函数
+     */
     addHookOnce(hookName: string, callback: (...args: unknown[]) => unknown): void {
         if (this.eventHandler) {
             this.eventHandler.addHookOnce(hookName, callback);
@@ -637,6 +736,10 @@ export class Workbook {
         return this.eventHandler.runHooksUntil(hookName, ...args);
     }
 
+    /**
+     * 更新配置（应用到当前活动工作表）
+     * @param settings - 配置对象
+     */
     updateSettings(settings: Record<string, unknown> = {}): void {
         this.#withActiveSheet((s) => {
             if (settings.defaultStyle) {
@@ -838,6 +941,12 @@ export class Workbook {
         (this.getPlugin("exportFile") as { downloadFile?: (f: string, o?: unknown) => void } | null)?.downloadFile?.(format, options);
     }
 
+    /**
+     * 销毁工作簿
+     *
+     * 依次销毁：插件管理器 → 事件处理器 → 编辑器 → 渲染引擎，
+     * 并清空工作表集合。
+     */
     destroy(): void {
         this.activeSheet?.bus?.emit(SHEET_EVENTS.WORKBOOK_DESTROY, [this], { source: "Workbook" });
 
@@ -869,6 +978,13 @@ export class Workbook {
         this.renderEngine?.sheetTabBar?.refresh();
     }
 
+    /**
+     * 以当前活动工作表为上下文执行回调
+     *
+     * @param fn - 回调函数
+     * @param defaultValue - 无活动工作表时的默认返回值
+     * @returns 回调返回值或 defaultValue
+     */
     #withActiveSheet<T>(fn: (sheet: Sheet) => T, defaultValue?: T): T | undefined {
         if (!this.activeSheet) return defaultValue;
         return fn(this.activeSheet);

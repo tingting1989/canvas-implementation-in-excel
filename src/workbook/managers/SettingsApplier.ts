@@ -15,8 +15,29 @@ import type { CellRange } from "../../model/types";
  * - 所有方法均为静态方法，无状态，纯粹的数据转换
  * - 每个配置项对应一个应用逻辑分支，互不耦合
  * - 复杂配置项提取为私有辅助方法（#applyRowHeights 等）
+ *
+ * @class SettingsApplier
  */
 export class SettingsApplier {
+    /**
+     * 应用配置到 Sheet 和 RenderEngine
+     *
+     * 按配置项逐一应用，处理顺序：
+     * 1. 尺寸配置（maxRows/maxCols 或 startRows/startCols）
+     * 2. 表头配置（colHeaders/rowHeaders/nestedHeaders）
+     * 3. 数据配置（data/defaultStyle/rowStyles/colStyles/rangeStyles）
+     * 4. 行列尺寸（rowHeights/colWidths）
+     * 5. 合并单元格（mergeCells）
+     * 6. 条件格式（conditionalStyles）
+     * 7. 列类型配置（columns）
+     * 8. 单元格配置（cell/cells）
+     * 9. 渲染配置（width/height/cellPadding/textOverflowEllipsis）
+     * 10. 交互配置（readOnly/fixedRowsTop/fixedColumnsStart）
+     *
+     * @param sheet - 工作表实例
+     * @param renderEngine - 渲染引擎实例（可为 null）
+     * @param settings - 配置对象
+     */
     static apply({ sheet, renderEngine, settings }: { sheet: Sheet; renderEngine: RenderEngine | null; settings: Record<string, unknown> }): void {
         if (settings.maxRows !== undefined || settings.maxCols !== undefined) {
             const rows = (settings.maxRows as number) || CONFIG.MAX_ROWS;
@@ -107,6 +128,15 @@ export class SettingsApplier {
         }
     }
 
+    /**
+     * 应用行高配置
+     *
+     * - number: 所有行设为同一高度
+     * - number[]: 逐行设置高度
+     *
+     * @param sheet - 工作表
+     * @param rowHeights - 行高配置
+     */
     static #applyRowHeights(sheet: Sheet, rowHeights: number | number[]): void {
         const rc = sheet.rowColManager;
         if (isNumber(rowHeights)) {
@@ -119,6 +149,15 @@ export class SettingsApplier {
         }
     }
 
+    /**
+     * 应用列宽配置
+     *
+     * - number: 所有列设为同一宽度
+     * - number[]: 逐列设置宽度
+     *
+     * @param sheet - 工作表
+     * @param colWidths - 列宽配置
+     */
     static #applyColWidths(sheet: Sheet, colWidths: number | number[]): void {
         const rc = sheet.rowColManager;
         if (isNumber(colWidths)) {
@@ -131,6 +170,14 @@ export class SettingsApplier {
         }
     }
 
+    /**
+     * 应用合并单元格配置
+     *
+     * 遍历 mergeCells 数组，跳过缺少必要字段的项。
+     *
+     * @param sheet - 工作表
+     * @param mergeCells - 合并区域数组
+     */
     static #applyMergeCells(sheet: Sheet, mergeCells: { row: number; col: number; rowspan: number; colspan: number }[]): void {
         for (const m of mergeCells) {
             if (
@@ -148,6 +195,12 @@ export class SettingsApplier {
         }
     }
 
+    /**
+     * 应用条件格式配置
+     *
+     * @param sheet - 工作表
+     * @param conditionalStyles - 条件格式数组
+     */
     static #applyConditionalStyles(
         sheet: Sheet,
         conditionalStyles: { range: CellRange; condition: (value: unknown, cell?: unknown) => boolean; style: StyleObject }[],
@@ -158,6 +211,12 @@ export class SettingsApplier {
         }
     }
 
+    /**
+     * 应用行样式配置
+     *
+     * @param sheet - 工作表
+     * @param rowStyles - 行号到样式对象的映射
+     */
     static #applyRowStyles(sheet: Sheet, rowStyles: Record<string, StyleObject>): void {
         if (!isObject(rowStyles)) return;
         for (const [row, styleObj] of Object.entries(rowStyles)) {
@@ -166,6 +225,12 @@ export class SettingsApplier {
         }
     }
 
+    /**
+     * 应用列样式配置
+     *
+     * @param sheet - 工作表
+     * @param colStyles - 列号到样式对象的映射
+     */
     static #applyColStyles(sheet: Sheet, colStyles: Record<string, StyleObject>): void {
         if (!isObject(colStyles)) return;
         for (const [col, styleObj] of Object.entries(colStyles)) {
@@ -174,6 +239,12 @@ export class SettingsApplier {
         }
     }
 
+    /**
+     * 应用区域样式配置
+     *
+     * @param sheet - 工作表
+     * @param rangeStyles - 区域样式数组
+     */
     static #applyRangeStyles(sheet: Sheet, rangeStyles: { range: CellRange; style: StyleObject }[]): void {
         if (!Array.isArray(rangeStyles)) return;
         for (const rs of rangeStyles) {

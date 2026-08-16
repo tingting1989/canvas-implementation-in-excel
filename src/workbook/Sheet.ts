@@ -95,6 +95,7 @@ export class Sheet implements ISheet {
         this.chartManager = null;
     }
 
+    /** 数据协调者（懒初始化） */
     get data(): SheetDataCoordinator {
         if (!this.#dataCoordinator) {
             this.#dataCoordinator = new SheetDataCoordinator(this);
@@ -102,6 +103,7 @@ export class Sheet implements ISheet {
         return this.#dataCoordinator;
     }
 
+    /** 样式协调者（懒初始化） */
     get styles(): SheetStyleCoordinator {
         if (!this.#styleCoordinator) {
             this.#styleCoordinator = new SheetStyleCoordinator(this);
@@ -109,6 +111,7 @@ export class Sheet implements ISheet {
         return this.#styleCoordinator;
     }
 
+    /** 合并协调者（懒初始化） */
     get merges(): SheetMergeCoordinator {
         if (!this.#mergeCoordinator) {
             this.#mergeCoordinator = new SheetMergeCoordinator(this);
@@ -116,6 +119,7 @@ export class Sheet implements ISheet {
         return this.#mergeCoordinator;
     }
 
+    /** 操作协调者（懒初始化） */
     get operations(): SheetOperationCoordinator {
         if (!this.#operationCoordinator) {
             this.#operationCoordinator = new SheetOperationCoordinator(this);
@@ -123,6 +127,7 @@ export class Sheet implements ISheet {
         return this.#operationCoordinator;
     }
 
+    /** 元数据协调者（懒初始化） */
     get meta(): SheetMetaCoordinator {
         if (!this.#metaCoordinator) {
             this.#metaCoordinator = new SheetMetaCoordinator(this);
@@ -130,16 +135,26 @@ export class Sheet implements ISheet {
         return this.#metaCoordinator;
     }
 
+    /**
+     * 检查工作表是否可写（非只读）
+     * @returns true 表示可写
+     */
     _ensureWritable(): boolean {
         return !this.#readOnly;
     }
 
+    /** 使所有缓存失效并触发 INVALIDATE_ALL 事件 */
     _invalidateAll(): void {
         this.#styleCacheVersion++;
         this.styleManager.invalidateCache();
         this.#bus.emit(SHEET_EVENTS.INVALIDATE_ALL);
     }
 
+    /**
+     * 使指定单元格缓存失效并触发 INVALIDATE_CELL 事件
+     * @param r - 行号
+     * @param c - 列号
+     */
     _invalidateCell(r: number, c: number): void {
         this.styleManager.invalidateCache();
         this.#bus.emit(SHEET_EVENTS.INVALIDATE_CELL, { r, c });
@@ -175,6 +190,7 @@ export class Sheet implements ISheet {
         this.#readOnly = !!v;
     }
 
+    /** 冻结行总高度（px），带缓存 */
     get frozenRowsHeight(): number {
         if (this.#cachedFrozenRowsHeight < 0) {
             this.#cachedFrozenRowsHeight = this.#calculateFrozenRowsHeight();
@@ -182,6 +198,7 @@ export class Sheet implements ISheet {
         return this.#cachedFrozenRowsHeight;
     }
 
+    /** 冻结列总宽度（px），带缓存 */
     get frozenColsWidth(): number {
         if (this.#cachedFrozenColsWidth < 0) {
             this.#cachedFrozenColsWidth = this.#calculateFrozenColsWidth();
@@ -189,11 +206,13 @@ export class Sheet implements ISheet {
         return this.#cachedFrozenColsWidth;
     }
 
+    /** 使冻结区域缓存失效 */
     invalidateFreezeCache(): void {
         this.#cachedFrozenRowsHeight = -1;
         this.#cachedFrozenColsWidth = -1;
     }
 
+    /** 获取单元格数据访问器 */
     get cellDataAccessor(): CellDataAccessor {
         return this.data.dataAccessor;
     }
@@ -218,6 +237,13 @@ export class Sheet implements ISheet {
         return this.data.loadData(...args);
     }
 
+    /**
+     * 清除所有数据
+     *
+     * @param options - 选项
+     * @param options.skipHistory - 是否跳过历史记录（默认 false）
+     * @returns 变更信息和清除数量
+     */
     clearData(options: { skipHistory?: boolean } = {}): {
         changes: Array<{ row: number; col: number; oldValue: unknown; styleId: number }>;
         clearedCount: number;
@@ -247,6 +273,17 @@ export class Sheet implements ISheet {
         return { changes, clearedCount };
     }
 
+    /**
+     * 清除指定区域数据
+     *
+     * @param topRow - 起始行
+     * @param topCol - 起始列
+     * @param bottomRow - 结束行
+     * @param bottomCol - 结束列
+     * @param options - 选项
+     * @param options.skipHistory - 是否跳过历史记录
+     * @returns 变更信息和清除数量
+     */
     clearRange(
         topRow: number,
         topCol: number,
@@ -505,10 +542,20 @@ export class Sheet implements ISheet {
         return this.operations.setGridSize(...args);
     }
 
+    /**
+     * 可见列号 → 实际列号（当前为恒等映射，列移动功能预留）
+     * @param visibleCol - 可见列号
+     * @returns 实际列号
+     */
     toRealCol(visibleCol: number): number {
         return visibleCol;
     }
 
+    /**
+     * 实际列号 → 可见列号（当前为恒等映射，列移动功能预留）
+     * @param realCol - 实际列号
+     * @returns 可见列号
+     */
     toVisibleCol(realCol: number): number {
         return realCol;
     }
@@ -521,6 +568,10 @@ export class Sheet implements ISheet {
         this._invalidateCell(r, c);
     }
 
+    /**
+     * 计算冻结行总高度
+     * @returns 冻结行高度（px）
+     */
     #calculateFrozenRowsHeight(): number {
         if (this.#fixedRowsTop <= 0) return 0;
 
@@ -530,6 +581,10 @@ export class Sheet implements ISheet {
         return rc.getRowY(lastFrozenRow) + rc.getRowHeight(lastFrozenRow);
     }
 
+    /**
+     * 计算冻结列总宽度
+     * @returns 冻结列宽度（px）
+     */
     #calculateFrozenColsWidth(): number {
         if (this.#fixedColumnsStart <= 0) return 0;
 
