@@ -29,7 +29,7 @@ export class FormulaPlugin extends BasePlugin {
 
         const showFormulaBar = options.showFormulaBar !== false;
 
-        this.#engine = new FormulaEngine(this.workbook);
+        this.#engine = new FormulaEngine(this.workbook as any);
         this.workbook.formulaEngine = this.#engine;
 
         for (const sheet of this.workbook.sheets.values()) {

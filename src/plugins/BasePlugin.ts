@@ -156,6 +156,6 @@ export class BasePlugin {
     }
 
     getPlugin(pluginName: string): BasePlugin | null {
-        return this.#workbook?.getPlugin(pluginName) || null;
+        return (this.#workbook?.getPlugin(pluginName) as BasePlugin) || null;
     }
 }
