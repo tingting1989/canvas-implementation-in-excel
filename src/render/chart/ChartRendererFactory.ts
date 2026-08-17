@@ -73,6 +73,14 @@ export class ChartRendererFactory {
             return this.#echartsBridge as typeof IChartRenderer;
         }
 
+        if (NativeChartRenderer.get(chartType)) {
+            errorHandler.debug(ERROR_CODE.CHART_STRATEGY_DEBUG, `[ChartRendererFactory] Matched custom registered strategy for type: ${chartType}`, {
+                chartType,
+                rendererType: "NativeChartRenderer",
+            });
+            return NativeChartRenderer;
+        }
+
         errorHandler.warn(ERROR_CODE.CHART_TYPE_NOT_FOUND, `[ChartRendererFactory] Unsupported chart type: ${chartType}`, {
             chartType,
             nativeTypes: this.NATIVE_TYPES,

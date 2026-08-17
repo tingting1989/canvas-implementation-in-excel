@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>自定义图表演示 - Canvas-Sheet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px
+        }
+        .container { max-width: 1200px; margin: 0 auto }
+        h1 { color: #333; margin-bottom: 20px; font-size: 28px }
+        h2 { color: #444; margin: 20px 0 10px; font-size: 20px }
+        .toolbar {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center
+        }
+        .toolbar button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s
+        }
+        .btn-primary { background: #4472C4; color: white }
+        .btn-primary:hover { background: #365a9c }
+        .btn-success { background: #70AD47; color: white }
+        .btn-success:hover { background: #5a8d39 }
+        .btn-info { background: #5B9BD5; color: white }
+        .btn-info:hover { background: #4889bf }
+        .btn-warning { background: #FFC000; color: #333 }
+        .btn-warning:hover { background: #e6ad00 }
+        .btn-danger { background: #ED7D31; color: white }
+        .btn-danger:hover { background: #d56b28 }
+        .btn-purple { background: #9B59B6; color: white }
+        .btn-purple:hover { background: #7d3c98 }
+        .divider { width: 1px; height: 32px; background: #ddd; margin: 0 8px }
+        .sheet-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden
+        }
+        #sheet { width: 100%; height: 600px }
+        .info-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+        .info-panel h3 { color: #333; margin-bottom: 12px }
+        .info-panel p { font-size: 13px; line-height: 1.8; color: #555 }
+        .code-block {
+            margin: 12px 0;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre
+        }
+        .code-block .kw { color: #569cd6 }
+        .code-block .fn { color: #dcdcaa }
+        .code-block .str { color: #ce9178 }
+        .code-block .cmt { color: #6a9955 }
+        .code-block .num { color: #b5cea8 }
+        .code-block .type { color: #4ec9b0 }
+        .section {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+        }
+        .section h3 { color: #4472C4; margin-bottom: 12px; font-size: 18px }
+        .section p { font-size: 13px; line-height: 1.8; color: #555 }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 16px
+        }
+        .feature-card {
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #4472C4
+        }
+        .feature-card h4 { color: #333; margin-bottom: 8px; font-size: 15px }
+        .feature-card p { font-size: 12px; color: #666; line-height: 1.6 }
+        .feature-card.style-card { border-left-color: #70AD47 }
+        .feature-card.plugin-card { border-left-color: #ED7D31 }
+        .feature-card.strategy-card { border-left-color: #9B59B6 }
+        .feature-card.interaction-card { border-left-color: #5B9BD5 }
+        .tip-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #e8f4fd;
+            border-radius: 6px;
+            border-left: 4px solid #4472C4;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.6
+        }
+        .log-area {
+            margin-top: 20px;
+            padding: 16px;
+            background: #1e1e1e;
+            color: #00ff00;
+            border-radius: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 13px;
+            max-height: 250px;
+            overflow-y: auto
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🎨 自定义图表 (Custom Chart) 演示</h1>
+
+    <div class="toolbar">
+        <button class="btn-primary" onclick="createCustomStyleChart()">🎨 自定义样式图表</button>
+        <button class="btn-success" onclick="createCustomColorChart()">🌈 自定义配色图表</button>
+        <button class="btn-purple" onclick="registerAndCreateCustomStrategy()">🧩 注册自定义策略</button>
+        <div class="divider"></div>
+        <button class="btn-info" onclick="updateStyleDynamically()">✏️ 动态修改样式</button>
+        <button class="btn-warning" onclick="updateDataRangeDynamically()">🔄 动态修改数据范围</button>
+        <div class="divider"></div>
+        <button class="btn-primary" onclick="moveChart()">↔️ 移动位置</button>
+        <button class="btn-success" onclick="resizeChart()">📐 调整大小</button>
+        <button class="btn-danger" onclick="removeChart()">🗑️ 删除图表</button>
+    </div>
+
+    <div class="sheet-container">
+        <canvas id="sheet"></canvas>
+    </div>
+
+    <div class="info-panel">
+        <h3>📖 自定义图表说明</h3>
+        <p>Canvas-Sheet 的图表系统支持三个层级的自定义：</p>
+
+        <div class="feature-grid">
+            <div class="feature-card style-card">
+                <h4>🟢 第一层：样式自定义 (ChartStyle)</h4>
+                <p>通过 <code>style</code> 配置项自定义标题、颜色、图例、网格、坐标轴标签、平滑曲线等视觉属性，适用于所有内置图表类型。</p>
+            </div>
+            <div class="feature-card plugin-card">
+                <h4>🟠 第二层：运行时动态修改</h4>
+                <p>通过 ChartPlugin 的 <code>updateChartStyle()</code>、<code>updateChartDataRange()</code>、<code>moveChart()</code>、<code>resizeChart()</code> 等方法在运行时动态修改图表。</p>
+            </div>
+            <div class="feature-card strategy-card">
+                <h4>🟣 第三层：策略扩展 (BaseChartStrategy)</h4>
+                <p>继承 <code>BaseChartStrategy</code> 并覆写 <code>render()</code>、<code>hitTest()</code>、<code>formatTooltip()</code> 等方法，创建全新的图表类型，通过 <code>NativeChartRenderer.register()</code> 注册。</p>
+            </div>
+            <div class="feature-card interaction-card">
+                <h4>🔵 交互自定义</h4>
+                <p>覆写 <code>hitTest()</code> 自定义点击命中检测，覆写 <code>formatTooltip()</code> 和 <code>formatDetail()</code> 自定义 Tooltip 显示格式。</p>
+            </div>
+        </div>
+
+        <div class="tip-box">
+            <strong>💡 提示:</strong> 点击上方按钮依次体验三种自定义方式。本示例将创建一个"水滴图 (Waterdrop)"作为自定义策略的演示，它以水滴形状展示数据占比。
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>📝 ChartStyle 可配置属性一览</h3>
+        <div class="code-block"><span class="cmt">// 图表样式配置接口 (ChartStyle)</span>
+<span class="kw">interface</span> <span class="type">ChartStyle</span> {
+    <span class="cmt">// --- 通用属性 ---</span>
+    title?: <span class="type">string</span>;              <span class="cmt">// 图表标题文本</span>
+    showLegend?: <span class="type">boolean</span>;        <span class="cmt">// 是否显示图例 (默认 true)</span>
+    showGrid?: <span class="type">boolean</span>;          <span class="cmt">// 是否显示网格线 (默认 true)</span>
+    showTooltip?: <span class="type">boolean</span>;       <span class="cmt">// 是否显示 Tooltip (默认 true)</span>
+    colors?: <span class="type">string</span>[];           <span class="cmt">// 系列颜色列表 (覆盖默认9色)</span>
+    ignoreHiddenData?: <span class="type">boolean</span>;  <span class="cmt">// 是否忽略隐藏行/列</span>
+
+    <span class="cmt">// --- 折线图/面积图 ---</span>
+    fill?: <span class="type">boolean</span>;              <span class="cmt">// 是否填充区域 (面积图)</span>
+    smooth?: <span class="type">boolean</span>;            <span class="cmt">// 是否使用平滑曲线</span>
+
+    <span class="cmt">// --- 坐标轴 ---</span>
+    xAxisLabel?: <span class="type">string</span>;         <span class="cmt">// X 轴标签文本</span>
+    yAxisLabel?: <span class="type">string</span>;         <span class="cmt">// Y 轴标签文本</span>
+
+    <span class="cmt">// --- 仪表盘 ---</span>
+    min?: <span class="type">number</span>;               <span class="cmt">// 自定义最小值</span>
+    max?: <span class="type">number</span>;               <span class="cmt">// 自定义最大值</span>
+
+    <span class="cmt">// --- 雷达图 ---</span>
+    indicators?: <span class="type">IndicatorConfig</span>[]; <span class="cmt">// 各维度指标配置</span>
+
+    <span class="cmt">// --- 热力图 ---</span>
+    showValue?: <span class="type">boolean</span>;         <span class="cmt">// 单元格内显示数值</span>
+    cellPadding?: <span class="type">number</span>;       <span class="cmt">// 单元格内边距</span>
+}</div>
+    </div>
+
+    <div class="section">
+        <h3>📝 自定义策略示例代码</h3>
+        <div class="code-block"><span class="cmt">// 1. 继承 BaseChartStrategy 创建自定义策略</span>
+<span class="kw">class</span> <span class="type">WaterdropStrategy</span> <span class="kw">extends</span> <span class="type">BaseChartStrategy</span> {
+    <span class="fn">constructor</span>() {
+        <span class="kw">super</span>(<span class="str">"waterdrop"</span>, <span class="str">"水滴图"</span>);
+    }
+
+    <span class="cmt">// 2. 覆写 render() 实现绘制逻辑</span>
+    <span class="fn">render</span>(ctx, data, area, style, yScale) {
+        <span class="cmt">// ... 自定义 Canvas 绘制代码 ...</span>
+    }
+
+    <span class="cmt">// 3. 覆写 isAxisFree() 声明无坐标轴</span>
+    <span class="fn">isAxisFree</span>() { <span class="kw">return</span> <span class="num">true</span>; }
+
+    <span class="cmt">// 4. 覆写 hitTest() 自定义命中检测</span>
+    <span class="fn">hitTest</span>(px, py, data, area, ...) { <span class="cmt">/* ... */</span> }
+
+    <span class="cmt">// 5. 覆写 formatTooltip() 自定义提示格式</span>
+    <span class="fn">formatTooltip</span>(hoverInfo) { <span class="cmt">/* ... */</span> }
+}
+
+<span class="cmt">// 6. 注册到渲染器</span>
+<span class="type">NativeChartRenderer</span>.<span class="fn">register</span>(<span class="kw">new</span> <span class="type">WaterdropStrategy</span>());
+
+<span class="cmt">// 7. 通过 ChartPlugin 使用自定义图表</span>
+chartPlugin.<span class="fn">addChart</span>(<span class="str">"waterdrop"</span>, dataRange, options);</div>
+    </div>
+
+    <div class="section">
+        <h3>📝 ChartPlugin 运行时 API</h3>
+        <div class="code-block"><span class="cmt">// 添加图表 (支持所有内置类型 + 自定义注册类型)</span>
+chartPlugin.<span class="fn">addChart</span>(type, dataRange, options);
+
+<span class="cmt">// 便捷方法 (每种内置类型各一个)</span>
+chartPlugin.<span class="fn">addBarChart</span>(dataRange, options);
+chartPlugin.<span class="fn">addLineChart</span>(dataRange, options);
+chartPlugin.<span class="fn">addPieChart</span>(dataRange, options);
+<span class="cmt">// ... addAreaChart, addScatterChart, addCandlestickChart,</span>
+<span class="cmt">//     addGaugeChart, addFunnelChart, addRadarChart, addHeatmapChart</span>
+
+<span class="cmt">// 运行时动态修改</span>
+chartPlugin.<span class="fn">updateChartStyle</span>(chartId, { colors: [...], smooth: <span class="num">true</span> });
+chartPlugin.<span class="fn">updateChartDataRange</span>(chartId, { startRow, startCol, endRow, endCol });
+chartPlugin.<span class="fn">moveChart</span>(chartId, anchorRow, anchorCol, offsetX, offsetY);
+chartPlugin.<span class="fn">resizeChart</span>(chartId, width, height);
+chartPlugin.<span class="fn">removeChart</span>(chartId);</div>
+    </div>
+
+    <div class="log-area" id="logArea">> 系统就绪... | 自定义图表演示模式</div>
+</div>
+<script src="../libs/exceljs.min.js"></script>
+<script src="../../dist/canvas-sheet.umd.js"></script>
+<script>
+let workbook = null, chartPlugin = null, currentChartId = null;
+
+function log(msg) {
+    const la = document.getElementById('logArea');
+    la.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+    la.scrollTop = la.scrollHeight;
+}
+
+function init() {
+    try {
+        workbook = new CanvasSheet.Workbook(document.getElementById('sheet'), {
+            plugins: [ "chart"]
+        });
+        workbook.initRender();
+        workbook.render();
+        chartPlugin = workbook.getPlugin('chart');
+
+        log('✅ 初始化成功 - 自定义图表演示模式');
+
+        registerWaterdropStrategy();
+        autoCreateCustomChart();
+
+        log('');
+        log('🎯 可用操作:');
+        log('   1. 🎨 自定义样式图表 - 演示 ChartStyle 配置');
+        log('   2. 🌈 自定义配色图表 - 演示颜色覆盖');
+        log('   3. 🧩 注册自定义策略 - 演示 BaseChartStrategy 扩展 (已自动注册水滴图)');
+        log('   4. ✏️ 动态修改样式 - 演示 updateChartStyle()');
+        log('   5. 🔄 动态修改数据范围 - 演示 updateChartDataRange()');
+    } catch (e) {
+        log(`❌ Error: ${e.message}`);
+    }
+}
+
+function registerWaterdropStrategy() {
+    const NativeChartRenderer = CanvasSheet.NativeChartRenderer;
+    const BaseChartStrategy = CanvasSheet.BaseChartStrategy;
+
+    if (!NativeChartRenderer || !BaseChartStrategy) {
+        log('❌ NativeChartRenderer 或 BaseChartStrategy 未导出');
+        return false;
+    }
+
+    if (NativeChartRenderer.get('waterdrop')) {
+        return true;
+    }
+
+    class WaterdropStrategy extends BaseChartStrategy {
+        constructor() {
+            super("waterdrop", "水滴图");
+        }
+
+        render(ctx, data, area, style, yScale) {
+            const seriesCount = data.headers.length - 1;
+            const catCount = data.data.length;
+            if (seriesCount <= 0 || catCount <= 0) return;
+
+            const totalWidth = area.w;
+            const totalHeight = area.h;
+            const dropMaxRadius = Math.min(totalWidth / (catCount * 2.5), totalHeight * 0.35);
+            const gap = totalWidth / catCount;
+
+            let totalValue = 0;
+            for (let i = 0; i < catCount; i++) {
+                totalValue += Math.abs(Number(data.data[i][1]) || 0);
+            }
+            if (totalValue === 0) totalValue = 1;
+
+            for (let i = 0; i < catCount; i++) {
+                const value = Math.abs(Number(data.data[i][1]) || 0);
+                const ratio = value / totalValue;
+                const radius = Math.max(8, dropMaxRadius * Math.sqrt(ratio));
+                const cx = area.x + gap * i + gap / 2;
+                const cy = area.y + totalHeight * 0.45;
+
+                const color = style.colors ? style.colors[i % style.colors.length] : '#4472C4';
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(cx, cy - radius * 1.6);
+                ctx.bezierCurveTo(
+                    cx + radius * 0.8, cy - radius * 0.8,
+                    cx + radius, cy + radius * 0.2,
+                    cx, cy + radius
+                );
+                ctx.bezierCurveTo(
+                    cx - radius, cy + radius * 0.2,
+                    cx - radius * 0.8, cy - radius * 0.8,
+                    cx, cy - radius * 1.6
+                );
+                ctx.closePath();
+
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+                grad.addColorStop(0, color + 'AA');
+                grad.addColorStop(1, color);
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+
+                ctx.save();
+                ctx.fillStyle = '#333';
+                ctx.font = 'bold 13px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(String(data.data[i][0]), cx, cy + radius + 20);
+
+                ctx.font = '12px sans-serif';
+                ctx.fillStyle = '#666';
+                ctx.fillText((ratio * 100).toFixed(1) + '%', cx, cy + radius + 38);
+
+                ctx.font = 'bold 14px sans-serif';
+                ctx.fillStyle = '#fff';
+                ctx.fillText(String(value), cx, cy - 2);
+                ctx.restore();
+            }
+        }
+
+        isAxisFree() {
+            return true;
+        }
+
+        formatTooltip(hoverInfo) {
+            return [
+                String(hoverInfo.category),
+                `数值: ${hoverInfo.value}`
+            ];
+        }
+    }
+
+    NativeChartRenderer.register(new WaterdropStrategy());
+    log('✅ 水滴图策略 (WaterdropStrategy) 注册成功');
+    log('   • type: "waterdrop" | name: "水滴图"');
+    log('   • isAxisFree: true (无坐标轴)');
+    log('   • 自定义 render: 水滴形状 + 径向渐变 + 百分比标注');
+    return true;
+}
+
+function autoCreateCustomChart() {
+    if (!chartPlugin) return;
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 0, '渠道');
+    s.setCell(0, 1, '用户数');
+
+    const channels = [
+        { name: '搜索引擎', value: 4200 },
+        { name: '社交媒体', value: 3100 },
+        { name: '直接访问', value: 2800 },
+        { name: '邮件营销', value: 1500 },
+        { name: '广告投放', value: 900 }
+    ];
+
+    channels.forEach((item, i) => {
+        s.setCell(i + 1, 0, item.name);
+        s.setCell(i + 1, 1, item.value);
+    });
+
+    const c = chartPlugin.addChart(
+        "waterdrop",
+        { startRow: 0, startCol: 0, endRow: 5, endCol: 1 },
+        {
+            anchorRow: 0,
+            anchorCol: 2,
+            width: 560,
+            height: 400,
+            style: {
+                title: '💧 用户来源分布 (自定义水滴图策略)',
+                showLegend: false,
+                showTooltip: true,
+                showGrid: false,
+                colors: ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#3B82F6']
+            }
+        }
+    );
+
+    if (c) {
+        currentChartId = c.id;
+        log('✅ 水滴图自动创建成功 (页面加载即展示自定义图表)');
+        log('   数据: 5个渠道的用户来源分布');
+        log('   渲染: 水滴形状 + 径向渐变 + 百分比标注');
+        log('');
+        log('💡 这是通过 BaseChartStrategy 扩展的全新图表类型，非内置图表');
+    }
+}
+
+function createCustomStyleChart() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+    if (currentChartId) {
+        chartPlugin.removeChart(currentChartId);
+        currentChartId = null;
+    }
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 0, '季度');
+    s.setCell(0, 1, '收入');
+    s.setCell(0, 2, '支出');
+    s.setCell(0, 3, '利润');
+
+    const data = [
+        { q: 'Q1', income: 4200, expense: 2800, profit: 1400 },
+        { q: 'Q2', income: 5100, expense: 3200, profit: 1900 },
+        { q: 'Q3', income: 4800, expense: 2900, profit: 1900 },
+        { q: 'Q4', income: 6200, expense: 3500, profit: 2700 }
+    ];
+
+    data.forEach((item, i) => {
+        s.setCell(i + 1, 0, item.q);
+        s.setCell(i + 1, 1, item.income);
+        s.setCell(i + 1, 2, item.expense);
+        s.setCell(i + 1, 3, item.profit);
+    });
+
+    const c = chartPlugin.addBarChart(
+        { startRow: 0, startCol: 0, endRow: 4, endCol: 3 },
+        {
+            anchorRow: 0,
+            anchorCol: 4,
+            width: 520,
+            height: 400,
+            style: {
+                title: '💰 季度财务分析 (自定义样式)',
+                showLegend: true,
+                showTooltip: true,
+                showGrid: true,
+                colors: ['#2E86AB', '#A23B72', '#F18F01'],
+                xAxisLabel: '季度',
+                yAxisLabel: '金额 (万元)',
+                ignoreHiddenData: true
+            }
+        }
+    );
+
+    if (c) {
+        currentChartId = c.id;
+        log('✅ 自定义样式柱状图创建成功');
+        log('   样式自定义项:');
+        log('   • title: "💰 季度财务分析 (自定义样式)"');
+        log('   • colors: ["#2E86AB", "#A23B72", "#F18F01"]');
+        log('   • xAxisLabel: "季度", yAxisLabel: "金额 (万元)"');
+        log('   • showLegend: true, showGrid: true, showTooltip: true');
+        log('   • ignoreHiddenData: true');
+    }
+}
+
+function createCustomColorChart() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+    if (currentChartId) {
+        chartPlugin.removeChart(currentChartId);
+        currentChartId = null;
+    }
+
+    const s = workbook.activeSheet;
+
+    s.setCell(0, 0, '月份');
+    s.setCell(0, 1, '用户量');
+    s.setCell(0, 2, '转化率');
+
+    const data = [
+        { m: '1月', users: 1200, rate: 15 },
+        { m: '2月', users: 1800, rate: 22 },
+        { m: '3月', users: 2400, rate: 28 },
+        { m: '4月', users: 3100, rate: 35 },
+        { m: '5月', users: 4200, rate: 42 },
+        { m: '6月', users: 5800, rate: 51 }
+    ];
+
+    data.forEach((item, i) => {
+        s.setCell(i + 1, 0, item.m);
+        s.setCell(i + 1, 1, item.users);
+        s.setCell(i + 1, 2, item.rate);
+    });
+
+    const c = chartPlugin.addLineChart(
+        { startRow: 0, startCol: 0, endRow: 6, endCol: 2 },
+        {
+            anchorRow: 0,
+            anchorCol: 3,
+            width: 550,
+            height: 400,
+            style: {
+                title: '📈 用户增长趋势 (渐变配色 + 平滑曲线)',
+                showLegend: true,
+                showTooltip: true,
+                showGrid: true,
+                smooth: true,
+                fill: false,
+                colors: ['#6366F1', '#F59E0B'],
+                xAxisLabel: '月份',
+                yAxisLabel: '数值'
+            }
+        }
+    );
+
+    if (c) {
+        currentChartId = c.id;
+        log('✅ 自定义配色折线图创建成功');
+        log('   样式自定义项:');
+        log('   • colors: ["#6366F1", "#F59E0B"] (Indigo + Amber)');
+        log('   • smooth: true (平滑曲线)');
+        log('   • fill: false (不填充面积)');
+    }
+}
+
+function registerAndCreateCustomStrategy() {
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const registered = registerWaterdropStrategy();
+    if (registered) {
+        log('ℹ️ 水滴图策略已注册');
+    }
+
+    if (currentChartId) {
+        chartPlugin.removeChart(currentChartId);
+        currentChartId = null;
+    }
+
+    autoCreateCustomChart();
+}
+
+function updateStyleDynamically() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const colorSets = [
+        ['#E74C3C', '#3498DB', '#2ECC71'],
+        ['#9B59B6', '#F39C12', '#1ABC9C'],
+        ['#34495E', '#E67E22', '#16A085']
+    ];
+    const randomColors = colorSets[Math.floor(Math.random() * colorSets.length)];
+
+    chartPlugin.updateChartStyle(currentChartId, {
+        colors: randomColors,
+        showGrid: Math.random() > 0.5
+    });
+
+    log('✅ 动态样式更新成功');
+    log(`   colors: [${randomColors.map(c => `"${c}"`).join(', ')}]`);
+}
+
+function updateDataRangeDynamically() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    if (!chartPlugin) return log('❌ 图表插件未加载');
+
+    const endRow = Math.floor(Math.random() * 3) + 3;
+    chartPlugin.updateChartDataRange(currentChartId, {
+        startRow: 0,
+        startCol: 0,
+        endRow: endRow,
+        endCol: 3
+    });
+
+    log(`✅ 动态数据范围更新成功: endRow ${endRow + 1} 行`);
+}
+
+function moveChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.moveChart(currentChartId, Math.floor(Math.random() * 15) + 3, Math.floor(Math.random() * 8) + 1, 10, 10);
+    log('↔️ 图表位置已移动');
+}
+
+function resizeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.resizeChart(currentChartId, Math.floor(Math.random() * 200) + 400, Math.floor(Math.random() * 150) + 300);
+    log('📐 图表尺寸已调整');
+}
+
+function removeChart() {
+    if (!currentChartId) return log('⚠️ 请先创建图表');
+    chartPlugin.removeChart(currentChartId);
+    log('🗑️ 图表已删除');
+    currentChartId = null;
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

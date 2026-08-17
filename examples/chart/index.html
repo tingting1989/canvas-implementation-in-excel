@@ -170,6 +170,10 @@
             background: linear-gradient(135deg, #dc3545 0%, #bd2130 100%)
         }
 
+        .custom .card-header {
+            background: linear-gradient(135deg, #9B59B6 0%, #7d3c98 100%)
+        }
+
         .footer {
             text-align: center;
             margin-top: 50px;
@@ -181,7 +185,7 @@
 <body>
 <div class="container">
     <h1>📊 Canvas-Sheet 图表演示中心</h1>
-    <p class="subtitle">10种专业图表类型 · 完整导出功能 · 独立运行示例</p>
+    <p class="subtitle">10种专业图表类型 · 自定义图表扩展 · 完整导出功能 · 独立运行示例</p>
 
     <div class="grid">
         <!-- 柱状图 -->
@@ -361,6 +365,24 @@
                     <li>异常值检测功能</li>
                 </ul>
                 <a href="heatmap-chart-demo.html" class="btn-link">打开演示 →</a>
+            </div>
+        </div>
+
+        <!-- 自定义图表 -->
+        <div class="card custom">
+            <div class="card-header">
+                <div class="card-icon">🎨</div>
+                <div class="card-title">自定义图表 (Custom Chart)</div>
+                <div class="card-subtitle">custom-chart-demo.html</div>
+            </div>
+            <div class="card-body">
+                <p class="card-desc">样式自定义、运行时动态修改、策略模式扩展全新图表类型，三级自定义体系。</p>
+                <ul class="features">
+                    <li>ChartStyle 样式配置</li>
+                    <li>运行时动态修改 API</li>
+                    <li>BaseChartStrategy 策略扩展</li>
+                </ul>
+                <a href="custom-chart-demo.html" class="btn-link">打开演示 →</a>
             </div>
         </div>
     </div>
