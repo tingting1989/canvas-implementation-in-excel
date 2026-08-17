@@ -7,25 +7,25 @@ import { VALIDATION_RULE_TYPE } from "../../constants/enums/ValidationRuleType.j
  * 下拉列表、自定义公式等多种验证类型。
  */
 export class ValidationRule {
-    id: string;
-    range: string;
-    type: string;
-    operator: string | null;
+    id: string = "";
+    range: string = "";
+    type: string = "";
+    operator: string | null = null;
     value: any;
-    source: string[] | string | null;
-    formula: string | null;
-    pattern: string | null;
+    source: string[] | string | null = null;
+    formula: string | null = null;
+    pattern: string | null = null;
     allowBlank: boolean = true;
     showDropdown: boolean = true;
     showErrorMessage: boolean = true;
-    errorMessage: string | null;
+    errorMessage: string | null = null;
     errorTitle: string = "输入错误";
     errorStyle: string = "stop";
-    inputMessage: string | null;
+    inputMessage: string | null = null;
     inputTitle: string = "提示";
     priority: number = 0;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt!: Date;
+    updatedAt!: Date;
 
     static VALID_TYPES: string[] = ["number", "text", "list", "formula", "date", "time", "datetime", "regex", "unique"];
 

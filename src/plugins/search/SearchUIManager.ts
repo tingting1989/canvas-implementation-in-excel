@@ -1,5 +1,5 @@
 import { SearchDropdown } from "./SearchDropdown.js";
-import { PopupPanelNew } from "../../ui/components/PopupPanelNew.js";
+import { PopupPanel } from "../../ui/components/PopupPanel.js";
 import { PopupManager } from "../../ui/components/PopupManager.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
@@ -67,7 +67,7 @@ export class SearchUIManager {
     show(): void {
         if (this.#dropdown) return;
 
-        this.#popupPanel = new PopupPanelNew();
+        this.#popupPanel = new PopupPanel();
 
         this.#dropdown = new SearchDropdown();
 

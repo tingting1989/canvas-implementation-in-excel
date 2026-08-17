@@ -110,7 +110,7 @@ class FunctionRegistry {
 
         const wrappedFn = function wrappedFn(this: unknown, ...args: unknown[]): unknown {
             try {
-                return fn.apply(this, args);
+                return fn.apply(this, args as [unknown[], unknown?]);
             } catch (error) {
                 errorHandler.error(ERROR_CODE.FORMULA_EVAL_ERROR, `函数 ${upperName} 执行失败`, {
                     functionName: upperName,
@@ -143,7 +143,7 @@ class FunctionRegistry {
         const upperName = name.toUpperCase();
 
         if (this._functions.has(upperName)) {
-            const entry = this._functions.get(upperName);
+            const entry = this._functions.get(upperName)!;
 
             if (entry.category === FUNCTION_CATEGORY.BUILTIN) {
                 errorHandler.warn(ERROR_CODE.FORMULA_FUNCTION_OVERRIDE, `尝试注销内置函数 ${upperName}`, { functionName: upperName });

@@ -1,6 +1,6 @@
 import { FilterDropdown } from "./FilterDropdown.js";
 import { FilterEngine } from "./FilterEngine.js";
-import { PopupPanelNew } from "../../ui/components/PopupPanelNew.js";
+import { PopupPanel } from "../../ui/components/PopupPanel.js";
 import { PopupManager } from "../../ui/components/PopupManager.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
@@ -15,7 +15,7 @@ import type { FilterPlugin } from "./FilterPlugin.js";
  * 设计原则：
  * 1. **PopupManager 规范**:
  *    - 使用 `PopupManager.getInstance().register/unregister` 注册/注销
- *    - 使用 `PopupPanelNew` 作为弹窗容器
+ *    - 使用 `PopupPanel` 作为弹窗容器
  *    - 继承 FilterDropdown 作为内容组件注入容器
  *    - 支持 `closeAll(exceptId)` 协调关闭机制
  *
@@ -84,7 +84,7 @@ export class FilterUIManager {
      * 执行流程：
      * 1. 关闭已打开的面板（防重复创建）
      * 2. 通过 FilterEngine 提取唯一值
-     * 3. 创建 PopupPanelNew 容器和 FilterDropdown 内容组件
+     * 3. 创建 PopupPanel 容器和 FilterDropdown 内容组件
      * 4. 初始化回调（onApply, onClear）
      * 5. 设置筛选数据（col, allValues, currentFilter, options）
      * 6. 显示容器并注册到 PopupManager
@@ -101,7 +101,7 @@ export class FilterUIManager {
             const currentFilter = this.#filterState!.getColumnFilter(col);
             const columnType = (this.#filterPlugin as any).getColumnType(col);
 
-            this.#popupPanel = new PopupPanelNew();
+            this.#popupPanel = new PopupPanel();
 
             this.#dropdown = new FilterDropdown();
 

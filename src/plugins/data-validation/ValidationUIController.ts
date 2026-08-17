@@ -578,7 +578,7 @@ export class ValidationUIController {
                     status = statusMap[cached.result.errorStyle] || ICON_STATUS.INVALID;
                 }
                 this.#getCurrentCache().set(key, status);
-                return { status, source: cached.source };
+                return { status, source: cached.source ?? "" };
             }
 
             const rules = this.#validationPlugin?.getRulesForCell(row, col) || [];

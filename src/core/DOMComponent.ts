@@ -1,4 +1,4 @@
-import { Disposable } from "./Disposable.js";
+import { Disposable } from "./Disposable";
 
 /**
  * DOM 元素属性配置接口

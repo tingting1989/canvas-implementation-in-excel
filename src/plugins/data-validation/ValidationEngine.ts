@@ -403,7 +403,7 @@ export class ValidationEngine {
     getFromCache(key: string, value: any): ValidationResult | null {
         const cellCache = this.#cache.get(key);
         if (cellCache && cellCache.has(String(value))) {
-            return cellCache.get(String(value));
+            return cellCache.get(String(value)) ?? null;
         }
         return null;
     }

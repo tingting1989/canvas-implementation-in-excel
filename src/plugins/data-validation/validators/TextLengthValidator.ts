@@ -29,7 +29,7 @@ export class TextLengthValidator extends BaseValidator {
         const length = textValue.length;
 
         try {
-            let operator = rule.operator;
+            let operator = rule.operator || "between";
 
             if (operator.startsWith("length")) {
                 operator = operator.replace("length", "");

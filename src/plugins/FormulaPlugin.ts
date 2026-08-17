@@ -27,23 +27,24 @@ export class FormulaPlugin extends BasePlugin {
     init(options: Record<string, any> = {}): void {
         super.init(options);
 
+        const wb = this.workbook!;
         const showFormulaBar = options.showFormulaBar !== false;
 
-        this.#engine = new FormulaEngine(this.workbook as any);
-        this.workbook.formulaEngine = this.#engine;
+        this.#engine = new FormulaEngine(wb as any);
+        wb.formulaEngine = this.#engine;
 
-        for (const sheet of this.workbook.sheets.values()) {
+        for (const sheet of wb.sheets.values()) {
             this.#engine.registerFormulasBatch(sheet);
         }
 
-        for (const sheet of this.workbook.sheets.values()) {
+        for (const sheet of wb.sheets.values()) {
             this.#engine.recalculateAll(sheet);
         }
 
         if (showFormulaBar) {
-            const container = this.workbook.renderEngine?.outerWrap;
-            this.#bar = new FormulaBarManager(this.workbook, container);
-            this.workbook.formulaBar = this.#bar;
+            const container = wb.renderEngine?.outerWrap;
+            this.#bar = new FormulaBarManager(wb as any, container!);
+            wb.formulaBar = this.#bar;
             this.#hookFormulaBar();
         }
 
@@ -66,7 +67,7 @@ export class FormulaPlugin extends BasePlugin {
     }
 
     #hookFormulaBar(): void {
-        const re = this.workbook.renderEngine;
+        const re = this.workbook!.renderEngine;
         if (!re) return;
 
         this.#afterRenderCallback = () => {
@@ -106,8 +107,8 @@ export class FormulaPlugin extends BasePlugin {
             this.#engine = null;
         }
 
-        this.workbook.formulaEngine = null;
-        this.workbook.formulaBar = null;
+        this.workbook!.formulaEngine = null;
+        this.workbook!.formulaBar = null;
 
         super.destroy();
     }

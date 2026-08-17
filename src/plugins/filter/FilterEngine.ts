@@ -275,10 +275,10 @@ export class FilterEngine {
             case "lte":
                 return numCondition !== undefined && !isNaN(numCondition) && numValue <= numCondition;
             case "between":
-                if (isNaN(numCondition) || isNaN(numConditionEnd)) {
+                if (numCondition === undefined || numConditionEnd === undefined || isNaN(numCondition) || isNaN(numConditionEnd)) {
                     return false;
                 }
-                return numValue >= numCondition && numValue <= numConditionEnd!;
+                return numValue >= numCondition! && numValue <= numConditionEnd!;
             default:
                 return true;
         }

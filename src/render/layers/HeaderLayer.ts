@@ -102,7 +102,7 @@ export class HeaderLayer extends BaseLayer {
 
         const { viewW, viewH } = options;
 
-        this.headerRenderer.render(ctx, sheet, viewport, viewW, viewH, this.#selectionLayer);
+        this.headerRenderer.render(ctx, sheet, viewport, viewW!, viewH!, this.#selectionLayer);
 
         this.renderCount++;
     }

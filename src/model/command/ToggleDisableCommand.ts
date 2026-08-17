@@ -2,7 +2,7 @@ import { Command } from "./Command.js";
 
 /** 单元格数据存储最小接口（含 disabled 属性） */
 interface DisableCellStore {
-    get(row: number, col: number): { disabled?: boolean } | null;
+    get(row: number, col: number): { disabled?: boolean } | null | undefined;
 }
 
 /**

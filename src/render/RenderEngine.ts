@@ -95,28 +95,28 @@ export class RenderEngine extends DOMComponent {
     sheetTabBar: SheetTabManager;
 
     /** 响应式存储 */
-    store: ReactiveStore;
+    store!: ReactiveStore;
 
     /** 图层合成器 */
-    compositor: LayerCompositor;
+    compositor!: LayerCompositor;
 
     /** 瓦片图层 */
-    tileLayer: TileLayer;
+    tileLayer!: TileLayer;
 
     /** 选区图层 */
-    selectionLayer: SelectionLayer;
+    selectionLayer!: SelectionLayer;
 
     /** 冻结图层 */
-    frozenLayer: FrozenLayer;
+    frozenLayer!: FrozenLayer;
 
     /** 交互图层 */
-    interactionLayer: InteractionLayer;
+    interactionLayer!: InteractionLayer;
 
     /** 表头图层 */
-    headerLayer: HeaderLayer;
+    headerLayer!: HeaderLayer;
 
     /** 图表图层 */
-    chartLayer: ChartLayer;
+    chartLayer!: ChartLayer;
 
     /** 编辑器引用（由外部设置） */
     editor: any;
@@ -150,7 +150,7 @@ export class RenderEngine extends DOMComponent {
         this.scrollMgr = new ScrollManager(this.wrap, this.canvas);
         this.trackChild(this.scrollMgr as any);
 
-        this.sheetTabBar = new SheetTabManager(this.wrap, null);
+        this.sheetTabBar = new SheetTabManager(this.wrap, null as any);
         this.trackChild(this.sheetTabBar as any);
 
         this.editor = null;
@@ -570,7 +570,7 @@ export class RenderEngine extends DOMComponent {
         if (px > headerW && py > headerH) {
             const chartHit = this.chartLayer?.hitTest(px, py, sheet, vt!);
             if (chartHit && chartHit.type === CONTENT_TYPE.CHART) {
-                return { type: HIT_TYPE.CHART, ...chartHit };
+                return { ...chartHit, type: HIT_TYPE.CHART };
             }
             const col = vt!.viewXToCol(px);
             const row = vt!.viewYToRow(py);

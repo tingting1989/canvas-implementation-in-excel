@@ -16,46 +16,102 @@
  * limitations under the License.
  */
 
-export { Workbook } from "../workbook/Workbook.js";
-export * from "../model/index.js";
-export * from "../core/ErrorHandler.js";
-export * from "../types/index.js";
-export { ReactiveStore } from "../state/ReactiveStore.js";
-export { EventStrategy } from "../editor/strategies/EventStrategy.js";
-export { CellEditor } from "../editor/editors/CellEditor.js";
-export { BasePlugin } from "../plugins/BasePlugin.js";
-export { PluginManager } from "../plugins/PluginManager.js";
-export { ImportFilePlugin } from "../plugins/ImportFilePlugin.js";
-export { ExportFilePlugin } from "../plugins/ExportFilePlugin.js";
-export { AutoFillPlugin } from "../plugins/AutoFillPlugin.js";
-export { WebComponent } from "../core/WebComponent.js";
-export { DOMComponent } from "../core/DOMComponent.js";
-export { Disposable } from "../core/Disposable.js";
-export { FormulaEngine } from "../formula/FormulaEngine.js";
-export { FormulaEvaluator } from "../formula/FormulaEvaluator.js";
-export { BaseColumnType } from "../types/BaseColumnType.js";
-export * from "../types/index.js";
-export { themeStyleProvider } from "../theme/ThemeStyleProvider.js";
-export { functionRegistry, FUNCTION_CATEGORY } from "../formula/functions/index.js";
-export { BaseLayer } from "../render/BaseLayer.js";
-export { ViewportTransform } from "../render/ViewportTransform.js";
-export * from "../constants/enums/AutoFillDir.js";
-export * from "../constants/enums/BorderStyle.js";
-export * from "../constants/enums/ChartType.js";
-export * from "../constants/enums/ContentType.js";
-export * from "../constants/enums/ErrorStyle.js";
-export * from "../constants/enums/FontStyle.js";
-export * from "../constants/enums/ScrollAxis.js";
-export * from "../constants/enums/SortArrowDir.js";
-export * from "../constants/enums/SortOrder.js";
-export * from "../constants/enums/StyleScope.js";
-export * from "../constants/enums/TextAlign.js";
-export * from "../constants/enums/ValidationRuleType.js";
-export * from "../constants/enums/VerticalAlign.js";
-export * from "../constants/eventNames.js";
-export * from "../constants/hookNames.js";
-export * from "../constants/sheetEvents.js";
-export * from "../constants/config.js";
-export * from "../constants/hitType.js";
-export * from "../constants/layerZIndex.js";
-export * from "../utils/index.js";
+// ============================================================
+// 核心
+// ============================================================
+export { Workbook } from "../workbook/Workbook";
+export * from "../model/index";
+export * from "../core/ErrorHandler";
+export * from "../types/index";
+export { ReactiveStore } from "../state/ReactiveStore";
+export { WebComponent } from "../core/WebComponent";
+export { DOMComponent } from "../core/DOMComponent";
+export { Disposable } from "../core/Disposable";
+
+// ============================================================
+// 编辑器
+// ============================================================
+export { EventStrategy } from "../editor/strategies/EventStrategy";
+export { CellEditor } from "../editor/editors/CellEditor";
+
+// ============================================================
+// 插件系统
+// ============================================================
+export { BasePlugin } from "../plugins/BasePlugin";
+export { PluginManager } from "../plugins/PluginManager";
+export { AutoFillPlugin } from "../plugins/AutoFillPlugin";
+export { ChartPlugin } from "../plugins/ChartPlugin";
+export { ColumnMovePlugin } from "../plugins/ColumnMovePlugin";
+export { ContextMenuPlugin } from "../plugins/ContextMenuPlugin";
+export { CopyPastePlugin } from "../plugins/CopyPastePlugin";
+export { FreezePlugin } from "../plugins/FreezePlugin";
+export { HiddenColumnsPlugin } from "../plugins/HiddenColumnsPlugin";
+export { HiddenRowsPlugin } from "../plugins/HiddenRowsPlugin";
+export { RowMovePlugin } from "../plugins/RowMovePlugin";
+export { ImportFilePlugin } from "../plugins/ImportFilePlugin";
+export { ExportFilePlugin } from "../plugins/ExportFilePlugin";
+export { FormulaPlugin } from "../plugins/FormulaPlugin";
+export { SortPlugin } from "../plugins/sort/SortPlugin";
+export { FilterPlugin } from "../plugins/filter/FilterPlugin";
+export { SearchPlugin } from "../plugins/search/SearchPlugin";
+export { DataValidationPlugin } from "../plugins/data-validation/DataValidationPlugin";
+
+// ============================================================
+// 公式引擎
+// ============================================================
+export { FormulaEngine } from "../formula/FormulaEngine";
+export { FormulaEvaluator } from "../formula/FormulaEvaluator";
+export { functionRegistry, FUNCTION_CATEGORY } from "../formula/functions/index";
+
+// ============================================================
+// 类型系统
+// ============================================================
+export { BaseColumnType } from "../types/BaseColumnType";
+export { themeStyleProvider } from "../theme/ThemeStyleProvider";
+export { PopupManager } from "../ui/components/PopupManager";
+export { PopupPanel } from "../ui/components/PopupPanel";
+
+// ============================================================
+// 渲染
+// ============================================================
+export { BaseLayer } from "../render/BaseLayer";
+export { ViewportTransform } from "../render/ViewportTransform";
+
+// ============================================================
+// 图表系统
+// ============================================================
+export { ChartModel } from "../model/chart/ChartModel";
+export { ChartManager } from "../model/chart/ChartManager";
+export { ChartRendererFactory } from "../render/chart/ChartRendererFactory";
+export { NativeChartRenderer } from "../render/chart/NativeChartRenderer";
+export { IChartRenderer } from "../render/chart/IChartRenderer";
+export { BaseChartStrategy } from "../render/chart/BaseChartStrategy";
+export { DataExtractor } from "../render/chart/DataExtractor";
+export { ChartCacheManager } from "../render/chart/ChartCacheManager";
+export { ChartCache } from "../render/chart/ChartCache";
+export * from "../render/chart/types";
+export * from "../render/chart/strategies/index";
+
+// ============================================================
+// 常量与枚举
+// ============================================================
+export * from "../constants/enums/AutoFillDir";
+export * from "../constants/enums/BorderStyle";
+export * from "../constants/enums/ChartType";
+export * from "../constants/enums/ContentType";
+export * from "../constants/enums/ErrorStyle";
+export * from "../constants/enums/FontStyle";
+export * from "../constants/enums/ScrollAxis";
+export * from "../constants/enums/SortArrowDir";
+export * from "../constants/enums/SortOrder";
+export * from "../constants/enums/StyleScope";
+export * from "../constants/enums/TextAlign";
+export * from "../constants/enums/ValidationRuleType";
+export * from "../constants/enums/VerticalAlign";
+export * from "../constants/eventNames";
+export * from "../constants/hookNames";
+export * from "../constants/sheetEvents";
+export * from "../constants/config";
+export * from "../constants/hitType";
+export * from "../constants/layerZIndex";
+export * from "../utils/index";

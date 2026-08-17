@@ -11,12 +11,12 @@ export class FormulaBarElement extends WebComponent {
     #value: string = "";
 
     onConnect(disposable: import("../../core/Disposable.js").Disposable): void {
-        const input = this.shadowRoot.querySelector(".formula-input") as HTMLInputElement;
+        const input = this.shadowRoot!.querySelector(".formula-input") as HTMLInputElement;
         disposable.trackEvent(this, "keydown", (e: Event) => e.stopPropagation());
 
-        disposable.trackEvent(input, "keydown", this.#handleKeydown);
-        disposable.trackEvent(input, "focus", this.#handleFocus);
-        disposable.trackEvent(input, "blur", this.#handleBlur);
+        disposable.trackEvent(input, "keydown", (e: Event) => this.#handleKeydown(e as KeyboardEvent));
+        disposable.trackEvent(input, "focus", (e: Event) => this.#handleFocus(e as FocusEvent));
+        disposable.trackEvent(input, "blur", (e: Event) => this.#handleBlur(e as FocusEvent));
         disposable.trackEvent(input, "compositionstart", () => (this.composing = true));
         disposable.trackEvent(input, "compositionend", () => (this.composing = false));
     }
@@ -70,21 +70,21 @@ export class FormulaBarElement extends WebComponent {
     `;
 
     render(changedAttr?: string | null): void {
-        if (!this.shadowRoot.querySelector(".formula-input")) {
-            this.shadowRoot.innerHTML = `
+        if (!this.shadowRoot!.querySelector(".formula-input")) {
+            this.shadowRoot!.innerHTML = `
                 <style>${this.#styleText}</style>
                 <div class="cell-ref"></div>
                 <input class="formula-input" type="text" placeholder="输入值或公式...">
             `;
 
-            this.shadowRoot.querySelector(".cell-ref")!.textContent = this.#cellRef;
-            (this.shadowRoot.querySelector(".formula-input") as HTMLInputElement).value = this.#value;
+            this.shadowRoot!.querySelector(".cell-ref")!.textContent = this.#cellRef;
+            (this.shadowRoot!.querySelector(".formula-input") as HTMLInputElement).value = this.#value;
             return;
         }
 
         if (!changedAttr || changedAttr === "cell-ref") {
             this.#cellRef = this.getAttribute("cell-ref") || "A1";
-            const cellRefEl = this.shadowRoot.querySelector(".cell-ref");
+            const cellRefEl = this.shadowRoot!.querySelector(".cell-ref");
             if (cellRefEl) cellRefEl.textContent = this.#cellRef;
         }
     }

@@ -245,7 +245,7 @@ type OperatorLabelMap = Record<string, string>;
  * 设计原则：
  * 1. **纯内容组件**:
  *    - 继承 HTMLElement，不负责弹窗定位/遮罩/关闭逻辑
- *    - 由 FilterUIManager 创建 PopupPanelNew 容器并注入此组件
+ *    - 由 FilterUIManager 创建 PopupPanel 容器并注入此组件
  *    - 通过 initCallbacks() 接收业务回调
  *
  * 2. **防御性编程**:
@@ -881,7 +881,7 @@ export class FilterDropdown extends HTMLElement {
             if (op === this.#conditionOperator) {
                 option.selected = true;
             }
-            this.#operatorSelect.appendChild(option);
+            this.#operatorSelect!.appendChild(option);
         });
 
         this.#updateConditionValueVisibility();

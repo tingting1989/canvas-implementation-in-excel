@@ -9,7 +9,7 @@ import { CONFIG } from "../constants/config";
 import { SettingsApplier } from "./managers/SettingsApplier";
 import { SHEET_EVENTS } from "../constants/sheetEvents";
 import { HOOKS } from "../constants/hookNames";
-import type { StyleObject } from "./interfaces/ISheet";
+import type { StyleObject, ISheet } from "./interfaces/ISheet";
 
 /**
  * 待加载插件（按名称）
@@ -302,11 +302,11 @@ export class Workbook {
             const activeEditor = this.editor?.getActiveEditor();
             if (!activeEditor || activeEditor.activeRow < 0) return;
 
-            const { activeRow: row, activeCol: col } = activeEditor;
+            const { activeRow: row, activeCol: col } = activeEditor!;
             const dpr = window.devicePixelRatio || 1;
             const tabH = CONFIG.SHEET_TAB_HEIGHT;
-            const canvasW = this.renderEngine!.canvas.width / dpr;
-            const canvasH = this.renderEngine!.canvas.height / dpr;
+            const canvasW = this.renderEngine!.canvas!.width / dpr;
+            const canvasH = this.renderEngine!.canvas!.height / dpr;
 
             const viewport = this.eventHandler?.viewport as {
                 isCellVisible: (r: number, c: number, w: number, h: number, t: number) => boolean;
@@ -486,7 +486,7 @@ export class Workbook {
         this.#boundSheets.delete(removed);
 
         if (this.activeSheet === removed) {
-            this.switchTo(this.sheets.keys().next().value);
+            this.switchTo(this.sheets.keys().next().value as string);
         }
 
         this.#refreshTabBar();
@@ -822,7 +822,7 @@ export class Workbook {
         });
     }
 
-    batchStyleUpdate(fn: (sheet: Sheet) => void): void {
+    batchStyleUpdate(fn: (sheet: ISheet) => void): void {
         this.#withActiveSheet((s) => {
             s.batchStyleUpdate(fn);
             this.render();
@@ -985,8 +985,8 @@ export class Workbook {
      * @param defaultValue - 无活动工作表时的默认返回值
      * @returns 回调返回值或 defaultValue
      */
-    #withActiveSheet<T>(fn: (sheet: Sheet) => T, defaultValue?: T): T | undefined {
-        if (!this.activeSheet) return defaultValue;
+    #withActiveSheet<T>(fn: (sheet: Sheet) => T, defaultValue?: T): T {
+        if (!this.activeSheet) return defaultValue as T;
         return fn(this.activeSheet);
     }
 }

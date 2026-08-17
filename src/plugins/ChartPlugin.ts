@@ -56,7 +56,7 @@ export class ChartPlugin extends BasePlugin {
         this.#unbindSheetSwitchListener();
         this.#sheetSwitchUnsubscribe = sheet.bus.on(SHEET_EVENTS.SHEET_SWITCHED, (envelope: any) => {
             const { currentSheet } = envelope.payload;
-            const newSheet = this.workbook.sheets.get(currentSheet);
+            const newSheet = this.workbook!.sheets.get(currentSheet);
             if (newSheet && !newSheet.chartManager) {
                 newSheet.chartManager = new ChartManager(newSheet);
             }

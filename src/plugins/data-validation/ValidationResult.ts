@@ -8,11 +8,11 @@ export class ValidationResult {
     valid: boolean;
     message: string | null;
     errorStyle: string;
-    errorTitle: string | null;
+    errorTitle: string | null = null;
     failedValue: any;
-    ruleId: string | null;
+    ruleId: string | null = null;
     timestamp: Date;
-    metadata: Record<string, any> | null;
+    metadata: Record<string, any> | null = null;
     cancelled?: boolean;
     deferred?: boolean;
     needsAsyncValidation?: boolean;

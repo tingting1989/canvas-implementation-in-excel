@@ -44,28 +44,28 @@ export class SheetTabManager extends Disposable {
     }
 
     #bindEvents(): void {
-        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.SWITCH, (e: CustomEvent) => {
-            if (this.#onSwitch) this.#onSwitch(e.detail.name);
+        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.SWITCH, (e: Event) => {
+            if (this.#onSwitch) this.#onSwitch((e as CustomEvent).detail.name);
         });
 
-        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.CLOSE, (e: CustomEvent) => {
-            if (this.#onRemove) this.#onRemove(e.detail.name);
+        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.CLOSE, (e: Event) => {
+            if (this.#onRemove) this.#onRemove((e as CustomEvent).detail.name);
         });
 
-        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.RENAME, (e: CustomEvent) => {
-            if (this.#onRename) this.#onRename(e.detail.oldName, e.detail.newName);
+        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.RENAME, (e: Event) => {
+            if (this.#onRename) this.#onRename((e as CustomEvent).detail.oldName, (e as CustomEvent).detail.newName);
         });
 
         this.trackEvent(this.#element!, SHEET_TAB_EVENTS.ADD, () => {
             if (this.#onAdd) this.#onAdd();
         });
 
-        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.COPY, (e: CustomEvent) => {
-            if (this.#onCopy) this.#onCopy(e.detail.name);
+        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.COPY, (e: Event) => {
+            if (this.#onCopy) this.#onCopy((e as CustomEvent).detail.name);
         });
 
-        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.HIDE, (e: CustomEvent) => {
-            if (this.#onHide) this.#onHide(e.detail.name);
+        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.HIDE, (e: Event) => {
+            if (this.#onHide) this.#onHide((e as CustomEvent).detail.name);
         });
     }
 

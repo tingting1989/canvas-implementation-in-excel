@@ -31,7 +31,7 @@ export class NumberValidator extends BaseValidator {
         }
 
         try {
-            const isValid = this.compare(value, rule.value, rule.operator);
+            const isValid = this.compare(value, rule.value, rule.operator!);
 
             return Promise.resolve(
                 isValid

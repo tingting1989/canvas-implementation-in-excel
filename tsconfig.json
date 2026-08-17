@@ -5,7 +5,7 @@
         "moduleResolution": "bundler",
         "allowJs": true,
         "checkJs": false,
-        "strict": false,
+        "strict": true,
         "esModuleInterop": true,
         "declaration": true,
         "declarationDir": "./dist/types",

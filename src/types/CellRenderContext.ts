@@ -173,7 +173,7 @@ export class CellRenderContext {
         if (fontOrSize === undefined) {
             fontOrSize = this._style?.fontSize || CONFIG.DEFAULT_FONT_SIZE || 14;
         }
-        return calcCenteredTextY(this._y, this._height, fontOrSize);
+        return calcCenteredTextY(this._y, this._height, fontOrSize!);
     }
 
     drawRoundedRect(x: number, y: number, w: number, h: number, radius: number): void {

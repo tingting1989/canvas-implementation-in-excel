@@ -184,7 +184,7 @@ export interface ISheet {
     /** 批量操作管理器 */
     batchOp: BatchOperationManager;
     /** 图表管理器（可选） */
-    chartManager: ChartManager | undefined;
+    chartManager: ChartManager | null;
 
     /** 样式管理器（9 层样式合并） */
     styleManager: SheetStyleManager;

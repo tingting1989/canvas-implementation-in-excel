@@ -453,8 +453,8 @@ export class HeaderLayoutBuilder {
         return {
             ...baseStyle,
             ...customStyle,
-            color: customStyle.color || baseStyle?.color || null,
-            backgroundColor: customStyle.backgroundColor || baseStyle?.backgroundColor || null,
+            color: customStyle.color || baseStyle?.color || undefined,
+            backgroundColor: customStyle.backgroundColor || baseStyle?.backgroundColor || undefined,
         };
     }
 

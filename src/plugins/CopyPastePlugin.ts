@@ -35,9 +35,9 @@ export class CopyPastePlugin extends BasePlugin {
         this.#allowCut = options.allowCut !== false;
 
         this.#clipboard = new ClipboardManager();
-        this.workbook.clipboard = this.#clipboard;
+        this.workbook!.clipboard = this.#clipboard;
 
-        this.#strategy = new CopyPasteStrategy(this.eventHandler, this.#clipboard);
+        this.#strategy = new CopyPasteStrategy(this.eventHandler!, this.#clipboard);
         this.addStrategy("copyPaste", this.#strategy);
 
         if (options.enabled === false) {
@@ -49,7 +49,7 @@ export class CopyPastePlugin extends BasePlugin {
         this.#clipboard?.destroy();
         this.#strategy = null;
         this.#clipboard = null;
-        this.workbook.clipboard = null;
+        this.workbook!.clipboard = null;
         super.destroy();
     }
 

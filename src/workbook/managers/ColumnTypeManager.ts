@@ -104,7 +104,7 @@ export class ColumnTypeManager {
      * @returns 列类型实例
      */
     getColumnTypeInstance(col: number): BaseColumnType {
-        return resolveColumnTypeFromConfig(this.#columnsConfig.get(col));
+        return resolveColumnTypeFromConfig(this.#columnsConfig.get(col))!;
     }
 
     /**
@@ -124,10 +124,10 @@ export class ColumnTypeManager {
         const cellProps = this.#sheet.resolveCellProperties(r, c);
         if (cellProps?.type) {
             const { type: name, ...rest } = cellProps;
-            return getColumnTypeInstance(name, extractColumnTypeOptions(rest));
+            return getColumnTypeInstance(name, extractColumnTypeOptions(rest))!;
         }
 
-        return resolveCellTypeFromPosition(r, c, this.#cellTypes, this.#columnsConfig);
+        return resolveCellTypeFromPosition(r, c, this.#cellTypes, this.#columnsConfig)!;
     }
 
     /**

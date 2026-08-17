@@ -258,10 +258,10 @@ export class SheetTabBarElement extends WebComponent {
     }
 
     onConnect(disposable: import("../../core/Disposable.js").Disposable): void {
-        const prevBtn = this.shadowRoot.querySelector(".nav-btn.prev") as HTMLElement;
-        const nextBtn = this.shadowRoot.querySelector(".nav-btn.next") as HTMLElement;
-        const addBtnInScroll = this.shadowRoot.querySelector(".add-btn.in-scroll") as HTMLElement;
-        const tabsContainer = this.shadowRoot.querySelector(".tabs") as HTMLElement;
+        const prevBtn = this.shadowRoot!.querySelector(".nav-btn.prev") as HTMLElement;
+        const nextBtn = this.shadowRoot!.querySelector(".nav-btn.next") as HTMLElement;
+        const addBtnInScroll = this.shadowRoot!.querySelector(".add-btn.in-scroll") as HTMLElement;
+        const tabsContainer = this.shadowRoot!.querySelector(".tabs") as HTMLElement;
 
         disposable.trackEvent(prevBtn, EVENT_NAMES.CLICK, () => {
             this.#scrollBy(-120);
@@ -304,16 +304,16 @@ export class SheetTabBarElement extends WebComponent {
             }
         });
 
-        disposable.trackEvent(document, EVENT_NAMES.KEYDOWN, (e: KeyboardEvent) => {
-            if (e.key === "Escape" && this.#contextMenuEl) {
+        disposable.trackEvent(document, EVENT_NAMES.KEYDOWN, (e: Event) => {
+            if ((e as KeyboardEvent).key === "Escape" && this.#contextMenuEl) {
                 this.#hideContextMenu();
             }
         });
     }
 
     render(): void {
-        if (!this.shadowRoot.querySelector(".tabs")) {
-            this.shadowRoot.appendChild(template.content.cloneNode(true));
+        if (!this.shadowRoot!.querySelector(".tabs")) {
+            this.shadowRoot!.appendChild(template.content.cloneNode(true));
         }
     }
 
@@ -328,7 +328,7 @@ export class SheetTabBarElement extends WebComponent {
         const tab = this.#tabs.get(sheetName);
         if (!tab) return;
 
-        const scrollWrap = this.shadowRoot.querySelector(".tabs-scroll") as HTMLElement;
+        const scrollWrap = this.shadowRoot!.querySelector(".tabs-scroll") as HTMLElement;
         const tabLeft = tab.offsetLeft;
         const tabWidth = tab.offsetWidth;
         const viewW = scrollWrap.clientWidth;
@@ -348,7 +348,7 @@ export class SheetTabBarElement extends WebComponent {
         this.#currentActiveName = activeName;
         this.#cleanupRename();
 
-        const tabsContainer = this.shadowRoot.querySelector(".tabs") as HTMLElement | null;
+        const tabsContainer = this.shadowRoot!.querySelector(".tabs") as HTMLElement | null;
         if (!tabsContainer) return;
 
         tabsContainer.innerHTML = "";
@@ -369,7 +369,7 @@ export class SheetTabBarElement extends WebComponent {
             this.#tabs.set(name, tab);
         }
 
-        const scrollWrap = this.shadowRoot.querySelector(".tabs-scroll") as HTMLElement | null;
+        const scrollWrap = this.shadowRoot!.querySelector(".tabs-scroll") as HTMLElement | null;
         if (scrollWrap) {
             scrollWrap.scrollLeft = 0;
         }
@@ -405,7 +405,7 @@ export class SheetTabBarElement extends WebComponent {
             menu.appendChild(menuItem);
         }
 
-        this.shadowRoot.appendChild(menu);
+        this.shadowRoot!.appendChild(menu);
         this.#contextMenuEl = menu;
 
         const menuWidth = menu.offsetWidth;

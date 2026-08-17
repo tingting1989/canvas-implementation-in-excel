@@ -1,7 +1,7 @@
-import { ERROR_LEVEL } from "../constants/errorCodes.js";
-import { isFunction } from "../utils/helper.js";
+import { ERROR_LEVEL } from "../constants/errorCodes";
+import { isFunction } from "../utils/helper";
 
-export { ERROR_LEVEL, ERROR_CODE } from "../constants/errorCodes.js";
+export { ERROR_LEVEL, ERROR_CODE } from "../constants/errorCodes";
 
 /**
  * 错误处理器配置选项
@@ -24,7 +24,7 @@ interface ErrorHandlerOptions {
  * @param {number} level - 错误级别（ERROR_LEVEL 枚举值）
  * @param {Record<string, unknown>} [meta] - 附加元数据（上下文信息）
  */
-type ErrorListener = (code: string, message: string, level: number, meta?: Record<string, unknown>) => void;
+type ErrorListener = (code: string, message: string, level: number, meta?: unknown) => void;
 
 /**
  * ErrorHandler — 集中式错误处理器（单例模式）
@@ -121,7 +121,7 @@ export class ErrorHandler {
      * @param {Record<string, unknown>} [meta] - 附加元数据
      * @returns {void}
      */
-    error(code: string, message: string, meta?: Record<string, unknown>): void {
+    error(code: string, message: string, meta?: unknown): void {
         this.#report(ERROR_LEVEL.ERROR, code, message, meta);
     }
 
@@ -133,7 +133,7 @@ export class ErrorHandler {
      * @param {Record<string, unknown>} [meta] - 附加元数据
      * @returns {void}
      */
-    warn(code: string, message: string, meta?: Record<string, unknown>): void {
+    warn(code: string, message: string, meta?: unknown): void {
         this.#report(ERROR_LEVEL.WARN, code, message, meta);
     }
 
@@ -145,7 +145,7 @@ export class ErrorHandler {
      * @param {Record<string, unknown>} [meta] - 附加元数据
      * @returns {void}
      */
-    debug(code: string, message: string, meta?: Record<string, unknown>): void {
+    debug(code: string, message: string, meta?: unknown): void {
         if (!this.#devMode) return;
         this.#report(ERROR_LEVEL.DEBUG, code, message, meta);
     }
@@ -158,7 +158,7 @@ export class ErrorHandler {
      * @param {Record<string, unknown>} [meta] - 附加元数据
      * @returns {void}
      */
-    info(code: string, message: string, meta?: Record<string, unknown>): void {
+    info(code: string, message: string, meta?: unknown): void {
         this.#report(ERROR_LEVEL.INFO, code, message, meta);
     }
 
@@ -174,7 +174,7 @@ export class ErrorHandler {
      * @returns {void}
      * @throws {Error} 当 throwOnFatal 为 true 时抛出
      */
-    throw(code: string, message: string, meta?: Record<string, unknown>): never | void {
+    throw(code: string, message: string, meta?: unknown): never | void {
         this.#report(ERROR_LEVEL.FATAL, code, message, meta);
         if (this.#throwOnFatal) {
             throw new Error(`[${code}] ${message}`);
@@ -255,7 +255,7 @@ export class ErrorHandler {
      * @param {Record<string, unknown>} [meta] - 附加元数据
      * @returns {void}
      */
-    #report(level: number, code: string, message: string, meta?: Record<string, unknown>): void {
+    #report(level: number, code: string, message: string, meta?: unknown): void {
         if (level < this.#level) return;
 
         const prefix = this.#getLevelPrefix(level);
@@ -284,7 +284,7 @@ export class ErrorHandler {
      * @param {Record<string, unknown>} [meta] - 附加元数据
      * @returns {void}
      */
-    #notifyListeners(code: string, message: string, level: number, meta?: Record<string, unknown>): void {
+    #notifyListeners(code: string, message: string, level: number, meta?: unknown): void {
         for (const listener of this.#listeners) {
             try {
                 listener(code, message, level, meta);
@@ -321,6 +321,6 @@ export class ErrorHandler {
 /**
  * 全局错误处理器单例
  *
- * 使用方式：import { errorHandler } from './core/ErrorHandler.js';
+ * 使用方式：import { errorHandler } from './core/ErrorHandler';
  */
 export const errorHandler = new ErrorHandler();

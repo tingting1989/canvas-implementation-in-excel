@@ -55,7 +55,7 @@ export class CellDataAccessor {
      * @returns 单元格实例或 null
      */
     get(row: number, col: number): Cell | null {
-        return this.#cellStore.get(row, col);
+        return this.#cellStore.get(row, col) ?? null;
     }
 
     /**

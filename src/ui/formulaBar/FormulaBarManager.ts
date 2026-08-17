@@ -33,17 +33,17 @@ export class FormulaBarManager extends Disposable {
     }
 
     #bindEvents(): void {
-        this.trackEvent(this.#element!, FORMULA_BAR_EVENTS.COMMIT, (e: CustomEvent) => {
-            this.#commitValue(e.detail.value);
+        this.trackEvent(this.#element!, FORMULA_BAR_EVENTS.COMMIT, (e: Event) => {
+            this.#commitValue((e as CustomEvent).detail.value);
         });
 
         this.trackEvent(this.#element!, FORMULA_BAR_EVENTS.CANCEL, () => {
             this.#cancelEdit();
         });
 
-        this.trackEvent(this.#element!, FORMULA_BAR_EVENTS.COMMIT_AND_MOVE, (e: CustomEvent) => {
-            this.#commitValue(e.detail.value);
-            this.#moveToCell(e.detail.direction);
+        this.trackEvent(this.#element!, FORMULA_BAR_EVENTS.COMMIT_AND_MOVE, (e: Event) => {
+            this.#commitValue((e as CustomEvent).detail.value);
+            this.#moveToCell((e as CustomEvent).detail.direction);
         });
 
         this.trackEvent(this.#element!, FORMULA_BAR_EVENTS.START_EDIT, () => {

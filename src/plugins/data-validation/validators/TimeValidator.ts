@@ -89,7 +89,7 @@ export class TimeValidator extends BaseValidator {
 
     parseTimeRange(value: any): [number, number | undefined] {
         if (Array.isArray(value)) {
-            return [this.parseTime(value[0]) || 0, this.parseTime(value[1])];
+            return [this.parseTime(value[0]) || 0, this.parseTime(value[1]) ?? undefined];
         }
 
         const time = this.parseTime(value) || 0;

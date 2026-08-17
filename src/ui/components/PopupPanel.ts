@@ -126,14 +126,14 @@ template.innerHTML = `
 </div>
 `;
 
-export class PopupPanelNew extends HTMLElement {
+export class PopupPanel extends HTMLElement {
     static DEFAULT_Z_INDEX = 10000;
     static ANIMATION_DURATION = 150;
 
     #anchor: HTMLElement | null = null;
     #position: { x: number; y: number } = { x: 0, y: 0 };
     #placement: "top" | "bottom" | "left" | "right" = "bottom";
-    #zIndex: number = PopupPanelNew.DEFAULT_Z_INDEX;
+    #zIndex: number = PopupPanel.DEFAULT_Z_INDEX;
     #visible: boolean = false;
     #closeOnClickOutside: boolean = true;
     #closeOnEscape: boolean = true;
@@ -154,14 +154,14 @@ export class PopupPanelNew extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: "open" });
-        this.shadowRoot.appendChild(template.content.cloneNode(true));
+        this.shadowRoot!.appendChild(template.content.cloneNode(true));
 
-        this._panel = this.shadowRoot.querySelector(".panel");
-        this._header = this.shadowRoot.querySelector(".header");
-        this._titleEl = this.shadowRoot.querySelector(".title");
-        this._closeBtn = this.shadowRoot.querySelector(".close-btn");
-        this._body = this.shadowRoot.querySelector(".body");
-        this._mask = this.shadowRoot.querySelector(".mask");
+        this._panel = this.shadowRoot!.querySelector(".panel");
+        this._header = this.shadowRoot!.querySelector(".header");
+        this._titleEl = this.shadowRoot!.querySelector(".title");
+        this._closeBtn = this.shadowRoot!.querySelector(".close-btn");
+        this._body = this.shadowRoot!.querySelector(".body");
+        this._mask = this.shadowRoot!.querySelector(".mask");
 
         this.setAttribute("role", "dialog");
         this.setAttribute("aria-modal", "false");
@@ -173,7 +173,7 @@ export class PopupPanelNew extends HTMLElement {
         this.#anchor = options.anchor || null;
         this.#position = options.position || { x: 0, y: 0 };
         this.#placement = options.placement || "bottom";
-        this.#zIndex = options.zIndex || PopupPanelNew.DEFAULT_Z_INDEX;
+        this.#zIndex = options.zIndex || PopupPanel.DEFAULT_Z_INDEX;
         this.#onClose = options.onClose || null;
         this.#closeOnClickOutside = options.closeOnClickOutside !== false;
         this.#closeOnEscape = options.closeOnEscape !== false;
@@ -399,7 +399,7 @@ export class PopupPanelNew extends HTMLElement {
 
     #enterAnimation(done: () => void): void {
         this.onEnter();
-        setTimeout(done, PopupPanelNew.ANIMATION_DURATION);
+        setTimeout(done, PopupPanel.ANIMATION_DURATION);
     }
 
     #exitAnimation(done: () => void): void {
@@ -413,7 +413,7 @@ export class PopupPanelNew extends HTMLElement {
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                this._panel!.style.transition = `opacity ${PopupPanelNew.ANIMATION_DURATION}ms ease, transform ${PopupPanelNew.ANIMATION_DURATION}ms ease`;
+                this._panel!.style.transition = `opacity ${PopupPanel.ANIMATION_DURATION}ms ease, transform ${PopupPanel.ANIMATION_DURATION}ms ease`;
                 this._panel!.style.opacity = "1";
                 this._panel!.style.transform = "scaleY(1)";
             });
@@ -421,10 +421,10 @@ export class PopupPanelNew extends HTMLElement {
     }
 
     onExit(callback: () => void): void {
-        this._panel!.style.transition = `opacity ${PopupPanelNew.ANIMATION_DURATION}ms ease, transform ${PopupPanelNew.ANIMATION_DURATION}ms ease`;
+        this._panel!.style.transition = `opacity ${PopupPanel.ANIMATION_DURATION}ms ease, transform ${PopupPanel.ANIMATION_DURATION}ms ease`;
         this._panel!.style.opacity = "0";
         this._panel!.style.transform = "scaleY(0.9)";
-        setTimeout(callback, PopupPanelNew.ANIMATION_DURATION);
+        setTimeout(callback, PopupPanel.ANIMATION_DURATION);
     }
 
     disconnectedCallback(): void {
@@ -433,10 +433,10 @@ export class PopupPanelNew extends HTMLElement {
     }
 }
 
-customElements.define("popup-panel-new", PopupPanelNew);
+customElements.define("popup-panel-new", PopupPanel);
 
 declare global {
     interface HTMLElementTagNameMap {
-        "popup-panel-new": PopupPanelNew;
+        "popup-panel-new": PopupPanel;
     }
 }

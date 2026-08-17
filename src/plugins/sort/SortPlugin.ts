@@ -225,7 +225,7 @@ export class SortPlugin extends BasePlugin {
 
         this.#sheetSwitchUnsubscribe = sheet.bus.on(SHEET_EVENTS.SHEET_SWITCHED, (envelope: any) => {
             const { currentSheet } = envelope.payload;
-            const newSheet = this.workbook.sheets.get(currentSheet);
+            const newSheet = this.workbook!.sheets.get(currentSheet);
             if (newSheet) {
                 this.#onSheetSwitched(newSheet);
             }

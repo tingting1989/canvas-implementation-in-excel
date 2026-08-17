@@ -1,6 +1,6 @@
-import { errorHandler } from "./ErrorHandler.js";
-import { EVENT_FLOW_REGISTRY } from "../constants/sheetEvents.js";
-import { ERROR_CODE } from "../constants/errorCodes.js";
+import { errorHandler } from "./ErrorHandler";
+import { EVENT_FLOW_REGISTRY } from "../constants/sheetEvents";
+import { ERROR_CODE } from "../constants/errorCodes";
 
 /**
  * 事件信封结构

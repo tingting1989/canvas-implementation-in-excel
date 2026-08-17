@@ -53,9 +53,12 @@ export class MouseStrategy extends EventStrategy {
      * 防抖的单元格点击事件触发器
      * 避免快速连续点击时重复触发 ON_CELL_CLICK 钩子
      */
-    #debouncedCellClick: ReturnType<typeof debounce> = debounce((row: number, col: number, e: MouseEvent) => {
-        this.handler.runHooks(HOOKS.ON_CELL_CLICK, row, col, e);
-    }, 200);
+    #debouncedCellClick: ReturnType<typeof debounce> = debounce(
+        ((row: number, col: number, e: MouseEvent) => {
+            this.handler.runHooks(HOOKS.ON_CELL_CLICK, row, col, e);
+        }) as (...args: unknown[]) => void,
+        200,
+    );
 
     /** 上次悬停的单元格坐标，用于检测悬停进出 */
     #lastHoverCell: { row: number; col: number } = { row: -1, col: -1 };

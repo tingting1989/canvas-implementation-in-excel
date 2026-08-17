@@ -456,17 +456,20 @@ export class SearchDropdown extends HTMLElement {
      * @private 私有方法 - 创建防抖搜索函数
      */
     #createDebouncedSearch(): void {
-        this.#debouncedSearch = debounce((query: string) => {
-            if (query) {
-                const options = this.#getCurrentOptions();
-                this.#onSearchCallback?.(query, options);
-            } else {
-                if (this.#resultInfo) {
-                    this.#resultInfo.textContent = "-";
-                    this.#resultInfo.className = "search-result-info";
+        this.#debouncedSearch = debounce(
+            ((query: string) => {
+                if (query) {
+                    const options = this.#getCurrentOptions();
+                    this.#onSearchCallback?.(query, options);
+                } else {
+                    if (this.#resultInfo) {
+                        this.#resultInfo.textContent = "-";
+                        this.#resultInfo.className = "search-result-info";
+                    }
                 }
-            }
-        }, 300);
+            }) as (...args: unknown[]) => void,
+            300,
+        );
     }
 
     /**

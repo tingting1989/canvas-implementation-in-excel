@@ -63,7 +63,7 @@ export class DateTimeValidator extends BaseValidator {
 
     parseRange(value: any, mode: string): [Date, Date | undefined] {
         if (Array.isArray(value)) {
-            return [DateTimeParser.parseByMode(value[0], mode) || new Date(0), DateTimeParser.parseByMode(value[1], mode)];
+            return [DateTimeParser.parseByMode(value[0], mode) || new Date(0), DateTimeParser.parseByMode(value[1], mode) ?? undefined];
         }
         const parsed = DateTimeParser.parseByMode(value, mode) || new Date(0);
         return [parsed, undefined];

@@ -86,7 +86,7 @@ export class SortEngine {
      * @returns 排序结果统计
      */
     sortRows(colIndex: number, options: SortOptions = {}): SortResult {
-        const { fixedRows, hiddenRows, order, comparator, caseSensitive } = options;
+        const { fixedRows, hiddenRows, order = "asc", comparator, caseSensitive } = options;
         return this.sortMultiple(
             [
                 {

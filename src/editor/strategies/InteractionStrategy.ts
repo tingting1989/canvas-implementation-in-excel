@@ -39,9 +39,12 @@ export class InteractionStrategy extends EventStrategy {
     /** 上次悬停的单元格键（"row,col"格式） */
     #lastHoveredCell: string | null = null;
     /** 防抖的单击处理器，避免双击时触发两次单击 */
-    #debouncedHandleClick: ReturnType<typeof debounce> = debounce((hitInfo: any, event: MouseEvent) => {
-        this.#doHandleClick(hitInfo, event);
-    }, 200);
+    #debouncedHandleClick: ReturnType<typeof debounce> = debounce(
+        ((hitInfo: any, event: MouseEvent) => {
+            this.#doHandleClick(hitInfo, event);
+        }) as (...args: unknown[]) => void,
+        200,
+    );
     /** 是否正在处理双击（抑制防抖单击） */
     #inDoubleClick: boolean = false;
     /** 是否有待执行的渲染 */
