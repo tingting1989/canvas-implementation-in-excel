@@ -104,13 +104,6 @@ export class DataValidationPlugin extends BasePlugin {
         const formulaEngine = (this as any).workbook?.formulaEngine || null;
         this.#engine.init(formulaEngine, null, engineConfig);
 
-        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[DataValidation] v3.0 初始化配置:`, {
-            formulaEngine: formulaEngine ? "✅ 已连接" : "❌ 未连接",
-            enableAdvancedCache: engineConfig.enableAdvancedCache,
-            syncThreshold: engineConfig.syncThreshold,
-            asyncTimeout: engineConfig.asyncTimeout,
-            ruleCount: options.rules?.length || 0,
-        });
 
         if (options.conflictStrategy) {
             this.#engine.conflictStrategy = options.conflictStrategy as any;
@@ -133,7 +126,7 @@ export class DataValidationPlugin extends BasePlugin {
                     errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
                 }
             }
-            errorHandler.info(ERROR_CODE.VALIDATION_INFO, `[DataValidation] ✅ 规则加载完成: ${successCount}/${options.rules.length}`);
+
         }
 
         this.#registerStrategy();
@@ -143,10 +136,6 @@ export class DataValidationPlugin extends BasePlugin {
         this.#copyPasteHandler = new CopyPasteHandler(this);
         this.#active = true;
 
-        errorHandler.info(
-            ERROR_CODE.VALIDATION_INFO,
-            `[DataValidation] ✅ DataValidationPlugin v3.0 激活 | FormulaEngine: ${formulaEngine ? "✅" : "❌"}`,
-        );
     }
 
     get active(): boolean {

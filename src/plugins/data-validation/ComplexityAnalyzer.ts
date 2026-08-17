@@ -182,10 +182,6 @@ export class ComplexityAnalyzer {
                 },
             };
 
-            errorHandler.debug(
-                ERROR_CODE.VALIDATION_DEBUG_LOG,
-                `[ComplexityAnalyzer] 分析完成: complexity=${complexity}, path=${path}, time=${estimatedTime.toFixed(1)}ms`,
-            );
 
             return result;
         } catch (error: any) {

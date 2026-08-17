@@ -171,10 +171,7 @@ export class FormulaValidator extends BaseValidator {
             const analysis = this.#complexityAnalyzer.analyze(resolvedFormula);
 
             if (analysis.canUseSyncFastPath && analysis.estimatedTime < this.#config.syncThreshold) {
-                errorHandler.debug(
-                    ERROR_CODE.VALIDATION_DEBUG_LOG,
-                    `[FormulaValidator] ✅ 使用同步快速通道: ${resolvedFormula} (${analysis.estimatedTime.toFixed(1)}ms预估)`,
-                );
+
 
                 const evaluationContext = this.#buildEvaluationContext(value, context);
 
