@@ -182,7 +182,6 @@ export class ComplexityAnalyzer {
                 },
             };
 
-
             return result;
         } catch (error: any) {
             errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[ComplexityAnalyzer] 分析过程异常`, { error, formula });

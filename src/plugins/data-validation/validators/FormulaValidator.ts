@@ -171,8 +171,6 @@ export class FormulaValidator extends BaseValidator {
             const analysis = this.#complexityAnalyzer.analyze(resolvedFormula);
 
             if (analysis.canUseSyncFastPath && analysis.estimatedTime < this.#config.syncThreshold) {
-
-
                 const evaluationContext = this.#buildEvaluationContext(value, context);
 
                 let result: unknown;

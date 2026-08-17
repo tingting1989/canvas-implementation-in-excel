@@ -203,7 +203,6 @@ export class DataValidationPlugin extends BasePlugin {
         const formulaEngine = this.workbook?.formulaEngine || null;
         this.#engine.init(formulaEngine, null, engineConfig);
 
-
         if (options.conflictStrategy) {
             this.#engine.conflictStrategy = options.conflictStrategy;
             this.#conflictStrategy = options.conflictStrategy;
@@ -225,7 +224,6 @@ export class DataValidationPlugin extends BasePlugin {
                     errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 加载规则失败:`, e);
                 }
             }
-
         }
 
         this.#registerStrategy();
@@ -234,7 +232,6 @@ export class DataValidationPlugin extends BasePlugin {
         this.#dirtyFlagManager = new ValidationDirtyFlagManager();
         this.#copyPasteHandler = new CopyPasteHandler(this);
         this.#active = true;
-
     }
 
     /** @returns {boolean} 插件是否处于激活状态 */

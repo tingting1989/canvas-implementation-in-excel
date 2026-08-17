@@ -16,9 +16,9 @@
  * @version 3.0.0
  */
 
-import {errorHandler} from "../../core/ErrorHandler.js";
-import {ERROR_CODE} from "../../constants/errorCodes.js";
-import {isString} from "../../utils/helper.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { isString } from "../../utils/helper.js";
 
 /**
  * 函数分类常量（冻结对象，防止运行时修改）
