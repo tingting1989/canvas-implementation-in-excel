@@ -47,7 +47,9 @@ export class BatchValidationCoordinator {
         });
     }
 
-    async exitBatchMode(options: Record<string, any> = {}): Promise<{ totalChecked: number; invalidCount: number; violations: any[]; duration: number }> {
+    async exitBatchMode(
+        options: Record<string, any> = {},
+    ): Promise<{ totalChecked: number; invalidCount: number; violations: any[]; duration: number }> {
         if (!this.#isBatchMode) {
             return { totalChecked: 0, invalidCount: 0, violations: [], duration: 0 };
         }

@@ -552,7 +552,11 @@ export class ValidationUIController {
                 if (cached.result.valid) {
                     status = ICON_STATUS.VALID;
                 } else {
-                    const statusMap: Record<string, string> = { stop: ICON_STATUS.INVALID, warning: ICON_STATUS.WARNING, information: ICON_STATUS.DEFERRED };
+                    const statusMap: Record<string, string> = {
+                        stop: ICON_STATUS.INVALID,
+                        warning: ICON_STATUS.WARNING,
+                        information: ICON_STATUS.DEFERRED,
+                    };
                     status = statusMap[cached.result.errorStyle] || ICON_STATUS.INVALID;
                 }
                 this.#getCurrentCache().set(key, status);
@@ -580,7 +584,11 @@ export class ValidationUIController {
                 if (result.valid) {
                     status = ICON_STATUS.VALID;
                 } else {
-                    const statusMap: Record<string, string> = { stop: ICON_STATUS.INVALID, warning: ICON_STATUS.WARNING, information: ICON_STATUS.DEFERRED };
+                    const statusMap: Record<string, string> = {
+                        stop: ICON_STATUS.INVALID,
+                        warning: ICON_STATUS.WARNING,
+                        information: ICON_STATUS.DEFERRED,
+                    };
                     status = statusMap[result.errorStyle] || ICON_STATUS.INVALID;
                 }
                 this.#getCurrentCache().set(key, status);
@@ -638,7 +646,11 @@ export class ValidationUIController {
                         if (result.valid) {
                             status = ICON_STATUS.VALID;
                         } else {
-                            const statusMap: Record<string, string> = { stop: ICON_STATUS.INVALID, warning: ICON_STATUS.WARNING, information: ICON_STATUS.DEFERRED };
+                            const statusMap: Record<string, string> = {
+                                stop: ICON_STATUS.INVALID,
+                                warning: ICON_STATUS.WARNING,
+                                information: ICON_STATUS.DEFERRED,
+                            };
                             status = statusMap[result.errorStyle] || ICON_STATUS.INVALID;
                         }
                         this.#getCurrentCache().set(key, status);

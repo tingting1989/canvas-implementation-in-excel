@@ -11,7 +11,7 @@ import { ValidationResult } from "./ValidationResult.js";
 import { ListSourceResolver } from "./ListSourceResolver.js";
 import { complexityAnalyzer } from "./ComplexityAnalyzer.js";
 import { getValidationCache } from "./ValidationCache.js";
-import type { ValidationRule } from "./ValidationRule.js";
+import { ValidationRule } from "./ValidationRule.js";
 
 export class ValidationEngine {
     #validators: Map<string, any> = new Map();

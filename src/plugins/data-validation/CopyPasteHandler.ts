@@ -42,7 +42,14 @@ export class CopyPasteHandler {
         }
     }
 
-    pasteWithRules(sourceRow: number, sourceCol: number, targetRow: number, targetCol: number, pasteOption: string = PASTE_OPTIONS.ALL, conflictResolution?: string): string[] {
+    pasteWithRules(
+        sourceRow: number,
+        sourceCol: number,
+        targetRow: number,
+        targetCol: number,
+        pasteOption: string = PASTE_OPTIONS.ALL,
+        conflictResolution?: string,
+    ): string[] {
         if (!this.shouldPasteValidation(pasteOption)) {
             return [];
         }
@@ -79,7 +86,15 @@ export class CopyPasteHandler {
         return newRuleIds;
     }
 
-    pasteRangeWithRules(sourceStartRow: number, sourceStartCol: number, targetStartRow: number, targetStartCol: number, rowCount: number, colCount: number, pasteOption: string = PASTE_OPTIONS.ALL): string[] {
+    pasteRangeWithRules(
+        sourceStartRow: number,
+        sourceStartCol: number,
+        targetStartRow: number,
+        targetStartCol: number,
+        rowCount: number,
+        colCount: number,
+        pasteOption: string = PASTE_OPTIONS.ALL,
+    ): string[] {
         if (!this.shouldPasteValidation(pasteOption)) {
             return [];
         }

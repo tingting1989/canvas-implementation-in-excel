@@ -80,20 +80,16 @@ export class FormulaValidator extends BaseValidator {
                     context,
                 });
 
-                return ValidationResult.failure(
-                    `公式验证错误: ${evalError.message}`,
-                    rule.errorStyle === "stop" ? "warning" : rule.errorStyle,
-                    {
-                        value,
-                        ruleId: rule.id,
-                        metadata: {
-                            error: evalError.message,
-                            formula: resolvedFormula,
-                            executionPath: "async-pipeline",
-                            executionTime: performance.now() - startTime,
-                        },
+                return ValidationResult.failure(`公式验证错误: ${evalError.message}`, rule.errorStyle === "stop" ? "warning" : rule.errorStyle, {
+                    value,
+                    ruleId: rule.id,
+                    metadata: {
+                        error: evalError.message,
+                        formula: resolvedFormula,
+                        executionPath: "async-pipeline",
+                        executionTime: performance.now() - startTime,
                     },
-                );
+                });
             }
 
             const isValid = !!result;
@@ -142,19 +138,15 @@ export class FormulaValidator extends BaseValidator {
         } catch (error: any) {
             errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 异步验证过程异常", { error, value, rule, context });
 
-            return ValidationResult.failure(
-                `公式验证系统错误: ${error.message}`,
-                "warning",
-                {
-                    value,
-                    ruleId: rule?.id,
-                    metadata: {
-                        error: error.message,
-                        executionPath: "async-pipeline",
-                        executionTime: performance.now() - startTime,
-                    },
+            return ValidationResult.failure(`公式验证系统错误: ${error.message}`, "warning", {
+                value,
+                ruleId: rule?.id,
+                metadata: {
+                    error: error.message,
+                    executionPath: "async-pipeline",
+                    executionTime: performance.now() - startTime,
                 },
-            );
+            });
         }
     }
 
@@ -248,9 +240,7 @@ export class FormulaValidator extends BaseValidator {
             return formula;
         }
 
-        return formula
-            .replace(/\{row\}/g, String((context.row ?? 0) + 1))
-            .replace(/\{col\}/g, String(context.col ?? 0));
+        return formula.replace(/\{row\}/g, String((context.row ?? 0) + 1)).replace(/\{col\}/g, String(context.col ?? 0));
     }
 
     evaluateSimpleFormulaSync(formula: string, value: any, context: Record<string, any>): boolean {
@@ -268,13 +258,20 @@ export class FormulaValidator extends BaseValidator {
                 if (isNaN(leftValue)) return false;
 
                 switch (operator) {
-                    case ">": return leftValue > rightValue;
-                    case "<": return leftValue < rightValue;
-                    case ">=": return leftValue >= rightValue;
-                    case "<=": return leftValue <= rightValue;
-                    case "=": return leftValue === rightValue;
-                    case "<>": return leftValue !== rightValue;
-                    default: return false;
+                    case ">":
+                        return leftValue > rightValue;
+                    case "<":
+                        return leftValue < rightValue;
+                    case ">=":
+                        return leftValue >= rightValue;
+                    case "<=":
+                        return leftValue <= rightValue;
+                    case "=":
+                        return leftValue === rightValue;
+                    case "<>":
+                        return leftValue !== rightValue;
+                    default:
+                        return false;
                 }
             }
 
@@ -288,13 +285,20 @@ export class FormulaValidator extends BaseValidator {
                 if (isNaN(leftValue)) return false;
 
                 switch (operator) {
-                    case ">": return leftValue > rightValue;
-                    case "<": return leftValue < rightValue;
-                    case ">=": return leftValue >= rightValue;
-                    case "<=": return leftValue <= rightValue;
-                    case "=": return leftValue === rightValue;
-                    case "<>": return leftValue !== rightValue;
-                    default: return false;
+                    case ">":
+                        return leftValue > rightValue;
+                    case "<":
+                        return leftValue < rightValue;
+                    case ">=":
+                        return leftValue >= rightValue;
+                    case "<=":
+                        return leftValue <= rightValue;
+                    case "=":
+                        return leftValue === rightValue;
+                    case "<>":
+                        return leftValue !== rightValue;
+                    default:
+                        return false;
                 }
             }
 

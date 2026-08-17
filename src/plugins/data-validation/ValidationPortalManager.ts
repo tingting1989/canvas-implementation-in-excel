@@ -159,7 +159,10 @@ export class ValidationPortalManager extends DOMComponent {
         this.#portalContainer = null;
     }
 
-    #calculateFixedPosition(position: Record<string, any>, options: Record<string, any> = {}): { x: number; y: number; width: number; height: number } {
+    #calculateFixedPosition(
+        position: Record<string, any>,
+        options: Record<string, any> = {},
+    ): { x: number; y: number; width: number; height: number } {
         const { x, y, width, height } = position;
 
         let canvasRect = { left: 0, top: 0 };

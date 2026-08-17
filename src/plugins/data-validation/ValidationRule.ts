@@ -27,7 +27,22 @@ export class ValidationRule {
     createdAt!: Date;
     updatedAt!: Date;
 
-    static VALID_TYPES: string[] = ["number", "text", "list", "formula", "date", "time", "datetime", "regex", "unique"];
+    static #validTypes: Set<string> = new Set(["number", "text", "list", "formula", "date", "time", "datetime", "regex", "unique"]);
+
+    static get VALID_TYPES(): string[] {
+        return [...ValidationRule.#validTypes];
+    }
+
+    static registerValidType(type: string): void {
+        if (!type || typeof type !== "string" || type.trim() === "") {
+            throw new Error("验证类型必须为非空字符串");
+        }
+        ValidationRule.#validTypes.add(type.trim());
+    }
+
+    static isValidType(type: string): boolean {
+        return ValidationRule.#validTypes.has(type);
+    }
 
     constructor(options: Record<string, any> = {}) {
         Object.assign(this, options);
@@ -48,8 +63,8 @@ export class ValidationRule {
             throw new Error("规则无效: range 必须为非空字符串");
         }
 
-        if (this.type && !ValidationRule.VALID_TYPES.includes(this.type)) {
-            throw new Error(`规则无效: 不支持的验证类型 ${this.type}, 必须是 ${ValidationRule.VALID_TYPES.join(",")} 之一`);
+        if (this.type && !ValidationRule.isValidType(this.type)) {
+            throw new Error(`规则无效: 不支持的验证类型 ${this.type}, 当前支持: ${ValidationRule.VALID_TYPES.join(", ")}`);
         }
     }
 
@@ -96,9 +111,8 @@ export class ValidationRule {
             errors.push("缺少必需属性: type");
         }
 
-        const validTypes = Object.values(VALIDATION_RULE_TYPE) as string[];
-        if (this.type && !validTypes.includes(this.type)) {
-            errors.push(`无效的验证类型: ${this.type}，必须是 ${validTypes.join(",")} 之一`);
+        if (this.type && !ValidationRule.isValidType(this.type)) {
+            errors.push(`无效的验证类型: ${this.type}，当前支持: ${ValidationRule.VALID_TYPES.join(", ")}`);
         }
 
         if (this.type === VALIDATION_RULE_TYPE.NUMBER && !this.operator) {

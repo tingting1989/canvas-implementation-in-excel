@@ -57,7 +57,14 @@ export class ValidationDirtyFlagManager {
         }
     }
 
-    markRangeDirty(startRow: number, startCol: number, endRow: number, endCol: number, flag: number = DIRTY_FLAGS.VALUES_CHANGED, source?: string): void {
+    markRangeDirty(
+        startRow: number,
+        startCol: number,
+        endRow: number,
+        endCol: number,
+        flag: number = DIRTY_FLAGS.VALUES_CHANGED,
+        source?: string,
+    ): void {
         for (let row = startRow; row <= endRow; row++) {
             for (let col = startCol; col <= endCol; col++) {
                 this.markDirty(row, col, flag, source);

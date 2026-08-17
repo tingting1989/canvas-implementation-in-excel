@@ -66,7 +66,17 @@ export class ComplexityAnalyzer {
         };
 
         this.AGGREGATE_FUNCTIONS = Object.freeze([
-            "SUM", "AVERAGE", "COUNT", "COUNTA", "COUNTIF", "SUMPRODUCT", "MAX", "MIN", "STDEV", "VAR", "SUBTOTAL",
+            "SUM",
+            "AVERAGE",
+            "COUNT",
+            "COUNTA",
+            "COUNTIF",
+            "SUMPRODUCT",
+            "MAX",
+            "MIN",
+            "STDEV",
+            "VAR",
+            "SUBTOTAL",
         ]);
 
         this.LOOKUP_FUNCTIONS = Object.freeze(["VLOOKUP", "HLOOKUP", "INDEX", "MATCH", "LOOKUP", "XLOOKUP"]);
@@ -78,7 +88,18 @@ export class ComplexityAnalyzer {
         this.LOGICAL_FUNCTIONS = Object.freeze(["IF", "AND", "OR", "NOT", "IFERROR", "IFNA", "XOR"]);
 
         this.TEXT_FUNCTIONS = Object.freeze([
-            "LEN", "LEFT", "RIGHT", "MID", "FIND", "SEARCH", "SUBSTITUTE", "TRIM", "UPPER", "LOWER", "CONCAT", "TEXT",
+            "LEN",
+            "LEFT",
+            "RIGHT",
+            "MID",
+            "FIND",
+            "SEARCH",
+            "SUBSTITUTE",
+            "TRIM",
+            "UPPER",
+            "LOWER",
+            "CONCAT",
+            "TEXT",
         ]);
 
         this.MATH_FUNCTIONS = Object.freeze(["ABS", "ROUND", "ROUNDUP", "ROUNDDOWN", "INT", "MOD", "POWER", "SQRT", "CEILING", "FLOOR"]);
@@ -276,11 +297,7 @@ export class ComplexityAnalyzer {
             return 0;
         }
 
-        const cellRefPatterns: RegExp[] = [
-            /\$?[A-Z]+\$?\d+/g,
-            /[A-Z]+\d+:[A-Z]+\d+/g,
-            /'[^']+'!\$?[A-Z]+\$?\d+/g,
-        ];
+        const cellRefPatterns: RegExp[] = [/\$?[A-Z]+\$?\d+/g, /[A-Z]+\d+:[A-Z]+\d+/g, /'[^']+'!\$?[A-Z]+\$?\d+/g];
 
         let count = 0;
         for (const pattern of cellRefPatterns) {
