@@ -55,6 +55,17 @@ export { SortPlugin } from "../plugins/sort/SortPlugin";
 export { FilterPlugin } from "../plugins/filter/FilterPlugin";
 export { SearchPlugin } from "../plugins/search/SearchPlugin";
 export { DataValidationPlugin } from "../plugins/data-validation/DataValidationPlugin";
+export { ValidationRule } from "../plugins/data-validation/ValidationRule";
+export { ValidationResult } from "../plugins/data-validation/ValidationResult";
+export { ValidationEngine } from "../plugins/data-validation/ValidationEngine";
+export { BaseValidator } from "../plugins/data-validation/validators/BaseValidator";
+export { NumberValidator } from "../plugins/data-validation/validators/NumberValidator";
+export { TextLengthValidator } from "../plugins/data-validation/validators/TextLengthValidator";
+export { ListValidator } from "../plugins/data-validation/validators/ListValidator";
+export { UniqueValidator } from "../plugins/data-validation/validators/UniqueValidator";
+export { FormulaValidator } from "../plugins/data-validation/validators/FormulaValidator";
+export { DateTimeValidator } from "../plugins/data-validation/validators/DateTimeValidator";
+export { RegexValidator } from "../plugins/data-validation/validators/RegexValidator";
 
 // ============================================================
 // 公式引擎

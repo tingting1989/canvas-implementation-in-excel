@@ -428,6 +428,18 @@ export class DataValidationPlugin extends BasePlugin {
         return success;
     }
 
+    registerValidator(type: string, validator: any): void {
+        if (!this.#engine) {
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[DataValidation] 引擎未初始化，无法注册验证器");
+            return;
+        }
+        this.#engine.registerValidator(type, validator);
+    }
+
+    registerValidType(type: string): void {
+        ValidationRule.registerValidType(type);
+    }
+
     async validateCell(row: number, col: number, value: any): Promise<ValidationResult> {
         if (!this.#engine) {
             return ValidationResult.success();

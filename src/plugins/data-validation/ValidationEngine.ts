@@ -61,6 +61,7 @@ export class ValidationEngine {
 
     registerValidator(type: string, validator: any): void {
         this.#validators.set(type, validator);
+        ValidationRule.registerValidType(type);
     }
 
     addRule(rule: ValidationRule): string {
