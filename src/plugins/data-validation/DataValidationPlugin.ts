@@ -6,8 +6,8 @@ import { ValidationRule } from "./ValidationRule.js";
 import { ValidationUIController } from "./ValidationUIController.js";
 import { ValidationPortalManager } from "./ValidationPortalManager.js";
 import { ValidationDirtyFlagManager } from "./ValidationDirtyFlagManager.js";
-import { CopyPasteHandler } from "./CopyPasteHandler.js";
-import { getValidationCache } from "./ValidationCache.js";
+import { CopyPasteHandler, PASTE_OPTIONS } from "./CopyPasteHandler.js";
+import { getValidationCache, initValidationCache } from "./ValidationCache.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
@@ -88,6 +88,17 @@ export class DataValidationPlugin extends BasePlugin {
             retryAttempts: formulaValidationConfig.asyncValidation?.retryAttempts || 2,
             enableDeferred: formulaValidationConfig.asyncValidation?.enabled !== false,
         };
+
+        if (formulaValidationConfig.cache) {
+            initValidationCache({
+                l1MaxSize: formulaValidationConfig.cache.l1MaxSize,
+                l2MaxSize: formulaValidationConfig.cache.l2MaxSize,
+                l3Enabled: formulaValidationConfig.cache.l3Enabled,
+                defaultTTL: formulaValidationConfig.cache.defaultTTL,
+            });
+        } else {
+            initValidationCache();
+        }
 
         this.#engine = new ValidationEngine((this as any).sheet?.cellStore);
         const formulaEngine = (this as any).workbook?.formulaEngine || null;
@@ -205,7 +216,7 @@ export class DataValidationPlugin extends BasePlugin {
                 this.#removeErrorStyle(row, col);
             }
 
-            this.#portalUI?.setIconStatus(row, col, true);
+            this.#portalUI?.setIconStatus(row, col, true, "stop");
         }
 
         return true;
@@ -213,7 +224,7 @@ export class DataValidationPlugin extends BasePlugin {
 
     handleAfterSetValue(row: number, col: number, value: any): void {
         if (!this.#active || !this.#engine) return;
-        this.#dirtyFlagManager?.markDirty(row, col, "user_edit");
+        this.#dirtyFlagManager?.markDirty(row, col, 2, "user_edit");
 
         const result = ValidationResult.success();
         result.row = row;
@@ -226,6 +237,17 @@ export class DataValidationPlugin extends BasePlugin {
 
     interceptBeforePaste(data: any): boolean {
         if (!this.#active || !this.#copyPasteHandler) return true;
+
+        if (data?.sourceRow !== undefined && data?.targetRow !== undefined) {
+            this.#copyPasteHandler!.pasteWithRules(
+                data.sourceRow,
+                data.sourceCol,
+                data.targetRow,
+                data.targetCol,
+                data.pasteOption || PASTE_OPTIONS.ALL,
+            );
+        }
+
         return true;
     }
 
@@ -513,11 +535,14 @@ export class DataValidationPlugin extends BasePlugin {
         }
 
         if (this.#dirtyFlagManager) {
-            this.#dirtyFlagManager.clearAllDirty();
+            this.#dirtyFlagManager.destroy();
             this.#dirtyFlagManager = null;
         }
 
-        this.#copyPasteHandler = null;
+        if (this.#copyPasteHandler) {
+            this.#copyPasteHandler.destroy();
+            this.#copyPasteHandler = null;
+        }
         super.destroy();
     }
 

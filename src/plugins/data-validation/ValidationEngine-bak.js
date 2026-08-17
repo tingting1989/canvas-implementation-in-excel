@@ -1,4 +1,4 @@
-import { errorHandler } from "../../core/ErrorHandler.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { NumberValidator } from "./validators/NumberValidator.js";
 import { TextLengthValidator } from "./validators/TextLengthValidator.js";
@@ -9,32 +9,98 @@ import { DateTimeValidator } from "./validators/DateTimeValidator.js";
 import { RegexValidator } from "./validators/RegexValidator.js";
 import { ValidationResult } from "./ValidationResult.js";
 import { ListSourceResolver } from "./ListSourceResolver.js";
-import { complexityAnalyzer } from "./ComplexityAnalyzer.js";
-import { getValidationCache } from "./ValidationCache.js";
-import type { ValidationRule } from "./ValidationRule.js";
+import { complexityAnalyzer } from "./ComplexityAnalyzer.js"; // v3.0 新增
+import { getValidationCache } from "./ValidationCache.js"; // v3.0 新增
 
+/**
+ * ═══════════════════════════════════════════════════════════════
+ * 📌 ValidationEngine v3.0 - 单轨异步架构验证引擎
+ * ═══════════════════════════════════════════════════════════════
+ *
+ * 核心升级：
+ * ✅ 深度集成 FormulaEngine（消除 Mock 数据）
+ * ✅ 单轨异步架构 + 同步快速通道优化
+ * ✅ 三级缓存系统（L1视口 → L2最近 → L3持久化）
+ * ✅ 复杂度分析器（智能路径决策）
+ * ✅ 安全机制（移除 eval()，采用安全解析器）
+ *
+ * @example
+ * const engine = new ValidationEngine(cellStore);
+ * engine.init(formulaEngine);
+ *
+ * // 异步验证（标准路径）
+ * const result = await engine.validateCell(0, 0, 50);
+ *
+ * // 同步快速通道（简单公式 <10ms）
+ * const syncResult = engine.validateCellSync(0, 0, 'hello');
+ */
 export class ValidationEngine {
-    #validators: Map<string, any> = new Map();
-    #rules: Map<string, ValidationRule> = new Map();
-    #destroyed: boolean = false;
-    #cellStore: any;
-    #cache: Map<string, Map<string, ValidationResult>> = new Map();
-    #maxCacheSize: number = 10000;
-    #conflictStrategy: string = "short-circuit";
-    #sourceResolver: ListSourceResolver | null = null;
-    #formulaEngine: any = null;
-    #enableAdvancedCache: boolean = true;
+    /** @type {Map<string, Object>} 验证器注册表 */
+    #validators = new Map();
 
-    constructor(cellStore: any) {
+    /** @type {Map<string, import('./ValidationRule.js').ValidationRule>} 规则存储 */
+    #rules = new Map();
+
+    /** @type {boolean} 是否已销毁 */
+    #destroyed = false;
+
+    /** @type {Object} CellStore 实例 */
+    #cellStore;
+
+    /** @type {Map<string, Map<string, import('./ValidationResult.js').ValidationResult>>} 验证结果缓存（保留向后兼容） */
+    #cache = new Map();
+
+    /** @type {number} 缓存最大容量 */
+    #maxCacheSize = 10000;
+
+    /** @type {string} 规则冲突解决策略：short-circuit|priority|aggregate */
+    #conflictStrategy = "short-circuit";
+
+    /** @type {ListSourceResolver|null} 动态数据源解析器 */
+    #sourceResolver = null;
+
+    // ════════════════════════════════════════
+    // v3.0 新增属性
+    // ════════════════════════════════════════
+
+    /** @type {Object|null} FormulaEngine 实例 */
+    #formulaEngine = null;
+
+    /** @type {boolean} 是否启用三级缓存 */
+    #enableAdvancedCache = true;
+
+    /**
+     * 构造验证引擎
+     * @param {Object} cellStore - CellStore 实例
+     */
+    constructor(cellStore) {
         this.#cellStore = cellStore;
     }
 
-    init(formulaEngine: any = null, sheetManager: any = null, config: Record<string, any> = {}): void {
+    /**
+     * 初始化引擎（v3.0 增强版）
+     *
+     * 注册所有内置验证器，并初始化高级组件：
+     * - ComplexityAnalyzer（复杂度分析器）
+     * - ValidationCache（三级缓存系统）
+     *
+     * 内置验证器类型：
+     * number、text、list、unique、formula、date、time、datetime、regex
+     *
+     * @param {Object|null} [formulaEngine=null] - 公式引擎实例（formula 类型必需）
+     * @param {Object|null} [sheetManager=null] - SheetManager 实例（动态区域引用需要）
+     * @param {Object} [config={}] - 配置选项
+     * @param {boolean} [config.enableAdvancedCache=true] - 是否启用三级缓存
+     */
+    init(formulaEngine = null, sheetManager = null, config = {}) {
+        // 保存配置
         this.#formulaEngine = formulaEngine;
         this.#enableAdvancedCache = config.enableAdvancedCache !== false;
 
+        // 初始化动态数据源解析器
         this.#sourceResolver = new ListSourceResolver(this.#cellStore, sheetManager);
 
+        // 注册所有内置验证器
         this.registerValidator("number", new NumberValidator());
         this.registerValidator("text", new TextLengthValidator());
 
@@ -44,6 +110,7 @@ export class ValidationEngine {
 
         this.registerValidator("unique", new UniqueValidator(this.#cellStore));
 
+        // v3.0 增强：FormulaValidator 现在接收完整配置
         const formulaConfig = {
             syncThreshold: config.syncThreshold || 10,
             asyncTimeout: config.asyncTimeout || 500,
@@ -59,11 +126,23 @@ export class ValidationEngine {
         this.registerValidator("regex", new RegexValidator());
     }
 
-    registerValidator(type: string, validator: any): void {
+    /**
+     * 注册验证器
+     * @param {string} type - 验证类型标识（如 "number"、"list"）
+     * @param {Object} validator - 验证器实例，需提供 validate(value, rule, context) 方法
+     */
+    registerValidator(type, validator) {
         this.#validators.set(type, validator);
     }
 
-    addRule(rule: ValidationRule): string {
+    /**
+     * 添加验证规则
+     * 校验规则有效性，通过后存入规则表并使受影响范围的缓存失效
+     * @param {import('./ValidationRule.js').ValidationRule} rule - 规则实例
+     * @returns {string} 规则 ID
+     * @throws {Error} 规则校验失败时抛出异常
+     */
+    addRule(rule) {
         const validation = rule.validate();
         if (!validation.valid) {
             throw new Error(`规则验证失败: ${validation.errors.join(", ")}`);
@@ -74,7 +153,13 @@ export class ValidationEngine {
         return rule.id;
     }
 
-    removeRule(ruleId: string): boolean {
+    /**
+     * 移除验证规则
+     * 移除后使受影响范围的缓存失效
+     * @param {string} ruleId - 规则 ID
+     * @returns {boolean} 是否成功移除
+     */
+    removeRule(ruleId) {
         const rule = this.#rules.get(ruleId);
         if (rule) {
             this.#rules.delete(ruleId);
@@ -84,43 +169,68 @@ export class ValidationEngine {
         return false;
     }
 
-    getRulesForCell(row: number, col: number): ValidationRule[] {
-        const rules: ValidationRule[] = [];
+    /**
+     * 获取指定单元格关联的所有验证规则
+     * 返回结果按 priority 升序排列（优先级数值越小越先执行）
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {import('./ValidationRule.js').ValidationRule[]} 规则数组
+     */
+    getRulesForCell(row, col) {
+        const rules = [];
         for (const rule of this.#rules.values()) {
             if (this.isCellInRange(row, col, rule.range)) {
                 rules.push(rule);
             }
         }
-        return rules.sort((a: any, b: any) => a.priority - b.priority);
+        return rules.sort((a, b) => a.priority - b.priority);
     }
 
-    async validateCell(row: number, col: number, value: any, rules?: ValidationRule[]): Promise<ValidationResult> {
+    /**
+     * 异步验证单个单元格（v3.0 增强版）
+     *
+     * 缓存读取优先级：
+     * 1. 三级缓存系统（L1 → L2 → L3）- 如果启用高级缓存
+     * 2. 传统内存缓存（向后兼容）
+     * 3. 未命中则执行验证并写入缓存
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} value - 待验证的值
+     * @param {Array} [rules] - 可选的预加载规则（避免重复查询）
+     * @returns {Promise<ValidationResult>} 验证结果
+     */
+    async validateCell(row, col, value, rules) {
         const cacheKey = `${row},${col}`;
 
         try {
+            // v3.0 新增：优先使用三级缓存系统
             if (this.#enableAdvancedCache) {
                 const cache = getValidationCache();
                 try {
                     const cached = cache ? await cache.get(cacheKey) : null;
 
                     if (cached && cached.result !== null && cached.result !== undefined) {
+                        // 三级缓存命中，直接返回
                         return cached.result.valid
-                            ? ValidationResult.success({ source: "advanced-cache" })
+                            ? ValidationResult.success({ source: "advanced-cache", level: cached.level })
                             : ValidationResult.failure(cached.result.rule?.errorMessage || "验证失败", cached.result.rule?.errorStyle || "stop", {
                                   ...cached.result.metadata,
                                   source: "advanced-cache",
                               });
                     }
-                } catch (cacheError: any) {
+                } catch (cacheError) {
                     errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] 三级缓存读取失败，降级到传统缓存", { error: cacheError });
                 }
             }
 
+            // 向后兼容：传统内存缓存检查
             const legacyCached = this.getFromCache(cacheKey, value);
             if (legacyCached) {
                 return legacyCached;
             }
 
+            // 获取验证规则（如果未预加载）
             if (!rules || !Array.isArray(rules)) {
                 rules = this.getRulesForCell(row, col);
             }
@@ -129,6 +239,7 @@ export class ValidationEngine {
                 return ValidationResult.success();
             }
 
+            // 构建上下文
             const context = {
                 row,
                 col,
@@ -136,7 +247,8 @@ export class ValidationEngine {
                 workbook: this.#cellStore?.workbook || null,
             };
 
-            let result: ValidationResult;
+            // 根据冲突策略执行验证
+            let result;
             switch (this.#conflictStrategy) {
                 case "short-circuit":
                     result = await this.validateWithShortCircuit(rules, value, context);
@@ -151,6 +263,7 @@ export class ValidationEngine {
                     result = await this.validateWithShortCircuit(rules, value, context);
             }
 
+            // 写入三级缓存（异步，不阻塞返回）
             if (this.#enableAdvancedCache && result) {
                 const cache = getValidationCache();
                 if (cache) {
@@ -168,7 +281,7 @@ export class ValidationEngine {
                                 sheet: context.sheet,
                             },
                         )
-                        .catch((cacheError: any) => {
+                        .catch((cacheError) => {
                             errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 缓存写入失败（不影响主流程）", {
                                 error: cacheError,
                             });
@@ -177,14 +290,23 @@ export class ValidationEngine {
             }
 
             return result;
-        } catch (error: any) {
+        } catch (error) {
             errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] validateCell() 异常", { error, row, col, value });
 
             return ValidationResult.failure(`验证引擎异常: ${error.message}`, "warning", { error: error.message, row, col });
         }
     }
 
-    validateCellSync(row: number, col: number, value: any): ValidationResult {
+    /**
+     * 同步验证单个单元格
+     * 用于 BEFORE_SET_VALUE_AT 钩子拦截（必须同步返回），不经过缓存
+     * 优先使用验证器的 validateSync 方法，不存在则回退到 validate
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} value - 待验证的值
+     * @returns {import('./ValidationResult.js').ValidationResult} 验证结果
+     */
+    validateCellSync(row, col, value) {
         const rules = this.getRulesForCell(row, col);
 
         if (rules.length === 0) {
@@ -205,9 +327,14 @@ export class ValidationEngine {
         }
     }
 
-    async validateRange(range: string): Promise<{ total: number; valid: number; invalid: number; results: any[] }> {
+    /**
+     * 批量验证区域内的所有单元格
+     * @param {string} range - 区域范围字符串（如 "A1:A100"）
+     * @returns {Promise<{total: number, valid: number, invalid: number, results: Array}>} 批量验证报告
+     */
+    async validateRange(range) {
         const cells = this.getCellsInRange(range);
-        const results: any[] = [];
+        const results = [];
 
         for (const { row, col, value } of cells) {
             const result = await this.validateCell(row, col, value);
@@ -224,7 +351,16 @@ export class ValidationEngine {
         };
     }
 
-    async validateWithShortCircuit(rules: ValidationRule[], value: any, context: Record<string, any>): Promise<ValidationResult> {
+    /**
+     * 短路策略验证（任一失败即失败）
+     * 按优先级逐条验证，第一条失败规则的结果即为最终结果
+     * @private
+     * @param {ValidationRule[]} rules - 按优先级排序的规则数组
+     * @param {*} value - 待验证的值
+     * @param {object} context - 验证上下文 { row, col, sheet }
+     * @returns {Promise<ValidationResult>} 验证结果
+     */
+    async validateWithShortCircuit(rules, value, context) {
         for (const rule of rules) {
             const validator = this.#validators.get(rule.type);
             if (!validator) {
@@ -244,8 +380,17 @@ export class ValidationEngine {
         return successResult;
     }
 
-    async validateWithPriority(rules: ValidationRule[], value: any, context: Record<string, any>): Promise<ValidationResult> {
-        let lastResult: ValidationResult = ValidationResult.success();
+    /**
+     * 优先级策略验证（最高优先级决定结果）
+     * 按优先级逐条验证，最后一条规则的结果即为最终结果
+     * @private
+     * @param {ValidationRule[]} rules - 按优先级排序的规则数组
+     * @param {*} value - 待验证的值
+     * @param {object} context - 验证上下文 { row, col, sheet }
+     * @returns {Promise<ValidationResult>} 验证结果
+     */
+    async validateWithPriority(rules, value, context) {
+        let lastResult = ValidationResult.success();
 
         for (const rule of rules) {
             const validator = this.#validators.get(rule.type);
@@ -258,8 +403,17 @@ export class ValidationEngine {
         return lastResult;
     }
 
-    async validateWithAggregate(rules: ValidationRule[], value: any, context: Record<string, any>): Promise<ValidationResult> {
-        const errors: string[] = [];
+    /**
+     * 聚合策略验证（全部通过才算通过）
+     * 收集所有失败规则的错误信息，用分号拼接
+     * @private
+     * @param {ValidationRule[]} rules - 按优先级排序的规则数组
+     * @param {*} value - 待验证的值
+     * @param {object} context - 验证上下文 { row, col, sheet }
+     * @returns {Promise<ValidationResult>} 验证结果
+     */
+    async validateWithAggregate(rules, value, context) {
+        const errors = [];
 
         for (const rule of rules) {
             const validator = this.#validators.get(rule.type);
@@ -277,7 +431,17 @@ export class ValidationEngine {
         return finalResult;
     }
 
-    validateWithShortCircuitSync(rules: ValidationRule[], value: any, context: Record<string, any>): ValidationResult {
+    /**
+     * 短路策略验证（同步版本）
+     * 用于 BEFORE_SET_VALUE_AT 钩子拦截，必须同步返回
+     * 优先使用验证器的 validateSync 方法，不存在则回退到 validate
+     * @private
+     * @param {ValidationRule[]} rules - 按优先级排序的规则数组
+     * @param {*} value - 待验证的值
+     * @param {object} context - 验证上下文
+     * @returns {ValidationResult} 验证结果
+     */
+    validateWithShortCircuitSync(rules, value, context) {
         for (const rule of rules) {
             const validator = this.#validators.get(rule.type);
             if (!validator) continue;
@@ -289,8 +453,16 @@ export class ValidationEngine {
         return ValidationResult.success();
     }
 
-    validateWithPrioritySync(rules: ValidationRule[], value: any, context: Record<string, any>): ValidationResult {
-        let lastResult: ValidationResult = ValidationResult.success();
+    /**
+     * 优先级策略验证（同步版本）
+     * @private
+     * @param {ValidationRule[]} rules - 按优先级排序的规则数组
+     * @param {*} value - 待验证的值
+     * @param {object} context - 验证上下文
+     * @returns {ValidationResult} 验证结果
+     */
+    validateWithPrioritySync(rules, value, context) {
+        let lastResult = ValidationResult.success();
 
         for (const rule of rules) {
             const validator = this.#validators.get(rule.type);
@@ -303,8 +475,16 @@ export class ValidationEngine {
         return lastResult;
     }
 
-    validateWithAggregateSync(rules: ValidationRule[], value: any, context: Record<string, any>): ValidationResult {
-        const errors: string[] = [];
+    /**
+     * 聚合策略验证（同步版本）
+     * @private
+     * @param {ValidationRule[]} rules - 按优先级排序的规则数组
+     * @param {*} value - 待验证的值
+     * @param {object} context - 验证上下文
+     * @returns {ValidationResult} 验证结果
+     */
+    validateWithAggregateSync(rules, value, context) {
+        const errors = [];
 
         for (const rule of rules) {
             const validator = this.#validators.get(rule.type);
@@ -320,9 +500,21 @@ export class ValidationEngine {
         return errors.length > 0 ? ValidationResult.failure(errors.join("; "), "warning") : ValidationResult.success();
     }
 
-    isCellInRange(row: number, col: number, rangeStr: string): boolean {
+    /**
+     * 检查单元格是否在范围内
+     * 支持三种范围模式：
+     * 1. 整列 "A:A" 或 "B:C"
+     * 2. 整行 "1:1" 或 "2:5"
+     * 3. 标准区域 "A1:B100"
+     * @private
+     * @param {number} row - 行号（0-based）
+     * @param {number} col - 列号（0-based）
+     * @param {string} rangeStr - 范围字符串
+     * @returns {boolean} 单元格是否在范围内
+     */
+    isCellInRange(row, col, rangeStr) {
         try {
-            const colToNum = (colStr: string): number => {
+            const colToNum = (colStr) => {
                 let num = 0;
                 for (let i = 0; i < colStr.length; i++) {
                     num = num * 26 + (colStr.charCodeAt(i) - 64);
@@ -330,6 +522,7 @@ export class ValidationEngine {
                 return num - 1;
             };
 
+            // 模式 1: 整列 "A:A", "B:C"
             const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
             if (fullColMatch) {
                 const startCol = colToNum(fullColMatch[1]);
@@ -337,6 +530,7 @@ export class ValidationEngine {
                 return col >= startCol && col <= endCol;
             }
 
+            // 模式 2: 整行 "1:1", "2:5"
             const fullRowMatch = rangeStr.match(/^(\d+):(\d+)$/);
             if (fullRowMatch) {
                 const startRow = parseInt(fullRowMatch[1]) - 1;
@@ -344,6 +538,7 @@ export class ValidationEngine {
                 return row >= startRow && row <= endRow;
             }
 
+            // 模式 3: 标准区域 "A1:B100"
             const rangeMatch = rangeStr.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
             if (rangeMatch) {
                 const startRow = parseInt(rangeMatch[2]) - 1;
@@ -355,19 +550,26 @@ export class ValidationEngine {
             }
 
             return false;
-        } catch (e: any) {
+        } catch (e) {
             console.error(`[VE-ERROR] isCellInRange failed for range="${rangeStr}"`, e);
             return false;
         }
     }
 
-    getCellsInRange(rangeStr: string): Array<{ row: number; col: number; value: any }> {
-        const cells: Array<{ row: number; col: number; value: any }> = [];
+    /**
+     * 获取范围内的所有单元格数据
+     * 仅支持标准区域模式 "A1:B100"
+     * @private
+     * @param {string} rangeStr - 范围字符串
+     * @returns {Array<{row: number, col: number, value: *}>} 单元格数据数组
+     */
+    getCellsInRange(rangeStr) {
+        const cells = [];
         const match = rangeStr.match(/([A-Z]+)(\d+):([A-Z]+)(\d+)/);
 
         if (!match) return cells;
 
-        const colToNum = (col: string): number => {
+        const colToNum = (col) => {
             let num = 0;
             for (let i = 0; i < col.length; i++) {
                 num = num * 26 + (col.charCodeAt(i) - 64);
@@ -394,30 +596,49 @@ export class ValidationEngine {
         return cells;
     }
 
-    getFromCache(key: string, value: any): ValidationResult | null {
+    /**
+     * 从缓存中读取验证结果
+     * 缓存结构为两级 Map：外层 key 为 "row,col"，内层 key 为值的字符串表示
+     * @param {string} key - 缓存键，格式为 "row,col"
+     * @param {*} value - 单元格值，用于匹配内层缓存
+     * @returns {ValidationResult|null} 缓存的验证结果，未命中返回 null
+     */
+    getFromCache(key, value) {
         const cellCache = this.#cache.get(key);
         if (cellCache && cellCache.has(String(value))) {
-            return cellCache.get(String(value)) ?? null;
+            return cellCache.get(String(value));
         }
         return null;
     }
 
-    setToCache(key: string, value: any, result: ValidationResult): void {
+    /**
+     * 将验证结果写入缓存
+     * 当内层缓存达到 #maxCacheSize 时，淘汰最早的条目（FIFO）
+     * @param {string} key - 缓存键，格式为 "row,col"
+     * @param {*} value - 单元格值
+     * @param {ValidationResult} result - 验证结果
+     */
+    setToCache(key, value, result) {
         if (!this.#cache.has(key)) {
             this.#cache.set(key, new Map());
         }
 
-        const cellCache = this.#cache.get(key)!;
+        const cellCache = this.#cache.get(key);
 
         if (cellCache.size >= this.#maxCacheSize) {
-            const oldestKey = cellCache.keys().next().value as string;
+            const oldestKey = cellCache.keys().next().value;
             cellCache.delete(oldestKey);
         }
 
         cellCache.set(String(value), result);
     }
 
-    invalidateCache(range: string | null): void {
+    /**
+     * 使指定范围内的缓存失效
+     * range 为 null 时清空全部缓存
+     * @param {string|null} range - 范围字符串，null 表示全部
+     */
+    invalidateCache(range) {
         if (!range) {
             this.#cache.clear();
             return;
@@ -431,15 +652,22 @@ export class ValidationEngine {
         }
     }
 
-    clearAllCache(): void {
+    /** 清空全部验证结果缓存 */
+    clearAllCache() {
         this.#cache.clear();
     }
 
-    get rules(): Map<string, ValidationRule> {
+    /** @returns {Map<string, ValidationRule>} 规则映射表的浅拷贝 */
+    get rules() {
         return new Map(this.#rules);
     }
 
-    set conflictStrategy(strategy: string) {
+    /**
+     * 设置规则冲突解决策略
+     * @param {string} strategy - 策略名称，可选值：short-circuit | priority | aggregate
+     * @throws {Error} 策略名称无效时抛出异常
+     */
+    set conflictStrategy(strategy) {
         const validStrategies = ["short-circuit", "priority", "aggregate"];
         if (!validStrategies.includes(strategy)) {
             throw new Error(`无效的冲突策略: ${strategy}`);
@@ -447,31 +675,40 @@ export class ValidationEngine {
         this.#conflictStrategy = strategy;
     }
 
-    get conflictStrategy(): string {
+    /** @returns {string} 当前冲突解决策略 */
+    get conflictStrategy() {
         return this.#conflictStrategy;
     }
 
-    get sourceResolver(): ListSourceResolver | null {
+    /** @returns {ListSourceResolver|null} 动态数据源解析器 */
+    get sourceResolver() {
         return this.#sourceResolver;
     }
 
-    destroy(): void {
+    /**
+     * 销毁引擎，清空验证器注册表、规则存储和缓存（v3.0 增强版）
+     */
+    destroy() {
         if (this.#destroyed) return;
         this.#destroyed = true;
 
+        // 清理基础资源
         this.#validators.clear();
         this.#rules.clear();
         this.#cache.clear();
 
+        // v3.0 新增：清理三级缓存系统
         if (this.#enableAdvancedCache) {
             const cache = getValidationCache();
             if (cache) {
-                try {
-                    cache.clear();
-                    errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 三级缓存已清空");
-                } catch (error: any) {
-                    errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] 三级缓存清空失败", { error });
-                }
+                cache
+                    .clear()
+                    .then(() => {
+                        errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, "[ValidationEngine] 三级缓存已清空");
+                    })
+                    .catch((error) => {
+                        errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationEngine] 三级缓存清空失败", { error });
+                    });
             }
         }
 

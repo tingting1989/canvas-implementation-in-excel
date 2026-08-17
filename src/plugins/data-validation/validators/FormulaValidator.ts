@@ -1,163 +1,230 @@
 import { BaseValidator } from "./BaseValidator.js";
 import { ValidationResult } from "../ValidationResult.js";
-import type { ValidationRule } from "../ValidationRule.js";
+import { ValidationRule } from "../ValidationRule.js";
+import { ComplexityAnalyzer, complexityAnalyzer, COMPLEXITY_THRESHOLD } from "../ComplexityAnalyzer.js";
 import { ShadowEvaluator } from "../ShadowEvaluator.js";
-import { ComplexityAnalyzer } from "../ComplexityAnalyzer.js";
+import { getValidationCache } from "../ValidationCache.js";
 import { errorHandler } from "../../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../../constants/errorCodes.js";
 
-interface FormulaValidatorConfig {
-    maxComplexity?: number;
-    timeout?: number;
-    enableShadowEval?: boolean;
-}
+const DEFAULT_CONFIG = Object.freeze({
+    enableComplexityAnalysis: true,
+    enableShadowEvaluation: true,
+    syncTimeoutMs: COMPLEXITY_THRESHOLD.SYNC_TIME_LIMIT_MS,
+    maxFormulaLength: 1024,
+});
 
-interface FormulaContext {
-    row?: number;
-    col?: number;
-    sheet?: string;
-    [key: string]: any;
-}
-
-/**
- * 公式验证器
- *
- * 支持自定义公式验证逻辑，通过公式引擎执行公式并
- * 根据返回值（true/false）判断验证结果。
- *
- * 安全策略：
- * - 低复杂度公式：直接通过公式引擎求值
- * - 高复杂度公式：通过 ShadowEvaluator 在隔离沙箱中求值
- * - 超复杂度公式：直接拒绝并返回失败结果
- */
 export class FormulaValidator extends BaseValidator {
     static get TYPE(): string {
         return "formula";
     }
 
-    #formulaEngine: any;
-    #shadowEvaluator: ShadowEvaluator | null;
+    #formulaEngine: any = null;
     #complexityAnalyzer: ComplexityAnalyzer;
-    #maxComplexity: number;
-    #timeout: number;
-    #enableShadowEval: boolean;
+    #config: Record<string, any>;
 
-    constructor(formulaEngine: any = null, config: FormulaValidatorConfig = {}) {
+    constructor(formulaEngine: any, config: Record<string, any> = {}) {
         super();
         this.#formulaEngine = formulaEngine;
-        this.#shadowEvaluator = config.enableShadowEval !== false ? new ShadowEvaluator() : null;
-        this.#complexityAnalyzer = new ComplexityAnalyzer();
-        this.#maxComplexity = config.maxComplexity ?? 100;
-        this.#timeout = config.timeout ?? 5000;
-        this.#enableShadowEval = config.enableShadowEval !== false;
+        this.#complexityAnalyzer = complexityAnalyzer;
+        this.#config = { ...DEFAULT_CONFIG, ...config };
     }
 
-    async validate(value: any, rule: ValidationRule, context: FormulaContext = {}): Promise<ValidationResult> {
-        const { isBlank, allowed } = this.checkBlank(value, rule);
-        if (isBlank) {
-            return allowed
-                ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
+    async validate(value: any, rule: ValidationRule, context: Record<string, any> = {}): Promise<ValidationResult> {
+        const formula = rule.formula;
+
+        if (!formula || typeof formula !== "string") {
+            return ValidationResult.failure("公式验证规则缺少 formula 字段", "stop", { value });
         }
 
-        if (!rule.formula) {
-            return ValidationResult.failure("公式验证需要指定 formula", "warning", { ruleId: rule.id });
+        if (formula.length > this.#config.maxFormulaLength) {
+            return ValidationResult.failure(`公式长度超过限制 (${formula.length} > ${this.#config.maxFormulaLength})`, "stop", { value });
+        }
+
+        const blankCheck = this.checkBlank(value, rule);
+        if (blankCheck.isBlank && blankCheck.allowed) {
+            return ValidationResult.success();
         }
 
         try {
-            const complexity = this.#complexityAnalyzer.analyze(rule.formula);
+            if (this.#config.enableComplexityAnalysis) {
+                const analysis = this.#complexityAnalyzer.analyze(formula);
 
-            if (complexity.score > this.#maxComplexity) {
-                errorHandler.warn(
-                    ERROR_CODE.VALIDATION_ERROR,
-                    `[FormulaValidator] 公式复杂度(${complexity.score})超过阈值(${this.#maxComplexity})，拒绝执行`,
-                );
-                return ValidationResult.failure(rule.errorMessage || "公式过于复杂，无法安全执行", "warning", {
-                    ruleId: rule.id,
-                    metadata: { complexity: complexity.score, maxComplexity: this.#maxComplexity },
-                });
+                if (analysis.canUseSyncFastPath) {
+                    const result = this.#evaluateSync(formula, value, rule, context);
+                    if (result) return result;
+                }
+
+                if (this.#config.enableShadowEvaluation) {
+                    return await this.#evaluateInShadow(formula, value, rule, context);
+                }
+
+                return await this.#evaluateDirect(formula, value, rule, context);
             }
 
-            let result: boolean;
-
-            if (complexity.score > 50 && this.#shadowEvaluator) {
-                result = await this.#shadowEvaluator.evaluate(rule.formula, {
-                    value,
-                    row: context.row,
-                    col: context.col,
-                    sheet: context.sheet,
-                });
-            } else if (this.#formulaEngine) {
-                result = await this.evaluateWithEngine(rule.formula, value, context);
-            } else {
-                errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 无公式引擎可用，尝试简单求值");
-                result = this.simpleEvaluate(rule.formula, value);
-            }
-
-            return result
-                ? ValidationResult.success()
-                : ValidationResult.failure(rule.errorMessage || "公式验证失败", rule.errorStyle, {
-                      value,
-                      ruleId: rule.id,
-                      metadata: { formula: rule.formula, complexity: complexity.score },
-                  });
+            return await this.#evaluateDirect(formula, value, rule, context);
         } catch (error: any) {
-            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 公式执行失败:", error);
-            return ValidationResult.failure(`公式执行错误: ${error.message}`, "warning", {
-                value,
-                ruleId: rule.id,
-                metadata: { formula: rule.formula, error: error.message },
-            });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[FormulaValidator] 公式求值失败: "${formula}"`, error);
+            return ValidationResult.failure(`公式求值异常: ${error.message}`, "warning", { value });
         }
     }
 
-    async evaluateWithEngine(formula: string, value: any, context: FormulaContext): Promise<boolean> {
-        if (!this.#formulaEngine) {
-            throw new Error("公式引擎未初始化");
+    validateSync(value: any, rule: ValidationRule, context: Record<string, any> = {}): ValidationResult {
+        const formula = rule.formula;
+
+        if (!formula || typeof formula !== "string") {
+            return ValidationResult.failure("公式验证规则缺少 formula 字段", "stop", { value });
         }
 
-        const wrappedFormula = formula.startsWith("=") ? formula : `=${formula}`;
+        const blankCheck = this.checkBlank(value, rule);
+        if (blankCheck.isBlank && blankCheck.allowed) {
+            return ValidationResult.success();
+        }
 
-        const result = await this.#formulaEngine.evaluate(wrappedFormula, {
-            currentValue: value,
-            row: context.row,
-            col: context.col,
-        });
-
-        return this.coerceToBoolean(result);
-    }
-
-    simpleEvaluate(formula: string, value: any): boolean {
         try {
-            const cleanedFormula = formula.replace(/^=/, "").replace(/\bvalue\b/g, "_value");
-            const fn = new Function("_value", `"use strict"; return (${cleanedFormula});`);
-            const result = fn(value);
-            return this.coerceToBoolean(result);
-        } catch (e: any) {
-            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[FormulaValidator] 简单求值失败:", e);
-            return false;
+            if (this.#config.enableComplexityAnalysis) {
+                const analysis = this.#complexityAnalyzer.analyze(formula);
+                if (!analysis.canUseSyncFastPath) {
+                    return ValidationResult.deferred("公式复杂度较高，需要异步验证", {
+                        needsAsyncValidation: true,
+                        complexity: analysis.complexity,
+                        estimatedTime: analysis.estimatedTime,
+                        reasons: analysis.reasons,
+                    });
+                }
+            }
+
+            const result = this.#evaluateSync(formula, value, rule, context);
+            if (result) return result;
+
+            return ValidationResult.deferred("同步求值未完成，需要异步验证", {
+                needsAsyncValidation: true,
+            });
+        } catch (error: any) {
+            return ValidationResult.failure(`公式求值异常: ${error.message}`, "warning", { value });
         }
     }
 
-    coerceToBoolean(result: any): boolean {
-        if (typeof result === "boolean") return result;
-        if (typeof result === "number") return result !== 0;
-        if (typeof result === "string") {
-            const lower = result.toLowerCase().trim();
-            return lower === "true" || lower === "1" || lower === "yes";
+    #evaluateSync(formula: string, value: any, rule: ValidationRule, context: Record<string, any>): ValidationResult | null {
+        if (!this.#formulaEngine || typeof this.#formulaEngine.evaluateFormula !== "function") {
+            return null;
         }
-        return !!result;
+
+        try {
+            const evalContext = {
+                currentValue: value,
+                row: context.row ?? 0,
+                col: context.col ?? 0,
+                sheet: context.sheet || "Sheet1",
+            };
+
+            const result = this.#formulaEngine.evaluateFormula(formula, evalContext);
+            const isValid = result === true;
+
+            if (this.#config.enableCache) {
+                const cache = getValidationCache();
+                if (cache) {
+                    const cacheKey = `${context.row || 0},${context.col || 0}`;
+                    cache
+                        .set(
+                            cacheKey,
+                            {
+                                valid: isValid,
+                                value,
+                                ruleId: rule.id,
+                                formula,
+                            },
+                            {
+                                source: "sync-fast-path",
+                                sheet: context.sheet || "default",
+                            },
+                        )
+                        .catch(() => {});
+                }
+            }
+
+            if (isValid) {
+                return ValidationResult.success();
+            }
+
+            if (result === false) {
+                return ValidationResult.failure(rule.errorMessage || `公式验证失败: ${formula}`, rule.errorStyle || "stop", { value });
+            }
+
+            return null;
+        } catch (error: any) {
+            return null;
+        }
     }
 
-    get formulaEngine(): any {
-        return this.#formulaEngine;
+    async #evaluateInShadow(formula: string, value: any, rule: ValidationRule, context: Record<string, any>): Promise<ValidationResult> {
+        const shadowContext = {
+            row: context.row ?? 0,
+            col: context.col ?? 0,
+            value,
+            sheet: context.sheet || "Sheet1",
+        };
+
+        const evaluator = new ShadowEvaluator(this.#formulaEngine, shadowContext);
+
+        try {
+            const passed = await evaluator.evaluate(formula);
+
+            if (passed) {
+                return ValidationResult.success();
+            }
+
+            return ValidationResult.failure(rule.errorMessage || `公式验证失败: ${formula}`, rule.errorStyle || "stop", { value });
+        } finally {
+            evaluator.destroy();
+        }
     }
 
-    set formulaEngine(engine: any) {
-        this.#formulaEngine = engine;
-    }
+    async #evaluateDirect(formula: string, value: any, rule: ValidationRule, context: Record<string, any>): Promise<ValidationResult> {
+        if (!this.#formulaEngine || typeof this.#formulaEngine.evaluateFormula !== "function") {
+            return ValidationResult.failure("公式引擎未初始化", "stop", { value });
+        }
 
-    get maxComplexity(): number {
-        return this.#maxComplexity;
+        const evalContext = {
+            currentValue: value,
+            row: context.row ?? 0,
+            col: context.col ?? 0,
+            sheet: context.sheet || "Sheet1",
+        };
+
+        const result = await this.#formulaEngine.evaluateFormula(formula, evalContext);
+        const isValid = result === true;
+
+        if (this.#config.enableCache) {
+            const cache = getValidationCache();
+            if (cache) {
+                const cacheKey = `${context.row || 0},${context.col || 0}`;
+                await cache.set(
+                    cacheKey,
+                    {
+                        valid: isValid,
+                        value,
+                        ruleId: rule.id,
+                        formula,
+                    },
+                    {
+                        source: "async-pipeline",
+                        sheet: context.sheet || "default",
+                    },
+                );
+            }
+        }
+
+        if (isValid) {
+            return ValidationResult.success();
+        }
+
+        if (result === false) {
+            return ValidationResult.failure(rule.errorMessage || `公式验证失败: ${formula}`, rule.errorStyle || "stop", { value });
+        }
+
+        return ValidationResult.failure(`公式返回了非布尔值: ${JSON.stringify(result)}`, "warning", { value });
     }
 }
+
+export { DEFAULT_CONFIG };

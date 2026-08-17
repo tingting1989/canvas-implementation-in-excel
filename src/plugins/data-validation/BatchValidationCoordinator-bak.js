@@ -1,6 +1,5 @@
-import { errorHandler } from "../../core/ErrorHandler.js";
+﻿import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
-
 const BATCH_EVENTS = {
     BATCH_START: "validation:batch:start",
     BATCH_PROGRESS: "validation:batch:progress",
@@ -8,29 +7,104 @@ const BATCH_EVENTS = {
     BATCH_ERROR: "validation:batch:error",
 };
 
+/**
+ * 批量验证协调器
+ *
+ * 职责：
+ * 1. 检测批量操作（Sort/Paste/AutoFill）
+ * 2. 合并验证请求（避免重复）
+ * 3. 分批异步执行（不阻塞 UI）
+ * 4. 提供进度反馈
+ *
+ * @example
+ * const coordinator = new BatchValidationCoordinator(validationEngine, eventBus);
+ *
+ * // 进入批量模式
+ * coordinator.enterBatchMode('paste', 1000);
+ *
+ * // ... 执行批量操作 ...
+ *
+ * // 退出并执行验证
+ * const report = await coordinator.exitBatchMode();
+ */
 export class BatchValidationCoordinator {
-    #isBatchMode: boolean = false;
-    #pendingValidations: Array<{ row: number; col: number; newValue: any; oldValue: any; timestamp: number }> = [];
-    #currentOperation: string | null = null;
-    #estimatedCount: number = 0;
-    BATCH_SIZE: number = 100;
-    #engine: any;
-    #eventBus: any;
+    /**
+     * @type {boolean} 是否正在进行批量操作
+     * @private
+     */
+    #isBatchMode = false;
 
-    constructor(engine: any, eventBus: any = null) {
+    /**
+     * @type {Array} 待处理的验证队列
+     * @private
+     */
+    #pendingValidations = [];
+
+    /**
+     * @type {string|null} 当前操作类型
+     * @private
+     */
+    #currentOperation = null;
+
+    /**
+     * @type {number} 预估影响行数
+     * @private
+     */
+    #estimatedCount = 0;
+
+    /**
+     * @type {number} 批量大小（每批处理的单元格数）
+     */
+    BATCH_SIZE = 100;
+
+    /**
+     * @type {import('./ValidationEngine.js').ValidationEngine} 验证引擎实例
+     * @private
+     */
+    #engine;
+
+    /**
+     * @type {Object} 事件总线实例
+     * @private
+     */
+    #eventBus;
+
+    /**
+     * 构造批量验证协调器
+     * @param {import('./ValidationEngine.js').ValidationEngine} engine - 验证引擎
+     * @param {Object} eventBus - 事件总线
+     */
+    constructor(engine, eventBus = null) {
         this.#engine = engine;
         this.#eventBus = eventBus;
     }
 
-    get isBatchMode(): boolean {
+    /**
+     * 是否处于批量模式
+     * @returns {boolean}
+     */
+    get isBatchMode() {
         return this.#isBatchMode;
     }
 
-    get pendingCount(): number {
+    /**
+     * 当前待处理的验证数量
+     * @returns {number}
+     */
+    get pendingCount() {
         return this.#pendingValidations.length;
     }
 
-    enterBatchMode(operation: string, estimatedCount: number): void {
+    /**
+     * 进入批量操作模式
+     *
+     * 由 SortPlugin/PastePlugin/AutoFillPlugin 在操作开始前调用
+     *
+     * @param {string} operation - 操作类型 ('sort' | 'paste' | 'autofill' | 'undo')
+     * @param {number} estimatedCount - 预估影响行数
+     * @throws {Error} 如果已在批量模式中
+     */
+    enterBatchMode(operation, estimatedCount) {
         if (this.#isBatchMode) {
             throw new Error(`已经在批量模式中，当前操作: ${this.#currentOperation}`);
         }
@@ -47,17 +121,24 @@ export class BatchValidationCoordinator {
         });
     }
 
-    async exitBatchMode(options: Record<string, any> = {}): Promise<{ totalChecked: number; invalidCount: number; violations: any[]; duration: number }> {
+    /**
+     * 退出批量操作模式并执行验证
+     *
+     * @param {Object} [options={}] - 选项
+     * @param {boolean} [options.showReport=true] - 是否显示违规报告
+     * @returns {Promise<{totalChecked: number, invalidCount: number, violations: Array, duration: number}>}
+     */
+    async exitBatchMode(options = {}) {
         if (!this.#isBatchMode) {
             return { totalChecked: 0, invalidCount: 0, violations: [], duration: 0 };
         }
 
         const startTime = performance.now();
 
-        let report: any;
+        let report;
         try {
             report = await this.#processBatch();
-        } catch (error: any) {
+        } catch (error) {
             errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[BatchValidation] 批量验证失败:", error);
             this.#emit(BATCH_EVENTS.BATCH_ERROR, { error, operation: this.#currentOperation });
 
@@ -91,7 +172,16 @@ export class BatchValidationCoordinator {
         };
     }
 
-    onCellChange(row: number, col: number, newValue: any, oldValue: any = undefined): void {
+    /**
+     * 处理单个单元格变更（智能路由）
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @param {*} newValue - 新值
+     * @param {*} [oldValue] - 旧值
+     * @throws {Error} 如果不在批量模式中
+     */
+    onCellChange(row, col, newValue, oldValue = undefined) {
         if (!this.#isBatchMode) {
             throw new Error("不在批量模式中，请先调用 enterBatchMode()");
         }
@@ -105,7 +195,10 @@ export class BatchValidationCoordinator {
         });
     }
 
-    cancel(): void {
+    /**
+     * 取消当前批量操作（不执行验证）
+     */
+    cancel() {
         if (!this.#isBatchMode) return;
 
         errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[BatchValidation] 取消批量操作: ${this.#currentOperation}`);
@@ -120,8 +213,13 @@ export class BatchValidationCoordinator {
         this.#resetState();
     }
 
-    async #processBatch(): Promise<any> {
-        const results: any[] = [];
+    /**
+     * 分批异步处理队列
+     * @private
+     * @returns {Promise<Object>}
+     */
+    async #processBatch() {
+        const results = [];
         const total = this.#pendingValidations.length;
 
         for (let i = 0; i < total; i += this.BATCH_SIZE) {
@@ -146,8 +244,14 @@ export class BatchValidationCoordinator {
         return this.#generateReport(results);
     }
 
-    async #processSingleBatch(batch: any[]): Promise<any[]> {
-        const results: any[] = [];
+    /**
+     * 处理单个批次
+     * @private
+     * @param {Array} batch - 批次数据
+     * @returns {Promise<Array>}
+     */
+    async #processSingleBatch(batch) {
+        const results = [];
 
         for (const item of batch) {
             try {
@@ -159,7 +263,7 @@ export class BatchValidationCoordinator {
                     value: item.newValue,
                     ...result.toJSON(),
                 });
-            } catch (error: any) {
+            } catch (error) {
                 errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[BatchValidation] 单元格 (${item.row},${item.col}) 验证失败:`, error);
                 results.push({
                     row: item.row,
@@ -175,7 +279,12 @@ export class BatchValidationCoordinator {
         return results;
     }
 
-    #yieldToMainThread(): Promise<void> {
+    /**
+     * 让出主线程（避免阻塞 UI）
+     * @private
+     * @returns {Promise<void>}
+     */
+    #yieldToMainThread() {
         return new Promise((resolve) => {
             if (typeof requestIdleCallback !== "undefined") {
                 requestIdleCallback(() => resolve(), { timeout: 50 });
@@ -185,7 +294,13 @@ export class BatchValidationCoordinator {
         });
     }
 
-    #generateReport(results: any[]): { totalChecked: number; validCount: number; invalidCount: number; violations: any[] } {
+    /**
+     * 生成验证报告
+     * @private
+     * @param {Array} results - 所有验证结果
+     * @returns {Object}
+     */
+    #generateReport(results) {
         const violations = results.filter((r) => !r.valid);
         const validCount = results.filter((r) => r.valid).length;
 
@@ -204,20 +319,33 @@ export class BatchValidationCoordinator {
         };
     }
 
-    #resetState(): void {
+    /**
+     * 重置状态
+     * @private
+     */
+    #resetState() {
         this.#isBatchMode = false;
         this.#currentOperation = null;
         this.#estimatedCount = 0;
         this.#pendingValidations = [];
     }
 
-    #emit(event: string, data: any): void {
+    /**
+     * 发送事件
+     * @private
+     * @param {string} event - 事件名称
+     * @param {Object} data - 事件数据
+     */
+    #emit(event, data) {
         if (this.#eventBus && typeof this.#eventBus.emit === "function") {
             this.#eventBus.emit(event, data);
         }
     }
 
-    destroy(): void {
+    /**
+     * 销毁协调器
+     */
+    destroy() {
         this.cancel();
         this.#engine = null;
         this.#eventBus = null;

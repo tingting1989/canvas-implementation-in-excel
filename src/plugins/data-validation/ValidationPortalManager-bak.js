@@ -2,12 +2,54 @@ import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { DOMComponent } from "../../core/DOMComponent.js";
 
+/**
+ * ValidationPortalManager - 验证 UI 门户管理器
+ *
+ * 核心思想：
+ * 所有验证相关的 UI 组件（下拉菜单、错误提示、气泡框）
+ * 都通过 Portal 渲染到统一的容器中，
+ * 而不是直接 append 到 body。
+ *
+ * 优势：
+ * 1. 统一管理生命周期（自动清理）
+ * 2. 正确处理坐标系转换（缩放/滚动/冻结）
+ * 3. 避免 zIndex 战争（层级可控）
+ * 4. 支持 Shadow DOM / iframe
+ * 5. 便于测试（DOM 结构可预测）
+ *
+ * @example
+ * const portal = new ValidationPortalManager(renderEngine);
+ * portal.init(rootContainer);
+ *
+ * const dropdown = portal.createPortal('dropdown_B2', 'dropdown', { x: 100, y: 200 });
+ */
 export class ValidationPortalManager extends DOMComponent {
-    #portalContainer: HTMLElement | null = null;
-    #portals: Map<string, HTMLElement> = new Map();
-    #renderEngine: any = null;
-    #initialized: boolean = false;
+    /**
+     * @type {HTMLElement|null} Portal 容器
+     * @private
+     */
+    #portalContainer = null;
 
+    /**
+     * @type {Map<string, HTMLElement>} 已创建的门户节点
+     * @private
+     */
+    #portals = new Map();
+
+    /**
+     * @type {Object|null} 渲染引擎实例
+     * @private
+     */
+    #renderEngine;
+
+    /**
+     * @type {boolean} 是否已初始化
+     */
+    #initialized = false;
+
+    /**
+     * 默认配置
+     */
     static DEFAULT_CONFIG = {
         zIndex: 9999,
         autoCleanup: true,
@@ -15,23 +57,42 @@ export class ValidationPortalManager extends DOMComponent {
         maxPortals: 50,
     };
 
-    config: Record<string, any>;
+    /** @type {Object} 当前配置 */
+    config;
 
-    constructor(renderEngine: any, config: Record<string, any> = {}) {
+    /**
+     * 构造 Portal 管理器
+     * @param {Object} renderEngine - 渲染引擎实例（用于获取缩放、位置等信息）
+     * @param {Object} [config={}] - 配置选项
+     */
+    constructor(renderEngine, config = {}) {
         super();
         this.#renderEngine = renderEngine;
         this.config = { ...ValidationPortalManager.DEFAULT_CONFIG, ...config };
     }
 
-    get isInitialized(): boolean {
+    /**
+     * 是否已初始化
+     * @returns {boolean}
+     */
+    get isInitialized() {
         return this.#initialized;
     }
 
-    get activePortalCount(): number {
+    /**
+     * 当前活跃的 Portal 数量
+     * @returns {number}
+     */
+    get activePortalCount() {
         return this.#portals.size;
     }
 
-    init(rootContainer: HTMLElement): void {
+    /**
+     * 初始化 Portal 系统
+     * @param {HTMLElement} rootContainer - 应用根容器（通常是 Canvas 父元素）
+     * @throws {Error} 如果已初始化或容器无效
+     */
+    init(rootContainer) {
         if (this.#initialized) {
             throw new Error("ValidationPortalManager 已经初始化");
         }
@@ -63,7 +124,24 @@ export class ValidationPortalManager extends DOMComponent {
         this.#initialized = true;
     }
 
-    createPortal(id: string, type: string, position: Record<string, any>, options: Record<string, any> = {}): HTMLElement {
+    /**
+     * 创建 Portal 节点
+     *
+     * @param {string} id - 唯一标识（如 'dropdown_B2_C3'）
+     * @param {string} type - 类型 ('dropdown' | 'tooltip' | 'bubble')
+     * @param {Object} position - 目标位置（相对于 viewport）
+     * @param {number} position.x - X 坐标
+     * @param {number} position.y - Y 坐标
+     * @param {Object} [options={}] - 额外选项
+     * @param {number} [options.width] - 宽度
+     * @param {number} [options.height] - 高度
+     * @param {Object} [options.style] - 额外样式
+     * @param {boolean} [options.autoRemove=false] - 是否自动移除
+     * @param {number} [options.autoRemoveDelay=3000] - 自动移除延迟(ms)
+     * @returns {HTMLElement} Portal DOM 节点
+     * @throws {Error} 如果未初始化或超出最大数量
+     */
+    createPortal(id, type, position, options = {}) {
         if (!this.#initialized) {
             throw new Error("ValidationPortalManager 未初始化，请先调用 init()");
         }
@@ -95,7 +173,7 @@ export class ValidationPortalManager extends DOMComponent {
             ...(options.style || {}),
         });
 
-        this.#portalContainer!.appendChild(portalEl);
+        this.#portalContainer.appendChild(portalEl);
         this.#portals.set(id, portalEl);
 
         if (options.autoRemove) {
@@ -106,7 +184,12 @@ export class ValidationPortalManager extends DOMComponent {
         return portalEl;
     }
 
-    removePortal(id: string): boolean {
+    /**
+     * 移除 Portal 节点
+     * @param {string} id - Portal ID
+     * @returns {boolean} 是否成功移除
+     */
+    removePortal(id) {
         const portal = this.#portals.get(id);
         if (portal) {
             portal.remove();
@@ -116,11 +199,22 @@ export class ValidationPortalManager extends DOMComponent {
         return false;
     }
 
-    getPortal(id: string): HTMLElement | null {
+    /**
+     * 获取 Portal 节点
+     * @param {string} id - Portal ID
+     * @returns {HTMLElement|null}
+     */
+    getPortal(id) {
         return this.#portals.get(id) || null;
     }
 
-    updatePosition(id: string, position: Record<string, any>): boolean {
+    /**
+     * 更新 Portal 位置
+     * @param {string} id - Portal ID
+     * @param {Object} position - 新位置
+     * @returns {boolean} 是否成功更新
+     */
+    updatePosition(id, position) {
         const portal = this.#portals.get(id);
         if (!portal) return false;
 
@@ -131,7 +225,12 @@ export class ValidationPortalManager extends DOMComponent {
         return true;
     }
 
-    clearByType(type: string): number {
+    /**
+     * 清除指定类型的所有 Portal
+     * @param {string} type - 类型 ('dropdown' | 'tooltip' | 'bubble')
+     * @returns {number} 清除的数量
+     */
+    clearByType(type) {
         let count = 0;
         for (const [id, portal] of this.#portals) {
             if (portal.dataset.portalType === type) {
@@ -143,23 +242,44 @@ export class ValidationPortalManager extends DOMComponent {
         return count;
     }
 
-    destroyAll(): void {
+    /**
+     * 销毁所有 Portal（插件销毁时调用）
+     */
+    destroyAll() {
         this.#portals.forEach((portal) => portal.remove());
         this.#portals.clear();
     }
 
-    destroy(): void {
+    /**
+     * 销毁 Portal 系统（幂等，由基类 Disposable 保证）
+     */
+    destroy() {
         super.destroy();
     }
 
-    onDestroy(): void {
+    /** @override */
+    onDestroy() {
         this.destroyAll();
         this.#initialized = false;
         this.#renderEngine = null;
         this.#portalContainer = null;
     }
 
-    #calculateFixedPosition(position: Record<string, any>, options: Record<string, any> = {}): { x: number; y: number; width: number; height: number } {
+    /**
+     * 计算正确的 fixed 坐标（核心算法）
+     *
+     * 解决的问题：
+     * 1. Canvas 缩放（transform: scale）
+     * 2. 页面滚动（scrollLeft/scrollTop）
+     * 3. 冻结行列偏移
+     * 4. 高 DPI 屏幕（devicePixelRatio）
+     *
+     * @private
+     * @param {Object} position - 目标位置
+     * @param {Object} [options={}] - 选项
+     * @returns {{x: number, y: number, width?: number, height?: number}}
+     */
+    #calculateFixedPosition(position, options = {}) {
         const { x, y, width, height } = position;
 
         let canvasRect = { left: 0, top: 0 };
@@ -180,10 +300,18 @@ export class ValidationPortalManager extends DOMComponent {
         };
     }
 
-    #getFrozenOffset(options: Record<string, any> = {}): { x: number; y: number } {
+    /**
+     * 获取冻结行列偏移
+     * @private
+     * @param {Object} options - 选项
+     * @returns {{x: number, y: number}}
+     */
+    #getFrozenOffset(options = {}) {
         let offsetX = 0;
         let offsetY = 0;
 
+        // 这里有问题
+        // TODO: 这里需要根据当前的冻结状态来计算偏移量
         if (this.#renderEngine?.frozenState) {
             offsetX = this.#renderEngine.frozenState.offsetX || 0;
             offsetY = this.#renderEngine.frozenState.offsetY || 0;
@@ -197,7 +325,35 @@ export class ValidationPortalManager extends DOMComponent {
         return { x: offsetX, y: offsetY };
     }
 
-    #handleResize(): void {
+    /**
+     * 处理窗口 resize 事件
+     * @private
+     */
+    #handleResize() {
+        if (!this.#initialized) return;
+
+        for (const [id, portal] of this.#portals) {
+            const currentLeft = parseFloat(portal.style.left) || 0;
+            const currentTop = parseFloat(portal.style.top) || 0;
+
+            if (portal.dataset.position) {
+                try {
+                    const originalPos = JSON.parse(portal.dataset.position);
+                    const newPos = this.#calculateFixedPosition(originalPos);
+                    portal.style.left = `${newPos.x}px`;
+                    portal.style.top = `${newPos.y}px`;
+                } catch (e) {
+                    // 忽略解析错误
+                }
+            }
+        }
+    }
+
+    /**
+     * 处理窗口 scroll 事件
+     * @private
+     */
+    #handleScroll() {
         if (!this.#initialized) return;
 
         for (const [id, portal] of this.#portals) {
@@ -208,33 +364,20 @@ export class ValidationPortalManager extends DOMComponent {
                     portal.style.left = `${newPos.x}px`;
                     portal.style.top = `${newPos.y}px`;
                 } catch (e) {
-                    // ignore
+                    // 忽略解析错误
                 }
             }
         }
     }
 
-    #handleScroll(): void {
-        if (!this.#initialized) return;
-
-        for (const [id, portal] of this.#portals) {
-            if (portal.dataset.position) {
-                try {
-                    const originalPos = JSON.parse(portal.dataset.position);
-                    const newPos = this.#calculateFixedPosition(originalPos);
-                    portal.style.left = `${newPos.x}px`;
-                    portal.style.top = `${newPos.y}px`;
-                } catch (e) {
-                    // ignore
-                }
-            }
-        }
-    }
-
-    #removeOldestPortal(): void {
+    /**
+     * 移除最旧的 Portal
+     * @private
+     */
+    #removeOldestPortal() {
         if (this.#portals.size === 0) return;
 
-        const firstKey = this.#portals.keys().next().value as string;
+        const firstKey = this.#portals.keys().next().value;
         this.removePortal(firstKey);
     }
 }

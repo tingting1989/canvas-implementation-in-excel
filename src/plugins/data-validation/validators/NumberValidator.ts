@@ -26,17 +26,22 @@ export class NumberValidator extends BaseValidator {
             );
         }
 
-        if (typeof value !== "number" || isNaN(value)) {
+        let numValue = value;
+        if (typeof value === "string") {
+            numValue = Number(value);
+        }
+
+        if (typeof numValue !== "number" || isNaN(numValue)) {
             return Promise.resolve(ValidationResult.failure(rule.errorMessage || `必须是数值类型`, rule.errorStyle, { value, ruleId: rule.id }));
         }
 
         try {
-            const isValid = this.compare(value, rule.value, rule.operator!);
+            const isValid = this.compare(numValue, rule.value, rule.operator!);
 
             return Promise.resolve(
                 isValid
                     ? ValidationResult.success()
-                    : ValidationResult.failure(this.buildErrorMessage(value, rule), rule.errorStyle, { value, ruleId: rule.id }),
+                    : ValidationResult.failure(this.buildErrorMessage(numValue, rule), rule.errorStyle, { value, ruleId: rule.id }),
             );
         } catch (error: any) {
             return Promise.resolve(

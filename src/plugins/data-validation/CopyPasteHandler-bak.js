@@ -18,16 +18,47 @@ const CONFLICT_RESOLUTION = Object.freeze({
     PROMPT: "prompt",
 });
 
+/**
+ * 复制/粘贴验证规则处理器
+ *
+ * 管理验证规则在复制/粘贴操作中的行为：
+ * - 粘贴时是否携带验证规则
+ * - 粘贴选项区分（全部/仅值/仅格式/仅规则）
+ * - 目标已有规则的冲突解决
+ * - 跨 Sheet 粘贴时的规则迁移
+ *
+ * @example
+ * const handler = new CopyPasteHandler(validationPlugin);
+ *
+ * // 粘贴时携带规则
+ * handler.pasteWithRules(sourceRow, sourceCol, targetRow, targetCol, pasteOption);
+ */
 export class CopyPasteHandler {
-    #validationPlugin: any = null;
-    #defaultConflictResolution: string = CONFLICT_RESOLUTION.OVERWRITE;
+    /** @type {Object|null} 验证插件实例 */
+    #validationPlugin = null;
 
-    constructor(validationPlugin: any, options: Record<string, any> = {}) {
+    /** @type {string} 默认冲突解决策略 */
+    #defaultConflictResolution = CONFLICT_RESOLUTION.OVERWRITE;
+
+    /**
+     * 构造处理器
+     *
+     * @param {Object} validationPlugin - DataValidationPlugin 实例
+     * @param {Object} [options={}] - 配置选项
+     * @param {string} [options.conflictResolution='overwrite'] - 默认冲突策略
+     */
+    constructor(validationPlugin, options = {}) {
         this.#validationPlugin = validationPlugin;
         this.#defaultConflictResolution = options.conflictResolution || CONFLICT_RESOLUTION.OVERWRITE;
     }
 
-    shouldPasteValidation(pasteOption: string): boolean {
+    /**
+     * 判断指定粘贴选项是否应携带验证规则
+     *
+     * @param {string} pasteOption - 粘贴选项
+     * @returns {boolean}
+     */
+    shouldPasteValidation(pasteOption) {
         switch (pasteOption) {
             case PASTE_OPTIONS.ALL:
             case PASTE_OPTIONS.FORMATS:
@@ -42,20 +73,33 @@ export class CopyPasteHandler {
         }
     }
 
-    pasteWithRules(sourceRow: number, sourceCol: number, targetRow: number, targetCol: number, pasteOption: string = PASTE_OPTIONS.ALL, conflictResolution?: string): string[] {
+    /**
+     * 粘贴验证规则
+     *
+     * 从源位置复制验证规则到目标位置，根据粘贴选项和冲突策略处理。
+     *
+     * @param {number} sourceRow - 源行号
+     * @param {number} sourceCol - 源列号
+     * @param {number} targetRow - 目标行号
+     * @param {number} targetCol - 目标列号
+     * @param {string} [pasteOption='all'] - 粘贴选项
+     * @param {string} [conflictResolution] - 冲突解决策略
+     * @returns {string[]} 新创建的规则 ID 数组
+     */
+    pasteWithRules(sourceRow, sourceCol, targetRow, targetCol, pasteOption = PASTE_OPTIONS.ALL, conflictResolution) {
         if (!this.shouldPasteValidation(pasteOption)) {
             return [];
         }
 
-        const sourceRules: ValidationRule[] = this.#validationPlugin?.getRulesForCell(sourceRow, sourceCol) || [];
+        const sourceRules = this.#validationPlugin?.getRulesForCell(sourceRow, sourceCol) || [];
         if (sourceRules.length === 0) {
             return [];
         }
 
-        const targetRules: ValidationRule[] = this.#validationPlugin?.getRulesForCell(targetRow, targetCol) || [];
+        const targetRules = this.#validationPlugin?.getRulesForCell(targetRow, targetCol) || [];
         const resolution = conflictResolution || this.#defaultConflictResolution;
 
-        const newRuleIds: string[] = [];
+        const newRuleIds = [];
 
         for (const sourceRule of sourceRules) {
             const hasConflict = targetRules.some((targetRule) => targetRule.type === sourceRule.type);
@@ -70,7 +114,7 @@ export class CopyPasteHandler {
                 try {
                     const ruleId = this.#validationPlugin.setValidation(newRule);
                     newRuleIds.push(ruleId);
-                } catch (e: any) {
+                } catch (e) {
                     errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[CopyPasteHandler] 粘贴规则失败:", e);
                 }
             }
@@ -79,12 +123,24 @@ export class CopyPasteHandler {
         return newRuleIds;
     }
 
-    pasteRangeWithRules(sourceStartRow: number, sourceStartCol: number, targetStartRow: number, targetStartCol: number, rowCount: number, colCount: number, pasteOption: string = PASTE_OPTIONS.ALL): string[] {
+    /**
+     * 批量粘贴验证规则（区域粘贴）
+     *
+     * @param {number} sourceStartRow - 源起始行
+     * @param {number} sourceStartCol - 源起始列
+     * @param {number} targetStartRow - 目标起始行
+     * @param {number} targetStartCol - 目标起始列
+     * @param {number} rowCount - 行数
+     * @param {number} colCount - 列数
+     * @param {string} [pasteOption='all'] - 粘贴选项
+     * @returns {string[]} 新创建的规则 ID 数组
+     */
+    pasteRangeWithRules(sourceStartRow, sourceStartCol, targetStartRow, targetStartCol, rowCount, colCount, pasteOption = PASTE_OPTIONS.ALL) {
         if (!this.shouldPasteValidation(pasteOption)) {
             return [];
         }
 
-        const allNewIds: string[] = [];
+        const allNewIds = [];
 
         for (let dr = 0; dr < rowCount; dr++) {
             for (let dc = 0; dc < colCount; dc++) {
@@ -96,16 +152,37 @@ export class CopyPasteHandler {
         return allNewIds;
     }
 
-    getRuleSnapshot(row: number, col: number): Record<string, any>[] {
-        const rules: ValidationRule[] = this.#validationPlugin?.getRulesForCell(row, col) || [];
+    /**
+     * 获取源位置的验证规则快照（用于粘贴预览）
+     *
+     * @param {number} row - 行号
+     * @param {number} col - 列号
+     * @returns {Object[]} 规则 JSON 数组
+     */
+    getRuleSnapshot(row, col) {
+        const rules = this.#validationPlugin?.getRulesForCell(row, col) || [];
         return rules.map((rule) => rule.toJSON());
     }
 
-    destroy(): void {
+    /**
+     * 销毁处理器
+     */
+    destroy() {
         this.#validationPlugin = null;
     }
 
-    #resolveConflict(sourceRule: ValidationRule, targetRules: ValidationRule[], resolution: string): boolean {
+    // ─── 私有方法 ───
+
+    /**
+     * 解决规则冲突
+     *
+     * @private
+     * @param {ValidationRule} sourceRule - 源规则
+     * @param {ValidationRule[]} targetRules - 目标已有规则
+     * @param {string} resolution - 冲突策略
+     * @returns {boolean} 是否应应用源规则
+     */
+    #resolveConflict(sourceRule, targetRules, resolution) {
         switch (resolution) {
             case CONFLICT_RESOLUTION.OVERWRITE:
                 return true;
@@ -128,7 +205,21 @@ export class CopyPasteHandler {
         }
     }
 
-    #migrateRule(sourceRule: ValidationRule, sourceRow: number, sourceCol: number, targetRow: number, targetCol: number): Record<string, any> | null {
+    /**
+     * 迁移规则到新位置
+     *
+     * 调整规则的范围引用，使其指向目标位置。
+     * 跨 Sheet 粘贴时调整表名引用。
+     *
+     * @private
+     * @param {ValidationRule} sourceRule - 源规则
+     * @param {number} sourceRow - 源行号
+     * @param {number} sourceCol - 源列号
+     * @param {number} targetRow - 目标行号
+     * @param {number} targetCol - 目标列号
+     * @returns {Object|null} 新规则配置，无法迁移则返回 null
+     */
+    #migrateRule(sourceRule, sourceRow, sourceCol, targetRow, targetCol) {
         const ruleConfig = sourceRule.toJSON();
 
         delete ruleConfig.id;
@@ -148,11 +239,22 @@ export class CopyPasteHandler {
         return ruleConfig;
     }
 
-    #migrateRange(rangeStr: string, sourceRow: number, sourceCol: number, targetRow: number, targetCol: number): string {
+    /**
+     * 迁移范围引用
+     *
+     * @private
+     * @param {string} rangeStr - 范围字符串
+     * @param {number} sourceRow - 源行号
+     * @param {number} sourceCol - 源列号
+     * @param {number} targetRow - 目标行号
+     * @param {number} targetCol - 目标列号
+     * @returns {string} 迁移后的范围字符串
+     */
+    #migrateRange(rangeStr, sourceRow, sourceCol, targetRow, targetCol) {
         const rowOffset = targetRow - sourceRow;
         const colOffset = targetCol - sourceCol;
 
-        const numToCol = (num: number): string => {
+        const numToCol = (num) => {
             let result = "";
             let n = num;
             while (n >= 0) {
@@ -162,7 +264,7 @@ export class CopyPasteHandler {
             return result;
         };
 
-        const colToNum = (colStr: string): number => {
+        const colToNum = (colStr) => {
             let num = 0;
             for (let i = 0; i < colStr.length; i++) {
                 num = num * 26 + (colStr.charCodeAt(i) - 64);
@@ -195,7 +297,18 @@ export class CopyPasteHandler {
         return rangeStr;
     }
 
-    #migrateFormula(formula: string, sourceRow: number, sourceCol: number, targetRow: number, targetCol: number): string {
+    /**
+     * 迁移公式中的单元格引用
+     *
+     * @private
+     * @param {string} formula - 公式字符串
+     * @param {number} sourceRow - 源行号
+     * @param {number} sourceCol - 源列号
+     * @param {number} targetRow - 目标行号
+     * @param {number} targetCol - 目标列号
+     * @returns {string} 迁移后的公式
+     */
+    #migrateFormula(formula, sourceRow, sourceCol, targetRow, targetCol) {
         const rowOffset = targetRow - sourceRow;
         const colOffset = targetCol - sourceCol;
 
@@ -203,8 +316,8 @@ export class CopyPasteHandler {
             return formula;
         }
 
-        return formula.replace(/\b([A-Z]+)(\d+)\b/g, (match, colStr: string, rowStr: string) => {
-            const colToNum = (c: string): number => {
+        return formula.replace(/\b([A-Z]+)(\d+)\b/g, (match, colStr, rowStr) => {
+            const colToNum = (c) => {
                 let num = 0;
                 for (let i = 0; i < c.length; i++) {
                     num = num * 26 + (c.charCodeAt(i) - 64);
@@ -212,7 +325,7 @@ export class CopyPasteHandler {
                 return num - 1;
             };
 
-            const numToCol = (num: number): string => {
+            const numToCol = (num) => {
                 let result = "";
                 let n = num;
                 while (n >= 0) {
