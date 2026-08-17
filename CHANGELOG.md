@@ -5,6 +5,86 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-17
+
+### 🎉 Major Release — TypeScript Support & Search/Replace
+
+This release introduces **complete TypeScript type definitions** and a **full-featured Search & Replace plugin**. All changes are **backward compatible** with no breaking API changes.
+
+---
+
+## ✨ New Features
+
+### 📘 TypeScript Support (Complete)
+
+- ✅ **Full Type Definitions** — Auto-generated `.d.ts` files shipped with the package, no `@types` package needed
+- ✅ **Package.json Exports** — Proper `exports["."].types` + top-level `types` field for ESM/CJS/TS resolution
+- ✅ **Tsconfig Declaration** — `declaration: true`, `declarationDir: "./dist/types"`, `rootDir: "./src"`
+- ✅ **Build Pipeline** — `npm run types` generates declarations via `tsc --emitDeclarationOnly`
+- ✅ **Consumer Config** — Works with `"moduleResolution": "bundler"` or `"node16"` in downstream projects
+- ✅ **TypeScript Usage Examples** — Value+type import, `import type`, type annotations all supported
+
+#### Type Resolution Flow
+
+```
+import { Workbook } from "@canvas-sheet/core"
+  │
+  ├─ TypeScript → package.json exports["."].types → ./dist/types/api/index.d.ts
+  ├─ ESM Runtime → exports["."].import              → ./dist/canvas-sheet.esm.mjs
+  └─ CJS Runtime → exports["."].require             → ./dist/canvas-sheet.umd.js
+```
+
+#### Usage
+
+```typescript
+// Value + type import
+import { Workbook, HOOKS } from "@canvas-sheet/core";
+
+// Type-only import
+import type { WorkbookOptions, SheetConfig } from "@canvas-sheet/core";
+
+// Type annotation
+const options: WorkbookOptions = { ... };
+const workbook: Workbook = new Workbook(options);
+```
+
+### 🔍 Search & Replace Plugin (Complete)
+
+- ✅ **SearchPlugin** — Full-featured search & replace, similar to Excel's Ctrl+F
+- ✅ **Text Search** — Full-text search across all cells
+- ✅ **Regex Search** — Regular expression pattern matching
+- ✅ **Case Sensitive / Whole Word** — Configurable match options
+- ✅ **Result Highlighting** — Canvas-rendered highlight on matched cells
+- ✅ **Keyboard Navigation** — F3 (next) / Shift+F3 (previous) shortcuts
+- ✅ **Search & Replace** — Single replace + replace all, with Ctrl+Z undo support
+- ✅ **Search Scope** — Current sheet or all sheets
+- ✅ **Draggable UI** — Movable search panel
+- ✅ **Hook Events** — `BEFORE_SEARCH`, `AFTER_SEARCH`, `BEFORE_SEARCH_REPLACE`, `AFTER_SEARCH_REPLACE`
+
+#### Usage
+
+```typescript
+import { Workbook, SearchPlugin, HOOKS } from "@canvas-sheet/core";
+
+const workbook = new Workbook();
+workbook.loadPlugin("search");
+
+// Listen to search events
+workbook.addHook(HOOKS.AFTER_SEARCH, (result) => {
+    console.log(`Found ${result.total} matches`);
+});
+```
+
+---
+
+## 🔧 Infrastructure
+
+- ✅ **tsconfig.json** — Strict mode, ES2020 target, bundler module resolution
+- ✅ **Type Export Path** — `./dist/types/api/index.d.ts` aligned with `src/api/index.js` entry point
+- ✅ **Search Module** — `SearchEngine`, `SearchNavigator`, `SearchResultHighlighter`, `SearchStrategy`, `SearchUIManager`
+
+---
+
 ## [1.0.15] - 2026-08-01
 
 ### 🎉 Major Release - Enterprise-Grade Features & Enhanced Functionality
