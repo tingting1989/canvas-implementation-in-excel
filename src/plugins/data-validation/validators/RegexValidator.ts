@@ -32,48 +32,44 @@ export class RegexValidator extends BaseValidator {
     };
 
     validate(value: any, rule: ValidationRule, context: Record<string, any> = {}): Promise<ValidationResult> {
+        return Promise.resolve(this.validateSync(value, rule, context));
+    }
+
+    validateSync(value: any, rule: ValidationRule, context: Record<string, any> = {}): ValidationResult {
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
-            return Promise.resolve(
-                allowed
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id }),
-            );
+            return allowed
+                ? ValidationResult.success()
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         if (typeof value !== "string") {
-            return Promise.resolve(
-                ValidationResult.failure(rule.errorMessage || "正则表达式验证只能用于文本类型", "warning", { value, ruleId: rule.id }),
-            );
+            return ValidationResult.failure(rule.errorMessage || "正则表达式验证只能用于文本类型", "warning", { value, ruleId: rule.id });
         }
 
         try {
             const regex = this.getCompiledPattern(rule.pattern!);
 
             if (!regex) {
-                return Promise.resolve(ValidationResult.failure(`无效的正则表达式: ${rule.pattern}`, "warning", { value, ruleId: rule.id }));
+                return ValidationResult.failure(`无效的正则表达式: ${rule.pattern}`, "warning", { value, ruleId: rule.id });
             }
 
             const isValid = regex.test(value);
 
-            return Promise.resolve(
-                isValid
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(rule.errorMessage || `"${value}" 不符合要求的格式`, rule.errorStyle, {
-                          value,
-                          ruleId: rule.id,
-                          metadata: { pattern: rule.pattern },
-                      }),
-            );
+            return isValid
+                ? ValidationResult.success()
+                : ValidationResult.failure(rule.errorMessage || `"${value}" 不符合要求的格式`, rule.errorStyle, {
+                      value,
+                      ruleId: rule.id,
+                      metadata: { pattern: rule.pattern },
+                  });
         } catch (error: any) {
             errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[RegexValidator] 正则表达式执行失败:", error);
-            return Promise.resolve(
-                ValidationResult.failure(`正则表达式错误: ${error.message}`, "warning", {
-                    value,
-                    ruleId: rule.id,
-                    metadata: { error: error.message },
-                }),
-            );
+            return ValidationResult.failure(`正则表达式错误: ${error.message}`, "warning", {
+                value,
+                ruleId: rule.id,
+                metadata: { error: error.message },
+            });
         }
     }
 

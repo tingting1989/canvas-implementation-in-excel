@@ -17,13 +17,15 @@ export class NumberValidator extends BaseValidator {
     }
 
     validate(value: any, rule: ValidationRule, context: Record<string, any> = {}): Promise<ValidationResult> {
+        return Promise.resolve(this.validateSync(value, rule, context));
+    }
+
+    validateSync(value: any, rule: ValidationRule, context: Record<string, any> = {}): ValidationResult {
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
-            return Promise.resolve(
-                allowed
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id }),
-            );
+            return allowed
+                ? ValidationResult.success()
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         let numValue = value;
@@ -32,21 +34,17 @@ export class NumberValidator extends BaseValidator {
         }
 
         if (typeof numValue !== "number" || isNaN(numValue)) {
-            return Promise.resolve(ValidationResult.failure(rule.errorMessage || `必须是数值类型`, rule.errorStyle, { value, ruleId: rule.id }));
+            return ValidationResult.failure(rule.errorMessage || `必须是数值类型`, rule.errorStyle, { value, ruleId: rule.id });
         }
 
         try {
             const isValid = this.compare(numValue, rule.value, rule.operator!);
 
-            return Promise.resolve(
-                isValid
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(this.buildErrorMessage(numValue, rule), rule.errorStyle, { value, ruleId: rule.id }),
-            );
+            return isValid
+                ? ValidationResult.success()
+                : ValidationResult.failure(this.buildErrorMessage(numValue, rule), rule.errorStyle, { value, ruleId: rule.id });
         } catch (error: any) {
-            return Promise.resolve(
-                ValidationResult.failure(`验证失败: ${error.message}`, "warning", { value, ruleId: rule.id, metadata: { error: error.message } }),
-            );
+            return ValidationResult.failure(`验证失败: ${error.message}`, "warning", { value, ruleId: rule.id, metadata: { error: error.message } });
         }
     }
 

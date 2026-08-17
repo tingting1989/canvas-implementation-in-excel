@@ -27,6 +27,63 @@ import { isUrl, openUrl } from "./utils/UrlDetector.js";
 import { functionRegistry } from "./formula/functions/index.js";
 import { ERROR_CODE, ERROR_LEVEL } from "./constants/errorCodes.js";
 const initApp = () => {
+    const sampleData = [
+        // 表头行
+        [
+            "编号", "姓名", "部门", "职位", "邮箱", "日期时间", "邮箱格式", "唯一编号",
+            "数值>0", "范围0-100", "整数检查", "偶数检查", "文本长度≥5", "非空文本", "日期2024", "布尔值",
+            "SUM聚合", "AVERAGE平均", "COUNTIF条件", "IFERROR处理", "AND复合联动", "OR异常检测", "NOT非空检查", "MAX/MIN范围", "VLOOKUP外键"
+        ],
+
+        // 第1行：全部通过（正常数据）
+        [
+            1, "张三", "技术部", "工程师", "zhangsan@corp.com", "2024-06-15 09:30", "valid@email.com", "EMP001",
+            100, 50, 42, 8, "Valid Text", "NonEmpty", "2024-06-15", true,
+            200, 50.0, "test@mail.com", "123", "OK", "Normal", "Filled", 75, "张三"
+        ],
+
+        // 第2行：多个失败（测试同步阻止 + 异步标记）
+        [
+            2, "李四", "市场部", "经理", "lisi@corp.com.cn", "2024-03-20 14:00", "user@domain.org", "EMP001",
+            -10, 150, 3.14, 7, "No", "", "2023-01-01", false,
+            141, 35.29, "no-at-sign", "abc", "Fail", "Abnormal", "", 120, "王五"
+        ],
+
+        // 第3行：部分失败（边界测试）
+        [
+            3, "王五", "财务部", "会计", "wangwu@finance.net", "2024-12-31 16:45", "ok@test.io", "EMP003",
+            55, 75, 100, 6, "Perfect Length", "HasContent", "2024-12-31", true,
+            231, 62.75, "another@email.com", "456", "Pass", "Normal", "Data", 90, "赵六"
+        ],
+
+        // 第4行：异常数据组合
+        [
+            4, "赵六", "人事部", "专员", "zhaoliu@hr.org", "2020-07-20 08:15", "bad-format", "EMP004",
+            0, -5, -7, 9, "X", "TextHere", "2026-01-01", true,
+            -3, -1.33, "missing@symbol", "xyz", "Error", "Outlier", "Value", -10, "钱七"
+        ],
+
+        // 第5行：混合结果
+        [
+            5, "钱七", "技术部", "架构师", "qianqi@tech.com", "2024-06-20 20:30", "good@email.cn", "EMP005",
+            88, 99, 77, 4, "Another Good One", "NotEmpty", "2024-06-20", false,
+            264, 66.0, "user@host.com", "789", "Good", "Normal", "Present", 85, "孙八"
+        ],
+
+        // 第6行：大量标记
+        [
+            6, "孙八", "市场部", "销售", "sunba@mkt.co.uk", "2023-11-11 12:45", "simple@addr", "EMP006",
+            -1, 101, 2.5, 3, "Bad", "", "2023-12-31", false,
+            102, 25.5, "invalid-email", "ABC", "Fail", "Special", "", 105, "周九"
+        ],
+
+        // 第7行：基本正常
+        [
+            7, "周九", "财务部", "总监", "zhoujiu@fin.com", "2024-07-04 10:00", "chief@office.gov", "EMP007",
+            42, 50, 200, 10, "OK", "Has Value", "2024-07-04", true,
+            292, 73.0, "admin@system.edu", "101010", "Pass", "Normal", "Exists", 110, "吴十"
+        ]
+    ];
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 
     // 配置统一错误处理：开发模式输出所有级别日志
@@ -36,133 +93,41 @@ const initApp = () => {
     });
 
     const wb = new Workbook(document.getElementById("wrap"), {
-        defaultStyle: {},
+        width: 1600, height: 400,
+        sheets: [{
+            name: '数据验证',
+            data: sampleData,
+            columns: [
+                { type: 'numeric', width: 55, title: '编号' },
+                { type: 'text', width: 65, title: '姓名' },
+                { type: 'text', width: 70, title: '部门' },
+                { type: 'text', width: 70, title: '职位' },
+                { type: 'text', width: 120, title: '邮箱' },
+                { type: 'text', width: 130, title: '日期时间' },
+                { type: 'text', width: 110, title: '邮箱格式' },
+                { type: 'text', width: 70, title: '唯一编号' },
 
-        sheets: [
-            {
-                name: "星级评分演示",
+                { type: 'numeric', width: 72, title: '数值>0\n[同步-stop]' },
+                { type: 'numeric', width: 72, title: '范围0-100\n[同步-stop]' },
+                { type: 'numeric', width: 68, title: '整数检查\n[同步-stop]' },
+                { type: 'numeric', width: 68, title: '偶数检查\n[同步-stop]' },
+                { type: 'text', width: 85, title: '文本长度≥5\n[同步-stop]' },
+                { type: 'text', width: 80, title: '非空文本\n[同步-stop]' },
+                { type: 'text', width: 90, title: '日期2024\n[同步-stop]' },
+                { type: 'text', width: 68, title: '布尔值\n[同步-stop]' },
 
-                data: [
-                    // ["产品名称", "类别", "用户评分", "专家评分", "综合评价", "推荐指数", "满意度", "性价比"],
-                    // ["产品A", "电子产品", 5, 5, 5, 5, 5, 5],
-                    // ["产品B", "家居用品", 4, 4, 4, 4, 4, 4],
-                    // ["产品C", "服装配饰", 3, 3, 3, 3, 3, 3],
-                    // ["产品D", "食品饮料", 5, 4, 5, 4, 5, 4],
-                    // ["产品E", "图书文具", 4, 5, 4, 5, 4, 5],
-                    // ["产品F", "运动户外", 3, 4, 3, 4, 3, 4],
-                    // ["产品G", "美妆护肤", 5, 5, 5, 5, 5, 5],
-                    // ["产品H", "汽车配件", 4, 3, 4, 3, 4, 3],
-                    // ["产品I", "数码配件", 5, 5, 5, 5, 5, 5],
-                    // ["产品J", "母婴用品", 4, 4, 4, 4, 4, 4],
-                    // ["产品K", "宠物用品", 3, 3, 3, 3, 3, 3],
-                    // ["产品L", "办公设备", 5, 4, 5, 4, 5, 4],
-                ],
-
-                columns: [
-                    { type: "numeric", width: 120 },
-                    { type: "numeric", width: 120 },
-                    { type: "date", width: 120 },
-                    // { type: "hyperlink", width: 100 },
-                    // // 用户评分
-                    // {
-                    //     type: "starRating",
-                    //     width: 180,
-                    //     options: { maxStars: 3, color: "#00FF00", emptyColor: "#CCCCCC" },
-                    // },
-                    // // 专家评分
-                    // // {
-                    // //     type: "trafficLight",
-                    // //     width: 180,
-                    // //     options: { maxStars: 5, color: "#FF6B6B", emptyColor: "#E0E0E0" },
-                    // // },
-                    // // // 综合评价
-                    // {
-                    //     type: "select",
-                    //     width: 180,
-                    //     source: [
-                    //         { value: "0", label: "好" },
-                    //         { value: "1", label: "中" },
-                    //         { value: "2", label: "差" },
-                    //     ],
-                    // },
-                    // {
-                    //     type: "date",
-                    //     width: 120,
-                    //     style: { textAlign: "center" },
-                    //     options: { min: "2025-12-11", max: "2026-01-01", allowInvalid: false, dateFormat: { pattern: "YYYY-MM-DD" } },
-                    // },
-                    // { type: "text", width: 120 },
-                    // // 推荐指数
-                    // {
-                    //     type: "starRating",
-                    //     width: 180,
-                    //     options: {maxStars: 5, color: "#9B59B6", emptyColor: "#C0C0C0"}
-                    // },
-                    // // 满意度
-                    // {
-                    //     type: "starRating",
-                    //     width: 180,
-                    //     options: {maxStars: 5, color: "#F39C12", emptyColor: "#E8E8E8"}
-                    // },
-                    // // 性价比
-                    // {
-                    //     type: "starRating",
-                    //     width: 180,
-                    //     options: {maxStars: 5, color: "#2ECC71", emptyColor: "#D5D5D5"}
-                    // }
-                ],
-
-                cell: [
-                    // 表头样式
-                    // {
-                    //     row: 0,
-                    //     col: 0,
-                    //     style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    // },
-                    // {
-                    //     row: 0,
-                    //     col: 1,
-                    //     type: "text",
-                    //     style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    // },
-                    // {
-                    //     row: 0,
-                    //     col: 2,
-                    //     type: "text",
-                    //     style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    // },
-                    {
-                        row: 0,
-                        col: 3,
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
-                    {
-                        row: 0,
-                        col: 4,
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
-                    {
-                        row: 0,
-                        col: 5,
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
-                    {
-                        row: 0,
-                        col: 6,
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
-                    {
-                        row: 0,
-                        col: 7,
-                        style: { backgroundColor: "#667eea", color: "white", fontWeight: "bold", textAlign: "center" },
-                    },
-                ],
-
-                // rowHeights: [40, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45],
-                textOverflowEllipsis: false,
-                cellPadding: 10,
-            },
-        ],
+                { type: 'numeric', width: 72, title: 'SUM聚合\n[异步-warning]' },
+                { type: 'numeric', width: 78, title: 'AVERAGE平均\n[异步-warning]' },
+                { type: 'text', width: 82, title: 'COUNTIF条件\n[异步-warning]' },
+                { type: 'text', width: 78, title: 'IFERROR处理\n[异步-warning]' },
+                { type: 'text', width: 75, title: 'AND复合联动\n[异步-warning]' },
+                { type: 'text', width: 75, title: 'OR异常检测\n[异步-warning]' },
+                { type: 'text', width: 72, title: 'NOT非空检查\n[异步-warning]' },
+                { type: 'numeric', width: 80, title: 'MAX/MIN范围\n[异步-warning]' },
+                { type: 'text', width: 80, title: 'VLOOKUP外键\n[异步-warning]' }
+            ],
+            cellPadding: 8
+        }],
         plugins: [
             "autoFill",
             "contextMenu",
@@ -177,503 +142,238 @@ const initApp = () => {
             "freeze",
             "formula",
 
-            "sort",
+            // "sort",
             "dataValidation",
             "chart",
-            "filter",
-            "search",
+            // "interaction"
+            // "filter",
         ],
         pluginOptions: {
-            contextMenu: {
-                enabled: true,
-                customItems: [
-                    {
-                        label: "高亮选中行",
-
-                        // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
-                        contexts: ["cell", "rowHeader"],
-                        action: (row, col, sheet) => {
-                            sheet.setRowStyle(row, { backgroundColor: "yellow" });
-                            wb.render();
-                        },
-                    },
-                    {
-                        label: "设置单元格样式",
-                        contexts: ["cell"],
-                        action: (row, col, sheet) => {
-                            const range = sheet.selection.getRange();
-                            const styleObj = { backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724" };
-                            for (let r = range.topRow; r <= range.bottomRow; r++) {
-                                for (let c = range.topCol; c <= range.bottomCol; c++) {
-                                    if (!sheet.isDisabled(r, c)) {
-                                        sheet.setCellStyle(r, c, styleObj);
-                                    }
-                                }
-                            }
-                            wb.render();
-                        },
-                    },
-                    {
-                        label: "取消单元格样式",
-                        contexts: ["cell", "rowHeader", "colHeader"],
-                        action: (row, col, sheet) => {
-                            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Clear cell style");
-                            const range = sheet.selection.getRange();
-                            for (let r = range.topRow; r <= range.bottomRow; r++) {
-                                sheet.clearRowStyle(r);
-                                for (let c = range.topCol; c <= range.bottomCol; c++) {
-                                    sheet.clearCellStyle(r, c);
-                                }
-                            }
-                            wb.render();
-                        },
-                    },
-                    { type: "separator" },
-                    {
-                        label: "导出选中区域",
-                        action: (row, col, sheet) => {
-                            errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Export from", row, col);
-                            alert("导出功能（示例）");
-                        },
-                    },
-                ],
-
-                // disabledItems: ["mergeCells", "unmergeCells"],
-
-                // rowMove: { enabled: false },
-            },
-
-            // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
-            // sort: {
-            //     // 允许排序的列索引数组（0-based）
-            //     // 不配置或为空数组 → 所有列都不可排序
-            //     sortableColumns: [0, 2, 4], // 只允许 A、C、E 列排序
-            // },
-            filter: {
-                // 允许过滤的列索引数组（0-based）
-                filterableColumns: [0, 1, 2],
-                columnTypes: {
-                    0: "text",
-                    1: "numeric",
-                    2: "date",
-                },
-            },
             dataValidation: {
-                // ═══════════════════════════════════════════════════════════
-                // 📌 DataValidationPlugin v3.0 配置
-                // ═══════════════════════════════════════════════════════════
-                //
-                // 核心功能：
-                // ✅ 单轨异步架构 + 同步快速通道优化
-                // ✅ 深度集成 FormulaEngine（消除 Mock 数据）
-                // ✅ 三级缓存系统（L1视口 → L2最近 → L3持久化）
-                // ✅ 复杂度分析器（智能路径决策）
-                // ✅ 支持 49+ 内置函数 + 无限自定义函数
-                // ✅ 6种图标状态渐进式渲染
-                //
-                conflictStrategy: "short-circuit",
-                highlightInvalidCells: true,
-
-                // v3.0 新增：公式验证配置
-                formulaValidation: {
-                    // 同步快速通道配置（用于 BEFORE_SET_VALUE_AT 实时拦截）
-                    syncFastPath: {
-                        enabled: true,
-                        threshold: 10, // 复杂度阈值(ms)，<10ms 走同步
-                        maxComplexity: 2, // 复杂度等级 ≤2 才走同步
-                    },
-                    // 异步验证配置
-                    asyncValidation: {
-                        enabled: true,
-                        timeout: 500, // 异步超时时间(ms)
-                        maxConcurrent: 5, // 最大并发验证数
-                        retryAttempts: 2, // 失败重试次数
-                    },
-                    // 三级缓存配置
-                    cache: {
-                        enabled: true,
-                        l1MaxSize: 500, // 视口缓存最大容量
-                        l2MaxSize: 1000, // 最近缓存最大容量
-                        l3Enabled: true, // 是否启用持久化缓存(IndexedDB)
-                        defaultTTL: 3600000, // 默认缓存有效期(ms)，1小时
-                    },
-                },
-
+                conflictStrategy: 'short-circuit',
                 rules: [
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例2：同步快速通道公式验证（简单公式）
-                    // 复杂度 ≤2，预计响应时间 <10ms
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "A:A",
-                        type: "formula",
-                        formula: "=A{row}>0", // 简单比较公式，复杂度=1
-                        allowBlank: false,
-                        errorMessage: "评分必须大于0",
-                        errorStyle: "warning",
-                        // inputTitle: "评分验证",
-                        // inputMessage: "请输入1-5的评分"
-                    },
+                    // ════════════════════════════════════════
+                    // 📋 基础类型验证 (A-H列) - 展示内置验证器
+                    // ════════════════════════════════════════
 
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例3：同步快速通道公式验证（复合条件）
-                    // AND函数 + 多条件，复杂度=2
-                    // ═══════════════════════════════════════════════════════════
                     {
-                        range: "B:B",
-                        type: "formula",
-                        formula: "=AND(B{row}>=1, B{row}<=5)", // 复合条件，复杂度=2
-                        allowBlank: true,
-                        errorMessage: "专家评分必须在1-5之间",
-                        errorStyle: "stop",
+                        range: 'A2:A20',
+                        type: 'number',
+                        operator: 'between',
+                        value: [3, 100],
+                        errorMessage: '⛔ 编号必须是 1-100 之间的整数',
+                        errorStyle: 'stop'
                     },
-
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例4：异步验证公式（复杂公式）
-                    // 复杂度 >2，自动走异步管道，显示 pending 图标
-                    // ═══════════════════════════════════════════════════════════
                     {
-                        range: "C2:C20",
-                        type: "formula",
-                        formula: "=AND(C{row}>0,A{row}>0,C{row}*0.6+A{row}*0.4>0)", // 复杂公式，复杂度>2
-                        allowBlank: true,
-                        errorMessage: "综合评分计算失败，请检查输入",
-                        errorStyle: "warning",
-                    },
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例1：基础文本验证（原有规则）
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "D1:D10",
-                        type: "text",
-                        operator: "lengthBetween",
+                        range: 'B2:B20',
+                        type: 'text',
+                        operator: 'lengthBetween',
                         value: [3, 10],
-                        allowBlank: false,
-                        errorMessage: "长度为3-10个字符",
-                        errorStyle: "stop",
+                        errorMessage: '⛔ 姓名长度必须在 3-10 个字符之间',
+                        errorStyle: 'stop'
+                    },
+                    {
+                        range: 'C2:C20',
+                        type: 'list',
+                        source: ['技术部', '市场部', '财务部', '人事部', '运营部'],
+                        errorMessage: '⚠️ 请从下拉列表中选择部门',
+                        errorStyle: 'warning',
+                        inputMessage: '选择部门：技术/市场/财务/人事/运营'
+                    },
+                    {
+                        range: 'D2:D20',
+                        type: 'text',
+                        operator: 'lengthBetween',
+                        value: [3, 15],
+                        errorMessage: '⚠️ 职位长度必须在 3-15 个字符之间',
+                        errorStyle: 'warning'
+                    },
+                    {
+                        range: 'E2:E20',
+                        type: 'regex',
+                        pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
+                        errorMessage: '⚠️ 请输入有效的邮箱地址（如 user@example.com）',
+                        errorStyle: 'warning',
+                        inputMessage: '格式：用户名@域名.后缀'
+                    },
+                    {
+                        range: 'F2:F20',
+                        type: 'datetime',
+                        operator: 'between',
+                        value: ['2020-01-01 00:00:00', '2026-12-31 23:59:59'],
+                        errorMessage: '⚠️ 请输入 2020-2026 年内的日期时间',
+                        errorStyle: 'warning'
+                    },
+                    {
+                        range: 'G2:G20',
+                        type: 'regex',
+                        pattern: '^.*@.*\\..*$',
+                        errorMessage: '⚠️ 邮箱格式必须包含 @ 和 . 符号',
+                        errorStyle: 'warning'
+                    },
+                    {
+                        range: 'H2:H20',
+                        type: 'unique',
+                        errorMessage: '🚫 唯一编号不能重复！',
+                        errorStyle: 'stop'
+                    },
+                    // ════════════════════════════════════════
+                    // 🔄 同步验证示例 (8个) - 简单公式 + errorStyle:'stop'
+                    // 特点：即时响应，可立即阻止非法输入
+                    // ════════════════════════════════════════
+
+                    {
+                        range: 'I2:I20',
+                        type: 'formula',
+                        formula: '=I{row}>0',
+                        errorMessage: '⛔ 数值必须大于0（同步-立即阻止）',
+                        errorStyle: 'stop',
+                        description: '[同步] 基础数值比较运算符 >'
+                    },
+                    {
+                        range: 'J2:J20',
+                        type: 'formula',
+                        formula: '=AND(J{row}>=0, J{row}<=100)',
+                        errorMessage: '⛔ 数值必须在0-100范围内（同步-范围检查）',
+                        errorStyle: 'stop',
+                        description: '[同步] AND逻辑组合 + 范围检查'
+                    },
+                    {
+                        range: 'K2:K20',
+                        type: 'formula',
+                        formula: '=INT(K{row})=K{row}',
+                        errorMessage: '⛔ 必须是整数（同步-整数验证）',
+                        errorStyle: 'stop',
+                        description: '[同步] INT函数 - 整数类型检查'
+                    },
+                    {
+                        range: 'L2:L20',
+                        type: 'formula',
+                        formula: '=ISEVEN(L{row})',
+                        errorMessage: '⛔ 必须是偶数（同步-奇偶性检查）',
+                        errorStyle: 'stop',
+                        description: '[同步] ISEVEN函数 - 偶数判断'
+                    },
+                    {
+                        range: 'M2:M20',
+                        type: 'formula',
+                        formula: '=LEN(M{row})>=5',
+                        errorMessage: '⛔ 文本长度不足：需要>=5字符（同步-长度验证）',
+                        errorStyle: 'stop',
+                        description: '[同步] LEN函数 - 文本长度限制'
+                    },
+                    {
+                        range: 'N2:N20',
+                        type: 'formula',
+                        formula: '=AND(ISTEXT(N{row}), LEN(N{row})>0)',
+                        errorMessage: '⛔ 必须是非空文本（同步-非空文本验证）',
+                        errorStyle: 'stop',
+                        description: '[同步] ISTEXT函数 + 复合条件'
+                    },
+                    {
+                        range: 'O2:O20',
+                        type: 'formula',
+                        formula: '=AND(O{row}>=DATE(2024,1,1), O{row}<=DATE(2024,12,31))',
+                        errorMessage: '🚫 日期必须在2024年内（同步-日期范围严格阻止）',
+                        errorStyle: 'stop',
+                        description: '[同步] DATE函数 - 固定日期范围（支持 YYYY-MM-DD 格式自动转换）',
+                        hint: '输入格式：2024-06-15, 2024/06/15, 或 Date 对象'
+                    },
+                    {
+                        range: 'P2:P20',
+                        type: 'formula',
+                        formula: '=OR(P{row}=TRUE, P{row}=FALSE)',
+                        errorMessage: '⛔ 必须是布尔值TRUE/FALSE（严格模式：禁止0/1/"true"/"false"等）',
+                        errorStyle: 'stop',
+                        description: '[同步] OR逻辑 + 布尔值常量（严格类型检查，使用===）',
+                        hint: '只接受 JavaScript 布尔值 true 或 false，其他所有值（包括数字0/1、字符串）都会被阻止'
                     },
 
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例5：自定义函数验证（业务逻辑注入）
-                    // 使用已注册的自定义函数验证数据
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "E2:E20",
-                        type: "formula",
-                        formula: "=ISPRIME(E{row})", // 自定义函数验证质数
-                        allowBlank: true,
-                        errorMessage: "推荐指数必须是质数",
-                        // errorStyle: "information",
-                        errorStyle: "warning",
-                    },
-
-                    // ═══════════════════════════════════════════════════════════
-                    // 📝 示例6：跨单元格引用验证
-                    // 引用其他单元格进行条件判断
-                    // ═══════════════════════════════════════════════════════════
-                    {
-                        range: "F2:F20",
-                        type: "formula",
-                        formula: "=C{row}>A{row}", // 跨单元格比较
-                        allowBlank: true,
-                        errorMessage: "满意度对比验证失败",
-                        errorStyle: "warning",
-                    },
+                    // ════════════════════════════════════════
+                    // ⏳ 异步验证示例 (9个) - 复杂函数 + errorStyle:'warning'
+                    // 特点：使用FormulaEngine完整功能，后台执行后标记
+                    // ════════════════════════════════════════
 
                     {
-                        range: "G:G",
-                        type: "formula",
-                        formula: "CALCULATEBMI(A{row},B{row})", // 跨单元格比较
-                        errorMessage: "必须输入正数",
-                        errorStyle: "warning",
+                        range: 'Q2:Q20',
+                        type: 'formula',
+                        formula: '=SUM(I{row}:P{row})<500',
+                        errorMessage: '⚠️ 行总和超过500（异步-SUM聚合函数）',
+                        errorStyle: 'warning',
+                        description: '[异步] SUM聚合函数 - 行汇总限制'
                     },
-                    //
-                    // {
-                    //     range: "A:A",
-                    //     type: "text",
-                    //     operator: "greaterThan",
-                    //     value: 5,
-                    //     errorMessage: "必须输入正数",
-                    //     errorStyle: "stop",
-                    // },
-                    //
-                    // {
-                    //     range: "C:C",
-                    //     type: "time",
-                    //     operator: "between",
-                    //     value: ["09:00", "18:00"],
-                    //     errorMessage: "必须输入正数",
-                    //     errorStyle: "stop",
-                    // },
-                    // {
-                    //     range: "D:D",
-                    //     type: "unique",
-                    // },
-                    // {
-                    //     range: "G:G",
-                    //     type: "date",
-                    //     operator: "between",
-                    //     value: ["01/01/2020", "12/31/2020"],
-                    //     errorMessage: "必须输入正数",
-                    //     errorStyle: "stop",
-                    // },
-                ],
-            },
-        },
-        hooks: {
-            // ==================== 编辑相关钩子 ====================
-            // ✅ 已执行
-            // [HOOKS.BEFORE_BEGIN_EDITING]: (...args) => {
-            //     console.log("[HOOK] beforeBeginEditing 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_BEGIN_EDITING]: (...args) => {
-            //     console.log("[HOOK] afterBeginEditing 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_FINISH_EDITING]: (...args) => {
-            //     console.log("[HOOK] beforeFinishEditing 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_FINISH_EDITING]: (...args) => {
-            //     console.log("[HOOK] afterFinishEditing 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_CHANGE]: (...args) => {
-            //     console.log("[HOOK] beforeChange 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_CHANGE]: (...args) => {
-            //     console.log("[HOOK] afterChange 执行了", ...args);
-            // },
-            //
-            // // ==================== 选择相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_SELECTION]: (...args) => {
-            //     console.log("[HOOK] beforeSelection 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SELECTION]: (...args) => {
-            //     console.log("[HOOK] afterSelection 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_SELECTION_END]: (...args) => {
-            //     console.log("[HOOK] beforeSelectionEnd 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SELECTION_END]: (...args) => {
-            //     console.log("[HOOK] afterSelectionEnd 执行了", ...args);
-            // },
-            //
-            // // ==================== 单元格交互钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.ON_CELL_MOUSE_DOWN]: (...args) => {
-            //     console.log("[HOOK] onCellMouseDown 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.ON_CELL_MOUSE_OVER]: (...args) => {
-            //     console.log("[HOOK] onCellMouseOver 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.ON_CELL_MOUSE_OUT]: (...args) => {
-            //     console.log("[HOOK] onCellMouseOut 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.ON_CELL_CLICK]: (...args) => {
-            //     console.log("[HOOK] onCellClick 执行了", ...args);
-            //     if (isFunction(updateToolbarStyleState)) {
-            //         updateToolbarStyleState();
-            //     }
-            // },
-            // // ✅ 已执行
-            // [HOOKS.ON_CELL_DBL_CLICK]: (...args) => {
-            //     console.log("[HOOK] onCellDblClick 执行了", ...args);
-            // },
-            //
-            // // ==================== 键盘相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_KEY_DOWN]: (...args) => {
-            //     console.log("[HOOK] beforeKeyDown 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_KEY_DOWN]: (...args) => {
-            //     console.log("[HOOK] afterKeyDown 执行了", ...args);
-            // },
-            //
-            // // ==================== 滚动相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SCROLL_HORIZONTALLY]: (...args) => {
-            //     console.log("[HOOK] afterScrollHorizontally 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SCROLL_VERTICALLY]: (...args) => {
-            //     console.log("[HOOK] afterScrollVertically 执行了", ...args);
-            // },
-            //
-            // // ==================== 合并单元格相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_MERGE_CELLS]: (...args) => {
-            //     console.log("[HOOK] beforeMergeCells 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_MERGE_CELLS]: (...args) => {
-            //     console.log("[HOOK] afterMergeCells 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_UNMERGE_CELLS]: (...args) => {
-            //     console.log("[HOOK] beforeUnmergeCells 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_UNMERGE_CELLS]: (...args) => {
-            //     console.log("[HOOK] afterUnmergeCells 执行了", ...args);
-            // },
-            //
-            // // ==================== 剪贴板相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_COPY]: (...args) => {
-            //     console.log("[HOOK] beforeCopy 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_COPY]: (...args) => {
-            //     console.log("[HOOK] afterCopy 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_CUT]: (...args) => {
-            //     console.log("[HOOK] beforeCut 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_CUT]: (...args) => {
-            //     console.log("[HOOK] afterCut 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_PASTE]: (...args) => {
-            //     console.log("[HOOK] beforePaste 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_PASTE]: (...args) => {
-            //     console.log("[HOOK] afterPaste 执行了", ...args);
-            // },
-            //
-            // // ==================== 列移动相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_COLUMN_MOVE]: (...args) => {
-            //     console.log("[HOOK] beforeColumnMove 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_COLUMN_MOVE]: (...args) => {
-            //     console.log("[HOOK] afterColumnMove 执行了", ...args);
-            // },
-            //
-            // // ==================== 行移动相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_ROW_MOVE]: (...args) => {
-            //     console.log("[HOOK] beforeRowMove 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_ROW_MOVE]: (...args) => {
-            //     console.log("[HOOK] afterRowMove 执行了", ...args);
-            // },
-            //
-            // // ==================== 隐藏列相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.AFTER_HIDE_COLUMN]: (...args) => {
-            //     console.log("[HOOK] afterHideColumn 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SHOW_COLUMN]: (...args) => {
-            //     console.log("[HOOK] afterShowColumn 执行了", ...args);
-            // },
-            //
-            // // ==================== 隐藏行相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.AFTER_HIDE_ROW]: (...args) => {
-            //     console.log("[HOOK] afterHideRow 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SHOW_ROW]: (...args) => {
-            //     console.log("[HOOK] afterShowRow 执行了", ...args);
-            // },
-            //
-            // // ==================== 冻结行列相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.AFTER_FREEZE]: (...args) => {
-            //     console.log("[HOOK] afterFreeze 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_UNFREEZE]: (...args) => {
-            //     console.log("[HOOK] afterUnfreeze 执行了", ...args);
-            // },
-            //
-            // // ==================== 工作表切换相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
-            //     console.log("[HOOK] afterSheetSwitch 执行了", ...args);
-            // },
-            //
-            // // ==================== 排序相关钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SORT]: (...args) => {
-            //     console.log("[HOOK] afterSort 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SORT_RESTORE]: (...args) => {
-            //     console.log("[HOOK] afterSortRestore 执行了", ...args);
-            // },
-            //
-            // // ==================== 生命周期钩子 ====================
-            // // ✅ 已执行
-            // [HOOKS.INIT]: (...args) => {
-            //     console.log("[HOOK] init 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.DESTROY]: (...args) => {
-            //     console.log("[HOOK] destroy 执行了", ...args);
-            // },
-            // ==================== 工作表相关钩子 ====================
-            // ✅ 已执行
-            // [HOOKS.BEFORE_SHEET_RENAME]: (...args) => {
-            //     console.log("[HOOK] beforeSheetRename 执行了", ...args);
-            //     return true;
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SHEET_RENAME]: (...args) => {
-            //     console.log("[HOOK] afterSheetRename 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_SHEET_ADD]: (...args) => {
-            //     console.log("[HOOK] beforeSheetAdd 执行了", ...args);
-            //     return true;
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SHEET_ADD]: (...args) => {
-            //     console.log("[HOOK] afterSheetAdd 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_SHEET_REMOVE]: (...args) => {
-            //     console.log("[HOOK] beforeSheetRemove 执行了", ...args);
-            //     return true;
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SHEET_REMOVE]: (...args) => {
-            //     console.log("[HOOK] afterSheetRemove 执行了", ...args);
-            // },
-            // // ✅ 已执行
-            // [HOOKS.BEFORE_SHEET_SWITCH]: (...args) => {
-            //     console.log("[HOOK] beforeSheetSwitch 执行了", ...args);
-            //     return true;
-            // },
-            // // ✅ 已执行
-            // [HOOKS.AFTER_SHEET_SWITCH]: (...args) => {
-            //     console.log("[HOOK] afterSheetSwitch 执行了", ...args);
-            //     return true;
-            // },
-        },
-        afterInit(wb) {
-            const s2 = wb.sheets.get("Sheet2");
-            if (s2) {
-                s2.setCell(2, 0, "Switch to Sheet1 to paste");
+                    {
+                        range: 'R2:R20',
+                        type: 'formula',
+                        formula: '=AVERAGE(I{row},K{row},L{row},Q{row})>0',
+                        errorMessage: '⚠️ 平均值必须>0（异步-AVERAGE统计函数）',
+                        errorStyle: 'warning',
+                        description: '[异步] AVERAGE统计函数 - 多列平均'
+                    },
+                    {
+                        range: 'S2:S20',
+                        type: 'formula',
+                        formula: '=COUNTIF(E{row},"*@*")>0',
+                        errorMessage: '⚠️ 邮箱格式不包含@符号（异步-COUNTIF条件计数）',
+                        errorStyle: 'warning',
+                        description: '[异步] COUNTIF条件函数 - 通配符匹配'
+                    },
+                    {
+                        range: 'T2:T20',
+                        type: 'formula',
+                        formula: '=IFERROR(INT(T{row}),0)=T{row}',
+                        errorMessage: '⚠️ 无法转换为整数（异步-IFERROR错误处理）',
+                        errorStyle: 'warning',
+                        description: '[异步] IFERROR条件函数 - 安全转换'
+                    },
+                    {
+                        range: 'U2:U20',
+                        type: 'formula',
+                        formula: '=AND(I{row}>0, LEN(M{row})>=5, Q{row}<100)',
+                        errorMessage: '⚠️ 复合条件不满足（异步-AND多字段联动）',
+                        errorStyle: 'warning',
+                        description: '[异步] AND复合逻辑 - 跨多列联合验证'
+                    },
+                    {
+                        range: 'V2:V20',
+                        type: 'formula',
+                        formula: '=OR(I{row}<0, I{row}>100, M{row}="特殊")',
+                        errorMessage: '⚠️ 触发了异常值规则（异步-OR多条件容错）',
+                        errorStyle: 'warning',
+                        description: '[异步] OR多条件逻辑 - 异常检测'
+                    },
+                    {
+                        range: 'W2:W20',
+                        type: 'formula',
+                        formula: '=NOT(ISBLANK(W{row}))',
+                        errorMessage: '⚠️ 不能为空（异步-NOT+ISBLANK组合）',
+                        errorStyle: 'warning',
+                        description: '[异步] NOT非运算 + ISBLANK空值检查'
+                    },
+                    {
+                        range: 'X2:X20',
+                        type: 'formula',
+                        formula: '=AND(X{row}>=MIN(I{row}:L{row}), X{row}<=MAX(I{row}:L{row}))',
+                        errorMessage: '⚠️ 超出历史数据范围（异步-MAX/MIN极值函数）',
+                        errorStyle: 'warning',
+                        description: '[异步] MAX/MIN数学函数 - 动态范围'
+                    },
+                    {
+                        range: 'Y2:Y20',
+                        type: 'formula',
+                        formula: '=ISNUMBER(VLOOKUP(Y{row},$B$2:$D$20,1,FALSE))',
+                        errorMessage: '⚠️ 未在员工列表中找到（异步-VLOOKUP查找函数）',
+                        errorStyle: 'warning',
+                        description: '[异步] VLOOKUP查找函数 - 外键约束'
+                    }
+                ]
             }
         },
+        hooks:{
+            beforeValidate: function(value, context) {
+                console.log('🪝 [BEFORE_VALIDATE] 值=' + JSON.stringify(value) + ' 位置=(' + context.row + ',' + context.col + ')', 'info');
+            }
+        }
     });
 
     // wb.loadPluginClass(InteractionPlugin, {

@@ -185,6 +185,34 @@ export class DataValidationPlugin extends BasePlugin {
 
         const result = this.#engine.validateCellSync(row, col, value);
 
+        if (result.deferred && result.needsAsyncValidation) {
+            this.#engine.validateCell(row, col, value).then((asyncResult) => {
+                asyncResult.row = row;
+                asyncResult.col = col;
+                asyncResult.value = value;
+                asyncResult.source = "before_set_value_async";
+
+                if (!asyncResult.valid) {
+                    (this as any).hooks?.runHooks(HOOKS.VALIDATION_FAILED, row, col, value, asyncResult);
+                    this.#portalUI?.showErrorTooltip(row, col, asyncResult.message || "输入值无效", asyncResult.errorStyle || "stop");
+
+                    if (this.#highlightInvalidCells) {
+                        this.#applyErrorStyle(row, col, asyncResult.errorStyle || "stop");
+                    }
+
+                    this.#portalUI?.setIconStatus(row, col, false, asyncResult.errorStyle || "stop");
+                } else {
+                    (this as any).hooks?.runHooks(HOOKS.AFTER_VALIDATE, asyncResult);
+
+                    if (this.#highlightInvalidCells) {
+                        this.#removeErrorStyle(row, col);
+                    }
+
+                    this.#portalUI?.setIconStatus(row, col, true, "stop");
+                }
+            }).catch(() => {});
+        }
+
         if (!result.valid) {
             result.row = row;
             result.col = col;

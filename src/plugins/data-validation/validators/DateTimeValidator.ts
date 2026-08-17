@@ -21,13 +21,15 @@ export class DateTimeValidator extends BaseValidator {
     }
 
     validate(value: any, rule: ValidationRule, context: Record<string, any> = {}): Promise<ValidationResult> {
+        return Promise.resolve(this.validateSync(value, rule, context));
+    }
+
+    validateSync(value: any, rule: ValidationRule, context: Record<string, any> = {}): ValidationResult {
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
-            return Promise.resolve(
-                allowed
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id }),
-            );
+            return allowed
+                ? ValidationResult.success()
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         const mode = rule.type || "date";
@@ -35,9 +37,7 @@ export class DateTimeValidator extends BaseValidator {
 
         if (!parsedValue) {
             const label = MODE_LABELS[mode] || "日期时间";
-            return Promise.resolve(
-                ValidationResult.failure(rule.errorMessage || `"${value}" 不是有效的${label}格式`, rule.errorStyle, { value, ruleId: rule.id }),
-            );
+            return ValidationResult.failure(rule.errorMessage || `"${value}" 不是有效的${label}格式`, rule.errorStyle, { value, ruleId: rule.id });
         }
 
         try {
@@ -50,14 +50,12 @@ export class DateTimeValidator extends BaseValidator {
                 isValid = this.compareDateTime(parsedValue, minVal, maxVal, rule.operator!);
             }
 
-            return Promise.resolve(
-                isValid
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(this.buildErrorMessage(rule, mode), rule.errorStyle, { value, ruleId: rule.id }),
-            );
+            return isValid
+                ? ValidationResult.success()
+                : ValidationResult.failure(this.buildErrorMessage(rule, mode), rule.errorStyle, { value, ruleId: rule.id });
         } catch (error: any) {
             const label = MODE_LABELS[mode] || "日期时间";
-            return Promise.resolve(ValidationResult.failure(`${label}验证失败: ${error.message}`, "warning", { value, ruleId: rule.id }));
+            return ValidationResult.failure(`${label}验证失败: ${error.message}`, "warning", { value, ruleId: rule.id });
         }
     }
 

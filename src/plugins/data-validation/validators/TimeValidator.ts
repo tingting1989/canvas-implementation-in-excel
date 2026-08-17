@@ -13,24 +13,24 @@ export class TimeValidator extends BaseValidator {
     }
 
     validate(value: any, rule: ValidationRule, context: Record<string, any> = {}): Promise<ValidationResult> {
+        return Promise.resolve(this.validateSync(value, rule, context));
+    }
+
+    validateSync(value: any, rule: ValidationRule, context: Record<string, any> = {}): ValidationResult {
         const { isBlank, allowed } = this.checkBlank(value, rule);
         if (isBlank) {
-            return Promise.resolve(
-                allowed
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id }),
-            );
+            return allowed
+                ? ValidationResult.success()
+                : ValidationResult.failure(rule.errorMessage || "不允许为空", rule.errorStyle, { ruleId: rule.id });
         }
 
         const timeValue = this.parseTime(value);
 
         if (timeValue === null) {
-            return Promise.resolve(
-                ValidationResult.failure(rule.errorMessage || `"${value}" 不是有效的时间格式（HH:mm 或 HH:mm:ss）`, rule.errorStyle, {
-                    value,
-                    ruleId: rule.id,
-                }),
-            );
+            return ValidationResult.failure(rule.errorMessage || `"${value}" 不是有效的时间格式（HH:mm 或 HH:mm:ss）`, rule.errorStyle, {
+                value,
+                ruleId: rule.id,
+            });
         }
 
         try {
@@ -60,13 +60,11 @@ export class TimeValidator extends BaseValidator {
                     throw new Error(`不支持的运算符: ${rule.operator}`);
             }
 
-            return Promise.resolve(
-                isValid
-                    ? ValidationResult.success()
-                    : ValidationResult.failure(this.buildErrorMessage(timeValue, rule), rule.errorStyle, { value, ruleId: rule.id }),
-            );
+            return isValid
+                ? ValidationResult.success()
+                : ValidationResult.failure(this.buildErrorMessage(timeValue, rule), rule.errorStyle, { value, ruleId: rule.id });
         } catch (error: any) {
-            return Promise.resolve(ValidationResult.failure(`时间验证失败: ${error.message}`, "warning", { value, ruleId: rule.id }));
+            return ValidationResult.failure(`时间验证失败: ${error.message}`, "warning", { value, ruleId: rule.id });
         }
     }
 

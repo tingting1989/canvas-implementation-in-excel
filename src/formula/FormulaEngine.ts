@@ -39,7 +39,7 @@ interface ValidationContext {
     value?: unknown;
     row?: number;
     col?: number;
-    sheet?: Sheet | null;
+    sheet?: Sheet | string | null;
     workbook?: Workbook | null;
     options?: Record<string, unknown>;
 }
@@ -696,7 +696,12 @@ export class FormulaEngine {
         }
 
         const { value, row, col, sheet, options = {} } = context;
-        const targetSheet = sheet || this.workbook?.getActiveSheet();
+        let targetSheet: Sheet | null | undefined;
+        if (sheet && typeof sheet === "object" && "cellStore" in sheet) {
+            targetSheet = sheet as Sheet;
+        } else {
+            targetSheet = this.workbook?.getActiveSheet();
+        }
 
         if (!targetSheet) {
             errorHandler.debug(ERROR_CODE.VALIDATION_ERROR, "验证上下文缺少 sheet", { context });
@@ -730,7 +735,7 @@ export class FormulaEngine {
                     return realSheet.cellStore?.get?.(r, c) || null;
                 },
                 set: () => {},
-                chunks: realSheet.cellStore.chunks,
+                chunks: realSheet.cellStore?.chunks,
             },
             cellDataAccessor: realSheet.cellDataAccessor,
             getAllCells: () => [],
