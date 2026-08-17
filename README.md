@@ -3,14 +3,16 @@
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.15-blue.svg" alt="Version" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License" />
+  <img src="https://img.shields.io/badge/TypeScript-Ready-blue.svg" alt="TypeScript" />
   <img src="https://img.shields.io/badge/JavaScript-ES6%2B-yellow.svg" alt="Language" />
-  <a href="#技术栈"><img src="https://img.shields.io/badge/Web_Components-Custom_Elements-orange.svg" alt="Web Components" /></a>
+  <a href="#技术架构"><img src="https://img.shields.io/badge/Web_Components-Custom_Elements-orange.svg" alt="Web Components" /></a>
 </p>
 
 <p align="center">
   <strong>高性能 Canvas 渲染的 Web 电子表格引擎</strong><br/>
   基于 Canvas API + Web Components 的现代化表格解决方案<br/>
-  支持 10万+ 行数据流畅渲染、公式计算、数据验证、图表可视化
+  支持 10万+ 行数据流畅渲染、公式计算、数据验证、图表可视化<br/>
+  <strong>完整 TypeScript 类型支持</strong> — 开箱即用的类型定义
 </p>
 
 ---
@@ -19,9 +21,11 @@
 
 - [✨ 核心特性](#核心特性)
 - [🚀 快速开始](#快速开始)
+- [📘 TypeScript 支持](#typescript-支持)
 - [🏗️ 技术架构](#技术架构)
-- [📦 安装与使用](#安装与使用)
+- [📦 安装与构建](#安装与构建)
 - [💻 API 参考](#api-参考)
+- [🪝 Hooks 钩子系统](#hooks-钩子系统)
 - [🎨 自定义与扩展](#自定义与扩展)
 - [📋 已完成功能](#已完成功能)
 - [🔮 待开发功能](#待开发功能)
@@ -32,58 +36,58 @@
 
 ## ✨ 核心特性
 
-### 🎯 **极致性能**
-- ✅ **Canvas 硬件加速渲染** 
-- ✅ **瓦片化渲染架构** (Tile Rendering) - 只绘制可视区域
-- ✅ **智能缓存机制** - TileCache + ChartCache 双层缓存
-- ✅ **支持 100,000+ 行**数据流畅滚动（在主流桌面浏览器环境下实测）,实际性能受硬件配置、浏览器实现、单元格复杂度影响，建议在目标环境中自行验证
+### 🎯 极致性能
+- ✅ **Canvas 硬件加速渲染**
+- ✅ **瓦片化渲染架构** (Tile Rendering) — 只绘制可视区域
+- ✅ **智能缓存机制** — TileCache + ChartCache 双层缓存
+- ✅ **支持 100,000+ 行**数据流畅滚动（在主流桌面浏览器环境下实测），实际性能受硬件配置、浏览器实现、单元格复杂度影响，建议在目标环境中自行验证
 
-### 🧮 **强大的公式系统**
-- ✅ **Excel 兼容语法** - `=SUM(A1:A100)`, `=VLOOKUP(...)`
-- ✅ **52 个内置函数** - 数学(13)、统计(9)、逻辑(7)、文本(13)、查找(4)、条件(6) 函数（全部经过测试验证，含 examples）
-- ✅ **自定义函数注册** - `registerFunction('MYFUNC', impl)`
-- ✅ **循环引用检测** - 防止无限递归
-- ✅ **惰性求值** - 按需计算，避免不必要的开销
+### 🧮 强大的公式系统
+- ✅ **Excel 兼容语法** — `=SUM(A1:A100)`, `=VLOOKUP(...)`
+- ✅ **52 个内置函数** — 数学(13)、统计(9)、逻辑(7)、文本(13)、查找(4)、条件(6)，全部经过测试验证
+- ✅ **自定义函数注册** — `functionRegistry.register('MYFUNC', impl)`
+- ✅ **循环引用检测** — 防止无限递归
+- ✅ **惰性求值** — 按需计算，避免不必要的开销
 
-### 🎨 **丰富的数据类型**
+### 🎨 丰富的数据类型
 - ✅ **11 种列类型**:
   - 基础数据类型 (6种): text, numeric, date, select, textarea, hyperlink
   - 可视化渲染器 (5种): checkbox, progressBar, starRating, sparkline, colorPreview
-- ✅ **可扩展的类型系统** - 继承 BaseColumnType 创建自定义类型
-- ✅ **增强的日期解析** - 支持如 "2021年05月10日" 等中文日期格式
+- ✅ **可扩展的类型系统** — 继承 `BaseColumnType` 创建自定义类型
+- ✅ **增强的日期解析** — 支持如 "2021年05月10日" 等中文日期格式
 
-### 📊 **企业级图表系统**
-- ✅ **10 类图表类型**（全部经过测试验证）:
+### 📊 企业级图表系统
+- ✅ **10 类内置图表类型**（全部经过测试验证）:
   - 柱状图 (Bar)、折线图 (Line)、饼图 (Pie)、面积图 (Area)
   - 散点图 (Scatter)、K线图 (Candlestick)、仪表盘 (Gauge)
   - 漏斗图 (Funnel)、雷达图 (Radar)、热力图 (Heatmap)
-- ✅ **多图表支持** - 同一 Sheet 中可导出多张图表
-- ✅ **数据联动** - 图表与数据的实时同步更新
-- ✅ **Tooltip 提示** - 图表悬浮提示功能
-- ✅ **样式导出** - 支持带样式的图表导出到 Excel
+- ✅ **自定义图表** — 继承 `BaseChartStrategy` 创建任意图表类型，通过 `NativeChartRenderer.register()` 注册
+- ✅ **策略模式架构** — `ChartRendererFactory` → `NativeChartRenderer` → `BaseChartStrategy`，每层可扩展
+- ✅ **ECharts 桥接预留** — `ChartRendererFactory` 支持 ECharts 类型分发（treemap、sunburst 等）
+- ✅ **多图表支持** — 同一 Sheet 中可导出多张图表
+- ✅ **数据联动** — 图表与数据的实时同步更新
+- ✅ **Tooltip 提示** — 图表悬浮提示功能，支持自定义格式化
+- ✅ **命中测试** — 点击/悬停检测，`hitTest()` 可覆写
+- ✅ **高清导出** — `renderWithPixelRatio()` 支持指定像素比渲染
+- ✅ **样式导出** — 支持带样式的图表导出到 Excel
 
-### 🔌 **插件化架构**
-- ✅ **20+ 内置插件** - 冻结窗格、排序、筛选、自动填充、数据验证...
-- ✅ **事件驱动** - EventBus + Hooks 双向通信机制
-- ✅ **策略模式** - 键盘、鼠标、复制粘贴等行为可定制
+### 🔌 插件化架构
+- ✅ **20+ 内置插件** — 冻结窗格、排序、筛选、搜索、自动填充、数据验证...
+- ✅ **事件驱动** — EventBus + Hooks 双向通信机制
+- ✅ **策略模式** — 键盘、鼠标、复制粘贴等行为可定制
+- ✅ **Hook 事件系统** — 完善的生命周期钩子和功能钩子
 
-### 🛡️ **企业级特性**
-- ✅ **数据验证规则** - 必填、唯一性、正则表达式、范围限制、**自定义公式验证**
-- ✅ **条件格式** - 基于规则的动态样式应用
-- ✅ **撤销/重做栈** - Command Pattern 实现的完整历史记录
-- ✅ **合并单元格** - 支持跨行跨列合并
-- ✅ **多工作表管理** - SheetTab 切换与管理
-- ✅ **导入导出功能** - 企业级别 Excel 导入导出（嵌套表头、样式、列宽行高、图表）
-- ✅ **筛选功能** - 支持 text/numeric/date 类型，支持正则匹配过滤
-- ✅ **主题系统** - 2 种内置主题 (Default/Light + Dark) + 自定义主题注册能力
-- ✅ **批量操作** - 批量更新选区内数据
-
-### 🔌 **插件化架构**
-- ✅ **20+ 内置插件** - 冻结窗格、排序、筛选、自动填充、数据验证...
-- ✅ **事件驱动** - EventBus + Hooks 双向通信机制
-- ✅ **策略模式** - 键盘、鼠标、复制粘贴等行为可定制
-- ✅ **Hook 事件系统** - 完善的生命周期钩子和功能钩子
-- ✅ **JSDoc 注释** - 所有公共 API 符合 JSDoc 规范，完整的类型提示
+### 🛡️ 企业级特性
+- ✅ **数据验证规则** — 必填、唯一性、正则表达式、范围限制、自定义公式验证
+- ✅ **条件格式** — 基于规则的动态样式应用
+- ✅ **撤销/重做栈** — Command Pattern 实现的完整历史记录
+- ✅ **合并单元格** — 支持跨行跨列合并
+- ✅ **多工作表管理** — SheetTab 切换与管理
+- ✅ **导入导出功能** — 企业级 Excel 导入导出（嵌套表头、样式、列宽行高、图表）
+- ✅ **筛选功能** — 支持 text/numeric/date 类型，支持正则匹配过滤
+- ✅ **搜索替换** — 全文搜索、正则匹配、导航定位、结果高亮
+- ✅ **主题系统** — 2 种内置主题 (Default/Light + Dark) + 自定义主题注册能力
+- ✅ **批量操作** — 批量更新选区内数据
 
 ---
 
@@ -118,8 +122,7 @@ npm install @canvas-sheet/core
     <script src="./dist/canvas-sheet.umd.js"></script>
     <script>
         const container = document.getElementById('spreadsheet-container');
-        
-        // 创建工作簿实例
+
         const workbook = new CanvasSheet.Workbook(container, {
             startRows: 100,
             startCols: 26,
@@ -129,39 +132,17 @@ npm install @canvas-sheet/core
             }
         });
         const sheet = workbook.activeSheet;
-        
-        // 禁用单元格
-        sheet.disableCell(1, 0);
-        
-        // 启用
-        sheet.enableCell(1, 0);
 
-        // 设置样式
-        sheet.setCellStyle(1,,0 , {
+        sheet.setCellValue(0, 0, 'Hello World');
+        sheet.setCellValue(1, 0, 42);
+        sheet.setCellValue(2, 0, '=SUM(A1:A10)');
+
+        sheet.setCellStyle(0, 0, {
             color: 'red',
             fontWeight: 'bold',
-            textAlign: 'center'
-            fontStyle: 'italic'
+            textAlign: 'center',
             backgroundColor: '#fff'
         });
-        // 或者
-        workbook.setCellStyle(row, col, {
-            color: 'red',
-            fontWeight: 'bold',
-            textAlign: 'center'
-            fontStyle: 'italic'
-            backgroundColor: '#fff'
-        });
-        // 设置文本值
-        sheet.setCell(0, 0, 'Hello World');
-
-        // 设置数值
-        sheet.setCell(2, 0, 42);
-
-        // 设置公式（以 = 开头）
-        sheet.setCell(4, 0, '=SUM(A1:A10)');           // 求和
-        sheet.setCell(5, 0, '=AVERAGE(B1:B100)');      // 平均值
-        sheet.setCell(6, 0, '=IF(C1>100,"High","Low")'); // 条件
     </script>
 </body>
 </html>
@@ -172,17 +153,12 @@ npm install @canvas-sheet/core
 ```javascript
 import { Workbook } from '@canvas-sheet/core';
 
-// 初始化工作簿
 const container = document.getElementById('spreadsheet-container');
 const wb = new Workbook(container, {
     width: window.innerWidth,
     height: window.innerHeight,
-    
-    // 初始行列数
     startRows: 1000,
     startCols: 50,
-    
-    // 默认样式
     defaultStyle: {
         fontSize: 13,
         fontFamily: 'Arial',
@@ -190,14 +166,225 @@ const wb = new Workbook(container, {
     }
 });
 
-// 批量填充数据
 wb.activeSheet.loadData([
-    ["姓名", "年龄", "green"],
-    ["张三", 30, "yellow"],
-    ["李四", 25, "red"],
+    ["姓名", "年龄", "城市"],
+    ["张三", 30, "北京"],
+    ["李四", 25, "上海"],
 ]);
+```
+
+---
+
+## 📘 TypeScript 支持
+
+`@canvas-sheet/core` 自 v1.0.15 起提供**完整的 TypeScript 类型定义**，无需额外安装 `@types` 包。
+
+### 类型解析机制
 
 ```
+import { Workbook } from "@canvas-sheet/core"
+  │
+  ├─ TypeScript → package.json exports["."].types → ./dist/types/api/index.d.ts
+  ├─ ESM 运行时 → exports["."].import              → ./dist/canvas-sheet.esm.mjs
+  └─ CJS 运行时 → exports["."].require             → ./dist/canvas-sheet.umd.js
+```
+
+### 消费者项目配置
+
+确保 `tsconfig.json` 中 `moduleResolution` 支持 `exports` 字段：
+
+```jsonc
+{
+    "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "bundler",   // "node16" | "nodenext" 亦可
+        "strict": true,
+        "skipLibCheck": true
+    }
+}
+```
+
+> **说明**：`moduleResolution: "bundler"` / `"node16"` / `"nodenext"` 会读取 `package.json` 的 `exports.types` 条件。旧的 `"node"` 模式回退到顶层 `types` 字段，也能工作。
+
+### 导入方式
+
+#### 值 + 类型同时导入
+
+```typescript
+import { Workbook, BasePlugin, EVENT_NAMES, HOOKS, CONFIG } from "@canvas-sheet/core";
+
+const workbook = new Workbook(document.getElementById("app")!);
+```
+
+#### 仅导入类型（零运行时开销）
+
+```typescript
+import type { Workbook, BasePlugin } from "@canvas-sheet/core";
+
+// 或内联 type 修饰符
+import { type Workbook, EVENT_NAMES } from "@canvas-sheet/core";
+```
+
+#### 类型标注
+
+```typescript
+import { Workbook, BasePlugin, BaseColumnType } from "@canvas-sheet/core";
+
+const workbook: Workbook = new Workbook(container);
+
+class MyPlugin extends BasePlugin {
+    static get PLUGIN_NAME() { return "myPlugin"; }
+    onInit() { console.log("initialized"); }
+}
+
+Workbook.registerColumnType("myCol", BaseColumnType);
+```
+
+### 完整 TypeScript 使用示例
+
+```typescript
+import {
+    Workbook,
+    ReactiveStore,
+    BasePlugin,
+    PluginManager,
+    AutoFillPlugin,
+    WebComponent,
+    DOMComponent,
+    Disposable,
+    FormulaEngine,
+    FormulaEvaluator,
+    BaseColumnType,
+    themeStyleProvider,
+    functionRegistry,
+    FUNCTION_CATEGORY,
+    BaseLayer,
+    ViewportTransform,
+    AUTO_FILL_DIR,
+    BORDER_STYLE,
+    CHART_TYPE,
+    CONTENT_TYPE,
+    ERROR_STYLE,
+    FONT_STYLE,
+    SCROLL_AXIS,
+    SORT_ARROW_DIR,
+    SORT_ORDER,
+    STYLE_SCOPE,
+    TEXT_ALIGN,
+    VALIDATION_RULE_TYPE,
+    VERTICAL_ALIGN,
+    EVENT_NAMES,
+    HOOKS,
+    SHEET_EVENTS,
+    CONFIG,
+    HIT_TYPE,
+    LAYER_Z_INDEX
+} from "@canvas-sheet/core";
+
+const appEl = document.getElementById("app")!;
+const workbook = new Workbook(appEl);
+
+Workbook.registerPlugin("autoFill", AutoFillPlugin);
+workbook.loadPlugin("autoFill");
+
+const sheet = workbook.createSheet("Sheet1", { rowCount: 1000, colCount: 26 });
+
+sheet.setCellValue(0, 0, "Hello");
+sheet.setCellValue(0, 1, 42);
+sheet.setCellValue(0, 2, "=A1&B1");
+
+const engine = new FormulaEngine(sheet);
+const result = engine.evaluateFormula("=SUM(A1:A10)");
+
+functionRegistry.register(
+    "MY_FUNC",
+    (args: unknown[]) => args[0] || 0,
+    { category: FUNCTION_CATEGORY.MATH }
+);
+
+class MyPlugin extends BasePlugin {
+    static get PLUGIN_NAME() { return "myPlugin"; }
+    onInit() { console.log("MyPlugin initialized"); }
+}
+
+Workbook.registerPlugin("myPlugin", MyPlugin);
+workbook.loadPlugin("myPlugin");
+
+const store = new ReactiveStore();
+store.subscribe((state: unknown) => { console.log("State changed:", state); });
+
+themeStyleProvider.setTheme("dark");
+
+console.log(CONFIG, EVENT_NAMES, HOOKS, SHEET_EVENTS, HIT_TYPE, LAYER_Z_INDEX);
+```
+
+### 导出的类型与常量总览
+
+| 分类 | 导出名称 | 说明 |
+|------|---------|------|
+| **核心类** | `Workbook` | 工作簿顶层管理对象 |
+| | `ReactiveStore` | 响应式状态管理器 |
+| | `EventStrategy` | 事件策略 |
+| | `CellEditor` | 单元格编辑器 |
+| | `WebComponent` | Web Components 基类 |
+| | `DOMComponent` | DOM 操作封装类 |
+| | `Disposable` | 生命周期资源管理类 |
+| **插件类** | `BasePlugin` | 插件基类 |
+| | `PluginManager` | 插件管理器 |
+| | `AutoFillPlugin` | 自动填充插件 |
+| | `ChartPlugin` | 图表插件 |
+| | `ColumnMovePlugin` | 列移动插件 |
+| | `ContextMenuPlugin` | 右键菜单插件 |
+| | `CopyPastePlugin` | 复制粘贴插件 |
+| | `FreezePlugin` | 冻结窗格插件 |
+| | `HiddenColumnsPlugin` | 隐藏列插件 |
+| | `HiddenRowsPlugin` | 隐藏行插件 |
+| | `RowMovePlugin` | 行移动插件 |
+| | `ImportFilePlugin` | 导入文件插件 |
+| | `ExportFilePlugin` | 导出文件插件 |
+| | `FormulaPlugin` | 公式插件 |
+| | `SortPlugin` | 排序插件 |
+| | `FilterPlugin` | 筛选插件 |
+| | `SearchPlugin` | 搜索替换插件 |
+| | `DataValidationPlugin` | 数据验证插件 |
+| **公式引擎** | `FormulaEngine` | 公式引擎 |
+| | `FormulaEvaluator` | 公式求值器 |
+| | `functionRegistry` | 函数注册表实例 |
+| | `FUNCTION_CATEGORY` | 函数分类常量 |
+| **类型系统** | `BaseColumnType` | 列类型基类 |
+| | `themeStyleProvider` | 主题样式提供者 |
+| | `PopupManager` | 弹窗管理器 |
+| | `PopupPanel` | 弹窗面板 |
+| **渲染** | `BaseLayer` | 图层基类 |
+| | `ViewportTransform` | 视口坐标转换器 |
+| **图表** | `ChartModel` | 图表数据模型 |
+| | `ChartManager` | 图表管理器 |
+| | `ChartRendererFactory` | 图表渲染工厂 |
+| | `NativeChartRenderer` | 原生图表渲染器 |
+| | `IChartRenderer` | 图表渲染器接口 |
+| | `BaseChartStrategy` | 图表策略基类 |
+| | `DataExtractor` | 数据提取器 |
+| | `ChartCacheManager` | 图表缓存管理器 |
+| | `ChartCache` | 图表缓存 |
+| **枚举常量** | `AUTO_FILL_DIR` | 自动填充方向 |
+| | `BORDER_STYLE` | 边框样式 |
+| | `CHART_TYPE` | 图表类型 |
+| | `CONTENT_TYPE` | 内容类型 |
+| | `ERROR_STYLE` | 错误样式 |
+| | `FONT_STYLE` | 字体样式 |
+| | `SCROLL_AXIS` | 滚动轴 |
+| | `SORT_ARROW_DIR` | 排序箭头方向 |
+| | `SORT_ORDER` | 排序顺序 |
+| | `STYLE_SCOPE` | 样式作用域 |
+| | `TEXT_ALIGN` | 文本对齐 |
+| | `VALIDATION_RULE_TYPE` | 验证规则类型 |
+| | `VERTICAL_ALIGN` | 垂直对齐 |
+| **系统常量** | `EVENT_NAMES` | DOM 事件名称 |
+| | `HOOKS` | 生命周期钩子名称 |
+| | `SHEET_EVENTS` | 工作表事件名称 |
+| | `CONFIG` | 全局配置 |
+| | `HIT_TYPE` | 命中类型 |
+| | `LAYER_Z_INDEX` | 图层 Z 轴顺序 |
 
 ---
 
@@ -253,7 +440,7 @@ wb.activeSheet.loadData([
 │  ├──────────┤ ├──────────┤ ├──────────┤ ├──────────────────┤  │
 │  │ CopyPaste │ │ Export   │ │ Chart    │ │ HiddenRows/Cols  │  │
 │  │ (复制粘贴) │ │ (导出)   │ │ (图表)   │ │ (隐藏行/列)      │  │
-│  └──────────┘ └──────────┘ └──────────┘ └──────────────────┘  │
+│  └──────────┘ └──────────┘ └────────────┘ └──────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -285,49 +472,59 @@ wb.activeSheet.loadData([
 
 ---
 
-## 📦 安装与使用
+## 📦 安装与构建
 
 ### 📋 前置要求
 
 - **Node.js**: >= 16.x
 - **现代浏览器**: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
-- **构建工具**: Webpack 5+ (已配置)
 
 ### 🛠️ 开发环境搭建
 
 ```bash
-# 克隆项目
-git clone https://github.com/your-repo/canvas-implementation-in-excel.git
+git clone https://github.com/tingting1989/canvas-implementation-in-excel.git
 cd canvas-implementation-in-excel
 
-# 安装依赖
 npm install
 
-# 启动开发服务器 (热更新)
-npm run dev
-# 访问 http://localhost:9000
-
-# 生产构建
-npm run build:lib
-# 输出: dist/canvas-sheet.esm.mjs (ES Module)
-#       dist/canvas-sheet.umd.js  (UMD)
-
-# 运行测试
-npm test              # 单次运行
-npm run test:watch    # 监听模式
-npm run test:coverage # 覆盖率报告
-
-# 代码检查
-npm run lint          # ESLint
-npm run format        # Prettier
-
-# 生成文档
-npm run docs          # JSDoc → HTML
+npm run dev              # 启动开发服务器 (热更新) → http://localhost:9000
+npm run build:lib        # 生产构建 + 类型生成
+npm test                 # 运行测试
+npm run test:watch       # 监听模式
+npm run test:coverage    # 覆盖率报告
+npm run lint             # ESLint
+npm run format           # Prettier
+npm run typecheck        # TypeScript 类型检查
+npm run docs             # JSDoc → HTML
 ```
+
+### 构建产物
+
+| 文件 | 格式 | 说明 |
+|------|------|------|
+| `dist/canvas-sheet.esm.mjs` | ESM | ES Module 格式，支持 Tree Shaking |
+| `dist/canvas-sheet.umd.js` | UMD | 通用格式，全局变量 `CanvasSheet` |
+| `dist/types/api/index.d.ts` | TypeScript | 完整类型声明 |
 
 ### 📖 在项目中引入
 
-#### 方式 1: CDN 直接引用 (UMD)
+#### 方式 1: ES Module（推荐）
+
+```javascript
+import { Workbook } from '@canvas-sheet/core';
+
+const wb = new Workbook(document.getElementById('container'), options);
+```
+
+#### 方式 2: CommonJS
+
+```javascript
+const { Workbook } = require('@canvas-sheet/core');
+
+const wb = new Workbook(document.getElementById('container'), options);
+```
+
+#### 方式 3: CDN / UMD
 
 ```html
 <script src="https://cdn.example.com/canvas-sheet.umd.js"></script>
@@ -337,302 +534,187 @@ npm run docs          # JSDoc → HTML
 </script>
 ```
 
-#### 方式 2: ES Module (推荐)
-
-```javascript
-// main.js
-import { Workbook } from '@canvas-sheet/core';
-
-const wb = new Workbook(document.getElementById('container'), options);
-```
-
 ---
 
 ## 💻 API 参考
 
-### 📘 Workbook 类 - 工作簿核心
+### 📘 Workbook 类 — 工作簿核心
 
-> **顶层管理对象**，作为 Facade 协调 Sheet、RenderEngine、EventHandler、EditorManager、PluginManager 等子系统。
->
-> 对齐 Handsontable 的 `new Handsontable(container, options)` 模式。
+> 顶层管理对象，作为 Facade 协调 Sheet、RenderEngine、EventHandler、EditorManager、PluginManager 等子系统。
 
 #### 📌 构造函数
 
-```javascript
-/**
- * @param {HTMLElement|string} element - 容器元素或 Canvas 元素 ID
- * @param {object} [options={}] - 配置选项
- */
-new Workbook(element, options)
+```typescript
+new Workbook(element: HTMLElement | string, options?: WorkbookOptions)
 ```
 
 #### 🔧 静态方法：全局插件注册
 
-```javascript
-// 全局注册插件类（统一注册源）
-Workbook.registerPlugin(name, PluginClass);
-
-// 全局注销插件类
-Workbook.unregisterPlugin(name);
+```typescript
+Workbook.registerPlugin(name: string, PluginClass: typeof BasePlugin): void
+Workbook.unregisterPlugin(name: string): void
 ```
 
 #### 🔌 插件委托方法
 
-```javascript
-// 加载已注册的插件（按名称）
-workbook.loadPlugin(name, options);
-
-// 直接加载插件类
-workbook.loadPluginClass(PluginClass, options);
-
-// 卸载插件
-workbook.unloadPlugin(name);
-
-// 获取插件实例
-workbook.getPlugin(name);
-
-// 启用/禁用插件
-workbook.enablePlugin(name);
-workbook.disablePlugin(name);
+```typescript
+workbook.loadPlugin(name: string, options?: Record<string, unknown>): unknown | null
+workbook.loadPluginClass(PluginClass: typeof BasePlugin, options?: Record<string, unknown>): unknown | null
+workbook.unloadPlugin(name: string): void
+workbook.getPlugin(name: string): unknown | null
+workbook.enablePlugin(name: string): void
+workbook.disablePlugin(name: string): void
 ```
 
 #### ⚙️ 初始化与生命周期
 
-```javascript
-// ✨ 方式1：自动初始化（推荐，默认行为）
-// autoInit=true 时，构造函数会自动调用 initRender() 和 render()
-const workbook = new Workbook(container, options);
-
-// 方式2：手动初始化（需要完全控制初始化时机时使用）
+```typescript
+const workbook = new Workbook(container, options);       // autoInit=true（默认）
 const workbook = new Workbook(container, { ...options, autoInit: false });
-// ... 进行额外配置 ...
-workbook.initRender();  // 手动初始化渲染引擎
-workbook.render();      // 手动触发首次渲染
-
-// 销毁所有资源（必须在移除 DOM 前调用）
-workbook.destroy();
+workbook.initRender();   // 手动初始化渲染引擎
+workbook.render();       // 手动触发首次渲染
+workbook.destroy();      // 销毁所有资源
 ```
 
 #### 📑 工作表管理
 
-```javascript
-// 添加工作表
-const sheet = workbook.addSheet(name);
-
-// 删除工作表（至少保留一个）
-const success = workbook.removeSheet(name);
-
-// 重命名工作表
-const success = workbook.renameSheet(oldName, newName);
-
-// 切换到指定工作表
-workbook.switchTo(name);
-
-// 获取当前活动工作表
-const sheet = workbook.getActiveSheet();
+```typescript
+workbook.addSheet(name: string): Sheet
+workbook.removeSheet(name: string): boolean
+workbook.renameSheet(oldName: string, newName: string): boolean
+workbook.switchTo(name: string): void
+workbook.getActiveSheet(): Sheet | null
 ```
 
 #### 🎨 渲染控制
 
-```javascript
-// 重新渲染当前活动工作表
-workbook.render();
+```typescript
+workbook.render(): void
 ```
 
-#### 📋 剪贴板操作（委托到 CopyPastePlugin）
+#### 📋 剪贴板操作
 
-```javascript
-// 复制当前选区
-workbook.copy();
-
-// 粘贴到当前选区
-workbook.paste();
+```typescript
+workbook.copy(): void
+workbook.paste(): void
 ```
 
 #### ↩️ 撤销/重做
 
-```javascript
-// 撤销
-workbook.undo();
-
-// 重做
-workbook.redo();
+```typescript
+workbook.undo(): void
+workbook.redo(): void
 ```
 
 #### 📊 单元格操作
 
-```javascript
-// 禁用/启用单元格
-workbook.disableCell();
-workbook.enableCell();
-
-// 合并/取消合并单元格
-workbook.mergeCells(topRow, topCol, bottomRow, bottomCol);
-workbook.unmergeCells();
-
-// 插入/删除行和列
-// atRow:第几行
-// atCol:第几列
-workbook.insertRow(atRow);
-workbook.insertCol(atCol);
-workbook.deleteRow(atRow);
-workbook.deleteCol(atCol);
+```typescript
+workbook.disableCell(row: number, col: number): void
+workbook.enableCell(row: number, col: number): void
+workbook.mergeCells(topRow: number, topCol: number, bottomRow: number, bottomCol: number): void
+workbook.unmergeCells(): void
+workbook.insertRow(atRow: number): void
+workbook.insertCol(atCol: number): void
+workbook.deleteRow(atRow: number): void
+workbook.deleteCol(atCol: number): void
 ```
 
+#### 🎯 钩子系统
 
-#### 🎯 钩子系统（Hooks）（委托到 EventHandler，支持 Early Hooks）
-
-```javascript
-// 添加钩子监听器（eventHandler 创建前会缓存）
-workbook.addHook(hookName, callback);
-
-// 添加一次性钩子监听器
-workbook.addHookOnce(hookName, callback);
-
-// 移除钩子监听器
-workbook.removeHook(hookName, callback);
-
-// 清空指定钩子的所有监听器
-workbook.clearHook(hookName);
-
-// 检查是否有指定钩子的监听器
-const exists = workbook.hasHook(hookName);
-
-// 触发所有监听器
-workbook.runHooks(hookName, ...args);
-
-// 触发监听器直到返回 false
-workbook.runHooksUntil(hookName, ...args);
+```typescript
+workbook.addHook(hookName: string, callback: Function): void
+workbook.addHookOnce(hookName: string, callback: Function): void
+workbook.removeHook(hookName: string, callback: Function): void
+workbook.clearHook(hookName: string): void
+workbook.hasHook(hookName: string): boolean
+workbook.runHooks(hookName: string, ...args: unknown[]): unknown
+workbook.runHooksUntil(hookName: string, ...args: unknown[]): unknown
 ```
 
 #### 💅 样式操作
 
-```javascript
-// 更新配置（对齐 Handsontable 的 updateSettings API）
-workbook.updateSettings(settings);
-
-// 单元格样式
-
-const style = workbook.getCellStyle(row, col);
-workbook.clearCellStyle(row, col);
-
-// 范围样式
-workbook.setRangeStyle(range, styleObj);
-workbook.clearRangeStyle(range);
-
-// 行列样式
-workbook.setRowStyle(row, styleObj);
-workbook.setColStyle(col, styleObj);
-workbook.clearRowStyle(row);
-workbook.clearColStyle(col);
-
-// 默认样式（全局基础）
-workbook.setDefaultStyle(styleObj);  // 所有 Sheet 继承
-const defaultStyle = workbook.getDefaultStyle();
-
-// 批量样式更新（性能优化）
-workbook.batchStyleUpdate(fn);
+```typescript
+workbook.getCellStyle(row: number, col: number): StyleObject
+workbook.setCellStyle(row: number, col: number, style: StyleObject): void
+workbook.clearCellStyle(row: number, col: number): void
+workbook.setRangeStyle(range: Range, style: StyleObject): void
+workbook.clearRangeStyle(range: Range): void
+workbook.setRowStyle(row: number, style: StyleObject): void
+workbook.setColStyle(col: number, style: StyleObject): void
+workbook.clearRowStyle(row: number): void
+workbook.clearColStyle(col: number): void
+workbook.setDefaultStyle(style: StyleObject): void
+workbook.getDefaultStyle(): StyleObject
+workbook.batchStyleUpdate(fn: () => void): void
+workbook.updateSettings(settings: Partial<WorkbookOptions>): void
 ```
 
-#### 📤 导出功能（委托到 exportFile 插件）
+#### 📤 导出功能
 
-```javascript
-// 导出为字符串
-const csvString = workbook.exportAsString('csv', options);
-
-// 导出为 Blob 对象
-const blob = workbook.exportAsBlob('xlsx', options);
-
-// 直接触发下载
-workbook.downloadFile('csv', options);
+```typescript
+workbook.exportAsString(format: 'csv' | 'xlsx', options?: object): string
+workbook.exportAsBlob(format: 'csv' | 'xlsx', options?: object): Blob
+workbook.downloadFile(format: 'csv' | 'xlsx', options?: object): void
 ```
 
 #### 🏷️ 公共属性
 
 | 属性 | 类型 | 说明 |
 |------|------|------|
-| `sheets` | `Map<string, Sheet>` | 所有工作表的 Map |
-| `activeSheet` | `Sheet\|null` | 当前活动的工作表 |
-| `clipboard` | `ClipboardManager\|null` | 剪贴板管理器（由 CopyPastePlugin 注入） |
-| `renderEngine` | `RenderEngine\|null` | 渲染引擎实例 |
-| `editor` | `EditorManager\|null` | 编辑器管理器 |
-| `eventHandler` | `EventHandler\|null` | 事件处理器 |
-| `pluginManager` | `PluginManager\|null` | 插件管理器 |
-| `formulaEngine` | `FormulaEngine\|null` | 公式引擎（由 FormulaPlugin 注入） |
-| `formulaBar` | `FormulaBarManager\|null` | 公式栏管理器（由 FormulaPlugin 注入） |
+| `sheets` | `Map<string, Sheet>` | 所有工作表 |
+| `activeSheet` | `Sheet \| null` | 当前活动工作表 |
+| `clipboard` | `ClipboardManager \| null` | 剪贴板管理器 |
+| `renderEngine` | `RenderEngine \| null` | 渲染引擎 |
+| `editor` | `EditorManager \| null` | 编辑器管理器 |
+| `eventHandler` | `EventHandler \| null` | 事件处理器 |
+| `pluginManager` | `PluginManager \| null` | 插件管理器 |
+| `formulaEngine` | `FormulaEngine \| null` | 公式引擎 |
+| `formulaBar` | `FormulaBarManager \| null` | 公式栏管理器 |
 
 ### 📗 配置选项
 
 #### 🔹 Workbook 级别配置（WorkbookOptions）
 
-> 以下配置项作用于 **Workbook 全局**，或作为**默认值**应用到所有 Sheet。
-
 ```typescript
 interface WorkbookOptions {
-    // ========== 尺寸设置（Workbook 全局）==========
-    width?: number;                              // 画布宽度（px），默认自适应容器
-    height?: number;                             // 画布高度（px），默认自适应容器
-    
-    // ========== 工作表配置 ==========
-    sheetName?: string;                          // 初始工作表名称（默认: 'Sheet1'）
-    sheets?: SheetConfig[];                      // 多工作表配置数组（推荐使用）
-    
-    // ========== 全局默认样式 ==========
-    defaultStyle?: CellStyle;                    // 单元格默认样式（所有 Sheet 继承的基础样式）
-    
-    // ========== 插件系统（Workbook 全局）==========
-    plugins?: string[];                          // 要加载的插件名称列表
-    pluginOptions?: { [pluginName: string]: any }; // 插件选项映射 { pluginName: options }
-    
-    // ========== 钩子系统（Workbook 全局）==========
-    hooks?: { [hookName: string]: Function };    // 事件钩子映射 { hookName: callback }
-    
-    // ========== 生命周期回调 ==========
-    afterInit?: Function;                        // 初始化完成回调 (workbook) => void
+    width?: number;
+    height?: number;
+    sheetName?: string;
+    sheets?: SheetConfig[];
+    defaultStyle?: CellStyle;
+    plugins?: string[];
+    pluginOptions?: { [pluginName: string]: any };
+    hooks?: { [hookName: string]: Function };
+    afterInit?: (workbook: Workbook) => void;
 }
 ```
 
 #### 🔸 Sheet 级别配置（SheetConfig）
 
-> ⚠️ **重要：** 以下配置项属于**具体某个 Sheet** 的配置，建议放在 `sheets` 数组的每个 sheet 对象中。
->
-> 如果直接放在顶层 `options` 中，将作为**默认值**应用到所有 Sheet。
-
 ```typescript
 interface SheetConfig {
-    // ========== 基础信息 ==========
-    name?: string;                               // 工作表名称（默认自动生成 'SheetN'）
-    
-    // ========== 数据初始化 ==========
-    data?: Array<Array<any>>;                    // 初始数据（二维数组）
-    
-    // ========== 行列配置 ==========
-    startRows?: number;                          // 初始行数（默认: 100）
-    startCols?: number;                          // 初始列数（默认: 26）
-    maxRows?: number;                            // 最大行数限制（超过则忽略新增）
-    maxCols?: number;                            // 最大列数限制（超过则忽略新增）
-    rowHeights?: number | number[];              // 行高配置
-    colWidths?: number | number[];               // 列宽配置
-    
-    // ========== 表头配置 ==========
-    colHeaders?: true | string[] | Function;     // 列头标签（默认: true）
-    rowHeaders?: true | string[] | Function;     // 行头标签（默认: true）
-    headerHeight?: number;                       // 表头高度
-    rowHeaderWidth?: number;                     // 行头宽度
-    nestedHeaders?: Array<Array<{                // 嵌套表头配置
+    name?: string;
+    data?: Array<Array<any>>;
+    startRows?: number;
+    startCols?: number;
+    maxRows?: number;
+    maxCols?: number;
+    rowHeights?: number | number[];
+    colWidths?: number | number[];
+    colHeaders?: true | string[] | Function;
+    rowHeaders?: true | string[] | Function;
+    headerHeight?: number;
+    rowHeaderWidth?: number;
+    nestedHeaders?: Array<Array<{
         label: string;
         colspan?: number;
         rowspan?: number;
         style?: object;
     }>>;
-    
-    // ========== 样式配置 ==========
-    defaultStyle?: CellStyle;                    // 该 Sheet 的默认样式（覆盖 Workbook 级别）
-    rowStyles?: Array<object>;                   // 行样式数组
-    colStyles?: Array<object>;                   // 列样式数组
-    rangeStyles?: Array<object>;                 // 区域样式数组
-    
-    // ========== 单元格配置 ==========
+    defaultStyle?: CellStyle;
+    rowStyles?: Array<object>;
+    colStyles?: Array<object>;
+    rangeStyles?: Array<object>;
     cell?: Array<{
         row: number;
         col: number;
@@ -640,115 +722,72 @@ interface SheetConfig {
         disabled?: boolean;
         readOnly?: boolean;
         value?: any;
-    }>;                                         // 静态单元格配置
-    cells?: Function;                            // 动态单元格属性函数 (row, col) => { style?, disabled?, ... }
-    
-    // ========== 合并单元格 ==========
+    }>;
+    cells?: (row: number, col: number) => object;
     mergeCells?: Array<{
         row: number;
         col: number;
         rowspan: number;
         colspan: number;
     }>;
-    
-    // ========== 条件格式 ==========
     conditionalStyles?: Array<{
         range: object;
-        condition: Function;
+        condition: (value: any) => boolean;
         style: object;
     }>;
-    
-    // ========== 列定义 ==========
-    columns?: Array<object | Function>;          // 列配置数组
-    
-    // ========== 冻结窗格 ==========
-    fixedRowsTop?: number;                       // 固定顶部行数
-    fixedColumnsStart?: number;                  // 固定左侧列数
-    
-    // ========== 渲染配置 ==========
-    cellPadding?: number;                        // 单元格内边距
-    textOverflowEllipsis?: boolean;              // 文本溢出显示省略号
-    
-    // ========== 功能开关 ==========
-    readOnly?: boolean;                          // 只读模式
+    columns?: Array<object | Function>;
+    fixedRowsTop?: number;
+    fixedColumnsStart?: number;
+    cellPadding?: number;
+    textOverflowEllipsis?: boolean;
+    readOnly?: boolean;
 }
 ```
 
-#### 📊 配置优先级说明
+#### 📊 配置优先级
 
 ```
-┌─────────────────────────────────────────┐
-│  Workbook.defaultStyle (全局基础 - 最低优先级) │
-└─────────────────────┬───────────────────┘
-                      ↓
-┌─────────────────────────────────────────┐
-│   Sheet.defaultStyle (Sheet 级别 - 中等)    │
-└─────────────────────┬───────────────────┘
-                      ↓
-┌─────────────────────────────────────────┐
-│  rangeStyles / cell / cells (最高优先级)  │
-└─────────────────────────────────────────┘
+Workbook.defaultStyle (全局基础 - 最低优先级)
+    ↓
+Sheet.defaultStyle (Sheet 级别 - 中等)
+    ↓
+rangeStyles / cell / cells (最高优先级)
 ```
 
-当同一属性在多个层级都有配置时，**越具体的配置优先级越高**。
+#### 📝 配置示例
 
----
-
-#### 📝 使用示例
-
-```javascript
+```typescript
 import { Workbook } from '@canvas-sheet/core';
 
-const workbook = new Workbook(document.getElementById('container'), {
-    // ✅ Workbook 级别配置（全局）
+const workbook = new Workbook(document.getElementById('container')!, {
     width: window.innerWidth,
     height: window.innerHeight,
-    
-    // 全局默认样式（所有 Sheet 继承的基础）
     defaultStyle: {
         fontSize: 13,
         fontFamily: 'Arial',
         textAlign: 'left',
         color: '#333'
     },
-    
-    // 加载插件（全局）
-    plugins: ['freeze', 'sort', 'filter', 'autoFill'],
+    plugins: ['freeze', 'sort', 'filter', 'autoFill', 'search'],
     pluginOptions: {
         freeze: { fixedRowsTop: 2, fixedColsLeft: 1 }
     },
-    
-    // 推荐方式：使用 sheets 数组配置每个 Sheet
     sheets: [
         {
             name: 'Sheet1',
-            
-            // ✅ Sheet 级别配置
             startRows: 100,
             startCols: 26,
-            
-            // 表头配置
             colHeaders: true,
             rowHeaders: true,
-            
-            // 该 Sheet 的默认样式（会合并全局 defaultStyle）
-            defaultStyle: {
-                backgroundColor: '#fff'
-            },
-            
-            // 初始数据
+            defaultStyle: { backgroundColor: '#fff' },
             data: [
                 ['姓名', '年龄', '城市'],
                 ['张三', 25, '北京'],
                 ['李四', 30, '上海']
             ],
-            
-            // 合并单元格
             mergeCells: [
                 { row: 0, col: 0, rowspan: 1, colspan: 3 }
             ],
-            
-            // 单元格配置
             cell: [
                 { row: 1, col: 0, value: '张三', readOnly: true },
                 { row: 1, col: 1, value: 25, style: { color: 'blue' } }
@@ -756,964 +795,221 @@ const workbook = new Workbook(document.getElementById('container'), {
         },
         {
             name: '数据统计',
-            
-            // 另一个 Sheet 可以有完全不同的配置
             startRows: 50,
             startCols: 10,
             readOnly: true,
-            
             data: [
                 ['项目', '数值'],
                 ['总计', '=SUM(Sheet1!B:B)']
             ]
         }
     ],
-    
-    // 初始化完成回调
-    afterInit: (workbook) => {
-        console.log('准备就绪！', workbook);
-
-        // 添加自定义钩子
-        workbook.addHook('afterSelection', (row, col) => {
+    afterInit: (wb) => {
+        wb.addHook('afterSelection', (row: number, col: number) => {
             console.log(`选中单元格: ${row}, ${col}`);
         });
     }
 });
-
-// ✨ autoInit=true（默认）：构造函数自动完成初始化，无需手动调用
-// 如需延迟初始化，设置 autoInit: false 后手动调用：
-// workbook.initRender();
 ```
-
-### 📙 示例代码库
-
-<details>
-<summary><b>🔧 高级用法示例</b></summary>
-
-#### 1️⃣ 自定义列类型
-
-```javascript
-import { BaseColumnType,Workbook,registerColumnTypeClass } from '@canvas-sheet/core';
-
-
-class TrafficLightType extends BaseColumnType {
-    get name() {
-        return "trafficLight";
-    }
-
-    get editorType() {
-        return "select";
-    }
-
-    getEditorOptions() {
-        return {
-            source: [
-                { value: "green", label: "🟢 正常" },
-                { value: "yellow", label: "🟡 警告" },
-                { value: "red", label: "🔴 危险" },
-            ],
-        };
-    }
-
-    format(value) {
-        const map = { green: "正常", yellow: "警告", red: "危险" };
-        return map[value] || String(value);
-    }
-
-    render(context) {
-        const { ctx, x, y, width, height, value, displayValue, style } = context;
-
-        const indicatorSize = Math.min(width, height) * 0.35;
-        const indicatorRadius = indicatorSize / 2;
-        const indicatorCy = context.getCenterY();
-        const gap = 6;
-        const padding = context.getPadding(context.sheet);
-
-        const colors = {
-            green: "#4caf50",
-            yellow: "#ff9800",
-            red: "#f44336",
-        };
-
-        const fontSize = style?.fontSize || 14;
-        const fontFamily = style?.fontFamily || "Microsoft YaHei";
-        const textColor = style?.color || "#000";
-        const textAlign = style?.textAlign || "left";
-
-        ctx.font = `${fontSize}px ${fontFamily}`;
-        const textWidth = displayValue ? ctx.measureText(displayValue).width : 0;
-        const totalWidth = indicatorSize + gap + textWidth;
-
-        let startX;
-        if (textAlign === "right") {
-            startX = x + width - totalWidth - padding;
-        } else if (textAlign === "center") {
-            startX = x + (width - totalWidth) / 2;
-        } else {
-            startX = x + padding;
-        }
-
-        const indicatorCx = startX + indicatorRadius;
-        const textX = startX + indicatorSize + gap;
-
-        ctx.fillStyle = colors[value] || "#ccc";
-        ctx.beginPath();
-        ctx.arc(indicatorCx, indicatorCy, indicatorRadius, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (context.isSelected) {
-            ctx.strokeStyle = colors[value] || "#999";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(indicatorCx, indicatorCy, indicatorRadius + 3, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-
-        if (displayValue) {
-            ctx.fillStyle = textColor;
-            ctx.textAlign = "left";
-            ctx.textBaseline = "middle";
-            ctx.fillText(displayValue, textX, indicatorCy);
-        }
-    }
-}
-// 注册自定义类型
-registerColumnTypeClass("trafficLight", TrafficLightType);
-
-const wb = new Workbook('canvas', {
-    defaultStyle: {},
-
-    // readOnly: true,
-    // 工作表高度和宽度（像素值）
-    // height: 600,
-    // 工作表高度和宽度（像素值）
-    // width: 800,
-
-    // 初始行数
-    // startRows: 10,
-    // 初始列数
-    // startCols: 10,
-    // cellPadding: 30,
-    sheets: [
-       
-        {
-            name: "Sheet1",
-            // 是否只读
-            readOnly: false,
-            headerHeight: 48,
-            // 嵌套表头配置
-            nestedHeaders: [
-                [
-                    {
-                        label: "日报表",
-                        colspan: 5,
-                        style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                    },
-                ],
-                [
-                    { label: "日期：yyyy-mm-dd", style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" } },
-                    {
-                        label: "时间",
-                        colspan: 4,
-
-                        style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                    },
-                ],
-                [
-                    {
-                        label: "名称",
-                        style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                    },
-                    {
-                        label: "0:00",
-                        style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                    },
-
-                    {
-                        label: "2:00",
-                        style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                    },
-
-                    {
-                        label: "4:00",
-                        style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                    },
-                    {
-                        label: "6:00",
-                        style: { fontWeight: "bold", textAlign: "center", backgroundColor: "#fff" },
-                    },
-                ],
-            ],
-
-            // 单元格内容超出单元格宽度时是否显示省略号
-            textOverflowEllipsis: false,
-
-            // 每个单元格的内边距（像素值）
-            cellPadding: 10,
-
-            // 固定行列数上限（使用 maxRows/maxCols）
-            maxRows: 50,
-            maxCols: 14,
-
-            colWidths: [600],
-            columns: [
-                { type: "text", width: 120, style: { textAlign: "left" } },
-                { type: "select", width: 80, style: { textAlign: "right" }, source: ["正常", "异常"] },
-                { type: "textarea", width: 200, maxRows: 4, style: { textAlign: "right" } },
-            ],
-
-            cell: [
-                { row: 0, col: 2, type: "trafficLight" }, // 第0行第2列 → trafficLight
-                { row: 1, col: 2, type: "select", source: ["正常", "异常"] }, // → select
-            ],
-        },
-        {
-            name: "Sheet2",
-
-            // readOnly: false,
-            data: [
-                ["Zhang San", 25, "Beijing", "Tech", 15000, "2020-03-15"],
-                ["Li Si", 30, "Shanghai", "Marketing", 18000, "2019-07-01"],
-                ["Wang Wu", 28, "Guangzhou", "Tech", 16000, "2021-01-10"],
-            ],
-
-            // colHeaders: ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-            rowHeaderWidth: 120,
-            rowHeights: [30, 50, 90],
-            rowHeaders: [{ label: "序号", style: { textAlign: "center" } }, "年龄", "城市", "部门", "薪酬", "入职日期"],
-
-            // 嵌套表头配置（支持完整 style 属性）
-            nestedHeaders: [
-                [
-                    {
-                        label: "基本信息",
-                        colspan: 2,
-                        style: {
-                            backgroundColor: "#FFC000",
-                            color: "#FFFFFF",
-                            fontWeight: "bold",
-                            fontSize: "14px",
-                            textAlign: "left",
-                        },
-                    },
-                    {
-                        label: "工作信息",
-                        colspan: 4,
-                        style: {
-                            backgroundColor: "#70AD47",
-                            color: "#FFFFFF",
-                            fontWeight: "bold",
-                            fontSize: "14px",
-                            textAlign: "center",
-                        },
-                    },
-                ],
-                [
-                    {
-                        label: "姓名",
-                        style: {
-                            backgroundColor: "#FFC000",
-                            fontWeight: "bold",
-                        },
-                    },
-                    "年龄",
-                    {
-                        label: "城市",
-                        style: {
-                            backgroundColor: "#FFC000",
-                            fontWeight: "bold",
-                        },
-                    },
-                    {
-                        label: "部门",
-                        style: {
-                            fontStyle: "italic",
-                            color: "#333333",
-                        },
-                    },
-                    {
-                        label: "薪酬",
-                        colspan: 2,
-                        style: {
-                            backgroundColor: "#ED7D31",
-                            color: "#FFFFFF",
-                            textAlign: "center",
-                        },
-                    },
-                ],
-                ["Name", "Age", "City", "Dept", "Salary", "Hire Date"],
-            ],
-            textOverflowEllipsis: false,
-            cellPadding: 10,
-            conditionalStyles: [
-                {
-                    range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
-                    condition: (v) => isNumber(v) && v > 25,
-                    style: { backgroundColor: "#ffcccc" },
-                },
-            ],
-            cell: [
-                { row: 0, col: 0, style: { backgroundColor: "#e8f4fd", fontWeight: "bold", textAlign: "center" } },
-                { row: 1, col: 3, disabled: true },
-                { row: 2, col: 4, readOnly: true, style: { backgroundColor: "#fff3cd" } },
-            ],
-            cells: (row, col) => {
-                if (row === 0) {
-                    return { style: { fontWeight: "bold", backgroundColor: "#e8f4fd" } };
-                }
-                if (col === 0 && row > 0) {
-                    return { style: { textAlign: "right", fontWeight: "bold" } };
-                }
-            },
-            columns: [
-                { type: "text", width: 120, style: { textAlign: "left" } },
-                { type: "numeric", width: 80, style: { textAlign: "right" }, numericFormat: { pattern: "0" } },
-                { type: "text", width: 100 },
-                { type: "text", width: 100 },
-                { type: "numeric", width: 100, style: { textAlign: "right" }, numericFormat: { pattern: "$0,0.00" } },
-                { type: "date", width: 300 },
-            ],
-        },
-    ],
-    plugins: [
-        "autoFill",
-        "contextMenu",
-        "columnMove",
-        "copyPaste",
-
-        "exportFile",
-        "hiddenColumns",
-        "hiddenRows",
-        "rowMove",
-        "freeze",
-        "formula",
-        "sort",
-        "dataValidation",
-    ],
-    pluginOptions: {
-        contextMenu: {
-            enabled: true,
-            customItems: [
-                {
-                    label: "高亮选中行",
-
-                    // 自定义项 contexts 属性：自定义菜单项可指定在哪些上下文中显示，不指定则默认 ["cell"]
-                    contexts: ["cell", "rowHeader"],
-                    action: (row, col, sheet) => {
-                        sheet.setRowStyle(row, { backgroundColor: "yellow" });
-                        wb.render();
-                    },
-                },
-                {
-                    label: "设置单元格样式",
-                    contexts: ["cell"],
-                    action: (row, col, sheet) => {
-                        const range = sheet.selection.getRange();
-                        const styleObj = { backgroundColor: "#d4edda", fontWeight: "bold", color: "#155724" };
-                        for (let r = range.topRow; r <= range.bottomRow; r++) {
-                            for (let c = range.topCol; c <= range.bottomCol; c++) {
-                                if (!sheet.isDisabled(r, c)) {
-                                    sheet.setCellStyle(r, c, styleObj);
-                                }
-                            }
-                        }
-                        wb.render();
-                    },
-                },
-                {
-                    label: "取消单元格样式",
-                    contexts: ["cell", "rowHeader", "colHeader"],
-                    action: (row, col, sheet) => {
-                        errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Clear cell style");
-                        const range = sheet.selection.getRange();
-                        for (let r = range.topRow; r <= range.bottomRow; r++) {
-                            sheet.clearRowStyle(r);
-                            for (let c = range.topCol; c <= range.bottomCol; c++) {
-                                sheet.clearCellStyle(r, c);
-                            }
-                        }
-                        wb.render();
-                    },
-                },
-                { type: "separator" },
-                {
-                    label: "导出选中区域",
-                    action: (row, col, sheet) => {
-                        errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Export from", row, col);
-                        alert("导出功能（示例）");
-                    },
-                },
-            ],
-
-            // disabledItems: ["mergeCells", "unmergeCells"],
-
-            // rowMove: { enabled: false },
-        },
-
-        // freeze: { fixedRowsTop: 1, fixedColumnsStart: 1 },
-
-        dataValidation: {
-            conflictStrategy: "short-circuit",
-            rules: [
-                // {
-                //     range: "B:B",
-                //     type: "number",
-                //     operator: "between",
-                //     value: [0, 100],
-                //     errorMessage: "必须输入正数",
-                //     errorStyle: "stop",
-                // },
-                //
-                // {
-                //     range: "A:A",
-                //     type: "text",
-                //     operator: "greaterThan",
-                //     value: 5,
-                //     errorMessage: "必须输入正数",
-                //     errorStyle: "stop",
-                // },
-                //
-                // {
-                //     range: "C:C",
-                //     type: "time",
-                //     operator: "between",
-                //     value: ["09:00", "18:00"],
-                //     errorMessage: "必须输入正数",
-                //     errorStyle: "stop",
-                // },
-                // {
-                //     range: "D:D",
-                //     type: "unique",
-                // },
-                // {
-                //     range: "G:G",
-                //     type: "date",
-                //     operator: "between",
-                //     value: ["01/01/2020", "12/31/2020"],
-                //     errorMessage: "必须输入正数",
-                //     errorStyle: "stop",
-                // },
-            ],
-        },
-    },
-    hooks: {
-        
-    },
-    afterInit(wb) {
-        const s2 = wb.sheets.get("Sheet2");
-        if (s2) {
-            s2.setCell(2, 0, "Switch to Sheet1 to paste");
-        }
-    },
-});
-
-```
-
-#### 2️⃣ 自定义公式函数
-
-```javascript
-import { functionRegistry, FUNCTION_CATEGORY } from '@canvas-sheet/core';
-
-// 注册税率计算函数
-functionRegistry.register('TAX', (args, context) => {
-    const amount = args[0];  // 金额
-    const rate = args[1] || 0.13;  // 税率 (默认13%)
-    return amount * rate;
-}, { category: FUNCTION_CATEGORY.CUSTOM });
-```
-
-#### 3️⃣ 事件驱动编程
-
-```javascript
-const wb = new Workbook(container);
-wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
-    if (!e.ctrlKey && !e.metaKey) return;
-    const sheet = wb.activeSheet;
-    const cell = sheet.cellStore.get(row, col);
-    if (cell?.value && isUrl(cell.value)) {
-        const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
-        if (canOpen === false) {
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-        }
-        openUrl(cell.value);
-        wb.runHooks(HOOKS.AFTER_OPEN_URL, row, col, cell.value);
-        e.preventDefault();
-        e.stopPropagation();
-    }
-});
-
-```
-
-#### 4️⃣ 条件格式
-
-```javascript
-// 设置条件格式规则
-new Workbook(container, {
-    sheets:{
-        conditionalStyles: [
-            {
-                range: { topRow: 0, topCol: 0, bottomRow: 10000000, bottomCol: 25 },
-                condition: (v) => isNumber(v) && v > 25,
-                style: { backgroundColor: "#ffcccc" },
-            },
-        ],
-    }
-})
-```
-
-#### 5️⃣ 数据验证
-
-```javascript
-new Workbook(container, {
-    plugins: [
-        "autoFill",
-        "contextMenu",
-        "columnMove",
-        "copyPaste",
-        "exportFile",
-        "hiddenColumns",
-        "hiddenRows",
-        "rowMove",
-        "freeze",
-        "formula",
-        "sort",
-        "dataValidation",
-    ],
-    pluginOptions: {
-        dataValidation: {
-            conflictStrategy: "short-circuit",
-            rules: [
-                {
-                    range: "B:B",
-                    type: "number",
-                    operator: "between",
-                    value: [0, 100],
-                    errorMessage: "必须输入正数",
-                    errorStyle: "stop",
-                },
-
-                {
-                    range: "A:A",
-                    type: "text",
-                    operator: "greaterThan",
-                    value: 5,
-                    errorMessage: "必须输入正数",
-                    errorStyle: "stop",
-                },
-
-                {
-                    range: "C:C",
-                    type: "time",
-                    operator: "between",
-                    value: ["09:00", "18:00"],
-                    errorMessage: "必须输入正数",
-                    errorStyle: "stop",
-                },
-                {
-                    range: "D:D",
-                    type: "unique",
-                },
-                {
-                    range: "G:G",
-                    type: "date",
-                    operator: "between",
-                    value: ["01/01/2020", "12/31/2020"],
-                    errorMessage: "必须输入正数",
-                    errorStyle: "stop",
-                },
-            ],
-        },
-    },
-})
-```
-
-</details>
 
 ---
 
-## 🪝 Hooks 生命周期钩子系统
+## 🪝 Hooks 钩子系统
 
-Canvas Spreadsheet 提供了完整的 **Hooks（钩子）系统**，允许开发者在关键节点注入自定义逻辑。
+Canvas Spreadsheet 提供完整的 **Hooks（钩子）系统**，允许在关键节点注入自定义逻辑。
 
 ### 📋 Hooks 总览表
 
-| 分类 | Hook 名称 | 常量引用 | 触发时机 | 可阻止操作 | 参数说明 |
-|------|----------|---------|----------|-----------|---------|
-| **📝 编辑相关** |
-| 编辑开始前 | `beforeBeginEditing` | `HOOKS.BEFORE_BEGIN_EDITING` | 用户触发编辑但编辑器未打开时 | ✅ 返回 false 可阻止 | `(row, col)` |
-| 编辑开始后 | `afterBeginEditing` | `HOOKS.AFTER_BEGIN_EDITING` | 编辑器已打开并准备好接收输入 | ❌ | `(row, col)` |
-| 编辑结束前 | `beforeFinishEditing` | `HOOKS.BEFORE_FINISH_EDITING` | 用户提交编辑内容时 | ✅ 返回 false 可阻止 | `(row, col, newValue, oldValue)` |
-| 编辑结束后 | `afterFinishEditing` | `HOOKS.AFTER_FINISH_EDITING` | 新值已写入数据模型 | ❌ | `(row, col, newValue, oldValue)` |
-| 数据变更前 | `beforeChange` | `HOOKS.BEFORE_CHANGE` | 任何修改单元格值的操作之前 | ✅ 最后的机会阻止变更 | `[{row, col, oldValue, newValue}]` |
-| 数据变更后 | `afterChange` | `HOOKS.AFTER_CHANGE` | 单元格值已更新到存储层 | ❌ | `changes: Array<{row, col, oldValue, newValue}>` |
-| 设置单元格值前 | `beforeSetValueAt` | `HOOKS.BEFORE_SET_VALUE_AT` | 单个单元格写入前触发 | ✅ 用于数据验证拦截 | `(row, col, value)` |
-| 设置单元格值后 | `afterSetValueAt` | `HOOKS.AFTER_SET_VALUE_AT` | 单个单元格写入后触发 | ❌ | `(row, col, value)` |
-| **🎯 选择相关** |
-| 选择开始前 | `beforeSelection` | `HOOKS.BEFORE_SELECTION` | 用户开始新的选择操作 | ✅ | `(startRow, startCol, endRow, endCol)` |
-| 选择完成后 | `afterSelection` | `HOOKS.AFTER_SELECTION` | 选择区域已确定并高亮显示 | ❌ | `(startRow, startCol, endRow, endCol)` |
-| 选择结束前（拖拽） | `beforeSelectionEnd` | `HOOKS.BEFORE_SELECTION_END` | 拖拽即将释放 | ✅ | `(range)` |
-| 选择结束后 | `afterSelectionEnd` | `HOOKS.AFTER_SELECTION_END` | 拖拽选择操作已完成 | ❌ | `(range)` |
+| 分类 | Hook 名称 | 常量引用 | 触发时机 | 可阻止 | 参数 |
+|------|----------|---------|----------|--------|------|
+| **📝 编辑** |
+| 编辑开始前 | `beforeBeginEditing` | `HOOKS.BEFORE_BEGIN_EDITING` | 编辑器未打开时 | ✅ | `(row, col)` |
+| 编辑开始后 | `afterBeginEditing` | `HOOKS.AFTER_BEGIN_EDITING` | 编辑器已打开 | ❌ | `(row, col)` |
+| 编辑结束前 | `beforeFinishEditing` | `HOOKS.BEFORE_FINISH_EDITING` | 提交编辑时 | ✅ | `(row, col, newVal, oldVal)` |
+| 编辑结束后 | `afterFinishEditing` | `HOOKS.AFTER_FINISH_EDITING` | 新值已写入 | ❌ | `(row, col, newVal, oldVal)` |
+| 数据变更前 | `beforeChange` | `HOOKS.BEFORE_CHANGE` | 修改单元格值之前 | ✅ | `changes[]` |
+| 数据变更后 | `afterChange` | `HOOKS.AFTER_CHANGE` | 值已更新到存储层 | ❌ | `changes[]` |
+| 设置值前 | `beforeSetValueAt` | `HOOKS.BEFORE_SET_VALUE_AT` | 单元格写入前 | ✅ | `(row, col, value)` |
+| 设置值后 | `afterSetValueAt` | `HOOKS.AFTER_SET_VALUE_AT` | 单元格写入后 | ❌ | `(row, col, value)` |
+| **🎯 选择** |
+| 选择开始前 | `beforeSelection` | `HOOKS.BEFORE_SELECTION` | 新选择操作 | ✅ | `(startRow, startCol, endRow, endCol)` |
+| 选择完成后 | `afterSelection` | `HOOKS.AFTER_SELECTION` | 选区已确定 | ❌ | `(startRow, startCol, endRow, endCol)` |
+| 选择结束前 | `beforeSelectionEnd` | `HOOKS.BEFORE_SELECTION_END` | 拖拽即将释放 | ✅ | `(range)` |
+| 选择结束后 | `afterSelectionEnd` | `HOOKS.AFTER_SELECTION_END` | 拖拽完成 | ❌ | `(range)` |
 | **🖱️ 单元格交互** |
-| 鼠标按下 | `onCellMouseDown` | `HOOKS.ON_CELL_MOUSE_DOWN` | 在单元格区域内按下鼠标按钮 | ❌ | `(row, col, event)` |
-| 鼠标移入 | `onCellMouseOver` | `HOOKS.ON_CELL_MOUSE_OVER` | 鼠标指针进入单元格边界 | ❌ | `(row, col, event)` |
-| 鼠标移出 | `onCellMouseOut` | `HOOKS.ON_CELL_MOUSE_OUT` | 鼠标指针离开单元格边界 | ❌ | `(row, col, event)` |
-| 单元格点击 | `onCellClick` | `HOOKS.ON_CELL_CLICK` | 完整的 click 事件 | ❌ | `(row, col, event)` |
-| 单元格双击 | `onCellDblClick` | `HOOKS.ON_CELL_DBL_CLICK` | 快速连续两次点击（通常用于编辑） | ❌ | `(row, col, event)` |
-| **⌨️ 键盘相关** |
-| 键盘按下前 | `beforeKeyDown` | `HOOKS.BEFORE_KEY_DOWN` | 按键被处理之前 | ✅ 可拦截按键 | `(event)` |
-| 键盘按下后 | `afterKeyDown` | `HOOKS.AFTER_KEY_DOWN` | 按键已被处理并产生效果 | ❌ | `(event)` |
-| **📜 滚动相关** |
-| 水平滚动后 | `afterScrollHorizontally` | `HOOKS.AFTER_SCROLL_HORIZONTALLY` | 视口水平位置已改变 | ❌ | `(newScrollLeft)` |
-| 垂直滚动后 | `afterScrollVertically` | `HOOKS.AFTER_SCROLL_VERTICALLY` | 视口垂直位置已改变 | ❌ | `(newScrollTop)` |
+| 鼠标按下 | `onCellMouseDown` | `HOOKS.ON_CELL_MOUSE_DOWN` | 单元格内按下 | ❌ | `(row, col, event)` |
+| 鼠标移入 | `onCellMouseOver` | `HOOKS.ON_CELL_MOUSE_OVER` | 进入单元格 | ❌ | `(row, col, event)` |
+| 鼠标移出 | `onCellMouseOut` | `HOOKS.ON_CELL_MOUSE_OUT` | 离开单元格 | ❌ | `(row, col, event)` |
+| 单元格点击 | `onCellClick` | `HOOKS.ON_CELL_CLICK` | click 事件 | ❌ | `(row, col, event)` |
+| 单元格双击 | `onCellDblClick` | `HOOKS.ON_CELL_DBL_CLICK` | 双击 | ❌ | `(row, col, event)` |
+| **⌨️ 键盘** |
+| 键盘按下前 | `beforeKeyDown` | `HOOKS.BEFORE_KEY_DOWN` | 按键处理前 | ✅ | `(event)` |
+| 键盘按下后 | `afterKeyDown` | `HOOKS.AFTER_KEY_DOWN` | 按键已处理 | ❌ | `(event)` |
+| **📜 滚动** |
+| 水平滚动后 | `afterScrollHorizontally` | `HOOKS.AFTER_SCROLL_HORIZONTALLY` | 水平位置改变 | ❌ | `(newScrollLeft)` |
+| 垂直滚动后 | `afterScrollVertically` | `HOOKS.AFTER_SCROLL_VERTICALLY` | 垂直位置改变 | ❌ | `(newScrollTop)` |
 | **🔗 合并单元格** |
-| 合并前 | `beforeMergeCells` | `HOOKS.BEFORE_MERGE_CELLS` | 即将执行合并操作 | ✅ | `(topRow, topCol, bottomRow, bottomCol)` |
-| 合并后 | `afterMergeCells` | `HOOKS.AFTER_MERGE_CELLS` | 单元格已成功合并为一个区域 | ❌ | `(mergeRange)` |
-| 取消合并前 | `beforeUnmergeCells` | `HOOKS.BEFORE_UNMERGE_CELLS` | 即将拆分合并单元格 | ✅ | `(topRow, topCol)` |
-| 取消合并后 | `afterUnmergeCells` | `HOOKS.AFTER_UNMERGE_CELLS` | 合并单元格已恢复为独立单元格 | ❌ | `(row, col)` |
+| 合并前 | `beforeMergeCells` | `HOOKS.BEFORE_MERGE_CELLS` | 即将合并 | ✅ | `(topRow, topCol, bottomRow, bottomCol)` |
+| 合并后 | `afterMergeCells` | `HOOKS.AFTER_MERGE_CELLS` | 已合并 | ❌ | `(mergeRange)` |
+| 取消合并前 | `beforeUnmergeCells` | `HOOKS.BEFORE_UNMERGE_CELLS` | 即将拆分 | ✅ | `(topRow, topCol)` |
+| 取消合并后 | `afterUnmergeCells` | `HOOKS.AFTER_UNMERGE_CELLS` | 已拆分 | ❌ | `(row, col)` |
 | **📋 剪贴板** |
-| 复制前 | `beforeCopy` | `HOOKS.BEFORE_COPY` | 数据即将复制到剪贴板 | ✅ | `(range)` |
-| 复制后 | `afterCopy` | `HOOKS.AFTER_COPY` | 数据已复制到剪贴板 | ❌ | `(data, range)` |
-| 剪切前 | `beforeCut` | `HOOKS.BEFORE_CUT` | 数据即将剪切到剪贴板并从原位置移除 | ✅ | `(range)` |
-| 剪切后 | `afterCut` | `HOOKS.AFTER_CUT` | 数据已从原位置移除 | ❌ | `(data, range)` |
-| 粘贴前 | `beforePaste` | `HOOKS.BEFORE_PASTE` | 剪贴板数据即将粘贴到目标位置 | ✅ | `(targetPosition, data)` |
-| 粘贴后 | `afterPaste` | `HOOKS.AFTER_PASTE` | 剪贴板数据已插入到目标位置 | ❌ | `(changes)` |
+| 复制前 | `beforeCopy` | `HOOKS.BEFORE_COPY` | 即将复制 | ✅ | `(range)` |
+| 复制后 | `afterCopy` | `HOOKS.AFTER_COPY` | 已复制 | ❌ | `(data, range)` |
+| 剪切前 | `beforeCut` | `HOOKS.BEFORE_CUT` | 即将剪切 | ✅ | `(range)` |
+| 剪切后 | `afterCut` | `HOOKS.AFTER_CUT` | 已剪切 | ❌ | `(data, range)` |
+| 粘贴前 | `beforePaste` | `HOOKS.BEFORE_PASTE` | 即将粘贴 | ✅ | `(target, data)` |
+| 粘贴后 | `afterPaste` | `HOOKS.AFTER_PASTE` | 已粘贴 | ❌ | `(changes)` |
 | **↔️ 列/行移动** |
-| 列移动前 | `beforeColumnMove` | `HOOKS.BEFORE_COLUMN_MOVE` | 即将通过拖拽改变列顺序 | ✅ | `(sourceCol, targetCol)` |
-| 列移动后 | `afterColumnMove` | `HOOKS.AFTER_COLUMN_MOVE` | 列顺序已调整完成 | ❌ | `(sourceCol, targetCol)` |
-| 行移动前 | `beforeRowMove` | `HOOKS.BEFORE_ROW_MOVE` | 即将通过拖拽改变行顺序 | ✅ | `(sourceRow, targetRow)` |
-| 行移动后 | `afterRowMove` | `HOOKS.AFTER_ROW_MOVE` | 行顺序已调整完成 | ❌ | `(sourceRow, targetRow)` |
+| 列移动前 | `beforeColumnMove` | `HOOKS.BEFORE_COLUMN_MOVE` | 即将移动列 | ✅ | `(sourceCol, targetCol)` |
+| 列移动后 | `afterColumnMove` | `HOOKS.AFTER_COLUMN_MOVE` | 列已移动 | ❌ | `(sourceCol, targetCol)` |
+| 行移动前 | `beforeRowMove` | `HOOKS.BEFORE_ROW_MOVE` | 即将移动行 | ✅ | `(sourceRow, targetRow)` |
+| 行移动后 | `afterRowMove` | `HOOKS.AFTER_ROW_MOVE` | 行已移动 | ❌ | `(sourceRow, targetRow)` |
 | **👁️ 隐藏显示** |
-| 列隐藏后 | `afterHideColumn` | `HOOKS.AFTER_HIDE_COLUMN` | 指定列已从视图中隐藏 | ❌ | `(colIndex)` |
-| 列显示后 | `afterShowColumn` | `HOOKS.AFTER_SHOW_COLUMN` | 隐藏的列已重新可见 | ❌ | `(colIndex)` |
-| 行隐藏后 | `afterHideRow` | `HOOKS.AFTER_HIDE_ROW` | 指定行已从视图中隐藏 | ❌ | `(rowIndex)` |
-| 行显示后 | `afterShowRow` | `HOOKS.AFTER_SHOW_ROW` | 隐藏的行已重新可见 | ❌ | `(rowIndex)` |
+| 列隐藏后 | `afterHideColumn` | `HOOKS.AFTER_HIDE_COLUMN` | 列已隐藏 | ❌ | `(colIndex)` |
+| 列显示后 | `afterShowColumn` | `HOOKS.AFTER_SHOW_COLUMN` | 列已显示 | ❌ | `(colIndex)` |
+| 行隐藏后 | `afterHideRow` | `HOOKS.AFTER_HIDE_ROW` | 行已隐藏 | ❌ | `(rowIndex)` |
+| 行显示后 | `afterShowRow` | `HOOKS.AFTER_SHOW_ROW` | 行已显示 | ❌ | `(rowIndex)` |
 | **❄️ 冻结窗格** |
-| 冻结后 | `afterFreeze` | `HOOKS.AFTER_FREEZE` | 冻结窗格已生效 | ❌ | `(fixedRowsTop, fixedColumnsStart)` |
-| 解冻后 | `afterUnfreeze` | `HOOKS.AFTER_UNFREEZE` | 冻结窗格已取消 | ❌ | - |
+| 冻结后 | `afterFreeze` | `HOOKS.AFTER_FREEZE` | 冻结已生效 | ❌ | `(fixedRows, fixedCols)` |
+| 解冻后 | `afterUnfreeze` | `HOOKS.AFTER_UNFREEZE` | 冻结已取消 | ❌ | — |
 | **📑 工作表管理** |
-| 工作表新增前 | `beforeSheetAdd` | `HOOKS.BEFORE_SHEET_ADD` | 即将创建新工作表 | ✅ | `(sheetName)` |
-| 工作表新增后 | `afterSheetAdd` | `HOOKS.AFTER_SHEET_ADD` | 新工作表已成功创建 | ❌ | `(sheetName, sheetInstance)` |
-| 工作表删除前 | `beforeSheetRemove` | `HOOKS.BEFORE_SHEET_REMOVE` | 即将删除工作表 | ✅ | `(sheetName)` |
-| 工作表删除后 | `afterSheetRemove` | `HOOKS.AFTER_SHEET_REMOVE` | 工作表已从工作簿中移除 | ❌ | `(sheetName, removedSheet)` |
-| 工作表重命名前 | `beforeSheetRename` | `HOOKS.BEFORE_SHEET_RENAME` | 即将重命名工作表 | ✅ | `(oldName, newName)` |
-| 工作表重命名后 | `afterSheetRename` | `HOOKS.AFTER_SHEET_RENAME` | 工作表名称已更改 | ❌ | `(oldName, newName)` |
-| 工作表切换前 | `beforeSheetSwitch` | `HOOKS.BEFORE_SHEET_SWITCH` | 即将切换到指定工作表 | ✅ | `(currentSheet, targetSheet)` |
-| 工作表切换后 | `afterSheetSwitch` | `HOOKS.AFTER_SHEET_SWITCH` | 当前活动工作表已改变 | ❌ | `(previousSheet, currentSheet)` |
+| 新增前 | `beforeSheetAdd` | `HOOKS.BEFORE_SHEET_ADD` | 即将创建 | ✅ | `(sheetName)` |
+| 新增后 | `afterSheetAdd` | `HOOKS.AFTER_SHEET_ADD` | 已创建 | ❌ | `(sheetName, sheet)` |
+| 删除前 | `beforeSheetRemove` | `HOOKS.BEFORE_SHEET_REMOVE` | 即将删除 | ✅ | `(sheetName)` |
+| 删除后 | `afterSheetRemove` | `HOOKS.AFTER_SHEET_REMOVE` | 已删除 | ❌ | `(sheetName, sheet)` |
+| 重命名前 | `beforeSheetRename` | `HOOKS.BEFORE_SHEET_RENAME` | 即将重命名 | ✅ | `(oldName, newName)` |
+| 重命名后 | `afterSheetRename` | `HOOKS.AFTER_SHEET_RENAME` | 已重命名 | ❌ | `(oldName, newName)` |
+| 切换前 | `beforeSheetSwitch` | `HOOKS.BEFORE_SHEET_SWITCH` | 即将切换 | ✅ | `(current, target)` |
+| 切换后 | `afterSheetSwitch` | `HOOKS.AFTER_SHEET_SWITCH` | 已切换 | ❌ | `(previous, current)` |
 | **📊 排序** |
-| 排序后 | `afterSort` | `HOOKS.AFTER_SORT` | 数据已按指定规则重新排列 | ❌ | `(colIndex, options, result)` |
-| 排序恢复后 | `afterSortRestore` | `HOOKS.AFTER_SORT_RESTORE` | 已撤销排序操作，恢复原始顺序 | ❌ | `(swappedRows)` |
+| 排序后 | `afterSort` | `HOOKS.AFTER_SORT` | 数据已排序 | ❌ | `(colIndex, options, result)` |
+| 排序恢复后 | `afterSortRestore` | `HOOKS.AFTER_SORT_RESTORE` | 已撤销排序 | ❌ | `(swappedRows)` |
 | **🎨 图表** |
-| 图表添加后 | `afterChartAdd` | `HOOKS.AFTER_CHART_ADD` | 新图表已创建并添加到工作表 | ❌ | `(chartConfig, chartInstance)` |
-| 图表删除后 | `afterChartRemove` | `HOOKS.AFTER_CHART_REMOVE` | 图表已从工作表中移除 | ❌ | `(chartId)` |
-| 图表更新后 | `afterChartUpdate` | `HOOKS.AFTER_CHART_UPDATE` | 图表数据或样式已变更 | ❌ | `(chartId, newConfig)` |
+| 图表添加后 | `afterChartAdd` | `HOOKS.AFTER_CHART_ADD` | 图表已创建 | ❌ | `(config, instance)` |
+| 图表删除后 | `afterChartRemove` | `HOOKS.AFTER_CHART_REMOVE` | 图表已删除 | ❌ | `(chartId)` |
+| 图表更新后 | `afterChartUpdate` | `HOOKS.AFTER_CHART_UPDATE` | 图表已变更 | ❌ | `(chartId, newConfig)` |
 | **🔗 URL 超链接** |
-| URL 检测到 | `onUrlDetected` | `HOOKS.ON_URL_DETECTED` | 单元格值被识别为 URL 时 | ❌ | `(row, col, urlValue)` |
-| URL 点击前 | `beforeOpenUrl` | `HOOKS.BEFORE_OPEN_URL` | 用户 Ctrl+Click 包含 URL 的单元格时 | ✅ 可阻止打开 | `(row, col, urlValue, event)` |
-| URL 已打开 | `afterOpenUrl` | `HOOKS.AFTER_OPEN_URL` | 链接已通过 window.open 打开 | ❌ | `(row, col, urlValue)` |
+| URL 检测到 | `onUrlDetected` | `HOOKS.ON_URL_DETECTED` | 值被识别为 URL | ❌ | `(row, col, url)` |
+| URL 点击前 | `beforeOpenUrl` | `HOOKS.BEFORE_OPEN_URL` | Ctrl+Click 时 | ✅ | `(row, col, url, event)` |
+| URL 已打开 | `afterOpenUrl` | `HOOKS.AFTER_OPEN_URL` | 链接已打开 | ❌ | `(row, col, url)` |
+| **📥 导入** |
+| 导入进度 | `onImportProgress` | `HOOKS.IMPORT_PROGRESS` | 导入进行中 | ❌ | `(progress)` |
+| 导入完成 | `onImportComplete` | `HOOKS.IMPORT_COMPLETE` | 导入完成 | ❌ | `(result)` |
+| 导入错误 | `onImportError` | `HOOKS.IMPORT_ERROR` | 导入出错 | ❌ | `(error)` |
+| **📤 导出** |
+| 导出完成 | `onExportComplete` | `HOOKS.EXPORT_COMPLETE` | 导出完成 | ❌ | `(result)` |
+| 导出错误 | `onExportError` | `HOOKS.EXPORT_ERROR` | 导出出错 | ❌ | `(error)` |
+| **🛡️ 数据验证** |
+| 验证前 | `beforeValidate` | `HOOKS.BEFORE_VALIDATE` | 即将验证 | ✅ | `(rule, value)` |
+| 验证后 | `afterValidate` | `HOOKS.AFTER_VALIDATE` | 验证完成 | ❌ | `(result)` |
+| 验证失败 | `validationFailed` | `HOOKS.VALIDATION_FAILED` | 验证不通过 | ❌ | `(rule, value, error)` |
+| **🔍 搜索** |
+| 搜索前 | `beforeSearch` | `HOOKS.BEFORE_SEARCH` | 即将搜索 | ✅ | `(query)` |
+| 搜索后 | `afterSearch` | `HOOKS.AFTER_SEARCH` | 搜索完成 | ❌ | `(results)` |
+| 替换前 | `beforeSearchReplace` | `HOOKS.BEFORE_SEARCH_REPLACE` | 即将替换 | ✅ | `(target, replacement)` |
+| 替换后 | `afterSearchReplace` | `HOOKS.AFTER_SEARCH_REPLACE` | 替换完成 | ❌ | `(changes)` |
 | **🔄 生命周期** |
-| 初始化完成 | `init` | `HOOKS.INIT` | Workbook/Sheet 构造完成并准备就绪 | ❌ | `(workbook/sheet)` |
-| 销毁前 | `destroy` | `HOOKS.DESTROY` | 对象即将被清理和释放资源 | ❌ | `(instance)` |
+| 初始化完成 | `init` | `HOOKS.INIT` | 构造完成 | ❌ | `(instance)` |
+| 销毁前 | `destroy` | `HOOKS.DESTROY` | 即将销毁 | ❌ | `(instance)` |
 
 ### 💡 Hooks 使用示例
 
 <details>
 <summary><b>🔧 实战案例集</b></summary>
 
-#### **1️⃣ 数据验证拦截**
+#### 1️⃣ 数据验证拦截
 
-```javascript
-import { HOOKS } from '@canvas-sheet/core';
+```typescript
+import { Workbook, HOOKS } from '@canvas-sheet/core';
 
 const wb = new Workbook(container);
 
-// 阻止非法数据输入
-wb.addHook(HOOKS.BEFORE_CHANGE, (changes) => {
+wb.addHook(HOOKS.BEFORE_CHANGE, (changes: Array<{row: number, col: number, newValue: unknown}>) => {
     for (const change of changes) {
-        const { row, col, newValue } = change;
-        
-        // 第 1 列只允许正数
-        if (col === 1 && typeof newValue === 'number' && newValue < 0) {
+        if (change.col === 1 && typeof change.newValue === 'number' && change.newValue < 0) {
             alert('第 1 列不允许负数！');
-            return false;  // 阻止整个变更
-        }
-        
-        // 第 2 列邮箱格式验证
-        if (col === 2 && typeof newValue === 'string') {
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newValue)) {
-                alert('请输入有效的邮箱地址！');
-                return false;  // 阻止变更
-            }
+            return false;
         }
     }
-    
-    return true;  // 允许变更
+    return true;
 });
 ```
 
-#### **2️⃣ 操作日志记录**
+#### 2️⃣ 操作日志记录
 
-```javascript
-// 记录所有数据变更（不可撤销）
-wb.addHook(HOOKS.AFTER_CHANGE, (changes) => {
+```typescript
+wb.addHook(HOOKS.AFTER_CHANGE, (changes: Array<{row: number, col: number, oldValue: unknown, newValue: unknown}>) => {
     const timestamp = new Date().toISOString();
-    
     changes.forEach(({ row, col, oldValue, newValue }) => {
-        console.log(`[${timestamp}] 变更: [${row},${col}]: "${oldValue}" → "${newValue}"`);
-        
-        // 发送到远程日志服务器
-        sendToLogServer({
-            action: 'cell_change',
-            position: { row, col },
-            oldValue,
-            newValue,
-            timestamp,
-            user: currentUser.id
-        });
-    });
-});
-
-// 记录工作表切换
-wb.addHook(HOOKS.AFTER_SHEET_SWITCH, (previousSheet, currentSheet) => {
-    analytics.track('sheet_switch', {
-        from: previousSheet.name,
-        to: currentSheet.name,
-        userId: currentUser.id
+        console.log(`[${timestamp}] [${row},${col}]: "${oldValue}" → "${newValue}"`);
     });
 });
 ```
 
-#### **3️⃣ 自定义快捷键行为**
+#### 3️⃣ 自定义快捷键
 
-```javascript
-// 拦截特定按键
-wb.addHook(HOOKS.BEFORE_KEY_DOWN, (event) => {
-    // Ctrl+S 保存（默认无行为）
+```typescript
+wb.addHook(HOOKS.BEFORE_KEY_DOWN, (event: KeyboardEvent) => {
     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
         event.preventDefault();
         saveWorkbook();
-        return true;  // 表示已处理
+        return true;
     }
-    
-    // Ctrl+Z 在特定条件下禁用撤销
-    if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-        if (isReadOnlyMode()) {
-            event.preventDefault();
-            showToast('只读模式不允许撤销');
-            return true;
-        }
-    }
-    
-    return undefined;  // 继续默认处理
+    return undefined;
 });
 ```
 
-#### **4️⃣ 单元格交互增强**
+#### 4️⃣ 单元格交互增强
 
-```javascript
-// 双击打开详情弹窗
-wb.addHook(HOOKS.ON_CELL_DBL_CLICK, (row, col, event) => {
-    if (col === 0) {  // 第一列为 ID 列
-        const cellValue = wb.getCellValue(row, col);
-        openDetailModal(cellValue);
-        event.preventDefault();  // 阻止默认编辑行为
+```typescript
+wb.addHook(HOOKS.ON_CELL_DBL_CLICK, (row: number, col: number, event: MouseEvent) => {
+    if (col === 0) {
+        openDetailModal(wb.getCellValue(row, col));
+        event.preventDefault();
     }
 });
-
-// 鼠标悬停显示提示
-let tooltipTimeout;
-wb.addHook(HOOKS.ON_CELL_MOUSE_OVER, (row, col, event) => {
-    clearTimeout(tooltipTimeout);
-    tooltipTimeout = setTimeout(() => {
-        showTooltip(event.clientX, event.clientY, {
-            content: `行: ${row + 1}, 列: ${col + 1}`,
-            value: wb.getCellValue(row, col)
-        });
-    }, 500);  // 延迟 500ms 显示
-});
-
-wb.addHook(HOOKS.ON_CELL_MOUSE_OUT, () => {
-    clearTimeout(tooltipTimeout);
-    hideTooltip();
-});
 ```
 
-#### **5️⃣ 复制粘贴数据处理**
+#### 5️⃣ URL 超链接安全控制
 
-```javascript
-// 粘贴前转换数据格式
-wb.addHook(HOOKS.BEFORE_PASTE, (targetPosition, clipboardData) => {
-    // 将外部复制的文本自动转换为数字
-    const processedData = clipboardData.map(row =>
-        row.map(cell => {
-            if (typeof cell === 'string' && /^[\d,.]+$/.test(cell)) {
-                return parseFloat(cell.replace(/,/g, ''));
-            }
-            return cell;
-        })
-    );
-    
-    return processedData;  // 返回修改后的数据
-});
-
-// 复制时添加额外信息
-wb.addHook(HOOKS.AFTER_COPY, (data, range) => {
-    console.log(`复制了 ${data.length} 行 × ${data[0]?.length || 0} 列数据`);
-    
-    // 自动同步到剪贴板的元数据
-    navigator.clipboard.writeText(JSON.stringify({
-        source: 'canvas-spreadsheet',
-        range,
-        timestamp: Date.now(),
-        data
-    }));
-});
-```
-
-#### **6️⃣ 排序和冻结监控**
-
-```javascript
-// 排序后更新图表数据源
-wb.addHook(HOOKS.AFTER_SORT, (colIndex, options, result) => {
-    console.log(`按第 ${colIndex + 1} 列${options.ascending ? '升序' : '降序'}排序完成`);
-    
-    // 刷新关联的图表
-    refreshLinkedCharts();
-    
-    // 显示排序提示
-    showToast(`排序完成：影响 ${result.swappedCount} 行`);
-});
-
-// 冻结状态变化监听
-wb.addHook(HOOKS.AFTER_FREEZE, (fixedRows, fixedCols) => {
-    console.log(`冻结窗格已设置：固定 ${fixedRows} 行，${fixedCols} 列`);
-    
-    updateFreezeIndicator(fixedRows, fixedCols);
-});
-
-wb.addHook(HOOKS.AFTER_UNFREEZE, () => {
-    console.log('冻结窗格已取消');
-    hideFreezeIndicator();
-});
-```
-
-#### **7️⃣ URL 超链接安全控制**
-
-```javascript
-// 拦截危险 URL 打开
-wb.addHook(HOOKS.BEFORE_OPEN_URL, (row, col, urlValue, event) => {
-    // 白名单检查
+```typescript
+wb.addHook(HOOKS.BEFORE_OPEN_URL, (row: number, col: number, urlValue: string, event: MouseEvent) => {
     const allowedDomains = ['example.com', 'company-internal.com'];
     try {
         const url = new URL(urlValue);
-        if (!allowedDomains.some(domain => url.hostname.endsWith(domain))) {
+        if (!allowedDomains.some(d => url.hostname.endsWith(d))) {
             event.preventDefault();
-            
-            // 显示确认对话框
-            const confirmed = confirm(
-                `您即将访问外部链接：\n\n${urlValue}\n\n是否继续？`
-            );
-            
-            if (confirmed) {
-                window.open(urlValue, '_blank', 'noopener,noreferrer');
-            }
-            
-            return false;  // 阻止默认行为
+            const confirmed = confirm(`您即将访问外部链接：\n\n${urlValue}\n\n是否继续？`);
+            if (confirmed) window.open(urlValue, '_blank', 'noopener,noreferrer');
+            return false;
         }
-    } catch (e) {
-        console.warn('无效 URL:', urlValue);
-        return false;
-    }
-    
-    return true;  // 允许打开
+    } catch { return false; }
+    return true;
 });
+```
 
-// 记录所有检测到的 URL
-wb.addHook(HOOKS.ON_URL_DETECTED, (row, col, urlValue) => {
-    console.log(`[${row}, ${col}] 检测到 URL: ${urlValue}`);
-    
-    // 标记包含链接的单元格样式
-    wb.setCellStyle(row, col, {
-        color: '#0066cc',
-        textDecoration: 'underline'
-    });
+#### 6️⃣ 一次性钩子
+
+```typescript
+wb.addHookOnce(HOOKS.INIT, (workbook: Workbook) => {
+    loadUserPreferences(workbook);
+    setupAutoSave(workbook);
 });
 ```
 
 </details>
 
-### ⚙️ Hooks 高级用法
-
-#### **一次性钩子（addHookOnce）**
-
-```javascript
-// 只在首次初始化时执行一次
-wb.addHookOnce(HOOKS.INIT, (workbook) => {
-    console.log('这是首次初始化！');
-    loadUserPreferences(workbook);
-    setupAutoSave(workbook);
-});
-
-// 只在第一次编辑时显示引导提示
-wb.addHookOnce(HOOKS.AFTER_BEGIN_EDITING, (row, col) => {
-    showTutorialTooltip('您可以在此处输入数据...');
-});
-```
-
-#### **条件性钩子注册/注销**
-
-```javascript
-function enableAuditLog() {
-    // 注册审计日志钩子
-    const logHandler = (changes) => {
-        auditLogger.log('DATA_CHANGE', changes);
-    };
-    
-    wb.addHook(HOOKS.AFTER_CHANGE, logHandler);
-    
-    // 存储引用以便后续移除
-    wb._auditHandler = logHandler;
-}
-
-function disableAuditLog() {
-    if (wb._auditHandler) {
-        wb.removeHook(HOOKS.AFTER_CHANGE, wb._auditHandler);
-        delete wb._auditHandler;
-    }
-}
-
-// 根据用户权限动态启用/禁用
-if (user.hasPermission('audit')) {
-    enableAuditLog();
-}
-```
-
-#### **清理钩子**
-
-```javascript
-// 清理某个钩子的所有监听器
-wb.clearHook(HOOKS.ON_CELL_CLICK);
-
-
-// 检查是否有特定钩子
-if (wb.hasHook(HOOKS.BEFORE_CHANGE)) {
-    console.log('存在 beforeChange 钩子');
-}
-```
-
 ### 🔐 Hooks 最佳实践
 
-| 场景 | 推荐使用 | 不推荐使用 |
-|------|---------|-----------|
+| 场景 | 推荐 | 不推荐 |
+|------|------|--------|
 | **数据验证** | `BEFORE_CHANGE`, `BEFORE_SET_VALUE_AT` | `AFTER_CHANGE`（太晚） |
-| **UI 反馈** | `AFTER_*` 系列（确保操作成功） | `BEFORE_*`（可能被取消） |
-| **日志记录** | `AFTER_CHANGE`, `AFTER_SORT` 等 | `BEFORE_*`（可能未实际发生） |
+| **UI 反馈** | `AFTER_*` 系列 | `BEFORE_*`（可能被取消） |
+| **日志记录** | `AFTER_CHANGE`, `AFTER_SORT` | `BEFORE_*`（可能未实际发生） |
 | **权限控制** | `BEFORE_*` 系列（可阻止） | `ON_*`（仅通知） |
-| **性能敏感** | 减少回调内的计算量 | 同步执行耗时操作 |
-| **错误处理** | 使用 try-catch 包裹回调逻辑 | 让错误传播导致崩溃 |
 
-> **💡 性能提示**: Hooks 回调应尽量轻量化（< 1ms），避免阻塞主线程。对于复杂逻辑，建议使用 `requestIdleCallback` 或 `setTimeout(fn, 0)` 异步处理。
+> **性能提示**: Hooks 回调应尽量轻量化（< 1ms），复杂逻辑建议使用 `requestIdleCallback` 或 `setTimeout(fn, 0)` 异步处理。
 
 ---
 
@@ -1721,70 +1017,47 @@ if (wb.hasHook(HOOKS.BEFORE_CHANGE)) {
 
 ### 🔌 插件开发指南
 
-```javascript
+```typescript
 import { BasePlugin, HOOKS } from '@canvas-sheet/core';
+import type { Workbook } from '@canvas-sheet/core';
 
-export class AutoFillPlugin extends BasePlugin {
-    static get PLUGIN_NAME() {
-        return "autoFill";
-    }
+export class MyCustomPlugin extends BasePlugin {
+    static get PLUGIN_NAME() { return "myCustom"; }
 
-    /** @type {AutoFillStrategy|null} */
-    #strategy = null;
-
-    /**
-     * 初始化自动填充插件
-     * 注册 AutoFillStrategy 到事件处理器
-     *
-     * @param {object} options - 插件配置
-     * @param {boolean} [options.enabled=true] - 是否默认启用
-     */
-    init(options = {}) {
+    init(options: Record<string, any> = {}) {
         super.init(options);
-
-        this.#strategy = new AutoFillStrategy(this.eventHandler);
-        this.addStrategy("autoFill", this.#strategy);
-
-        if (options.enabled === false) {
-            this.disable();
-        }
+        // 注册策略、钩子等
     }
 
-    /**
-     * 销毁插件
-     * 策略会由基类 removeOwnStrategies() 自动清理
-     */
     destroy() {
-        this.#strategy = null;
+        // 清理资源
         super.destroy();
     }
 
-    /**
-     * 启用自动填充
-     */
     enable() {
         super.enable();
-        this.#strategy?.enable();
     }
 
-    /**
-     * 禁用自动填充
-     */
     disable() {
         super.disable();
-        this.#strategy?.disable();
     }
 }
 
-// 注册插件
-import { PluginManager } from '@canvas-sheet/core';
-PluginManager.register(MyCustomPlugin);
+// 全局注册
+Workbook.registerPlugin("myCustom", MyCustomPlugin);
+
+// 或在初始化时加载
+const wb = new Workbook(container, {
+    plugins: ["myCustom"],
+    pluginOptions: { myCustom: { enabled: true } }
+});
 ```
 
-### 🎭 自定义渲染器
+### 🎭 自定义列类型渲染器
 
-```javascript
-import { BaseColumnType } from '@canvas-sheet/core';
+```typescript
+import { BaseColumnType, Workbook } from '@canvas-sheet/core';
+import type { CellRenderContext } from '@canvas-sheet/core';
 
 class TrafficLightType extends BaseColumnType {
     get name() { return 'trafficLight'; }
@@ -1800,266 +1073,428 @@ class TrafficLightType extends BaseColumnType {
         };
     }
 
-    render(context) {
+    format(value: string): string {
+        const map: Record<string, string> = { green: '正常', yellow: '警告', red: '危险' };
+        return map[value] || String(value);
+    }
+
+    render(context: CellRenderContext): void {
         const { ctx, x, y, width, height, value } = context;
-        
-        const colors = {
-            green: '#4caf50',
-            yellow: '#ff9800',
-            red: '#f44336'
+        const colors: Record<string, string> = {
+            green: '#4caf50', yellow: '#ff9800', red: '#f44336'
         };
-        
         const radius = Math.min(width, height) / 3;
         const centerX = x + width / 2;
         const centerY = y + height / 2;
 
-        ctx.fillStyle = colors[value] || '#ccc';
+        ctx.fillStyle = colors[value as string] || '#ccc';
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         ctx.fill();
 
         if (context.isSelected) {
-            ctx.strokeStyle = colors[value] || '#999';
+            ctx.strokeStyle = colors[value as string] || '#999';
             ctx.lineWidth = 2;
             ctx.stroke();
         }
     }
 }
 
-registerColumnTypeClass('trafficLight', TrafficLightType);
+Workbook.registerColumnType("trafficLight", TrafficLightType);
+```
+
+### 🧮 自定义公式函数
+
+```typescript
+import { functionRegistry, FUNCTION_CATEGORY } from '@canvas-sheet/core';
+
+functionRegistry.register('TAX', (args: unknown[]) => {
+    const amount = args[0] as number;
+    const rate = (args[1] as number) || 0.13;
+    return amount * rate;
+}, { category: FUNCTION_CATEGORY.CUSTOM });
+
+// 使用: =TAX(1000, 0.13) → 130
+```
+
+### 📊 自定义图表
+
+图表系统基于**策略模式**架构，每类图表对应一个 `BaseChartStrategy` 子类。你可以继承基类创建任意图表类型，并通过 `NativeChartRenderer.register()` 注册到渲染器中。
+
+#### 架构层次
+
+```
+ChartRendererFactory.getRenderer(type)   ← 工厂分发渲染器
+    ↓
+NativeChartRenderer                      ← 渲染管线编排（网格→坐标轴→图表→标题→图例）
+    ↓
+BaseChartStrategy 子类                   ← 具体图表绘制逻辑（你自定义的这一层）
+```
+
+#### 自定义图表步骤
+
+```typescript
+import {
+    BaseChartStrategy,
+    NativeChartRenderer,
+    ChartRendererFactory
+} from '@canvas-sheet/core';
+import type { ChartData, PlotArea, ChartStyle, YScale, HitInfo } from '@canvas-sheet/core';
+
+// 1. 继承 BaseChartStrategy 创建自定义策略
+class WaterfallStrategy extends BaseChartStrategy {
+    constructor() {
+        super("waterfall", "瀑布图");   // type 标识 + 显示名称
+    }
+
+    // 2. 覆写 render() 实现绘制逻辑（必须）
+    render(
+        ctx: CanvasRenderingContext2D,
+        data: ChartData,
+        area: PlotArea,
+        style: ChartStyle,
+        yScale?: YScale | null
+    ): void {
+        const { headers, data: rows } = data;
+        const { x, y, w, h } = area;
+
+        // ... 你的 Canvas 绘制逻辑 ...
+        // ctx.fillRect(), ctx.fillText(), etc.
+    }
+
+    // 3. 可选：覆写 hitTest() 实现点击检测
+    hitTest(
+        px: number, py: number,
+        data: ChartData,
+        area: PlotArea,
+        style: ChartStyle
+    ): HitInfo | null {
+        // 返回命中信息或 null
+        return null;
+    }
+
+    // 4. 可选：覆写 formatTooltip() 自定义提示格式
+    formatTooltip(hitInfo: HitInfo): string {
+        return `${hitInfo.category}: ${hitInfo.value}`;
+    }
+
+    // 5. 可选：覆写 isAxisFree() 声明是否无坐标轴（如饼图）
+    isAxisFree(): boolean {
+        return false;  // 瀑布图有坐标轴
+    }
+}
+
+// 6. 注册到 NativeChartRenderer
+NativeChartRenderer.register(new WaterfallStrategy());
+
+// 7.（可选）扩展 ChartRendererFactory 的原生类型列表
+ChartRendererFactory.NATIVE_TYPES.push("waterfall");
+
+// 现在可以在工作表中使用 "waterfall" 类型
+const chart = sheet.addChart({
+    type: "waterfall",
+    anchorRow: 0,
+    anchorCol: 5,
+    width: 400,
+    height: 300,
+    dataRange: { startRow: 0, startCol: 0, endRow: 6, endCol: 1 },
+    style: {
+        title: "月度利润瀑布图",
+        colors: ["#5470c6", "#91cc75", "#ee6666"],
+        showLegend: true,
+        showTooltip: true
+    }
+});
+```
+
+#### 可覆写的方法
+
+| 方法 | 必须 | 说明 |
+|------|------|------|
+| `render(ctx, data, area, style, yScale)` | ✅ | 核心绘制逻辑 |
+| `hitTest(px, py, data, area, style)` | ❌ | 点击/悬停命中检测，返回 `HitInfo \| null` |
+| `formatTooltip(hitInfo)` | ❌ | Tooltip 文本格式化 |
+| `formatDetail(hitInfo)` | ❌ | 详细信息格式化（K线、仪表盘等） |
+| `isAxisFree()` | ❌ | 是否无坐标轴（饼图、雷达图等返回 `true`） |
+| `computeYScale(data, area, style)` | ❌ | 自定义 Y 轴刻度计算 |
+
+#### ChartStyle 配置项
+
+```typescript
+interface ChartStyle {
+    title?: string;              // 图表标题
+    showLegend?: boolean;        // 是否显示图例（默认 true）
+    showGrid?: boolean;         // 是否显示网格线（默认 true）
+    showTooltip?: boolean;      // 是否启用 Tooltip（默认 true）
+    colors?: string[];          // 系列颜色列表
+    smooth?: boolean;           // 平滑曲线（折线图/面积图）
+    fill?: boolean;             // 填充区域（面积图）
+    xAxisLabel?: string;        // X 轴标签
+    yAxisLabel?: string;        // Y 轴标签
+    min?: number;               // Y 轴最小值
+    max?: number;               // Y 轴最大值
+    indicators?: IndicatorConfig[];  // 雷达图维度配置
+    showValue?: boolean;        // 单元格内显示数值（热力图）
+    cellPadding?: number;       // 单元格内边距（热力图）
+}
+```
+
+#### 高清导出
+
+```typescript
+// 使用指定像素比渲染（用于导出高清图片）
+NativeChartRenderer.renderWithPixelRatio(
+    ctx, chart, data, plotArea, style, 2  // 2x 高清
+);
+```
+
+### 🎨 主题定制
+
+```typescript
+import { themeStyleProvider } from '@canvas-sheet/core';
+
+// 切换内置主题
+themeStyleProvider.setTheme("dark");
+
+// 订阅主题变化
+const unsubscribe = themeStyleProvider.subscribe(() => {
+    console.log("Theme changed!");
+    workbook.render();
+});
+
+// 取消订阅
+unsubscribe();
+```
+
+### 📊 条件格式
+
+```typescript
+const workbook = new Workbook(container, {
+    sheets: [{
+        name: 'Sheet1',
+        conditionalStyles: [
+            {
+                range: { topRow: 0, topCol: 0, bottomRow: 10000, bottomCol: 25 },
+                condition: (v: unknown) => typeof v === 'number' && v > 25,
+                style: { backgroundColor: '#ffcccc' }
+            }
+        ]
+    }]
+});
+```
+
+### 🛡️ 数据验证
+
+```typescript
+const workbook = new Workbook(container, {
+    plugins: ['dataValidation'],
+    pluginOptions: {
+        dataValidation: {
+            conflictStrategy: 'short-circuit',
+            rules: [
+                {
+                    range: 'B:B',
+                    type: 'number',
+                    operator: 'between',
+                    value: [0, 100],
+                    errorMessage: '必须输入 0-100 之间的数',
+                    errorStyle: 'stop'
+                },
+                {
+                    range: 'A:A',
+                    type: 'textLength',
+                    operator: 'greaterThan',
+                    value: 5,
+                    errorMessage: '至少输入 5 个字符',
+                    errorStyle: 'warning'
+                },
+                {
+                    range: 'D:D',
+                    type: 'unique',
+                    errorMessage: '值不能重复'
+                },
+                {
+                    range: 'G:G',
+                    type: 'date',
+                    operator: 'between',
+                    value: ['01/01/2020', '12/31/2026'],
+                    errorMessage: '日期超出范围',
+                    errorStyle: 'stop'
+                },
+                {
+                    range: 'H:H',
+                    type: 'regex',
+                    pattern: '^[A-Z]{2}\\d{4}$',
+                    errorMessage: '格式应为两位大写字母+4位数字'
+                }
+            ]
+        }
+    }
+});
+```
+
+### 🔍 搜索替换
+
+```typescript
+const workbook = new Workbook(container, {
+    plugins: ['search'],
+});
+
+// 搜索插件支持：
+// - 全文搜索 / 正则匹配
+// - 大小写敏感选项
+// - 结果导航（上一个/下一个）
+// - 搜索结果高亮
+// - 替换（单个/全部）
 ```
 
 ---
 
 ## 📋 已完成功能
 
-### ✅ **核心引擎 (100%)**
+### ✅ 核心引擎 (100%)
 - ✅ Canvas 2D 渲染引擎
 - ✅ 瓦片化渲染架构 (Tile Rendering)
 - ✅ 智能视口裁剪 (Viewport Clipping)
 - ✅ 双缓冲绘图 (Double Buffering)
 - ✅ 硬件加速 (GPU Acceleration)
 
-### ✅ **数据模型 (95%)**
+### ✅ 数据模型 (95%)
 - ✅ 分块存储系统 (ChunkedCellStore)
 - ✅ 单元格对象池 (Cell Pool)
 - ✅ 行列管理器 (RowColManager)
 - ✅ 合并单元格 (Merge Cells)
 - ✅ 隐藏行/列 (Hidden Rows/Cols)
-- [ ] 数据版本控制 (Data Versioning) - *进行中*
+- [ ] 数据版本控制 (Data Versioning)
 
-### ✅ **公式系统 (95%)**
+### ✅ 公式系统 (95%)
 - ✅ 公式解析器 (FormulaParser)
 - ✅ 公式求值器 (FormulaEvaluator)
-- ✅ **52 个内置函数** - 数学(13)、统计(9)、逻辑(7)、文本(13)、查找(4)、条件(6)，全部经过测试验证，含完整 examples
+- ✅ **52 个内置函数** — 数学(13)、统计(9)、逻辑(7)、文本(13)、查找(4)、条件(6)
 - ✅ 循环引用检测
 - ✅ 惰性求值 (Lazy Evaluation)
 - ✅ 自定义函数注册
-- [ ] 数组公式 (Array Formulas) - *计划中*
+- [ ] 数组公式 (Array Formulas)
 
-### ✅ **类型系统 (98%)**
-- ✅ **11 种列类型**:
-  - 基础数据类型 (6种): text, numeric, date, select, textarea, hyperlink
-  - 可视化渲染器 (5种): checkbox, progressBar, starRating, sparkline, colorPreview
+### ✅ 类型系统 (98%)
+- ✅ **11 种列类型**: text, numeric, date, select, textarea, hyperlink, checkbox, progressBar, starRating, sparkline, colorPreview
 - ✅ 可扩展的类型注册表
 - ✅ 格式化/解析/验证管道
-- ✅ **增强的日期解析** - 支持中文日期格式（如 "2021年05月10日"）
-- [ ] 地理位置类型 (GeoLocation) - *计划中*
+- ✅ 增强的日期解析（支持中文日期格式）
 
-### ✅ **插件生态 (92%)**
+### ✅ 插件生态 (95%)
 - ✅ 冻结窗格插件 (FreezePlugin)
-- ✅ 排序插件 (SortPlugin) - 升序/降序/多列排序，**优化表头图标**
-- ✅ 自动填充插件 (AutoFillPattern)
+- ✅ 排序插件 (SortPlugin) — 升序/降序/多列排序
+- ✅ 自动填充插件 (AutoFillPlugin)
 - ✅ 复制粘贴插件 (CopyPastePlugin)
-- ✅ 数据验证插件 (DataValidationPlugin) - **完善功能 + 修复 bug + 自定义公式验证**
+- ✅ 数据验证插件 (DataValidationPlugin) — number/text/date/unique/regex/formula 验证
 - ✅ 右键菜单插件 (ContextMenuPlugin)
-- ✅ 导出文件插件 (ExportFilePlugin) - **企业级导出（嵌套表头/样式/列宽行高/多图表）**
+- ✅ 导出文件插件 (ExportFilePlugin) — 企业级导出（嵌套表头/样式/列宽行高/多图表）
 - ✅ 导入文件插件 (ImportFilePlugin)
 - ✅ 公式插件 (FormulaPlugin)
-- ✅ 图表插件 (ChartPlugin) - **10 类图表（Bar/Line/Pie/Area/Scatter/Candlestick/Gauge/Funnel/Radar/Heatmap），数据联动，Tooltip 提示**
-- ✅ 行/列移动插件 (MovePlugins)
-- ✅ 隐藏行/列插件 (HiddenPlugins)
-- ✅ **筛选插件 (FilterPlugin)** - text/numeric/date 类型，正则匹配支持
-- [ ] 评论/批注插件 (CommentPlugin) - *计划中*
+- ✅ 图表插件 (ChartPlugin) — 10 类内置图表 + 自定义图表支持（BaseChartStrategy 策略模式）
+- ✅ 行/列移动插件 (RowMovePlugin / ColumnMovePlugin)
+- ✅ 隐藏行/列插件 (HiddenRowsPlugin / HiddenColumnsPlugin)
+- ✅ 筛选插件 (FilterPlugin) — text/numeric/date 类型，正则匹配
+- ✅ 搜索替换插件 (SearchPlugin) — 全文搜索、正则匹配、导航定位、结果高亮
 
-### ✅ **UI 组件 (95%)**
+### ✅ UI 组件 (95%)
 - ✅ 公式栏 (FormulaBar)
 - ✅ 工作表标签栏 (SheetTabBar)
 - ✅ 右键上下文菜单 (ContextMenu)
-- ✅ 滚动条 (Scrollbar) - 自定义样式
+- ✅ 滚动条 (Scrollbar)
 - ✅ 单元格编辑器 (Text/Numeric/Date/Select/Textarea/Hyperlink/Checkbox/StarRating)
 - ✅ 选区高亮 (Selection Highlight)
-- ✅ **主题系统** - 2 种内置主题 (Default/Light + Dark) + 自定义主题注册
-- [ ] 迷你地图 (Minimap) - *计划中*
-- [ ] 缩放控件 (Zoom Control) - *计划中*
+- ✅ 主题系统 — 2 种内置主题 + 自定义主题注册
 
-### ✅ **事件与钩子 (100%)**
-- ✅ 事件总线 (EventBus)
-- ✅ 生命周期钩子 (Lifecycle Hooks)
-- ✅ 30+ 内置事件
-- ✅ **完善的 Hook 事件系统** - 新增功能相关钩子
-- ✅ 20+ 钩子点
+### ✅ 事件与钩子 (100%)
+- ✅ 事件总线 (EventBus) — 标准信封格式、契约校验
+- ✅ 生命周期钩子 (Lifecycle Hooks) — 40+ 钩子点
+- ✅ DOM 事件常量 (EVENT_NAMES)
+- ✅ 工作表事件 (SHEET_EVENTS)
 
-### ✅ **开发者工具 (90%)**
+### ✅ 基础设施 (100%)
+- ✅ Disposable — 资源生命周期管理
+- ✅ DOMComponent — DOM 操作封装
+- ✅ WebComponent — Web Components 基类
+- ✅ ReactiveStore — 响应式状态管理
+- ✅ ErrorHandler — 统一错误处理
+- ✅ ViewportTransform — 视口坐标转换
+
+### ✅ TypeScript 支持 (100%)
+- ✅ 完整的 `.d.ts` 类型声明文件
+- ✅ `package.json` exports.types 条件导出
+- ✅ 类型导出路径验证通过
+- ✅ TS 使用示例代码 (`test-ts-support/`)
+
+### ✅ 开发者工具 (95%)
 - ✅ ESLint + Prettier 代码规范
-- ✅ Vitest 测试框架 (单元/集成/E2E)
-- ✅ JSDoc 自动文档生成 - **符合 JSDoc 规范的完整注释**
+- ✅ Vitest 测试框架
+- ✅ JSDoc 自动文档生成
 - ✅ Husky Git Hooks
 - ✅ Webpack 5 构建优化
 - ✅ ESM + UMD 双模块输出
-- ✅ **丰富的 Examples 示例** - 大量新增示例代码
-- [ ] Playground 在线演示 - *计划中*
 
 ---
 
 ## 🔮 待开发功能
 
-### 🎯 **短期目标 (v1.2.0 - Q3 2026)**
+### 🎯 短期目标 (v1.2.0)
 
-#### 🔍 **搜索替换插件**
-- [ ] 搜索替换插件 (SearchReplacePlugin)
-  - [ ] 全文搜索功能
-  - [ ] 正则表达式搜索
-  - [ ] 替换功能（单个/全部）
-  - [ ] 大小写敏感选项
-  - [ ] 单元格范围限制搜索
-
-#### 🎨 **数据验证与样式打通**
+- [ ] 评论/批注插件 (CommentPlugin)
+- [ ] 迷你地图 (Minimap)
+- [ ] 缩放控件 (Zoom Control)
 - [ ] 数据验证与列类型样式集成
-  - [ ] 验证失败时的视觉反馈增强
-  - [ ] 基于验证状态的动态样式
-  - [ ] 自定义验证提示样式
-  - [ ] 列类型特定的验证规则预设
 
-### 🚀 **中期目标 (v2.0.0 - Q4 2026)**
+### 🚀 中期目标 (v2.0.0)
 
-#### 💻 **TypeScript 支持**
-- [ ] TypeScript 类型定义
-  - [ ] 完整的 .d.ts 类型声明文件
-  - [ ] 泛型支持
-  - [ ] 类型导出
-  - [ ] TS 示例代码
-
-#### 🔌 **插件按需加载**
-- [ ] 插件懒加载机制
-  - [ ] 动态导入 (Dynamic Import)
-  - [ ] 插件依赖管理
-  - [ ] 按需加载配置
-  - [ ] 插件包体积优化
-
-
-### 🚀 **中期目标 (v2.0.0 - Q4 2026)**
-
-#### 👥 **实时协作**
-- [ ] WebSocket 同步引擎
-- [ ] 操作转换 (OT) 算法
-- [ ] 冲突解决机制
+- [ ] 插件按需加载 / 动态导入
+- [ ] 数组公式 (Array Formulas)
+- [ ] 实时协作 (WebSocket + OT)
 - [ ] 光标同步显示
-- [ ] 用户权限管理
 - [ ] 版本历史回放
 
+### 🌟 长期愿景 (v3.0.0+)
 
-### 🌟 **长期愿景 (v3.0.0+ - 2027+)**
-
-#### 🤖 **AI 集成**
-- [ ] 智能数据补全
-- [ ] 自然语言查询 ("显示销售额前10的产品")
-- [ ] 异常检测与告警
-- [ ] 自动化报表生成
-- [ ] 预测分析集成
-
-#### 🌐 **WebAssembly 加速**
-- [ ] 核心计算引擎移植到 WASM
-- [ ] 公式计算性能提升 10x+
-- [ ] 大规模排序/聚合加速
-- [ ] 内存占用降低 50%
-
-
+- [ ] AI 集成 — 智能数据补全、自然语言查询
+- [ ] WebAssembly 加速 — 核心计算引擎移植
+- [ ] 地理位置类型 (GeoLocation)
+- [ ] Playground 在线演示
 
 ---
 
 ## 🤝 贡献指南
 
-我们欢迎所有形式的贡献！无论是 Bug 报告、功能请求还是代码提交。
-
 ### 🐛 报告问题
 
 1. 在 [Issues](../../issues) 中搜索现有问题
-2. 如果没有找到，点击 **New Issue**
-3. 使用模板填写详细信息：
-   - 复现步骤
-   - 期望行为 vs 实际行为
-   - 截图/GIF (如果涉及 UI)
-   - 环境信息 (浏览器/OS/版本)
+2. 点击 **New Issue**，填写复现步骤、期望行为、实际行为、环境信息
 
 ### 💻 提交代码
-
-#### Fork & Clone
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/canvas-implementation-in-excel.git
 cd canvas-implementation-in-excel
 git checkout -b feature/your-feature-name
-```
 
-#### 开发流程
-
-```bash
-# 安装依赖
 npm install
+npm run dev          # 开发调试
+npm run lint         # 代码检查
+npm run typecheck    # 类型检查
+npm test             # 运行测试
 
-# 创建分支 (遵循规范)
-git checkout -b feat/add-pie-chart
-# git checkout -b fix/crash-on-scroll
-# git checkout -b docs/update-readme
-
-# 编写代码 (遵循代码规范)
-npm run dev  # 开发调试
-npm run lint # 代码检查
-
-# 运行测试 (确保通过)
-npm test
-
-# 提交变更 (使用 Conventional Commits)
-git commit -m "feat(chart): add pie chart renderer"
-# fix(scroll): resolve memory leak on rapid scrolling
-# docs(readme): update installation guide
-# test(validation): add edge case tests
-
-# 推送并创建 PR
-git push origin feat/add-pie-chart
-# 然后在 GitHub 上创建 Pull Request
+git commit -m "feat(scope): description"   # Conventional Commits
+git push origin feature/your-feature-name
 ```
 
 #### 代码规范
 
 - ✅ **ESLint**: `npm run lint` 必须通过
 - ✅ **Prettier**: `npm run format` 自动格式化
+- ✅ **TypeCheck**: `npm run typecheck` 必须通过
 - ✅ **Commit Message**: 遵循 [Conventional Commits](https://www.conventionalcommits.org/)
 - ✅ **Test Coverage**: 新增代码覆盖率 > 80%
 - ✅ **JSDoc**: 公共 API 必须有完整注释
-
-#### Pull Request 模板
-
-```markdown
-## 📝 变更描述
-简要说明本次修改的内容和原因
-
-## 🔗 关联 Issue
-Fixes #123
-
-## 📸 截图/GIF (如果是 UI 变更)
-[在此处添加截图]
-
-## ✅ 测试清单
-- [ ] 单元测试已添加/更新
-- [ ] 所有测试通过 (`npm test`)
-- [ ] ESLint 检查通过 (`npm run lint`)
-- [ ] 文档已更新 (如有必要)
-
-## 💬 其他说明
-[可选的其他补充信息]
-```
 
 ---
 
@@ -2074,7 +1509,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE.org/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -2083,38 +1518,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ```
 
-### 📜 权利与义务
+**您可以自由地：** 商业使用、修改源码、分发副本、再授权、私人使用
 
-**您可以自由地：**
-- ✅ 商业使用
-- ✅ 修改源码
-- ✅ 分发副本
-- ✅ 再授权
-- ✅ 私人使用
-
-**您必须遵守：**
-- ⚠️ 保留版权声明和许可证文本
-- ⚠️ 修改的文件必须标注变更
-- ⚠️ 如果包含 NOTICE 文件，需保留归属声明
-
-**您不能：**
-- ❌ 追究作者关于软件缺陷的责任
-- ❌ 使用作者的商标或商号进行背书
+**您必须遵守：** 保留版权声明和许可证文本、修改的文件必须标注变更
 
 ---
 
 ## 🙏 致谢
 
-感谢以下开源项目和社区：
-
-- **Handsontable** - 为电子表格领域树立的标准
-- **HyperFormula** - 优秀的公式引擎参考实现
-- **Canvas API** - 让高性能 Web 图形成为可能
-- **Web Components** - 组件化的未来标准
-- **Vitest** - 快速可靠的测试框架
-- **Webpack** - 强大的模块打包工具
-
-特别感谢所有贡献者、Issue 报告者和用户的反馈！
+- **Handsontable** — 电子表格领域标准
+- **HyperFormula** — 公式引擎参考实现
+- **Canvas API** — 高性能 Web 图形
+- **Web Components** — 组件化未来标准
+- **Vitest** — 快速可靠的测试框架
+- **Webpack** — 强大的模块打包工具
 
 ---
 
