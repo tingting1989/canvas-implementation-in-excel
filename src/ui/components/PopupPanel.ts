@@ -48,7 +48,7 @@ template.innerHTML = `
 
   .panel {
     position: absolute;
-    min-width: 260px;
+    min-width: 80px;
     background: var(--popup-bg, #ffffff);
     border: 1px solid var(--popup-border, #d9d9d9);
     border-radius: 6px;

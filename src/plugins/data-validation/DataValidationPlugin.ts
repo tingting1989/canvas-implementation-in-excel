@@ -331,20 +331,49 @@ export class DataValidationPlugin extends BasePlugin {
         const sheet = (this as any).sheet;
         if (!sheet) return;
 
-        const rc = sheet.rowColManager;
         const re = (this as any).renderEngine;
         const sx = re.scrollX;
         const sy = re.scrollY;
         const viewW = re.viewW;
         const viewH = re.viewH;
 
-        const visibleRange = rc.getVisibleRange(sx, sy, viewW, viewH);
+        const rc = sheet.rowColManager;
+        const headerH = (sheet as any).getHeaderHeight?.() ?? 0;
+        const headerW = (sheet as any).getHeaderWidth?.() ?? 0;
+        const frozenColsW = (sheet as any).frozenColsWidth ?? 0;
+        const frozenRowsH = (sheet as any).frozenRowsHeight ?? 0;
+        const fixedCols = (sheet as any).fixedColumnsStart ?? 0;
+        const fixedRows = (sheet as any).fixedRowsTop ?? 0;
+
+        const scrolledRange = rc.getVisibleRange(sx, sy, viewW - headerW, viewH - headerH);
+
+        let startRow = scrolledRange.topRow;
+        let endRow = scrolledRange.bottomRow;
+        let startCol = scrolledRange.topCol;
+        let endCol = scrolledRange.bottomCol;
+
+        if (fixedRows > 0) {
+            startRow = Math.min(startRow, 0);
+            endRow = Math.max(endRow, fixedRows - 1);
+        }
+        if (fixedCols > 0) {
+            startCol = Math.min(startCol, 0);
+            endCol = Math.max(endCol, fixedCols - 1);
+        }
 
         this.#portalUI.renderValidationIcons({
-            startRow: visibleRange.topRow,
-            endRow: visibleRange.bottomRow,
-            startCol: visibleRange.topCol,
-            endCol: visibleRange.bottomCol,
+            startRow,
+            endRow,
+            startCol,
+            endCol,
+            scrollX: sx,
+            scrollY: sy,
+            headerH,
+            headerW,
+            frozenColsW,
+            frozenRowsH,
+            viewW,
+            viewH,
         });
     }
 

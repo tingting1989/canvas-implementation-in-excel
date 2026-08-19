@@ -44,7 +44,14 @@ export class ValidationUIController {
     #validationPlugin: any = null;
     #renderEngine: any = null;
     #initialized: boolean = false;
-    #dropdownState: { row: number; col: number; options: string[]; activeIndex: number; listEl: HTMLElement; portalId: string } | null = null;
+    #dropdownState: {
+        row: number;
+        col: number;
+        options: string[];
+        activeIndex: number;
+        listEl: HTMLElement;
+        portalId: string;
+    } | null = null;
     #tooltipState: { row: number; col: number; portalId: string } | null = null;
     #inputMessageState: { row: number; col: number; portalId: string } | null = null;
     #dropdownArrowCells: Set<string> = new Set();
@@ -439,13 +446,38 @@ export class ValidationUIController {
         ctx.fillText("❗", x + size / 2, y + size / 2);
     }
 
-    renderValidationIcons(viewport: { startRow: number; endRow: number; startCol: number; endCol: number }): void {
+    renderValidationIcons(viewport: {
+        startRow: number;
+        endRow: number;
+        startCol: number;
+        endCol: number;
+        scrollX?: number;
+        scrollY?: number;
+        headerH?: number;
+        headerW?: number;
+        frozenColsW?: number;
+        frozenRowsH?: number;
+        viewW?: number;
+        viewH?: number;
+    }): void {
         if (!this.#validationPlugin?.engine || !this.#renderEngine) return;
 
         const ctx = this.#renderEngine.ctx;
         if (!ctx) return;
 
         const { startRow, endRow, startCol, endCol } = viewport;
+        const scrollX = viewport.scrollX ?? 0;
+        const scrollY = viewport.scrollY ?? 0;
+        const headerH = viewport.headerH ?? 0;
+        const headerW = viewport.headerW ?? 0;
+        const frozenColsW = viewport.frozenColsW ?? 0;
+        const frozenRowsH = viewport.frozenRowsH ?? 0;
+        const viewW = viewport.viewW ?? 0;
+        const viewH = viewport.viewH ?? 0;
+
+        const sheet = this.#validationPlugin.sheet;
+        const fixedCols = (sheet as any).fixedColumnsStart ?? 0;
+        const fixedRows = (sheet as any).fixedRowsTop ?? 0;
 
         const iconsToDraw: Record<string, Array<{ x: number; y: number; size: number }>> = {
             [ICON_STATUS.VALID]: [],
@@ -472,13 +504,33 @@ export class ValidationUIController {
                     continue;
                 }
 
-                const cellRect = this.#getCellRect(row, col);
+                const cellRect = this.#getCellRectWithViewport(row, col, scrollX, scrollY, headerH, headerW);
                 if (!cellRect) continue;
+
+                const iconX = cellRect.x + cellRect.width - 16;
+                const iconY = cellRect.y + 2;
+
+                const isFrozenCol = col < fixedCols;
+                const isFrozenRow = row < fixedRows;
+
+                let validPosition = false;
+
+                if (isFrozenCol && isFrozenRow) {
+                    validPosition = iconX >= headerW && iconX < headerW + frozenColsW && iconY >= headerH && iconY < headerH + frozenRowsH;
+                } else if (isFrozenCol && !isFrozenRow) {
+                    validPosition = iconX >= headerW && iconX < headerW + frozenColsW && iconY >= headerH + frozenRowsH && iconY <= viewH;
+                } else if (!isFrozenCol && isFrozenRow) {
+                    validPosition = iconX >= headerW + frozenColsW && iconX <= viewW && iconY >= headerH && iconY < headerH + frozenRowsH;
+                } else {
+                    validPosition = iconX >= headerW + frozenColsW && iconX <= viewW && iconY >= headerH + frozenRowsH && iconY <= viewH;
+                }
+
+                if (!validPosition) continue;
 
                 if (iconsToDraw[cachedStatus]) {
                     iconsToDraw[cachedStatus].push({
-                        x: cellRect.x + cellRect.width - 16,
-                        y: cellRect.y + 2,
+                        x: iconX,
+                        y: iconY,
                         size: 12,
                     });
                 }
@@ -491,6 +543,50 @@ export class ValidationUIController {
             for (const { x, y, size } of icons) {
                 this.drawValidationIcon(ctx, x, y, status, size);
             }
+        }
+    }
+
+    #getCellRectWithViewport(
+        row: number,
+        col: number,
+        scrollX: number,
+        scrollY: number,
+        headerH: number,
+        headerW: number,
+    ): {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    } | null {
+        if (!this.#renderEngine || !this.#validationPlugin?.sheet) return null;
+
+        const sheet = this.#validationPlugin.sheet;
+        const rc = (sheet as any).rowColManager;
+        if (!rc) return null;
+
+        try {
+            const fixedCols = (sheet as any).fixedColumnsStart ?? 0;
+            const fixedRows = (sheet as any).fixedRowsTop ?? 0;
+
+            const isFrozenCol = col < fixedCols;
+            const isFrozenRow = row < fixedRows;
+
+            const effectiveSx = isFrozenCol ? 0 : scrollX;
+            const effectiveSy = isFrozenRow ? 0 : scrollY;
+
+            let x: number, y: number, width: number, height: number;
+
+            x = headerW + rc.getColX(col) - effectiveSx;
+
+            y = headerH + rc.getRowY(row) - effectiveSy;
+
+            width = rc.getColWidth(col);
+            height = rc.getRowHeight(row);
+
+            return { x, y, width, height };
+        } catch (e) {
+            return this.#getCellRect(row, col);
         }
     }
 
@@ -510,7 +606,11 @@ export class ValidationUIController {
             try {
                 result = engine.validateCellSync(row, col, value);
             } catch (error: any) {
-                errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] 同步验证失败", { error, row, col });
+                errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] 同步验证失败", {
+                    error,
+                    row,
+                    col,
+                });
             }
         }
 
@@ -531,7 +631,16 @@ export class ValidationUIController {
             const cache = getValidationCache();
             if (cache) {
                 cache
-                    .set(key, { valid: result.valid, errorStyle: result.errorStyle, value, ruleId: result.ruleId }, { source: "sync-validation" })
+                    .set(
+                        key,
+                        {
+                            valid: result.valid,
+                            errorStyle: result.errorStyle,
+                            value,
+                            ruleId: result.ruleId,
+                        },
+                        { source: "sync-validation" },
+                    )
                     .catch(() => {});
             }
             return;
@@ -609,7 +718,11 @@ export class ValidationUIController {
 
             return { status: ICON_STATUS.PENDING, source: "async-scheduled" };
         } catch (error: any) {
-            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] determineIconStatus() 异常", { error, row, col });
+            errorHandler.error(ERROR_CODE.VALIDATION_ERROR, "[ValidationUIController] determineIconStatus() 异常", {
+                error,
+                row,
+                col,
+            });
 
             return { status: ICON_STATUS.ERROR, source: "error" };
         }

@@ -482,7 +482,7 @@ const initApp = () => {
                         description: "[异步] SUM聚合函数 - 行汇总限制",
                     },
                     {
-                        range: "R2:R20",
+                        range: "R2:R200",
                         type: "formula",
                         formula: "=AVERAGE(I{row},K{row},L{row},Q{row})>0",
                         errorMessage: "⚠️ 平均值必须>0（异步-AVERAGE统计函数）",
