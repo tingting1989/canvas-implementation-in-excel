@@ -28,8 +28,8 @@ describe("ContextMenuStrategy", () => {
     });
 
     afterEach(() => {
-        const menuEl = document.querySelector(".ctx-menu");
-        if (menuEl) menuEl.remove();
+        const popupEls = document.querySelectorAll("popup-panel-new");
+        popupEls.forEach((el) => el.remove());
     });
 
     describe("构造函数和属性", () => {
@@ -56,31 +56,29 @@ describe("ContextMenuStrategy", () => {
             expect(handlers[DELEGATE_KEYS.CANVAS_CONTEXTMENU]).toBeTypeOf("function");
         });
 
-        it("CM-05: 应声明 document:mousedown 事件（点击外部关闭）", () => {
+        it("CM-05: 点击外部关闭由 PopupPanel 处理，不再需要 document:mousedown", () => {
             const strategy = new ContextMenuStrategy(mockHandler);
             const handlers = strategy.getEventHandlers();
-            expect(handlers[DELEGATE_KEYS.DOCUMENT_MOUSEDOWN]).toBeTypeOf("function");
+            expect(handlers[DELEGATE_KEYS.DOCUMENT_MOUSEDOWN]).toBeUndefined();
         });
 
-        it("CM-06: 应只声明2个事件", () => {
+        it("CM-06: 应只声明1个事件（contextmenu）", () => {
             const strategy = new ContextMenuStrategy(mockHandler);
             const handlers = strategy.getEventHandlers();
-            expect(Object.keys(handlers)).toHaveLength(2);
+            expect(Object.keys(handlers)).toHaveLength(1);
         });
     });
 
     describe("init() / destroy()", () => {
-        it("CM-07: init 创建菜单 DOM", () => {
+        it("CM-07: init 安全执行（UI 由 UIManager 按需创建）", () => {
             const strategy = new ContextMenuStrategy(mockHandler);
-            strategy.init();
-            expect(document.querySelectorAll(".ctx-menu").length).toBe(1);
+            expect(() => strategy.init()).not.toThrow();
         });
 
-        it("CM-08: destroy 移除菜单 DOM", () => {
+        it("CM-08: destroy 关闭 UIManager", () => {
             const strategy = new ContextMenuStrategy(mockHandler);
             strategy.init();
-            strategy.destroy();
-            expect(document.querySelectorAll(".ctx-menu").length).toBe(0);
+            expect(() => strategy.destroy()).not.toThrow();
         });
 
         it("CM-09: destroy 幂等安全", () => {

@@ -3,7 +3,8 @@ import { SHEET_EVENTS } from "../../constants/sheetEvents";
 import { Cell } from "../../model/store/Cell";
 import { SetCellCommand } from "../../model/command/SetCellCommand";
 import { ToggleDisableCommand } from "../../model/command/ToggleDisableCommand";
-import type { ISheet } from "../interfaces/ISheet";
+import { stylePool } from "../../model/styles/index";
+import type { ISheet, StyleObject } from "../interfaces/ISheet";
 import type { ChunkedCellStore } from "../../model/store/ChunkedCellStore";
 
 /**
@@ -71,21 +72,24 @@ export class SheetDataCoordinator {
      * 核心写入方法，处理流程：
      * 1. 权限检查（只读保护）
      * 2. 尺寸确保（自动扩展行列范围）
-     * 3. 公式检测：值以 "=" 开头时触发 FORMULA_SET 事件
-     * 4. 公式清除：旧值有公式时触发 FORMULA_REMOVE 事件
-     * 5. 创建命令并推入历史栈（支持撤销）
-     * 6. 写入存储并使缓存失效
-     * 7. 触发 CELL_CHANGED 事件（非公式时）
+     * 3. 样式参数归一化：number 直接使用，StyleObject 转换为 styleId
+     * 4. 公式检测：值以 "=" 开头时触发 FORMULA_SET 事件
+     * 5. 公式清除：旧值有公式时触发 FORMULA_REMOVE 事件
+     * 6. 创建命令并推入历史栈（支持撤销）
+     * 7. 写入存储并使缓存失效
+     * 8. 触发 CELL_CHANGED 事件（非公式时）
      *
      * @param r - 行号（从 0 开始）
      * @param c - 列号（从 0 开始）
      * @param value - 单元格值，字符串以 "=" 开头时识别为公式
-     * @param styleId - 样式 ID，默认 0（无样式）
+     * @param styleIdOrObj - 样式 ID（number）或样式对象（StyleObject），默认 0
      * @param disabled - 是否禁用，默认 false
      */
-    setCell(r: number, c: number, value: unknown, styleId: number = 0, disabled: boolean = false): void {
+    setCell(r: number, c: number, value: unknown, styleIdOrObj: number | StyleObject = 0, disabled: boolean = false): void {
         if (!this.#sheet._ensureWritable()) return;
         this.#sheet.rowColManager.ensureSize(r + 1, c + 1);
+
+        const styleId = typeof styleIdOrObj === "object" && styleIdOrObj !== null ? stylePool.getStyleId(styleIdOrObj) : (styleIdOrObj as number);
 
         let formula: string | null = null;
         let cellValue = value;

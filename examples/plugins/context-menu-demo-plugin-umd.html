@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 ContextMenuPlugin 功能演示</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh; padding: 20px; color: #333;
+        }
+        .container {
+            max-width: 1400px; margin: 0 auto; background: white;
+            border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+
+        .nav-bar {
+            display: flex; justify-content: center; gap: 8px; padding: 16px 30px;
+            background: #f8f9fa; border-bottom: 2px solid #e9ecef; flex-wrap: wrap;
+        }
+        .nav-bar a {
+            display: inline-block; padding: 8px 16px; border-radius: 8px;
+            background: rgba(102,126,234,0.1); color: #4a5568; text-decoration: none;
+            font-weight: 600; font-size: 14px; transition: all 0.3s;
+        }
+        .nav-bar a:hover, .nav-bar a.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; transform: translateY(-2px);
+        }
+
+        .main-content {
+            display: grid; grid-template-columns: 1fr 400px; gap: 20px; padding: 30px;
+        }
+        .canvas-container {
+            background: #f8f9fa; padding: 20px; border: 1px solid #e9ecef; min-height: 500px;
+        }
+        #spreadsheet { width: 100%; height: 450px; background: white; }
+
+        .control-panel {
+            background: #f8f9fa; border-radius: 12px; padding: 25px;
+            border: 2px solid #e9ecef; height: fit-content;
+        }
+        .panel-title {
+            font-size: 1.3em; color: #495057; margin-bottom: 20px; padding-bottom: 10px;
+            border-bottom: 3px solid #667eea; font-weight: 600;
+        }
+
+        .status-display {
+            padding: 15px; background: white; border-radius: 8px;
+            border: 2px solid #dee2e6; margin-bottom: 20px;
+        }
+        .status-row {
+            display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef;
+        }
+        .status-row:last-child { border-bottom: none; }
+        .status-label { color: #6c757d; font-size: 13px; }
+        .status-value { font-weight: 600; color: #667eea; }
+
+        .control-group { margin-bottom: 20px; }
+        .control-group label { display: block; font-weight: 600; margin-bottom: 8px; color: #495057; }
+
+        .btn {
+            width: 100%; padding: 14px 24px; border: none; border-radius: 8px;
+            font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+            margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.6); }
+        .btn-secondary { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; box-shadow: 0 4px 15px rgba(245,87,108,0.4); }
+        .btn-secondary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,87,108,0.6); }
+        .btn-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; box-shadow: 0 4px 15px rgba(79,172,254,0.4); }
+        .btn-info:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79,172,254,0.6); }
+        .btn-warning { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; box-shadow: 0 4px 15px rgba(250,112,154,0.4); }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(250,112,154,0.6); }
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; box-shadow: 0 4px 15px rgba(17,153,142,0.4); }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(17,153,142,0.6); }
+
+        .log-panel {
+            grid-column: 1 / -1; background: #1e1e1e; border-radius: 12px; padding: 20px;
+            max-height: 300px; overflow-y: auto; border: 2px solid #333;
+        }
+        .log-title { color: #4facfe; font-size: 1.2em; margin-bottom: 15px; font-family: monospace; font-weight: 600; }
+        .log-content { font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; line-height: 1.6; color: #d4d4d4; }
+        .log-entry { padding: 6px 10px; margin: 4px 0; border-radius: 4px; border-left: 4px solid transparent; }
+        .log-success { background: rgba(56,239,125,0.1); border-left-color: #38ef7d; color: #38ef7d; }
+        .log-error { background: rgba(255,107,107,0.1); border-left-color: #ff6b6b; color: #ff6b6b; }
+        .log-info { background: rgba(79,172,254,0.1); border-left-color: #4facfe; color: #4facfe; }
+        .log-warn { background: rgba(255,193,7,0.1); border-left-color: #ffc107; color: #ffc107; }
+
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 30px; background: #f8f9fa; border-top: 2px solid #e9ecef; font-size: 14px; color: #6c757d;
+        }
+        .status-indicator { display: flex; align-items: center; gap: 8px; }
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%; background: #28a745; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .info-section { padding: 30px; background: white; border-top: 2px solid #e9ecef; }
+        .info-section h2 {
+            font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+        }
+
+        .shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+        .shortcut-card { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); padding: 12px 16px; border-radius: 10px; }
+        .shortcut-card .key {
+            font-family: 'Consolas', monospace; font-size: 14px; font-weight: 700; color: #2d3748;
+            background: rgba(255,255,255,0.6); padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px;
+        }
+        .shortcut-card .desc { font-size: 12px; color: #4a5568; }
+
+        .api-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; margin-top: 20px; }
+        .api-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #667eea; transition: transform 0.2s ease;
+        }
+        .api-card:hover { transform: translateY(-2px); }
+        .api-card .category { font-size: 12px; font-weight: 600; color: #667eea; margin-bottom: 8px; }
+        .api-card .name { font-size: 16px; font-weight: 700; color: #333; margin-bottom: 4px; }
+        .api-card .syntax {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 6px 10px; border-radius: 4px; margin-bottom: 8px;
+        }
+        .api-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
+        .api-card .example {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
+            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
+            margin-top: 10px; line-height: 1.6; border-left: 3px solid #11998e; white-space: pre;
+        }
+
+        .config-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .config-table th {
+            padding: 10px; border: 1px solid #ddd; text-align: left;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+        }
+        .config-table td { padding: 8px; border: 1px solid #ddd; }
+        .config-table code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+        .config-example {
+            margin-top: 16px; background: #f0f9ff; border-left: 4px solid #3b82f6;
+            padding: 12px 16px; border-radius: 6px; font-size: 13px; color: #1e40af;
+        }
+        .config-example pre {
+            margin-top: 8px; font-family: 'Consolas', monospace; font-size: 12px; white-space: pre-wrap;
+        }
+
+        .builtin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 16px; }
+        .builtin-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 14px 16px; border-radius: 10px; border-left: 4px solid #667eea;
+        }
+        .builtin-card .key {
+            font-family: 'Consolas', monospace; font-size: 13px; font-weight: 700; color: #667eea;
+            background: rgba(102,126,234,0.1); padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px;
+        }
+        .builtin-card .label { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; }
+        .builtin-card .ctx {
+            font-size: 11px; color: #718096; display: flex; gap: 6px; flex-wrap: wrap;
+        }
+        .builtin-card .ctx span {
+            background: #e2e8f0; padding: 1px 6px; border-radius: 3px; font-family: monospace;
+        }
+
+        .custom-demo { margin-top: 20px; }
+        .custom-demo .code-block {
+            font-family: 'Consolas', monospace; font-size: 12px; line-height: 1.6;
+            background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px;
+            margin-top: 12px; overflow-x: auto; white-space: pre;
+        }
+        .custom-demo .code-block .kw { color: #569cd6; }
+        .custom-demo .code-block .str { color: #ce9178; }
+        .custom-demo .code-block .cmt { color: #6a9955; }
+        .custom-demo .code-block .fn { color: #dcdcaa; }
+        .custom-demo .code-block .num { color: #b5cea8; }
+        .custom-demo .code-block .prop { color: #9cdcfe; }
+
+        @media (max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; }
+            .header h1 { font-size: 2em; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 ContextMenuPlugin 功能演示</h1>
+            <p>右键菜单插件 — 支持内置操作、自定义菜单项、图标/HTML/渲染函数</p>
+        </div>
+
+        <div class="nav-bar">
+            <a href="filter-demo-plugin-umd.html">筛选</a>
+            <a href="search-demo-plugin-umd.html">搜索</a>
+            <a href="sort-demo-plugin-umd.html">排序</a>
+            <a href="context-menu-demo-plugin-umd.html" class="active">右键菜单</a>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <canvas id="spreadsheet"></canvas>
+            </div>
+
+            <div class="control-panel">
+                <h3 class="panel-title">⚙️ 菜单控制</h3>
+
+                <div class="status-display">
+                    <div class="status-row">
+                        <span class="status-label">插件状态</span>
+                        <span class="status-value" id="pluginStatus">未加载</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">自定义项数</span>
+                        <span class="status-value" id="customItemCount">0</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">禁用项数</span>
+                        <span class="status-value" id="disabledItemCount">0</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">隐藏项数</span>
+                        <span class="status-value" id="hiddenItemCount">0</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>📌 快速操作</label>
+                </div>
+
+                <button class="btn btn-primary" onclick="addCustomItem()">
+                    <span>➕</span> 添加自定义菜单项
+                </button>
+
+                <button class="btn btn-info" onclick="addIconItem()">
+                    <span>🎨</span> 添加带图标菜单项
+                </button>
+
+                <button class="btn btn-success" onclick="addRenderItem()">
+                    <span>🛠</span> 添加自定义渲染项
+                </button>
+
+                <button class="btn btn-secondary" onclick="toggleDisableItem()">
+                    <span>🔒</span> 切换禁用"删除行"（灰色可见）
+                </button>
+
+                <button class="btn btn-info" onclick="toggleHideItem()">
+                    <span>👁</span> 切换隐藏"插入图片"（不渲染）
+                </button>
+
+                <button class="btn btn-warning" onclick="resetPlugin()">
+                    <span>🔄</span> 重置为默认配置
+                </button>
+            </div>
+
+            <div class="log-panel">
+                <h3 class="log-title">📋 操作日志</h3>
+                <div class="log-content" id="logContent">
+                    <div class="log-entry log-info">[系统] 页面加载完成，等待初始化...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ 内置菜单项 ═══ -->
+        <div class="info-section">
+            <h2>📦 内置菜单项 (Built-in Items)</h2>
+            <p style="color:#666; font-size:13px; margin-bottom:16px;">
+                以下菜单项由 ContextMenuStrategy 内置提供，根据右键位置（单元格/行标头/列标头）自动显示对应菜单。可通过 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">disabledItems</code> 禁用特定项。
+            </p>
+            <div class="builtin-grid">
+                <div class="builtin-card">
+                    <div class="key">insertRowAbove</div>
+                    <div class="label">在上方插入行</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">insertRowBelow</div>
+                    <div class="label">在下方插入行</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">insertColLeft</div>
+                    <div class="label">在左侧插入列</div>
+                    <div class="ctx"><span>cell</span><span>colHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">insertColRight</div>
+                    <div class="label">在右侧插入列</div>
+                    <div class="ctx"><span>cell</span><span>colHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">deleteRow</div>
+                    <div class="label">删除行</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">deleteCol</div>
+                    <div class="label">删除列</div>
+                    <div class="ctx"><span>cell</span><span>colHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">hideRow / showRow</div>
+                    <div class="label">隐藏行 / 显示行</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">hideColumn / showColumn</div>
+                    <div class="label">隐藏列 / 显示列</div>
+                    <div class="ctx"><span>cell</span><span>colHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">freezeAtCell</div>
+                    <div class="label">冻结至此处</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span><span>colHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">freezeRow</div>
+                    <div class="label">冻结首行</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">freezeCol</div>
+                    <div class="label">冻结首列</div>
+                    <div class="ctx"><span>cell</span><span>colHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">unfreeze</div>
+                    <div class="label">取消冻结</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span><span>colHeader</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">mergeCells</div>
+                    <div class="label">合并单元格</div>
+                    <div class="ctx"><span>cell</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">unmergeCells</div>
+                    <div class="label">取消合并</div>
+                    <div class="ctx"><span>cell</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">insertImage</div>
+                    <div class="label">插入图片</div>
+                    <div class="ctx"><span>cell</span></div>
+                </div>
+                <div class="builtin-card">
+                    <div class="key">clearContent</div>
+                    <div class="label">清空内容</div>
+                    <div class="ctx"><span>cell</span><span>rowHeader</span><span>colHeader</span></div>
+                </div>
+            </div>
+            <p style="color:#e74c3c; font-size:13px; margin-top:16px;">
+                ⚠️ <strong>只读模式</strong>：当 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">sheet.readOnly = true</code> 时，所有修改数据的内置项（插入/删除/合并/清空/隐藏/冻结等）自动禁用并隐藏。
+            </p>
+        </div>
+
+        <!-- ═══ 自定义菜单项 ═══ -->
+        <div class="info-section">
+            <h2>🎨 自定义菜单项 (Custom Items)</h2>
+            <p style="color:#666; font-size:13px; margin-bottom:16px;">
+                通过 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">customItems</code> 配置添加自定义菜单项。支持三种渲染方式，优先级：<strong>render &gt; html &gt; icon + label</strong>
+            </p>
+
+            <div style="overflow-x: auto;">
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 160px;">字段</th>
+                            <th style="width: 120px;">类型</th>
+                            <th style="width: 80px;">必填</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">key</td>
+                            <td><code>string</code></td>
+                            <td>否*</td>
+                            <td>菜单项唯一标识键。未设置时自动生成 <code>custom_0</code>, <code>custom_1</code>... *建议始终设置以确保稳定引用。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">label</td>
+                            <td><code>string</code></td>
+                            <td>否</td>
+                            <td>菜单项显示文本。当 <code>html</code> 或 <code>render</code> 存在时被忽略。</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">icon</td>
+                            <td><code>string</code></td>
+                            <td>否</td>
+                            <td>图标 HTML/SVG 字符串，渲染在文本左侧。当 <code>html</code> 或 <code>render</code> 存在时被忽略。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">html</td>
+                            <td><code>string</code></td>
+                            <td>否</td>
+                            <td>自定义 HTML 内容，设置后 <code>label</code>/<code>icon</code> 均被忽略。适合带样式、徽章的富文本菜单项。</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">render</td>
+                            <td><code>(el: HTMLElement) =&gt; void</code></td>
+                            <td>否</td>
+                            <td>自定义渲染函数，优先级最高。直接操作菜单项 DOM 元素，可注入任意组件（复选框、下拉等）。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">action</td>
+                            <td><code>(row, col, sheet) =&gt; void</code></td>
+                            <td>否</td>
+                            <td>点击回调函数。参数为右键点击的行号、列号和 sheet 实例。</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">contexts</td>
+                            <td><code>string[]</code></td>
+                            <td>否</td>
+                            <td>出现的上下文类型列表。可选值：<code>"cell"</code>、<code>"rowHeader"</code>、<code>"colHeader"</code>。默认 <code>["cell"]</code>。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">type</td>
+                            <td><code>string</code></td>
+                            <td>否</td>
+                            <td>设为 <code>"separator"</code> 表示分隔线，此时其他字段均被忽略。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 示例 1: 纯文本 -->
+            <div class="custom-demo">
+                <h3 style="font-size: 1.1em; color: #4a5568; margin-top: 20px;">📝 示例 1：纯文本自定义项</h3>
+                <div class="code-block"><span class="cmt">// 最简单的自定义项：label + action</span>
+<span class="prop">customItems</span>: [
+    {
+        <span class="prop">key</span>: <span class="str">"myAction"</span>,
+        <span class="prop">label</span>: <span class="str">"我的操作"</span>,
+        <span class="prop">action</span>: (<span class="prop">row</span>, <span class="prop">col</span>, <span class="prop">sheet</span>) =&gt; {
+            console.<span class="fn">log</span>(<span class="str">`点击了 [${row}, ${col}]`</span>);
+        },
+        <span class="prop">contexts</span>: [<span class="str">"cell"</span>, <span class="str">"rowHeader"</span>]
+    }
+]</div>
+            </div>
+
+            <!-- 示例 2: 带图标 -->
+            <div class="custom-demo">
+                <h3 style="font-size: 1.1em; color: #4a5568; margin-top: 20px;">🎨 示例 2：带 SVG 图标的菜单项</h3>
+                <div class="code-block"><span class="prop">customItems</span>: [
+    {
+        <span class="prop">key</span>: <span class="str">"drawChart"</span>,
+        <span class="prop">label</span>: <span class="str">"绘图"</span>,
+        <span class="prop">icon</span>: <span class="str">`&lt;svg viewBox="0 0 16 16" width="16" height="16"&gt;
+  &lt;path d="M2 14L6 6L10 10L14 2" stroke="#4A90D9"
+        fill="none" stroke-width="1.5"/&gt;
+&lt;/svg&gt;`</span>,
+        <span class="prop">action</span>: (<span class="prop">row</span>, <span class="prop">col</span>, <span class="prop">sheet</span>) =&gt; { <span class="cmt">/* 打开绘图面板 */</span> },
+        <span class="prop">contexts</span>: [<span class="str">"cell"</span>]
+    }
+]</div>
+            </div>
+
+            <!-- 示例 3: HTML 内容 -->
+            <div class="custom-demo">
+                <h3 style="font-size: 1.1em; color: #4a5568; margin-top: 20px;">🌐 示例 3：自定义 HTML 内容（带徽章/样式）</h3>
+                <div class="code-block"><span class="prop">customItems</span>: [
+    {
+        <span class="prop">key</span>: <span class="str">"advancedFilter"</span>,
+        <span class="prop">html</span>: <span class="str">`&lt;span style="color:#e74c3c"&gt;⚠&lt;/span&gt; 高级筛选
+               &lt;span style="font-size:11px;color:#999"&gt;Beta&lt;/span&gt;`</span>,
+        <span class="prop">action</span>: (<span class="prop">row</span>, <span class="prop">col</span>, <span class="prop">sheet</span>) =&gt; { <span class="cmt">/* ... */</span> }
+    }
+]</div>
+            </div>
+
+            <!-- 示例 4: 渲染函数 -->
+            <div class="custom-demo">
+                <h3 style="font-size: 1.1em; color: #4a5568; margin-top: 20px;">🛠 示例 4：自定义渲染函数（最灵活，可注入任意组件）</h3>
+                <div class="code-block"><span class="prop">customItems</span>: [
+    {
+        <span class="prop">key</span>: <span class="str">"toggleDraw"</span>,
+        <span class="prop">render</span>: (<span class="prop">el</span>) =&gt; {
+            el.style.display = <span class="str">"flex"</span>;
+            el.style.alignItems = <span class="str">"center"</span>;
+            el.style.gap = <span class="str">"8px"</span>;
+
+            <span class="kw">const</span> cb = document.<span class="fn">createElement</span>(<span class="str">"input"</span>);
+            cb.type = <span class="str">"checkbox"</span>;
+            cb.id = <span class="str">"toggle-drawing"</span>;
+            el.<span class="fn">appendChild</span>(cb);
+
+            <span class="kw">const</span> label = document.<span class="fn">createElement</span>(<span class="str">"label"</span>);
+            label.textContent = <span class="str">"启用绘图模式"</span>;
+            label.htmlFor = <span class="str">"toggle-drawing"</span>;
+            el.<span class="fn">appendChild</span>(label);
+        },
+        <span class="prop">action</span>: (<span class="prop">row</span>, <span class="prop">col</span>, <span class="prop">sheet</span>) =&gt; { <span class="cmt">/* ... */</span> }
+    }
+]</div>
+            </div>
+
+            <!-- 示例 5: 分隔线 + 多上下文 -->
+            <div class="custom-demo">
+                <h3 style="font-size: 1.1em; color: #4a5568; margin-top: 20px;">📏 示例 5：分隔线 + 多上下文组合</h3>
+                <div class="code-block"><span class="prop">customItems</span>: [
+    { <span class="prop">type</span>: <span class="str">"separator"</span> },  <span class="cmt">// 分隔线</span>
+    {
+        <span class="prop">key</span>: <span class="str">"exportPdf"</span>,
+        <span class="prop">label</span>: <span class="str">"导出 PDF"</span>,
+        <span class="prop">icon</span>: <span class="str">`&lt;svg&gt;...&lt;/svg&gt;`</span>,
+        <span class="prop">contexts</span>: [<span class="str">"cell"</span>, <span class="str">"rowHeader"</span>, <span class="str">"colHeader"</span>]
+    },
+    {
+        <span class="prop">key</span>: <span class="str">"shareLink"</span>,
+        <span class="prop">label</span>: <span class="str">"分享链接"</span>,
+        <span class="prop">contexts</span>: [<span class="str">"cell"</span>]  <span class="cmt">// 仅单元格右键时显示</span>
+    }
+]</div>
+            </div>
+        </div>
+
+        <!-- ═══ 配置选项 ═══ -->
+        <div class="info-section">
+            <h2>⚙️ ContextMenuPlugin 配置选项 (pluginOptions.contextMenu)</h2>
+            <p style="color:#666; font-size:13px; margin-bottom:16px;">
+                通过 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">pluginOptions.contextMenu</code> 传入，与 <code style="background:#f0f0f0; padding:2px 6px; border-radius:4px;">ContextMenuPlugin.DEFAULT_OPTIONS</code> 合并后生效。
+            </p>
+            <div style="overflow-x: auto;">
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 260px;">选项路径</th>
+                            <th style="width: 120px;">类型</th>
+                            <th style="width: 180px;">默认值</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">enabled</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>插件是否启用。设为 false 时插件加载但不激活。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">closeOnClickOutside</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>点击菜单外部区域时是否自动关闭。设为 false 时仅能通过 Esc 键或选择菜单项后关闭。</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">closeOnEscape</td>
+                            <td><code>boolean</code></td>
+                            <td style="font-family: monospace;">true</td>
+                            <td>按 Esc 键时是否自动关闭菜单。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">zIndex</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">10001</td>
+                            <td>菜单面板的 z-index 层级。默认高于筛选/搜索面板(10001)，确保右键菜单在最上层。</td>
+                        </tr>
+                        <tr style="background: #f8f9fa;">
+                            <td style="font-family: monospace; color: #667eea;">dropdownWidth</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">180</td>
+                            <td>菜单面板最小宽度（像素）。</td>
+                        </tr>
+                        <tr>
+                            <td style="font-family: monospace; color: #667eea;">dropdownMaxHeight</td>
+                            <td><code>number</code></td>
+                            <td style="font-family: monospace;">400</td>
+                            <td>菜单面板最大高度（像素），超出后内容区可滚动。</td>
+                        </tr>
+                        <tr style="background: #f0fdf4;">
+                            <td colspan="4" style="font-weight: 700; color: #166534;">📌 customItems — 自定义菜单项列表</td>
+                        </tr>
+                        <tr style="background: #f0fdf4;">
+                            <td style="font-family: monospace; color: #166534;">customItems</td>
+                            <td><code>MenuItemConfig[]</code></td>
+                            <td style="font-family: monospace;">[]</td>
+                            <td>自定义菜单项数组。每项支持 <code>key</code>, <code>label</code>, <code>icon</code>, <code>html</code>, <code>render</code>, <code>action</code>, <code>contexts</code>, <code>type</code> 字段。详见上方"自定义菜单项"章节。</td>
+                        </tr>
+                        <tr style="background: #dbeafe;">
+                            <td colspan="4" style="font-weight: 700; color: #2563eb;">🚫 hiddenItems — 隐藏内置菜单项（完全不渲染）</td>
+                        </tr>
+                        <tr style="background: #eff6ff;">
+                            <td style="font-family: monospace; color: #2563eb;">hiddenItems</td>
+                            <td><code>string[]</code></td>
+                            <td style="font-family: monospace;">[]</td>
+                            <td>隐藏的内置菜单项键数组。被隐藏的项<strong>完全不渲染</strong>，用户看不到。例如 <code>["insertImage", "mergeCells"]</code> 可隐藏图片和合并操作。</td>
+                        </tr>
+                        <tr style="background: #fef3c7;">
+                            <td colspan="4" style="font-weight: 700; color: #d97706;">🔒 disabledItems — 禁用内置菜单项（灰色显示，不可点击）</td>
+                        </tr>
+                        <tr style="background: #fffbeb;">
+                            <td style="font-family: monospace; color: #d97706;">disabledItems</td>
+                            <td><code>string[]</code></td>
+                            <td style="font-family: monospace;">[]</td>
+                            <td>禁用的内置菜单项键数组。被禁用的项<strong>仍可见但灰色显示</strong>，不可点击（opacity: 0.45, cursor: not-allowed）。例如 <code>["deleteRow", "deleteCol"]</code> 可禁用删除操作但保留提示。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="config-example">
+                <strong>完整配置示例：</strong>
+                <pre>pluginOptions: {
+    contextMenu: {
+        enabled: true,
+        closeOnClickOutside: true,
+        closeOnEscape: true,
+        zIndex: 10001,
+        dropdownWidth: 180,
+        dropdownMaxHeight: 400,
+        hiddenItems: ["insertImage", "mergeCells"],
+        disabledItems: ["deleteRow", "deleteCol"],
+        customItems: [
+            {
+                key: "drawChart",
+                label: "绘图",
+                icon: '&lt;svg viewBox="0 0 16 16" width="16" height="16"&gt;&lt;path d="M2 14L6 6L10 10L14 2" stroke="#4A90D9" fill="none" stroke-width="1.5"/&gt;&lt;/svg&gt;',
+                action: (row, col, sheet) =&gt; { console.log("绘图", row, col); },
+                contexts: ["cell"]
+            },
+            {
+                key: "advancedFilter",
+                html: '&lt;span style="color:#e74c3c"&gt;⚠&lt;/span&gt; 高级筛选 &lt;span style="font-size:11px;color:#999"&gt;Beta&lt;/span&gt;',
+                action: (row, col, sheet) =&gt; { /* ... */ }
+            },
+            {
+                type: "separator"
+            },
+            {
+                key: "exportPdf",
+                label: "导出 PDF",
+                action: (row, col, sheet) =&gt; { /* ... */ },
+                contexts: ["cell", "rowHeader", "colHeader"]
+            }
+        ]
+    }
+}</pre>
+            </div>
+        </div>
+
+        <!-- ═══ 快捷键说明 ═══ -->
+        <div class="info-section">
+            <h2>⌨️ 交互说明</h2>
+            <div class="shortcut-grid">
+                <div class="shortcut-card">
+                    <div class="key">右键单击单元格</div>
+                    <div class="desc">显示单元格上下文菜单（最完整）</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">右键单击行标头</div>
+                    <div class="desc">显示行操作菜单（插入/删除行等）</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">右键单击列标头</div>
+                    <div class="desc">显示列操作菜单（插入/删除列等）</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">Esc</div>
+                    <div class="desc">关闭右键菜单（可配置 closeOnEscape）</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">点击菜单外部</div>
+                    <div class="desc">关闭右键菜单（可配置 closeOnClickOutside）</div>
+                </div>
+                <div class="shortcut-card">
+                    <div class="key">选择菜单项</div>
+                    <div class="desc">执行对应操作并自动关闭菜单</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ API 参考 ═══ -->
+        <div class="info-section">
+            <h2>📚 ContextMenuPlugin API 参考</h2>
+            <div class="api-grid">
+                <div class="api-card">
+                    <div class="category">生命周期</div>
+                    <div class="name">enable() / disable()</div>
+                    <div class="syntax">enable(): void &nbsp;&nbsp; disable(): void</div>
+                    <div class="desc">启用/禁用插件。禁用后右键不再弹出菜单。</div>
+                    <div class="example">plugin.disable();  // 临时禁用
+plugin.enable();   // 恢复启用</div>
+                </div>
+                <div class="api-card">
+                    <div class="category">生命周期</div>
+                    <div class="name">init(options) / destroy()</div>
+                    <div class="syntax">init(options?: Partial&lt;ContextMenuPluginOptions&gt;): void
+destroy(): void</div>
+                    <div class="desc">初始化/销毁插件。init 会合并 DEFAULT_OPTIONS，destroy 清理所有资源。</div>
+                    <div class="example">plugin.init({ enabled: true, disabledItems: ["deleteRow"] });
+plugin.destroy();</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>系统就绪</span>
+            </div>
+            <div>CanvasSheet | ContextMenuPlugin Demo</div>
+        </div>
+    </div>
+
+    <script src="../../dist/canvas-sheet.umd.js"></script>
+
+    <script>
+        let workbook = null;
+        let contextMenuPlugin = null;
+        let customItemCount = 0;
+        let isDeleteRowDisabled = false;
+        let isInsertImageHidden = false;
+
+        function log(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        async function initSpreadsheet() {
+            try {
+                log('开始初始化 Workbook...', 'info');
+
+                const container = document.getElementById('spreadsheet');
+                workbook = new CanvasSheet.Workbook(container, {
+                    width: 900,
+                    height: 530,
+                    plugins: [
+                        "autoFill",
+                        "contextMenu",
+                        "columnMove",
+                        "copyPaste",
+                        "exportFile",
+                        "importFile",
+                        "hiddenColumns",
+                        "hiddenRows",
+                        "rowMove",
+                        "freeze",
+                        "formula",
+                        "sort",
+                        "filter",
+                    ],
+                    pluginOptions: {
+                        contextMenu: {
+                            enabled: true,
+                            closeOnClickOutside: true,
+                            closeOnEscape: true,
+                            zIndex: 10001,
+                            dropdownWidth: 180,
+                            dropdownMaxHeight: 400,
+                        },
+                        filter: {
+                            filterableColumns: [0, 2, 4]
+                        }
+                    },
+                    sheets: [{
+                        name: "员工信息",
+                        data: [
+                            ["张三", 25, "北京", "技术部", 15000, "2020-03-15"],
+                            ["李四", 30, "上海", "市场部", 18000, "2019-07-01"],
+                            ["王五", 28, "广州", "技术部", 16000, "2021-01-10"],
+                            ["赵六", 35, "深圳", "人事部", 20000, "2018-05-20"],
+                            ["孙七", 27, "杭州", "技术部", 14000, "2022-02-28"],
+                            ["周八", 32, "南京", "财务部", 17000, "2017-11-15"],
+                            ["吴九", 29, "成都", "市场部", 15500, "2020-08-10"],
+                            ["郑十", 31, "武汉", "技术部", 19000, "2019-03-25"],
+                            ["王二", 26, "西安", "市场部", 14500, "2021-05-20"],
+                            ["李三", 33, "苏州", "财务部", 18500, "2018-09-12"],
+                            ["赵四", 29, "重庆", "技术部", 16500, "2020-11-30"],
+                            ["孙五", 34, "天津", "人事部", 19500, "2017-06-08"],
+                        ],
+                        rowHeaderWidth: 120,
+                        columns: [
+                            { type: "text", width: 100 },
+                            { type: "numeric", width: 80, numericFormat: { pattern: "0" } },
+                            { type: "text", width: 100 },
+                            { type: "text", width: 100 },
+                            { type: "numeric", width: 100, numericFormat: { pattern: "$0,0" } },
+                            { type: "date", width: 120 },
+                        ],
+                    }]
+                });
+
+                contextMenuPlugin = workbook.getPlugin('contextMenu');
+
+                if (!contextMenuPlugin) {
+                    throw new Error('ContextMenuPlugin 未找到');
+                }
+
+                log('✅ Workbook 初始化成功', 'success');
+                log('✅ ContextMenuPlugin 已加载', 'success');
+                log('💡 提示：在表格上右键单击即可弹出上下文菜单', 'info');
+
+                updateStatusDisplay();
+
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function rebuildPlugin(options) {
+            if (!contextMenuPlugin) return;
+            try {
+                contextMenuPlugin.destroy();
+            } catch (e) {}
+
+            const defaultOptions = {
+                enabled: true,
+                closeOnClickOutside: true,
+                closeOnEscape: true,
+                zIndex: 10001,
+                dropdownWidth: 180,
+                dropdownMaxHeight: 400,
+                hiddenItems: isInsertImageHidden ? ["insertImage"] : [],
+                disabledItems: isDeleteRowDisabled ? ["deleteRow"] : [],
+            };
+
+            contextMenuPlugin.init({ ...defaultOptions, ...options });
+            log('✅ 插件已重新初始化', 'success');
+            updateStatusDisplay();
+        }
+
+        function addCustomItem() {
+            customItemCount++;
+            const key = `demoAction_${customItemCount}`;
+            const label = `自定义操作 ${customItemCount}`;
+
+            rebuildPlugin({
+                customItems: [
+                    {
+                        key: key,
+                        label: label,
+                        action: (row, col, sheet) => {
+                            log(`📌 执行 "${label}" @ [${row}, ${col}]`, 'success');
+                        },
+                        contexts: ["cell", "rowHeader", "colHeader"],
+                    }
+                ],
+            });
+
+            log(`➕ 已添加纯文本自定义项: "${label}"`, 'info');
+        }
+
+        function addIconItem() {
+            customItemCount++;
+            const key = `iconAction_${customItemCount}`;
+
+            rebuildPlugin({
+                customItems: [
+                    {
+                        key: key,
+                        label: `绘图 ${customItemCount}`,
+                        icon: '<svg viewBox="0 0 16 16" width="16" height="16"><path d="M2 14L6 6L10 10L14 2" stroke="#4A90D9" fill="none" stroke-width="1.5"/></svg>',
+                        action: (row, col, sheet) => {
+                            log(`🎨 执行"绘图" @ [${row}, ${col}]`, 'success');
+                        },
+                        contexts: ["cell"],
+                    }
+                ],
+            });
+
+            log(`🎨 已添加带图标自定义项: "绘图 ${customItemCount}"`, 'info');
+        }
+
+        function addRenderItem() {
+            customItemCount++;
+            const key = `renderAction_${customItemCount}`;
+
+            rebuildPlugin({
+                customItems: [
+                    {
+                        key: key,
+                        render: (el) => {
+                            el.style.display = 'flex';
+                            el.style.alignItems = 'center';
+                            el.style.gap = '8px';
+
+                            const icon = document.createElement('span');
+                            icon.textContent = '🔧';
+                            el.appendChild(icon);
+
+                            const text = document.createElement('span');
+                            text.textContent = `自定义渲染 ${customItemCount}`;
+                            text.style.flex = '1';
+                            el.appendChild(text);
+
+                            const badge = document.createElement('span');
+                            badge.textContent = 'NEW';
+                            badge.style.fontSize = '10px';
+                            badge.style.background = '#ff6b6b';
+                            badge.style.color = 'white';
+                            badge.style.padding = '1px 6px';
+                            badge.style.borderRadius = '3px';
+                            el.appendChild(badge);
+                        },
+                        action: (row, col, sheet) => {
+                            log(`🛠 执行"自定义渲染 ${customItemCount}" @ [${row}, ${col}]`, 'success');
+                        },
+                        contexts: ["cell"],
+                    }
+                ],
+            });
+
+            log(`🛠 已添加自定义渲染项: "自定义渲染 ${customItemCount}"`, 'info');
+        }
+
+        function toggleDisableItem() {
+            isDeleteRowDisabled = !isDeleteRowDisabled;
+            rebuildPlugin({});
+            log(`🔒 "删除行" 已${isDeleteRowDisabled ? '禁用（灰色可见）' : '启用'}`, isDeleteRowDisabled ? 'warn' : 'success');
+        }
+
+        function toggleHideItem() {
+            isInsertImageHidden = !isInsertImageHidden;
+            rebuildPlugin({});
+            log(`👁 "插入图片" 已${isInsertImageHidden ? '隐藏（不渲染）' : '显示'}`, isInsertImageHidden ? 'warn' : 'success');
+        }
+
+        function resetPlugin() {
+            customItemCount = 0;
+            isDeleteRowDisabled = false;
+            isInsertImageHidden = false;
+            rebuildPlugin({});
+            log('🔄 已重置为默认配置', 'info');
+        }
+
+        function updateStatusDisplay() {
+            document.getElementById('pluginStatus').textContent = '已加载';
+            document.getElementById('customItemCount').textContent = customItemCount;
+            document.getElementById('disabledItemCount').textContent = isDeleteRowDisabled ? 1 : 0;
+            document.getElementById('hiddenItemCount').textContent = isInsertImageHidden ? 1 : 0;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initSpreadsheet, 500);
+        });
+
+        window.addEventListener('error', (event) => {
+            log(`💥 全局错误: ${event.message}`, 'error');
+        });
+    </script>
+</body>
+</html>

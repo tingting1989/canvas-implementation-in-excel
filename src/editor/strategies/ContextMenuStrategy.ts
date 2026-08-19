@@ -2,13 +2,20 @@ import { EventStrategy } from "./EventStrategy.js";
 import { HIT_TYPE } from "../../constants/hitType.js";
 import { DELEGATE_KEYS } from "../../constants/eventNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
-import "./contextMenu.css";
 import { STRATEGY_PRIORITY } from "../../constants/strategyPriority.js";
+import { ContextMenuUIManager } from "./ContextMenuUIManager.js";
+import type { MenuItemData } from "./ContextMenuDropdown.js";
 
 /** 菜单项配置接口（用于自定义菜单项） */
 interface MenuItemConfig {
     /** 菜单项显示文本 */
     label?: string;
+    /** 图标 HTML/SVG 字符串，渲染在文本左侧 */
+    icon?: string;
+    /** 自定义 HTML 内容，设置后 label/icon 均被忽略 */
+    html?: string;
+    /** 自定义渲染函数，优先级最高，可直接操作菜单项 DOM 元素 */
+    render?: (el: HTMLElement) => void;
     /** 点击回调函数 */
     action?: (row: number, col: number, sheet: any) => void;
     /** 菜单项唯一标识键 */
@@ -23,15 +30,32 @@ interface MenuItemConfig {
 interface MenuItemEntry {
     /** 显示文本 */
     label: string;
+    /** 图标 HTML/SVG */
+    icon?: string;
+    /** 自定义 HTML 内容 */
+    html?: string;
+    /** 自定义渲染函数 */
+    render?: (el: HTMLElement) => void;
     /** 点击回调 */
     action: (row: number, col: number, sheet: any) => void;
 }
 
+/** 右键菜单 UI 行为选项（由插件透传） */
+interface ContextMenuUIOptions {
+    closeOnClickOutside?: boolean;
+    closeOnEscape?: boolean;
+    zIndex?: number;
+    dropdownWidth?: number;
+    dropdownMaxHeight?: number;
+}
+
 /** 右键菜单配置选项 */
-interface ContextMenuOptions {
+interface ContextMenuOptions extends ContextMenuUIOptions {
     /** 自定义菜单项列表 */
     customItems?: MenuItemConfig[];
-    /** 禁用的菜单项键列表 */
+    /** 隐藏的菜单项键列表（完全不渲染） */
+    hiddenItems?: string[];
+    /** 禁用的菜单项键列表（灰色显示，不可点击） */
     disabledItems?: string[];
 }
 
@@ -48,8 +72,7 @@ interface ContextMenuOptions {
  * 2. **内置菜单操作**：插入/删除行列、合并/取消合并、隐藏/显示、冻结等
  * 3. **自定义菜单项**：支持通过配置添加自定义菜单项
  * 4. **禁用控制**：支持禁用特定菜单项，只读模式下自动禁用修改操作
- * 5. **自动定位**：菜单自动调整位置避免超出视口
- * 6. **点击外部关闭**：点击菜单外部区域自动关闭
+ * 5. **PopupPanel 弹窗规范**：使用 PopupPanel + PopupManager 管理弹窗生命周期
  *
  * 菜单上下文类型：
  * - cell: 单元格右键菜单（最完整）
@@ -63,8 +86,10 @@ export class ContextMenuStrategy extends EventStrategy {
     /** 策略优先级：弹出UI */
     priority: number = STRATEGY_PRIORITY.POPUP_UI;
 
-    /** 菜单DOM元素 */
-    #menuEl: HTMLDivElement | null = null;
+    /** UI 管理器（PopupPanel + PopupManager 规范） */
+    #uiManager: ContextMenuUIManager = new ContextMenuUIManager();
+    /** UI 行为选项（由插件透传） */
+    #uiOptions: ContextMenuUIOptions = {};
     /** 右键点击的行号 */
     #row: number = -1;
     /** 右键点击的列号 */
@@ -73,7 +98,9 @@ export class ContextMenuStrategy extends EventStrategy {
     #context: string = "cell";
     /** 菜单项映射表（键 → 菜单条目） */
     #menuItemMap: Map<string, MenuItemEntry> = new Map();
-    /** 被禁用的菜单项键集合 */
+    /** 被隐藏的菜单项键集合（完全不渲染） */
+    #hiddenKeys: Set<string> = new Set();
+    /** 被禁用的菜单项键集合（灰色显示，不可点击） */
     #disabledKeys: Set<string> = new Set();
     /** 自定义菜单项列表 */
     #customItems: MenuItemConfig[] = [];
@@ -165,20 +192,31 @@ export class ContextMenuStrategy extends EventStrategy {
 
     constructor(handler: any, options: ContextMenuOptions = {}) {
         super(handler);
+        this.#uiOptions = {
+            closeOnClickOutside: options.closeOnClickOutside,
+            closeOnEscape: options.closeOnEscape,
+            zIndex: options.zIndex,
+            dropdownWidth: options.dropdownWidth,
+            dropdownMaxHeight: options.dropdownMaxHeight,
+        };
         this.#buildMenuItems(options);
     }
 
     #buildMenuItems(options: ContextMenuOptions): void {
         const builtIn = this._buildBuiltInItems();
+        const hiddenItems = options.hiddenItems || [];
         const disabledItems = options.disabledItems || [];
         this.#customItems = options.customItems || [];
 
+        for (const key of hiddenItems) {
+            this.#hiddenKeys.add(key);
+        }
         for (const key of disabledItems) {
             this.#disabledKeys.add(key);
         }
 
         for (const [key, item] of Object.entries(builtIn)) {
-            if (!this.#disabledKeys.has(key)) {
+            if (!this.#hiddenKeys.has(key)) {
                 this.#menuItemMap.set(key, item);
             }
         }
@@ -187,23 +225,25 @@ export class ContextMenuStrategy extends EventStrategy {
             const ci = this.#customItems[i];
             if (ci.type === "separator") continue;
             const key = ci.key || `custom_${i}`;
-            this.#menuItemMap.set(key, { label: ci.label!, action: ci.action! });
+            this.#menuItemMap.set(key, {
+                label: ci.label || "",
+                icon: ci.icon,
+                html: ci.html,
+                render: ci.render,
+                action: ci.action || (() => {}),
+            });
         }
     }
 
-    init(): void {
-        this.#createMenu();
-    }
+    init(): void {}
 
     destroy(): void {
-        this.#menuEl?.remove();
-        this.#menuEl = null;
+        this.#uiManager.close();
     }
 
     getEventHandlers(): Record<string, (e: Event) => boolean | void> {
         return {
             [DELEGATE_KEYS.CANVAS_CONTEXTMENU]: (e: Event) => this.#handleContextMenu(e as MouseEvent),
-            [DELEGATE_KEYS.DOCUMENT_MOUSEDOWN]: (e: Event) => this.#handleDismiss(e as MouseEvent),
         };
     }
 
@@ -368,37 +408,25 @@ export class ContextMenuStrategy extends EventStrategy {
         };
     }
 
-    #createMenu(): void {
-        this.#menuEl = document.createElement("div");
-        this.#menuEl.className = "ctx-menu";
-
-        this.#menuEl.addEventListener("click", (e: Event) => {
-            const target = e.target as HTMLElement;
-            const el = target.closest(".ctx-item") as HTMLElement | null;
-            if (!el) return;
-            const item = this.#menuItemMap.get(el.dataset.key!);
-            if (!item?.action) return;
-            item.action(this.#row, this.#col, this.handler.sheet);
-            this.handler.render();
-            this.#hideMenu();
-        });
-
-        document.body.appendChild(this.#menuEl);
-    }
-
-    #renderMenuItems(): void {
-        this.#menuEl!.innerHTML = "";
-
+    #buildVisibleItems(): (MenuItemData | null)[] {
+        const items: (MenuItemData | null)[] = [];
         const isReadOnly = this.handler.sheet?.readOnly;
 
         const order = ContextMenuStrategy.#CONTEXT_ITEMS[this.#context] || ContextMenuStrategy.#CONTEXT_ITEMS.cell;
         for (const key of order) {
             if (key === null) {
-                this.#appendSeparator();
+                items.push(null);
             } else {
                 if (isReadOnly && ContextMenuStrategy.#READONLY_DISABLED.has(key)) continue;
                 const item = this.#menuItemMap.get(key);
-                if (item) this.#appendItem(key, item.label);
+                if (item) {
+                    const data: MenuItemData = { key, label: item.label };
+                    if (item.icon) data.icon = item.icon;
+                    if (item.html) data.html = item.html;
+                    if (item.render) data.render = item.render;
+                    if (this.#disabledKeys.has(key)) data.disabled = true;
+                    items.push(data);
+                }
             }
         }
 
@@ -406,38 +434,24 @@ export class ContextMenuStrategy extends EventStrategy {
         for (let i = 0; i < this.#customItems.length; i++) {
             const ci = this.#customItems[i];
             if (ci.type === "separator") {
-                if (hasCustom) this.#appendSeparator();
+                if (hasCustom) items.push(null);
                 continue;
             }
             const ctxs = ci.contexts || ["cell"];
             if (!ctxs.includes(this.#context)) continue;
             if (!hasCustom) {
-                this.#appendSeparator();
+                items.push(null);
                 hasCustom = true;
             }
             const key = ci.key || `custom_${i}`;
-            this.#appendItem(key, ci.label!);
+            const data: MenuItemData = { key, label: ci.label || "" };
+            if (ci.icon) data.icon = ci.icon;
+            if (ci.html) data.html = ci.html;
+            if (ci.render) data.render = ci.render;
+            items.push(data);
         }
-    }
 
-    #appendSeparator(): void {
-        const sep = document.createElement("div");
-        sep.className = "ctx-separator";
-        this.#menuEl!.appendChild(sep);
-    }
-
-    #appendItem(key: string, label: string): void {
-        const el = document.createElement("div");
-        el.className = "ctx-item";
-        el.dataset.key = key;
-        el.textContent = label;
-        this.#menuEl!.appendChild(el);
-    }
-
-    #handleDismiss(e: MouseEvent): void {
-        if (this.#menuEl && !this.#menuEl.contains(e.target as Node)) {
-            this.#hideMenu();
-        }
+        return items;
     }
 
     #handleContextMenu(e: MouseEvent): void {
@@ -507,26 +521,18 @@ export class ContextMenuStrategy extends EventStrategy {
         this.#row = row;
         this.#col = col;
 
-        this.#renderMenuItems();
+        const items = this.#buildVisibleItems();
 
-        this.#menuEl!.style.display = "block";
-        const menuW = this.#menuEl!.offsetWidth;
-        const menuH = this.#menuEl!.offsetHeight;
-        const winW = window.innerWidth;
-        const winH = window.innerHeight;
-
-        let x = clientX;
-        let y = clientY;
-        if (x + menuW > winW) x = winW - menuW;
-        if (y + menuH > winH) y = winH - menuH;
-
-        this.#menuEl!.style.left = x + "px";
-        this.#menuEl!.style.top = y + "px";
-    }
-
-    #hideMenu(): void {
-        if (this.#menuEl) {
-            this.#menuEl.style.display = "none";
-        }
+        this.#uiManager.open(
+            { x: clientX, y: clientY },
+            items,
+            (key: string) => {
+                const item = this.#menuItemMap.get(key);
+                if (!item?.action) return;
+                item.action(this.#row, this.#col, this.handler.sheet);
+                this.handler.render();
+            },
+            this.#uiOptions,
+        );
     }
 }

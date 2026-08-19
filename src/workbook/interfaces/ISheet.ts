@@ -248,10 +248,10 @@ export interface ISheet {
      * @param r - 行号
      * @param c - 列号
      * @param value - 单元格值，以 "=" 开头时识别为公式
-     * @param styleId - 样式 ID（默认 0）
+     * @param styleIdOrObj - 样式 ID（number）或样式对象（StyleObject），默认 0
      * @param disabled - 是否禁用（默认 false）
      */
-    setCell(r: number, c: number, value: unknown, styleId?: number, disabled?: boolean): void;
+    setCell(r: number, c: number, value: unknown, styleIdOrObj?: number | StyleObject, disabled?: boolean): void;
     /**
      * 禁用单元格
      * @param r - 行号

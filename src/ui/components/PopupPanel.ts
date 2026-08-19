@@ -8,6 +8,7 @@ interface PopupShowOptions {
     title?: string;
     draggable?: boolean;
     mask?: boolean;
+    showHeader?: boolean;
     closeOnClickOutside?: boolean;
     closeOnEscape?: boolean;
     zIndex?: number;
@@ -88,6 +89,10 @@ template.innerHTML = `
 
   :host(:not([data-has-title])) .title {
     visibility: hidden;
+  }
+
+  :host([data-no-header]) .header {
+    display: none;
   }
 
   .close-btn {
@@ -188,6 +193,12 @@ export class PopupPanel extends HTMLElement {
             this.setAttribute("data-has-title", "");
         } else {
             this.removeAttribute("data-has-title");
+        }
+
+        if (options.showHeader === false) {
+            this.setAttribute("data-no-header", "");
+        } else {
+            this.removeAttribute("data-no-header");
         }
 
         this._body!.innerHTML = "";

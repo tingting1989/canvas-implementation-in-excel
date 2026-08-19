@@ -217,8 +217,8 @@ export class Sheet implements ISheet {
         return this.data.dataAccessor;
     }
 
-    setCell(...args: [number, number, unknown, number?, boolean?]) {
-        return this.data.setCell(...args);
+    setCell(r: number, c: number, value: unknown, styleIdOrObj?: number | StyleObject, disabled?: boolean) {
+        return this.data.setCell(r, c, value, styleIdOrObj, disabled);
     }
 
     disableCell(...args: [number, number]) {

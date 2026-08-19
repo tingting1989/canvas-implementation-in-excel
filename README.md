@@ -133,9 +133,9 @@ npm install @canvas-sheet/core
         });
         const sheet = workbook.activeSheet;
 
-        sheet.setCellValue(0, 0, 'Hello World');
-        sheet.setCellValue(1, 0, 42);
-        sheet.setCellValue(2, 0, '=SUM(A1:A10)');
+        sheet.setCell(0, 0, 'Hello World');
+        sheet.setCell(1, 0, 42);
+        sheet.setCell(2, 0, '=SUM(A1:A10)');
 
         sheet.setCellStyle(0, 0, {
             color: 'red',
@@ -287,11 +287,11 @@ const workbook = new Workbook(appEl);
 Workbook.registerPlugin("autoFill", AutoFillPlugin);
 workbook.loadPlugin("autoFill");
 
-const sheet = workbook.createSheet("Sheet1", { rowCount: 1000, colCount: 26 });
+const sheet = workbook.addSheet("Sheet1");
 
-sheet.setCellValue(0, 0, "Hello");
-sheet.setCellValue(0, 1, 42);
-sheet.setCellValue(0, 2, "=A1&B1");
+sheet.setCell(0, 0, "Hello");
+sheet.setCell(0, 1, 42);
+sheet.setCell(0, 2, "=A1&B1");
 
 const engine = new FormulaEngine(sheet);
 const result = engine.evaluateFormula("=SUM(A1:A10)");

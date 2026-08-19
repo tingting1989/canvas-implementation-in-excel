@@ -1,6 +1,8 @@
 import { WebComponent } from "../../core/WebComponent.js";
 import { SHEET_TAB_EVENTS } from "./sheetTabEvents.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { SheetTabUIManager } from "./SheetTabUIManager.js";
+import type { SheetTabMenuItemData } from "./SheetTabDropdown.js";
 
 interface ContextMenuItem {
     action: string;
@@ -166,49 +168,6 @@ template.innerHTML = `
             background: #d8d8d8;
             color: #217346;
         }
-
-        .context-menu {
-            position: fixed;
-            background: #fff;
-            border: 1px solid #d0d0d0;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            padding: 4px 0;
-            z-index: 10000;
-            min-width: 120px;
-            font-size: 12px;
-        }
-
-        .context-menu-item {
-            padding: 6px 16px;
-            cursor: pointer;
-            color: #333;
-            white-space: nowrap;
-        }
-
-        .context-menu-item:hover {
-            background: #e8f5e9;
-            color: #217346;
-        }
-
-        .context-menu-item.danger {
-            color: #c62828;
-        }
-
-        .context-menu-item.danger:hover {
-            background: #fbe9e7;
-            color: #c62828;
-        }
-
-        .context-menu-item.disabled {
-            color: #bbb;
-            cursor: default;
-        }
-
-        .context-menu-item.disabled:hover {
-            background: transparent;
-            color: #bbb;
-        }
     </style>
     <div class="nav-group">
         <div class="nav-btn prev">
@@ -241,9 +200,9 @@ export class SheetTabBarElement extends WebComponent {
     #renameHandleBlur: (() => void) | null = null;
     #currentSheets: Map<string, any> | null = null;
     #currentActiveName: string | null = null;
-    #contextMenuEl: HTMLDivElement | null = null;
     #contextTargetName: string | null = null;
     #readOnly: boolean = false;
+    #uiManager: SheetTabUIManager = new SheetTabUIManager();
 
     get readOnly(): boolean {
         return this.#readOnly;
@@ -296,18 +255,6 @@ export class SheetTabBarElement extends WebComponent {
             if (!tab || this.#readOnly) return;
             this.emit(SHEET_TAB_EVENTS.SWITCH, { name: tab.dataset.name });
             this.#showContextMenu(tab, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
-        });
-
-        disposable.trackEvent(document, EVENT_NAMES.CLICK, (e: Event) => {
-            if (this.#contextMenuEl && !(e as MouseEvent).composedPath().includes(this.#contextMenuEl)) {
-                this.#hideContextMenu();
-            }
-        });
-
-        disposable.trackEvent(document, EVENT_NAMES.KEYDOWN, (e: Event) => {
-            if ((e as KeyboardEvent).key === "Escape" && this.#contextMenuEl) {
-                this.#hideContextMenu();
-            }
         });
     }
 
@@ -375,75 +322,42 @@ export class SheetTabBarElement extends WebComponent {
         }
     }
 
-    #showContextMenu(tab: HTMLElement, clientX: number, clientY: number): void {
-        this.#hideContextMenu();
-
-        this.#contextTargetName = tab.dataset.name ?? null;
-        const menu = document.createElement("div");
-        menu.className = "context-menu";
-
+    #buildContextMenuItems(): (SheetTabMenuItemData | null)[] {
+        const items: (SheetTabMenuItemData | null)[] = [];
         const sheetCount = this.#currentSheets ? this.#currentSheets.size : 1;
 
         for (const item of CONTEXT_MENU_ITEMS) {
-            const menuItem = document.createElement("div");
-            menuItem.className = "context-menu-item";
-            menuItem.textContent = item.label;
-            menuItem.dataset.action = item.action;
+            const data: SheetTabMenuItemData = {
+                key: item.action,
+                label: item.label,
+            };
 
-            if (item.action === "delete" && sheetCount <= 1) {
-                menuItem.classList.add("disabled");
-            } else if (item.action === "delete") {
-                menuItem.classList.add("danger");
+            if (item.action === "delete") {
+                if (sheetCount <= 1) {
+                    data.disabled = true;
+                } else {
+                    data.danger = true;
+                }
             }
 
-            if (!menuItem.classList.contains("disabled")) {
-                menuItem.addEventListener(EVENT_NAMES.CLICK, () => {
-                    this.#handleContextAction(item.action);
-                });
-            }
-
-            menu.appendChild(menuItem);
+            items.push(data);
         }
 
-        this.shadowRoot!.appendChild(menu);
-        this.#contextMenuEl = menu;
-
-        const menuWidth = menu.offsetWidth;
-        const menuHeight = menu.offsetHeight;
-        const vpWidth = window.innerWidth;
-        const vpHeight = window.innerHeight;
-
-        let left = clientX;
-        let top = clientY;
-
-        if (left + menuWidth > vpWidth) {
-            left = vpWidth - menuWidth - 4;
-        }
-        if (left < 0) {
-            left = 4;
-        }
-        if (top + menuHeight > vpHeight) {
-            top = clientY - menuHeight;
-        }
-        if (top < 0) {
-            top = 4;
-        }
-
-        menu.style.left = left + "px";
-        menu.style.top = top + "px";
+        return items;
     }
 
-    #hideContextMenu(): void {
-        if (this.#contextMenuEl) {
-            this.#contextMenuEl.remove();
-            this.#contextMenuEl = null;
-        }
-        this.#contextTargetName = null;
+    #showContextMenu(tab: HTMLElement, clientX: number, clientY: number): void {
+        this.#uiManager.close();
+
+        this.#contextTargetName = tab.dataset.name ?? null;
+        const items = this.#buildContextMenuItems();
+
+        this.#uiManager.open({ x: clientX, y: clientY }, items, (key: string) => this.#handleContextAction(key));
     }
 
     #handleContextAction(action: string): void {
         const name = this.#contextTargetName;
-        this.#hideContextMenu();
+        this.#uiManager.close();
 
         if (!name) return;
 
@@ -469,7 +383,7 @@ export class SheetTabBarElement extends WebComponent {
     #startRename(tabElement: HTMLElement): void {
         const oldName = tabElement.dataset.name!;
         this.#cleanupRename();
-        this.#hideContextMenu();
+        this.#uiManager.close();
         this.#renaming = true;
 
         const tabOriginalWidth = tabElement.offsetWidth;
@@ -576,7 +490,7 @@ export class SheetTabBarElement extends WebComponent {
     onDisconnect(): void {
         this.#tabs.clear();
         this.#cleanupRename();
-        this.#hideContextMenu();
+        this.#uiManager.close();
         this.#currentSheets = null;
         this.#currentActiveName = null;
     }
