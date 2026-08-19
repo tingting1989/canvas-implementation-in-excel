@@ -34,6 +34,10 @@ export interface SheetEvents {
     readonly GET_CLIPBOARD: "sheet:get-clipboard";
     readonly GET_PLUGIN: "sheet:get-plugin";
 
+    // ── 列/行移动事件 ──
+    readonly COLUMN_MOVED: "sheet:column-moved";
+    readonly ROW_MOVED: "sheet:row-moved";
+
     // ── 编辑器生命周期事件 ──
     readonly EDITOR_BEFORE_BEGIN: "editor:before-begin";
     readonly EDITOR_AFTER_BEGIN: "editor:after-begin";
@@ -74,6 +78,9 @@ export const SHEET_EVENTS: SheetEvents = Object.freeze({
     ROW_COL_RESIZE: "sheet:row-col-resize",
     GET_CLIPBOARD: "sheet:get-clipboard",
     GET_PLUGIN: "sheet:get-plugin",
+
+    COLUMN_MOVED: "sheet:column-moved",
+    ROW_MOVED: "sheet:row-moved",
 
     EDITOR_BEFORE_BEGIN: "editor:before-begin",
     EDITOR_AFTER_BEGIN: "editor:after-begin",
@@ -121,6 +128,8 @@ export const EVENT_FLOW_REGISTRY: EventFlowRegistry = Object.freeze({
     [SHEET_EVENTS.GET_CLIPBOARD]: { emitters: ["TileRenderer", "ContextMenuStrategy"], listeners: ["Workbook"] },
     [SHEET_EVENTS.GET_PLUGIN]: { emitters: ["ContextMenuStrategy"], listeners: ["Workbook"] },
     [SHEET_EVENTS.SHEET_SWITCHED]: { emitters: ["Workbook"], listeners: ["SortPlugin", "FreezePlugin", "ChartPlugin"] },
+    [SHEET_EVENTS.COLUMN_MOVED]: { emitters: ["Sheet"], listeners: ["FilterPlugin"] },
+    [SHEET_EVENTS.ROW_MOVED]: { emitters: ["Sheet"], listeners: [] },
     [SHEET_EVENTS.EDITOR_BEFORE_BEGIN]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },
     [SHEET_EVENTS.EDITOR_AFTER_BEGIN]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },
     [SHEET_EVENTS.EDITOR_BEFORE_FINISH]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },

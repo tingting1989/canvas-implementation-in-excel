@@ -193,6 +193,9 @@ export class SheetOperationCoordinator {
 
         this.#dispatchToSubSystems(SUB.MOVE_COL, fromCol, toCol);
         this.#sheet.colSync.move(fromCol, toCol);
+
+        this.#sheet.bus.emit(SHEET_EVENTS.COLUMN_MOVED, { fromCol, toCol });
+
         this.#sheet._invalidateAll();
     }
 
