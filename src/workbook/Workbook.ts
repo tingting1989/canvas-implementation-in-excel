@@ -352,6 +352,21 @@ export class Workbook {
             return success;
         };
 
+        tabBar.onCopy = (name: string) => {
+            this.copySheet(name);
+            tabBar.refresh();
+        };
+
+        tabBar.onHide = (name: string) => {
+            this.hideSheet(name);
+            tabBar.refresh();
+        };
+
+        tabBar.onUnhide = (name: string) => {
+            this.unhideSheet(name);
+            tabBar.refresh();
+        };
+
         tabBar.refresh();
     }
 
@@ -518,6 +533,81 @@ export class Workbook {
 
         this.runHooks(HOOKS.AFTER_SHEET_RENAME, oldName, newName);
         return true;
+    }
+
+    copySheet(name: string): boolean {
+        if (!this.sheets.has(name)) return false;
+
+        const sourceSheet = this.sheets.get(name)!;
+        const newName = this.#generateCopySheetName(name);
+
+        const cancelled = this.runHooksUntil(HOOKS.BEFORE_SHEET_ADD, newName);
+        if (cancelled === false) return false;
+
+        const newSheet = new Sheet(newName);
+        if (this.renderEngine) this.#bindSheetEvents(newSheet);
+
+        newSheet.rowColManager.ensureSize(sourceSheet.rowColManager.rowCount, sourceSheet.rowColManager.colCount);
+
+        for (let row = 0; row < sourceSheet.rowColManager.rowCount; row++) {
+            for (let col = 0; col < sourceSheet.rowColManager.colCount; col++) {
+                const cell = sourceSheet.cellDataAccessor?.get(row, col);
+                if (cell && (cell.value !== undefined || cell.value !== null || cell.styleId !== undefined)) {
+                    newSheet.setCell(row, col, cell.value, { styleId: cell.styleId });
+                }
+            }
+        }
+
+        if (this.#defaultStyle) {
+            newSheet.setDefaultStyle(this.#defaultStyle);
+        }
+
+        this.sheets.set(newName, newSheet);
+        this.#refreshTabBar();
+
+        this.runHooks(HOOKS.AFTER_SHEET_ADD, newName, newSheet);
+
+        this.switchTo(newName);
+        return true;
+    }
+
+    hideSheet(name: string): boolean {
+        if (!this.sheets.has(name)) return false;
+        if (this.sheets.size <= 1) return false;
+
+        const sheet = this.sheets.get(name)!;
+        if (this.activeSheet === sheet) {
+            const visibleSheets = [...this.sheets.entries()].filter(([, s]) => s.visible && s !== sheet);
+            if (visibleSheets.length > 0) {
+                this.switchTo(visibleSheets[0][0]);
+            }
+        }
+
+        sheet.visible = false;
+        this.#refreshTabBar();
+        return true;
+    }
+
+    unhideSheet(name: string): boolean {
+        if (!this.sheets.has(name)) return false;
+
+        const sheet = this.sheets.get(name)!;
+        if (sheet.visible) return false;
+
+        sheet.visible = true;
+        this.switchTo(name);
+        this.#refreshTabBar();
+        return true;
+    }
+
+    #generateCopySheetName(originalName: string): string {
+        let idx = 1;
+        let newName = `${originalName} (${idx})`;
+        while (this.sheets.has(newName)) {
+            idx++;
+            newName = `${originalName} (${idx})`;
+        }
+        return newName;
     }
 
     /**

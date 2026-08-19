@@ -3,6 +3,7 @@ import { SHEET_TAB_EVENTS } from "./sheetTabEvents.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
 import { SheetTabUIManager } from "./SheetTabUIManager.js";
 import type { SheetTabMenuItemData } from "./SheetTabDropdown.js";
+import { UnhideSheetDialog } from "./UnhideSheetDialog.js";
 
 interface ContextMenuItem {
     action: string;
@@ -14,6 +15,7 @@ const CONTEXT_MENU_ITEMS: ContextMenuItem[] = [
     { action: "delete", label: "删除" },
     { action: "copy", label: "复制" },
     { action: "hide", label: "隐藏" },
+    { action: "unhide", label: "取消隐藏..." },
 ];
 
 const template = document.createElement("template");
@@ -200,6 +202,7 @@ export class SheetTabBarElement extends WebComponent {
     #renameHandleBlur: (() => void) | null = null;
     #currentSheets: Map<string, any> | null = null;
     #currentActiveName: string | null = null;
+    #hiddenSheets: string[] = [];
     #contextTargetName: string | null = null;
     #readOnly: boolean = false;
     #uiManager: SheetTabUIManager = new SheetTabUIManager();
@@ -288,11 +291,12 @@ export class SheetTabBarElement extends WebComponent {
         }
     }
 
-    refresh(sheets: Map<string, any>, activeName: string): void {
+    refresh(sheets: Map<string, any>, activeName: string, hiddenSheets: string[] = []): void {
         if (this.isDestroyed) return;
 
         this.#currentSheets = sheets;
         this.#currentActiveName = activeName;
+        this.#hiddenSheets = hiddenSheets;
         this.#cleanupRename();
 
         const tabsContainer = this.shadowRoot!.querySelector(".tabs") as HTMLElement | null;
@@ -325,8 +329,14 @@ export class SheetTabBarElement extends WebComponent {
     #buildContextMenuItems(): (SheetTabMenuItemData | null)[] {
         const items: (SheetTabMenuItemData | null)[] = [];
         const sheetCount = this.#currentSheets ? this.#currentSheets.size : 1;
+        const hasHiddenSheets = this.#hiddenSheets.length > 0;
 
         for (const item of CONTEXT_MENU_ITEMS) {
+            if (item === null) {
+                items.push(null);
+                continue;
+            }
+
             const data: SheetTabMenuItemData = {
                 key: item.action,
                 label: item.label,
@@ -337,6 +347,12 @@ export class SheetTabBarElement extends WebComponent {
                     data.disabled = true;
                 } else {
                     data.danger = true;
+                }
+            }
+
+            if (item.action === "unhide") {
+                if (!hasHiddenSheets) {
+                    data.disabled = true;
                 }
             }
 
@@ -359,7 +375,7 @@ export class SheetTabBarElement extends WebComponent {
         const name = this.#contextTargetName;
         this.#uiManager.close();
 
-        if (!name) return;
+        if (!name && action !== "unhide") return;
 
         switch (action) {
             case "delete":
@@ -367,7 +383,7 @@ export class SheetTabBarElement extends WebComponent {
                 break;
             case "rename":
                 if (!this.#renaming) {
-                    const tab = this.#tabs.get(name);
+                    const tab = this.#tabs.get(name!);
                     if (tab) this.#startRename(tab);
                 }
                 break;
@@ -377,7 +393,30 @@ export class SheetTabBarElement extends WebComponent {
             case "hide":
                 this.emit(SHEET_TAB_EVENTS.HIDE, { name });
                 break;
+            case "unhide":
+                this.#handleUnhideAction();
+                break;
         }
+    }
+
+    #handleUnhideAction(): void {
+        if (this.#hiddenSheets.length === 0) return;
+
+        if (this.#hiddenSheets.length === 1) {
+            this.emit(SHEET_TAB_EVENTS.UNHIDE, { name: this.#hiddenSheets[0] });
+            return;
+        }
+
+        const dialog = document.createElement("unhide-sheet-dialog") as InstanceType<typeof UnhideSheetDialog>;
+
+        dialog.open(this.#hiddenSheets, {
+            onConfirm: (selectedSheets: string[]) => {
+                for (const name of selectedSheets) {
+                    this.emit(SHEET_TAB_EVENTS.UNHIDE, { name });
+                }
+            },
+            onCancel: () => {},
+        });
     }
 
     #startRename(tabElement: HTMLElement): void {

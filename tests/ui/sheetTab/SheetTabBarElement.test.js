@@ -206,13 +206,14 @@ describe("SheetTabBarElement Web Component", () => {
 
         const dropdown = getDropdown();
         const items = dropdown.shadowRoot.querySelectorAll(".st-item");
-        expect(items.length).toBe(4);
+        expect(items.length).toBe(5);
 
         const keys = Array.from(items).map((i) => i.dataset.key);
         expect(keys).toContain("rename");
         expect(keys).toContain("delete");
         expect(keys).toContain("copy");
         expect(keys).toContain("hide");
+        expect(keys).toContain("unhide");
     });
 
     it("STBE-14: 多工作表时删除选项为 danger 样式", () => {
