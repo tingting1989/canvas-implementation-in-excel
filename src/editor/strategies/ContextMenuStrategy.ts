@@ -451,7 +451,41 @@ export class ContextMenuStrategy extends EventStrategy {
             items.push(data);
         }
 
-        return items;
+        return this.#cleanupSeparators(items);
+    }
+
+    /**
+     * 清理多余的分隔线
+     *
+     * 移除以下情况的分隔线（null）：
+     * - 开头或结尾的分隔线
+     * - 连续多个分隔线合并为一个
+     *
+     * @param items - 包含 MenuItemData 和 null（分隔线）的原始列表
+     * @returns 清理后的列表
+     */
+    #cleanupSeparators(items: (MenuItemData | null)[]): (MenuItemData | null)[] {
+        const result: (MenuItemData | null)[] = [];
+        let lastWasSeparator = false;
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+
+            if (item === null) {
+                if (lastWasSeparator) continue;
+                result.push(null);
+                lastWasSeparator = true;
+            } else {
+                result.push(item);
+                lastWasSeparator = false;
+            }
+        }
+
+        while (result.length > 0 && result[result.length - 1] === null) {
+            result.pop();
+        }
+
+        return result;
     }
 
     #handleContextMenu(e: MouseEvent): void {
