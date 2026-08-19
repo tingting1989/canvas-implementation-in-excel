@@ -142,6 +142,20 @@ export class SortState {
         return this.#currentSortInfo.col;
     }
 
+    /**
+     * 更新排序列索引
+     *
+     * 用于列移动后同步更新排序状态中的列索引。
+     *
+     * @param newCol - 新的列索引
+     */
+    updateSortCol(newCol: number): void {
+        this.#currentSortInfo = {
+            col: newCol,
+            order: this.#currentSortInfo.order,
+        };
+    }
+
     /** 当前排序顺序 */
     get sortOrder(): string | null {
         return this.#currentSortInfo.order;

@@ -155,6 +155,8 @@ export class SortPlugin extends BasePlugin {
 
         this.#bindSheetSwitchListener(sheet);
 
+        this.#bindColumnMoveListener(sheet);
+
         this.#active = true;
         this.renderEngine?.invalidateAll();
         this.render();
@@ -239,6 +241,91 @@ export class SortPlugin extends BasePlugin {
         if (this.#sheetSwitchUnsubscribe) {
             this.#sheetSwitchUnsubscribe();
             this.#sheetSwitchUnsubscribe = null;
+        }
+    }
+
+    /**
+     * @private 绑定列移动事件监听器
+     *
+     * 列移动后同步更新 #sortableColumns 索引和排序状态，
+     * 并刷新排序图标到正确的列位置。
+     */
+    #bindColumnMoveListener(sheet: any): void {
+        if (!sheet?.bus) return;
+
+        const self = this;
+
+        sheet.bus.on(SHEET_EVENTS.COLUMN_MOVED, (envelope: any) => {
+            const { fromCol, toCol } = envelope.payload;
+            self.#handleColumnMove(fromCol, toCol);
+        });
+    }
+
+    /**
+     * @private 处理列移动事件
+     */
+    #handleColumnMove(fromCol: number, toCol: number): void {
+        if (fromCol === toCol) return;
+
+        this.#updateSortableColumnsAfterMove(fromCol, toCol);
+        this.#updateSortStateAfterMove(fromCol, toCol);
+
+        (this.#sortUIManager as SortUIManager).setShowSortableIndicators(
+            this.#sortableColumns !== null && this.#sortableColumns.size > 0,
+            this.#sortableColumns,
+        );
+        (this.#sortUIManager as SortUIManager).updateIndicators();
+
+        this.renderEngine?.invalidateAll();
+        this.render();
+    }
+
+    /**
+     * @private 更新可排序列集合
+     */
+    #updateSortableColumnsAfterMove(fromCol: number, toCol: number): void {
+        if (!this.#sortableColumns) return;
+
+        const newSet = new Set<number>();
+
+        for (const col of this.#sortableColumns) {
+            let newCol: number;
+
+            if (col === fromCol) {
+                newCol = toCol;
+            } else if (fromCol < toCol) {
+                newCol = col > fromCol && col <= toCol ? col - 1 : col;
+            } else {
+                newCol = col >= toCol && col < fromCol ? col + 1 : col;
+            }
+
+            newSet.add(newCol);
+        }
+
+        this.#sortableColumns = newSet;
+    }
+
+    /**
+     * @private 更新排序状态中的列索引
+     */
+    #updateSortStateAfterMove(fromCol: number, toCol: number): void {
+        if (!this.#sortState || !this.#sortState.isSorted) return;
+
+        const currentCol = this.#sortState.sortCol;
+        if (currentCol < 0) return;
+
+        let newCol: number;
+
+        if (currentCol === fromCol) {
+            newCol = toCol;
+        } else if (fromCol < toCol) {
+            newCol = currentCol > fromCol && currentCol <= toCol ? currentCol - 1 : currentCol;
+        } else {
+            newCol = currentCol >= toCol && currentCol < fromCol ? currentCol + 1 : currentCol;
+        }
+
+        if (newCol !== currentCol) {
+            this.#sortState.updateSortCol(newCol);
         }
     }
 

@@ -128,7 +128,7 @@ export const EVENT_FLOW_REGISTRY: EventFlowRegistry = Object.freeze({
     [SHEET_EVENTS.GET_CLIPBOARD]: { emitters: ["TileRenderer", "ContextMenuStrategy"], listeners: ["Workbook"] },
     [SHEET_EVENTS.GET_PLUGIN]: { emitters: ["ContextMenuStrategy"], listeners: ["Workbook"] },
     [SHEET_EVENTS.SHEET_SWITCHED]: { emitters: ["Workbook"], listeners: ["SortPlugin", "FreezePlugin", "ChartPlugin"] },
-    [SHEET_EVENTS.COLUMN_MOVED]: { emitters: ["Sheet"], listeners: ["FilterPlugin"] },
+    [SHEET_EVENTS.COLUMN_MOVED]: { emitters: ["Sheet"], listeners: ["FilterPlugin", "SortPlugin"] },
     [SHEET_EVENTS.ROW_MOVED]: { emitters: ["Sheet"], listeners: [] },
     [SHEET_EVENTS.EDITOR_BEFORE_BEGIN]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },
     [SHEET_EVENTS.EDITOR_AFTER_BEGIN]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },
