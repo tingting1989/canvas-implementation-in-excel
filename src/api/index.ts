@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license Apache-2.0
  *
  * Copyright 2026 jiangsuiting <1158973435@qq.com>
@@ -95,6 +95,7 @@ export { SearchEngine } from "../plugins/search/SearchEngine";
 export { FormulaEngine } from "../plugins/formula/FormulaEngine";
 export { FormulaEvaluator } from "../plugins/formula/FormulaEvaluator";
 export { parseFormula } from "../plugins/formula/FormulaParser";
+export type { ASTNode, ASTLiteral, ASTCellRef, ASTRangeRef, ASTFunction, ASTUnaryOp, ASTBinaryOp } from "../plugins/formula/FormulaParser";
 export { functionRegistry, FUNCTION_CATEGORY } from "../plugins/formula/functions";
 
 // ============================================================
