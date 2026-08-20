@@ -778,6 +778,5 @@ export class ValidationEngine {
         this.#sourceResolver = null;
         this.#cellStore = null;
         this.#formulaEngine = null;
-
     }
 }
