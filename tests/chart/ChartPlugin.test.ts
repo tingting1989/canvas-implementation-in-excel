@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ChartPlugin } from "@/plugins/ChartPlugin";
+import { ChartPlugin } from "@/plugins/chart/ChartPlugin";
 import { CHART_TYPE } from "@/constants/enums/ChartType";
 
 function createMockBus() {

@@ -1,4 +1,4 @@
-import { BasePlugin } from "../BasePlugin.js";
+import { BasePlugin } from "../base/BasePlugin.js";
 import { FilterState } from "./FilterState.js";
 import { FilterUIManager } from "./FilterUIManager.js";
 import { FilterStrategy } from "./FilterStrategy.js";

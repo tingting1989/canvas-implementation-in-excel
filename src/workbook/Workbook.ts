@@ -4,7 +4,7 @@ import { EditorManager } from "../editor/EditorManager";
 import { EventHandler } from "../core/EventHandler";
 import { isFunction, isObject } from "../utils/helper";
 import { PluginManager } from "../plugins/index";
-import { BasePlugin } from "../plugins/BasePlugin";
+import { BasePlugin } from "../plugins/base/BasePlugin";
 import { CONFIG } from "../constants/config";
 import { SettingsApplier } from "./managers/SettingsApplier";
 import { SHEET_EVENTS } from "../constants/sheetEvents";

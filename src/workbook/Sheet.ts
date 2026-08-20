@@ -10,7 +10,7 @@ import { ColumnTypeManager } from "./managers/ColumnTypeManager";
 import { HeaderLabelManager } from "./managers/HeaderLabelManager";
 import { ConditionalFormatManager } from "./managers/ConditionalFormatManager";
 import { BatchOperationManager } from "./managers/BatchOperationManager";
-import { ChartManager } from "../model/chart/ChartManager";
+import { ChartManager } from "../plugins/chart/ChartManager";
 
 import { SheetDataCoordinator } from "./coordinators/SheetDataCoordinator";
 import { SheetStyleCoordinator } from "./coordinators/SheetStyleCoordinator";

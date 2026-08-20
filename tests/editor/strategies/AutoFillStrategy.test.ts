@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { AutoFillStrategy } from "@/editor/strategies/AutoFillStrategy.js";
+import { AutoFillStrategy } from "@/plugins/autoFill/AutoFillStrategy.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 

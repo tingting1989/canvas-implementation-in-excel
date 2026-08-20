@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { CopyPasteStrategy } from "@/editor/strategies/CopyPasteStrategy.js";
+import { CopyPasteStrategy } from "@/plugins/copyPaste/CopyPasteStrategy.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 

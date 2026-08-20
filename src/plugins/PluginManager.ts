@@ -1,4 +1,4 @@
-import { BasePlugin } from "./BasePlugin.js";
+import { BasePlugin } from "./base/BasePlugin.js";
 import { errorHandler } from "../core/ErrorHandler.js";
 import { ERROR_CODE } from "../constants/errorCodes.js";
 

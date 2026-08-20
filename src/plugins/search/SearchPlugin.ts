@@ -1,4 +1,4 @@
-import { BasePlugin } from "../BasePlugin.js";
+import { BasePlugin } from "../base/BasePlugin.js";
 import { SearchState } from "./SearchState.js";
 import type { SearchResult, SearchOptions } from "./SearchState.js";
 import { SearchEngine } from "./SearchEngine.js";

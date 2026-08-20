@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { HiddenColumnsPlugin } from "../../src/plugins/HiddenColumnsPlugin.js";
-import { HiddenRowsPlugin } from "../../src/plugins/HiddenRowsPlugin.js";
+import { HiddenColumnsPlugin } from "@/plugins/hiddenColumns/HiddenColumnsPlugin.ts";
+import { HiddenRowsPlugin } from "@/plugins/hiddenRows/HiddenRowsPlugin.ts";
 import { createMockWorkbook } from "./BasePlugin.test.js";
 
 describe("HiddenColumnsPlugin", () => {

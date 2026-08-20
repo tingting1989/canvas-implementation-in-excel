@@ -1,4 +1,4 @@
-import { BasePlugin } from "./BasePlugin.js";
+import { BasePlugin } from "./base/BasePlugin.js";
 import { FormulaEngine } from "../formula/FormulaEngine.js";
 import { FormulaBarManager } from "../ui/formulaBar/FormulaBarManager.js";
 

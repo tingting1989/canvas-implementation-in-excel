@@ -14,7 +14,7 @@ import type { SelectionManager } from "../../model/selection/SelectionManager";
 import type { MergeManager } from "../../model/merge/MergeManager";
 import type { HistoryStack } from "../../model/history/HistoryStack";
 import type { BatchOperationManager } from "../managers/BatchOperationManager";
-import type { ChartManager } from "../../model/chart/ChartManager";
+import type { ChartManager } from "../../plugins/chart/ChartManager";
 import type { EventBus } from "../../core/EventBus";
 import type { ChunkedCellStore } from "../../model/store/ChunkedCellStore";
 import type { SheetStyleManager } from "../managers/SheetStyleManager";

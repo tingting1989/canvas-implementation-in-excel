@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ExportFilePlugin } from "../../src/plugins/ExportFilePlugin.js";
+import { ExportFilePlugin } from "@/plugins/exportFile/ExportFilePlugin.ts";
 import ExcelJS from "exceljs";
 
 // ============================================================================

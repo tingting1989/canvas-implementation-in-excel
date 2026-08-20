@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ContextMenuStrategy } from "@/editor/strategies/ContextMenuStrategy.js";
+import { ContextMenuStrategy } from "@/plugins/contextMenu/ContextMenuStrategy.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 

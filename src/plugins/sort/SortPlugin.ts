@@ -1,9 +1,9 @@
-import { BasePlugin } from "../BasePlugin.js";
+import { BasePlugin } from "../base/BasePlugin.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { SortState } from "./SortState.js";
 import { SortEngine } from "./SortEngine.js";
-import { SortStrategy } from "../../editor/strategies/SortStrategy.js";
+import { SortStrategy } from "./SortStrategy.js";
 import { SortUIManager } from "./SortUIManager.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";

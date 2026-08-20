@@ -1,6 +1,6 @@
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
-import { BasePlugin } from "../BasePlugin.js";
+import { BasePlugin } from "../base/BasePlugin.js";
 import { ValidationEngine } from "./ValidationEngine.js";
 import { ValidationRule } from "./ValidationRule.js";
 import { ValidationUIController } from "./ValidationUIController.js";
@@ -12,7 +12,7 @@ import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
 import { stylePool } from "../../model/styles/index.js";
-import { ValidationStrategy } from "../../editor/strategies/ValidationStrategy.js";
+import { ValidationStrategy } from "./ValidationStrategy.js";
 import { ValidationResult } from "./ValidationResult.js";
 
 const VALIDATION_ERROR_STYLES = Object.freeze({

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ChartManager } from "@/model/chart/ChartManager";
-import type { ChartLike } from "@/model/chart/ChartManager";
+import { ChartManager } from "@/plugins/chart/ChartManager";
+import type { ChartLike } from "@/plugins/chart/ChartManager";
 
 function createMockSheet() {
     return {

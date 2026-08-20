@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ColumnMovePlugin } from "../../src/plugins/ColumnMovePlugin.js";
-import { RowMovePlugin } from "../../src/plugins/RowMovePlugin.js";
+import { ColumnMovePlugin } from "@/plugins/columnMove/ColumnMovePlugin.ts";
+import { RowMovePlugin } from "@/plugins/rowMove/RowMovePlugin.ts";
 
 function createMockWorkbook(overrides = {}) {
     return {

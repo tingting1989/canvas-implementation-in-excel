@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ChartSelectionStrategy } from "@/editor/strategies/ChartSelectionStrategy.js";
+import { ChartSelectionStrategy } from "@/plugins/chart/ChartSelectionStrategy.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 

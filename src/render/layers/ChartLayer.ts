@@ -11,7 +11,7 @@ import { NativeChartRenderer } from "../chart/NativeChartRenderer.js";
 import { ViewportTransform } from "../ViewportTransform.js";
 import type { Sheet } from "../../workbook/Sheet.js";
 import type { ReactiveStore as Store } from "../../state/ReactiveStore.js";
-import type { ChartModel } from "../../model/chart/ChartModel.js";
+import type { ChartModel } from "../../plugins/chart/ChartModel.js";
 
 /** 图表内边距配置 */
 const PADDING = { top: 36, right: 20, bottom: 44, left: 56 };

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SortStrategy } from "@/editor/strategies/SortStrategy.js";
+import { SortStrategy } from "@/plugins/sort/SortStrategy.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 import { HIT_TYPE } from "@/constants/hitType.js";

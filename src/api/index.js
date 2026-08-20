@@ -37,19 +37,19 @@ export { CellEditor } from "../editor/editors/CellEditor";
 // ============================================================
 // 插件系统
 // ============================================================
-export { BasePlugin } from "../plugins/BasePlugin";
+export { BasePlugin } from "../plugins/base/BasePlugin";
 export { PluginManager } from "../plugins/PluginManager";
-export { AutoFillPlugin } from "../plugins/AutoFillPlugin";
-export { ChartPlugin } from "../plugins/ChartPlugin";
-export { ColumnMovePlugin } from "../plugins/ColumnMovePlugin";
-export { ContextMenuPlugin } from "../plugins/ContextMenuPlugin";
-export { CopyPastePlugin } from "../plugins/CopyPastePlugin";
-export { FreezePlugin } from "../plugins/FreezePlugin";
-export { HiddenColumnsPlugin } from "../plugins/HiddenColumnsPlugin";
-export { HiddenRowsPlugin } from "../plugins/HiddenRowsPlugin";
-export { RowMovePlugin } from "../plugins/RowMovePlugin";
-export { ImportFilePlugin } from "../plugins/ImportFilePlugin";
-export { ExportFilePlugin } from "../plugins/ExportFilePlugin";
+export { AutoFillPlugin } from "../plugins/autoFill/AutoFillPlugin";
+export { ChartPlugin } from "../plugins/chart/ChartPlugin";
+export { ColumnMovePlugin } from "../plugins/columnMove/ColumnMovePlugin";
+export { ContextMenuPlugin } from "../plugins/contextMenu/ContextMenuPlugin";
+export { CopyPastePlugin } from "../plugins/copyPaste/CopyPastePlugin";
+export { FreezePlugin } from "../plugins/freeze/FreezePlugin";
+export { HiddenColumnsPlugin } from "../plugins/hiddenColumns/HiddenColumnsPlugin";
+export { HiddenRowsPlugin } from "../plugins/hiddenRows/HiddenRowsPlugin";
+export { RowMovePlugin } from "../plugins/rowMove/RowMovePlugin";
+export { ImportFilePlugin } from "../plugins/importFile/ImportFilePlugin";
+export { ExportFilePlugin } from "../plugins/exportFile/ExportFilePlugin";
 export { FormulaPlugin } from "../plugins/FormulaPlugin";
 export { SortPlugin } from "../plugins/sort/SortPlugin";
 export { FilterPlugin } from "../plugins/filter/FilterPlugin";
@@ -91,8 +91,8 @@ export { ViewportTransform } from "../render/ViewportTransform";
 // ============================================================
 // 图表系统
 // ============================================================
-export { ChartModel } from "../model/chart/ChartModel";
-export { ChartManager } from "../model/chart/ChartManager";
+export { ChartModel } from "../plugins/chart/ChartModel";
+export { ChartManager } from "../plugins/chart/ChartManager";
 export { ChartRendererFactory } from "../render/chart/ChartRendererFactory";
 export { NativeChartRenderer } from "../render/chart/NativeChartRenderer";
 export { IChartRenderer } from "../render/chart/IChartRenderer";

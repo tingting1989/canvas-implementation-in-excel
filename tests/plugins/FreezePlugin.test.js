@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { FreezePlugin } from "../../src/plugins/FreezePlugin.js";
+import { FreezePlugin } from "@/plugins/freeze/FreezePlugin.ts";
 import { createMockWorkbook } from "./BasePlugin.test.js";
 
 describe("FreezePlugin", () => {
