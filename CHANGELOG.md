@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-20
+
+### 🎉 Feature Release — Sheet Operations, Context Menu Refactor & Full TypeScript Migration
+
+This release introduces **sheet hide/copy functionality**, a **refactored right-click context menu**, **custom chart registration**, and completes the **full JavaScript → TypeScript migration**. All changes are **backward compatible** with no breaking API changes.
+
+---
+
+## ✨ New Features
+
+### 📋 Sheet Hide & Copy
+- ✅ **Sheet Hide** — Hide/show sheets via API and UI, hidden sheets are excluded from navigation
+- ✅ **Sheet Copy** — Duplicate sheets with full data, styles, and configurations preserved
+- ✅ **UI Integration** — Hide and copy options available in sheet tab right-click menu
+
+### 🖱️ Right-Click Context Menu Refactor
+- ✅ **Complete Rewrite** — Rebuilt context menu system with improved architecture and extensibility
+- ✅ **Better Performance** — Optimized rendering and event handling for faster menu display
+- ✅ **Plugin Support** — Context menu items can be registered and customized by plugins
+- ✅ **Improved UX** — Refined menu item layout, icons, and interaction patterns
+
+### 📊 Custom Chart Registration
+- ✅ **User-Registered Charts** — Users can now register custom chart types via API
+- ✅ **Chart Type Extensibility** — Extensible chart system supporting third-party chart renderers
+- ✅ **Custom Chart Configuration** — Full control over chart rendering, options, and data binding
+
+---
+
+## 🔧 Refactoring
+
+### 📘 Full TypeScript Migration
+- ✅ **All JS → TS** — Completely refactored all JavaScript source files to TypeScript
+- ✅ **Strict Type Safety** — Full strict mode TypeScript with comprehensive type annotations
+- ✅ **Improved IDE Support** — Better autocompletion, inline documentation, and error detection
+
+### 🛡️ Data Validation Icon Style Refactor
+- ✅ **Redesigned Validation Icons** — Refactored data validation error/warning/info icon drawing styles
+- ✅ **Consistent Visual Language** — Unified icon design across all validation types
+- ✅ **Better Readability** — Improved icon clarity and visual distinction between validation severity levels
+
+---
+
+## 🐛 Bug Fixes
+
+- Fixed known bugs in **Filter** plugin
+- Fixed known bugs in **Sort** functionality
+- Fixed known bugs in **Data Validation** edge cases
+
+---
+
 ## [1.1.0] - 2026-08-17
 
 ### 🎉 Major Release — TypeScript Support & Search/Replace
