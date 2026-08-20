@@ -72,6 +72,12 @@ export class DataValidationPlugin extends BasePlugin {
     #highlightInvalidCells: boolean = false;
     #errorStyleRules: Map<string, { cfRule: any; styleId: number }> = new Map();
     #sheetSwitchUnsubscribe: (() => void) | null = null;
+    #columnMoveUnsubscribe: (() => void) | null = null;
+    #rowMoveUnsubscribe: (() => void) | null = null;
+    #columnInsertUnsubscribe: (() => void) | null = null;
+    #columnDeleteUnsubscribe: (() => void) | null = null;
+    #rowInsertUnsubscribe: (() => void) | null = null;
+    #rowDeleteUnsubscribe: (() => void) | null = null;
     #afterRenderCallback: (() => void) | null = null;
 
     init(options: PluginOptions = {}): void {
@@ -129,6 +135,10 @@ export class DataValidationPlugin extends BasePlugin {
 
         this.#registerStrategy();
         this.#bindSheetSwitchListener();
+        this.#bindColumnMoveListener();
+        this.#bindRowMoveListener();
+        this.#bindColumnInsertDeleteListeners();
+        this.#bindRowInsertDeleteListeners();
         this.#initUIController();
         this.#dirtyFlagManager = new ValidationDirtyFlagManager();
         this.#copyPasteHandler = new CopyPasteHandler(this);
@@ -289,6 +299,200 @@ export class DataValidationPlugin extends BasePlugin {
         }
     }
 
+    #bindColumnMoveListener(): void {
+        const sheet = (this as any).sheet;
+        if (!sheet?.bus) return;
+        this.#unbindColumnMoveListener();
+
+        this.#columnMoveUnsubscribe = sheet.bus.on(SHEET_EVENTS.COLUMN_MOVED, (envelope: any) => {
+            const { fromCol, toCol } = envelope.payload;
+            this.#handleColumnMove(fromCol, toCol);
+        });
+    }
+
+    #unbindColumnMoveListener(): void {
+        if (this.#columnMoveUnsubscribe) {
+            this.#columnMoveUnsubscribe();
+            this.#columnMoveUnsubscribe = null;
+        }
+    }
+
+    #bindRowMoveListener(): void {
+        const sheet = (this as any).sheet;
+        if (!sheet?.bus) return;
+        this.#unbindRowMoveListener();
+
+        this.#rowMoveUnsubscribe = sheet.bus.on(SHEET_EVENTS.ROW_MOVED, (envelope: any) => {
+            const { fromRow, toRow } = envelope.payload;
+            this.#handleRowMove(fromRow, toRow);
+        });
+    }
+
+    #unbindRowMoveListener(): void {
+        if (this.#rowMoveUnsubscribe) {
+            this.#rowMoveUnsubscribe();
+            this.#rowMoveUnsubscribe = null;
+        }
+    }
+
+    #handleColumnMove(fromCol: number, toCol: number): void {
+        if (!this.#active || !this.#engine) return;
+        if (fromCol === toCol) return;
+
+        this.#engine.shiftRuleRangesForColumnMove(fromCol, toCol);
+
+        this.#dirtyFlagManager?.clear();
+        this.#portalUI?.clearAllStatus();
+        this.#portalUI?.clearPendingValidations();
+
+        if (this.#highlightInvalidCells) {
+            this.#clearAllErrorStyles();
+        }
+
+        (this as any).renderEngine?.invalidateAll();
+        (this as any).render();
+    }
+
+    #handleRowMove(fromRow: number, toRow: number): void {
+        if (!this.#active || !this.#engine) return;
+        if (fromRow === toRow) return;
+
+        this.#engine.shiftRuleRangesForRowMove(fromRow, toRow);
+
+        this.#dirtyFlagManager?.clear();
+        this.#portalUI?.clearAllStatus();
+        this.#portalUI?.clearPendingValidations();
+
+        if (this.#highlightInvalidCells) {
+            this.#clearAllErrorStyles();
+        }
+
+        (this as any).renderEngine?.invalidateAll();
+        (this as any).render();
+    }
+
+    #bindColumnInsertDeleteListeners(): void {
+        const sheet = (this as any).sheet;
+        if (!sheet?.bus) return;
+        this.#unbindColumnInsertDeleteListeners();
+
+        this.#columnInsertUnsubscribe = sheet.bus.on(SHEET_EVENTS.COLUMN_INSERTED, (envelope: any) => {
+            const { atCol } = envelope.payload;
+            this.#handleColumnInsert(atCol);
+        });
+
+        this.#columnDeleteUnsubscribe = sheet.bus.on(SHEET_EVENTS.COLUMN_DELETED, (envelope: any) => {
+            const { atCol } = envelope.payload;
+            this.#handleColumnDelete(atCol);
+        });
+    }
+
+    #unbindColumnInsertDeleteListeners(): void {
+        if (this.#columnInsertUnsubscribe) {
+            this.#columnInsertUnsubscribe();
+            this.#columnInsertUnsubscribe = null;
+        }
+        if (this.#columnDeleteUnsubscribe) {
+            this.#columnDeleteUnsubscribe();
+            this.#columnDeleteUnsubscribe = null;
+        }
+    }
+
+    #bindRowInsertDeleteListeners(): void {
+        const sheet = (this as any).sheet;
+        if (!sheet?.bus) return;
+        this.#unbindRowInsertDeleteListeners();
+
+        this.#rowInsertUnsubscribe = sheet.bus.on(SHEET_EVENTS.ROW_INSERTED, (envelope: any) => {
+            const { atRow } = envelope.payload;
+            this.#handleRowInsert(atRow);
+        });
+
+        this.#rowDeleteUnsubscribe = sheet.bus.on(SHEET_EVENTS.ROW_DELETED, (envelope: any) => {
+            const { atRow } = envelope.payload;
+            this.#handleRowDelete(atRow);
+        });
+    }
+
+    #unbindRowInsertDeleteListeners(): void {
+        if (this.#rowInsertUnsubscribe) {
+            this.#rowInsertUnsubscribe();
+            this.#rowInsertUnsubscribe = null;
+        }
+        if (this.#rowDeleteUnsubscribe) {
+            this.#rowDeleteUnsubscribe();
+            this.#rowDeleteUnsubscribe = null;
+        }
+    }
+
+    #handleColumnInsert(atCol: number): void {
+        if (!this.#active || !this.#engine) return;
+
+        this.#engine.shiftRuleRangesForColumnInsert(atCol);
+
+        this.#dirtyFlagManager?.clear();
+        this.#portalUI?.clearAllStatus();
+        this.#portalUI?.clearPendingValidations();
+
+        if (this.#highlightInvalidCells) {
+            this.#clearAllErrorStyles();
+        }
+
+        (this as any).renderEngine?.invalidateAll();
+        (this as any).render();
+    }
+
+    #handleColumnDelete(atCol: number): void {
+        if (!this.#active || !this.#engine) return;
+
+        this.#engine.shiftRuleRangesForColumnDelete(atCol);
+
+        this.#dirtyFlagManager?.clear();
+        this.#portalUI?.clearAllStatus();
+        this.#portalUI?.clearPendingValidations();
+
+        if (this.#highlightInvalidCells) {
+            this.#clearAllErrorStyles();
+        }
+
+        (this as any).renderEngine?.invalidateAll();
+        (this as any).render();
+    }
+
+    #handleRowInsert(atRow: number): void {
+        if (!this.#active || !this.#engine) return;
+
+        this.#engine.shiftRuleRangesForRowInsert(atRow);
+
+        this.#dirtyFlagManager?.clear();
+        this.#portalUI?.clearAllStatus();
+        this.#portalUI?.clearPendingValidations();
+
+        if (this.#highlightInvalidCells) {
+            this.#clearAllErrorStyles();
+        }
+
+        (this as any).renderEngine?.invalidateAll();
+        (this as any).render();
+    }
+
+    #handleRowDelete(atRow: number): void {
+        if (!this.#active || !this.#engine) return;
+
+        this.#engine.shiftRuleRangesForRowDelete(atRow);
+
+        this.#dirtyFlagManager?.clear();
+        this.#portalUI?.clearAllStatus();
+        this.#portalUI?.clearPendingValidations();
+
+        if (this.#highlightInvalidCells) {
+            this.#clearAllErrorStyles();
+        }
+
+        (this as any).renderEngine?.invalidateAll();
+        (this as any).render();
+    }
+
     #initUIController(): void {
         try {
             let portalManager = (this as any).workbook?.validationPortalManager || null;
@@ -394,6 +598,11 @@ export class DataValidationPlugin extends BasePlugin {
                 errorHandler.error(ERROR_CODE.VALIDATION_ERROR, `[DataValidation] 新 Sheet 加载规则失败:`, e);
             }
         }
+
+        this.#bindColumnMoveListener();
+        this.#bindRowMoveListener();
+        this.#bindColumnInsertDeleteListeners();
+        this.#bindRowInsertDeleteListeners();
     }
 
     setValidation(ruleOptions: Record<string, any>): string | null {
@@ -575,6 +784,10 @@ export class DataValidationPlugin extends BasePlugin {
         this.disable();
         this.#clearAllErrorStyles();
         this.#unbindSheetSwitchListener();
+        this.#unbindColumnMoveListener();
+        this.#unbindRowMoveListener();
+        this.#unbindColumnInsertDeleteListeners();
+        this.#unbindRowInsertDeleteListeners();
         this.#unhookRenderEngine();
 
         if (this.#engine) {

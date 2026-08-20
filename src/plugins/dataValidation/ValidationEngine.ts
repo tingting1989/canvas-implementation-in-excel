@@ -1,5 +1,7 @@
 import { errorHandler } from "../../core/ErrorHandler.js";
 import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { UI_CONFIG } from "../../constants/uiConfig.js";
+import { colToIndex, indexToCol } from "../../utils/cellRef.js";
 import { NumberValidator } from "./validators/NumberValidator.js";
 import { TextLengthValidator } from "./validators/TextLengthValidator.js";
 import { ListValidator } from "./validators/ListValidator.js";
@@ -456,6 +458,302 @@ export class ValidationEngine {
         return this.#sourceResolver;
     }
 
+    static #calcShiftedIndex(index: number, from: number, to: number): number {
+        if (index === from) return to;
+        if (from < to) return index > from && index <= to ? index - 1 : index;
+        return index >= to && index < from ? index + 1 : index;
+    }
+
+    static #shiftRangeStr(rangeStr: string, axis: typeof UI_CONFIG.AXIS_COL | typeof UI_CONFIG.AXIS_ROW, from: number, to: number): string {
+        try {
+            const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
+            if (fullColMatch) {
+                if (axis === UI_CONFIG.AXIS_COL) {
+                    const startCol = colToIndex(fullColMatch[1]);
+                    const endCol = colToIndex(fullColMatch[2]);
+                    const newStart = ValidationEngine.#calcShiftedIndex(startCol, from, to);
+                    const newEnd = ValidationEngine.#calcShiftedIndex(endCol, from, to);
+                    return `${indexToCol(newStart)}:${indexToCol(newEnd)}`;
+                }
+                return rangeStr;
+            }
+
+            const fullRowMatch = rangeStr.match(/^(\d+):(\d+)$/);
+            if (fullRowMatch) {
+                if (axis === UI_CONFIG.AXIS_ROW) {
+                    const startRow = parseInt(fullRowMatch[1]) - 1;
+                    const endRow = parseInt(fullRowMatch[2]) - 1;
+                    const newStart = ValidationEngine.#calcShiftedIndex(startRow, from, to);
+                    const newEnd = ValidationEngine.#calcShiftedIndex(endRow, from, to);
+                    return `${newStart + 1}:${newEnd + 1}`;
+                }
+                return rangeStr;
+            }
+
+            const rangeMatch = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+            if (rangeMatch) {
+                const startCol = colToIndex(rangeMatch[1]);
+                const startRow = parseInt(rangeMatch[2]) - 1;
+                const endCol = colToIndex(rangeMatch[3]);
+                const endRow = parseInt(rangeMatch[4]) - 1;
+
+                const newStartCol = axis === UI_CONFIG.AXIS_COL ? ValidationEngine.#calcShiftedIndex(startCol, from, to) : startCol;
+                const newEndCol = axis === UI_CONFIG.AXIS_COL ? ValidationEngine.#calcShiftedIndex(endCol, from, to) : endCol;
+                const newStartRow = axis === UI_CONFIG.AXIS_ROW ? ValidationEngine.#calcShiftedIndex(startRow, from, to) : startRow;
+                const newEndRow = axis === UI_CONFIG.AXIS_ROW ? ValidationEngine.#calcShiftedIndex(endRow, from, to) : endRow;
+
+                return `${indexToCol(newStartCol)}${newStartRow + 1}:${indexToCol(newEndCol)}${newEndRow + 1}`;
+            }
+
+            return rangeStr;
+        } catch (e: any) {
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationEngine] shiftRangeStr failed for range="${rangeStr}"`, { error: e });
+            return rangeStr;
+        }
+    }
+
+    static #isRangeCoveringAxis(rangeStr: string, axis: typeof UI_CONFIG.AXIS_COL | typeof UI_CONFIG.AXIS_ROW, index: number): boolean {
+        try {
+            const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
+            if (fullColMatch && axis === UI_CONFIG.AXIS_COL) {
+                const startCol = colToIndex(fullColMatch[1]);
+                const endCol = colToIndex(fullColMatch[2]);
+                return index >= startCol && index <= endCol;
+            }
+
+            const fullRowMatch = rangeStr.match(/^(\d+):(\d+)$/);
+            if (fullRowMatch && axis === UI_CONFIG.AXIS_ROW) {
+                const startRow = parseInt(fullRowMatch[1]) - 1;
+                const endRow = parseInt(fullRowMatch[2]) - 1;
+                return index >= startRow && index <= endRow;
+            }
+
+            const rangeMatch = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+            if (rangeMatch) {
+                if (axis === UI_CONFIG.AXIS_COL) {
+                    const startCol = colToIndex(rangeMatch[1]);
+                    const endCol = colToIndex(rangeMatch[3]);
+                    return index >= startCol && index <= endCol;
+                }
+                const startRow = parseInt(rangeMatch[2]) - 1;
+                const endRow = parseInt(rangeMatch[4]) - 1;
+                return index >= startRow && index <= endRow;
+            }
+
+            return false;
+        } catch (e: any) {
+            return false;
+        }
+    }
+
+    static #shiftRangeStrForInsert(rangeStr: string, axis: typeof UI_CONFIG.AXIS_COL | typeof UI_CONFIG.AXIS_ROW, atIndex: number): string {
+        try {
+            const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
+            if (fullColMatch) {
+                if (axis === UI_CONFIG.AXIS_COL) {
+                    const startCol = colToIndex(fullColMatch[1]);
+                    const endCol = colToIndex(fullColMatch[2]);
+                    const newStart = startCol >= atIndex ? startCol + 1 : startCol;
+                    const newEnd = endCol >= atIndex ? endCol + 1 : endCol;
+                    return `${indexToCol(newStart)}:${indexToCol(newEnd)}`;
+                }
+                return rangeStr;
+            }
+
+            const fullRowMatch = rangeStr.match(/^(\d+):(\d+)$/);
+            if (fullRowMatch) {
+                if (axis === UI_CONFIG.AXIS_ROW) {
+                    const startRow = parseInt(fullRowMatch[1]) - 1;
+                    const endRow = parseInt(fullRowMatch[2]) - 1;
+                    const newStart = startRow >= atIndex ? startRow + 1 : startRow;
+                    const newEnd = endRow >= atIndex ? endRow + 1 : endRow;
+                    return `${newStart + 1}:${newEnd + 1}`;
+                }
+                return rangeStr;
+            }
+
+            const rangeMatch = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+            if (rangeMatch) {
+                const startCol = colToIndex(rangeMatch[1]);
+                const startRow = parseInt(rangeMatch[2]) - 1;
+                const endCol = colToIndex(rangeMatch[3]);
+                const endRow = parseInt(rangeMatch[4]) - 1;
+
+                const newStartCol = axis === UI_CONFIG.AXIS_COL && startCol >= atIndex ? startCol + 1 : startCol;
+                const newEndCol = axis === UI_CONFIG.AXIS_COL && endCol >= atIndex ? endCol + 1 : endCol;
+                const newStartRow = axis === UI_CONFIG.AXIS_ROW && startRow >= atIndex ? startRow + 1 : startRow;
+                const newEndRow = axis === UI_CONFIG.AXIS_ROW && endRow >= atIndex ? endRow + 1 : endRow;
+
+                return `${indexToCol(newStartCol)}${newStartRow + 1}:${indexToCol(newEndCol)}${newEndRow + 1}`;
+            }
+
+            return rangeStr;
+        } catch (e: any) {
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationEngine] shiftRangeStrForInsert failed for range="${rangeStr}"`, { error: e });
+            return rangeStr;
+        }
+    }
+
+    static #shiftRangeStrForDelete(rangeStr: string, axis: typeof UI_CONFIG.AXIS_COL | typeof UI_CONFIG.AXIS_ROW, atIndex: number): string {
+        try {
+            const fullColMatch = rangeStr.match(/^([A-Z]+):([A-Z]+)$/);
+            if (fullColMatch) {
+                if (axis === UI_CONFIG.AXIS_COL) {
+                    const startCol = colToIndex(fullColMatch[1]);
+                    const endCol = colToIndex(fullColMatch[2]);
+                    const newStart = startCol > atIndex ? startCol - 1 : startCol;
+                    const newEnd = endCol > atIndex ? endCol - 1 : endCol;
+                    return `${indexToCol(newStart)}:${indexToCol(newEnd)}`;
+                }
+                return rangeStr;
+            }
+
+            const fullRowMatch = rangeStr.match(/^(\d+):(\d+)$/);
+            if (fullRowMatch) {
+                if (axis === UI_CONFIG.AXIS_ROW) {
+                    const startRow = parseInt(fullRowMatch[1]) - 1;
+                    const endRow = parseInt(fullRowMatch[2]) - 1;
+                    const newStart = startRow > atIndex ? startRow - 1 : startRow;
+                    const newEnd = endRow > atIndex ? endRow - 1 : endRow;
+                    return `${newStart + 1}:${newEnd + 1}`;
+                }
+                return rangeStr;
+            }
+
+            const rangeMatch = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/);
+            if (rangeMatch) {
+                const startCol = colToIndex(rangeMatch[1]);
+                const startRow = parseInt(rangeMatch[2]) - 1;
+                const endCol = colToIndex(rangeMatch[3]);
+                const endRow = parseInt(rangeMatch[4]) - 1;
+
+                const newStartCol = axis === UI_CONFIG.AXIS_COL && startCol > atIndex ? startCol - 1 : startCol;
+                const newEndCol = axis === UI_CONFIG.AXIS_COL && endCol > atIndex ? endCol - 1 : endCol;
+                const newStartRow = axis === UI_CONFIG.AXIS_ROW && startRow > atIndex ? startRow - 1 : startRow;
+                const newEndRow = axis === UI_CONFIG.AXIS_ROW && endRow > atIndex ? endRow - 1 : endRow;
+
+                return `${indexToCol(newStartCol)}${newStartRow + 1}:${indexToCol(newEndCol)}${newEndRow + 1}`;
+            }
+
+            return rangeStr;
+        } catch (e: any) {
+            errorHandler.warn(ERROR_CODE.VALIDATION_ERROR, `[ValidationEngine] shiftRangeStrForDelete failed for range="${rangeStr}"`, { error: e });
+            return rangeStr;
+        }
+    }
+
+    shiftRuleRangesForColumnMove(fromCol: number, toCol: number): void {
+        if (fromCol === toCol || this.#destroyed) return;
+
+        for (const rule of this.#rules.values()) {
+            const newRange = ValidationEngine.#shiftRangeStr(rule.range, UI_CONFIG.AXIS_COL, fromCol, toCol);
+            if (newRange !== rule.range) {
+                this.invalidateCache(rule.range);
+                rule.range = newRange;
+                rule.updatedAt = new Date();
+            }
+        }
+
+        this.#cache.clear();
+    }
+
+    shiftRuleRangesForRowMove(fromRow: number, toRow: number): void {
+        if (fromRow === toRow || this.#destroyed) return;
+
+        for (const rule of this.#rules.values()) {
+            const newRange = ValidationEngine.#shiftRangeStr(rule.range, UI_CONFIG.AXIS_ROW, fromRow, toRow);
+            if (newRange !== rule.range) {
+                this.invalidateCache(rule.range);
+                rule.range = newRange;
+                rule.updatedAt = new Date();
+            }
+        }
+
+        this.#cache.clear();
+    }
+
+    shiftRuleRangesForColumnInsert(atCol: number): void {
+        if (this.#destroyed) return;
+
+        for (const rule of this.#rules.values()) {
+            const newRange = ValidationEngine.#shiftRangeStrForInsert(rule.range, UI_CONFIG.AXIS_COL, atCol);
+            if (newRange !== rule.range) {
+                this.invalidateCache(rule.range);
+                rule.range = newRange;
+                rule.updatedAt = new Date();
+            }
+        }
+
+        this.#cache.clear();
+    }
+
+    shiftRuleRangesForColumnDelete(atCol: number): void {
+        if (this.#destroyed) return;
+
+        const toRemove: string[] = [];
+
+        for (const [ruleId, rule] of this.#rules) {
+            if (ValidationEngine.#isRangeCoveringAxis(rule.range, UI_CONFIG.AXIS_COL, atCol)) {
+                toRemove.push(ruleId);
+                continue;
+            }
+
+            const newRange = ValidationEngine.#shiftRangeStrForDelete(rule.range, UI_CONFIG.AXIS_COL, atCol);
+            if (newRange !== rule.range) {
+                this.invalidateCache(rule.range);
+                rule.range = newRange;
+                rule.updatedAt = new Date();
+            }
+        }
+
+        for (const ruleId of toRemove) {
+            this.#rules.delete(ruleId);
+        }
+
+        this.#cache.clear();
+    }
+
+    shiftRuleRangesForRowInsert(atRow: number): void {
+        if (this.#destroyed) return;
+
+        for (const rule of this.#rules.values()) {
+            const newRange = ValidationEngine.#shiftRangeStrForInsert(rule.range, UI_CONFIG.AXIS_ROW, atRow);
+            if (newRange !== rule.range) {
+                this.invalidateCache(rule.range);
+                rule.range = newRange;
+                rule.updatedAt = new Date();
+            }
+        }
+
+        this.#cache.clear();
+    }
+
+    shiftRuleRangesForRowDelete(atRow: number): void {
+        if (this.#destroyed) return;
+
+        const toRemove: string[] = [];
+
+        for (const [ruleId, rule] of this.#rules) {
+            if (ValidationEngine.#isRangeCoveringAxis(rule.range, UI_CONFIG.AXIS_ROW, atRow)) {
+                toRemove.push(ruleId);
+                continue;
+            }
+
+            const newRange = ValidationEngine.#shiftRangeStrForDelete(rule.range, UI_CONFIG.AXIS_ROW, atRow);
+            if (newRange !== rule.range) {
+                this.invalidateCache(rule.range);
+                rule.range = newRange;
+                rule.updatedAt = new Date();
+            }
+        }
+
+        for (const ruleId of toRemove) {
+            this.#rules.delete(ruleId);
+        }
+
+        this.#cache.clear();
+    }
+
     destroy(): void {
         if (this.#destroyed) return;
         this.#destroyed = true;
@@ -481,6 +779,5 @@ export class ValidationEngine {
         this.#cellStore = null;
         this.#formulaEngine = null;
 
-        errorHandler.info(ERROR_CODE.VALIDATION_INFO, "[ValidationEngine v3.0 已销毁");
     }
 }
