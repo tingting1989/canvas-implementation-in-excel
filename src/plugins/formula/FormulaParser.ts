@@ -106,9 +106,7 @@ export function parseFormula(formula: string): ASTNode {
     }
 
     const parser = new Parser(tokens);
-    const ast = parser.parseExpression();
-
-    return ast;
+    return parser.parseExpression();
 }
 
 class Parser {

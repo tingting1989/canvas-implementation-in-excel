@@ -20,10 +20,15 @@
 // 核心
 // ============================================================
 export { Workbook } from "../workbook/Workbook";
+export { Sheet } from "../workbook/Sheet";
+export * from "../workbook/interfaces/index";
 export * from "../model/index";
 export * from "../core/ErrorHandler";
+export { Hooks } from "../core/Hooks";
+export { EventHandler } from "../core/EventHandler";
 export * from "../types/index";
 export { ReactiveStore } from "../state/ReactiveStore";
+export { Scheduler } from "../state/Scheduler";
 export { WebComponent } from "../core/WebComponent";
 export { DOMComponent } from "../core/DOMComponent";
 export { Disposable } from "../core/Disposable";
@@ -33,11 +38,20 @@ export { Disposable } from "../core/Disposable";
 // ============================================================
 export { EventStrategy } from "../editor/strategies/EventStrategy";
 export { CellEditor } from "../editor/editors/CellEditor";
+export { TextEditor } from "../editor/editors/TextEditor";
+export { NumericEditor } from "../editor/editors/NumericEditor";
+export { DateEditor } from "../editor/editors/DateEditor";
+export { SelectEditor } from "../editor/editors/SelectEditor";
+export { TextareaEditor } from "../editor/editors/TextareaEditor";
+export { EditorManager } from "../editor/EditorManager";
+export { ClipboardManager } from "../editor/ClipboardManager";
 
 // ============================================================
 // 插件系统
 // ============================================================
 export { BasePlugin } from "../plugins/base/BasePlugin";
+export { BaseHidePlugin } from "../plugins/base/BaseHidePlugin";
+export { BaseMovePlugin } from "../plugins/base/BaseMovePlugin";
 export { PluginManager } from "../plugins/PluginManager";
 export { AutoFillPlugin } from "../plugins/autoFill/AutoFillPlugin";
 export { ChartPlugin } from "../plugins/chart/ChartPlugin";
@@ -66,19 +80,31 @@ export { UniqueValidator } from "../plugins/dataValidation/validators/UniqueVali
 export { FormulaValidator } from "../plugins/dataValidation/validators/FormulaValidator";
 export { DateTimeValidator } from "../plugins/dataValidation/validators/DateTimeValidator";
 export { RegexValidator } from "../plugins/dataValidation/validators/RegexValidator";
+export { TimeValidator } from "../plugins/dataValidation/validators/TimeValidator";
+
+// ============================================================
+// 插件引擎
+// ============================================================
+export { SortEngine } from "../plugins/sort/SortEngine";
+export { FilterEngine } from "../plugins/filter/FilterEngine";
+export { SearchEngine } from "../plugins/search/SearchEngine";
 
 // ============================================================
 // 公式引擎
 // ============================================================
 export { FormulaEngine } from "../plugins/formula/FormulaEngine";
 export { FormulaEvaluator } from "../plugins/formula/FormulaEvaluator";
+export { parseFormula } from "../plugins/formula/FormulaParser";
 export { functionRegistry, FUNCTION_CATEGORY } from "../plugins/formula/functions";
 
 // ============================================================
-// 类型系统
+// 样式与主题
 // ============================================================
+export { StylePool, stylePool, DEFAULT_STYLE_ID } from "../model/styles/index";
 export { BaseColumnType } from "../types/BaseColumnType";
-export { themeStyleProvider } from "../theme/ThemeStyleProvider";
+export { ThemeManager } from "../theme/ThemeManager";
+export { defaultThemeConfig, darkThemeConfig } from "../theme/config";
+export { ThemeStyleProvider, themeStyleProvider } from "../theme/ThemeStyleProvider";
 export { PopupManager } from "../ui/components/PopupManager";
 export { PopupPanel } from "../ui/components/PopupPanel";
 
@@ -87,6 +113,12 @@ export { PopupPanel } from "../ui/components/PopupPanel";
 // ============================================================
 export { BaseLayer } from "../render/BaseLayer";
 export { ViewportTransform } from "../render/ViewportTransform";
+export { LayerCompositor } from "../render/LayerCompositor";
+export { TileLayer } from "../render/layers/TileLayer";
+export { SelectionLayer } from "../render/layers/SelectionLayer";
+export { FrozenLayer } from "../render/layers/FrozenLayer";
+export { InteractionLayer } from "../render/layers/InteractionLayer";
+export { HeaderLayer } from "../render/layers/HeaderLayer";
 
 // ============================================================
 // 图表系统
@@ -104,6 +136,11 @@ export * from "../render/chart/types";
 export * from "../render/chart/strategies/index";
 
 // ============================================================
+// UI
+// ============================================================
+export { ScrollManager } from "../ui/ScrollManager";
+
+// ============================================================
 // 常量与枚举
 // ============================================================
 export * from "../constants/enums/AutoFillDir";
@@ -119,6 +156,7 @@ export * from "../constants/enums/StyleScope";
 export * from "../constants/enums/TextAlign";
 export * from "../constants/enums/ValidationRuleType";
 export * from "../constants/enums/VerticalAlign";
+export * from "../constants/errorCodes";
 export * from "../constants/eventNames";
 export * from "../constants/hookNames";
 export * from "../constants/sheetEvents";

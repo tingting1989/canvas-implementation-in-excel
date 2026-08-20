@@ -11,3 +11,4 @@ export { UniqueValidator } from "./validators/UniqueValidator.js";
 export { FormulaValidator } from "./validators/FormulaValidator.js";
 export { DateTimeValidator } from "./validators/DateTimeValidator.js";
 export { RegexValidator } from "./validators/RegexValidator.js";
+export { TimeValidator } from "./validators/TimeValidator.js";
