@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { RowMoveStrategy } from "@/editor/strategies/RowMoveStrategy.js";
+import { RowMoveStrategy } from "@/plugins/rowMove/RowMoveStrategy.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 import { DELEGATE_KEYS } from "@/constants/eventNames.js";
 

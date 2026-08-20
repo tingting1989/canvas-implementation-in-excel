@@ -1,18 +1,18 @@
 import { PluginManager } from "./PluginManager.js";
-import { AutoFillPlugin } from "./AutoFillPlugin.js";
-import { ContextMenuPlugin } from "./ContextMenuPlugin.js";
-import { ColumnMovePlugin } from "./ColumnMovePlugin.js";
-import { CopyPastePlugin } from "./CopyPastePlugin.js";
-import { ExportFilePlugin } from "./ExportFilePlugin.js";
-import { ImportFilePlugin } from "./ImportFilePlugin.js";
-import { HiddenColumnsPlugin } from "./HiddenColumnsPlugin.js";
-import { HiddenRowsPlugin } from "./HiddenRowsPlugin.js";
-import { RowMovePlugin } from "./RowMovePlugin.js";
-import { FreezePlugin } from "./FreezePlugin.js";
-import { FormulaPlugin } from "./FormulaPlugin.js";
+import { AutoFillPlugin } from "./autoFill/AutoFillPlugin.js";
+import { ContextMenuPlugin } from "./contextMenu/ContextMenuPlugin.js";
+import { ColumnMovePlugin } from "./columnMove/ColumnMovePlugin.js";
+import { CopyPastePlugin } from "./copyPaste/CopyPastePlugin.js";
+import { ExportFilePlugin } from "./exportFile/ExportFilePlugin.js";
+import { ImportFilePlugin } from "./importFile/ImportFilePlugin.js";
+import { HiddenColumnsPlugin } from "./hiddenColumns/HiddenColumnsPlugin.js";
+import { HiddenRowsPlugin } from "./hiddenRows/HiddenRowsPlugin.js";
+import { RowMovePlugin } from "./rowMove/RowMovePlugin.js";
+import { FreezePlugin } from "./freeze/FreezePlugin.js";
+import { FormulaPlugin } from "./formula/FormulaPlugin.js";
 import { SortPlugin } from "./sort/SortPlugin.js";
-import { DataValidationPlugin } from "./data-validation/DataValidationPlugin.js";
-import { ChartPlugin } from "./ChartPlugin.js";
+import { DataValidationPlugin } from "./dataValidation/DataValidationPlugin.js";
+import { ChartPlugin } from "./chart/ChartPlugin.js";
 import { FilterPlugin } from "./filter/FilterPlugin.js";
 import { SearchPlugin } from "./search/SearchPlugin.js";
 
@@ -35,7 +35,7 @@ const builtinPlugins: [string, typeof BasePlugin][] = [
     ["search", SearchPlugin],
 ];
 
-import { BasePlugin } from "./BasePlugin.js";
+import { BasePlugin } from "./base/BasePlugin.js";
 
 export function registerBuiltinPlugins(): void {
     for (const [name, PluginClass] of builtinPlugins) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { lookupFunctions } from "@/formula/functions/lookup";
+import { lookupFunctions } from "@/plugins/formula/functions/lookup";
 
 describe("Lookup Functions - HLOOKUP", () => {
     const HLOOKUP = lookupFunctions.HLOOKUP;

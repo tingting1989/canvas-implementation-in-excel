@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { CopyPastePlugin } from "../../src/plugins/CopyPastePlugin.js";
-import { FormulaPlugin } from "../../src/plugins/FormulaPlugin.js";
-import { ContextMenuPlugin } from "../../src/plugins/ContextMenuPlugin.js";
+import { CopyPastePlugin } from "@/plugins/copyPaste/CopyPastePlugin.ts";
+import { FormulaPlugin } from "@/plugins/formula/FormulaPlugin.ts";
+import { ContextMenuPlugin } from "@/plugins/contextMenu/ContextMenuPlugin.ts";
 import { createMockWorkbook } from "./BasePlugin.test.js";
 
 describe("CopyPastePlugin", () => {

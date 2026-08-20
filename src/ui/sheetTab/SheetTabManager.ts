@@ -20,6 +20,7 @@ export class SheetTabManager extends Disposable {
     #onRename: SheetTabCallback | null = null;
     #onCopy: SheetTabCallback | null = null;
     #onHide: SheetTabCallback | null = null;
+    #onUnhide: SheetTabCallback | null = null;
 
     constructor(wrap: HTMLElement, workbook: WorkbookLike) {
         super();
@@ -67,11 +68,17 @@ export class SheetTabManager extends Disposable {
         this.trackEvent(this.#element!, SHEET_TAB_EVENTS.HIDE, (e: Event) => {
             if (this.#onHide) this.#onHide((e as CustomEvent).detail.name);
         });
+
+        this.trackEvent(this.#element!, SHEET_TAB_EVENTS.UNHIDE, (e: Event) => {
+            if (this.#onUnhide) this.#onUnhide((e as CustomEvent).detail.name);
+        });
     }
 
     refresh(): void {
         if (this.isDisposed || !this.#element || !this.#workbook) return;
-        this.#element.refresh(this.#workbook.sheets, this.#workbook.activeSheet?.name ?? "");
+        const visibleSheets = new Map([...this.#workbook.sheets.entries()].filter(([, sheet]) => (sheet as any).visible !== false));
+        const hiddenSheets = [...this.#workbook.sheets.entries()].filter(([, sheet]) => (sheet as any).visible === false).map(([name]) => name);
+        this.#element.refresh(visibleSheets, this.#workbook.activeSheet?.name ?? "", hiddenSheets);
         this.#element.readOnly = this.#workbook.activeSheet?.readOnly || false;
     }
 
@@ -103,6 +110,10 @@ export class SheetTabManager extends Disposable {
         this.#onHide = fn;
     }
 
+    set onUnhide(fn: SheetTabCallback) {
+        this.#onUnhide = fn;
+    }
+
     set workbook(wb: WorkbookLike) {
         this.#workbook = wb;
     }
@@ -120,5 +131,6 @@ export class SheetTabManager extends Disposable {
         this.#onRename = null;
         this.#onCopy = null;
         this.#onHide = null;
+        this.#onUnhide = null;
     }
 }

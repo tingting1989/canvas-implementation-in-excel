@@ -60,6 +60,35 @@
             background: rgba(191,54,12,0.08); padding: 4px 8px; border-radius: 3px; margin-top: 6px;
         }
 
+        .custom-validator-section {
+            background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%);
+            padding: 24px; border-radius: 16px; margin-bottom: 20px;
+            border: 2px solid #00acc1; box-shadow: 0 8px 25px rgba(0, 172, 193, 0.2);
+        }
+        .custom-validator-section h3 { color: #006064; margin-bottom: 16px; font-size: 1.3em; }
+        .custom-validator-section .step {
+            background: white; padding: 16px; border-radius: 10px; margin-bottom: 12px;
+            border-left: 4px solid #00acc1;
+        }
+        .custom-validator-section .step-number {
+            display: inline-block; width: 28px; height: 28px; line-height: 28px;
+            text-align: center; border-radius: 50%; background: #00acc1; color: white;
+            font-weight: 700; font-size: 14px; margin-right: 10px;
+        }
+        .custom-validator-section .step-title { font-weight: 700; color: #006064; font-size: 15px; }
+        .custom-validator-section .step-desc { color: #555; font-size: 13px; margin-top: 8px; line-height: 1.6; }
+        .code-block {
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; line-height: 1.6;
+            background: #1e1e2e; color: #cdd6f4; padding: 16px; border-radius: 8px;
+            margin-top: 10px; overflow-x: auto; white-space: pre;
+        }
+        .code-block .kw { color: #cba6f7; }
+        .code-block .fn { color: #89b4fa; }
+        .code-block .str { color: #a6e3a1; }
+        .code-block .cmt { color: #6c7086; }
+        .code-block .cls { color: #f9e2af; }
+        .code-block .num { color: #fab387; }
+
         .control-bar {
             display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center;
         }
@@ -119,6 +148,7 @@
                 <option value="regex">正则表达式</option>
                 <option value="unique">唯一性</option>
                 <option value="formula" selected>自定义公式</option>
+                <option value="phone" style="color:#00838f;">🧩 手机号（自定义）</option>
             </select>
             
             <span id="formulaTypeContainer" style="display:inline-block;">
@@ -402,6 +432,15 @@
                         <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#f59e0b;">warning ⚠️</strong></td>
                         <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#d97706;">⏳ 异步 (&lt;100ms)</strong></td>
                     </tr>
+                    <tr style="background: #e0f2f1;">
+                        <td style="padding: 8px; border: 1px solid #ddd; font-weight: bold; color: #00796b;">Z</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">手机号🧩</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><code>phone</code> <span style="background:#00acc1;color:white;padding:1px 4px;border-radius:3px;font-size:10px;">自定义</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><span class="badge" style="background:#00acc1;color:white;padding:2px 6px;border-radius:4px;font-size:11px;">phone</span></td>
+                        <td style="padding: 8px; border: 1px solid #ddd; font-family: monospace;">/^1[3-9]\d{9}$/</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#00838f;">stop 🛑</strong></td>
+                        <td style="padding: 8px; border: 1px solid #ddd;"><strong style="color:#006064;">🧩 自定义验证器</strong></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -412,6 +451,7 @@
                 <li><strong style="color:#0369a1;background:#f0f9ff;padding:2px 6px;border-radius:4px;">A-H 浅蓝</strong>: 基础类型验证（number/text/list/datetime/regex/unique）</li>
                 <li><strong style="color:#dc2626;background:#fee2e2;padding:2px 6px;border-radius:4px;">I-P 浅红</strong>: 同步公式验证（简单函数，立即阻止，errorStyle:'stop'）</li>
                 <li><strong style="color:#d97706;background:#fef3c7;padding:2px 6px;border-radius:4px;">Q-Y 浅黄</strong>: 异步公式验证（复杂函数，后台标记，errorStyle:'warning'）</li>
+                <li><strong style="color:#00796b;background:#e0f2f1;padding:2px 6px;border-radius:4px;">Z 青色</strong>: 自定义验证器（🧩 继承 BaseValidator，registerValidator 注册）</li>
             </ul>
         </div>
     </div>
@@ -550,10 +590,7 @@
 
             <div style="margin-top:15px;padding:12px;background:#eff6ff;border-radius:6px;border-left:4px solid #3b82f6;">
 
-                uni.showToast({
-                title: '上传成功',
-                icon: 'success'
-                });                <h4 style="margin-bottom:8px;color:#1e40af;">🔄 FormulaEngine 智能降级机制（增强版）</h4>
+                 <h4 style="margin-bottom:8px;color:#1e40af;">🔄 FormulaEngine 智能降级机制（增强版）</h4>
                 <p style="margin:0;color:#1e3a8a;font-size:13px;line-height:1.6;">
                     当 <strong>FormulaEngine 未加载</strong>时，系统会使用<strong>三级降级策略</strong>：
                 </p>
@@ -788,6 +825,173 @@
                 <div class="name">日期时间验证</div>
                 <div class="desc">验证日期时间值是否在指定范围内，支持多种格式（ISO、中文、12h 等），由 DateTimeValidator 统一处理。</div>
                 <div class="ops">运算符: before, after, between, notBetween, equalTo, notEqualTo<br>配置: value = ['2024-01-01 00:00:00', '2024-12-31 23:59:59']</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ 自定义验证器 ═══ -->
+    <div class="demo-section">
+        <h2 class="section-title"><span>🧩</span> 自定义验证器（Custom Validator）</h2>
+
+        <div style="background: linear-gradient(135deg, #006064 0%, #00838f 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+            <p style="margin: 0; line-height: 1.7; font-size: 1.05em;">
+                数据验证插件支持<strong>自定义验证器类型</strong>。通过继承 <code style="background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:4px;">BaseValidator</code> 并调用
+                <code style="background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:4px;">registerValidator()</code>，只需一步即可注册全新的验证类型，
+                白名单自动同步，无需修改核心代码。
+            </p>
+        </div>
+
+        <div class="custom-validator-section">
+            <h3>📝 三步创建自定义验证器</h3>
+
+            <div class="step">
+                <span class="step-number">1</span>
+                <span class="step-title">继承 BaseValidator，实现 validateSync + validate</span>
+                <div class="step-desc">
+                    <code>validateSync(value, rule, context)</code> 返回同步验证结果，<code>validate()</code> 包装为 Promise。使用 <code>checkBlank()</code> 处理空值，<code>ValidationResult.success()</code> / <code>ValidationResult.failure()</code> 返回结果。
+                </div>
+                <div class="code-block"><span class="kw">class</span> <span class="cls">PhoneValidator</span> <span class="kw">extends</span> <span class="cls">CanvasSheet.BaseValidator</span> {
+    <span class="kw">static</span> <span class="kw">get</span> <span class="fn">TYPE</span>() { <span class="kw">return</span> <span class="str">'phone'</span>; }
+
+    <span class="fn">validateSync</span>(value, rule, context) {
+        <span class="kw">const</span> { isBlank, allowed } = <span class="kw">this</span>.<span class="fn">checkBlank</span>(value, rule);
+        <span class="kw">if</span> (isBlank) <span class="kw">return</span> allowed
+            ? <span class="cls">CanvasSheet.ValidationResult</span>.<span class="fn">success</span>()
+            : <span class="cls">CanvasSheet.ValidationResult</span>.<span class="fn">failure</span>(<span class="str">'手机号不能为空'</span>, <span class="str">'stop'</span>);
+
+        <span class="kw">const</span> phoneRegex = <span class="str">/^1[3-9]\d{9}$/</span>;
+        <span class="kw">return</span> phoneRegex.<span class="fn">test</span>(<span class="cls">String</span>(value))
+            ? <span class="cls">CanvasSheet.ValidationResult</span>.<span class="fn">success</span>()
+            : <span class="cls">CanvasSheet.ValidationResult</span>.<span class="fn">failure</span>(<span class="str">'请输入有效的11位手机号'</span>, rule.errorStyle);
+    }
+
+    <span class="fn">validate</span>(value, rule, context) {
+        <span class="kw">return</span> <span class="cls">Promise</span>.<span class="fn">resolve</span>(<span class="kw">this</span>.<span class="fn">validateSync</span>(value, rule, context));
+    }
+}</div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">2</span>
+                <span class="step-title">调用 registerValidator() 一步注册（白名单自动同步）</span>
+                <div class="step-desc">
+                    <code>registerValidator(type, validator)</code> 同时完成验证器注册和类型白名单同步，无需手动调用 <code>ValidationRule.registerValidType()</code>。
+                </div>
+                <div class="code-block"><span class="cmt">// 一步注册：验证器 + 白名单自动同步</span>
+dvPlugin.<span class="fn">registerValidator</span>(<span class="str">'phone'</span>, <span class="kw">new</span> <span class="cls">PhoneValidator</span>());
+
+<span class="cmt">// 验证类型已自动加入白名单</span>
+console.<span class="fn">log</span>(<span class="cls">CanvasSheet.ValidationRule</span>.VALID_TYPES);
+<span class="cmt">// → ["number","text","list","formula","date","time","datetime","regex","unique","phone"]</span></div>
+            </div>
+
+            <div class="step">
+                <span class="step-number">3</span>
+                <span class="step-title">使用自定义类型创建验证规则</span>
+                <div class="step-desc">
+                    注册后，<code>type: 'phone'</code> 与内置类型完全等同，支持 <code>setValidation()</code>、<code>validateCell()</code>、<code>validateRange()</code> 等所有 API。
+                </div>
+                <div class="code-block">dvPlugin.<span class="fn">setValidation</span>({
+    range: <span class="str">'F2:F20'</span>,
+    type: <span class="str">'phone'</span>,           <span class="cmt">// ✅ 自定义类型，与内置类型完全等同</span>
+    errorMessage: <span class="str">'⚠️ 请输入有效的手机号'</span>,
+    errorStyle: <span class="str">'stop'</span>,
+    allowBlank: <span class="kw">true</span>
+});</div>
+            </div>
+        </div>
+
+        <h3 style="color: #4a5568; margin: 24px 0 16px;">🔑 核心 API</h3>
+        <div class="api-grid">
+            <div class="api-card">
+                <div class="category">自定义验证器</div>
+                <div class="name">registerValidator</div>
+                <div class="syntax">dv.registerValidator(type, validator): void</div>
+                <div class="desc">注册自定义验证器，同时自动将类型加入白名单。type 为验证类型名（如 'phone'），validator 为继承 BaseValidator 的实例。</div>
+                <div class="example">dv.registerValidator('phone', new PhoneValidator());</div>
+            </div>
+            <div class="api-card">
+                <div class="category">自定义验证器</div>
+                <div class="name">registerValidType</div>
+                <div class="syntax">dv.registerValidType(type): void</div>
+                <div class="desc">仅注册类型名到白名单（不注册验证器）。适用于需要先声明类型、稍后注册验证器的场景。</div>
+                <div class="example">dv.registerValidType('phone');
+// 后续再注册验证器...</div>
+            </div>
+            <div class="api-card">
+                <div class="category">类型查询</div>
+                <div class="name">ValidationRule.isValidType</div>
+                <div class="syntax">ValidationRule.isValidType(type): boolean</div>
+                <div class="desc">静态方法，查询类型是否已注册（包含内置 + 自定义类型）。O(1) 查询。</div>
+                <div class="example">CanvasSheet.ValidationRule.isValidType('phone');
+// → true
+CanvasSheet.ValidationRule.isValidType('unknown');
+// → false</div>
+            </div>
+            <div class="api-card">
+                <div class="category">类型查询</div>
+                <div class="name">ValidationRule.VALID_TYPES</div>
+                <div class="syntax">ValidationRule.VALID_TYPES: string[]</div>
+                <div class="desc">静态属性，获取所有已注册的验证类型列表（内置 + 自定义）。</div>
+                <div class="example">CanvasSheet.ValidationRule.VALID_TYPES;
+// → ["number","text","list",...,"phone"]</div>
+            </div>
+            <div class="api-card">
+                <div class="category">基类</div>
+                <div class="name">BaseValidator</div>
+                <div class="syntax">class MyValidator extends BaseValidator</div>
+                <div class="desc">所有验证器的基类。子类必须实现 validate() 方法，推荐同时实现 validateSync()。提供 checkBlank()、compare() 工具方法。</div>
+                <div class="example">class MyValidator extends CanvasSheet.BaseValidator {
+  static get TYPE() { return 'myType'; }
+  validateSync(value, rule, ctx) {
+    const { isBlank, allowed } = this.checkBlank(value, rule);
+    if (isBlank) return allowed
+      ? ValidationResult.success()
+      : ValidationResult.failure('不能为空');
+    // 自定义验证逻辑...
+    return ValidationResult.success();
+  }
+  validate(value, rule, ctx) {
+    return Promise.resolve(this.validateSync(value, rule, ctx));
+  }
+}</div>
+            </div>
+            <div class="api-card">
+                <div class="category">结果类</div>
+                <div class="name">ValidationResult</div>
+                <div class="syntax">ValidationResult.success() / .failure(msg, style)</div>
+                <div class="desc">验证结果封装。success() 返回通过结果，failure(msg, errorStyle) 返回失败结果。errorStyle 支持 'stop'/'warning'/'information'。</div>
+                <div class="example">CanvasSheet.ValidationResult.success();
+CanvasSheet.ValidationResult.failure('格式错误', 'stop');
+CanvasSheet.ValidationResult.failure('建议修改', 'warning');</div>
+            </div>
+        </div>
+
+        <h3 style="color: #4a5568; margin: 24px 0 16px;">💡 更多自定义验证器示例</h3>
+        <div class="validator-grid">
+            <div class="validator-card" style="background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-left: 4px solid #00acc1;">
+                <div class="type" style="color: #00838f;">type: phone（自定义）</div>
+                <div class="name">手机号验证</div>
+                <div class="desc">验证中国大陆手机号格式：1开头，第二位3-9，共11位数字。</div>
+                <div class="ops" style="color: #006064; background: rgba(0,96,100,0.08);">正则: /^1[3-9]\d{9}$/</div>
+            </div>
+            <div class="validator-card" style="background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-left: 4px solid #00acc1;">
+                <div class="type" style="color: #00838f;">type: idCard（自定义）</div>
+                <div class="name">身份证号验证</div>
+                <div class="desc">验证18位中国身份证号格式，含校验位计算。</div>
+                <div class="ops" style="color: #006064; background: rgba(0,96,100,0.08);">正则: /^\d{17}[\dXx]$/ + 校验位算法</div>
+            </div>
+            <div class="validator-card" style="background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-left: 4px solid #00acc1;">
+                <div class="type" style="color: #00838f;">type: ip（自定义）</div>
+                <div class="name">IP 地址验证</div>
+                <div class="desc">验证 IPv4 地址格式，每段 0-255。</div>
+                <div class="ops" style="color: #006064; background: rgba(0,96,100,0.08);">正则: /^(\d{1,3}\.){3}\d{1,3}$/ + 范围检查</div>
+            </div>
+            <div class="validator-card" style="background: linear-gradient(135deg, #e0f7fa 0%, #b2ebf2 100%); border-left: 4px solid #00acc1;">
+                <div class="type" style="color: #00838f;">type: password（自定义）</div>
+                <div class="name">密码强度验证</div>
+                <div class="desc">验证密码复杂度：长度、大小写、数字、特殊字符。</div>
+                <div class="ops" style="color: #006064; background: rgba(0,96,100,0.08);">规则: 长度≥8 + 大写 + 小写 + 数字 + 特殊字符</div>
             </div>
         </div>
     </div>
@@ -1219,56 +1423,56 @@ dv.destroy();  // 彻底销毁</div>
         [
             "编号", "姓名", "部门", "职位", "邮箱", "日期时间", "邮箱格式", "唯一编号",
             "数值>0", "范围0-100", "整数检查", "偶数检查", "文本长度≥5", "非空文本", "日期2024", "布尔值",
-            "SUM聚合", "AVERAGE平均", "COUNTIF条件", "IFERROR处理", "AND复合联动", "OR异常检测", "NOT非空检查", "MAX/MIN范围", "VLOOKUP外键"
+            "SUM聚合", "AVERAGE平均", "COUNTIF条件", "IFERROR处理", "AND复合联动", "OR异常检测", "NOT非空检查", "MAX/MIN范围", "VLOOKUP外键", "手机号🧩"
         ],
 
         // 第1行：全部通过（正常数据）
         [
             1, "张三", "技术部", "工程师", "zhangsan@corp.com", "2024-06-15 09:30", "valid@email.com", "EMP001",
             100, 50, 42, 8, "Valid Text", "NonEmpty", "2024-06-15", true,
-            200, 50.0, "test@mail.com", "123", "OK", "Normal", "Filled", 75, "张三"
+            200, 50.0, "test@mail.com", "123", "OK", "Normal", "Filled", 75, "张三", "13800138000"
         ],
 
         // 第2行：多个失败（测试同步阻止 + 异步标记）
         [
             2, "李四", "市场部", "经理", "lisi@corp.com.cn", "2024-03-20 14:00", "user@domain.org", "EMP001",
             -10, 150, 3.14, 7, "No", "", "2023-01-01", false,
-            141, 35.29, "no-at-sign", "abc", "Fail", "Abnormal", "", 120, "王五"
+            141, 35.29, "no-at-sign", "abc", "Fail", "Abnormal", "", 120, "王五", "12345678901"
         ],
 
         // 第3行：部分失败（边界测试）
         [
             3, "王五", "财务部", "会计", "wangwu@finance.net", "2024-12-31 16:45", "ok@test.io", "EMP003",
             55, 75, 100, 6, "Perfect Length", "HasContent", "2024-12-31", true,
-            231, 62.75, "another@email.com", "456", "Pass", "Normal", "Data", 90, "赵六"
+            231, 62.75, "another@email.com", "456", "Pass", "Normal", "Data", 90, "赵六", "15912345678"
         ],
 
         // 第4行：异常数据组合
         [
             4, "赵六", "人事部", "专员", "zhaoliu@hr.org", "2020-07-20 08:15", "bad-format", "EMP004",
             0, -5, -7, 9, "X", "TextHere", "2026-01-01", true,
-            -3, -1.33, "missing@symbol", "xyz", "Error", "Outlier", "Value", -10, "钱七"
+            -3, -1.33, "missing@symbol", "xyz", "Error", "Outlier", "Value", -10, "钱七", "abc1234567"
         ],
 
         // 第5行：混合结果
         [
             5, "钱七", "技术部", "架构师", "qianqi@tech.com", "2024-06-20 20:30", "good@email.cn", "EMP005",
             88, 99, 77, 4, "Another Good One", "NotEmpty", "2024-06-20", false,
-            264, 66.0, "user@host.com", "789", "Good", "Normal", "Present", 85, "孙八"
+            264, 66.0, "user@host.com", "789", "Good", "Normal", "Present", 85, "孙八", "18676543210"
         ],
 
         // 第6行：大量标记
         [
             6, "孙八", "市场部", "销售", "sunba@mkt.co.uk", "2023-11-11 12:45", "simple@addr", "EMP006",
             -1, 101, 2.5, 3, "Bad", "", "2023-12-31", false,
-            102, 25.5, "invalid-email", "ABC", "Fail", "Special", "", 105, "周九"
+            102, 25.5, "invalid-email", "ABC", "Fail", "Special", "", 105, "周九", "1380013800"
         ],
 
         // 第7行：基本正常
         [
             7, "周九", "财务部", "总监", "zhoujiu@fin.com", "2024-07-04 10:00", "chief@office.gov", "EMP007",
             42, 50, 200, 10, "OK", "Has Value", "2024-07-04", true,
-            292, 73.0, "admin@system.edu", "101010", "Pass", "Normal", "Exists", 110, "吴十"
+            292, 73.0, "admin@system.edu", "101010", "Pass", "Normal", "Exists", 110, "吴十", "17788899000"
         ]
     ];
 
@@ -1403,6 +1607,14 @@ dv.destroy();  // 彻底销毁</div>
                 }
                 
                 log('📐 使用公式: ' + ruleConfig.formula, 'info');
+                break;
+            case 'phone':
+                ruleConfig.errorMessage = '⚠️ 请输入有效的11位手机号（1开头，如 13800138000）';
+                ruleConfig.errorStyle = 'stop';
+                ruleConfig.allowBlank = true;
+                ruleConfig.inputMessage = '输入11位手机号（1开头）';
+                ruleConfig.inputTitle = '手机号';
+                log('🧩 使用自定义验证器: type=phone (PhoneValidator)', 'info');
                 break;
         }
 
@@ -1583,6 +1795,7 @@ dv.destroy();  // 彻底销毁</div>
 
     async function initWorkbook() {
         try {
+
             log('初始化数据验证演示...', 'info');
             const container = document.getElementById('sheet');
             container.width = 1400;
@@ -1620,7 +1833,8 @@ dv.destroy();  // 彻底销毁</div>
                         { type: 'text', width: 75, title: 'OR异常检测\n[异步-warning]' },
                         { type: 'text', width: 72, title: 'NOT非空检查\n[异步-warning]' },
                         { type: 'numeric', width: 80, title: 'MAX/MIN范围\n[异步-warning]' },
-                        { type: 'text', width: 80, title: 'VLOOKUP外键\n[异步-warning]' }
+                        { type: 'text', width: 80, title: 'VLOOKUP外键\n[异步-warning]' },
+                        { type: 'text', width: 110, title: '手机号🧩\n[自定义-phone]' }
                     ],
                     cellPadding: 8
                 }],
@@ -1873,6 +2087,64 @@ dv.destroy();  // 彻底销毁</div>
             });
 
             dvPlugin = workbook.getPlugin('dataValidation');
+
+            // ════════════════════════════════════════
+            // 🧩 自定义验证器演示：手机号验证器
+            // ════════════════════════════════════════
+            if (dvPlugin) {
+                var PhoneValidator = (function(_BaseValidator, _ValidationResult) {
+                    function PhoneValidator() {
+                        _BaseValidator.call(this);
+                    }
+                    PhoneValidator.prototype = Object.create(_BaseValidator.prototype);
+                    PhoneValidator.prototype.constructor = PhoneValidator;
+
+                    Object.defineProperty(PhoneValidator, 'TYPE', {
+                        get: function() { return 'phone'; }
+                    });
+
+                    PhoneValidator.prototype.validateSync = function(value, rule, context) {
+                        var blankResult = this.checkBlank(value, rule);
+                        if (blankResult.isBlank) {
+                            return blankResult.allowed
+                                ? _ValidationResult.success()
+                                : _ValidationResult.failure('手机号不能为空', 'stop');
+                        }
+                        var phoneRegex = /^1[3-9]\d{9}$/;
+                        return phoneRegex.test(String(value))
+                            ? _ValidationResult.success()
+                            : _ValidationResult.failure('请输入有效的11位手机号（如 13800138000）', rule.errorStyle || 'stop');
+                    };
+
+                    PhoneValidator.prototype.validate = function(value, rule, context) {
+                        return Promise.resolve(this.validateSync(value, rule, context));
+                    };
+
+                    return PhoneValidator;
+                })(CanvasSheet.BaseValidator, CanvasSheet.ValidationResult);
+
+                dvPlugin.registerValidator('phone', new PhoneValidator());
+                log('🧩 自定义验证器已注册: type=phone (PhoneValidator)', 'success');
+                log('   📋 当前合法类型: ' + CanvasSheet.ValidationRule.VALID_TYPES.join(', '), 'info');
+
+                var phoneRuleId = dvPlugin.setValidation({
+                    range: 'Z2:Z20',
+                    type: 'phone',
+                    errorMessage: '⚠️ 请输入有效的11位手机号',
+                    errorStyle: 'stop',
+                    allowBlank: true,
+                    inputMessage: '输入11位手机号（1开头，如 13800138000）',
+                    inputTitle: '手机号'
+                });
+                log('📱 手机号验证规则已添加: Z2:Z20 → ' + phoneRuleId, 'success');
+
+                var testValues = ['13800138000', '12345678901', '15912345678', 'abc', '1380013800'];
+                testValues.forEach(function(v) {
+                    var isValid = CanvasSheet.ValidationRule.isValidType('phone');
+                    log('   测试类型查询 isValidType("phone") = ' + isValid, 'info');
+                });
+            }
+
             toggleHooks();
             
             if (dvPlugin) {

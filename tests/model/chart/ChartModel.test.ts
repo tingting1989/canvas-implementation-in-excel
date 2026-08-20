@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ChartModel } from "@/model/chart/ChartModel";
-import type { DataRange, ChartModelOptions } from "@/model/chart/ChartModel";
+import { ChartModel } from "@/plugins/chart/ChartModel";
+import type { DataRange, ChartModelOptions } from "@/plugins/chart/ChartModel";
 
 describe("ChartModel", () => {
     describe("构造函数和基础属性", () => {

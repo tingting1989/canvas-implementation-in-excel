@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFormula, colToIndex, indexToCol } from "@/formula/FormulaParser";
+import { parseFormula, colToIndex, indexToCol } from "@/plugins/formula/FormulaParser";
 
 describe("FormulaParser BugHunt - colToIndex edge cases", () => {
     it("should handle very large column indices (XFD = 16384)", () => {

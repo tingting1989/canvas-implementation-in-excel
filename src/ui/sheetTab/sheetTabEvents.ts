@@ -15,6 +15,7 @@ export const SHEET_TAB_EVENTS = {
     ADD: "add",
     COPY: "copy",
     HIDE: "hide",
+    UNHIDE: "unhide",
 } as const;
 
 export type SheetTabEventName = (typeof SHEET_TAB_EVENTS)[keyof typeof SHEET_TAB_EVENTS];

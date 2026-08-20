@@ -5,7 +5,7 @@ import {
     RegexValidator,
     ValidationRule,
     ValidationResult
-} from '../../../src/plugins/data-validation/index.js';
+} from '@/plugins/dataValidation';
 
 describe('Phase 2 验证器 - 完整功能测试', () => {
 

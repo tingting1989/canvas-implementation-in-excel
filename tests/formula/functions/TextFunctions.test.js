@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { textFunctions } from "@/formula/functions/text";
+import { textFunctions } from "@/plugins/formula/functions/text";
 
 describe("Text Functions - UPPER", () => {
     const UPPER = textFunctions.UPPER;

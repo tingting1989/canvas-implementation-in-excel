@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { ValidationStrategy } from "@/editor/strategies/ValidationStrategy.js";
+import { ValidationStrategy } from "@/plugins/dataValidation/ValidationStrategy.js";
 import { STRATEGY_PRIORITY } from "@/constants/strategyPriority.js";
 
 describe("ValidationStrategy", () => {

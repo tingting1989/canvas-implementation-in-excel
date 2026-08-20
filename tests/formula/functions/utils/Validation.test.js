@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { _validateArgs, _validateNumericArg } from "@/formula/functions/utils/validation";
+import { _validateArgs, _validateNumericArg } from "@/plugins/formula/functions/utils/validation";
 
 describe("Utils - _validateArgs", () => {
     it("should pass for valid arg count within range", () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { _flatten, _toNum, _isBlank } from "@/formula/functions/utils/helpers";
+import { _flatten, _toNum, _isBlank } from "@/plugins/formula/functions/utils/helpers";
 
 describe("Utils BugHunt - _flatten", () => {
     it("should handle 10000-level deep nesting without stack overflow", () => {

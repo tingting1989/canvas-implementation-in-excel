@@ -7,9 +7,9 @@ import {
     hasFunction,
     getRegisteredFunctions,
     getFunctionStats,
-} from "@/formula/functions";
-import { mathFunctions } from "@/formula/functions/math";
-import { logicalFunctions } from "@/formula/functions/logical";
+} from "@/plugins/formula/functions";
+import { mathFunctions } from "@/plugins/formula/functions/math";
+import { logicalFunctions } from "@/plugins/formula/functions/logical";
 
 describe("FunctionRegistry - Construction", () => {
     it("should have built-in modules registered", () => {

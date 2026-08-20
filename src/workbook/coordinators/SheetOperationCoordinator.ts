@@ -136,6 +136,8 @@ export class SheetOperationCoordinator {
 
         this.#dispatchToSubSystems(SUB.INSERT_ROW, atRow);
         this.#sheet.rowSync.insert(atRow);
+
+        this.#sheet.bus.emit(SHEET_EVENTS.ROW_INSERTED, { atRow });
     }
 
     /**
@@ -149,6 +151,8 @@ export class SheetOperationCoordinator {
 
         this.#dispatchToSubSystems(SUB.INSERT_COL, atCol);
         this.#sheet.colSync.insert(atCol);
+
+        this.#sheet.bus.emit(SHEET_EVENTS.COLUMN_INSERTED, { atCol });
     }
 
     /**
@@ -162,6 +166,8 @@ export class SheetOperationCoordinator {
 
         this.#dispatchToSubSystems(SUB.DELETE_ROW, atRow);
         this.#sheet.rowSync.delete(atRow);
+
+        this.#sheet.bus.emit(SHEET_EVENTS.ROW_DELETED, { atRow });
     }
 
     /**
@@ -175,6 +181,8 @@ export class SheetOperationCoordinator {
 
         this.#dispatchToSubSystems(SUB.DELETE_COL, atCol);
         this.#sheet.colSync.delete(atCol);
+
+        this.#sheet.bus.emit(SHEET_EVENTS.COLUMN_DELETED, { atCol });
     }
 
     /**
@@ -193,6 +201,9 @@ export class SheetOperationCoordinator {
 
         this.#dispatchToSubSystems(SUB.MOVE_COL, fromCol, toCol);
         this.#sheet.colSync.move(fromCol, toCol);
+
+        this.#sheet.bus.emit(SHEET_EVENTS.COLUMN_MOVED, { fromCol, toCol });
+
         this.#sheet._invalidateAll();
     }
 
@@ -209,6 +220,9 @@ export class SheetOperationCoordinator {
 
         this.#dispatchToSubSystems(SUB.MOVE_ROW, fromRow, toRow);
         this.#sheet.rowSync.move(fromRow, toRow);
+
+        this.#sheet.bus.emit(SHEET_EVENTS.ROW_MOVED, { fromRow, toRow });
+
         this.#sheet._invalidateAll();
     }
 

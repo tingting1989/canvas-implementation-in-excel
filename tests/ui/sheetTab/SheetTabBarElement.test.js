@@ -2,11 +2,26 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { SheetTabBarElement } from "@/ui/sheetTab/SheetTabBarElement.js";
 import { SHEET_TAB_EVENTS } from "@/ui/sheetTab/sheetTabEvents.js";
 import { EVENT_NAMES } from "@/constants/eventNames.js";
+import "@/ui/components/PopupPanel.js";
+import "@/ui/sheetTab/SheetTabDropdown.js";
+
+function getDropdown() {
+    const panel = document.querySelector("popup-panel-new");
+    if (!panel) return null;
+    return panel.shadowRoot.querySelector("sheet-tab-dropdown");
+}
+
+function getDropdownItem(action) {
+    const dropdown = getDropdown();
+    if (!dropdown) return null;
+    return dropdown.shadowRoot.querySelector(`.st-item[data-key="${action}"]`);
+}
 
 describe("SheetTabBarElement Web Component", () => {
     let element;
 
     beforeEach(() => {
+        vi.useFakeTimers();
         element = document.createElement("sheet-tab-bar");
         document.body.appendChild(element);
     });
@@ -14,6 +29,8 @@ describe("SheetTabBarElement Web Component", () => {
     afterEach(() => {
         element.destroy();
         element.remove();
+        document.querySelectorAll("popup-panel-new").forEach((el) => el.remove());
+        vi.useRealTimers();
     });
 
     it("STBE-01: 渲染 Shadow DOM — 包含 nav-group, tabs-scroll, tabs, add-btn", () => {
@@ -165,9 +182,8 @@ describe("SheetTabBarElement Web Component", () => {
         expect(switchSpy).toHaveBeenCalledTimes(1);
         expect(switchSpy.mock.calls[0][0].detail.name).toBe("Sheet1");
 
-        const menu = element.shadowRoot.querySelector(".context-menu");
-        expect(menu).not.toBeNull();
-        expect(menu.getRootNode()).toBe(element.shadowRoot);
+        const dropdown = getDropdown();
+        expect(dropdown).not.toBeNull();
 
         element.removeEventListener(SHEET_TAB_EVENTS.SWITCH, switchSpy);
     });
@@ -188,14 +204,16 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const items = element.shadowRoot.querySelectorAll(".context-menu-item");
-        expect(items.length).toBe(4);
+        const dropdown = getDropdown();
+        const items = dropdown.shadowRoot.querySelectorAll(".st-item");
+        expect(items.length).toBe(5);
 
-        const actions = Array.from(items).map((i) => i.dataset.action);
-        expect(actions).toContain("rename");
-        expect(actions).toContain("delete");
-        expect(actions).toContain("copy");
-        expect(actions).toContain("hide");
+        const keys = Array.from(items).map((i) => i.dataset.key);
+        expect(keys).toContain("rename");
+        expect(keys).toContain("delete");
+        expect(keys).toContain("copy");
+        expect(keys).toContain("hide");
+        expect(keys).toContain("unhide");
     });
 
     it("STBE-14: 多工作表时删除选项为 danger 样式", () => {
@@ -214,7 +232,7 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        const deleteItem = getDropdownItem("delete");
         expect(deleteItem.classList.contains("danger")).toBe(true);
         expect(deleteItem.classList.contains("disabled")).toBe(false);
     });
@@ -232,7 +250,7 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        const deleteItem = getDropdownItem("delete");
         expect(deleteItem.classList.contains("disabled")).toBe(true);
     });
 
@@ -255,7 +273,7 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        const deleteItem = getDropdownItem("delete");
         deleteItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
         expect(closeSpy).toHaveBeenCalledTimes(1);
@@ -280,7 +298,7 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const renameItem = element.shadowRoot.querySelector('.context-menu-item[data-action="rename"]');
+        const renameItem = getDropdownItem("rename");
         renameItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
         const renameInput = element.shadowRoot.querySelector(".rename-input");
@@ -306,7 +324,7 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const copyItem = element.shadowRoot.querySelector('.context-menu-item[data-action="copy"]');
+        const copyItem = getDropdownItem("copy");
         copyItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
         expect(copySpy).toHaveBeenCalledTimes(1);
@@ -334,7 +352,7 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const hideItem = element.shadowRoot.querySelector('.context-menu-item[data-action="hide"]');
+        const hideItem = getDropdownItem("hide");
         hideItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
         expect(hideSpy).toHaveBeenCalledTimes(1);
@@ -359,12 +377,16 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        expect(element.shadowRoot.querySelector(".context-menu")).not.toBeNull();
+        vi.advanceTimersByTime(200);
 
-        const outsideClick = new MouseEvent("click", { bubbles: true, composed: true });
+        expect(getDropdown()).not.toBeNull();
+
+        const outsideClick = new MouseEvent("mousedown", { bubbles: true, composed: true, clientX: 1, clientY: 1 });
         document.dispatchEvent(outsideClick);
 
-        expect(element.shadowRoot.querySelector(".context-menu")).toBeNull();
+        vi.advanceTimersByTime(200);
+
+        expect(getDropdown()).toBeNull();
     });
 
     it("STBE-21: 按 Escape 关闭上下文菜单", () => {
@@ -383,11 +405,15 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        expect(element.shadowRoot.querySelector(".context-menu")).not.toBeNull();
+        vi.advanceTimersByTime(200);
+
+        expect(getDropdown()).not.toBeNull();
 
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
 
-        expect(element.shadowRoot.querySelector(".context-menu")).toBeNull();
+        vi.advanceTimersByTime(200);
+
+        expect(getDropdown()).toBeNull();
     });
 
     it("STBE-22: 点击前进按钮向右滚动标签", () => {
@@ -630,10 +656,13 @@ describe("SheetTabBarElement Web Component", () => {
     });
 
     it("STBE-41: 上下文菜单每项独占一行", () => {
-        const style = element.shadowRoot.querySelector("style");
+        const dropdown = document.createElement("sheet-tab-dropdown");
+        document.body.appendChild(dropdown);
+        const style = dropdown.shadowRoot.querySelector("style");
         const cssText = style.textContent;
-        expect(cssText).toContain(".context-menu-item");
+        expect(cssText).toContain(".st-item");
         expect(cssText).toContain("white-space: nowrap");
+        document.body.removeChild(dropdown);
     });
 
     it("STBE-42: 上下文菜单项点击后菜单关闭", () => {
@@ -652,10 +681,14 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const copyItem = element.shadowRoot.querySelector('.context-menu-item[data-action="copy"]');
+        vi.advanceTimersByTime(200);
+
+        const copyItem = getDropdownItem("copy");
         copyItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
-        expect(element.shadowRoot.querySelector(".context-menu")).toBeNull();
+        vi.advanceTimersByTime(200);
+
+        expect(getDropdown()).toBeNull();
     });
 
     it("STBE-43: disabled 菜单项点击不派发事件", () => {
@@ -674,7 +707,9 @@ describe("SheetTabBarElement Web Component", () => {
             }),
         );
 
-        const deleteItem = element.shadowRoot.querySelector('.context-menu-item[data-action="delete"]');
+        vi.advanceTimersByTime(200);
+
+        const deleteItem = getDropdownItem("delete");
         expect(deleteItem.classList.contains("disabled")).toBe(true);
         deleteItem.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
@@ -728,8 +763,8 @@ describe("SheetTabBarElement Web Component", () => {
                 }),
             );
 
-            const menu = element.shadowRoot.querySelector(".context-menu");
-            expect(menu).toBeNull();
+            const dropdown = getDropdown();
+            expect(dropdown).toBeNull();
         });
 
         it("STBE-37: readOnly=true 时双击不触发重命名", () => {

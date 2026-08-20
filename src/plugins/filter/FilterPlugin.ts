@@ -1,9 +1,10 @@
-import { BasePlugin } from "../BasePlugin.js";
+import { BasePlugin } from "../base/BasePlugin.js";
 import { FilterState } from "./FilterState.js";
 import { FilterUIManager } from "./FilterUIManager.js";
 import { FilterStrategy } from "./FilterStrategy.js";
 import { FilterIconRenderer } from "./FilterIconRenderer.js";
 import { errorHandler } from "../../core/ErrorHandler.js";
+import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 
 /** 空值处理配置 */
 interface NullValueHandling {
@@ -136,7 +137,7 @@ export class FilterPlugin extends BasePlugin {
         this.#initIconRenderer(mergedOptions.iconRenderer);
         this.#registerStrategies();
         this.#registerHeaderRenderer();
-        this.#registerHooks();
+        this.#registerInternalListeners();
     }
 
     /**
@@ -523,7 +524,102 @@ export class FilterPlugin extends BasePlugin {
     }
 
     /**
-     * @private 私有方法 - 注册事件钩子
+     * @private 私有方法 - 注册内部事件监听
+     *
+     * 通过 Sheet 的 bus 事件总线监听列移动事件，同步更新可过滤列配置和筛选状态。
+     * 使用内部事件总线而非 hooks，因为 hooks 是给外部用户监听的 API。
      */
-    #registerHooks(): void {}
+    #registerInternalListeners(): void {
+        const sheet = (this as any).sheet;
+        if (!sheet?.bus) return;
+
+        const self = this;
+
+        sheet.bus.on(SHEET_EVENTS.COLUMN_MOVED, (envelope: any) => {
+            const { fromCol, toCol } = envelope.payload;
+            self.#handleColumnMove(fromCol, toCol);
+        });
+    }
+
+    /**
+     * @private 处理列移动事件
+     *
+     * 同步更新：
+     * 1. #filterableColumns - 可过滤列索引集合
+     * 2. FilterState - 筛选配置和唯一值缓存
+     * 3. 刷新表头图标 - 重新绘制筛选图标到正确的列位置
+     */
+    #handleColumnMove(fromCol: number, toCol: number): void {
+        if (fromCol === toCol) return;
+
+        this.#updateFilterableColumnsAfterMove(fromCol, toCol);
+        this.#updateFilterStateAfterMove(fromCol, toCol);
+        this.refreshAllHeaderIcons();
+    }
+
+    /**
+     * @private 更新可过滤列集合
+     *
+     * 列移动后，将 #filterableColumns 中的索引按移动方向调整。
+     * - fromCol → toCol：被移动的列直接映射
+     * - 中间列：向移动反方向偏移 1
+     */
+    #updateFilterableColumnsAfterMove(fromCol: number, toCol: number): void {
+        if (!this.#filterableColumns) return;
+
+        const newSet = new Set<number>();
+
+        for (const col of this.#filterableColumns) {
+            let newCol: number;
+
+            if (col === fromCol) {
+                newCol = toCol;
+            } else if (fromCol < toCol) {
+                newCol = col > fromCol && col <= toCol ? col - 1 : col;
+            } else {
+                newCol = col >= toCol && col < fromCol ? col + 1 : col;
+            }
+
+            newSet.add(newCol);
+        }
+
+        this.#filterableColumns = newSet;
+    }
+
+    /**
+     * @private 更新 FilterState 中的筛选配置和缓存
+     *
+     * 将所有列索引根据移动进行调整，并清除唯一值缓存。
+     */
+    #updateFilterStateAfterMove(fromCol: number, toCol: number): void {
+        const filterState = (this as any).sheet?.filterState;
+        if (!filterState) return;
+
+        const allFilters = filterState.getAllFilters();
+        const newFilters = new Map<number, any>();
+
+        for (const [col, filterConfig] of allFilters) {
+            let newCol: number;
+
+            if (col === fromCol) {
+                newCol = toCol;
+            } else if (fromCol < toCol) {
+                newCol = col > fromCol && col <= toCol ? col - 1 : col;
+            } else {
+                newCol = col >= toCol && col < fromCol ? col + 1 : col;
+            }
+
+            newFilters.set(newCol, filterConfig);
+        }
+
+        filterState.clearAll();
+
+        for (const [newCol, config] of newFilters) {
+            filterState.setColumnFilter(newCol, config);
+        }
+
+        if (typeof filterState.invalidateColumnCache === "function") {
+            filterState.invalidateColumnCache();
+        }
+    }
 }

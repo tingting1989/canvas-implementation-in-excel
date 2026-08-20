@@ -1196,65 +1196,65 @@ class FormulaHistory {
 
 ```javascript
 // tests/formula-engine.test.js
-import { describe, it, expect, beforeEach } from 'vitest';
-import { FormulaEngine } from '../src/formula/FormulaEngine.js';
+import {describe, it, expect, beforeEach} from 'vitest';
+import {FormulaEngine} from './FormulaEngine.ts';
 
 describe('FormulaEngine', () => {
     let engine, workbook, sheet;
-    
+
     beforeEach(() => {
         workbook = createMockWorkbook();
         sheet = workbook.activeSheet;
         engine = new FormulaEngine(workbook);
     });
-    
+
     describe('Math Functions', () => {
         it('should calculate SUM correctly', () => {
             sheet.setCell(0, 0, 1);
             sheet.setCell(1, 0, 2);
             sheet.setCell(2, 0, 3);
-            
+
             expect(engine.setFormula(sheet, 3, 0, '=SUM(A1:A3)')).toBe(6);
         });
-        
+
         it('should handle SUMIF with criteria', () => {
             // Setup test data...
             expect(engine.setFormula(sheet, 0, 5, '=SUMIF(A1:A10, ">100")')).toBe(450);
         });
     });
-    
+
     describe('Lookup Functions', () => {
         it('should perform VLOOKUP exact match', () => {
             // Setup table data...
             expect(engine.setFormula(sheet, 0, 0, '=VLOOKUP("Apple", A1:C10, 3, FALSE)')).toBe('Red');
         });
-        
+
         it('should return #N/A for missing values', () => {
             expect(engine.setFormula(sheet, 0, 0, '=VLOOKUP("Grape", A1:C10, 2, FALSE)')).toBe('#N/A!');
         });
     });
-    
+
     describe('Circular Reference Detection', () => {
         it('should detect direct circular reference', () => {
             expect(engine.setFormula(sheet, 0, 0, '=A1+1')).toBe('#CIRCULAR!');
         });
-        
+
         it('should detect indirect circular reference', () => {
             engine.setFormula(sheet, 0, 0, '=B1+1');
             engine.setFormula(sheet, 1, 0, '=C1+1');
             expect(engine.setFormula(sheet, 2, 0, '=A1+1')).toBe('#CIRCULAR!');
         });
     });
-    
+
     describe('Performance Tests', () => {
         it('should handle 1000 formulas efficiently', () => {
             const start = performance.now();
-            
+
             for (let i = 0; i < 1000; i++) {
                 sheet.setCell(i, 0, i);
-                engine.setFormula(sheet, i, 1, `=A${i+1}*2`);
+                engine.setFormula(sheet, i, 1, `=A${i + 1}*2`);
             }
-            
+
             const duration = performance.now() - start;
             expect(duration).toBeLessThan(1000);  // < 1 second
         });

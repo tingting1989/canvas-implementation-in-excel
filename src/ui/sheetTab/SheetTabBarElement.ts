@@ -1,6 +1,9 @@
 import { WebComponent } from "../../core/WebComponent.js";
 import { SHEET_TAB_EVENTS } from "./sheetTabEvents.js";
 import { EVENT_NAMES } from "../../constants/eventNames.js";
+import { SheetTabUIManager } from "./SheetTabUIManager.js";
+import type { SheetTabMenuItemData } from "./SheetTabDropdown.js";
+import { UnhideSheetDialog } from "./UnhideSheetDialog.js";
 
 interface ContextMenuItem {
     action: string;
@@ -12,6 +15,7 @@ const CONTEXT_MENU_ITEMS: ContextMenuItem[] = [
     { action: "delete", label: "删除" },
     { action: "copy", label: "复制" },
     { action: "hide", label: "隐藏" },
+    { action: "unhide", label: "取消隐藏..." },
 ];
 
 const template = document.createElement("template");
@@ -166,49 +170,6 @@ template.innerHTML = `
             background: #d8d8d8;
             color: #217346;
         }
-
-        .context-menu {
-            position: fixed;
-            background: #fff;
-            border: 1px solid #d0d0d0;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-            padding: 4px 0;
-            z-index: 10000;
-            min-width: 120px;
-            font-size: 12px;
-        }
-
-        .context-menu-item {
-            padding: 6px 16px;
-            cursor: pointer;
-            color: #333;
-            white-space: nowrap;
-        }
-
-        .context-menu-item:hover {
-            background: #e8f5e9;
-            color: #217346;
-        }
-
-        .context-menu-item.danger {
-            color: #c62828;
-        }
-
-        .context-menu-item.danger:hover {
-            background: #fbe9e7;
-            color: #c62828;
-        }
-
-        .context-menu-item.disabled {
-            color: #bbb;
-            cursor: default;
-        }
-
-        .context-menu-item.disabled:hover {
-            background: transparent;
-            color: #bbb;
-        }
     </style>
     <div class="nav-group">
         <div class="nav-btn prev">
@@ -241,9 +202,10 @@ export class SheetTabBarElement extends WebComponent {
     #renameHandleBlur: (() => void) | null = null;
     #currentSheets: Map<string, any> | null = null;
     #currentActiveName: string | null = null;
-    #contextMenuEl: HTMLDivElement | null = null;
+    #hiddenSheets: string[] = [];
     #contextTargetName: string | null = null;
     #readOnly: boolean = false;
+    #uiManager: SheetTabUIManager = new SheetTabUIManager();
 
     get readOnly(): boolean {
         return this.#readOnly;
@@ -297,18 +259,6 @@ export class SheetTabBarElement extends WebComponent {
             this.emit(SHEET_TAB_EVENTS.SWITCH, { name: tab.dataset.name });
             this.#showContextMenu(tab, (e as MouseEvent).clientX, (e as MouseEvent).clientY);
         });
-
-        disposable.trackEvent(document, EVENT_NAMES.CLICK, (e: Event) => {
-            if (this.#contextMenuEl && !(e as MouseEvent).composedPath().includes(this.#contextMenuEl)) {
-                this.#hideContextMenu();
-            }
-        });
-
-        disposable.trackEvent(document, EVENT_NAMES.KEYDOWN, (e: Event) => {
-            if ((e as KeyboardEvent).key === "Escape" && this.#contextMenuEl) {
-                this.#hideContextMenu();
-            }
-        });
     }
 
     render(): void {
@@ -341,11 +291,12 @@ export class SheetTabBarElement extends WebComponent {
         }
     }
 
-    refresh(sheets: Map<string, any>, activeName: string): void {
+    refresh(sheets: Map<string, any>, activeName: string, hiddenSheets: string[] = []): void {
         if (this.isDestroyed) return;
 
         this.#currentSheets = sheets;
         this.#currentActiveName = activeName;
+        this.#hiddenSheets = hiddenSheets;
         this.#cleanupRename();
 
         const tabsContainer = this.shadowRoot!.querySelector(".tabs") as HTMLElement | null;
@@ -375,77 +326,56 @@ export class SheetTabBarElement extends WebComponent {
         }
     }
 
-    #showContextMenu(tab: HTMLElement, clientX: number, clientY: number): void {
-        this.#hideContextMenu();
-
-        this.#contextTargetName = tab.dataset.name ?? null;
-        const menu = document.createElement("div");
-        menu.className = "context-menu";
-
+    #buildContextMenuItems(): (SheetTabMenuItemData | null)[] {
+        const items: (SheetTabMenuItemData | null)[] = [];
         const sheetCount = this.#currentSheets ? this.#currentSheets.size : 1;
+        const hasHiddenSheets = this.#hiddenSheets.length > 0;
 
         for (const item of CONTEXT_MENU_ITEMS) {
-            const menuItem = document.createElement("div");
-            menuItem.className = "context-menu-item";
-            menuItem.textContent = item.label;
-            menuItem.dataset.action = item.action;
-
-            if (item.action === "delete" && sheetCount <= 1) {
-                menuItem.classList.add("disabled");
-            } else if (item.action === "delete") {
-                menuItem.classList.add("danger");
+            if (item === null) {
+                items.push(null);
+                continue;
             }
 
-            if (!menuItem.classList.contains("disabled")) {
-                menuItem.addEventListener(EVENT_NAMES.CLICK, () => {
-                    this.#handleContextAction(item.action);
-                });
+            const data: SheetTabMenuItemData = {
+                key: item.action,
+                label: item.label,
+            };
+
+            if (item.action === "delete") {
+                if (sheetCount <= 1) {
+                    data.disabled = true;
+                } else {
+                    data.danger = true;
+                }
             }
 
-            menu.appendChild(menuItem);
+            if (item.action === "unhide") {
+                if (!hasHiddenSheets) {
+                    data.disabled = true;
+                }
+            }
+
+            items.push(data);
         }
 
-        this.shadowRoot!.appendChild(menu);
-        this.#contextMenuEl = menu;
-
-        const menuWidth = menu.offsetWidth;
-        const menuHeight = menu.offsetHeight;
-        const vpWidth = window.innerWidth;
-        const vpHeight = window.innerHeight;
-
-        let left = clientX;
-        let top = clientY;
-
-        if (left + menuWidth > vpWidth) {
-            left = vpWidth - menuWidth - 4;
-        }
-        if (left < 0) {
-            left = 4;
-        }
-        if (top + menuHeight > vpHeight) {
-            top = clientY - menuHeight;
-        }
-        if (top < 0) {
-            top = 4;
-        }
-
-        menu.style.left = left + "px";
-        menu.style.top = top + "px";
+        return items;
     }
 
-    #hideContextMenu(): void {
-        if (this.#contextMenuEl) {
-            this.#contextMenuEl.remove();
-            this.#contextMenuEl = null;
-        }
-        this.#contextTargetName = null;
+    #showContextMenu(tab: HTMLElement, clientX: number, clientY: number): void {
+        this.#uiManager.close();
+
+        this.#contextTargetName = tab.dataset.name ?? null;
+        const items = this.#buildContextMenuItems();
+
+        this.#uiManager.open({ x: clientX, y: clientY }, items, (key: string) => this.#handleContextAction(key));
     }
 
     #handleContextAction(action: string): void {
         const name = this.#contextTargetName;
-        this.#hideContextMenu();
+        this.#uiManager.close();
 
-        if (!name) return;
+        if (!name && action !== "unhide") return;
 
         switch (action) {
             case "delete":
@@ -453,7 +383,7 @@ export class SheetTabBarElement extends WebComponent {
                 break;
             case "rename":
                 if (!this.#renaming) {
-                    const tab = this.#tabs.get(name);
+                    const tab = this.#tabs.get(name!);
                     if (tab) this.#startRename(tab);
                 }
                 break;
@@ -463,13 +393,36 @@ export class SheetTabBarElement extends WebComponent {
             case "hide":
                 this.emit(SHEET_TAB_EVENTS.HIDE, { name });
                 break;
+            case "unhide":
+                this.#handleUnhideAction();
+                break;
         }
+    }
+
+    #handleUnhideAction(): void {
+        if (this.#hiddenSheets.length === 0) return;
+
+        if (this.#hiddenSheets.length === 1) {
+            this.emit(SHEET_TAB_EVENTS.UNHIDE, { name: this.#hiddenSheets[0] });
+            return;
+        }
+
+        const dialog = document.createElement("unhide-sheet-dialog") as InstanceType<typeof UnhideSheetDialog>;
+
+        dialog.open(this.#hiddenSheets, {
+            onConfirm: (selectedSheets: string[]) => {
+                for (const name of selectedSheets) {
+                    this.emit(SHEET_TAB_EVENTS.UNHIDE, { name });
+                }
+            },
+            onCancel: () => {},
+        });
     }
 
     #startRename(tabElement: HTMLElement): void {
         const oldName = tabElement.dataset.name!;
         this.#cleanupRename();
-        this.#hideContextMenu();
+        this.#uiManager.close();
         this.#renaming = true;
 
         const tabOriginalWidth = tabElement.offsetWidth;
@@ -576,7 +529,7 @@ export class SheetTabBarElement extends WebComponent {
     onDisconnect(): void {
         this.#tabs.clear();
         this.#cleanupRename();
-        this.#hideContextMenu();
+        this.#uiManager.close();
         this.#currentSheets = null;
         this.#currentActiveName = null;
     }

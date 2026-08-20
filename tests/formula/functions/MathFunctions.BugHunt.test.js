@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { mathFunctions } from "@/formula/functions/math";
+import { mathFunctions } from "@/plugins/formula/functions/math";
 
 describe("Math Functions BugHunt - SUM", () => {
     const SUM = mathFunctions.SUM;

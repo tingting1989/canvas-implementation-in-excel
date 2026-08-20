@@ -12,7 +12,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { ImportFilePlugin } from "../../src/plugins/ImportFilePlugin.js";
+import { ImportFilePlugin } from "@/plugins/importFile/ImportFilePlugin.ts";
 import { HOOKS } from "../../src/constants/hookNames.js";
 import { StyleConverter, toArgb, fromArgb } from "@/shared/StyleConverter.js";
 

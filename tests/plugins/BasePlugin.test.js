@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BasePlugin } from "../../src/plugins/BasePlugin.js";
+import { BasePlugin } from "@/plugins/base/BasePlugin.ts";
 import { PluginManager } from "../../src/plugins/PluginManager.js";
 
 export function createMockWorkbook(overrides = {}) {
