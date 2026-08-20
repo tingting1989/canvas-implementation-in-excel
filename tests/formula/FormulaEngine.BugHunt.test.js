@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { FormulaEngine } from "@/formula/FormulaEngine";
-import { registerFunction, unregisterFunction, hasFunction } from "@/formula/functions";
+import { FormulaEngine } from "@/plugins/formula/FormulaEngine";
+import { registerFunction, unregisterFunction, hasFunction } from "@/plugins/formula/functions";
 
 function createMockCellStore(data = {}) {
     return {

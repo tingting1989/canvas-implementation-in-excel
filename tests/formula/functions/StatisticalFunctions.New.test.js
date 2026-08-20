@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { statisticalFunctions } from "@/formula/functions/statistical";
+import { statisticalFunctions } from "@/plugins/formula/functions/statistical";
 
 describe("Statistical Functions - STDEV", () => {
     const STDEV = statisticalFunctions.STDEV;

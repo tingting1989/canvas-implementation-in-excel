@@ -12,10 +12,10 @@
  * @module formula/functions/conditional
  */
 
-import { errorHandler } from "../../core/ErrorHandler.js";
-import { isString } from "../../utils/helper.js";
-import { _toNum, _validateArgs, _matchCriteria, _flatten } from "./utils/index.js";
-import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { errorHandler } from "../../../core/ErrorHandler.js";
+import { isString } from "../../../utils/helper.js";
+import { _toNum, _validateArgs, _matchCriteria, _flatten } from "./utils";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
 
 type FormulaResult = number | string | unknown;
 

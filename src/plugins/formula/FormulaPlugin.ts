@@ -1,6 +1,6 @@
-import { BasePlugin } from "./base/BasePlugin.js";
-import { FormulaEngine } from "../formula/FormulaEngine.js";
-import { FormulaBarManager } from "../ui/formulaBar/FormulaBarManager.js";
+import { BasePlugin } from "../base/BasePlugin.js";
+import { FormulaEngine } from "./FormulaEngine.js";
+import { FormulaBarManager } from "../../ui/formulaBar/FormulaBarManager.js";
 
 export class FormulaPlugin extends BasePlugin {
     static get PLUGIN_NAME(): string {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { logicalFunctions } from "@/formula/functions/logical";
+import { logicalFunctions } from "@/plugins/formula/functions/logical";
 
 describe("Logical Functions - IF", () => {
     const IF = logicalFunctions.IF;

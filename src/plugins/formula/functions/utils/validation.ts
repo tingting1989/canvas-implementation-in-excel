@@ -9,9 +9,9 @@
  * @module formula/functions/utils/validation
  */
 
-import { errorHandler } from "../../../core/ErrorHandler.js";
+import { errorHandler } from "../../../../core/ErrorHandler.js";
 import { _toNum } from "./helpers.js";
-import { ERROR_CODE } from "../../../constants/errorCodes";
+import { ERROR_CODE } from "../../../../constants/errorCodes";
 
 /**
  * 统一的参数校验器

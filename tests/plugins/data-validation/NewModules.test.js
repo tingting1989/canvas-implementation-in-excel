@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { ShadowEvaluator } from "../../../src/plugins/data-validation/ShadowEvaluator.js";
-import { ValidationDirtyFlagManager } from "../../../src/plugins/data-validation/ValidationDirtyFlagManager.js";
-import { ListSourceResolver } from "../../../src/plugins/data-validation/ListSourceResolver.js";
-import { CopyPasteHandler, PASTE_OPTIONS, CONFLICT_RESOLUTION } from "../../../src/plugins/data-validation/CopyPasteHandler.js";
+import { ShadowEvaluator } from "@/plugins/dataValidation/ShadowEvaluator.ts";
+import { ValidationDirtyFlagManager } from "@/plugins/dataValidation/ValidationDirtyFlagManager.ts";
+import { ListSourceResolver } from "@/plugins/dataValidation/ListSourceResolver.ts";
+import { CopyPasteHandler, PASTE_OPTIONS, CONFLICT_RESOLUTION } from "@/plugins/dataValidation/CopyPasteHandler.ts";
 
 describe("ShadowEvaluator - 沙箱隔离测试", () => {
     let mockEngine;

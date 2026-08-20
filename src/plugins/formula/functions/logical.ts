@@ -14,9 +14,9 @@
  * @module formula/functions/logical
  */
 
-import { errorHandler } from "../../core/ErrorHandler.js";
-import { ERROR_CODE } from "../../constants/errorCodes.js";
-import { _validateArgs } from "./utils/index.js";
+import { errorHandler } from "../../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
+import { _validateArgs } from "./utils";
 
 type FormulaResult = boolean | string | number | unknown;
 

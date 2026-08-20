@@ -10,10 +10,10 @@
  * @module formula/functions/lookup
  */
 
-import { ERROR_CODE } from "../../constants/errorCodes.js";
-import { isString } from "../../utils/helper.js";
-import { _flatten, _toNum, _validateArgs } from "./utils/index.js";
-import { errorHandler } from "../../core/ErrorHandler";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
+import { isString } from "../../../utils/helper.js";
+import { _flatten, _toNum, _validateArgs } from "./utils";
+import { errorHandler } from "../../../core/ErrorHandler";
 
 type FormulaResult = number | string;
 

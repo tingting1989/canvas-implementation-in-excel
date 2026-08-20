@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from 'vitest';
-import { DataValidationPlugin, ValidationResult } from '../../../src/plugins/data-validation/index.js';
+import { DataValidationPlugin, ValidationResult } from '@/plugins/dataValidation';
 import { HOOKS } from '../../../src/constants/hookNames.js';
 
 describe('DataValidationPlugin - Hooks 拦截功能测试', () => {

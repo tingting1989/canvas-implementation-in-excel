@@ -1,6 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { Workbook } from '../../src/workbook/Workbook.js';
-import { DataValidationPlugin } from '../../src/plugins/data-validation/DataValidationPlugin.js';
+import { DataValidationPlugin } from '@/plugins/dataValidation/DataValidationPlugin.ts';
 
 describe('DataValidationPlugin - 集成测试（真实 Workbook 环境）', () => {
     let workbook;

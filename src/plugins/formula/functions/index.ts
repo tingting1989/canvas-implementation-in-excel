@@ -22,8 +22,8 @@
  * @module FormulaFunctions
  */
 
-import { errorHandler } from "../../core/ErrorHandler.js";
-import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { errorHandler } from "../../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
 import { mathFunctions } from "./math.js";
 import { statisticalFunctions } from "./statistical.js";
 import { logicalFunctions } from "./logical.js";

@@ -50,29 +50,29 @@ export { HiddenRowsPlugin } from "../plugins/hiddenRows/HiddenRowsPlugin";
 export { RowMovePlugin } from "../plugins/rowMove/RowMovePlugin";
 export { ImportFilePlugin } from "../plugins/importFile/ImportFilePlugin";
 export { ExportFilePlugin } from "../plugins/exportFile/ExportFilePlugin";
-export { FormulaPlugin } from "../plugins/FormulaPlugin";
+export { FormulaPlugin } from "../plugins/formula/FormulaPlugin";
 export { SortPlugin } from "../plugins/sort/SortPlugin";
 export { FilterPlugin } from "../plugins/filter/FilterPlugin";
 export { SearchPlugin } from "../plugins/search/SearchPlugin";
-export { DataValidationPlugin } from "../plugins/data-validation/DataValidationPlugin";
-export { ValidationRule } from "../plugins/data-validation/ValidationRule";
-export { ValidationResult } from "../plugins/data-validation/ValidationResult";
-export { ValidationEngine } from "../plugins/data-validation/ValidationEngine";
-export { BaseValidator } from "../plugins/data-validation/validators/BaseValidator";
-export { NumberValidator } from "../plugins/data-validation/validators/NumberValidator";
-export { TextLengthValidator } from "../plugins/data-validation/validators/TextLengthValidator";
-export { ListValidator } from "../plugins/data-validation/validators/ListValidator";
-export { UniqueValidator } from "../plugins/data-validation/validators/UniqueValidator";
-export { FormulaValidator } from "../plugins/data-validation/validators/FormulaValidator";
-export { DateTimeValidator } from "../plugins/data-validation/validators/DateTimeValidator";
-export { RegexValidator } from "../plugins/data-validation/validators/RegexValidator";
+export { DataValidationPlugin } from "../plugins/dataValidation/DataValidationPlugin";
+export { ValidationRule } from "../plugins/dataValidation/ValidationRule";
+export { ValidationResult } from "../plugins/dataValidation/ValidationResult";
+export { ValidationEngine } from "../plugins/dataValidation/ValidationEngine";
+export { BaseValidator } from "../plugins/dataValidation/validators/BaseValidator";
+export { NumberValidator } from "../plugins/dataValidation/validators/NumberValidator";
+export { TextLengthValidator } from "../plugins/dataValidation/validators/TextLengthValidator";
+export { ListValidator } from "../plugins/dataValidation/validators/ListValidator";
+export { UniqueValidator } from "../plugins/dataValidation/validators/UniqueValidator";
+export { FormulaValidator } from "../plugins/dataValidation/validators/FormulaValidator";
+export { DateTimeValidator } from "../plugins/dataValidation/validators/DateTimeValidator";
+export { RegexValidator } from "../plugins/dataValidation/validators/RegexValidator";
 
 // ============================================================
 // 公式引擎
 // ============================================================
-export { FormulaEngine } from "../formula/FormulaEngine";
-export { FormulaEvaluator } from "../formula/FormulaEvaluator";
-export { functionRegistry, FUNCTION_CATEGORY } from "../formula/functions/index";
+export { FormulaEngine } from "../plugins/formula/FormulaEngine";
+export { FormulaEvaluator } from "../plugins/formula/FormulaEvaluator";
+export { functionRegistry, FUNCTION_CATEGORY } from "../plugins/formula/functions";
 
 // ============================================================
 // 类型系统

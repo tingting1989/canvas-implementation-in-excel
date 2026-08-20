@@ -15,10 +15,10 @@
  * @module formula/functions/statistical
  */
 
-import { isNumber } from "../../utils/helper.js";
-import { _flatten, _isBlank, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils/index.js";
-import { ERROR_CODE } from "../../constants/errorCodes.js";
-import { errorHandler } from "../../core/ErrorHandler.js";
+import { isNumber } from "../../../utils/helper.js";
+import { _flatten, _isBlank, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
+import { errorHandler } from "../../../core/ErrorHandler.js";
 
 type FormulaResult = number | string;
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { CopyPastePlugin } from "@/plugins/copyPaste/CopyPastePlugin.ts";
-import { FormulaPlugin } from "../../src/plugins/FormulaPlugin.js";
+import { FormulaPlugin } from "@/plugins/formula/FormulaPlugin.ts";
 import { ContextMenuPlugin } from "@/plugins/contextMenu/ContextMenuPlugin.ts";
 import { createMockWorkbook } from "./BasePlugin.test.js";
 

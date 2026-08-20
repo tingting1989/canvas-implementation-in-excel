@@ -1,9 +1,9 @@
-import { functionRegistry } from "./functions/index.js";
-import { isNumber, isString } from "../utils/helper.js";
-import { errorHandler } from "../core/ErrorHandler.js";
-import { ERROR_CODE } from "../constants/errorCodes.js";
+import { functionRegistry } from "./functions";
+import { isNumber, isString } from "../../utils/helper.js";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
 import { type ASTNode, type ASTCellRef, type ASTRangeRef, type ASTFunction, type ASTUnaryOp, type ASTBinaryOp } from "./FormulaParser.js";
-import { Cell } from "../model/store/Cell.js";
+import { Cell } from "../../model/store/Cell.js";
 
 interface Sheet {
     name: string;

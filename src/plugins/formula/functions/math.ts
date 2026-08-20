@@ -19,9 +19,9 @@
  * @module formula/functions/math
  */
 
-import { ERROR_CODE } from "../../constants/errorCodes.js";
-import { _flatten, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils/index.js";
-import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../../constants/errorCodes.js";
+import { _flatten, _toNum, _validateArgs, _forEachLeaf, _collectNums } from "./utils";
+import { errorHandler } from "../../../core/ErrorHandler.js";
 
 type FormulaResult = number | string;
 

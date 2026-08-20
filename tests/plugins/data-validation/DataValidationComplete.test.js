@@ -11,7 +11,7 @@ import {
     TextLengthValidator,
     ListValidator,
     UniqueValidator
-} from '../../../src/plugins/data-validation/index.js';
+} from '@/plugins/dataValidation';
 
 // ═══════════════════════════════════════════════════════════════════
 // Mock 工厂函数

@@ -1,4 +1,4 @@
-import { colToIndex } from "../utils/cellRef.js";
+import { colToIndex } from "../../utils/cellRef.js";
 
 const TOKEN = {
     NUMBER: "NUMBER",

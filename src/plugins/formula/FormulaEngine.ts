@@ -1,11 +1,11 @@
 import { parseFormula, type ASTNode } from "./FormulaParser.js";
-import { indexToCol } from "../utils/cellRef.js";
+import { indexToCol } from "../../utils/cellRef.js";
 import { FormulaEvaluator } from "./FormulaEvaluator.js";
-import { isString } from "../utils/helper.js";
-import { functionRegistry } from "./functions/index.js";
-import { errorHandler } from "../core/ErrorHandler.js";
-import { ERROR_CODE } from "../constants/errorCodes.js";
-import { Cell } from "../model/store/Cell.js";
+import { isString } from "../../utils/helper.js";
+import { functionRegistry } from "./functions";
+import { errorHandler } from "../../core/ErrorHandler.js";
+import { ERROR_CODE } from "../../constants/errorCodes.js";
+import { Cell } from "../../model/store/Cell.js";
 
 interface Sheet {
     name: string;

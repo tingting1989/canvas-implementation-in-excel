@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { conditionalFunctions } from "@/formula/functions/conditional";
+import { conditionalFunctions } from "@/plugins/formula/functions/conditional";
 
 describe("Conditional Functions - SUMIF", () => {
     const SUMIF = conditionalFunctions.SUMIF;

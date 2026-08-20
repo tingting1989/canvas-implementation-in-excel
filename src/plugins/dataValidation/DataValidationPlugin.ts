@@ -11,7 +11,7 @@ import { getValidationCache, initValidationCache } from "./ValidationCache.js";
 import { HOOKS } from "../../constants/hookNames.js";
 import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
-import { stylePool } from "../../model/styles/index.js";
+import { stylePool } from "../../model/styles";
 import { ValidationStrategy } from "./ValidationStrategy.js";
 import { ValidationResult } from "./ValidationResult.js";
 

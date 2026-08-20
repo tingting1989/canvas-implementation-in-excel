@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { _matchCriteria, _matchWildcard } from "@/formula/functions/utils/matching";
+import { _matchCriteria, _matchWildcard } from "@/plugins/formula/functions/utils/matching";
 
 describe("Utils - _matchCriteria - Comparison Operators", () => {
     it("should match > (greater than)", () => {

@@ -1,5 +1,5 @@
 ﻿import { describe, it, expect, vi } from "vitest";
-import { FormulaEvaluator } from "@/formula/FormulaEvaluator";
+import { FormulaEvaluator } from "@/plugins/formula/FormulaEvaluator";
 
 function createMockCellStore(data = {}) {
     return {
