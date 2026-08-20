@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @license Apache-2.0
  *
  * Copyright 2026 jiangsuiting <1158973435@qq.com>
@@ -18,17 +18,28 @@
 
 import { BaseColumnType } from "./types/BaseColumnType.js";
 import { Workbook } from "./workbook/Workbook.js";
-import { FormulaEngine } from "@plugin/formula/FormulaEngine.ts";
+import { FormulaEngine } from "./plugins/formula/FormulaEngine.js";
 import { HOOKS } from "./constants/hookNames.js";
-import { isFunction, isNumber } from "./utils/helper.js";
 import { errorHandler } from "./core/ErrorHandler.js";
 import { registerColumnTypeClass } from "./types/index.js";
 import { isUrl, openUrl } from "./utils/UrlDetector.js";
-import { functionRegistry } from "@plugin/formula/functions";
+import { functionRegistry } from "./plugins/formula/functions";
 import { ERROR_CODE, ERROR_LEVEL } from "./constants/errorCodes.js";
-const initApp = () => {
-    const sampleData = [
-        // 表头行
+
+declare global {
+    interface Window {
+        wb: Workbook;
+        resizeGrid: {
+            setRows: (rows: number) => void;
+            setCols: (cols: number) => void;
+            setSize: (rows: number, cols: number) => void;
+            getSize: () => { rows: number; cols: number; explicitlySized: boolean };
+        };
+    }
+}
+
+const initApp = (): void => {
+    const sampleData: (string | number | boolean)[][] = [
         [
             "编号",
             "姓名",
@@ -57,7 +68,6 @@ const initApp = () => {
             "VLOOKUP外键",
         ],
 
-        // 第1行：全部通过（正常数据）
         [
             1,
             "张三",
@@ -86,7 +96,6 @@ const initApp = () => {
             "张三",
         ],
 
-        // 第2行：多个失败（测试同步阻止 + 异步标记）
         [
             2,
             "李四",
@@ -115,7 +124,6 @@ const initApp = () => {
             "王五",
         ],
 
-        // 第3行：部分失败（边界测试）
         [
             3,
             "王五",
@@ -144,7 +152,6 @@ const initApp = () => {
             "赵六",
         ],
 
-        // 第4行：异常数据组合
         [
             4,
             "赵六",
@@ -173,7 +180,6 @@ const initApp = () => {
             "钱七",
         ],
 
-        // 第5行：混合结果
         [
             5,
             "钱七",
@@ -202,7 +208,6 @@ const initApp = () => {
             "孙八",
         ],
 
-        // 第6行：大量标记
         [
             6,
             "孙八",
@@ -231,7 +236,6 @@ const initApp = () => {
             "周九",
         ],
 
-        // 第7行：基本正常
         [
             7,
             "周九",
@@ -260,15 +264,15 @@ const initApp = () => {
             "吴十",
         ],
     ];
+
     errorHandler.debug(ERROR_CODE.DEBUG_LOG, "Initializing Canvas Spreadsheet (Tile Rendering + Plugin System)...");
 
-    // 配置统一错误处理：开发模式输出所有级别日志
     errorHandler.configure({
         level: ERROR_LEVEL.DEBUG,
         devMode: true,
     });
 
-    const wb = new Workbook(document.getElementById("wrap"), {
+    const wb = new Workbook(document.getElementById("wrap")!, {
         width: 1600,
         height: 400,
         sheets: [
@@ -331,10 +335,6 @@ const initApp = () => {
             dataValidation: {
                 conflictStrategy: "short-circuit",
                 rules: [
-                    // ════════════════════════════════════════
-                    // 📋 基础类型验证 (A-H列) - 展示内置验证器
-                    // ════════════════════════════════════════
-
                     {
                         range: "A2:A20",
                         type: "number",
@@ -396,10 +396,6 @@ const initApp = () => {
                         errorMessage: "🚫 唯一编号不能重复！",
                         errorStyle: "stop",
                     },
-                    // ════════════════════════════════════════
-                    // 🔄 同步验证示例 (8个) - 简单公式 + errorStyle:'stop'
-                    // 特点：即时响应，可立即阻止非法输入
-                    // ════════════════════════════════════════
 
                     {
                         range: "I2:I20",
@@ -467,11 +463,6 @@ const initApp = () => {
                         description: "[同步] OR逻辑 + 布尔值常量（严格类型检查，使用===）",
                         hint: "只接受 JavaScript 布尔值 true 或 false，其他所有值（包括数字0/1、字符串）都会被阻止",
                     },
-
-                    // ════════════════════════════════════════
-                    // ⏳ 异步验证示例 (9个) - 复杂函数 + errorStyle:'warning'
-                    // 特点：使用FormulaEngine完整功能，后台执行后标记
-                    // ════════════════════════════════════════
 
                     {
                         range: "Q2:Q20",
@@ -549,44 +540,13 @@ const initApp = () => {
             },
         },
         hooks: {
-            beforeValidate: function (value, context) {
+            beforeValidate: function (value: unknown, context: { row: number; col: number }) {
                 console.log("🪝 [BEFORE_VALIDATE] 值=" + JSON.stringify(value) + " 位置=(" + context.row + "," + context.col + ")", "info");
             },
         },
     });
 
-    // wb.loadPluginClass(InteractionPlugin, {
-    //     debugMode: false,
-    //     throttleMs: 16,
-    //     autoRender: true,
-    // });
-
-    // ✨ 新特性：autoInit=true（默认）时，构造函数会自动调用 initRender() 和 render()
-    // 如需延迟初始化，可设置 autoInit: false
-    // wb.initRender();
-    // wb.render();
-
-    // 🧹 示例：数据清空 API（v1.0.15+）
-    // 可在控制台测试以下命令：
-
-    // 1. 清空当前工作表（支持 Ctrl+Z 撤销）
-    // wb.clearActiveSheetData();
-
-    // 2. 清空所有工作表
-    // wb.clearAllSheetsData();
-
-    // 3. 清空指定范围（A1:D10）
-    // sheet.clearRange(0, 0, 9, 3);
-
-    // 4. 性能优化模式（大数据量）
-    // wb.clearActiveSheetData({ skipHistory: true });
-
-    // 5. 监听清空事件
-    // wb.addHook('afterClearData', ({ changes, clearedCount }) => {
-    //     console.log(`已清除 ${clearedCount} 个单元格`);
-    // });
-
-    const sheet = wb.getActiveSheet();
+    const sheet = wb.getActiveSheet()!;
     for (let i = 0; i < 300; i++) {
         sheet.setCell(i, 0, i);
     }
@@ -595,9 +555,9 @@ const initApp = () => {
         conditionalStyles: [
             {
                 range: { topRow: 15, topCol: 0, bottomRow: 20, bottomCol: 10 },
-                condition: function (v) {
+                condition: function (v: unknown): boolean {
                     const value = Number(v);
-                    return !Number.isNaN(value) && v > 30000;
+                    return !Number.isNaN(value) && (value as number) > 30000;
                 },
                 style: {
                     color: "red",
@@ -605,23 +565,19 @@ const initApp = () => {
             },
         ],
     });
-    // wb.initRender();
-    // wb.render();
-    // sheet.operations.setGridSize(10, 5);
-    // 超链接点击处理说明：
-    // - HyperlinkColumnType 的点击由 InteractionStrategy 处理（handleClick 方法）
-    // - 隐式超链接（其他列类型中的 URL）在此 hook 中处理
-    wb.addHook(HOOKS.ON_CELL_CLICK, (row, col, e) => {
-        const sheet = wb.activeSheet;
+
+    wb.addHook(HOOKS.ON_CELL_CLICK, (...args: unknown[]) => {
+        const row = args[0] as number;
+        const col = args[1] as number;
+        const e = args[2] as MouseEvent;
+        const sheet = wb.activeSheet!;
         const cell = sheet.cellStore.get(row, col);
 
-        // 跳过超链接列类型（已由 InteractionStrategy 处理）
         const cellType = sheet.getCellTypeInstance(row, col);
         if (cellType?.name === "hyperlink") {
-            return; // 由 InteractionStrategy 处理，避免重复
+            return;
         }
 
-        // 隐式超链接检测：自动检测非超链接列类型中的 URL
         if (cell?.value && isUrl(cell.value)) {
             const canOpen = wb.runHooks(HOOKS.BEFORE_OPEN_URL, row, col, cell.value, e);
             if (canOpen === false) {
@@ -629,14 +585,15 @@ const initApp = () => {
                 e.stopPropagation();
                 return;
             }
-            openUrl(cell.value);
+            openUrl(String(cell.value));
             wb.runHooks(HOOKS.AFTER_OPEN_URL, row, col, cell.value);
             e.preventDefault();
             e.stopPropagation();
         }
     });
 
-    wb.addHook(HOOKS.AFTER_CHANGE, (changes) => {
+    wb.addHook(HOOKS.AFTER_CHANGE, (...args: unknown[]) => {
+        const changes = args[0] as Array<{ row: number; col: number; newValue: unknown }>;
         for (const { row, col, newValue } of changes) {
             if (isUrl(newValue)) {
                 wb.runHooks(HOOKS.ON_URL_DETECTED, row, col, newValue);
@@ -644,19 +601,8 @@ const initApp = () => {
         }
     });
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // 📌 自定义公式函数注册（v3.0 新功能）
-    // ═══════════════════════════════════════════════════════════════════════
-    //
-    // 注册业务逻辑注入的自定义函数，供公式验证使用
-    // 函数注册后可通过 FormulaEngine.evaluate() 调用
-    //
-    const registerCustomValidationFunctions = () => {
-        // 使用静态方法注册自定义函数
-        // 静态方法直接调用 functionRegistry，不需要 FormulaEngine 实例
-
-        // 注册自定义函数：ISPRIME - 判断是否为质数
-        functionRegistry.register?.("ISPRIME", (args) => {
+    const registerCustomValidationFunctions = (): void => {
+        functionRegistry.register?.("ISPRIME", (args: unknown[]) => {
             console.log("ISPRIME", args);
             const value = Number(args[0]);
             if (value === null || value === undefined || isNaN(value)) {
@@ -672,27 +618,24 @@ const initApp = () => {
             return true;
         });
 
-        // 注册自定义函数：ISPOSITIVE - 判断是否为正数
-        functionRegistry.register?.("ISPOSITIVE", (args) => {
+        functionRegistry.register?.("ISPOSITIVE", (args: unknown[]) => {
             console.log("ISPOSITIVE", args);
             const value = Number(args[0]);
             return !isNaN(value) && value > 0;
         });
 
-        // 注册自定义函数：ISBETWEEN - 判断是否在指定范围内
-        functionRegistry.register("ISBETWEEN", (args) => {
+        functionRegistry.register("ISBETWEEN", (args: unknown[]) => {
             console.log("ISBETWEEN", args);
-            const [value, min, max] = args;
+            const [value, min, max] = args as number[];
             if (isNaN(value) || isNaN(min) || isNaN(max)) {
                 return false;
             }
             return value >= min && value <= max;
         });
 
-        // 注册自定义函数：GETLETTERGRADE - 根据分数返回等级
-        functionRegistry.register("GETLETTERGRADE", (args) => {
+        functionRegistry.register("GETLETTERGRADE", (args: unknown[]) => {
             console.log("GETLETTERGRADE", args);
-            const score = args[0];
+            const score = Number(args[0]);
             if (isNaN(score)) return "F";
             if (score >= 90) return "A";
             if (score >= 80) return "B";
@@ -701,18 +644,16 @@ const initApp = () => {
             return "F";
         });
 
-        // 注册自定义函数：VALIDATEEMAIL - 验证邮箱格式
-        functionRegistry.register("VALIDATEEMAIL", (args) => {
+        functionRegistry.register("VALIDATEEMAIL", (args: unknown[]) => {
             console.log("VALIDATEEMAIL", args);
             const email = String(args[0] || "");
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
         });
 
-        // 注册自定义函数：CALCULATEBMI - 计算BMI指数
-        functionRegistry.register("CALCULATEBMI", (args) => {
+        functionRegistry.register("CALCULATEBMI", (args: unknown[]) => {
             console.log("CALCULATEBMI", args);
-            const [weight, height] = args;
+            const [weight, height] = args as number[];
             if (isNaN(weight) || isNaN(height) || height <= 0) {
                 return NaN;
             }
@@ -720,39 +661,31 @@ const initApp = () => {
         });
     };
 
-    // 执行自定义函数注册
     registerCustomValidationFunctions();
 
     window.wb = wb;
 
-    // ============================================================
-    // 动态调整行列数示例（可在浏览器控制台调用）
-    // ============================================================
     window.resizeGrid = {
-        /** 设置行数 */
-        setRows: (rows) => {
-            const sheet = wb.getActiveSheet();
+        setRows: (rows: number): void => {
+            const sheet = wb.getActiveSheet()!;
             sheet.setRowCount(rows);
             errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 行数已调整为: ${rows}`);
         },
 
-        /** 设置列数 */
-        setCols: (cols) => {
-            const sheet = wb.getActiveSheet();
+        setCols: (cols: number): void => {
+            const sheet = wb.getActiveSheet()!;
             sheet.setColCount(cols);
             errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 列数已调整为: ${cols}`);
         },
 
-        /** 同时设置行数和列数 */
-        setSize: (rows, cols) => {
-            const sheet = wb.getActiveSheet();
+        setSize: (rows: number, cols: number): void => {
+            const sheet = wb.getActiveSheet()!;
             sheet.setGridSize(rows, cols);
             errorHandler.debug(ERROR_CODE.DEBUG_LOG, `✅ 网格大小已调整为: ${rows}行 x ${cols}列`);
         },
 
-        /** 获取当前网格大小 */
         getSize: () => {
-            const sheet = wb.getActiveSheet();
+            const sheet = wb.getActiveSheet()!;
             const rc = sheet.rowColManager;
             return {
                 rows: rc.rowCount,
@@ -761,11 +694,6 @@ const initApp = () => {
             };
         },
     };
-
-    // 示例：5秒后自动调整为 30行 x 15列（可删除此段代码）
-    // setTimeout(() => {
-    //     window.resizeGrid.setSize(30, 15);
-    // }, 5000);
 };
 
 document.addEventListener("DOMContentLoaded", initApp);

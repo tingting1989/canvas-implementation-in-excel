@@ -5,4 +5,4 @@
  * 方便外部代码和内部模块使用。
  */
 
-export { ISheet, type StyleObject, type MergeRange, type ColumnConfig, type CellConfigItem, type CellProperties } from "./ISheet";
+export { type ISheet, type StyleObject, type MergeRange, type ColumnConfig, type CellConfigItem, type CellProperties } from "./ISheet";

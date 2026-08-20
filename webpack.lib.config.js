@@ -4,7 +4,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 const shared = {
     mode: "production",
     devtool: false,
-    entry: "./src/api/index.js",
+    entry: "./src/api/index.ts",
     externals: {
         exceljs: {
             commonjs: "exceljs",

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @fileoverview 共享样式转换模块
  *
  * 功能概述：
@@ -12,9 +12,7 @@
  * 3. 性能优化：颜色缓存、延迟初始化
  * 4. 可扩展性：易于添加新的样式属性支持
  *
- * @module shared/style-converter
- * @author Canvas-Sheet Team
- * @version 1.0.0
+ * @module shared/StyleConverter
  */
 
 import { errorHandler } from "../core/ErrorHandler.js";
@@ -25,17 +23,11 @@ import { excelFontSizeToPixel, pixelToExcelFontSize } from "../utils/excelUnits.
 // [Section 1] 颜色转换工具
 // ============================================================================
 
-/**
- * 全局状态：颜色缓存和复用元素
- * @private
- */
-let _colorParserElement = null;
+let _colorParserElement: HTMLDivElement | null = null;
 
-/** @type {Map<string, string>} 颜色值缓存（原始值 → ARGB） */
-const _colorCache = new Map();
+const _colorCache: Map<string, string> = new Map();
 
-/** @type {Map<string, string>} 反向颜色缓存（ARGB → 标准格式） */
-const _reverseColorCache = new Map();
+const _reverseColorCache: Map<string, string> = new Map();
 
 /**
  * 将颜色值转换为 ExcelJS 兼容的 ARGB 格式
@@ -50,21 +42,17 @@ const _reverseColorCache = new Map();
  * 输出格式：
  * - 8 位十六进制 ARGB（无 # 号前缀）
  * - 示例：'FFFF0000'（完全不透明的红色）
- *
- * @param {string} color - 输入颜色值
- * @returns {string} ARGB 格式颜色（8 位十六进制，无 # 号）
  */
-export function toArgb(color) {
+export function toArgb(color: string): string {
     if (!color || typeof color !== "string") return "00000000";
 
     const trimmedColor = color.trim();
 
-    // 快速路径1：查询缓存
     if (_colorCache.has(trimmedColor)) {
-        return _colorCache.get(trimmedColor);
+        return _colorCache.get(trimmedColor)!;
     }
 
-    let result;
+    let result: string;
 
     const lowerColor = trimmedColor.toLowerCase();
     if (lowerColor === "transparent" || lowerColor === "") {
@@ -122,27 +110,21 @@ export function toArgb(color) {
  * 将 ARGB 格式颜色转换为标准 CSS 颜色格式
  *
  * 这是 toArgb() 的逆操作，用于从 Excel 导入时转换颜色。
- *
- * @param {string} argb - ARGB 格式颜色（8位或6位十六进制，可带#号）
- * @returns {string} 标准 CSS 颜色格式（#RRGGBB）
  */
-export function fromArgb(argb) {
+export function fromArgb(argb: string): string {
     if (!argb || typeof argb !== "string") return "#000000";
 
     const trimmedArgb = argb.trim().replace(/^#/, "");
 
-    // 快速路径：查询反向缓存
     if (_reverseColorCache.has(trimmedArgb)) {
-        return _reverseColorCache.get(trimmedArgb);
+        return _reverseColorCache.get(trimmedArgb)!;
     }
 
-    let hex;
+    let hex: string;
 
     if (/^[0-9a-f]{8}$/i.test(trimmedArgb)) {
-        // 8位ARGB，取后6位作为RGB
         hex = trimmedArgb.slice(2).toUpperCase();
     } else if (/^[0-9a-f]{6}$/i.test(trimmedArgb)) {
-        // 6位RGB，直接使用
         hex = trimmedArgb.toUpperCase();
     } else {
         return "#000000";
@@ -157,52 +139,135 @@ export function fromArgb(argb) {
 // [Section 2] 默认值常量
 // ============================================================================
 
-/** 默认字体大小 */
 const DEFAULT_FONT_SIZE = 11;
 
-/** 默认字体名称 */
 const DEFAULT_FONT_FAMILY = "Calibri";
 
-/** 默认边框样式 */
 const DEFAULT_BORDER_STYLE = "thin";
 
-/** 默认边框颜色 */
 const DEFAULT_BORDER_COLOR = "FFDDDDDD";
 
 // ============================================================================
 // [Section 3] StyleConverter 主类
 // ============================================================================
 
-/**
- * 样式转换器类
- *
- * 提供 Excel 样式与 Canvas-Sheet 样式之间的双向转换功能。
- * 支持两种格式：
- * - 扁平格式（Canvas-Sheet StylePool 格式）
- * - 嵌套格式（ExcelJS 标准格式）
- *
- * @class StyleConverter
- */
+interface FlatStyle {
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string | boolean;
+    fontStyle?: string;
+    color?: string;
+    textAlign?: string;
+    verticalAlign?: string;
+    backgroundColor?: string;
+    textDecoration?: string;
+}
+
+interface NestedStyleFont {
+    name?: string;
+    size?: number;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    color?: string;
+}
+
+interface NestedStyleAlignment {
+    horizontal?: string;
+    vertical?: string;
+    wrapText?: boolean;
+    indent?: number;
+}
+
+interface NestedStyleBorderSide {
+    style?: string;
+    color?: string;
+}
+
+interface NestedStyleBorder {
+    top?: NestedStyleBorderSide;
+    left?: NestedStyleBorderSide;
+    bottom?: NestedStyleBorderSide;
+    right?: NestedStyleBorderSide;
+}
+
+interface NestedStyleFill {
+    type?: string;
+    pattern?: string;
+    fgColor?: string;
+    bgColor?: string;
+    color?: string;
+}
+
+interface NestedStyle {
+    font?: NestedStyleFont;
+    alignment?: NestedStyleAlignment;
+    border?: NestedStyleBorder;
+    fill?: NestedStyleFill;
+    numberFormat?: string;
+}
+
+interface ExcelFontColor {
+    argb?: string;
+}
+
+interface ExcelFont {
+    name?: string;
+    size?: number;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    color?: ExcelFontColor;
+}
+
+interface ExcelAlignment {
+    horizontal?: string;
+    vertical?: string;
+    wrapText?: boolean;
+    indent?: number;
+}
+
+interface ExcelBorderSide {
+    style?: string;
+    color?: { argb?: string };
+}
+
+interface ExcelBorder {
+    top?: ExcelBorderSide;
+    left?: ExcelBorderSide;
+    bottom?: ExcelBorderSide;
+    right?: ExcelBorderSide;
+}
+
+interface ExcelFill {
+    type?: string;
+    pattern?: string;
+    fgColor?: { argb?: string };
+    bgColor?: { argb?: string };
+}
+
+interface ExcelStyle {
+    font?: ExcelFont;
+    alignment?: ExcelAlignment;
+    border?: ExcelBorder;
+    fill?: ExcelFill;
+    numFmt?: string;
+}
+
+interface ConversionWarning {
+    message: string;
+    timestamp: Date;
+    [key: string]: unknown;
+}
+
 export class StyleConverter {
-    constructor() {
-        /** @type {Array} 转换警告列表 */
+    warnings: ConversionWarning[] = [];
+
+    clearWarnings(): void {
         this.warnings = [];
     }
 
-    /**
-     * 清空警告列表
-     */
-    clearWarnings() {
-        this.warnings = [];
-    }
-
-    /**
-     * 添加转换警告
-     *
-     * @param {string} message - 警告消息
-     * @param {Object} context - 警告上下文信息
-     */
-    #addWarning(message, context = {}) {
+    #addWarning(message: string, context: Record<string, unknown> = {}): void {
         this.warnings.push({
             message,
             timestamp: new Date(),
@@ -210,47 +275,27 @@ export class StyleConverter {
         });
     }
 
-    /**
-     * 将 Canvas-Sheet 样式转换为 ExcelJS 样式
-     *
-     * 支持两种输入格式：
-     * 1. 扁平格式（StylePool 返回的格式）
-     * 2. 嵌套格式（ExcelJS 标准格式，直接透传）
-     *
-     * @param {Object|null} style - Canvas-Sheet 样式对象
-     * @returns {Object} ExcelJS 样式对象
-     */
-    convertToExcel(style) {
+    convertToExcel(style: FlatStyle | NestedStyle | null): Record<string, unknown> {
         if (!style || typeof style !== "object") return {};
 
-        const excelStyle = {};
-
-        // 检测是否为扁平格式
         const isFlatFormat =
-            style.backgroundColor !== undefined ||
-            style.fontFamily !== undefined ||
-            style.fontSize !== undefined ||
-            style.fontWeight !== undefined ||
-            style.textAlign !== undefined;
+            (style as FlatStyle).backgroundColor !== undefined ||
+            (style as FlatStyle).fontFamily !== undefined ||
+            (style as FlatStyle).fontSize !== undefined ||
+            (style as FlatStyle).fontWeight !== undefined ||
+            (style as FlatStyle).textAlign !== undefined;
 
         if (isFlatFormat) {
-            return this.#convertFlatToExcel(style);
+            return this.#convertFlatToExcel(style as FlatStyle);
         }
 
-        return this.#convertNestedToExcel(style);
+        return this.#convertNestedToExcel(style as NestedStyle);
     }
 
-    /**
-     * 将扁平格式的 Canvas-Sheet 样式转换为 ExcelJS 样式
-     *
-     * @param {Object} style - 扁平格式样式对象
-     * @returns {Object} ExcelJS 样式对象
-     */
-    #convertFlatToExcel(style) {
-        const excelStyle = {};
+    #convertFlatToExcel(style: FlatStyle): Record<string, unknown> {
+        const excelStyle: Record<string, unknown> = {};
 
-        // 字体设置
-        const fontConfig = {};
+        const fontConfig: Record<string, unknown> = {};
         if (style.fontFamily) fontConfig.name = style.fontFamily;
         if (style.fontSize) fontConfig.size = pixelToExcelFontSize(style.fontSize);
         if (style.fontWeight === "bold" || style.fontWeight === true) fontConfig.bold = true;
@@ -261,8 +306,7 @@ export class StyleConverter {
             excelStyle.font = fontConfig;
         }
 
-        // 对齐方式
-        const alignConfig = {};
+        const alignConfig: Record<string, unknown> = {};
         if (style.textAlign) alignConfig.horizontal = style.textAlign;
         if (style.verticalAlign) alignConfig.vertical = style.verticalAlign;
 
@@ -270,7 +314,6 @@ export class StyleConverter {
             excelStyle.alignment = alignConfig;
         }
 
-        // 背景色
         if (style.backgroundColor && style.backgroundColor !== "transparent") {
             const bgColor = toArgb(style.backgroundColor);
 
@@ -287,16 +330,9 @@ export class StyleConverter {
         return excelStyle;
     }
 
-    /**
-     * 将嵌套格式的样式转换为 ExcelJS 样式（透传 + 颜色转换）
-     *
-     * @param {Object} style - 嵌套格式样式对象
-     * @returns {Object} ExcelJS 样式对象
-     */
-    #convertNestedToExcel(style) {
-        const excelStyle = {};
+    #convertNestedToExcel(style: NestedStyle): Record<string, unknown> {
+        const excelStyle: Record<string, unknown> = {};
 
-        // 字体设置
         if (style.font) {
             excelStyle.font = {
                 name: style.font.name || DEFAULT_FONT_FAMILY,
@@ -308,7 +344,6 @@ export class StyleConverter {
             };
         }
 
-        // 对齐方式
         if (style.alignment) {
             excelStyle.alignment = {
                 horizontal: style.alignment.horizontal || "left",
@@ -318,7 +353,6 @@ export class StyleConverter {
             };
         }
 
-        // 边框设置
         if (style.border) {
             excelStyle.border = {
                 top: this.#convertBorderSide(style.border.top),
@@ -328,7 +362,6 @@ export class StyleConverter {
             };
         }
 
-        // 填充设置
         if (style.fill) {
             excelStyle.fill = {
                 type: "pattern",
@@ -338,7 +371,6 @@ export class StyleConverter {
             };
         }
 
-        // 数字格式
         if (style.numberFormat) {
             excelStyle.numFmt = style.numberFormat;
         }
@@ -346,31 +378,16 @@ export class StyleConverter {
         return excelStyle;
     }
 
-    /**
-     * 转换单个边框侧
-     *
-     * @param {Object} borderSide - 边框侧配置
-     * @returns {Object|undefined} 转换后的边框侧配置
-     */
-    #convertBorderSide(borderSide) {
+    #convertBorderSide(borderSide?: NestedStyleBorderSide): Record<string, unknown> | undefined {
         if (!borderSide) return undefined;
 
         return {
             style: borderSide.style || DEFAULT_BORDER_STYLE,
-            color: { argb: toArgb(borderSide.color) || DEFAULT_BORDER_COLOR },
+            color: { argb: toArgb(borderSide.color ?? "") || DEFAULT_BORDER_COLOR },
         };
     }
 
-    /**
-     * 将 ExcelJS 样式转换为 Canvas-Sheet 样式
-     *
-     * 这是 convertToExcel() 的逆操作。
-     *
-     * @param {Object|null} excelStyle - ExcelJS 样式对象
-     * @param {string} [outputFormat='flat'] - 输出格式：'flat' 或 'nested'
-     * @returns {Object} Canvas-Sheet 样式对象
-     */
-    convertFromExcel(excelStyle, outputFormat = "flat") {
+    convertFromExcel(excelStyle: ExcelStyle | null, outputFormat: "flat" | "nested" = "flat"): Record<string, unknown> {
         if (!excelStyle || typeof excelStyle !== "object") return {};
 
         if (outputFormat === "nested") {
@@ -380,16 +397,9 @@ export class StyleConverter {
         return this.#convertExcelToFlat(excelStyle);
     }
 
-    /**
-     * 将 ExcelJS 样式转换为扁平格式的 Canvas-Sheet 样式
-     *
-     * @param {Object} excelStyle - ExcelJS 样式对象
-     * @returns {Object} 扁平格式样式对象
-     */
-    #convertExcelToFlat(excelStyle) {
-        const flatStyle = {};
+    #convertExcelToFlat(excelStyle: ExcelStyle): Record<string, unknown> {
+        const flatStyle: Record<string, unknown> = {};
 
-        // 字体设置
         if (excelStyle.font) {
             if (excelStyle.font.name) flatStyle.fontFamily = excelStyle.font.name;
             if (excelStyle.font.size) flatStyle.fontSize = excelFontSizeToPixel(excelStyle.font.size);
@@ -400,13 +410,11 @@ export class StyleConverter {
             }
         }
 
-        // 对齐方式
         if (excelStyle.alignment) {
             if (excelStyle.alignment.horizontal) flatStyle.textAlign = excelStyle.alignment.horizontal;
             if (excelStyle.alignment.vertical) flatStyle.verticalAlign = excelStyle.alignment.vertical;
         }
 
-        // 背景色
         if (excelStyle.fill?.fgColor?.argb) {
             const bgColor = fromArgb(excelStyle.fill.fgColor.argb);
             if (bgColor !== "#000000") {
@@ -417,16 +425,9 @@ export class StyleConverter {
         return flatStyle;
     }
 
-    /**
-     * 将 ExcelJS 样式转换为嵌套格式的 Canvas-Sheet 样式
-     *
-     * @param {Object} excelStyle - ExcelJS 样式对象
-     * @returns {Object} 嵌套格式样式对象
-     */
-    #convertExcelToNested(excelStyle) {
-        const nestedStyle = {};
+    #convertExcelToNested(excelStyle: ExcelStyle): Record<string, unknown> {
+        const nestedStyle: Record<string, unknown> = {};
 
-        // 字体设置
         if (excelStyle.font) {
             nestedStyle.font = {
                 name: excelStyle.font.name || DEFAULT_FONT_FAMILY,
@@ -438,7 +439,6 @@ export class StyleConverter {
             };
         }
 
-        // 对齐方式
         if (excelStyle.alignment) {
             nestedStyle.alignment = {
                 horizontal: excelStyle.alignment.horizontal || "left",
@@ -448,7 +448,6 @@ export class StyleConverter {
             };
         }
 
-        // 边框设置
         if (excelStyle.border) {
             nestedStyle.border = {
                 top: this.#convertBorderSideFromExcel(excelStyle.border.top),
@@ -458,7 +457,6 @@ export class StyleConverter {
             };
         }
 
-        // 填充设置
         if (excelStyle.fill) {
             nestedStyle.fill = {
                 type: "pattern",
@@ -468,7 +466,6 @@ export class StyleConverter {
             };
         }
 
-        // 数字格式
         if (excelStyle.numFmt) {
             nestedStyle.numberFormat = excelStyle.numFmt;
         }
@@ -476,13 +473,7 @@ export class StyleConverter {
         return nestedStyle;
     }
 
-    /**
-     * 从 ExcelJS 边框侧转换
-     *
-     * @param {Object} borderSide - ExcelJS 边框侧配置
-     * @returns {Object|undefined} 转换后的边框侧配置
-     */
-    #convertBorderSideFromExcel(borderSide) {
+    #convertBorderSideFromExcel(borderSide?: ExcelBorderSide): Record<string, unknown> | undefined {
         if (!borderSide) return undefined;
 
         return {
@@ -496,11 +487,6 @@ export class StyleConverter {
 // [Section 4] 便捷函数导出
 // ============================================================================
 
-/**
- * 创建样式转换器实例（便捷函数）
- *
- * @returns {StyleConverter} 新的样式转换器实例
- */
-export function createStyleConverter() {
+export function createStyleConverter(): StyleConverter {
     return new StyleConverter();
 }

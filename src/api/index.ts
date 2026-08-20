@@ -102,6 +102,7 @@ export { functionRegistry, FUNCTION_CATEGORY } from "../plugins/formula/function
 // 样式与主题
 // ============================================================
 export { StylePool, stylePool, DEFAULT_STYLE_ID } from "../model/styles/index";
+export { StyleConverter, createStyleConverter, toArgb, fromArgb } from "../shared/StyleConverter";
 export { BaseColumnType } from "../types/BaseColumnType";
 export { ThemeManager } from "../theme/ThemeManager";
 export { defaultThemeConfig, darkThemeConfig } from "../theme/config";
