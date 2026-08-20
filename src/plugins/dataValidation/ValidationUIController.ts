@@ -26,7 +26,7 @@ const ICON_COLORS = Object.freeze({
     invalid: "#F44336",
     pending: "#9E9E9E",
     deferred: "#FF9800",
-    warning: "#FFC107",
+    warning: "#FF9800",
     error: "#F44336",
 });
 
@@ -351,99 +351,128 @@ export class ValidationUIController {
         const color = (ICON_COLORS as any)[status] || ICON_COLORS.pending;
 
         ctx.save();
-        ctx.beginPath();
-        ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
 
         switch (status) {
             case ICON_STATUS.VALID:
-                this.#drawCheckmark(ctx, x, y, size);
+                this.#drawCheckmark(ctx, x, y, size, color);
                 break;
             case ICON_STATUS.INVALID:
-                this.#drawCrossmark(ctx, x, y, size);
+                this.#drawCrossmark(ctx, x, y, size, color);
                 break;
             case ICON_STATUS.PENDING:
-                this.#drawPendingSymbol(ctx, x, y, size);
+                this.#drawPendingSymbol(ctx, x, y, size, color);
                 break;
             case ICON_STATUS.DEFERRED:
-                this.#drawDeferredSymbol(ctx, x, y, size);
+                this.#drawDeferredSymbol(ctx, x, y, size, color);
                 break;
             case ICON_STATUS.WARNING:
-                this.#drawWarningSymbol(ctx, x, y, size);
+                this.#drawWarningSymbol(ctx, x, y, size, color);
                 break;
             case ICON_STATUS.ERROR:
-                this.#drawErrorSymbol(ctx, x, y, size);
+                this.#drawErrorSymbol(ctx, x, y, size, color);
                 break;
             default:
-                this.#drawPendingSymbol(ctx, x, y, size);
+                this.#drawPendingSymbol(ctx, x, y, size, color);
         }
 
         ctx.restore();
     }
 
-    #drawCheckmark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.5;
+    #drawCheckmark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
         ctx.beginPath();
-        ctx.moveTo(x + size * 0.25, y + size * 0.5);
-        ctx.lineTo(x + size * 0.45, y + size * 0.7);
-        ctx.lineTo(x + size * 0.75, y + size * 0.3);
+        ctx.moveTo(x + size * 0.15, y + size * 0.5);
+        ctx.lineTo(x + size * 0.4, y + size * 0.75);
+        ctx.lineTo(x + size * 0.85, y + size * 0.25);
         ctx.stroke();
     }
 
-    #drawCrossmark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+    #drawCrossmark(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+
+        ctx.beginPath();
+        ctx.moveTo(x + size * 0.2, y + size * 0.2);
+        ctx.lineTo(x + size * 0.8, y + size * 0.8);
+        ctx.moveTo(x + size * 0.8, y + size * 0.2);
+        ctx.lineTo(x + size * 0.2, y + size * 0.8);
+        ctx.stroke();
+    }
+
+    #drawPendingSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+
+        ctx.beginPath();
+        ctx.arc(x + size / 2, y + size / 2, size * 0.4, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    #drawDeferredSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
+        const cx = x + size / 2;
+        const cy = y + size / 2;
+        const r = size * 0.4;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, Math.PI * 0.5, Math.PI * 1.5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    #drawWarningSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
+        const cx = x + size / 2;
+        const topY = y + size * 0.05;
+        const bottomY = y + size * 0.9;
+        const leftX = x + size * 0.05;
+        const rightX = x + size * 0.95;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(cx, topY);
+        ctx.lineTo(rightX, bottomY);
+        ctx.lineTo(leftX, bottomY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#fff";
+        ctx.font = `bold ${size * 0.5}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("!", cx, y + size * 0.6);
+    }
+
+    #drawErrorSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
+        const cx = x + size / 2;
+        const cy = y + size / 2;
+        const r = size * 0.45;
+
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1.5;
         ctx.lineCap = "round";
 
         ctx.beginPath();
-        ctx.moveTo(x + size * 0.3, y + size * 0.3);
-        ctx.lineTo(x + size * 0.7, y + size * 0.7);
-        ctx.moveTo(x + size * 0.7, y + size * 0.3);
-        ctx.lineTo(x + size * 0.3, y + size * 0.7);
+        ctx.moveTo(cx - r * 0.5, cy - r * 0.5);
+        ctx.lineTo(cx + r * 0.5, cy + r * 0.5);
+        ctx.moveTo(cx + r * 0.5, cy - r * 0.5);
+        ctx.lineTo(cx - r * 0.5, cy + r * 0.5);
         ctx.stroke();
-    }
-
-    #drawPendingSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-        ctx.fillStyle = "#fff";
-        ctx.font = `${size * 0.65}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("⏳", x + size / 2, y + size / 2);
-    }
-
-    #drawDeferredSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-        ctx.strokeStyle = "#fff";
-        ctx.lineWidth = 1.5;
-
-        ctx.beginPath();
-        ctx.arc(x + size / 2, y + size / 2, size * 0.35, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = "#fff";
-        ctx.beginPath();
-        ctx.arc(x + size / 2, y + size / 2, size * 0.08, 0, Math.PI * 2);
-        ctx.fill();
-    }
-
-    #drawWarningSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-        ctx.fillStyle = "#fff";
-        ctx.font = `bold ${size * 0.6}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("!", x + size / 2, y + size * 0.48);
-    }
-
-    #drawErrorSymbol(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
-        ctx.fillStyle = "#fff";
-        ctx.font = `bold ${size * 0.7}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("❗", x + size / 2, y + size / 2);
     }
 
     renderValidationIcons(viewport: {
@@ -507,8 +536,8 @@ export class ValidationUIController {
                 const cellRect = this.#getCellRectWithViewport(row, col, scrollX, scrollY, headerH, headerW);
                 if (!cellRect) continue;
 
-                const iconX = cellRect.x + cellRect.width - 16;
-                const iconY = cellRect.y + 2;
+                const iconX = cellRect.x + cellRect.width - 14;
+                const iconY = cellRect.y;
 
                 const isFrozenCol = col < fixedCols;
                 const isFrozenRow = row < fixedRows;
@@ -870,14 +899,11 @@ export class ValidationUIController {
         this.#renderEngine = null;
 
         this.#initialized = false;
-
-        errorHandler.info(ERROR_CODE.VALIDATION_INFO, "[ValidationUIController] 已销毁并释放所有资源");
     }
 
     #cleanupAsyncResources(): void {
         for (const [key, timerId] of this.#debounceTimers) {
             clearTimeout(timerId);
-            errorHandler.debug(ERROR_CODE.VALIDATION_DEBUG_LOG, `[ValidationUIController] 清除防抖定时器: ${key}`);
         }
         this.#debounceTimers.clear();
 
@@ -904,19 +930,14 @@ export class ValidationUIController {
 
     #getCellRect(row: number, col: number): { x: number; y: number; width: number; height: number } | null {
         if (!this.#renderEngine) return null;
-
-        if (typeof this.#renderEngine.getCellRect === "function") {
-            const rect = this.#renderEngine.getCellRect(row, col);
-            if (!rect) return null;
-            return {
-                x: rect.x,
-                y: rect.y,
-                width: rect.width ?? rect.w ?? 0,
-                height: rect.height ?? rect.h ?? 0,
-            };
-        }
-
-        return null;
+        const rect = this.#renderEngine.getCellRect(row, col);
+        if (!rect) return null;
+        return {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width ?? rect.w ?? 0,
+            height: rect.height ?? rect.h ?? 0,
+        };
     }
 
     #scanDropdownArrowCells(): void {
