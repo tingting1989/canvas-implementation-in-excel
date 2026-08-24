@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📏 行自适应高度演示 - Canvas Spreadsheet (UMD)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Microsoft YaHei', sans-serif;
+            min-height: 100vh; padding: 20px; color: #333;
+            background: linear-gradient(135deg, #0c3483 0%, #a2b6df 50%, #6b8dd6 100%);
+        }
+        .container {
+            max-width: 1400px; margin: 0 auto; background: white;
+            border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 30px; text-align: center;
+        }
+        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        .header p { opacity: 0.9; font-size: 1.1em; }
+        .badge {
+            display: inline-block; padding: 6px 16px; margin-top: 12px;
+            background: rgba(255,255,255,0.2); border-radius: 20px;
+            font-size: 0.85em; font-weight: 600; border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .main-content {
+            display: grid; grid-template-columns: 1fr 380px; gap: 20px; padding: 30px;
+        }
+        @media (max-width: 1024px) {
+            .main-content { grid-template-columns: 1fr; }
+        }
+
+        .canvas-section { display: flex; flex-direction: column; gap: 20px; }
+        .canvas-container {
+            background: #f8f9fa; padding: 20px; border: 1px solid #e9ecef; border-radius: 12px;
+        }
+        #spreadsheet { width: 100%; height: 500px; background: white; border-radius: 8px; }
+
+        .control-panel {
+            background: #f8f9fa; border-radius: 12px; padding: 25px;
+            border: 2px solid #e9ecef; height: fit-content;
+        }
+        .panel-title {
+            font-size: 1.3em; color: #495057; margin-bottom: 20px; padding-bottom: 10px;
+            border-bottom: 3px solid #667eea; font-weight: 600;
+        }
+
+        .control-group { margin-bottom: 20px; }
+        .control-group label {
+            display: block; font-weight: 600; margin-bottom: 8px; color: #495057; font-size: 14px;
+        }
+        .control-group .hint {
+            font-size: 12px; color: #6c757d; margin-top: 4px; line-height: 1.4;
+        }
+
+        .toggle-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; background: white; border-radius: 8px;
+            border: 2px solid #dee2e6; margin-bottom: 10px; cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .toggle-row:hover { border-color: #667eea; }
+        .toggle-row.active { border-color: #667eea; background: rgba(102,126,234,0.05); }
+        .toggle-row .toggle-label { font-weight: 600; color: #333; font-size: 14px; }
+        .toggle-row .toggle-desc { font-size: 12px; color: #6c757d; margin-top: 2px; }
+        .toggle-switch {
+            width: 44px; height: 24px; background: #ccc; border-radius: 12px;
+            position: relative; transition: background 0.3s; flex-shrink: 0;
+        }
+        .toggle-switch::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 20px; height: 20px; background: white; border-radius: 50%;
+            transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-row.active .toggle-switch { background: #667eea; }
+        .toggle-row.active .toggle-switch::after { transform: translateX(20px); }
+
+        .btn {
+            width: 100%; padding: 14px 24px; border: none; border-radius: 8px;
+            font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;
+            margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.6); }
+        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; box-shadow: 0 4px 15px rgba(17,153,142,0.4); }
+        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(17,153,142,0.6); }
+        .btn-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; box-shadow: 0 4px 15px rgba(79,172,254,0.4); }
+        .btn-info:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79,172,254,0.6); }
+        .btn-warning { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; box-shadow: 0 4px 15px rgba(250,112,154,0.4); }
+        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(250,112,154,0.6); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        .status-display {
+            padding: 15px; background: white; border-radius: 8px;
+            border: 2px solid #dee2e6; margin-bottom: 20px;
+        }
+        .status-row {
+            display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e9ecef;
+        }
+        .status-row:last-child { border-bottom: none; }
+        .status-label { color: #6c757d; font-size: 13px; }
+        .status-value { font-weight: 600; color: #667eea; font-size: 13px; }
+
+        .log-panel {
+            grid-column: 1 / -1; background: #1e1e1e; border-radius: 12px; padding: 20px;
+            max-height: 260px; overflow-y: auto; border: 2px solid #333;
+        }
+        .log-title { color: #4facfe; font-size: 1.2em; margin-bottom: 15px; font-family: monospace; font-weight: 600; }
+        .log-content { font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; line-height: 1.6; color: #d4d4d4; }
+        .log-entry { padding: 6px 10px; margin: 4px 0; border-radius: 4px; border-left: 4px solid transparent; }
+        .log-success { background: rgba(56,239,125,0.1); border-left-color: #38ef7d; color: #38ef7d; }
+        .log-error { background: rgba(255,107,107,0.1); border-left-color: #ff6b6b; color: #ff6b6b; }
+        .log-info { background: rgba(79,172,254,0.1); border-left-color: #4facfe; color: #4facfe; }
+        .log-warn { background: rgba(255,193,7,0.1); border-left-color: #ffc107; color: #ffc107; }
+
+        .info-section {
+            grid-column: 1 / -1; padding: 30px; background: white; border-top: 2px solid #e9ecef;
+        }
+        .info-section h2 {
+            font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+        }
+        .info-section h3 {
+            font-size: 1.2em; color: #667eea; margin: 20px 0 12px;
+        }
+
+        .config-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 20px; }
+        .config-table th {
+            padding: 10px; border: 1px solid #ddd; text-align: left;
+            background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+        }
+        .config-table td { padding: 8px; border: 1px solid #ddd; }
+        .config-table code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+
+        .code-block {
+            font-family: 'Consolas', monospace; font-size: 13px; line-height: 1.6;
+            background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px;
+            overflow-x: auto; white-space: pre; margin: 12px 0;
+        }
+        .code-block .kw { color: #569cd6; }
+        .code-block .str { color: #ce9178; }
+        .code-block .cmt { color: #6a9955; }
+        .code-block .fn { color: #dcdcaa; }
+        .code-block .num { color: #b5cea8; }
+        .code-block .prop { color: #9cdcfe; }
+
+        .feature-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 16px;
+        }
+        .feature-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 16px; border-radius: 12px; border-left: 4px solid #667eea;
+            transition: transform 0.2s ease;
+        }
+        .feature-card:hover { transform: translateY(-2px); }
+        .feature-card .feature-title { font-weight: 700; color: #333; margin-bottom: 6px; font-size: 15px; }
+        .feature-card .feature-desc { font-size: 13px; color: #666; line-height: 1.5; }
+
+        .status-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 30px; background: #f8f9fa; border-top: 2px solid #e9ecef; font-size: 14px; color: #6c757d;
+        }
+        .status-indicator { display: flex; align-items: center; gap: 8px; }
+        .status-dot {
+            width: 10px; height: 10px; border-radius: 50%; background: #28a745; animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📏 行自适应高度演示</h1>
+            <p>多行文本自动换行 & 行高自适应 — 列配置 + 右键菜单双模式</p>
+            <span class="badge">autoRowHeight · autoFitRow · ContextMenu</span>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-section">
+                <div class="canvas-container">
+                    <div id="spreadsheet"></div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="panel-title">🎛️ 控制面板</div>
+
+                <div class="status-display" id="statusDisplay">
+                    <div class="status-row">
+                        <span class="status-label">全局 autoRowHeight</span>
+                        <span class="status-value" id="statusGlobal">关闭</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">备注列 autoFitRow</span>
+                        <span class="status-value" id="statusColAutoFit">开启</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">最小行高</span>
+                        <span class="status-value" id="statusMinHeight">28px</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">最大行高</span>
+                        <span class="status-value" id="statusMaxHeight">500px</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>全局开关</label>
+                    <div class="toggle-row" id="toggleGlobal" onclick="toggleAutoRowHeight()">
+                        <div>
+                            <div class="toggle-label">autoRowHeight</div>
+                            <div class="toggle-desc">所有列内容变化时自动调整行高</div>
+                        </div>
+                        <div class="toggle-switch"></div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>手动操作</label>
+                    <button class="btn btn-success" onclick="autoFitSelectedRows()">📐 选区行自适应</button>
+                    <button class="btn btn-info" onclick="autoFitAllRows()">📏 全表行自适应</button>
+                    <button class="btn btn-warning" onclick="resetAllRowHeights()">↩️ 重置默认行高</button>
+                </div>
+
+                <div class="control-group">
+                    <label>测试数据</label>
+                    <button class="btn btn-primary" onclick="setLongText()">📝 填入长文本</button>
+                    <button class="btn btn-primary" onclick="setMultilineText()">📋 填入多行文本</button>
+                    <button class="btn btn-primary" onclick="setMixedData()">🔀 填入混合数据</button>
+                </div>
+            </div>
+
+            <div class="log-panel">
+                <div class="log-title">📋 操作日志</div>
+                <div class="log-content" id="logContent"></div>
+            </div>
+
+            <div class="info-section">
+                <h2>📖 功能说明</h2>
+
+                <h3>三种使用方式</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <div class="feature-title">1️⃣ 列配置 autoFitRow</div>
+                        <div class="feature-desc">在 columns 中为指定列设置 <code>autoFitRow: true</code>，该列内容变化时自动调整所在行高度。适合备注、描述等长文本列。</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-title">2️⃣ 全局配置 autoRowHeight</div>
+                        <div class="feature-desc">设置 <code>autoRowHeight: true</code>，所有列内容变化时均触发行高自适应。适合全局多行文本场景。</div>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-title">3️⃣ 右键菜单</div>
+                        <div class="feature-desc">选中单元格或行头后右键，选择「自适应行高」或「所有行自适应行高」，一次性调整选区或全表行高。</div>
+                    </div>
+                </div>
+
+                <h3>配置项</h3>
+                <table class="config-table">
+                    <thead>
+                        <tr>
+                            <th>配置项</th>
+                            <th>类型</th>
+                            <th>默认值</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>autoRowHeight</code></td>
+                            <td>boolean</td>
+                            <td>false</td>
+                            <td>全局行自适应高度开关</td>
+                        </tr>
+                        <tr>
+                            <td><code>autoRowHeightMin</code></td>
+                            <td>number</td>
+                            <td>28</td>
+                            <td>行高最小值（px）</td>
+                        </tr>
+                        <tr>
+                            <td><code>autoRowHeightMax</code></td>
+                            <td>number</td>
+                            <td>500</td>
+                            <td>行高最大值（px），防止极端值</td>
+                        </tr>
+                        <tr>
+                            <td><code>columns[i].autoFitRow</code></td>
+                            <td>boolean</td>
+                            <td>false</td>
+                            <td>列级行自适应开关，该列内容变化时触发</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>代码示例</h3>
+                <div class="code-block"><span class="cmt">// 方式一：列配置</span>
+<span class="kw">const</span> workbook = <span class="kw">new</span> CanvasSheet.<span class="fn">Workbook</span>(container, {
+    <span class="prop">columns</span>: [
+        { <span class="prop">type</span>: <span class="str">'text'</span>, <span class="prop">width</span>: <span class="num">100</span> },
+        { <span class="prop">type</span>: <span class="str">'textarea'</span>, <span class="prop">width</span>: <span class="num">200</span>, <span class="prop">autoFitRow</span>: <span class="kw">true</span> },
+    ],
+});
+
+<span class="cmt">// 方式二：全局配置</span>
+<span class="kw">const</span> workbook = <span class="kw">new</span> CanvasSheet.<span class="fn">Workbook</span>(container, {
+    <span class="prop">autoRowHeight</span>: <span class="kw">true</span>,
+    <span class="prop">autoRowHeightMin</span>: <span class="num">28</span>,
+    <span class="prop">autoRowHeightMax</span>: <span class="num">500</span>,
+});
+
+<span class="cmt">// 方式三：运行时调用 API</span>
+workbook.<span class="fn">updateSettings</span>({ <span class="prop">autoRowHeight</span>: <span class="kw">true</span> });
+
+<span class="cmt">// 手动触发行自适应</span>
+<span class="kw">const</span> sheet = workbook.<span class="prop">activeSheet</span>;
+sheet.<span class="fn">autoFitRowHeight</span>(<span class="num">0</span>, sheet.<span class="prop">rowColManager</span>.<span class="prop">rowCount</span> - <span class="num">1</span>);</div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Canvas Spreadsheet 运行中</span>
+            </div>
+            <span id="statusTime"></span>
+        </div>
+    </div>
+
+    <script src="../dist/canvas-sheet.umd.js"></script>
+
+    <script>
+        let workbook = null;
+        let globalAutoRowHeight = false;
+
+        function log(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logContent.appendChild(entry);
+            logContent.scrollTop = logContent.scrollHeight;
+        }
+
+        function updateStatusDisplay() {
+            document.getElementById('statusGlobal').textContent = globalAutoRowHeight ? '开启' : '关闭';
+            document.getElementById('statusColAutoFit').textContent = '开启';
+
+            const toggleEl = document.getElementById('toggleGlobal');
+            if (globalAutoRowHeight) {
+                toggleEl.classList.add('active');
+            } else {
+                toggleEl.classList.remove('active');
+            }
+        }
+
+        function toggleAutoRowHeight() {
+            if (!workbook) return;
+            globalAutoRowHeight = !globalAutoRowHeight;
+            workbook.updateSettings({ autoRowHeight: globalAutoRowHeight });
+            updateStatusDisplay();
+            log(`全局 autoRowHeight → ${globalAutoRowHeight ? '开启' : '关闭'}`, globalAutoRowHeight ? 'success' : 'warn');
+        }
+
+        function autoFitSelectedRows() {
+            if (!workbook || !workbook.activeSheet) return;
+            const sheet = workbook.activeSheet;
+            const range = sheet.selection.getRange();
+            sheet.autoFitRowHeight(range.topRow, range.bottomRow);
+            sheet._invalidateAll();
+            workbook.render();
+            log(`📐 选区行自适应：行 ${range.topRow} ~ ${range.bottomRow}`, 'success');
+        }
+
+        function autoFitAllRows() {
+            if (!workbook || !workbook.activeSheet) return;
+            const sheet = workbook.activeSheet;
+            const rowCount = sheet.rowColManager.rowCount;
+            sheet.autoFitRowHeight(0, rowCount - 1);
+            sheet._invalidateAll();
+            workbook.render();
+            log(`📏 全表行自适应：共 ${rowCount} 行`, 'success');
+        }
+
+        function resetAllRowHeights() {
+            if (!workbook || !workbook.activeSheet) return;
+            const sheet = workbook.activeSheet;
+            const rc = sheet.rowColManager;
+            const rowCount = rc.rowCount;
+            for (let r = 0; r < rowCount; r++) {
+                rc.setRowHeight(r, 28);
+            }
+            sheet._invalidateAll();
+            workbook.render();
+            log('↩️ 已重置所有行为默认高度 28px', 'warn');
+        }
+
+        function setLongText() {
+            if (!workbook || !workbook.activeSheet) return;
+            const sheet = workbook.activeSheet;
+            const longTexts = [
+                '这是一段很长的文本内容，用于测试行自适应高度功能是否正常工作，当文本超出列宽时应该自动换行并调整行高。',
+                'Canvas Spreadsheet 是一个基于 Canvas 渲染的高性能电子表格引擎，支持百万级数据渲染、公式计算、插件系统等丰富功能。',
+                '行自适应高度功能支持三种使用方式：列配置autoFitRow、全局配置autoRowHeight、右键菜单手动触发，灵活满足不同场景需求。',
+            ];
+            for (let i = 0; i < longTexts.length; i++) {
+                sheet.setCell(i, 2, longTexts[i]);
+            }
+            workbook.render();
+            log('📝 已填入长文本到备注列（第3列）', 'info');
+        }
+
+        function setMultilineText() {
+            if (!workbook || !workbook.activeSheet) return;
+            const sheet = workbook.activeSheet;
+            const multilineTexts = [
+                '第一行内容\n第二行内容\n第三行内容',
+                '项目进度：\n✅ 需求分析\n✅ 概要设计\n⏳ 详细设计\n⬜ 编码实现\n⬜ 测试验收',
+                '会议纪要\n日期：2026-08-21\n参会人：张三、李四、王五\n决议：\n1. 确定技术方案\n2. 下周完成原型\n3. 月底前交付',
+            ];
+            for (let i = 0; i < multilineTexts.length; i++) {
+                sheet.setCell(i, 2, multilineTexts[i]);
+            }
+            workbook.render();
+            log('📋 已填入多行文本到备注列（第3列）', 'info');
+        }
+
+        function setMixedData() {
+            if (!workbook || !workbook.activeSheet) return;
+            const sheet = workbook.activeSheet;
+            const data = [
+                ['张三', 28, '前端开发工程师，负责 Canvas 渲染引擎优化\n和性能调优工作'],
+                ['李四', 32, '后端开发\n负责 API 设计\n和数据库优化'],
+                ['王五', 25, 'UI 设计师'],
+                ['赵六', 35, '项目经理\n\n负责项目整体规划、进度跟踪、风险管理\n以及跨部门协调沟通工作\n当前管理 3 个并行项目'],
+                ['孙七', 29, '测试工程师\n自动化测试框架搭建\n性能测试与压力测试'],
+            ];
+            for (let r = 0; r < data.length; r++) {
+                for (let c = 0; c < data[r].length; c++) {
+                    sheet.setCell(r, c, data[r][c]);
+                }
+            }
+            workbook.render();
+            log('🔀 已填入混合数据（姓名 + 年龄 + 多行备注）', 'info');
+        }
+
+        async function initSpreadsheet() {
+            try {
+                log('开始初始化 Workbook...', 'info');
+
+                const container = document.getElementById('spreadsheet');
+                workbook = new CanvasSheet.Workbook(container, {
+                    width: 900,
+                    height: 500,
+                    plugins: [
+                        "autoFill",
+                        "contextMenu",
+                        "copyPaste",
+                        "freeze",
+                        "formula",
+                        "sort",
+                        "filter",
+                        "search",
+                    ],
+                    pluginOptions: {
+                        contextMenu: {
+                            enabled: true,
+                            closeOnClickOutside: true,
+                            closeOnEscape: true,
+                            zIndex: 10001,
+                            dropdownWidth: 200,
+                            dropdownMaxHeight: 450,
+                        },
+                    },
+                    sheets: [{
+                        name: "行自适应演示",
+                        data: [
+                            ["张三", 28, "前端开发，负责 Canvas 渲染引擎优化"],
+                            ["李四", 32, "后端开发\n负责 API 设计和数据库优化"],
+                            ["王五", 25, "UI 设计师"],
+                            ["赵六", 35, "项目经理\n\n负责项目整体规划、进度跟踪\n以及跨部门协调沟通工作"],
+                            ["孙七", 29, "测试工程师"],
+                            ["周八", 31, "运维工程师\n负责 CI/CD 流水线搭建\n和服务器监控告警配置"],
+                            ["吴九", 27, "产品经理\n需求分析 & 原型设计"],
+                            ["郑十", 33, "架构师\n技术选型 & 架构设计\n微服务治理 & 性能优化"],
+                        ],
+                        rowHeaderWidth: 50,
+                        columns: [
+                            { type: "text", width: 100 },
+                            { type: "numeric", width: 80 },
+                            { type: "textarea", width: 280, autoFitRow: true },
+                        ],
+                    }],
+                });
+
+                log('✅ Workbook 初始化成功', 'success');
+                log('✅ 备注列（第3列）已配置 autoFitRow: true', 'success');
+                log('💡 提示：编辑备注列内容后行高会自动调整', 'info');
+                log('💡 提示：右键单元格 → "自适应行高" 可手动触发', 'info');
+                log('💡 提示：点击控制面板按钮体验不同操作', 'info');
+
+                updateStatusDisplay();
+
+                autoFitAllRows();
+
+            } catch (error) {
+                log(`❌ 初始化失败: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('statusTime').textContent = now.toLocaleTimeString();
+        }
+
+        initSpreadsheet();
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>

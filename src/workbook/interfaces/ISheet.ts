@@ -99,6 +99,8 @@ export interface ColumnConfig {
     style?: StyleObject;
     /** 自定义验证函数，返回 true 或错误消息 */
     validator?: (value: unknown) => boolean | string;
+    /** 该列内容变化时自动调整所在行高度 */
+    autoFitRow?: boolean;
     /** 任意扩展属性 */
     [key: string]: unknown;
 }
@@ -218,6 +220,12 @@ export interface ISheet {
     cellPadding: number;
     /** 是否启用文本溢出省略号 */
     textOverflowEllipsis: boolean;
+    /** 是否启用行自适应高度（全局开关） */
+    autoRowHeight: boolean;
+    /** 行自适应高度最小值（px） */
+    autoRowHeightMin: number;
+    /** 行自适应高度最大值（px） */
+    autoRowHeightMax: number;
 
     /**
      * 检查工作表是否可写（非只读）
@@ -627,4 +635,17 @@ export interface ISheet {
      * @returns 可见列号
      */
     toVisibleCol(realCol: number): number;
+
+    /**
+     * 计算指定行的自适应高度
+     * @param row - 行号
+     * @returns 自适应行高（px）
+     */
+    calculateAutoRowHeight(row: number): number;
+    /**
+     * 对指定行范围执行行自适应高度
+     * @param startRow - 起始行号
+     * @param endRow - 结束行号（含）
+     */
+    autoFitRowHeight(startRow: number, endRow: number): void;
 }

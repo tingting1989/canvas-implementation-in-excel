@@ -115,6 +115,28 @@ export class SheetDataCoordinator {
         if (!formula) {
             this.#sheet.bus.emit(SHEET_EVENTS.CELL_CHANGED, { r, c });
         }
+
+        this.#tryAutoFitRowHeight(r, c);
+    }
+
+    /**
+     * 尝试触发行自适应高度
+     *
+     * 当 sheet.autoRowHeight 为 true 或该列配置了 autoFitRow 时，
+     * 重新计算该行高度并应用。
+     *
+     * @param r - 行号
+     * @param c - 列号
+     */
+    #tryAutoFitRowHeight(r: number, c: number): void {
+        const sheet = this.#sheet;
+        if (!sheet.autoRowHeight) {
+            const colConfig = sheet.meta.columnsConfig.get(c);
+            if (!colConfig?.autoFitRow) return;
+        }
+
+        const height = sheet.calculateAutoRowHeight(r);
+        sheet.rowColManager.setRowHeight(r, height);
     }
 
     /**

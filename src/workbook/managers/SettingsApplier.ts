@@ -126,6 +126,16 @@ export class SettingsApplier {
         if (settings.fixedColumnsStart !== undefined) {
             sheet.fixedColumnsStart = settings.fixedColumnsStart as number;
         }
+
+        if (settings.autoRowHeight !== undefined) {
+            sheet.autoRowHeight = settings.autoRowHeight as boolean;
+        }
+        if (settings.autoRowHeightMin !== undefined) {
+            sheet.autoRowHeightMin = settings.autoRowHeightMin as number;
+        }
+        if (settings.autoRowHeightMax !== undefined) {
+            sheet.autoRowHeightMax = settings.autoRowHeightMax as number;
+        }
     }
 
     /**

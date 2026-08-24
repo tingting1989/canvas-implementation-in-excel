@@ -17,12 +17,19 @@ import { CONFIG } from "../constants/config.js";
 import type { CellRenderContext } from "./CellRenderContext.js";
 
 export class TextareaColumnType extends BaseColumnType {
+    static readonly #MAX_CACHE_SIZE = 5000;
+    static readonly #wrapCache = new Map<string, string[]>();
+
     get name(): "textarea" {
         return "textarea";
     }
 
     get editorType(): "textarea" {
         return "textarea";
+    }
+
+    static invalidateAll(): void {
+        this.#wrapCache.clear();
     }
 
     format(value: any): string {
@@ -134,24 +141,68 @@ export class TextareaColumnType extends BaseColumnType {
     }
 
     #wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-        let currentLine = "";
-        const lines: string[] = [];
+        const cacheKey = `${text}|${maxWidth}|${ctx.font}`;
 
-        for (const char of text) {
-            const testLine = currentLine + char;
+        const cached = TextareaColumnType.#getCache(cacheKey);
+        if (cached !== undefined) return cached;
 
-            if (ctx.measureText(testLine).width > maxWidth && currentLine.length > 0) {
-                lines.push(currentLine);
-                currentLine = char;
-            } else {
-                currentLine = testLine;
+        const lines = this.#doWrapText(ctx, text, maxWidth);
+
+        TextareaColumnType.#setCache(cacheKey, lines);
+
+        return lines;
+    }
+
+    #doWrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+        const paragraphs = text.split("\n");
+        const allLines: string[] = [];
+
+        for (const paragraph of paragraphs) {
+            if (paragraph === "") {
+                allLines.push("");
+                continue;
+            }
+            let currentLine = "";
+
+            for (const char of paragraph) {
+                const testLine = currentLine + char;
+
+                if (ctx.measureText(testLine).width > maxWidth && currentLine.length > 0) {
+                    allLines.push(currentLine);
+                    currentLine = char;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+
+            if (currentLine) {
+                allLines.push(currentLine);
             }
         }
 
-        if (currentLine) {
-            lines.push(currentLine);
+        if (allLines.length === 0) {
+            allLines.push("");
         }
 
-        return lines;
+        return allLines;
+    }
+
+    static #getCache(key: string): string[] | undefined {
+        const value = this.#wrapCache.get(key);
+        if (value !== undefined) {
+            this.#wrapCache.delete(key);
+            this.#wrapCache.set(key, value);
+        }
+        return value;
+    }
+
+    static #setCache(key: string, lines: string[]): void {
+        if (this.#wrapCache.has(key)) {
+            this.#wrapCache.delete(key);
+        } else if (this.#wrapCache.size >= this.#MAX_CACHE_SIZE) {
+            const oldestKey = this.#wrapCache.keys().next().value;
+            if (oldestKey !== undefined) this.#wrapCache.delete(oldestKey);
+        }
+        this.#wrapCache.set(key, lines);
     }
 }

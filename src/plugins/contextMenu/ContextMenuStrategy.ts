@@ -154,6 +154,9 @@ export class ContextMenuStrategy extends EventStrategy {
             "mergeCells",
             "unmergeCells",
             null,
+            "autoFitRowHeight",
+            "autoFitAllRows",
+            null,
             "insertImage",
             null,
             "clearContent",
@@ -170,6 +173,9 @@ export class ContextMenuStrategy extends EventStrategy {
             "freezeAtCell",
             "freezeRow",
             "unfreeze",
+            null,
+            "autoFitRowHeight",
+            "autoFitAllRows",
             null,
             "clearContent",
         ],
@@ -403,6 +409,22 @@ export class ContextMenuStrategy extends EventStrategy {
                     const freeze = sheet.bus.emit(SHEET_EVENTS.GET_PLUGIN, { name: "freeze" }, { source: "ContextMenuStrategy" });
                     if (!freeze) return;
                     freeze.unfreeze();
+                },
+            },
+            autoFitRowHeight: {
+                label: "自适应行高",
+                action: (_r, _c, sheet) => {
+                    const range = sheet.selection.getRange();
+                    sheet.autoFitRowHeight(range.topRow, range.bottomRow);
+                    sheet._invalidateAll();
+                },
+            },
+            autoFitAllRows: {
+                label: "所有行自适应行高",
+                action: (_r, _c, sheet) => {
+                    const rowCount = sheet.rowColManager.rowCount;
+                    sheet.autoFitRowHeight(0, rowCount - 1);
+                    sheet._invalidateAll();
                 },
             },
         };

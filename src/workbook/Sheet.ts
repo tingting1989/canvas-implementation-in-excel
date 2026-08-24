@@ -80,6 +80,15 @@ export class Sheet implements ISheet {
     /** 是否启用文本溢出省略号 */
     textOverflowEllipsis: boolean = CONFIG.TEXT_OVERFLOW_ELLIPSIS;
 
+    /** 是否启用行自适应高度（全局开关） */
+    autoRowHeight: boolean = false;
+
+    /** 行自适应高度最小值（px） */
+    autoRowHeightMin: number = CONFIG.AUTO_ROW_HEIGHT_MIN;
+
+    /** 行自适应高度最大值（px） */
+    autoRowHeightMax: number = CONFIG.AUTO_ROW_HEIGHT_MAX;
+
     /** 样式管理器，管理样式注册、缓存和查找 */
     styleManager!: SheetStyleManager;
 
@@ -769,5 +778,123 @@ export class Sheet implements ISheet {
         const lastFrozenCol = this.#fixedColumnsStart - 1;
 
         return rc.getColX(lastFrozenCol) + rc.getColWidth(lastFrozenCol);
+    }
+
+    /**
+     * 计算指定行的自适应高度
+     *
+     * 遍历该行所有有数据的列，根据文本内容、列宽、字体信息计算
+     * 每个单元格所需高度，取最大值作为该行的自适应高度。
+     * 结果被限制在 [autoRowHeightMin, autoRowHeightMax] 范围内。
+     *
+     * @param row - 行号
+     * @returns 自适应行高（px）
+     */
+    calculateAutoRowHeight(row: number): number {
+        const rc = this.rowColManager;
+        const colCount = rc.colCount;
+        let maxHeight = this.autoRowHeightMin;
+
+        for (let col = 0; col < colCount; col++) {
+            const cell = this.cellStore.get(row, col);
+            if (!cell || cell.value === undefined || cell.value === null || cell.value === "") continue;
+
+            const colWidth = rc.getColWidth(col);
+            const padding = this.cellPadding;
+            const maxTextWidth = colWidth - padding * 2;
+            if (maxTextWidth <= 0) continue;
+
+            const style = this.resolveStyle(row, col);
+            const fontSize = style.fontSize || CONFIG.DEFAULT_FONT_SIZE;
+            const fontFamily = style.fontFamily || CONFIG.DEFAULT_FONT_FAMILY;
+            const fontWeight = style.fontWeight || "normal";
+            const fontStyle = style.fontStyle === "italic" ? "italic" : "";
+            const fontString = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`.trim().replace(/\s+/g, " ");
+
+            const cellType = this.getCellTypeInstance(row, col);
+            const typeName = cellType?.name || "text";
+            const lineHeight = fontSize * (CONFIG.TEXTAREA_LINE_HEIGHT_RATIO as number);
+
+            let lineCount = 1;
+            const text = String(cell.value);
+
+            const canvas = this.#measureCanvas || (this.#measureCanvas = document.createElement("canvas"));
+            const ctx = canvas.getContext("2d")!;
+            ctx.font = fontString;
+
+            if (typeName === "textarea" || text.includes("\n")) {
+                lineCount = this.#wrapTextMeasure(ctx, text, maxTextWidth);
+            } else {
+                const textWidth = ctx.measureText(text).width;
+                if (textWidth <= maxTextWidth) {
+                    lineCount = 1;
+                } else {
+                    lineCount = this.#wrapTextMeasure(ctx, text, maxTextWidth);
+                }
+            }
+
+            const neededHeight = lineCount * lineHeight + padding * 2;
+            if (neededHeight > maxHeight) {
+                maxHeight = neededHeight;
+            }
+        }
+
+        return Math.min(Math.max(maxHeight, this.autoRowHeightMin), this.autoRowHeightMax);
+    }
+
+    /**
+     * 对指定行范围执行行自适应高度
+     *
+     * 遍历 [startRow, endRow] 范围内的每一行，计算自适应高度并应用。
+     *
+     * @param startRow - 起始行号
+     * @param endRow - 结束行号（含）
+     */
+    autoFitRowHeight(startRow: number, endRow: number): void {
+        const rc = this.rowColManager;
+        for (let row = startRow; row <= endRow; row++) {
+            const height = this.calculateAutoRowHeight(row);
+            rc.setRowHeight(row, height);
+        }
+    }
+
+    /** 测量用离屏 Canvas（懒创建，复用） */
+    #measureCanvas: HTMLCanvasElement | null = null;
+
+    /**
+     * 文本换行测量：返回给定最大宽度下的行数
+     *
+     * @param ctx - Canvas 2D 上下文（已设置 font）
+     * @param text - 文本内容
+     * @param maxWidth - 最大文本宽度（px）
+     * @returns 换行后的行数
+     */
+    #wrapTextMeasure(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): number {
+        const paragraphs = text.split("\n");
+        let totalLines = 0;
+
+        for (const paragraph of paragraphs) {
+            if (paragraph === "") {
+                totalLines += 1;
+                continue;
+            }
+            let currentLine = "";
+            let lineCount = 0;
+
+            for (const char of paragraph) {
+                const testLine = currentLine + char;
+                if (ctx.measureText(testLine).width > maxWidth && currentLine.length > 0) {
+                    lineCount++;
+                    currentLine = char;
+                } else {
+                    currentLine = testLine;
+                }
+            }
+
+            if (currentLine) lineCount++;
+            totalLines += Math.max(lineCount, 1);
+        }
+
+        return totalLines;
     }
 }

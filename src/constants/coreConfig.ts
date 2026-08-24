@@ -81,6 +81,13 @@ export interface CoreConfig {
     readonly ZEBRA_LIGHT: "#fff";
     /** 斑马纹深色行背景 */
     readonly ZEBRA_DARK: "#fafafa";
+
+    // ═══ 行自适应高度 ═══
+
+    /** 行自适应高度最小值（px） */
+    readonly AUTO_ROW_HEIGHT_MIN: 28;
+    /** 行自适应高度最大值（px） */
+    readonly AUTO_ROW_HEIGHT_MAX: 500;
 }
 
 export const CORE_CONFIG: CoreConfig = Object.freeze({
@@ -118,4 +125,7 @@ export const CORE_CONFIG: CoreConfig = Object.freeze({
 
     ZEBRA_LIGHT: "#fff",
     ZEBRA_DARK: "#fafafa",
+
+    AUTO_ROW_HEIGHT_MIN: 28,
+    AUTO_ROW_HEIGHT_MAX: 500,
 });
