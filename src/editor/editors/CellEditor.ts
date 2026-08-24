@@ -721,8 +721,11 @@ export class CellEditor extends DOMComponent {
         if (!this.sheet) return;
         if (this.composing) return;
 
+        const isTextareaEditor = this.getElementType() === "textarea";
+
         switch (e.key) {
             case "Enter":
+                if (isTextareaEditor) return;
                 e.preventDefault();
 
                 if (e.ctrlKey || e.metaKey) {
@@ -741,6 +744,7 @@ export class CellEditor extends DOMComponent {
                 (this.editor as HTMLInputElement).blur();
                 break;
             case "Tab":
+                if (isTextareaEditor) return;
                 e.preventDefault();
                 this.#commitAndMoveNext("tab", e.shiftKey);
                 break;

@@ -32,6 +32,10 @@ export class TextareaColumnType extends BaseColumnType {
         this.#wrapCache.clear();
     }
 
+    static getCachedLines(key: string): string[] | undefined {
+        return this.#getCache(key);
+    }
+
     format(value: any): string {
         if (value === undefined || value === null) return "";
         return String(value);

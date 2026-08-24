@@ -21,6 +21,7 @@ import { SheetMetaCoordinator } from "./coordinators/SheetMetaCoordinator";
 import type { ISheet, StyleObject, CellConfigItem, CellProperties } from "./interfaces/ISheet";
 import type { CellDataAccessor } from "../model/grid/CellDataAccessor";
 import type { BaseColumnType } from "../types/BaseColumnType";
+import { TextareaColumnType } from "../types/TextareaColumnType";
 import type { CellRange } from "../model/types";
 
 /**
@@ -870,6 +871,11 @@ export class Sheet implements ISheet {
      * @returns 换行后的行数
      */
     #wrapTextMeasure(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): number {
+        const cacheKey = `${text}|${maxWidth}|${ctx.font}`;
+
+        const lines = TextareaColumnType.getCachedLines(cacheKey);
+        if (lines !== undefined) return lines.length;
+
         const paragraphs = text.split("\n");
         let totalLines = 0;
 

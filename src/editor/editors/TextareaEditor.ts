@@ -137,17 +137,20 @@ export class TextareaEditor extends CellEditor {
      * @private 私有方法 - textarea 键盘按键处理
      *
      * 按键行为：
-     * - Enter（无修饰键）：换行（默认行为，不拦截）
+     * - Enter（无修饰键）：在编辑器内换行
      * - Ctrl/Cmd+Enter：提交编辑
      * - Escape：取消编辑，恢复原始值
-     * - Tab：提交编辑
+     * - Tab：提交编辑（不移动焦点）
+     *
+     * 设计说明：父类 CellEditor#onKeyDown 已通过 getElementType() === "textarea"
+     * 判断跳过 Enter/Tab 的默认提交+移动行为，此处只需定义 textarea 特有的按键逻辑。
      *
      * @param e - 键盘事件
      */
     #onTextareaKeyDown(e: KeyboardEvent): void {
         if (this.composing) return;
 
-        // 普通 Enter：换行，不拦截
+        // 普通 Enter：在 textarea 内换行（父类 #onKeyDown 已跳过 textarea 的 Enter 处理）
         if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
             return;
         }
@@ -168,7 +171,7 @@ export class TextareaEditor extends CellEditor {
             return;
         }
 
-        // Tab：提交编辑
+        // Tab：提交编辑（不移动焦点）
         if (e.key === "Tab") {
             e.preventDefault();
             (this.editor as HTMLTextAreaElement).blur();
