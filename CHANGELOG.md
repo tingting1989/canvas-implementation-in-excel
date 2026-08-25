@@ -5,6 +5,136 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-20
+
+### 🎉 Feature Release — Sheet Operations, Context Menu Refactor & Full TypeScript Migration
+
+This release introduces **sheet hide/copy functionality**, a **refactored right-click context menu**, **custom chart registration**, and completes the **full JavaScript → TypeScript migration**. All changes are **backward compatible** with no breaking API changes.
+
+---
+
+## ✨ New Features
+
+### 📋 Sheet Hide & Copy
+- ✅ **Sheet Hide** — Hide/show sheets via API and UI, hidden sheets are excluded from navigation
+- ✅ **Sheet Copy** — Duplicate sheets with full data, styles, and configurations preserved
+- ✅ **UI Integration** — Hide and copy options available in sheet tab right-click menu
+
+### 🖱️ Right-Click Context Menu Refactor
+- ✅ **Complete Rewrite** — Rebuilt context menu system with improved architecture and extensibility
+- ✅ **Better Performance** — Optimized rendering and event handling for faster menu display
+- ✅ **Plugin Support** — Context menu items can be registered and customized by plugins
+- ✅ **Improved UX** — Refined menu item layout, icons, and interaction patterns
+
+### 📊 Custom Chart Registration
+- ✅ **User-Registered Charts** — Users can now register custom chart types via API
+- ✅ **Chart Type Extensibility** — Extensible chart system supporting third-party chart renderers
+- ✅ **Custom Chart Configuration** — Full control over chart rendering, options, and data binding
+
+---
+
+## 🔧 Refactoring
+
+### 📘 Full TypeScript Migration
+- ✅ **All JS → TS** — Completely refactored all JavaScript source files to TypeScript
+- ✅ **Strict Type Safety** — Full strict mode TypeScript with comprehensive type annotations
+- ✅ **Improved IDE Support** — Better autocompletion, inline documentation, and error detection
+
+### 🛡️ Data Validation Icon Style Refactor
+- ✅ **Redesigned Validation Icons** — Refactored data validation error/warning/info icon drawing styles
+- ✅ **Consistent Visual Language** — Unified icon design across all validation types
+- ✅ **Better Readability** — Improved icon clarity and visual distinction between validation severity levels
+
+---
+
+## 🐛 Bug Fixes
+
+- Fixed known bugs in **Filter** plugin
+- Fixed known bugs in **Sort** functionality
+- Fixed known bugs in **Data Validation** edge cases
+
+---
+
+## [1.1.0] - 2026-08-17
+
+### 🎉 Major Release — TypeScript Support & Search/Replace
+
+This release introduces **complete TypeScript type definitions** and a **full-featured Search & Replace plugin**. All changes are **backward compatible** with no breaking API changes.
+
+---
+
+## ✨ New Features
+
+### 📘 TypeScript Support (Complete)
+
+- ✅ **Full Type Definitions** — Auto-generated `.d.ts` files shipped with the package, no `@types` package needed
+- ✅ **Package.json Exports** — Proper `exports["."].types` + top-level `types` field for ESM/CJS/TS resolution
+- ✅ **Tsconfig Declaration** — `declaration: true`, `declarationDir: "./dist/types"`, `rootDir: "./src"`
+- ✅ **Build Pipeline** — `npm run types` generates declarations via `tsc --emitDeclarationOnly`
+- ✅ **Consumer Config** — Works with `"moduleResolution": "bundler"` or `"node16"` in downstream projects
+- ✅ **TypeScript Usage Examples** — Value+type import, `import type`, type annotations all supported
+
+#### Type Resolution Flow
+
+```
+import { Workbook } from "@canvas-sheet/core"
+  │
+  ├─ TypeScript → package.json exports["."].types → ./dist/types/api/index.d.ts
+  ├─ ESM Runtime → exports["."].import              → ./dist/canvas-sheet.esm.mjs
+  └─ CJS Runtime → exports["."].require             → ./dist/canvas-sheet.umd.js
+```
+
+#### Usage
+
+```typescript
+// Value + type import
+import { Workbook, HOOKS } from "@canvas-sheet/core";
+
+// Type-only import
+import type { WorkbookOptions, SheetConfig } from "@canvas-sheet/core";
+
+// Type annotation
+const options: WorkbookOptions = { ... };
+const workbook: Workbook = new Workbook(options);
+```
+
+### 🔍 Search & Replace Plugin (Complete)
+
+- ✅ **SearchPlugin** — Full-featured search & replace, similar to Excel's Ctrl+F
+- ✅ **Text Search** — Full-text search across all cells
+- ✅ **Regex Search** — Regular expression pattern matching
+- ✅ **Case Sensitive / Whole Word** — Configurable match options
+- ✅ **Result Highlighting** — Canvas-rendered highlight on matched cells
+- ✅ **Keyboard Navigation** — F3 (next) / Shift+F3 (previous) shortcuts
+- ✅ **Search & Replace** — Single replace + replace all, with Ctrl+Z undo support
+- ✅ **Search Scope** — Current sheet or all sheets
+- ✅ **Draggable UI** — Movable search panel
+- ✅ **Hook Events** — `BEFORE_SEARCH`, `AFTER_SEARCH`, `BEFORE_SEARCH_REPLACE`, `AFTER_SEARCH_REPLACE`
+
+#### Usage
+
+```typescript
+import { Workbook, SearchPlugin, HOOKS } from "@canvas-sheet/core";
+
+const workbook = new Workbook();
+workbook.loadPlugin("search");
+
+// Listen to search events
+workbook.addHook(HOOKS.AFTER_SEARCH, (result) => {
+    console.log(`Found ${result.total} matches`);
+});
+```
+
+---
+
+## 🔧 Infrastructure
+
+- ✅ **tsconfig.json** — Strict mode, ES2020 target, bundler module resolution
+- ✅ **Type Export Path** — `./dist/types/api/index.d.ts` aligned with `src/api/index.js` entry point
+- ✅ **Search Module** — `SearchEngine`, `SearchNavigator`, `SearchResultHighlighter`, `SearchStrategy`, `SearchUIManager`
+
+---
+
 ## [1.0.15] - 2026-08-01
 
 ### 🎉 Major Release - Enterprise-Grade Features & Enhanced Functionality

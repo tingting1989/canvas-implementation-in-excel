@@ -1,7 +1,7 @@
 # 📊 Canvas Spreadsheet Engine
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.15-blue.svg" alt="Version" />
+  <img src="https://img.shields.io/badge/version-1.1.0-blue.svg" alt="Version" />
   <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License" />
   <img src="https://img.shields.io/badge/TypeScript-Ready-blue.svg" alt="TypeScript" />
   <img src="https://img.shields.io/badge/JavaScript-ES6%2B-yellow.svg" alt="Language" />
@@ -177,7 +177,7 @@ wb.activeSheet.loadData([
 
 ## 📘 TypeScript 支持
 
-`@canvas-sheet/core` 自 v1.0.15 起提供**完整的 TypeScript 类型定义**，无需额外安装 `@types` 包。
+`@canvas-sheet/core` 自 v1.1.0 起提供**完整的 TypeScript 类型定义**，无需额外安装 `@types` 包。
 
 ### 类型解析机制
 
