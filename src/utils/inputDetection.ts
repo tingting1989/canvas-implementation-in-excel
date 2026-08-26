@@ -41,6 +41,34 @@
  */
 export class InputDetector {
     /**
+     * @private 私有字段 - 所属 Workbook 的 canvas 元素引用
+     *
+     * 用于在多 Workbook 共存时，判断当前焦点是否在当前 Workbook 的 canvas 上。
+     * 当 document.activeElement 是当前 Workbook 的 canvas 时，
+     * 键盘事件应由当前 Workbook 处理。
+     *
+     * 当此值为 null 时，不进行 canvas 焦点检查（兼容旧用法）。
+     */
+    #ownCanvas: HTMLCanvasElement | null = null;
+
+    /**
+     * @private 私有字段 - 所属 Workbook 的实例 ID
+     *
+     * 用于在多 Workbook 共存时，精确判断焦点编辑器是否属于当前 Workbook。
+     * Workbook 构造时自动生成唯一 ID（如 "cs-wb-0"），
+     * CellEditor.createEditor() 将此 ID 作为 CSS 类名添加到编辑器元素上，
+     * InputDetector 通过检查编辑器是否包含该类名来判断归属。
+     *
+     * 当此值为 null 时，退化为仅通过 CSS 类名判断（兼容旧用法）。
+     *
+     * @example
+     * // DOM 中可见：
+     * // <input class="cs-cell-editor cs-wb-0 cs-numeric-editor" ...>
+     * //                  ↑ 通用标识    ↑ Workbook 归属  ↑ 编辑器类型
+     */
+    #workbookId: string | null = null;
+
+    /**
      * @private 私有字段 - 上次焦点检查的 DOM 元素引用（缓存优化）
      *
      * 缓存上次检查的 activeElement 引用，
@@ -63,6 +91,54 @@ export class InputDetector {
      * - false: 焦点在 Canvas 编辑器或非输入区域（应由调用方处理）
      */
     #lastCheckResult: boolean = false;
+
+    /**
+     * 创建 InputDetector 实例
+     *
+     * @param workbookId - 所属 Workbook 的实例 ID（如 "cs-wb-0"），
+     *                     用于多实例场景下精确判断编辑器归属。
+     *                     省略时退化为仅通过 CSS 类名判断。
+     *
+     * @example
+     * // 单 Workbook 场景（无需指定 ID）
+     * const detector = new InputDetector();
+     *
+     * @example
+     * // 多 Workbook 场景（指定 ID 以区分实例）
+     * const detector = new InputDetector("cs-wb-0");
+     */
+    constructor(workbookId?: string | null) {
+        this.#workbookId = workbookId ?? null;
+    }
+
+    /**
+     * 设置所属 Workbook 的实例 ID
+     *
+     * 在 EventHandler 初始化完成后调用，因为此时 Workbook ID 才可用。
+     * 也支持在 Workbook 切换/重建时动态更新。
+     *
+     * @param id - Workbook 实例 ID（如 "cs-wb-0"）
+     */
+    setWorkbookId(id: string | null): void {
+        if (this.#workbookId !== id) {
+            this.#workbookId = id;
+            this.clearCache();
+        }
+    }
+
+    /**
+     * 设置所属 Workbook 的 canvas 元素引用
+     *
+     * 在 EventHandler 初始化完成后调用。
+     * 用于判断 document.activeElement 是否在当前 Workbook 的 canvas 上，
+     * 从而在多 Workbook 共存时正确决定是否处理 document 级键盘事件。
+     *
+     * @param canvas - canvas 元素
+     */
+    setOwnCanvas(canvas: HTMLCanvasElement | null): void {
+        this.#ownCanvas = canvas;
+        this.clearCache();
+    }
 
     /**
      * 公共方法 - 检查当前焦点是否在外部输入元素上
@@ -97,6 +173,13 @@ export class InputDetector {
         if (!activeElement) return false;
 
         if (activeElement.tagName === "BODY" || activeElement.tagName === "HTML") {
+            if (this.#ownCanvas) {
+                return true;
+            }
+            return false;
+        }
+
+        if (this.#ownCanvas && activeElement === this.#ownCanvas) {
             return false;
         }
 
@@ -271,33 +354,49 @@ export class InputDetector {
     }
 
     /*
-     * @private 私有方法 - 检查元素是否是 Canvas 自己的单元格编辑器
+     * @private 私有方法 - 检查元素是否是当前 Workbook 自己的单元格编辑器
      *
-     * 识别标准（满足任一即判定为 Canvas 编辑器）：
-     * 1. CSS 类名包含 'cs-cell-editor'（所有 Canvas 编辑器的标准标识）
-     * 2. 具有 data-canvas-editor="true" 属性（显式标记）
+     * 识别标准（必须同时满足）：
+     * 1. CSS 类名包含 'cs-cell-editor' 或具有 data-canvas-editor="true" 属性
+     * 2. 若 #workbookId 已设置，编辑器必须包含该 Workbook ID 类名
      *
-     * 技术说明：
-     * - CellEditor.createEditor() 会自动为所有编辑器添加 'cs-cell-editor' 类名
-     * - 因此无需通过 DOM 位置（如父容器 ID）来判断，避免硬编码动态变化的容器
+     * 多 Workbook 共存问题：
+     * 当页面上存在多个 Workbook 实例时，每个实例的编辑器都有 'cs-cell-editor' 类名。
+     * 如果仅通过类名判断，Workbook A 的 KeyboardStrategy 会将 Workbook B 的编辑器
+     * 误判为"自己的"编辑器，导致键盘事件被 Workbook B 的策略也处理，
+     * 造成光标跳转到另一个 Workbook 的单元格。
+     *
+     * 修复方案：
+     * Workbook 构造时生成唯一 ID（如 "cs-wb-0"），
+     * CellEditor.createEditor() 将此 ID 作为 CSS 类名添加到编辑器元素：
+     *   <input class="cs-cell-editor cs-wb-0 cs-numeric-editor" ...>
+     * InputDetector 通过 classList.contains(workbookId) 精确判断归属。
+     *
+     * 优势：
+     * - 不依赖 DOM 层级结构（即使编辑器被移动仍有效）
+     * - 调试友好（DOM 中直接可见 Workbook 归属）
+     * - 可扩展（Workbook ID 还可用于日志、多实例管理等）
      *
      * @param element - 待检查的 DOM 元素
      * @returns
-     *   - true: 是 Canvas 的单元格编辑器（不应拦截）
-     *   - false: 不是 Canvas 编辑器
+     *   - true: 是当前 Workbook 的单元格编辑器（不应拦截）
+     *   - false: 不是当前 Workbook 的编辑器（属于其他 Workbook 或外部输入）
      *
-     * @see CellEditor.createEditor() - 编辑器创建时添加 cs-cell-editor 类名
+     * @see CellEditor.createEditor() - 编辑器创建时添加 cs-cell-editor + workbookId 类名
+     * @see Workbook.constructor - Workbook 构造时生成唯一 ID
      */
     #isOurCellEditor(element: Element): boolean {
-        if (element.classList.contains("cs-cell-editor")) {
-            return true;
+        const isCellEditor = element.classList.contains("cs-cell-editor") || (element as HTMLElement).dataset.canvasEditor === "true";
+
+        if (!isCellEditor) {
+            return false;
         }
 
-        if ((element as HTMLElement).dataset.canvasEditor === "true") {
-            return true;
+        if (this.#workbookId) {
+            return element.classList.contains(this.#workbookId);
         }
 
-        return false;
+        return true;
     }
 
     /**

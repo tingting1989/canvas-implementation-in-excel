@@ -10,6 +10,7 @@ import {
 import { isFunction, isObject } from "../../utils/helper";
 import { errorHandler } from "../../core/ErrorHandler";
 import { ERROR_CODE } from "../../constants/errorCodes";
+import { SHEET_EVENTS } from "../../constants/sheetEvents.js";
 import type { Sheet } from "../Sheet";
 import type { BaseColumnType } from "../../types/BaseColumnType";
 import type { ColumnConfig } from "../interfaces/ISheet";
@@ -35,6 +36,13 @@ export class ColumnTypeManager {
     #columnsConfig: Map<number, ColumnConfig & Record<string, unknown>> = new Map();
     /** 单元格类型映射表（"r,c" → { name, options }） */
     #cellTypes: Map<string, { name: string; options: Record<string, unknown> }> = new Map();
+    /**
+     * 桥接器已接管的列集合
+     *
+     * 仅当列号在此集合中时，validateCellValue() 才降级为仅提示。
+     * 由 ColumnTypeValidationBridge 通过 markBridgeTaken/unmarkBridgeTaken 管理。
+     */
+    #bridgeTakenCols: Set<number> = new Set();
 
     /**
      * @param sheet - 工作表实例
@@ -174,6 +182,10 @@ export class ColumnTypeManager {
                 this.#sheet.rowColManager.ensureSize(1, c + 1);
             }
         }
+
+        this.#sheet.bus?.emit(SHEET_EVENTS.COLUMN_CONFIG_CHANGED, {
+            columnsConfig: this.#columnsConfig,
+        });
     }
 
     /**
@@ -193,7 +205,10 @@ export class ColumnTypeManager {
     /**
      * 验证单元格值
      *
-     * 通过类型实例的 validate() 方法和列配置的 validator 函数检查。
+     * 降级逻辑：
+     * - validation 存在 + 桥接器已接管 → 仅提示（DataValidationPlugin 负责拦截）
+     * - validation 存在 + 桥接器未接管 → 正常阻止（列类型验证兜底）
+     * - validation 不存在 → 正常行为
      *
      * @param r - 行号
      * @param c - 列号
@@ -201,7 +216,56 @@ export class ColumnTypeManager {
      * @returns true 表示通过，string 表示错误消息
      */
     validateCellValue(r: number, c: number, value: unknown): boolean | string {
-        return validateCellValueInternal(this.getCellTypeInstance(r, c), value, this.#columnsConfig.get(c));
+        const result = validateCellValueInternal(this.getCellTypeInstance(r, c), value, this.#columnsConfig.get(c));
+        const config = this.#columnsConfig.get(c);
+
+        if (config?.validation && this.#bridgeTakenCols.has(c) && result !== true) {
+            return typeof result === "string" ? result : "invalid";
+        }
+
+        return result;
+    }
+
+    /**
+     * 标记桥接器已接管指定列的验证
+     *
+     * 调用后，该列的 validateCellValue() 将降级为仅提示（不阻止提交），
+     * 验证拦截由 DataValidationPlugin 统一处理。
+     *
+     * @param col - 列号
+     */
+    markBridgeTaken(col: number): void {
+        this.#bridgeTakenCols.add(col);
+    }
+
+    /**
+     * 取消桥接器对指定列的接管
+     *
+     * 调用后，该列的 validateCellValue() 恢复正常行为（阻止无效值提交）。
+     *
+     * @param col - 列号
+     */
+    unmarkBridgeTaken(col: number): void {
+        this.#bridgeTakenCols.delete(col);
+    }
+
+    /**
+     * 清除所有桥接器接管标记
+     *
+     * 用于桥接器停用/销毁时批量恢复列类型验证。
+     */
+    clearBridgeTaken(): void {
+        this.#bridgeTakenCols.clear();
+    }
+
+    /**
+     * 查询指定列是否被桥接器接管
+     *
+     * @param col - 列号
+     * @returns 是否被桥接器接管
+     */
+    isBridgeTaken(col: number): boolean {
+        return this.#bridgeTakenCols.has(col);
     }
 
     /**

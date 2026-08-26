@@ -79,11 +79,29 @@ export class SelectEditor extends CellEditor {
      * 提交前验证新值是否合法
      * 验证结果非 false 时允许提交
      *
+     * 增强逻辑：DataValidation 同步验证优先判断
+     *
      * @param newValue - 待提交的新值
      * @returns 验证通过返回 true
      */
     validateBeforeCommit(newValue: unknown): boolean {
-        return this.sheet!.validateCellValue(this.activeRow, this.activeCol, newValue) !== false;
+        const typeResult = this.sheet!.validateCellValue(this.activeRow, this.activeCol, newValue);
+
+        const dvPlugin = (this.sheet as any)?.getPlugin?.("dataValidation");
+        if (dvPlugin?.active && dvPlugin.engine) {
+            const dvResult = dvPlugin.engine.validateCellSync(this.activeRow, this.activeCol, newValue);
+            if (dvResult && !dvResult.valid && dvResult.errorStyle === "stop") {
+                dvPlugin.uiController?.showErrorTooltip(
+                    this.activeRow,
+                    this.activeCol,
+                    dvResult.message || "输入值无效",
+                    dvResult.errorStyle || "stop",
+                );
+                return false;
+            }
+        }
+
+        return typeResult !== false;
     }
 
     /**

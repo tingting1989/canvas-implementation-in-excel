@@ -14,6 +14,10 @@ import { ERROR_STYLE } from "../../constants/enums/ErrorStyle.js";
 import { stylePool } from "../../model/styles";
 import { ValidationStrategy } from "./ValidationStrategy.js";
 import { ValidationResult } from "./ValidationResult.js";
+import { ColumnTypeValidationBridge } from "./ColumnTypeValidationBridge.js";
+import { colToIndex } from "../../utils/cellRef.js";
+
+const BRIDGE_SOURCE = "column-validation";
 
 const VALIDATION_ERROR_STYLES = Object.freeze({
     stop: {
@@ -79,6 +83,8 @@ export class DataValidationPlugin extends BasePlugin {
     #rowInsertUnsubscribe: (() => void) | null = null;
     #rowDeleteUnsubscribe: (() => void) | null = null;
     #afterRenderCallback: (() => void) | null = null;
+    #bridge: ColumnTypeValidationBridge | null = null;
+    #bridgeConfigChangeUnsubscribe: (() => void) | null = null;
 
     init(options: PluginOptions = {}): void {
         super.init(options);
@@ -142,6 +148,25 @@ export class DataValidationPlugin extends BasePlugin {
         this.#initUIController();
         this.#dirtyFlagManager = new ValidationDirtyFlagManager();
         this.#copyPasteHandler = new CopyPasteHandler(this);
+
+        if (options.bridgeColumnType !== false) {
+            const columnTypeManager = (this as any).sheet?.typeManager;
+            if (columnTypeManager && this.#engine) {
+                this.#bridge = new ColumnTypeValidationBridge(columnTypeManager, this.#engine, {
+                    defaultErrorStyle: options.bridgeOptions?.defaultErrorStyle || "stop",
+                    respectManualRules: options.bridgeOptions?.respectManualRules !== false,
+                });
+                this.#bridge.activate();
+
+                const sheet = (this as any).sheet;
+                if (sheet?.bus) {
+                    this.#bridgeConfigChangeUnsubscribe = sheet.bus.on(SHEET_EVENTS.COLUMN_CONFIG_CHANGED, () => {
+                        this.#bridge?.syncFromColumnConfig();
+                    });
+                }
+            }
+        }
+
         this.#active = true;
     }
 
@@ -163,6 +188,10 @@ export class DataValidationPlugin extends BasePlugin {
 
     get copyPasteHandler(): CopyPasteHandler | null {
         return this.#copyPasteHandler;
+    }
+
+    get bridge(): ColumnTypeValidationBridge | null {
+        return this.#bridge;
     }
 
     #registerStrategy(): void {
@@ -599,6 +628,18 @@ export class DataValidationPlugin extends BasePlugin {
             }
         }
 
+        if (this.#bridge) {
+            this.#bridge.destroy();
+            this.#bridge = null;
+        }
+        const columnTypeManager = newSheet.typeManager;
+        if (columnTypeManager && this.#engine) {
+            this.#bridge = new ColumnTypeValidationBridge(columnTypeManager, this.#engine, {
+                defaultErrorStyle: "stop",
+            });
+            this.#bridge.activate();
+        }
+
         this.#bindColumnMoveListener();
         this.#bindRowMoveListener();
         this.#bindColumnInsertDeleteListeners();
@@ -647,6 +688,15 @@ export class DataValidationPlugin extends BasePlugin {
             this.#portalUI?.onRuleChanged(rule, true);
             (this as any).renderEngine?.invalidateAll();
             (this as any).render();
+
+            if (rule.metadata?.source !== BRIDGE_SOURCE) {
+                const range = rule.range || "";
+                const colMatch = range.match(/^([A-Z]+):/);
+                if (colMatch && this.#bridge) {
+                    const col = colToIndex(colMatch[1]);
+                    this.#bridge.onManualRuleRemoved(col, rule.type);
+                }
+            }
         }
 
         return success;
@@ -790,6 +840,16 @@ export class DataValidationPlugin extends BasePlugin {
         this.#unbindRowInsertDeleteListeners();
         this.#unhookRenderEngine();
 
+        if (this.#bridgeConfigChangeUnsubscribe) {
+            this.#bridgeConfigChangeUnsubscribe();
+            this.#bridgeConfigChangeUnsubscribe = null;
+        }
+
+        if (this.#bridge) {
+            this.#bridge.destroy();
+            this.#bridge = null;
+        }
+
         if (this.#engine) {
             this.#engine.destroy();
             this.#engine = null;
@@ -827,7 +887,9 @@ export class DataValidationPlugin extends BasePlugin {
 
     exportRules(): Record<string, any>[] {
         if (!this.#engine) return [];
-        return this.getAllRules().map((rule) => rule.toJSON());
+        return this.getAllRules()
+            .filter((rule) => rule.metadata?.source !== BRIDGE_SOURCE)
+            .map((rule) => rule.toJSON());
     }
 
     importRules(rulesJSON: Record<string, any>[]): string[] {

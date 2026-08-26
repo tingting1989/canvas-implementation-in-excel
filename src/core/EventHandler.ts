@@ -7,6 +7,7 @@ import { RenderEngineCanvasContext } from "../render/RenderEngineCanvasContext.j
 import { MouseStrategy } from "../editor/strategies/MouseStrategy.js";
 import { KeyboardStrategy } from "../editor/strategies/KeyboardStrategy.js";
 import { ResizeStrategy } from "../editor/strategies/ResizeStrategy.js";
+import { isFunction } from "../utils/helper.js";
 import type { Disposable } from "./Disposable.js";
 
 /**
@@ -140,6 +141,36 @@ export class EventHandler {
     wrap: HTMLElement | null;
 
     /**
+     * 所属 Workbook 的实例 ID
+     *
+     * 格式："cs-wb-{n}"，由 Workbook 构造时自动生成。
+     * 传递给各策略的 InputDetector，用于多实例共存时
+     * 精确判断焦点编辑器是否属于当前 Workbook。
+     *
+     * 设置此属性时会自动传播到所有已注册策略的 InputDetector。
+     *
+     * @see Workbook.id
+     * @see InputDetector.setWorkbookId
+     */
+    set workbookId(id: string | null) {
+        this.#workbookId = id;
+        for (const [, strategy] of this.strategies) {
+            if (isFunction((strategy as any).updateWorkbookId)) {
+                (strategy as any).updateWorkbookId(id);
+            }
+        }
+    }
+
+    get workbookId(): string | null {
+        return this.#workbookId;
+    }
+
+    /**
+     * @private 私有字段 - workbookId 的存储
+     */
+    #workbookId: string | null = null;
+
+    /**
      * 视口服务实例
      *
      * 提供坐标转换和视口信息查询能力。
@@ -191,6 +222,11 @@ export class EventHandler {
         this.clipboard = clipboard || null;
         this.canvas = (renderEngine as any).canvas;
         this.wrap = (renderEngine as any).canvas.parentElement;
+
+        if (this.canvas) {
+            this.canvas.tabIndex = 0;
+            this.canvas.style.outline = "none";
+        }
 
         this.viewport = new RenderEngineViewportService(renderEngine as any);
         this.canvasContext = new RenderEngineCanvasContext(renderEngine as any);
@@ -331,6 +367,9 @@ export class EventHandler {
     addStrategy(name: string, strategy: EventStrategy): void {
         this.strategies.set(name, strategy);
         strategy.init();
+        if (this.#workbookId && isFunction((strategy as any).updateWorkbookId)) {
+            (strategy as any).updateWorkbookId(this.#workbookId);
+        }
         this.#registerStrategyHandlers(name, strategy);
     }
 

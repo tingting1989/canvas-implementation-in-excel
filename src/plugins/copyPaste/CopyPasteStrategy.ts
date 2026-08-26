@@ -54,7 +54,12 @@ export class CopyPasteStrategy extends EventStrategy {
     }
 
     init(): void {
+        this.#inputDetector.setOwnCanvas(this.handler.canvas as HTMLCanvasElement | null);
         this.#ensurePasteTarget();
+    }
+
+    updateWorkbookId(id: string | null): void {
+        this.#inputDetector.setWorkbookId(id);
     }
 
     destroy(): void {

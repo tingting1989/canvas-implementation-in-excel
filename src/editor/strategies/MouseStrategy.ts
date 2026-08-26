@@ -106,6 +106,11 @@ export class MouseStrategy extends EventStrategy {
         if (!this.enabled || !this.handler.sheet) return;
         if (e.button !== 0) return;
 
+        const canvas = this.handler.canvas as HTMLCanvasElement | null;
+        if (canvas && document.activeElement !== canvas) {
+            canvas.focus();
+        }
+
         const hit = this.handler.viewport.hitTest(e.clientX, e.clientY);
         if (!hit) return;
 

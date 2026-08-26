@@ -44,6 +44,9 @@ export interface SheetEvents {
     readonly ROW_INSERTED: "sheet:row-inserted";
     readonly ROW_DELETED: "sheet:row-deleted";
 
+    // ── 列配置变更事件 ──
+    readonly COLUMN_CONFIG_CHANGED: "sheet:column-config-changed";
+
     // ── 编辑器生命周期事件 ──
     readonly EDITOR_BEFORE_BEGIN: "editor:before-begin";
     readonly EDITOR_AFTER_BEGIN: "editor:after-begin";
@@ -92,6 +95,8 @@ export const SHEET_EVENTS: SheetEvents = Object.freeze({
     COLUMN_DELETED: "sheet:column-deleted",
     ROW_INSERTED: "sheet:row-inserted",
     ROW_DELETED: "sheet:row-deleted",
+
+    COLUMN_CONFIG_CHANGED: "sheet:column-config-changed",
 
     EDITOR_BEFORE_BEGIN: "editor:before-begin",
     EDITOR_AFTER_BEGIN: "editor:after-begin",
@@ -145,6 +150,7 @@ export const EVENT_FLOW_REGISTRY: EventFlowRegistry = Object.freeze({
     [SHEET_EVENTS.COLUMN_DELETED]: { emitters: ["Sheet"], listeners: ["DataValidationPlugin"] },
     [SHEET_EVENTS.ROW_INSERTED]: { emitters: ["Sheet"], listeners: ["DataValidationPlugin"] },
     [SHEET_EVENTS.ROW_DELETED]: { emitters: ["Sheet"], listeners: ["DataValidationPlugin"] },
+    [SHEET_EVENTS.COLUMN_CONFIG_CHANGED]: { emitters: ["ColumnTypeManager", "Sheet"], listeners: ["DataValidationPlugin"] },
     [SHEET_EVENTS.EDITOR_BEFORE_BEGIN]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },
     [SHEET_EVENTS.EDITOR_AFTER_BEGIN]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },
     [SHEET_EVENTS.EDITOR_BEFORE_FINISH]: { emitters: ["CellEditor"], listeners: ["EventHandler"] },

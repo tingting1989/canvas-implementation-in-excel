@@ -3,6 +3,7 @@ export { ValidationRule } from "./ValidationRule.js";
 export { ValidationResult } from "./ValidationResult.js";
 export { ValidationEngine } from "./ValidationEngine.js";
 export { ValidationPortalManager } from "./ValidationPortalManager.js";
+export { ColumnTypeValidationBridge } from "./ColumnTypeValidationBridge.js";
 export { BaseValidator } from "./validators/BaseValidator.js";
 export { NumberValidator } from "./validators/NumberValidator.js";
 export { TextLengthValidator } from "./validators/TextLengthValidator.js";

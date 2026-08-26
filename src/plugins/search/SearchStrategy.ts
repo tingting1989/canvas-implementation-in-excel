@@ -49,6 +49,14 @@ export class SearchStrategy extends EventStrategy {
         }
     }
 
+    init(): void {
+        this.#inputDetector.setOwnCanvas(this.handler.canvas as HTMLCanvasElement | null);
+    }
+
+    updateWorkbookId(id: string | null): void {
+        this.#inputDetector.setWorkbookId(id);
+    }
+
     /**
      * @private 私有方法 - 绑定插件生命周期事件
      *

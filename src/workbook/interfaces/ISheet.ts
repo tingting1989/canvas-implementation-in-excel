@@ -77,6 +77,65 @@ export interface MergeRange {
 }
 
 /**
+ * 列级验证规则配置
+ *
+ * 嵌入 ColumnConfig.validation 中，由 ColumnTypeValidationBridge
+ * 自动同步到 DataValidationPlugin 的 ValidationEngine。
+ *
+ * 所有字段均为可选——省略时由桥接器从列类型推断默认值。
+ */
+export interface ColumnValidationConfig {
+    /** 验证规则作用范围，默认整列（如 "A:A"） */
+    range?: string;
+    /**
+     * 验证类型，默认从列类型推断：
+     * - numeric → "number"
+     * - select  → "list"
+     * - date    → "date" / "time" / "datetime"（根据 dateFormat.pattern）
+     * - text/textarea → "text"
+     */
+    type?: string;
+    /** 比较运算符（如 "between"、"greaterThanOrEqual"） */
+    operator?: string;
+    /** 约束值（单值或 [min, max] 数组） */
+    value?: unknown;
+    /** 下拉选项数据源（list 类型使用） */
+    source?: string[] | string;
+    /** 自定义公式（formula 类型使用） */
+    formula?: string;
+    /** 正则表达式模式（regex 类型使用） */
+    pattern?: string;
+    /** 是否允许空值，默认 true */
+    allowBlank?: boolean;
+    /** 是否显示下拉箭头（list 类型），默认 true */
+    showDropdown?: boolean;
+    /** 是否显示错误提示，默认 true */
+    showErrorMessage?: boolean;
+    /** 自定义错误消息 */
+    errorMessage?: string | null;
+    /** 错误提示标题，默认 "输入错误" */
+    errorTitle?: string;
+    /**
+     * 错误样式：
+     * - "stop"：阻止写入并显示错误
+     * - "warning"：允许写入但显示警告
+     * - "information"：仅显示信息提示
+     * 默认 "stop"
+     */
+    errorStyle?: string;
+    /** 输入提示消息（选中单元格时显示） */
+    inputMessage?: string | null;
+    /** 输入提示标题，默认 "提示" */
+    inputTitle?: string;
+    /**
+     * 规则优先级：
+     * - 省略时默认 1000（低于手动规则的 0）
+     * - 数值越小优先级越高
+     */
+    priority?: number;
+}
+
+/**
  * 列配置项
  *
  * 描述单列的类型、默认值、宽度、样式等配置。
@@ -86,7 +145,7 @@ export interface ColumnConfig {
     /** 列类型名称，如 "text"、"number"、"date"、"checkbox" */
     type?: string;
     /** 该列的默认值 */
-    defaultValue?: unknown;
+    // defaultValue?: unknown;
     /** 传递给列类型实例的选项 */
     options?: Record<string, unknown>;
     /** 是否只读 */
@@ -97,10 +156,20 @@ export interface ColumnConfig {
     disabled?: boolean;
     /** 列级样式 */
     style?: StyleObject;
-    /** 自定义验证函数，返回 true 或错误消息 */
-    validator?: (value: unknown) => boolean | string;
     /** 该列内容变化时自动调整所在行高度 */
     autoFitRow?: boolean;
+    /**
+     * 列级验证规则配置
+     *
+     * 存在时：
+     * - 桥接器自动生成 ValidationRule 并添加到 ValidationEngine
+     * - 列类型 validate() 降级为仅提示（不阻止提交）
+     * - DataValidationPlugin 统一处理验证拦截和 UI 反馈
+     *
+     * 不存在时：
+     * - 行为与无 validation 时完全一致（向后兼容）
+     */
+    validation?: ColumnValidationConfig;
     /** 任意扩展属性 */
     [key: string]: unknown;
 }

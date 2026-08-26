@@ -97,6 +97,22 @@ export class CellEditor extends DOMComponent {
     #scrollHiding = false;
 
     /**
+     * 所属 Workbook 的实例 ID
+     *
+     * 格式："cs-wb-{n}"，由 EditorManager.setWorkbookId() 注入。
+     * createEditor() 时将此 ID 作为 CSS 类名添加到编辑器 DOM 元素，
+     * 供 InputDetector 在多 Workbook 共存时精确判断编辑器归属。
+     *
+     * DOM 中的效果：
+     * <input class="cs-cell-editor cs-wb-0 cs-numeric-editor" ...>
+     *                  ↑ 通用标识    ↑ Workbook归属  ↑ 编辑器类型
+     *
+     * @see EditorManager.setWorkbookId
+     * @see InputDetector.#isOurCellEditor
+     */
+    workbookId: string | null = null;
+
+    /**
      * @private 私有字段 - 提交锁
      * 在 commitAndMoveNext 流程中为 true，防止 blur 事件重复提交
      */
@@ -327,7 +343,7 @@ export class CellEditor extends DOMComponent {
      * 依次执行：创建元素 → 设置属性 → 挂载 DOM → 绑定通用事件 → 绑定自定义事件 → 创建后回调
      */
     createEditor(): void {
-        const className = `cs-cell-editor ${this.getEditorCssClass()}`.trim();
+        const className = `cs-cell-editor ${this.workbookId ?? ""} ${this.getEditorCssClass()}`.trim();
         this.editor = this.createElement(this.getElementType(), {
             className,
         }) as HTMLInputElement;

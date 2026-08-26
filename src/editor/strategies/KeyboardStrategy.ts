@@ -67,7 +67,13 @@ export class KeyboardStrategy extends EventStrategy {
         super(handler);
     }
 
-    init(): void {}
+    init(): void {
+        this.#inputDetector.setOwnCanvas(this.handler.canvas as HTMLCanvasElement | null);
+    }
+
+    updateWorkbookId(id: string | null): void {
+        this.#inputDetector.setWorkbookId(id);
+    }
 
     destroy(): void {}
 

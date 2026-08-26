@@ -49,6 +49,9 @@ export class EditorManager {
     /** 当前工作表引用 */
     #sheet: any | null = null;
 
+    /** 当前 Workbook 实例 ID，用于注入到编辑器 DOM class */
+    #currentWorkbookId: string | null = null;
+
     /**
      * 已注册的编辑器映射表
      * key 为编辑器类型名（如 'text', 'numeric'），value 为编辑器实例
@@ -84,6 +87,37 @@ export class EditorManager {
     setCanvasContext(canvasContext: any): void {
         for (const editor of this.editors.values()) {
             editor.canvasContext = canvasContext;
+        }
+    }
+
+    /**
+     * 向所有已注册的编辑器注入 Workbook 实例 ID
+     *
+     * Workbook ID 会作为 CSS 类名添加到编辑器 DOM 元素上，
+     * 供 InputDetector 在多 Workbook 共存时精确判断编辑器归属。
+     *
+     * @param workbookId - Workbook 实例 ID（如 "cs-wb-0"）
+     *
+     * @see Workbook.id
+     * @see InputDetector.#isOurCellEditor
+     */
+    setWorkbookId(workbookId: string | null): void {
+        this.#currentWorkbookId = workbookId;
+        for (const editor of this.editors.values()) {
+            if ("workbookId" in editor) {
+                const prev = (editor as any).workbookId;
+                (editor as any).workbookId = workbookId;
+
+                const dom = (editor as any).editor as HTMLElement | null;
+                if (dom) {
+                    if (prev) {
+                        dom.classList.remove(prev);
+                    }
+                    if (workbookId) {
+                        dom.classList.add(workbookId);
+                    }
+                }
+            }
         }
     }
 
@@ -180,6 +214,13 @@ export class EditorManager {
     addEditor(type: string, editor: CellEditorLike): void {
         this.editors.set(type, editor);
         editor.createEditor();
+        if ("workbookId" in editor && this.#currentWorkbookId) {
+            (editor as any).workbookId = this.#currentWorkbookId;
+            const dom = (editor as any).editor as HTMLElement | null;
+            if (dom) {
+                dom.classList.add(this.#currentWorkbookId);
+            }
+        }
     }
 
     /**

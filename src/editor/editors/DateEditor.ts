@@ -60,14 +60,32 @@ export class DateEditor extends CellEditor {
 
     /**
      * 提交前验证新值是否合法
-     * 验证结果为 true 或 "invalid"（允许无效值通过）时返回 true
+     *
+     * 增强逻辑：
+     * 1. 列类型即时提示（降级时返回 "invalid"，允许通过）
+     * 2. DataValidation 同步验证（决定是否阻止）
      *
      * @param newValue - 待提交的新值
      * @returns 验证通过返回 true
      */
     validateBeforeCommit(newValue: unknown): boolean {
-        const result = this.sheet!.validateCellValue(this.activeRow, this.activeCol, newValue);
-        return result === true || result === "invalid";
+        const typeResult = this.sheet!.validateCellValue(this.activeRow, this.activeCol, newValue);
+
+        const dvPlugin = (this.sheet as any)?.getPlugin?.("dataValidation");
+        if (dvPlugin?.active && dvPlugin.engine) {
+            const dvResult = dvPlugin.engine.validateCellSync(this.activeRow, this.activeCol, newValue);
+            if (dvResult && !dvResult.valid && dvResult.errorStyle === "stop") {
+                dvPlugin.uiController?.showErrorTooltip(
+                    this.activeRow,
+                    this.activeCol,
+                    dvResult.message || "输入值无效",
+                    dvResult.errorStyle || "stop",
+                );
+                return false;
+            }
+        }
+
+        return typeResult === true || typeResult === "invalid";
     }
 
     /**

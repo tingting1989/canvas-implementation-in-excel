@@ -1,4 +1,18 @@
 import { VALIDATION_RULE_TYPE } from "../../constants/enums/ValidationRuleType.js";
+import { isString } from "../../utils";
+
+/**
+ * 验证规则元数据
+ *
+ * 桥接器自动生成的规则带有 metadata.source = "column-validation"，
+ * 手动规则无此字段（或 source 为其他值）。
+ */
+export interface ValidationRuleMetadata {
+    source?: string;
+    columnType?: string;
+    column?: number;
+    generatedAt?: number;
+}
 
 /**
  * 验证规则实体类
@@ -26,6 +40,7 @@ export class ValidationRule {
     priority: number = 0;
     createdAt!: Date;
     updatedAt!: Date;
+    metadata?: ValidationRuleMetadata;
 
     static #validTypes: Set<string> = new Set(["number", "text", "list", "formula", "date", "time", "datetime", "regex", "unique"]);
 
@@ -34,7 +49,7 @@ export class ValidationRule {
     }
 
     static registerValidType(type: string): void {
-        if (!type || typeof type !== "string" || type.trim() === "") {
+        if (!type || !isString(type) || type.trim() === "") {
             throw new Error("验证类型必须为非空字符串");
         }
         ValidationRule.#validTypes.add(type.trim());
@@ -59,7 +74,7 @@ export class ValidationRule {
     }
 
     #validate(): void {
-        if (this.range !== undefined && (!this.range || typeof this.range !== "string" || this.range.trim() === "")) {
+        if (this.range !== undefined && (!this.range || !isString(this.range) || this.range.trim() === "")) {
             throw new Error("规则无效: range 必须为非空字符串");
         }
 
@@ -69,7 +84,7 @@ export class ValidationRule {
     }
 
     toJSON(): Record<string, any> {
-        return {
+        const result: Record<string, any> = {
             id: this.id,
             range: this.range,
             type: this.type,
@@ -90,6 +105,10 @@ export class ValidationRule {
             createdAt: this.createdAt.toISOString(),
             updatedAt: this.updatedAt.toISOString(),
         };
+        if (this.metadata) {
+            result.metadata = this.metadata;
+        }
+        return result;
     }
 
     static fromJSON(json: Record<string, any>): ValidationRule {

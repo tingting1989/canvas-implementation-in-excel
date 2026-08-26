@@ -51,6 +51,36 @@ type PendingPlugin = PendingPluginByName | PendingPluginByClass;
  */
 export class Workbook {
     /**
+     * @private 私有静态字段 - Workbook 实例自增计数器
+     *
+     * 每次构造 Workbook 时递增，用于生成唯一实例 ID。
+     * ID 格式为 "cs-wb-{n}"（如 "cs-wb-0", "cs-wb-1"），
+     * 作为 CSS 类名注入到 CellEditor DOM 元素上，
+     * 供 InputDetector 在多实例共存时精确判断编辑器归属。
+     */
+    static #instanceCounter: number = 0;
+
+    /**
+     * @readonly Workbook 实例唯一标识
+     *
+     * 格式："cs-wb-{n}"（n 从 0 自增）
+     *
+     * 用途：
+     * 1. **编辑器归属标记**：CellEditor.createEditor() 将此 ID 作为 CSS 类名
+     *    添加到编辑器 DOM 元素，InputDetector 据此判断焦点编辑器属于哪个 Workbook
+     * 2. **调试辅助**：DOM 中可直接看到编辑器归属（如 `class="cs-cell-editor cs-wb-0"`）
+     * 3. **多实例管理**：日志、插件等可通过 ID 区分不同 Workbook 实例
+     *
+     * @example
+     * const wb1 = new Workbook(container1, options);
+     * console.log(wb1.id); // "cs-wb-0"
+     *
+     * const wb2 = new Workbook(container2, options);
+     * console.log(wb2.id); // "cs-wb-1"
+     */
+    readonly id: string = `cs-wb-${Workbook.#instanceCounter++}`;
+
+    /**
      * DOM 容器元素或选择器
      * 用于挂载渲染引擎的 Canvas 画布
      */
@@ -276,9 +306,11 @@ export class Workbook {
     #createSubSystems(): void {
         this.editor = new EditorManager(this.renderEngine!, this.activeSheet!);
         this.eventHandler = new EventHandler(this.activeSheet!, this.renderEngine!, this.editor, null);
+        this.eventHandler.workbookId = this.id;
         this.eventHandler.setHookContext(this);
         this.editor.setViewport(this.eventHandler.viewport);
         this.editor.setCanvasContext(this.eventHandler.canvasContext);
+        this.editor.setWorkbookId(this.id);
         this.pluginManager = new PluginManager(this);
 
         this.#flushEarlyHooks();
