@@ -993,12 +993,27 @@ export class ValidationUIController {
             if (this.#dropdownState) {
                 const portal = this.#portalManager?.getPortal(this.#dropdownState.portalId);
                 if (portal && !portal.contains(event.target as Node)) {
-                    this.hideDropdown();
+                    const portalRoot = this.#portalManager?.getPortalContainer?.();
+                    if (portalRoot && !portalRoot.contains(event.target as Node)) {
+                        this.hideDropdown();
+                    } else if (!portalRoot) {
+                        this.hideDropdown();
+                    }
                 }
             }
         };
 
         this.#globalKeyHandler = (event: KeyboardEvent) => {
+            if (this.#dropdownState) {
+                const portalRoot = this.#portalManager?.getPortalContainer?.();
+                if (portalRoot) {
+                    const activeEl = document.activeElement;
+                    if (activeEl && !portalRoot.contains(activeEl) && !this.#isOwnCanvas(activeEl)) {
+                        return;
+                    }
+                }
+            }
+
             if (this.handleDropdownKeyboard(event)) {
                 return;
             }
@@ -1011,6 +1026,12 @@ export class ValidationUIController {
 
         document.addEventListener("mousedown", this.#globalClickHandler, true);
         document.addEventListener("keydown", this.#globalKeyHandler, true);
+    }
+
+    #isOwnCanvas(el: Element | null): boolean {
+        if (!el) return false;
+        const canvas = this.#renderEngine?.canvas;
+        return canvas && (el === canvas || el.closest?.(`[data-workbook-id="${(this.#validationPlugin as any)?.workbook?.id}"]`));
     }
 
     #unregisterGlobalListeners(): void {

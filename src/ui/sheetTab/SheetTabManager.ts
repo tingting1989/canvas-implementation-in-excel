@@ -26,6 +26,10 @@ export class SheetTabManager extends Disposable {
         super();
         this.#workbook = workbook;
         this.#createDOM(wrap);
+        if (workbook && (workbook as any).id) {
+            this.#element!.workbookId = (workbook as any).id;
+        }
+        this.#element!.workbookContainer = wrap;
         this.#bindEvents();
         this.refresh();
     }
@@ -116,6 +120,12 @@ export class SheetTabManager extends Disposable {
 
     set workbook(wb: WorkbookLike) {
         this.#workbook = wb;
+        if (this.#element) {
+            if ((wb as any).id) {
+                this.#element.workbookId = (wb as any).id;
+            }
+            this.#element.workbookContainer = this.#element.parentElement;
+        }
     }
 
     onDestroy(): void {

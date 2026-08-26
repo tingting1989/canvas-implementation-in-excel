@@ -120,6 +120,10 @@ export class ValidationPortalManager extends DOMComponent {
         return this.#portals.get(id) || null;
     }
 
+    getPortalContainer(): HTMLElement | null {
+        return this.#portalContainer;
+    }
+
     updatePosition(id: string, position: Record<string, any>): boolean {
         const portal = this.#portals.get(id);
         if (!portal) return false;

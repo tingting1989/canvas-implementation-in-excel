@@ -241,7 +241,17 @@ export class ContextMenuStrategy extends EventStrategy {
         }
     }
 
-    init(): void {}
+    init(): void {
+        this.#uiManager.setWorkbookId(this.handler.workbookId, this.#getWorkbookContainer());
+    }
+
+    updateWorkbookId(id: string | null): void {
+        this.#uiManager.setWorkbookId(id, this.#getWorkbookContainer());
+    }
+
+    #getWorkbookContainer(): HTMLElement | null {
+        return (this.handler as any)?.workbook?.renderEngine?.wrap || null;
+    }
 
     destroy(): void {
         this.#uiManager.close();

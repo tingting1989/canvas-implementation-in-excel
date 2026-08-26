@@ -65,6 +65,24 @@ export class ErrorHandler {
     #devMode: boolean = false;
 
     /**
+     * @private 私有字段 - 当前关联的 Workbook 实例 ID（用于调试追踪）
+     */
+    #workbookId: string | null = null;
+
+    /**
+     * 设置 Workbook 实例 ID，后续报告的错误元数据中将自动附加此 ID
+     *
+     * 注意：ErrorHandler 为全局单例，多 Workbook 场景下 workbookId 反映最后设置的值，
+     * 仅用于调试追踪，不作为严格隔离依据。
+     *
+     * @param {string | null} id - Workbook 实例 ID
+     * @returns {void}
+     */
+    setWorkbookId(id: string | null): void {
+        this.#workbookId = id;
+    }
+
+    /**
      * 运行时配置错误处理器
      *
      * @param {ErrorHandlerOptions} [options={}] - 配置选项
@@ -257,6 +275,12 @@ export class ErrorHandler {
      */
     #report(level: number, code: string, message: string, meta?: unknown): void {
         if (level < this.#level) return;
+
+        if (this.#workbookId && meta && typeof meta === "object") {
+            (meta as Record<string, unknown>).workbookId = this.#workbookId;
+        } else if (this.#workbookId && !meta) {
+            meta = { workbookId: this.#workbookId };
+        }
 
         const prefix = this.#getLevelPrefix(level);
         const fullMessage = `[${code}] ${message}`;

@@ -134,6 +134,13 @@ export class UnhideSheetDialog extends HTMLElement {
     #selectedSheets: Set<string> = new Set();
     #popupId: symbol | null = null;
     #popupPanel: InstanceType<typeof PopupPanel> | null = null;
+    #workbookId: string | null = null;
+    #workbookContainer: HTMLElement | null = null;
+
+    setWorkbookId(id: string | null, container?: HTMLElement | null): void {
+        this.#workbookId = id;
+        if (container !== undefined) this.#workbookContainer = container;
+    }
 
     constructor() {
         super();
@@ -200,7 +207,7 @@ export class UnhideSheetDialog extends HTMLElement {
         this.#renderSheetList(hiddenSheets);
 
         this.#popupPanel = new PopupPanel();
-        this.#popupId = PopupManager.getInstance().register(this.#popupPanel);
+        this.#popupId = PopupManager.getInstance(this.#workbookId || undefined).register(this.#popupPanel);
 
         this.#popupPanel.show({
             content: this,
@@ -211,6 +218,7 @@ export class UnhideSheetDialog extends HTMLElement {
             showHeader: true,
             closeOnClickOutside: false,
             zIndex: 10003,
+            workbookContainer: this.#workbookContainer || undefined,
             onClose: (reason: string) => {
                 if (reason === "close-btn" || reason === "escape") {
                     if (this.#callbacks?.onCancel) {
@@ -219,7 +227,7 @@ export class UnhideSheetDialog extends HTMLElement {
                 }
                 if (this.#popupId) {
                     try {
-                        PopupManager.getInstance().unregister(this.#popupId);
+                        PopupManager.getInstance(this.#workbookId || undefined).unregister(this.#popupId);
                     } catch {}
                     this.#popupId = null;
                 }
@@ -249,7 +257,7 @@ export class UnhideSheetDialog extends HTMLElement {
             this.#popupPanel.hide("user");
             if (this.#popupId) {
                 try {
-                    PopupManager.getInstance().unregister(this.#popupId);
+                    PopupManager.getInstance(this.#workbookId || undefined).unregister(this.#popupId);
                 } catch {}
                 this.#popupId = null;
             }

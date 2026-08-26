@@ -9,6 +9,7 @@ import { CONFIG } from "../constants/config";
 import { SettingsApplier } from "./managers/SettingsApplier";
 import { SHEET_EVENTS } from "../constants/sheetEvents";
 import { HOOKS } from "../constants/hookNames";
+import { PopupManager } from "../ui/components/PopupManager.js";
 import type { StyleObject, ISheet } from "./interfaces/ISheet";
 
 /**
@@ -1441,6 +1442,8 @@ export class Workbook {
 
         this.pluginManager?.destroyAll();
         this.pluginManager = null;
+
+        PopupManager.removeInstance(this.id);
 
         this.eventHandler?.destroy();
         this.eventHandler = null;

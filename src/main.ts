@@ -274,7 +274,7 @@ const initApp = (): void => {
 
     const wb = new Workbook(document.getElementById("wrap")!, {
         width: 1600,
-        height: 400,
+        height: 600,
         sheets: [
             {
                 name: "数据验证",

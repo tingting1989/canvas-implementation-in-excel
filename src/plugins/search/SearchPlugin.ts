@@ -130,6 +130,7 @@ export class SearchPlugin extends BasePlugin {
         this.#state = new SearchState();
         this.#engine = new SearchEngine();
         this.#uiController = new SearchUIManager(this as any);
+        this.#uiController.setWorkbookId((this as any).workbook?.id || null);
         const renderEngine = (this as any).workbook.renderEngine || null;
         this.#navigator = new SearchNavigator(this.#state, (this as any).workbook.activeSheet?.selection || null, renderEngine);
         this.#highlighter = new SearchResultHighlighter(renderEngine, (this as any).options.highlightStyle);

@@ -132,11 +132,19 @@ export class CopyPasteStrategy extends EventStrategy {
         const div = document.createElement("div");
         div.contentEditable = "true";
         div.style.cssText = "position:fixed;left:-9999px;top:-9999px;opacity:0;width:1px;height:1px;overflow:hidden;";
+        const workbookId = this.handler.workbookId;
+        if (workbookId) {
+            div.dataset.workbookId = workbookId;
+        }
         document.body.appendChild(div);
         this.#pasteTarget = div;
 
         this.#boundPasteHandler = (pasteEvent: ClipboardEvent): void => {
             if (!this.enabled) return;
+
+            if (workbookId && div.dataset.workbookId !== workbookId) {
+                return;
+            }
 
             const { sheet, editor } = this.handler;
             if (!sheet) return;

@@ -45,6 +45,17 @@ export class SearchUIManager {
     /** @private 私有字段 - 防重入标志，防止关闭时的无限递归 */
     #isHiding: boolean = false;
 
+    /** @private 私有字段 - Workbook 实例 ID，用于 PopupManager 隔离 */
+    #workbookId: string | null = null;
+
+    /** @private 私有字段 - Workbook 容器元素，用于 PopupPanel 事件隔离 */
+    #workbookContainer: HTMLElement | null = null;
+
+    setWorkbookId(id: string | null, container?: HTMLElement | null): void {
+        this.#workbookId = id;
+        if (container !== undefined) this.#workbookContainer = container;
+    }
+
     /**
      * 创建搜索 UI 控制器实例
      *
@@ -118,7 +129,7 @@ export class SearchUIManager {
 
             if (this.#popupId) {
                 try {
-                    PopupManager.getInstance().unregister(this.#popupId);
+                    PopupManager.getInstance(this.#workbookId || undefined).unregister(this.#popupId);
                 } catch (error) {
                     errorHandler.warn(ERROR_CODE.SEARCH_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", { originalError: error });
                 }

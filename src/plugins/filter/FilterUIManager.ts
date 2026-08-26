@@ -56,6 +56,15 @@ export class FilterUIManager {
     /** @private 私有字段 - 防重入标志，防止关闭时的无限递归 */
     #isHiding: boolean = false;
 
+    /** @private 私有字段 - Workbook 实例 ID，用于 PopupManager 隔离 */
+    #workbookId: string | null = null;
+    #workbookContainer: HTMLElement | null = null;
+
+    setWorkbookId(id: string | null, container?: HTMLElement | null): void {
+        this.#workbookId = id;
+        if (container !== undefined) this.#workbookContainer = container;
+    }
+
     /**
      * 创建筛选 UI 控制器实例
      *
@@ -118,7 +127,7 @@ export class FilterUIManager {
                 columnType,
             });
 
-            this.#popupId = PopupManager.getInstance().register(this.#popupPanel);
+            this.#popupId = PopupManager.getInstance(this.#workbookId || undefined).register(this.#popupPanel);
 
             const columnName = this.#getColumnName(col);
             this.#popupPanel.show({
@@ -130,6 +139,7 @@ export class FilterUIManager {
                 closeOnEscape: true,
                 content: this.#dropdown,
                 onClose: () => this.closeDropdown(),
+                workbookContainer: this.#workbookContainer || undefined,
             });
 
             setTimeout(() => {
@@ -177,7 +187,7 @@ export class FilterUIManager {
 
             if (this.#popupId) {
                 try {
-                    PopupManager.getInstance().unregister(this.#popupId);
+                    PopupManager.getInstance(this.#workbookId || undefined).unregister(this.#popupId);
                 } catch (error) {
                     errorHandler.warn(ERROR_CODE.FILTER_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", {
                         originalError: error,

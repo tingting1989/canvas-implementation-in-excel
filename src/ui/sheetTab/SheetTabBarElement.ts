@@ -206,6 +206,18 @@ export class SheetTabBarElement extends WebComponent {
     #contextTargetName: string | null = null;
     #readOnly: boolean = false;
     #uiManager: SheetTabUIManager = new SheetTabUIManager();
+    #workbookId: string | null = null;
+    #workbookContainer: HTMLElement | null = null;
+
+    set workbookId(id: string | null) {
+        this.#workbookId = id;
+        this.#uiManager.setWorkbookId(id, this.#workbookContainer);
+    }
+
+    set workbookContainer(el: HTMLElement | null) {
+        this.#workbookContainer = el;
+        this.#uiManager.setWorkbookId(this.#workbookId, el);
+    }
 
     get readOnly(): boolean {
         return this.#readOnly;
@@ -408,6 +420,8 @@ export class SheetTabBarElement extends WebComponent {
         }
 
         const dialog = document.createElement("unhide-sheet-dialog") as InstanceType<typeof UnhideSheetDialog>;
+
+        dialog.setWorkbookId(this.#workbookId, this.#workbookContainer);
 
         dialog.open(this.#hiddenSheets, {
             onConfirm: (selectedSheets: string[]) => {

@@ -246,7 +246,8 @@ export class SearchStrategy extends EventStrategy {
             }
         }
 
-        const modals = document.querySelectorAll(".modal-overlay, .dialog-backdrop, [role='dialog']");
+        const workbookContainer = (this.handler as any)?.workbook?.renderEngine?.wrap || document;
+        const modals = workbookContainer.querySelectorAll(".modal-overlay, .dialog-backdrop, [role='dialog']");
 
         for (const modal of modals) {
             if (modal.classList.contains("search-panel") || modal.tagName === "SEARCH-DROPDOWN") {

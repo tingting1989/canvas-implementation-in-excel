@@ -13,6 +13,7 @@ interface PopupShowOptions {
     closeOnEscape?: boolean;
     zIndex?: number;
     onClose?: (reason: string) => void;
+    workbookContainer?: HTMLElement;
 }
 
 interface DragStartState {
@@ -148,6 +149,7 @@ export class PopupPanel extends HTMLElement {
     #dragging: boolean = false;
     #dragStart: DragStartState | null = null;
     #rafDrag: number | null = null;
+    #workbookContainer: HTMLElement | null = null;
 
     _panel: HTMLElement | null = null;
     _header: HTMLElement | null = null;
@@ -183,6 +185,7 @@ export class PopupPanel extends HTMLElement {
         this.#closeOnClickOutside = options.closeOnClickOutside !== false;
         this.#closeOnEscape = options.closeOnEscape !== false;
         this.#draggable = options.draggable !== false;
+        this.#workbookContainer = options.workbookContainer || null;
 
         this.style.zIndex = String(this.#zIndex);
 
@@ -398,11 +401,24 @@ export class PopupPanel extends HTMLElement {
 
         if (clickedInsidePanel) return;
 
+        if (this.#workbookContainer) {
+            const target = e.target as Node;
+            if (!this.#workbookContainer.contains(target)) {
+                return;
+            }
+        }
+
         this.hide("click-outside");
     };
 
     #handleEscapeKey = (e: KeyboardEvent): void => {
         if (e.key === "Escape") {
+            if (this.#workbookContainer) {
+                const activeEl = document.activeElement;
+                if (activeEl && !this.#workbookContainer.contains(activeEl)) {
+                    return;
+                }
+            }
             e.preventDefault();
             this.hide("escape");
         }

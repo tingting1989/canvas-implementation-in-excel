@@ -19,6 +19,13 @@ export class SheetTabUIManager {
     #popupId: symbol | null = null;
     #isHiding: boolean = false;
     #onItemSelect: ((key: string) => void) | null = null;
+    #workbookId: string | null = null;
+    #workbookContainer: HTMLElement | null = null;
+
+    setWorkbookId(id: string | null, container?: HTMLElement | null): void {
+        this.#workbookId = id;
+        if (container !== undefined) this.#workbookContainer = container;
+    }
 
     open(
         position: { x: number; y: number },
@@ -47,7 +54,7 @@ export class SheetTabUIManager {
                 maxHeight: options.dropdownMaxHeight,
             });
 
-            this.#popupId = PopupManager.getInstance().register(this.#popupPanel);
+            this.#popupId = PopupManager.getInstance(this.#workbookId || undefined).register(this.#popupPanel);
 
             this.#popupPanel.show({
                 position,
@@ -59,6 +66,7 @@ export class SheetTabUIManager {
                 draggable: false,
                 content: this.#dropdown,
                 onClose: () => this.close(),
+                workbookContainer: this.#workbookContainer || undefined,
             });
         } catch (error) {
             errorHandler.error(ERROR_CODE.CONTEXT_MENU_UI_OPEN_ERROR, "打开工作表标签菜单失败", { originalError: error });
@@ -75,7 +83,7 @@ export class SheetTabUIManager {
 
             if (this.#popupId) {
                 try {
-                    PopupManager.getInstance().unregister(this.#popupId);
+                    PopupManager.getInstance(this.#workbookId || undefined).unregister(this.#popupId);
                 } catch (error) {
                     errorHandler.warn(ERROR_CODE.CONTEXT_MENU_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", {
                         originalError: error,

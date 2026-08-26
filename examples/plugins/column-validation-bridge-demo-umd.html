@@ -792,7 +792,7 @@ conflictStrategy: "aggregate"      // 收集所有错误合并</div>
     window.reinitWithBridge = function() {
         currentMode = 'bridge';
         log('═══ 切换到桥接模式（validation 子对象）═══', 'info');
-        createWorkbook(bridgeColumns, ['dataValidation', 'contextMenu', 'autoFill', 'copyPaste'], {
+        createWorkbook(bridgeColumns, ['dataValidation', 'contextMenu', 'autoFill', 'copyPaste', 'freeze'], {
             dataValidation: {
                 conflictStrategy: 'short-circuit',
                 bridgeColumnType: true
@@ -803,7 +803,7 @@ conflictStrategy: "aggregate"      // 收集所有错误合并</div>
     window.reinitWithLegacy = function() {
         currentMode = 'legacy';
         log('═══ 切换到向后兼容模式（options 推断）═══', 'info');
-        createWorkbook(legacyColumns, ['dataValidation', 'contextMenu', 'autoFill', 'copyPaste'], {
+        createWorkbook(legacyColumns, ['dataValidation', 'contextMenu', 'autoFill', 'copyPaste', 'freeze',   ], {
             dataValidation: {
                 conflictStrategy: 'short-circuit',
                 bridgeColumnType: true
@@ -814,7 +814,7 @@ conflictStrategy: "aggregate"      // 收集所有错误合并</div>
     window.reinitWithoutPlugin = function() {
         currentMode = 'noPlugin';
         log('═══ 切换到无插件模式（安全降级）═══', 'info');
-        createWorkbook(noPluginColumns, ['contextMenu', 'autoFill', 'copyPaste'], {});
+        createWorkbook(noPluginColumns, ['contextMenu', 'autoFill', 'copyPaste', 'freeze'],   {});
     };
 
     window.validateAll = function() {
@@ -1017,7 +1017,7 @@ conflictStrategy: "aggregate"      // 收集所有错误合并</div>
                 },
                 { type: 'text', width: 120 }
             ],
-            ['dataValidation', 'contextMenu'],
+            ['dataValidation', 'contextMenu',"freeze"],
             {
                 dataValidation: {
                     conflictStrategy: getConflictStrategy(),

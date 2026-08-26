@@ -54,8 +54,10 @@ export class ScrollManager extends DOMComponent {
         let dragging: string | null = null;
         let startMouse: number = 0;
         let startScroll: number = 0;
+        let dragOwner: string | null = null;
 
         const onDragMove = (e: MouseEvent): void => {
+            if (!dragging) return;
             if (dragging === SCROLL_AXIS.HORIZONTAL) {
                 const dx = e.clientX - startMouse;
                 const hw = this.#headerW ?? CONFIG.HEADER_WIDTH;
@@ -79,13 +81,17 @@ export class ScrollManager extends DOMComponent {
 
         const onDragEnd = (): void => {
             dragging = null;
+            dragOwner = null;
             document.removeEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
             document.removeEventListener(EVENT_NAMES.MOUSEUP, onDragEnd);
         };
 
+        const ownerKey = `scroll-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
         this.trackEvent(this.#hThumb!, EVENT_NAMES.MOUSEDOWN, (e: Event) => {
             (e as MouseEvent).preventDefault();
             dragging = SCROLL_AXIS.HORIZONTAL;
+            dragOwner = ownerKey;
             startMouse = (e as MouseEvent).clientX;
             startScroll = this.#scrollX;
             document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);
@@ -95,6 +101,7 @@ export class ScrollManager extends DOMComponent {
         this.trackEvent(this.#vThumb!, EVENT_NAMES.MOUSEDOWN, (e: Event) => {
             (e as MouseEvent).preventDefault();
             dragging = SCROLL_AXIS.VERTICAL;
+            dragOwner = ownerKey;
             startMouse = (e as MouseEvent).clientY;
             startScroll = this.#scrollY;
             document.addEventListener(EVENT_NAMES.MOUSEMOVE, onDragMove);

@@ -42,6 +42,13 @@ export class ContextMenuUIManager {
     #popupId: symbol | null = null;
     #isHiding: boolean = false;
     #onItemSelect: ((key: string) => void) | null = null;
+    #workbookId: string | null = null;
+    #workbookContainer: HTMLElement | null = null;
+
+    setWorkbookId(id: string | null, container?: HTMLElement | null): void {
+        this.#workbookId = id;
+        if (container !== undefined) this.#workbookContainer = container;
+    }
 
     /**
      * 打开右键菜单面板
@@ -78,7 +85,7 @@ export class ContextMenuUIManager {
                 maxHeight: options.dropdownMaxHeight,
             });
 
-            this.#popupId = PopupManager.getInstance().register(this.#popupPanel);
+            this.#popupId = PopupManager.getInstance(this.#workbookId || undefined).register(this.#popupPanel);
 
             this.#popupPanel.show({
                 position,
@@ -90,6 +97,7 @@ export class ContextMenuUIManager {
                 draggable: false,
                 content: this.#dropdown,
                 onClose: () => this.close(),
+                workbookContainer: this.#workbookContainer || undefined,
             });
         } catch (error) {
             errorHandler.error(ERROR_CODE.CONTEXT_MENU_UI_OPEN_ERROR, "打开右键菜单失败", { originalError: error });
@@ -114,7 +122,7 @@ export class ContextMenuUIManager {
 
             if (this.#popupId) {
                 try {
-                    PopupManager.getInstance().unregister(this.#popupId);
+                    PopupManager.getInstance(this.#workbookId || undefined).unregister(this.#popupId);
                 } catch (error) {
                     errorHandler.warn(ERROR_CODE.CONTEXT_MENU_UI_POPUP_UNREGISTER_ERROR, "注销 PopupManager 失败", {
                         originalError: error,

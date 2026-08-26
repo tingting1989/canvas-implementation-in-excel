@@ -287,6 +287,7 @@ export class FilterPlugin extends BasePlugin {
 
         const filterState = new FilterState();
         this.#uiManager = new FilterUIManager(sheet, filterState, this as any);
+        this.#uiManager.setWorkbookId((this as any).workbook?.id || null, (this as any).workbook?.renderEngine?.wrap || null);
 
         Object.defineProperty(sheet, "filterState", {
             value: filterState,
