@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-08-26
+
+### 🎉 Feature & Bugfix Release — Data Validation & Column Type Style Integration, Multi-Workbook Isolation Fixes
+
+This release introduces **data validation and column type style integration**, and fixes **all known bugs when multiple Workbook instances coexist on the same page**. All changes are **backward compatible** with no breaking API changes.
+
+---
+
+## ✨ New Features
+
+### 🔍 Data Validation & Column Type Style Integration
+- ✅ **Validation-Driven Styling** — Data validation rules now automatically apply column type styles (number format, date format, etc.)
+- ✅ **Column Type Inference** — Validation types drive visual formatting: numbers get right-aligned, dates get formatted, lists get dropdown indicators
+- ✅ **Style Consistency** — Validated cells maintain consistent visual representation across the sheet
+
+---
+
+## 🐛 Bug Fixes
+
+### 🔧 Multi-Workbook Instance Isolation (Same Page)
+- ✅ **PopupManager Singleton → Per-Workbook Registry** — Refactored PopupManager from global singleton to per-Workbook ID instance registry, preventing popup cross-interference between Workbook instances
+- ✅ **ValidationUIController Global Listeners** — Added Workbook ownership checks in global mousedown/keydown handlers; only process events belonging to the current Workbook's portal container
+- ✅ **PopupPanel Click-Outside Detection** — `handleClickOutside` now checks if click target is within the Workbook's container element, preventing one Workbook's popup from closing when clicking in another
+- ✅ **CopyPasteStrategy Hidden Div** — Paste target div now carries `data-workbook-id` attribute; paste event handler validates workbookId before processing
+- ✅ **ScrollManager Drag Ownership** — Added drag origin tracking (`dragOwner` key) and guard clause in mousemove handler to prevent cross-instance scroll drag interference
+- ✅ **SearchStrategy External Input Detection** — `document.querySelectorAll` scoped to Workbook container (`renderEngine.wrap`) instead of global document
+- ✅ **ErrorHandler Workbook Metadata** — Error reports now automatically attach `workbookId` to metadata for easier multi-instance debugging
+- ✅ **Workbook Lifecycle Cleanup** — `Workbook.destroy()` now calls `PopupManager.removeInstance()` to clean up per-Workbook popup resources
+
+---
+
 ## [1.1.1] - 2026-08-20
 
 ### 🎉 Feature Release — Sheet Operations, Context Menu Refactor & Full TypeScript Migration
