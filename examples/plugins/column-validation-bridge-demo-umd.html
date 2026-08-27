@@ -5,1159 +5,1743 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🔗 列类型验证桥接演示 - Canvas-Sheet</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh; padding: 20px; color: #333;
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
         }
+
         .container {
-            max-width: 1400px; margin: 0 auto; background: white;
-            border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
         }
+
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; padding: 30px; text-align: center;
+            color: white;
+            padding: 30px;
+            text-align: center;
         }
-        .header h1 { font-size: 2.5em; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
-        .header p { opacity: 0.9; font-size: 1.1em; }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
 
         .nav-bar {
-            display: flex; justify-content: center; gap: 8px; padding: 16px 30px;
-            background: #f8f9fa; border-bottom: 2px solid #e9ecef; flex-wrap: wrap;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
         }
+
         .nav-bar a {
-            display: inline-block; padding: 8px 16px; border-radius: 8px;
-            background: rgba(102,126,234,0.1); color: #4a5568; text-decoration: none;
-            font-weight: 600; font-size: 14px; transition: all 0.3s;
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            background: rgba(102, 126, 234, 0.1);
+            color: #4a5568;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
         }
+
         .nav-bar a:hover, .nav-bar a.active {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white; transform: translateY(-2px);
+            color: white;
+            transform: translateY(-2px);
         }
 
-        .main-content { padding: 30px; }
+        .main-content {
+            padding: 30px;
+        }
 
         .demo-section {
-            background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 24px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
             border: 2px solid #e9ecef;
         }
+
         .section-title {
-            font-size: 1.4em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
-            padding-bottom: 10px; border-bottom: 3px solid #667eea; font-weight: 600;
-        }
-        .canvas-container {
-            overflow: auto; background: #fff; position: relative;
-            border: 2px solid #dee2e6; border-radius: 8px;
+            font-size: 1.4em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            font-weight: 600;
         }
 
-        .control-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
-        .control-bar label { font-size: 13px; font-weight: 600; color: #495057; }
+        .canvas-container {
+            overflow: auto;
+            background: #fff;
+            position: relative;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+        }
+
+        .control-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .control-bar label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #495057;
+        }
+
         .control-bar select, .control-bar input[type="text"] {
-            padding: 6px 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 13px; min-width: 120px;
+            padding: 6px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 13px;
+            min-width: 120px;
         }
 
         .btn {
-            padding: 10px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
-            cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
-        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 15px rgba(102,126,234,0.4); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102,126,234,0.6); }
-        .btn-success { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; box-shadow: 0 4px 15px rgba(17,153,142,0.4); }
-        .btn-success:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(17,153,142,0.6); }
-        .btn-danger { background: linear-gradient(135deg, #f5576c 0%, #ff6b6b 100%); color: white; box-shadow: 0 4px 15px rgba(245,87,108,0.4); }
-        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(245,87,108,0.6); }
-        .btn-warning { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #333; box-shadow: 0 4px 15px rgba(250,112,154,0.4); }
-        .btn-warning:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(250,112,154,0.6); }
-        .btn-info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; box-shadow: 0 4px 15px rgba(79,172,254,0.4); }
-        .btn-info:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79,172,254,0.6); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f5576c 0%, #ff6b6b 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(250, 112, 154, 0.6);
+        }
+
+        .btn-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
 
         .status-bar {
-            display: flex; gap: 16px; margin-top: 12px; font-size: 13px; color: #6c757d; align-items: center;
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #6c757d;
+            align-items: center;
         }
-        .status-bar .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
-        .badge-active { background: #d4edda; color: #155724; }
-        .badge-inactive { background: #f8d7da; color: #721c24; }
+
+        .status-bar .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .badge-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
 
         .log-panel {
-            margin-top: 16px; background: #1e1e1e; border-radius: 12px; padding: 16px;
-            max-height: 250px; overflow-y: auto; border: 2px solid #333;
+            margin-top: 16px;
+            background: #1e1e1e;
+            border-radius: 12px;
+            padding: 16px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 2px solid #333;
         }
-        .log-title { color: #4facfe; font-size: 1.1em; margin-bottom: 10px; font-family: monospace; font-weight: 600; }
-        .log-entry { padding: 4px 10px; margin: 3px 0; border-radius: 4px; border-left: 4px solid transparent; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; }
-        .log-success { background: rgba(56,239,125,0.1); border-left-color: #38ef7d; color: #38ef7d; }
-        .log-error { background: rgba(255,107,107,0.1); border-left-color: #ff6b6b; color: #ff6b6b; }
-        .log-info { background: rgba(79,172,254,0.1); border-left-color: #4facfe; color: #4facfe; }
-        .log-warn { background: rgba(255,193,7,0.1); border-left-color: #ffc107; color: #ffc107; }
 
-        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 20px; }
+        .log-title {
+            color: #4facfe;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            font-family: monospace;
+            font-weight: 600;
+        }
+
+        .log-entry {
+            padding: 4px 10px;
+            margin: 3px 0;
+            border-radius: 4px;
+            border-left: 4px solid transparent;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+        }
+
+        .log-success {
+            background: rgba(56, 239, 125, 0.1);
+            border-left-color: #38ef7d;
+            color: #38ef7d;
+        }
+
+        .log-error {
+            background: rgba(255, 107, 107, 0.1);
+            border-left-color: #ff6b6b;
+            color: #ff6b6b;
+        }
+
+        .log-info {
+            background: rgba(79, 172, 254, 0.1);
+            border-left-color: #4facfe;
+            color: #4facfe;
+        }
+
+        .log-warn {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: #ffc107;
+            color: #ffc107;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
         .feature-card {
             background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-            padding: 16px; border-radius: 12px; border-left: 4px solid #667eea; transition: transform 0.2s ease;
-        }
-        .feature-card:hover { transform: translateY(-2px); }
-        .feature-card .tag { font-size: 11px; font-weight: 700; color: #667eea; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .feature-card .name { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 6px; }
-        .feature-card .desc { font-size: 13px; color: #666; line-height: 1.5; }
-        .feature-card .code {
-            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
-            background: rgba(17,153,142,0.08); padding: 8px 10px; border-radius: 4px;
-            margin-top: 10px; line-height: 1.5; white-space: pre; border-left: 3px solid #11998e;
+            padding: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.2s ease;
         }
 
-        .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
-        .compare-table th {
-            padding: 10px; border: 1px solid #ddd; text-align: left;
-            background: linear-gradient(135deg, #667eea, #764ba2); color: white;
+        .feature-card:hover {
+            transform: translateY(-2px);
         }
-        .compare-table td { padding: 8px 10px; border: 1px solid #ddd; }
-        .compare-table tr:nth-child(even) td { background: #f8f9fa; }
+
+        .feature-card .tag {
+            font-size: 11px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .feature-card .name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .feature-card .desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .feature-card .code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            color: #11998e;
+            background: rgba(17, 153, 142, 0.08);
+            padding: 8px 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            line-height: 1.5;
+            white-space: pre;
+            border-left: 3px solid #11998e;
+        }
+
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        .compare-table th {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .compare-table td {
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+        }
+
+        .compare-table tr:nth-child(even) td {
+            background: #f8f9fa;
+        }
+
         .compare-table code {
-            font-family: 'Consolas', monospace; font-size: 12px; color: #667eea;
-            background: rgba(102,126,234,0.1); padding: 2px 6px; border-radius: 3px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 2px 6px;
+            border-radius: 3px;
         }
 
         .bridge-status {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
         }
+
         .bridge-status .stat-card {
-            background: white; padding: 16px; border-radius: 10px; text-align: center;
-            border: 2px solid #e9ecef; transition: transform 0.2s;
+            background: white;
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            transition: transform 0.2s;
         }
-        .bridge-status .stat-card:hover { transform: translateY(-2px); }
-        .bridge-status .stat-value { font-size: 28px; font-weight: 700; color: #667eea; }
-        .bridge-status .stat-label { font-size: 12px; color: #6c757d; margin-top: 4px; }
 
-        .info-section { padding: 30px; background: white; border-top: 2px solid #e9ecef; }
+        .bridge-status .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .bridge-status .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .bridge-status .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        .info-section {
+            padding: 30px;
+            background: white;
+            border-top: 2px solid #e9ecef;
+        }
+
         .info-section h2 {
-            font-size: 1.5em; color: #4a5568; margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+            font-size: 1.5em;
+            color: #4a5568;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .status-indicator { display: flex; align-items: center; gap: 8px; }
-        .status-dot {
-            width: 10px; height: 10px; border-radius: 50%; background: #28a745; animation: pulse 2s infinite;
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
 
         .footer-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 30px; background: #f8f9fa; border-top: 2px solid #e9ecef; font-size: 14px; color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-top: 2px solid #e9ecef;
+            font-size: 14px;
+            color: #6c757d;
         }
 
-        .conflict-layer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+        .conflict-layer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
         .conflict-layer-card {
             background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
-            padding: 18px; border-radius: 12px; border-left: 4px solid #667eea;
-        }
-        .layer-badge {
-            display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; margin-bottom: 8px;
-        }
-        .layer-name { font-size: 15px; font-weight: 700; color: #333; margin-bottom: 8px; }
-        .layer-desc { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 10px; }
-        .layer-code {
-            font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #11998e;
-            background: rgba(17,153,142,0.08); padding: 10px 12px; border-radius: 4px;
-            line-height: 1.6; white-space: pre; border-left: 3px solid #11998e;
+            padding: 18px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
         }
 
-        .priority-flow { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 16px 0; }
-        .priority-item {
-            display: flex; align-items: flex-start; gap: 14px; width: 100%; max-width: 700px;
-            background: white; padding: 14px 18px; border-radius: 10px; border: 2px solid #e9ecef;
+        .layer-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 8px;
         }
+
+        .layer-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .layer-desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .layer-code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            color: #11998e;
+            background: rgba(17, 153, 142, 0.08);
+            padding: 10px 12px;
+            border-radius: 4px;
+            line-height: 1.6;
+            white-space: pre;
+            border-left: 3px solid #11998e;
+        }
+
+        .priority-flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            margin: 16px 0;
+        }
+
+        .priority-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            width: 100%;
+            max-width: 700px;
+            background: white;
+            padding: 14px 18px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+
         .priority-num {
-            font-size: 24px; font-weight: 800; color: #667eea; min-width: 50px; text-align: center;
+            font-size: 24px;
+            font-weight: 800;
+            color: #667eea;
+            min-width: 50px;
+            text-align: center;
             line-height: 1;
         }
-        .priority-info { font-size: 14px; font-weight: 600; color: #333; flex: 1; }
-        .priority-desc { font-size: 12px; color: #6c757d; margin-top: 4px; }
-        .priority-arrow { font-size: 20px; color: #adb5bd; }
-        .priority-tag {
-            display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-left: 6px;
+
+        .priority-info {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
         }
-        .priority-tag.manual { background: #dbeafe; color: #1e40af; }
-        .priority-tag.auto { background: #fef3c7; color: #92400e; }
+
+        .priority-desc {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 4px;
+        }
+
+        .priority-arrow {
+            font-size: 20px;
+            color: #adb5bd;
+        }
+
+        .priority-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 6px;
+        }
+
+        .priority-tag.manual {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .priority-tag.auto {
+            background: #fef3c7;
+            color: #92400e;
+        }
 
         @media (max-width: 1024px) {
-            .header h1 { font-size: 2em; }
-            .feature-grid { grid-template-columns: 1fr; }
-            .conflict-layer-grid { grid-template-columns: 1fr; }
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .conflict-layer-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔗 列类型验证桥接演示</h1>
-            <p>ColumnTypeValidationBridge — 在 columns[].validation 中声明验证规则，自动同步到 DataValidationPlugin</p>
+<div class="container">
+    <div class="header">
+        <h1>🔗 列类型验证桥接演示</h1>
+        <p>ColumnTypeValidationBridge — 在 columns[].validation 中声明验证规则，自动同步到 DataValidationPlugin</p>
+    </div>
+
+    <div class="nav-bar">
+        <a href="data-validation-plugin-demo-umd.html">数据验证</a>
+        <a href="column-validation-bridge-demo-umd.html" class="active">验证桥接</a>
+        <a href="filter-demo-plugin-umd.html">筛选</a>
+        <a href="sort-demo-plugin-umd.html">排序</a>
+        <a href="freeze-demo-plugin-umd.html">冻结</a>
+        <a href="context-menu-demo-plugin-umd.html">右键菜单</a>
+        <a href="search-demo-plugin-umd.html">搜索</a>
+    </div>
+
+    <div class="main-content">
+        <!-- ═══ 演示表格 ═══ -->
+        <div class="demo-section">
+            <h2 class="section-title"><span>📊</span> 桥接模式演示表格</h2>
+            <div class="control-bar">
+                <button class="btn btn-primary" onclick="reinitWithBridge()">🔄 桥接模式（validation 子对象）</button>
+                <button class="btn btn-warning" onclick="reinitWithLegacy()">🔙 向后兼容模式（options 推断）</button>
+                <button class="btn btn-danger" onclick="reinitWithoutPlugin()">🚫 无插件模式（安全降级）</button>
+                <button class="btn btn-success" onclick="validateAll()">✅ 批量验证</button>
+                <button class="btn btn-info" onclick="showBridgeStatus()">🔍 桥接状态</button>
+                <button class="btn btn-info" onclick="exportRules()">📤 导出规则</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="sheet"></canvas>
+            </div>
+            <div class="status-bar">
+                <span class="status-indicator"><span class="status-dot" id="statusDot"></span> 插件: <span
+                    id="pluginStatus" class="badge badge-inactive">未激活</span></span>
+                <span>桥接器: <span id="bridgeStatus" class="badge badge-inactive">未激活</span></span>
+                <span>模式: <strong id="modeDisplay">-</strong></span>
+                <span>规则数: <strong id="ruleCount">0</strong></span>
+            </div>
+            <div class="log-panel">
+                <div class="log-title">📋 运行日志</div>
+                <div id="logContainer"></div>
+            </div>
         </div>
 
-        <div class="nav-bar">
-            <a href="data-validation-plugin-demo-umd.html">数据验证</a>
-            <a href="column-validation-bridge-demo-umd.html" class="active">验证桥接</a>
-            <a href="filter-demo-plugin-umd.html">筛选</a>
-            <a href="sort-demo-plugin-umd.html">排序</a>
-            <a href="freeze-demo-plugin-umd.html">冻结</a>
-            <a href="context-menu-demo-plugin-umd.html">右键菜单</a>
-            <a href="search-demo-plugin-umd.html">搜索</a>
+        <!-- ═══ 桥接状态面板 ═══ -->
+        <div class="demo-section" id="bridgeStatusPanel" style="display:none;">
+            <h2 class="section-title"><span>🔍</span> 桥接器状态详情</h2>
+            <div class="bridge-status" id="bridgeStatusGrid"></div>
         </div>
 
-        <div class="main-content">
-            <!-- ═══ 演示表格 ═══ -->
-            <div class="demo-section">
-                <h2 class="section-title"><span>📊</span> 桥接模式演示表格</h2>
-                <div class="control-bar">
-                    <button class="btn btn-primary" onclick="reinitWithBridge()">🔄 桥接模式（validation 子对象）</button>
-                    <button class="btn btn-warning" onclick="reinitWithLegacy()">🔙 向后兼容模式（options 推断）</button>
-                    <button class="btn btn-danger" onclick="reinitWithoutPlugin()">🚫 无插件模式（安全降级）</button>
-                    <button class="btn btn-success" onclick="validateAll()">✅ 批量验证</button>
-                    <button class="btn btn-info" onclick="showBridgeStatus()">🔍 桥接状态</button>
-                    <button class="btn btn-info" onclick="exportRules()">📤 导出规则</button>
-                </div>
-                <div class="canvas-container"><canvas id="sheet"></canvas></div>
-                <div class="status-bar">
-                    <span class="status-indicator"><span class="status-dot" id="statusDot"></span> 插件: <span id="pluginStatus" class="badge badge-inactive">未激活</span></span>
-                    <span>桥接器: <span id="bridgeStatus" class="badge badge-inactive">未激活</span></span>
-                    <span>模式: <strong id="modeDisplay">-</strong></span>
-                    <span>规则数: <strong id="ruleCount">0</strong></span>
-                </div>
-                <div class="log-panel">
-                    <div class="log-title">📋 运行日志</div>
-                    <div id="logContainer"></div>
-                </div>
-            </div>
-
-            <!-- ═══ 桥接状态面板 ═══ -->
-            <div class="demo-section" id="bridgeStatusPanel" style="display:none;">
-                <h2 class="section-title"><span>🔍</span> 桥接器状态详情</h2>
-                <div class="bridge-status" id="bridgeStatusGrid"></div>
-            </div>
-
-            <!-- ═══ 功能特性 ═══ -->
-            <div class="demo-section">
-                <h2 class="section-title"><span>✨</span> 核心特性</h2>
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <div class="tag">直传模式</div>
-                        <div class="name">validation 子对象</div>
-                        <div class="desc">在 columns 配置中直接声明验证规则，桥接器自动同步到 ValidationEngine</div>
-                        <div class="code">{ type: "numeric",
-  validation: {
-    type: "number",
-    operator: "between",
-    value: [0, 100]
-  }
-}</div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="tag">向后兼容</div>
-                        <div class="name">options 推断模式</div>
-                        <div class="desc">无 validation 时，桥接器从 type + options 自动推断验证规则</div>
-                        <div class="code">{ type: "numeric",
-  options: { min: 0, max: 100 }
-}
-// → 自动推断 number between [0,100]</div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="tag">安全降级</div>
-                        <div class="name">插件未启用兜底</div>
-                        <div class="desc">DataValidationPlugin 未启用时，列类型 validate() 兜底，仍可阻止无效值</div>
-                        <div class="code">// 无插件时：
-validateCellValue(r, c, val)
-→ 列类型 validate() 正常阻止
-
-// 有插件时：
-validateCellValue(r, c, val)
-→ 降级为仅提示，插件统一拦截</div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="tag">手动优先</div>
-                        <div class="name">手动规则优先级</div>
-                        <div class="desc">pluginOptions.rules 中的手动规则优先级高于自动生成的规则</div>
-                        <div class="code">// 手动规则 priority: 0
-// 自动规则 priority: 1000
-// 手动规则优先执行</div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="tag">增量同步</div>
-                        <div class="name">配置变更自动同步</div>
-                        <div class="desc">columns 配置变更时，桥接器增量同步验证规则，未变更列跳过</div>
-                        <div class="code">sheet.applyColumnsConfig(newCols)
-→ COLUMN_CONFIG_CHANGED 事件
-→ bridge.syncFromColumnConfig()</div>
-                    </div>
-                    <div class="feature-card">
-                        <div class="tag">序列化排除</div>
-                        <div class="name">自动规则不导出</div>
-                        <div class="desc">exportRules() 自动排除桥接器生成的规则，避免重复（可从列配置重建）</div>
-                        <div class="code">plugin.exportRules()
-// → 仅返回手动规则
-// 自动规则从 columns 重建</div>
+        <!-- ═══ 功能特性 ═══ -->
+        <div class="demo-section">
+            <h2 class="section-title"><span>✨</span> 核心特性</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="tag">直传模式</div>
+                    <div class="name">validation 子对象</div>
+                    <div class="desc">在 columns 配置中直接声明验证规则，桥接器自动同步到 ValidationEngine</div>
+                    <div class="code">{ type: "numeric",
+                        validation: {
+                        type: "number",
+                        operator: "between",
+                        value: [0, 100]
+                        }
+                        }
                     </div>
                 </div>
-            </div>
-
-            <!-- ═══ 三种模式对比 ═══ -->
-            <div class="demo-section">
-                <h2 class="section-title"><span>⚖️</span> 三种模式对比</h2>
-                <table class="compare-table">
-                    <thead>
-                        <tr>
-                            <th>特性</th>
-                            <th>validation 子对象（推荐）</th>
-                            <th>options 推断（兼容）</th>
-                            <th>无插件（降级）</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>配置方式</td>
-                            <td><code>columns[].validation</code></td>
-                            <td><code>columns[].options</code></td>
-                            <td><code>columns[].type + options</code></td>
-                        </tr>
-                        <tr>
-                            <td>验证执行</td>
-                            <td>DataValidationPlugin</td>
-                            <td>DataValidationPlugin</td>
-                            <td>ColumnTypeManager.validate()</td>
-                        </tr>
-                        <tr>
-                            <td>错误弹框</td>
-                            <td>✅ 支持</td>
-                            <td>✅ 支持</td>
-                            <td>❌ 不支持</td>
-                        </tr>
-                        <tr>
-                            <td>无效高亮</td>
-                            <td>✅ 支持</td>
-                            <td>✅ 支持</td>
-                            <td>❌ 不支持</td>
-                        </tr>
-                        <tr>
-                            <td>验证图标</td>
-                            <td>✅ 支持</td>
-                            <td>✅ 支持</td>
-                            <td>❌ 不支持</td>
-                        </tr>
-                        <tr>
-                            <td>下拉箭头</td>
-                            <td>✅ showDropdown</td>
-                            <td>✅ 自动</td>
-                            <td>❌ 不支持</td>
-                        </tr>
-                        <tr>
-                            <td>阻止无效值</td>
-                            <td>✅ stop/warning/info</td>
-                            <td>✅ stop/warning/info</td>
-                            <td>⚠️ 仅阻止（无级别）</td>
-                        </tr>
-                        <tr>
-                            <td>自定义消息</td>
-                            <td>✅ errorMessage</td>
-                            <td>⚠️ 自动生成</td>
-                            <td>⚠️ 返回 string</td>
-                        </tr>
-                        <tr>
-                            <td>序列化</td>
-                            <td>从 columns 重建</td>
-                            <td>从 columns 重建</td>
-                            <td>从 columns 重建</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ═══ 列配置详情 ═══ -->
-            <div class="demo-section">
-                <h2 class="section-title"><span>📋</span> 列配置详情</h2>
-                <table class="compare-table" id="columnDetailTable">
-                    <thead>
-                        <tr>
-                            <th>列</th>
-                            <th>字段</th>
-                            <th>列类型</th>
-                            <th>验证类型</th>
-                            <th>验证规则</th>
-                            <th>errorStyle</th>
-                            <th>模式</th>
-                        </tr>
-                    </thead>
-                    <tbody id="columnDetailBody"></tbody>
-                </table>
-            </div>
-
-            <!-- ═══ 冲突解决机制 ═══ -->
-            <div class="demo-section">
-                <h2 class="section-title"><span>⚡</span> 冲突解决机制</h2>
-                <p style="color:#666;font-size:13px;margin-bottom:16px;line-height:1.8;">
-                    当 <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;">pluginOptions.dataValidation.rules</code> 中的<strong>手动规则</strong>
-                    与 <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;">columns[].validation</code> 产生的<strong>自动规则</strong>
-                    覆盖同一列的同类验证时，存在两层冲突解决机制：
-                </p>
-
-                <div class="conflict-layer-grid">
-                    <div class="conflict-layer-card">
-                        <div class="layer-badge">第一层</div>
-                        <div class="layer-name">规则注册阶段 — 手动优先，跳过自动</div>
-                        <div class="layer-desc">
-                            桥接器在 <code>syncColumn()</code> 时检测同列是否已存在<strong>同类型</strong>的手动规则
-                            （<code>metadata.source !== "column-validation"</code>）。
-                            若存在，<strong>跳过自动规则注册</strong>，仅标记 <code>markBridgeTaken</code>。
-                        </div>
-                        <div class="layer-code">if (respectManualRules &amp;&amp; hasManualRuleForColumn(col, rule.type)) {
-    markBridgeTaken(col);   // 仍标记桥接接管
-    return;                  // 不注册自动规则
-}</div>
-                    </div>
-                    <div class="conflict-layer-card">
-                        <div class="layer-badge">第二层</div>
-                        <div class="layer-name">验证执行阶段 — conflictStrategy</div>
-                        <div class="layer-desc">
-                            当同列存在多条不同类型规则时（如手动 <code>list</code> + 自动 <code>number</code>），
-                            由 <code>conflictStrategy</code> 决定多规则执行顺序。
-                        </div>
-                        <div class="layer-code">conflictStrategy: "short-circuit"  // 首条失败即返回
-conflictStrategy: "priority"       // 最后一条结果覆盖
-conflictStrategy: "aggregate"      // 收集所有错误合并</div>
+                <div class="feature-card">
+                    <div class="tag">向后兼容</div>
+                    <div class="name">options 推断模式</div>
+                    <div class="desc">无 validation 时，桥接器从 type + options 自动推断验证规则</div>
+                    <div class="code">{ type: "numeric",
+                        options: { min: 0, max: 100 }
+                        }
+                        // → 自动推断 number between [0,100]
                     </div>
                 </div>
+                <div class="feature-card">
+                    <div class="tag">安全降级</div>
+                    <div class="name">插件未启用兜底</div>
+                    <div class="desc">DataValidationPlugin 未启用时，列类型 validate() 兜底，仍可阻止无效值</div>
+                    <div class="code">// 无插件时：
+                        validateCellValue(r, c, val)
+                        → 列类型 validate() 正常阻止
 
-                <h3 style="font-size:1.1em;color:#4a5568;margin:20px 0 12px;">🧩 三种 conflictStrategy 行为对比</h3>
-                <table class="compare-table">
-                    <thead>
-                        <tr>
-                            <th style="width:140px;">策略</th>
-                            <th>行为</th>
-                            <th style="width:200px;">适用场景</th>
-                            <th style="width:120px;">优先级排序</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>short-circuit</code></td>
-                            <td>按优先级从小到大执行，<strong>首条失败立即返回</strong>，不再检查后续规则</td>
-                            <td>快速拦截，性能最优（默认）</td>
-                            <td>priority 0 → 1000</td>
-                        </tr>
-                        <tr>
-                            <td><code>priority</code></td>
-                            <td>按优先级从小到大执行，<strong>最后一条规则结果覆盖</strong>前面所有结果</td>
-                            <td>高优先级规则拥有最终决定权</td>
-                            <td>priority 0 → 1000</td>
-                        </tr>
-                        <tr>
-                            <td><code>aggregate</code></td>
-                            <td>执行<strong>所有规则</strong>，将所有错误消息用 <code>;</code> 合并返回</td>
-                            <td>需要展示所有违规信息</td>
-                            <td>全部执行</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <h3 style="font-size:1.1em;color:#4a5568;margin:20px 0 12px;">📌 优先级体系</h3>
-                <div class="priority-flow">
-                    <div class="priority-item">
-                        <div class="priority-num">0</div>
-                        <div class="priority-info">
-                            <strong>手动规则</strong>（pluginOptions.rules）
-                            <span class="priority-tag manual">手动</span>
-                        </div>
-                        <div class="priority-desc">用户在 pluginOptions.dataValidation.rules 中显式声明，priority 默认为 0</div>
-                    </div>
-                    <div class="priority-arrow">▼</div>
-                    <div class="priority-item">
-                        <div class="priority-num">1000</div>
-                        <div class="priority-info">
-                            <strong>自动规则</strong>（桥接器生成）
-                            <span class="priority-tag auto">自动</span>
-                        </div>
-                        <div class="priority-desc">从 columns[].validation 或 type+options 推断生成，priority 固定为 1000</div>
+                        // 有插件时：
+                        validateCellValue(r, c, val)
+                        → 降级为仅提示，插件统一拦截
                     </div>
                 </div>
-
-                <h3 style="font-size:1.1em;color:#4a5568;margin:20px 0 12px;">🔄 冲突场景与解决结果</h3>
-                <table class="compare-table">
-                    <thead>
-                        <tr>
-                            <th style="width:60px;">场景</th>
-                            <th style="width:200px;">配置</th>
-                            <th>解决方式</th>
-                            <th style="width:180px;">最终生效规则</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="font-weight:700;color:#667eea;">A</td>
-                            <td style="font-size:12px;">同列同类：手动 <code>number between [0,50]</code> + 列配置 <code>validation: { number between [0,100] }</code></td>
-                            <td>第一层：桥接器检测到同列已有手动 <code>number</code> 规则 → <strong>跳过自动规则注册</strong></td>
-                            <td><span class="priority-tag manual">手动</span> number [0,50]</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight:700;color:#667eea;">B</td>
-                            <td style="font-size:12px;">同列异类：手动 <code>list</code> 规则 + 列配置 <code>validation: { number between [0,100] }</code></td>
-                            <td>第一层：类型不同(<code>list</code>≠<code>number</code>) → 自动规则正常注册<br>第二层：两条规则按 conflictStrategy 执行</td>
-                            <td><span class="priority-tag manual">手动</span> list + <span class="priority-tag auto">自动</span> number</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight:700;color:#667eea;">C</td>
-                            <td style="font-size:12px;">仅自动：列配置 <code>validation: { number between [0,100] }</code>，无手动规则</td>
-                            <td>桥接器正常注册自动规则</td>
-                            <td><span class="priority-tag auto">自动</span> number [0,100]</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight:700;color:#667eea;">D</td>
-                            <td style="font-size:12px;">手动规则被移除：原场景 A 中手动规则被 <code>removeRule()</code></td>
-                            <td>桥接器 <code>onManualRuleRemoved()</code> 自动回补自动规则</td>
-                            <td><span class="priority-tag auto">自动</span> number [0,100]（回补）</td>
-                        </tr>
-                        <tr>
-                            <td style="font-weight:700;color:#667eea;">E</td>
-                            <td style="font-size:12px;">关闭手动优先：<code>bridgeOptions: { respectManualRules: false }</code></td>
-                            <td>桥接器不检查手动规则，自动规则始终注册（可能同列同类双规则）</td>
-                            <td><span class="priority-tag manual">手动</span> + <span class="priority-tag auto">自动</span> 共存</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- ═══ 冲突演示 ═══ -->
-            <div class="demo-section">
-                <h2 class="section-title"><span>🧪</span> 冲突解决交互演示</h2>
-                <p style="color:#666;font-size:13px;margin-bottom:16px;">
-                    以下演示场景 A（同列同类冲突）和场景 B（同列异类共存），可切换 conflictStrategy 观察行为差异。
-                </p>
-                <div class="control-bar">
-                    <button class="btn btn-primary" onclick="demoConflictA()">🅰️ 场景A：同列同类冲突</button>
-                    <button class="btn btn-info" onclick="demoConflictB()">🅱️ 场景B：同列异类共存</button>
-                    <button class="btn btn-success" onclick="demoConflictC()">🅲️ 场景C：仅自动规则</button>
-                    <button class="btn btn-warning" onclick="demoConflictE()">🅴️ 场景E：关闭手动优先</button>
+                <div class="feature-card">
+                    <div class="tag">手动优先</div>
+                    <div class="name">手动规则优先级</div>
+                    <div class="desc">pluginOptions.rules 中的手动规则优先级高于自动生成的规则</div>
+                    <div class="code">// 手动规则 priority: 0
+                        // 自动规则 priority: 1000
+                        // 手动规则优先执行
+                    </div>
                 </div>
-                <div class="control-bar" style="margin-top:8px;">
-                    <label>conflictStrategy：</label>
-                    <select id="conflictStrategySelect" onchange="switchConflictStrategy()">
-                        <option value="short-circuit">short-circuit（首条失败即返回）</option>
-                        <option value="priority">priority（最后一条覆盖）</option>
-                        <option value="aggregate">aggregate（合并所有错误）</option>
-                    </select>
-                    <button class="btn btn-danger" onclick="testConflictValue()">🧪 输入测试值 999 验证</button>
+                <div class="feature-card">
+                    <div class="tag">增量同步</div>
+                    <div class="name">配置变更自动同步</div>
+                    <div class="desc">columns 配置变更时，桥接器增量同步验证规则，未变更列跳过</div>
+                    <div class="code">sheet.applyColumnsConfig(newCols)
+                        → COLUMN_CONFIG_CHANGED 事件
+                        → bridge.syncFromColumnConfig()
+                    </div>
                 </div>
-                <div class="canvas-container"><canvas id="conflictSheet"></canvas></div>
-                <div class="status-bar">
-                    <span>冲突场景: <strong id="conflictScenario">-</strong></span>
-                    <span>手动规则: <strong id="manualRuleCount">0</strong></span>
-                    <span>自动规则: <strong id="autoRuleCount">0</strong></span>
-                    <span>总规则: <strong id="totalRuleCount">0</strong></span>
-                    <span>策略: <strong id="currentStrategy">short-circuit</strong></span>
-                </div>
-                <div class="log-panel">
-                    <div class="log-title">📋 冲突演示日志</div>
-                    <div id="conflictLogContainer"></div>
+                <div class="feature-card">
+                    <div class="tag">序列化排除</div>
+                    <div class="name">自动规则不导出</div>
+                    <div class="desc">exportRules() 自动排除桥接器生成的规则，避免重复（可从列配置重建）</div>
+                    <div class="code">plugin.exportRules()
+                        // → 仅返回手动规则
+                        // 自动规则从 columns 重建
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="footer-bar">
-            <span class="status-indicator"><span class="status-dot"></span> Canvas-Sheet 列类型验证桥接演示</span>
-            <span>ColumnTypeValidationBridge v1.0</span>
+        <!-- ═══ 三种模式对比 ═══ -->
+        <div class="demo-section">
+            <h2 class="section-title"><span>⚖️</span> 三种模式对比</h2>
+            <table class="compare-table">
+                <thead>
+                <tr>
+                    <th>特性</th>
+                    <th>validation 子对象（推荐）</th>
+                    <th>options 推断（兼容）</th>
+                    <th>无插件（降级）</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>配置方式</td>
+                    <td><code>columns[].validation</code></td>
+                    <td><code>columns[].options</code></td>
+                    <td><code>columns[].type + options</code></td>
+                </tr>
+                <tr>
+                    <td>验证执行</td>
+                    <td>DataValidationPlugin</td>
+                    <td>DataValidationPlugin</td>
+                    <td>ColumnTypeManager.validate()</td>
+                </tr>
+                <tr>
+                    <td>错误弹框</td>
+                    <td>✅ 支持</td>
+                    <td>✅ 支持</td>
+                    <td>❌ 不支持</td>
+                </tr>
+                <tr>
+                    <td>无效高亮</td>
+                    <td>✅ 支持</td>
+                    <td>✅ 支持</td>
+                    <td>❌ 不支持</td>
+                </tr>
+                <tr>
+                    <td>验证图标</td>
+                    <td>✅ 支持</td>
+                    <td>✅ 支持</td>
+                    <td>❌ 不支持</td>
+                </tr>
+                <tr>
+                    <td>下拉箭头</td>
+                    <td>✅ showDropdown</td>
+                    <td>✅ 自动</td>
+                    <td>❌ 不支持</td>
+                </tr>
+                <tr>
+                    <td>阻止无效值</td>
+                    <td>✅ stop/warning/info</td>
+                    <td>✅ stop/warning/info</td>
+                    <td>⚠️ 仅阻止（无级别）</td>
+                </tr>
+                <tr>
+                    <td>自定义消息</td>
+                    <td>✅ errorMessage</td>
+                    <td>⚠️ 自动生成</td>
+                    <td>⚠️ 返回 string</td>
+                </tr>
+                <tr>
+                    <td>序列化</td>
+                    <td>从 columns 重建</td>
+                    <td>从 columns 重建</td>
+                    <td>从 columns 重建</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ═══ 列配置详情 ═══ -->
+        <div class="demo-section">
+            <h2 class="section-title"><span>📋</span> 列配置详情</h2>
+            <table class="compare-table" id="columnDetailTable">
+                <thead>
+                <tr>
+                    <th>列</th>
+                    <th>字段</th>
+                    <th>列类型</th>
+                    <th>验证类型</th>
+                    <th>验证规则</th>
+                    <th>errorStyle</th>
+                    <th>模式</th>
+                </tr>
+                </thead>
+                <tbody id="columnDetailBody"></tbody>
+            </table>
+        </div>
+
+        <!-- ═══ 冲突解决机制 ═══ -->
+        <div class="demo-section">
+            <h2 class="section-title"><span>⚡</span> 冲突解决机制</h2>
+            <p style="color:#666;font-size:13px;margin-bottom:16px;line-height:1.8;">
+                当 <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;">pluginOptions.dataValidation.rules</code>
+                中的<strong>手动规则</strong>
+                与 <code style="background:#f0f0f0;padding:2px 6px;border-radius:4px;">columns[].validation</code> 产生的<strong>自动规则</strong>
+                覆盖同一列的同类验证时，存在两层冲突解决机制：
+            </p>
+
+            <div class="conflict-layer-grid">
+                <div class="conflict-layer-card">
+                    <div class="layer-badge">第一层</div>
+                    <div class="layer-name">规则注册阶段 — 手动优先，跳过自动</div>
+                    <div class="layer-desc">
+                        桥接器在 <code>syncColumn()</code> 时检测同列是否已存在<strong>同类型</strong>的手动规则
+                        （<code>metadata.source !== "column-validation"</code>）。
+                        若存在，<strong>跳过自动规则注册</strong>，仅标记 <code>markBridgeTaken</code>。
+                    </div>
+                    <div class="layer-code">if (respectManualRules &amp;&amp; hasManualRuleForColumn(col, rule.type)) {
+                        markBridgeTaken(col); // 仍标记桥接接管
+                        return; // 不注册自动规则
+                        }
+                    </div>
+                </div>
+                <div class="conflict-layer-card">
+                    <div class="layer-badge">第二层</div>
+                    <div class="layer-name">验证执行阶段 — conflictStrategy</div>
+                    <div class="layer-desc">
+                        当同列存在多条不同类型规则时（如手动 <code>list</code> + 自动 <code>number</code>），
+                        由 <code>conflictStrategy</code> 决定多规则执行顺序。
+                    </div>
+                    <div class="layer-code">conflictStrategy: "short-circuit" // 首条失败即返回
+                        conflictStrategy: "priority" // 最后一条结果覆盖
+                        conflictStrategy: "aggregate" // 收集所有错误合并
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="font-size:1.1em;color:#4a5568;margin:20px 0 12px;">🧩 三种 conflictStrategy 行为对比</h3>
+            <table class="compare-table">
+                <thead>
+                <tr>
+                    <th style="width:140px;">策略</th>
+                    <th>行为</th>
+                    <th style="width:200px;">适用场景</th>
+                    <th style="width:120px;">优先级排序</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><code>short-circuit</code></td>
+                    <td>按优先级从小到大执行，<strong>首条失败立即返回</strong>，不再检查后续规则</td>
+                    <td>快速拦截，性能最优（默认）</td>
+                    <td>priority 0 → 1000</td>
+                </tr>
+                <tr>
+                    <td><code>priority</code></td>
+                    <td>按优先级从小到大执行，<strong>最后一条规则结果覆盖</strong>前面所有结果</td>
+                    <td>高优先级规则拥有最终决定权</td>
+                    <td>priority 0 → 1000</td>
+                </tr>
+                <tr>
+                    <td><code>aggregate</code></td>
+                    <td>执行<strong>所有规则</strong>，将所有错误消息用 <code>;</code> 合并返回</td>
+                    <td>需要展示所有违规信息</td>
+                    <td>全部执行</td>
+                </tr>
+                </tbody>
+            </table>
+
+            <h3 style="font-size:1.1em;color:#4a5568;margin:20px 0 12px;">📌 优先级体系</h3>
+            <div class="priority-flow">
+                <div class="priority-item">
+                    <div class="priority-num">0</div>
+                    <div class="priority-info">
+                        <strong>手动规则</strong>（pluginOptions.rules）
+                        <span class="priority-tag manual">手动</span>
+                    </div>
+                    <div class="priority-desc">用户在 pluginOptions.dataValidation.rules 中显式声明，priority 默认为 0
+                    </div>
+                </div>
+                <div class="priority-arrow">▼</div>
+                <div class="priority-item">
+                    <div class="priority-num">1000</div>
+                    <div class="priority-info">
+                        <strong>自动规则</strong>（桥接器生成）
+                        <span class="priority-tag auto">自动</span>
+                    </div>
+                    <div class="priority-desc">从 columns[].validation 或 type+options 推断生成，priority 固定为 1000
+                    </div>
+                </div>
+            </div>
+
+            <h3 style="font-size:1.1em;color:#4a5568;margin:20px 0 12px;">🔄 冲突场景与解决结果</h3>
+            <table class="compare-table">
+                <thead>
+                <tr>
+                    <th style="width:60px;">场景</th>
+                    <th style="width:200px;">配置</th>
+                    <th>解决方式</th>
+                    <th style="width:180px;">最终生效规则</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td style="font-weight:700;color:#667eea;">A</td>
+                    <td style="font-size:12px;">同列同类：手动 <code>number between [0,50]</code> + 列配置 <code>validation:
+                        { number between [0,100] }</code></td>
+                    <td>第一层：桥接器检测到同列已有手动 <code>number</code> 规则 → <strong>跳过自动规则注册</strong>
+                    </td>
+                    <td><span class="priority-tag manual">手动</span> number [0,50]</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;color:#667eea;">B</td>
+                    <td style="font-size:12px;">同列异类：手动 <code>list</code> 规则 + 列配置 <code>validation: { number
+                        between [0,100] }</code></td>
+                    <td>第一层：类型不同(<code>list</code>≠<code>number</code>) → 自动规则正常注册<br>第二层：两条规则按
+                        conflictStrategy 执行
+                    </td>
+                    <td><span class="priority-tag manual">手动</span> list + <span class="priority-tag auto">自动</span>
+                        number
+                    </td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;color:#667eea;">C</td>
+                    <td style="font-size:12px;">仅自动：列配置 <code>validation: { number between [0,100] }</code>，无手动规则
+                    </td>
+                    <td>桥接器正常注册自动规则</td>
+                    <td><span class="priority-tag auto">自动</span> number [0,100]</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;color:#667eea;">D</td>
+                    <td style="font-size:12px;">手动规则被移除：原场景 A 中手动规则被 <code>removeRule()</code></td>
+                    <td>桥接器 <code>onManualRuleRemoved()</code> 自动回补自动规则</td>
+                    <td><span class="priority-tag auto">自动</span> number [0,100]（回补）</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;color:#667eea;">E</td>
+                    <td style="font-size:12px;">关闭手动优先：<code>bridgeOptions: { respectManualRules: false }</code>
+                    </td>
+                    <td>桥接器不检查手动规则，自动规则始终注册（可能同列同类双规则）</td>
+                    <td><span class="priority-tag manual">手动</span> + <span class="priority-tag auto">自动</span> 共存
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ═══ 冲突演示 ═══ -->
+        <div class="demo-section">
+            <h2 class="section-title"><span>🧪</span> 冲突解决交互演示</h2>
+            <p style="color:#666;font-size:13px;margin-bottom:16px;">
+                以下演示场景 A（同列同类冲突）和场景 B（同列异类共存），可切换 conflictStrategy 观察行为差异。
+            </p>
+            <div class="control-bar">
+                <button class="btn btn-primary" onclick="demoConflictA()">🅰️ 场景A：同列同类冲突</button>
+                <button class="btn btn-info" onclick="demoConflictB()">🅱️ 场景B：同列异类共存</button>
+                <button class="btn btn-success" onclick="demoConflictC()">🅲️ 场景C：仅自动规则</button>
+                <button class="btn btn-warning" onclick="demoConflictE()">🅴️ 场景E：关闭手动优先</button>
+            </div>
+            <div class="control-bar" style="margin-top:8px;">
+                <label>conflictStrategy：</label>
+                <select id="conflictStrategySelect" onchange="switchConflictStrategy()">
+                    <option value="short-circuit">short-circuit（首条失败即返回）</option>
+                    <option value="priority">priority（最后一条覆盖）</option>
+                    <option value="aggregate">aggregate（合并所有错误）</option>
+                </select>
+                <button class="btn btn-danger" onclick="testConflictValue()">🧪 输入测试值 999 验证</button>
+            </div>
+            <div class="canvas-container">
+                <canvas id="conflictSheet"></canvas>
+            </div>
+            <div class="status-bar">
+                <span>冲突场景: <strong id="conflictScenario">-</strong></span>
+                <span>手动规则: <strong id="manualRuleCount">0</strong></span>
+                <span>自动规则: <strong id="autoRuleCount">0</strong></span>
+                <span>总规则: <strong id="totalRuleCount">0</strong></span>
+                <span>策略: <strong id="currentStrategy">short-circuit</strong></span>
+            </div>
+            <div class="log-panel">
+                <div class="log-title">📋 冲突演示日志</div>
+                <div id="conflictLogContainer"></div>
+            </div>
         </div>
     </div>
 
+    <div class="footer-bar">
+        <span class="status-indicator"><span class="status-dot"></span> Canvas-Sheet 列类型验证桥接演示</span>
+        <span>ColumnTypeValidationBridge v1.0</span>
+    </div>
+</div>
+
 <script src="../../dist/canvas-sheet.umd.js"></script>
 <script>
-(function() {
-    var workbook = null;
-    var dvPlugin = null;
-    var currentMode = 'bridge';
+    (function () {
+        var workbook = null;
+        var dvPlugin = null;
+        var currentMode = 'bridge';
 
-    var DEPARTMENTS = ['技术部', '市场部', '财务部', '人事部', '运营部'];
-    var LEVELS = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'];
-    var STATUS = ['在职', '离职', '休假'];
+        var DEPARTMENTS = ['技术部', '市场部', '财务部', '人事部', '运营部'];
+        var LEVELS = ['P1', 'P2', 'P3', 'P4', 'P5', 'P6'];
+        var STATUS = ['在职', '离职', '休假'];
 
-    var sampleData = [
-        ['工号', '姓名', '部门', '职级', '薪资(K)', '入职日期', '绩效分', '状态', '邮箱', '年龄'],
-        [1001, '张三', '技术部', 'P3', 25, '2022-03-15', 85, '在职', 'zhangsan@co.com', 28],
-        [1002, '李四', '市场部', 'P4', 30, '2021-07-20', 92, '在职', 'lisi@co.com', 32],
-        [1003, '王五', '财务部', 'P2', 18, '2023-01-10', 78, '在职', 'wangwu@co.com', 25],
-        [1004, '赵六', '人事部', 'P3', 22, '2022-09-05', 88, '休假', 'zhaoliu@co.com', 30],
-        [1005, '钱七', '运营部', 'P5', 45, '2020-11-30', 95, '在职', 'qianqi@co.com', 38],
-        [1006, '孙八', '技术部', 'P2', 20, '2023-06-18', 72, '在职', 'sunba@co.com', 26],
-        [1007, '周九', '市场部', 'P3', 28, '2022-04-22', 81, '离职', 'zhoujiu@co.com', 29],
-        [1008, '吴十', '技术部', 'P4', 35, '2021-02-14', 90, '在职', 'wushi@co.com', 34],
-    ];
+        var sampleData = [
+            ['工号', '姓名', '部门', '职级', '薪资(K)', '入职日期', '绩效分', '状态', '邮箱', '年龄'],
+            [1001, '张三', '技术部', 'P3', 25, '2022-03-15', 85, '在职', 'zhangsan@co.com', 28],
+            [1002, '李四', '市场部', 'P4', 30, '2021-07-20', 92, '在职', 'lisi@co.com', 32],
+            [1003, '王五', '财务部', 'P2', 18, '2023-01-10', 78, '在职', 'wangwu@co.com', 25],
+            [1004, '赵六', '人事部', 'P3', 22, '2022-09-05', 88, '休假', 'zhaoliu@co.com', 30],
+            [1005, '钱七', '运营部', 'P5', 45, '2020-11-30', 95, '在职', 'qianqi@co.com', 38],
+            [1006, '孙八', '技术部', 'P2', 20, '2023-06-18', 72, '在职', 'sunba@co.com', 26],
+            [1007, '周九', '市场部', 'P3', 28, '2022-04-22', 81, '离职', 'zhoujiu@co.com', 29],
+            [1008, '吴十', '技术部', 'P4', 35, '2021-02-14', 90, '在职', 'wushi@co.com', 34],
+        ];
 
-    var bridgeColumns = [
-        {
-            type: 'numeric', width: 60,
-            validation: { type: 'number', operator: 'between', value: [1000, 9999], errorMessage: '工号必须是 1000-9999', errorStyle: 'stop' }
-        },
-        {
-            type: 'text', width: 70,
-            validation: { type: 'text', operator: 'lengthBetween', value: [2, 10], errorMessage: '姓名长度 2-10 个字符', errorStyle: 'stop' }
-        },
-        {
-            type: 'select', width: 75, options: { source: DEPARTMENTS },
-            validation: { type: 'list', source: DEPARTMENTS, showDropdown: true, errorMessage: '请从下拉列表选择部门', errorStyle: 'warning' }
-        },
-        {
-            type: 'select', width: 55, options: { source: LEVELS },
-            validation: { type: 'list', source: LEVELS, showDropdown: true, errorMessage: '请选择 P1-P6', errorStyle: 'stop' }
-        },
-        {
-            type: 'numeric', width: 65,
-            validation: { type: 'number', operator: 'between', value: [10, 100], errorMessage: '薪资范围 10-100K', errorStyle: 'warning' }
-        },
-        {
-            type: 'date', width: 95,
-            validation: { type: 'date', operator: 'between', value: ['2020-01-01', '2030-12-31'], errorMessage: '日期超出有效范围', errorStyle: 'warning' }
-        },
-        {
-            type: 'numeric', width: 60,
-            validation: { type: 'number', operator: 'between', value: [0, 100], errorMessage: '绩效分 0-100', errorStyle: 'stop' }
-        },
-        {
-            type: 'select', width: 55, options: { source: STATUS },
-            validation: { type: 'list', source: STATUS, showDropdown: true, errorMessage: '请选择在职/离职/休假', errorStyle: 'stop' }
-        },
-        {
-            type: 'text', width: 120,
-            validation: { type: 'regex', pattern: '^[\\w.-]+@[\\w.-]+\\.\\w+$', errorMessage: '请输入有效邮箱地址', errorStyle: 'warning' }
-        },
-        {
-            type: 'numeric', width: 50,
-            validation: { type: 'number', operator: 'between', value: [18, 65], errorMessage: '年龄范围 18-65', errorStyle: 'stop' }
+        var bridgeColumns = [
+            {
+                type: 'numeric', width: 60,
+                validation: {
+                    type: 'number',
+                    operator: 'between',
+                    value: [1000, 9999],
+                    errorMessage: '工号必须是 1000-9999',
+                    errorStyle: 'stop'
+                }
+            },
+            {
+                type: 'text', width: 70,
+                validation: {
+                    type: 'text',
+                    operator: 'lengthBetween',
+                    value: [2, 10],
+                    errorMessage: '姓名长度 2-10 个字符',
+                    errorStyle: 'stop'
+                }
+            },
+            {
+                type: 'select', width: 75, options: {source: DEPARTMENTS},
+                validation: {
+                    type: 'list',
+                    source: DEPARTMENTS,
+                    showDropdown: true,
+                    errorMessage: '请从下拉列表选择部门',
+                    errorStyle: 'warning'
+                }
+            },
+            {
+                type: 'select', width: 55, options: {source: LEVELS},
+                validation: {
+                    type: 'list',
+                    source: LEVELS,
+                    showDropdown: true,
+                    errorMessage: '请选择 P1-P6',
+                    errorStyle: 'stop'
+                }
+            },
+            {
+                type: 'numeric', width: 65,
+                validation: {
+                    type: 'number',
+                    operator: 'between',
+                    value: [10, 100],
+                    errorMessage: '薪资范围 10-100K',
+                    errorStyle: 'warning'
+                }
+            },
+            {
+                type: 'date', width: 95,
+                validation: {
+                    type: 'date',
+                    operator: 'between',
+                    value: ['2020-01-01', '2030-12-31'],
+                    errorMessage: '日期超出有效范围',
+                    errorStyle: 'warning'
+                }
+            },
+            {
+                type: 'numeric', width: 60,
+                validation: {
+                    type: 'number',
+                    operator: 'between',
+                    value: [0, 100],
+                    errorMessage: '绩效分 0-100',
+                    errorStyle: 'stop'
+                }
+            },
+            {
+                type: 'select', width: 55, options: {source: STATUS},
+                validation: {
+                    type: 'list',
+                    source: STATUS,
+                    showDropdown: true,
+                    errorMessage: '请选择在职/离职/休假',
+                    errorStyle: 'stop'
+                }
+            },
+            {
+                type: 'text', width: 120,
+                validation: {
+                    type: 'regex',
+                    pattern: '^[\\w.-]+@[\\w.-]+\\.\\w+$',
+                    errorMessage: '请输入有效邮箱地址',
+                    errorStyle: 'warning'
+                }
+            },
+            {
+                type: 'numeric', width: 50,
+                validation: {
+                    type: 'number',
+                    operator: 'between',
+                    value: [18, 65],
+                    errorMessage: '年龄范围 18-65',
+                    errorStyle: 'stop'
+                }
+            }
+        ];
+
+        var legacyColumns = [
+            {type: 'numeric', width: 60, options: {min: 1000, max: 9999}},
+            {type: 'text', width: 70},
+            {type: 'select', width: 75, options: {source: DEPARTMENTS}},
+            {type: 'select', width: 55, options: {source: LEVELS}},
+            {type: 'numeric', width: 65, options: {min: 10, max: 100}},
+            {type: 'date', width: 95},
+            {type: 'numeric', width: 60, options: {min: 0, max: 100}},
+            {type: 'select', width: 55, options: {source: STATUS}},
+            {type: 'text', width: 120},
+            {type: 'numeric', width: 50, options: {min: 18, max: 65}}
+        ];
+
+        var noPluginColumns = [
+            {type: 'numeric', width: 60, options: {min: 1000, max: 9999}},
+            {type: 'text', width: 70},
+            {type: 'select', width: 75, options: {source: DEPARTMENTS}},
+            {type: 'select', width: 55, options: {source: LEVELS}},
+            {type: 'numeric', width: 65, options: {min: 10, max: 100}},
+            {type: 'date', width: 95},
+            {type: 'numeric', width: 60, options: {min: 0, max: 100}},
+            {type: 'select', width: 55, options: {source: STATUS}},
+            {type: 'text', width: 120},
+            {type: 'numeric', width: 50, options: {min: 18, max: 65}}
+        ];
+
+        var columnDetails = [
+            {
+                col: 'A',
+                field: '工号',
+                type: 'numeric',
+                vType: 'number',
+                rule: 'between [1000, 9999]',
+                errorStyle: 'stop',
+                mode: '直传'
+            },
+            {
+                col: 'B',
+                field: '姓名',
+                type: 'text',
+                vType: 'text',
+                rule: 'lengthBetween [2, 10]',
+                errorStyle: 'stop',
+                mode: '直传'
+            },
+            {
+                col: 'C',
+                field: '部门',
+                type: 'select',
+                vType: 'list',
+                rule: 'source: 5个部门',
+                errorStyle: 'warning',
+                mode: '直传'
+            },
+            {
+                col: 'D',
+                field: '职级',
+                type: 'select',
+                vType: 'list',
+                rule: 'source: P1-P6',
+                errorStyle: 'stop',
+                mode: '直传'
+            },
+            {
+                col: 'E',
+                field: '薪资(K)',
+                type: 'numeric',
+                vType: 'number',
+                rule: 'between [10, 100]',
+                errorStyle: 'warning',
+                mode: '直传'
+            },
+            {
+                col: 'F',
+                field: '入职日期',
+                type: 'date',
+                vType: 'date',
+                rule: 'between [2020, 2030]',
+                errorStyle: 'warning',
+                mode: '直传'
+            },
+            {
+                col: 'G',
+                field: '绩效分',
+                type: 'numeric',
+                vType: 'number',
+                rule: 'between [0, 100]',
+                errorStyle: 'stop',
+                mode: '直传'
+            },
+            {
+                col: 'H',
+                field: '状态',
+                type: 'select',
+                vType: 'list',
+                rule: 'source: 3种状态',
+                errorStyle: 'stop',
+                mode: '直传'
+            },
+            {
+                col: 'I',
+                field: '邮箱',
+                type: 'text',
+                vType: 'regex',
+                rule: '邮箱正则',
+                errorStyle: 'warning',
+                mode: '直传'
+            },
+            {
+                col: 'J',
+                field: '年龄',
+                type: 'numeric',
+                vType: 'number',
+                rule: 'between [18, 65]',
+                errorStyle: 'stop',
+                mode: '直传'
+            }
+        ];
+
+        function log(msg, type) {
+            type = type || 'info';
+            var container = document.getElementById('logContainer');
+            var entry = document.createElement('div');
+            entry.className = 'log-entry log-' + type;
+            var now = new Date();
+            var ts = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
+            entry.textContent = '[' + ts + '] ' + msg;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
         }
-    ];
 
-    var legacyColumns = [
-        { type: 'numeric', width: 60, options: { min: 1000, max: 9999 } },
-        { type: 'text', width: 70 },
-        { type: 'select', width: 75, options: { source: DEPARTMENTS } },
-        { type: 'select', width: 55, options: { source: LEVELS } },
-        { type: 'numeric', width: 65, options: { min: 10, max: 100 } },
-        { type: 'date', width: 95 },
-        { type: 'numeric', width: 60, options: { min: 0, max: 100 } },
-        { type: 'select', width: 55, options: { source: STATUS } },
-        { type: 'text', width: 120 },
-        { type: 'numeric', width: 50, options: { min: 18, max: 65 } }
-    ];
-
-    var noPluginColumns = [
-        { type: 'numeric', width: 60, options: { min: 1000, max: 9999 } },
-        { type: 'text', width: 70 },
-        { type: 'select', width: 75, options: { source: DEPARTMENTS } },
-        { type: 'select', width: 55, options: { source: LEVELS } },
-        { type: 'numeric', width: 65, options: { min: 10, max: 100 } },
-        { type: 'date', width: 95 },
-        { type: 'numeric', width: 60, options: { min: 0, max: 100 } },
-        { type: 'select', width: 55, options: { source: STATUS } },
-        { type: 'text', width: 120 },
-        { type: 'numeric', width: 50, options: { min: 18, max: 65 } }
-    ];
-
-    var columnDetails = [
-        { col: 'A', field: '工号', type: 'numeric', vType: 'number', rule: 'between [1000, 9999]', errorStyle: 'stop', mode: '直传' },
-        { col: 'B', field: '姓名', type: 'text', vType: 'text', rule: 'lengthBetween [2, 10]', errorStyle: 'stop', mode: '直传' },
-        { col: 'C', field: '部门', type: 'select', vType: 'list', rule: 'source: 5个部门', errorStyle: 'warning', mode: '直传' },
-        { col: 'D', field: '职级', type: 'select', vType: 'list', rule: 'source: P1-P6', errorStyle: 'stop', mode: '直传' },
-        { col: 'E', field: '薪资(K)', type: 'numeric', vType: 'number', rule: 'between [10, 100]', errorStyle: 'warning', mode: '直传' },
-        { col: 'F', field: '入职日期', type: 'date', vType: 'date', rule: 'between [2020, 2030]', errorStyle: 'warning', mode: '直传' },
-        { col: 'G', field: '绩效分', type: 'numeric', vType: 'number', rule: 'between [0, 100]', errorStyle: 'stop', mode: '直传' },
-        { col: 'H', field: '状态', type: 'select', vType: 'list', rule: 'source: 3种状态', errorStyle: 'stop', mode: '直传' },
-        { col: 'I', field: '邮箱', type: 'text', vType: 'regex', rule: '邮箱正则', errorStyle: 'warning', mode: '直传' },
-        { col: 'J', field: '年龄', type: 'numeric', vType: 'number', rule: 'between [18, 65]', errorStyle: 'stop', mode: '直传' }
-    ];
-
-    function log(msg, type) {
-        type = type || 'info';
-        var container = document.getElementById('logContainer');
-        var entry = document.createElement('div');
-        entry.className = 'log-entry log-' + type;
-        var now = new Date();
-        var ts = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
-        entry.textContent = '[' + ts + '] ' + msg;
-        container.appendChild(entry);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function clearLog() {
-        document.getElementById('logContainer').innerHTML = '';
-    }
-
-    function updateStatus() {
-        var pluginEl = document.getElementById('pluginStatus');
-        var bridgeEl = document.getElementById('bridgeStatus');
-        var modeEl = document.getElementById('modeDisplay');
-        var ruleEl = document.getElementById('ruleCount');
-        var dotEl = document.getElementById('statusDot');
-
-        if (dvPlugin && dvPlugin.active) {
-            pluginEl.textContent = '已激活';
-            pluginEl.className = 'badge badge-active';
-            dotEl.style.background = '#28a745';
-        } else {
-            pluginEl.textContent = '未激活';
-            pluginEl.className = 'badge badge-inactive';
-            dotEl.style.background = '#dc3545';
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
         }
 
-        if (dvPlugin && dvPlugin.bridge && dvPlugin.bridge.active) {
-            bridgeEl.textContent = '已激活';
-            bridgeEl.className = 'badge badge-active';
-        } else {
-            bridgeEl.textContent = '未激活';
-            bridgeEl.className = 'badge badge-inactive';
+        function updateStatus() {
+            var pluginEl = document.getElementById('pluginStatus');
+            var bridgeEl = document.getElementById('bridgeStatus');
+            var modeEl = document.getElementById('modeDisplay');
+            var ruleEl = document.getElementById('ruleCount');
+            var dotEl = document.getElementById('statusDot');
+
+            if (dvPlugin && dvPlugin.active) {
+                pluginEl.textContent = '已激活';
+                pluginEl.className = 'badge badge-active';
+                dotEl.style.background = '#28a745';
+            } else {
+                pluginEl.textContent = '未激活';
+                pluginEl.className = 'badge badge-inactive';
+                dotEl.style.background = '#dc3545';
+            }
+
+            if (dvPlugin && dvPlugin.bridge && dvPlugin.bridge.active) {
+                bridgeEl.textContent = '已激活';
+                bridgeEl.className = 'badge badge-active';
+            } else {
+                bridgeEl.textContent = '未激活';
+                bridgeEl.className = 'badge badge-inactive';
+            }
+
+            modeEl.textContent = currentMode === 'bridge' ? 'validation 子对象' : currentMode === 'legacy' ? 'options 推断' : '无插件降级';
+
+            if (dvPlugin && dvPlugin.engine) {
+                ruleEl.textContent = dvPlugin.getAllRules().length;
+            } else {
+                ruleEl.textContent = '0';
+            }
         }
 
-        modeEl.textContent = currentMode === 'bridge' ? 'validation 子对象' : currentMode === 'legacy' ? 'options 推断' : '无插件降级';
-
-        if (dvPlugin && dvPlugin.engine) {
-            ruleEl.textContent = dvPlugin.getAllRules().length;
-        } else {
-            ruleEl.textContent = '0';
+        function renderColumnDetails() {
+            var tbody = document.getElementById('columnDetailBody');
+            tbody.innerHTML = '';
+            var modeLabel = currentMode === 'bridge' ? '直传' : currentMode === 'legacy' ? '推断' : '降级';
+            columnDetails.forEach(function (d) {
+                var tr = document.createElement('tr');
+                var errorStyleColor = d.errorStyle === 'stop' ? '#dc3545' : d.errorStyle === 'warning' ? '#f59e0b' : '#17a2b8';
+                var errorStyleIcon = d.errorStyle === 'stop' ? '⛔' : d.errorStyle === 'warning' ? '⚠️' : 'ℹ️';
+                tr.innerHTML =
+                    '<td style="font-weight:700;color:#667eea;">' + d.col + '</td>' +
+                    '<td>' + d.field + '</td>' +
+                    '<td><code>' + d.type + '</code></td>' +
+                    '<td><span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + d.vType + '</span></td>' +
+                    '<td style="font-family:Consolas,monospace;font-size:12px;">' + d.rule + '</td>' +
+                    '<td style="color:' + errorStyleColor + ';font-weight:600;">' + d.errorStyle + ' ' + errorStyleIcon + '</td>' +
+                    '<td>' + modeLabel + '</td>';
+                tbody.appendChild(tr);
+            });
         }
-    }
 
-    function renderColumnDetails() {
-        var tbody = document.getElementById('columnDetailBody');
-        tbody.innerHTML = '';
-        var modeLabel = currentMode === 'bridge' ? '直传' : currentMode === 'legacy' ? '推断' : '降级';
-        columnDetails.forEach(function(d) {
-            var tr = document.createElement('tr');
-            var errorStyleColor = d.errorStyle === 'stop' ? '#dc3545' : d.errorStyle === 'warning' ? '#f59e0b' : '#17a2b8';
-            var errorStyleIcon = d.errorStyle === 'stop' ? '⛔' : d.errorStyle === 'warning' ? '⚠️' : 'ℹ️';
-            tr.innerHTML =
-                '<td style="font-weight:700;color:#667eea;">' + d.col + '</td>' +
-                '<td>' + d.field + '</td>' +
-                '<td><code>' + d.type + '</code></td>' +
-                '<td><span style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + d.vType + '</span></td>' +
-                '<td style="font-family:Consolas,monospace;font-size:12px;">' + d.rule + '</td>' +
-                '<td style="color:' + errorStyleColor + ';font-weight:600;">' + d.errorStyle + ' ' + errorStyleIcon + '</td>' +
-                '<td>' + modeLabel + '</td>';
-            tbody.appendChild(tr);
-        });
-    }
-
-    function destroyWorkbook() {
-        if (workbook) {
-            try { workbook.destroy(); } catch(e) {}
-            workbook = null;
-            dvPlugin = null;
+        function destroyWorkbook() {
+            if (workbook) {
+                try {
+                    workbook.destroy();
+                } catch (e) {
+                }
+                workbook = null;
+                dvPlugin = null;
+            }
         }
-    }
 
-    function createWorkbook(columns, plugins, pluginOptions) {
-        destroyWorkbook();
-        clearLog();
+        function createWorkbook(columns, plugins, pluginOptions) {
+            destroyWorkbook();
+            clearLog();
 
-        var container = document.getElementById('sheet');
-        container.width = 1400;
-        container.height = 400;
+            var container = document.getElementById('sheet');
+            container.width = 1400;
+            container.height = 400;
 
-        log('创建 Workbook, 模式=' + currentMode, 'info');
+            log('创建 Workbook, 模式=' + currentMode, 'info');
 
-        workbook = new CanvasSheet.Workbook(container, {
-            width: 1600, height: 400,
-            sheets: [{
-                name: '列验证桥接',
-                data: sampleData,
-                columns: columns,
-                cellPadding: 8
-            }],
-            plugins: plugins || [],
-            pluginOptions: pluginOptions || {}
-        });
+            workbook = new CanvasSheet.Workbook(container, {
+                width: 1600, height: 400,
+                sheets: [{
+                    name: '列验证桥接',
+                    data: sampleData,
+                    columns: columns,
+                    cellPadding: 8
+                }],
+                plugins: plugins || [],
+                pluginOptions: pluginOptions || {}
+            });
 
-        dvPlugin = workbook.getPlugin('dataValidation');
+            dvPlugin = workbook.getPlugin('dataValidation');
 
-        if (dvPlugin) {
-            log('✅ DataValidationPlugin 已激活', 'success');
-            if (dvPlugin.bridge) {
-                if (dvPlugin.bridge.active) {
-                    log('✅ ColumnTypeValidationBridge 已激活, 桥接列数=' + dvPlugin.bridge.getBridgeStatus().bridgedColumnCount, 'success');
+            if (dvPlugin) {
+                log('✅ DataValidationPlugin 已激活', 'success');
+                if (dvPlugin.bridge) {
+                    if (dvPlugin.bridge.active) {
+                        log('✅ ColumnTypeValidationBridge 已激活, 桥接列数=' + dvPlugin.bridge.getBridgeStatus().bridgedColumnCount, 'success');
+                    } else {
+                        log('⚠️ 桥接器存在但未激活', 'warn');
+                    }
                 } else {
-                    log('⚠️ 桥接器存在但未激活', 'warn');
+                    log('⚠️ 桥接器未创建', 'warn');
                 }
             } else {
-                log('⚠️ 桥接器未创建', 'warn');
+                log('⚠️ DataValidationPlugin 未启用，列类型 validate() 兜底', 'warn');
             }
-        } else {
-            log('⚠️ DataValidationPlugin 未启用，列类型 validate() 兜底', 'warn');
-        }
 
-        updateStatus();
-        renderColumnDetails();
-    }
-
-    window.reinitWithBridge = function() {
-        currentMode = 'bridge';
-        log('═══ 切换到桥接模式（validation 子对象）═══', 'info');
-        createWorkbook(bridgeColumns, ['dataValidation', 'contextMenu', 'autoFill', 'copyPaste', 'freeze'], {
-            dataValidation: {
-                conflictStrategy: 'short-circuit',
-                bridgeColumnType: true
-            }
-        });
-    };
-
-    window.reinitWithLegacy = function() {
-        currentMode = 'legacy';
-        log('═══ 切换到向后兼容模式（options 推断）═══', 'info');
-        createWorkbook(legacyColumns, ['dataValidation', 'contextMenu', 'autoFill', 'copyPaste', 'freeze',   ], {
-            dataValidation: {
-                conflictStrategy: 'short-circuit',
-                bridgeColumnType: true
-            }
-        });
-    };
-
-    window.reinitWithoutPlugin = function() {
-        currentMode = 'noPlugin';
-        log('═══ 切换到无插件模式（安全降级）═══', 'info');
-        createWorkbook(noPluginColumns, ['contextMenu', 'autoFill', 'copyPaste', 'freeze'],   {});
-    };
-
-    window.validateAll = function() {
-        if (!dvPlugin || !dvPlugin.active) {
-            log('❌ DataValidationPlugin 未激活，无法批量验证', 'error');
-            return;
-        }
-        log('开始批量验证 A2:J9 ...', 'info');
-        dvPlugin.validateRange('A2:J9').then(function(results) {
-            var valid = 0, invalid = 0;
-            results.forEach(function(r) { r.valid ? valid++ : invalid++; });
-            log('✅ 批量验证完成: ' + valid + ' 通过, ' + invalid + ' 无效', invalid > 0 ? 'warn' : 'success');
             updateStatus();
-        }).catch(function(e) {
-            log('❌ 批量验证失败: ' + e.message, 'error');
-        });
-    };
-
-    window.showBridgeStatus = function() {
-        var panel = document.getElementById('bridgeStatusPanel');
-        var grid = document.getElementById('bridgeStatusGrid');
-
-        if (!dvPlugin || !dvPlugin.bridge) {
-            log('❌ 桥接器不可用', 'error');
-            panel.style.display = 'none';
-            return;
+            renderColumnDetails();
         }
 
-        panel.style.display = 'block';
-        var status = dvPlugin.bridge.getBridgeStatus();
-
-        grid.innerHTML =
-            '<div class="stat-card"><div class="stat-value">' + (status.active ? '✅' : '❌') + '</div><div class="stat-label">桥接器状态</div></div>' +
-            '<div class="stat-card"><div class="stat-value">' + status.autoRuleCount + '</div><div class="stat-label">自动规则数</div></div>' +
-            '<div class="stat-card"><div class="stat-value">' + status.bridgedColumnCount + '</div><div class="stat-label">桥接列数</div></div>';
-
-        log('🔍 桥接器状态: active=' + status.active + ', autoRules=' + status.autoRuleCount + ', bridgedCols=' + status.bridgedColumnCount, 'info');
-
-        if (status.details && status.details.length > 0) {
-            status.details.forEach(function(d) {
-                if (d.ruleId || d.hasValidation) {
-                    log('   列' + d.col + ': type=' + d.columnType + ', hasValidation=' + d.hasValidation + ', ruleId=' + (d.ruleId || 'none'), 'info');
-                }
-            });
-        }
-    };
-
-    window.exportRules = function() {
-        if (!dvPlugin || !dvPlugin.active) {
-            log('❌ 插件未激活', 'error');
-            return;
-        }
-        var rules = dvPlugin.exportRules();
-        log('📤 导出规则: ' + rules.length + ' 条（自动规则已排除）', 'success');
-        if (rules.length > 0) {
-            log('   ' + JSON.stringify(rules, null, 2).substring(0, 500), 'info');
-        } else {
-            log('   无手动规则（所有规则均由桥接器自动生成，从 columns 重建即可）', 'info');
-        }
-    };
-
-    // ═══ 冲突演示 ═══
-    var conflictWorkbook = null;
-    var conflictDvPlugin = null;
-    var currentConflictScenario = '-';
-
-    function conflictLog(msg, type) {
-        type = type || 'info';
-        var container = document.getElementById('conflictLogContainer');
-        var entry = document.createElement('div');
-        entry.className = 'log-entry log-' + type;
-        var now = new Date();
-        var ts = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ':' + now.getSeconds().toString().padStart(2,'0');
-        entry.textContent = '[' + ts + '] ' + msg;
-        container.appendChild(entry);
-        container.scrollTop = container.scrollHeight;
-    }
-
-    function clearConflictLog() {
-        document.getElementById('conflictLogContainer').innerHTML = '';
-    }
-
-    function destroyConflictWorkbook() {
-        if (conflictWorkbook) {
-            try { conflictWorkbook.destroy(); } catch(e) {}
-            conflictWorkbook = null;
-            conflictDvPlugin = null;
-        }
-    }
-
-    function getConflictStrategy() {
-        return document.getElementById('conflictStrategySelect').value;
-    }
-
-    function updateConflictStatus(manualCount, autoCount) {
-        document.getElementById('conflictScenario').textContent = currentConflictScenario;
-        document.getElementById('manualRuleCount').textContent = manualCount;
-        document.getElementById('autoRuleCount').textContent = autoCount;
-        document.getElementById('totalRuleCount').textContent = manualCount + autoCount;
-        document.getElementById('currentStrategy').textContent = getConflictStrategy();
-    }
-
-    function createConflictWorkbook(columns, plugins, pluginOptions, scenarioLabel) {
-        destroyConflictWorkbook();
-        clearConflictLog();
-        currentConflictScenario = scenarioLabel;
-
-        var container = document.getElementById('conflictSheet');
-        container.width = 800;
-        container.height = 300;
-
-        conflictLog('═══ 场景' + scenarioLabel + ' ═══', 'info');
-        conflictLog('conflictStrategy = ' + getConflictStrategy(), 'info');
-
-        conflictWorkbook = new CanvasSheet.Workbook(container, {
-            width: 900, height: 300,
-            sheets: [{
-                name: '冲突演示',
-                data: [
-                    ['数值列', '文本列'],
-                    [50, 'hello'],
-                    [120, 'world'],
-                    [999, 'test'],
-                ],
-                columns: columns,
-                cellPadding: 8
-            }],
-            plugins: plugins || [],
-            pluginOptions: pluginOptions || {}
-        });
-
-        conflictDvPlugin = conflictWorkbook.getPlugin('dataValidation');
-
-        if (conflictDvPlugin) {
-            conflictLog('✅ DataValidationPlugin 已激活', 'success');
-            var allRules = conflictDvPlugin.getAllRules();
-            var manualCount = 0;
-            var autoCount = 0;
-            allRules.forEach(function(r) {
-                if (r.metadata && r.metadata.source === 'column-validation') {
-                    autoCount++;
-                } else {
-                    manualCount++;
-                }
-                var source = (r.metadata && r.metadata.source === 'column-validation') ? '自动' : '手动';
-                conflictLog('   规则: type=' + r.type + ', range=' + r.range + ', priority=' + r.priority + ', source=' + source, 'info');
-            });
-            updateConflictStatus(manualCount, autoCount);
-        } else {
-            conflictLog('⚠️ DataValidationPlugin 未启用', 'warn');
-            updateConflictStatus(0, 0);
-        }
-    }
-
-    window.demoConflictA = function() {
-        conflictLog('场景A：同列同类冲突', 'info');
-        conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
-        conflictLog('  rules: [{number between [0,50], priority:0}] (手动)', 'info');
-        conflictLog('  预期：桥接器检测到同列已有手动 number 规则 → 跳过自动规则', 'warn');
-        createConflictWorkbook(
-            [
-                {
-                    type: 'numeric', width: 120,
-                    validation: { type: 'number', operator: 'between', value: [0, 100], errorMessage: '自动规则: 数值 0-100', errorStyle: 'stop' }
-                },
-                { type: 'text', width: 120 }
-            ],
-            ['dataValidation', 'contextMenu'],
-            {
+        window.reinitWithBridge = function () {
+            currentMode = 'bridge';
+            log('═══ 切换到桥接模式（validation 子对象）═══', 'info');
+            createWorkbook(bridgeColumns, ['dataValidation', "formula", 'contextMenu', 'autoFill', 'copyPaste', 'freeze'], {
                 dataValidation: {
-                    conflictStrategy: getConflictStrategy(),
-                    bridgeColumnType: true,
-                    rules: [
-                        {
-                            range: 'A:A',
+                    conflictStrategy: 'short-circuit',
+                    bridgeColumnType: true
+                }
+            });
+        };
+
+        window.reinitWithLegacy = function () {
+            currentMode = 'legacy';
+            log('═══ 切换到向后兼容模式（options 推断）═══', 'info');
+            createWorkbook(legacyColumns, ['dataValidation', "formula", 'contextMenu', 'autoFill', 'copyPaste', 'freeze',], {
+                dataValidation: {
+                    conflictStrategy: 'short-circuit',
+                    bridgeColumnType: true
+                }
+            });
+        };
+
+        window.reinitWithoutPlugin = function () {
+            currentMode = 'noPlugin';
+            log('═══ 切换到无插件模式（安全降级）═══', 'info');
+            createWorkbook(noPluginColumns, ['contextMenu', "formula", 'autoFill', 'copyPaste', 'freeze'], {});
+        };
+
+        window.validateAll = function () {
+            if (!dvPlugin || !dvPlugin.active) {
+                log('❌ DataValidationPlugin 未激活，无法批量验证', 'error');
+                return;
+            }
+            log('开始批量验证 A2:J9 ...', 'info');
+            dvPlugin.validateRange('A2:J9').then(function (results) {
+                var valid = 0, invalid = 0;
+                results.forEach(function (r) {
+                    r.valid ? valid++ : invalid++;
+                });
+                log('✅ 批量验证完成: ' + valid + ' 通过, ' + invalid + ' 无效', invalid > 0 ? 'warn' : 'success');
+                updateStatus();
+            }).catch(function (e) {
+                log('❌ 批量验证失败: ' + e.message, 'error');
+            });
+        };
+
+        window.showBridgeStatus = function () {
+            var panel = document.getElementById('bridgeStatusPanel');
+            var grid = document.getElementById('bridgeStatusGrid');
+
+            if (!dvPlugin || !dvPlugin.bridge) {
+                log('❌ 桥接器不可用', 'error');
+                panel.style.display = 'none';
+                return;
+            }
+
+            panel.style.display = 'block';
+            var status = dvPlugin.bridge.getBridgeStatus();
+
+            grid.innerHTML =
+                '<div class="stat-card"><div class="stat-value">' + (status.active ? '✅' : '❌') + '</div><div class="stat-label">桥接器状态</div></div>' +
+                '<div class="stat-card"><div class="stat-value">' + status.autoRuleCount + '</div><div class="stat-label">自动规则数</div></div>' +
+                '<div class="stat-card"><div class="stat-value">' + status.bridgedColumnCount + '</div><div class="stat-label">桥接列数</div></div>';
+
+            log('🔍 桥接器状态: active=' + status.active + ', autoRules=' + status.autoRuleCount + ', bridgedCols=' + status.bridgedColumnCount, 'info');
+
+            if (status.details && status.details.length > 0) {
+                status.details.forEach(function (d) {
+                    if (d.ruleId || d.hasValidation) {
+                        log('   列' + d.col + ': type=' + d.columnType + ', hasValidation=' + d.hasValidation + ', ruleId=' + (d.ruleId || 'none'), 'info');
+                    }
+                });
+            }
+        };
+
+        window.exportRules = function () {
+            if (!dvPlugin || !dvPlugin.active) {
+                log('❌ 插件未激活', 'error');
+                return;
+            }
+            var rules = dvPlugin.exportRules();
+            log('📤 导出规则: ' + rules.length + ' 条（自动规则已排除）', 'success');
+            if (rules.length > 0) {
+                log('   ' + JSON.stringify(rules, null, 2).substring(0, 500), 'info');
+            } else {
+                log('   无手动规则（所有规则均由桥接器自动生成，从 columns 重建即可）', 'info');
+            }
+        };
+
+        // ═══ 冲突演示 ═══
+        var conflictWorkbook = null;
+        var conflictDvPlugin = null;
+        var currentConflictScenario = '-';
+
+        function conflictLog(msg, type) {
+            type = type || 'info';
+            var container = document.getElementById('conflictLogContainer');
+            var entry = document.createElement('div');
+            entry.className = 'log-entry log-' + type;
+            var now = new Date();
+            var ts = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0') + ':' + now.getSeconds().toString().padStart(2, '0');
+            entry.textContent = '[' + ts + '] ' + msg;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearConflictLog() {
+            document.getElementById('conflictLogContainer').innerHTML = '';
+        }
+
+        function destroyConflictWorkbook() {
+            if (conflictWorkbook) {
+                try {
+                    conflictWorkbook.destroy();
+                } catch (e) {
+                }
+                conflictWorkbook = null;
+                conflictDvPlugin = null;
+            }
+        }
+
+        function getConflictStrategy() {
+            return document.getElementById('conflictStrategySelect').value;
+        }
+
+        function updateConflictStatus(manualCount, autoCount) {
+            document.getElementById('conflictScenario').textContent = currentConflictScenario;
+            document.getElementById('manualRuleCount').textContent = manualCount;
+            document.getElementById('autoRuleCount').textContent = autoCount;
+            document.getElementById('totalRuleCount').textContent = manualCount + autoCount;
+            document.getElementById('currentStrategy').textContent = getConflictStrategy();
+        }
+
+        function createConflictWorkbook(columns, plugins, pluginOptions, scenarioLabel) {
+            destroyConflictWorkbook();
+            clearConflictLog();
+            currentConflictScenario = scenarioLabel;
+
+            var container = document.getElementById('conflictSheet');
+            container.width = 800;
+            container.height = 300;
+
+            conflictLog('═══ 场景' + scenarioLabel + ' ═══', 'info');
+            conflictLog('conflictStrategy = ' + getConflictStrategy(), 'info');
+
+            conflictWorkbook = new CanvasSheet.Workbook(container, {
+                width: 900, height: 300,
+                sheets: [{
+                    name: '冲突演示',
+                    data: [
+                        ['数值列', '文本列'],
+                        [50, 'hello'],
+                        [120, 'world'],
+                        [999, 'test'],
+                    ],
+                    columns: columns,
+                    cellPadding: 8
+                }],
+                plugins: plugins || [],
+                pluginOptions: pluginOptions || {}
+            });
+
+            conflictDvPlugin = conflictWorkbook.getPlugin('dataValidation');
+
+            if (conflictDvPlugin) {
+                conflictLog('✅ DataValidationPlugin 已激活', 'success');
+                var allRules = conflictDvPlugin.getAllRules();
+                var manualCount = 0;
+                var autoCount = 0;
+                allRules.forEach(function (r) {
+                    if (r.metadata && r.metadata.source === 'column-validation') {
+                        autoCount++;
+                    } else {
+                        manualCount++;
+                    }
+                    var source = (r.metadata && r.metadata.source === 'column-validation') ? '自动' : '手动';
+                    conflictLog('   规则: type=' + r.type + ', range=' + r.range + ', priority=' + r.priority + ', source=' + source, 'info');
+                });
+                updateConflictStatus(manualCount, autoCount);
+            } else {
+                conflictLog('⚠️ DataValidationPlugin 未启用', 'warn');
+                updateConflictStatus(0, 0);
+            }
+        }
+
+        window.demoConflictA = function () {
+            conflictLog('场景A：同列同类冲突', 'info');
+            conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
+            conflictLog('  rules: [{number between [0,50], priority:0}] (手动)', 'info');
+            conflictLog('  预期：桥接器检测到同列已有手动 number 规则 → 跳过自动规则', 'warn');
+            createConflictWorkbook(
+                [
+                    {
+                        type: 'numeric', width: 120,
+                        validation: {
                             type: 'number',
                             operator: 'between',
-                            value: [0, 50],
-                            errorMessage: '手动规则: 数值必须在 0-50 之间',
-                            errorStyle: 'stop',
-                            priority: 0
+                            value: [0, 100],
+                            errorMessage: '自动规则: 数值 0-100',
+                            errorStyle: 'stop'
                         }
-                    ]
-                }
-            },
-            'A：同列同类'
-        );
-    };
-
-    window.demoConflictB = function() {
-        conflictLog('场景B：同列异类共存', 'info');
-        conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
-        conflictLog('  rules: [{list source:[50,120], priority:0}] (手动)', 'info');
-        conflictLog('  预期：类型不同(list≠number) → 自动规则正常注册，两条规则共存', 'warn');
-        createConflictWorkbook(
-            [
-                {
-                    type: 'numeric', width: 120,
-                    validation: { type: 'number', operator: 'between', value: [0, 100], errorMessage: '自动规则: 数值 0-100', errorStyle: 'stop' }
-                },
-                { type: 'text', width: 120 }
-            ],
-            ['dataValidation', 'contextMenu',"freeze"],
-            {
-                dataValidation: {
-                    conflictStrategy: getConflictStrategy(),
-                    bridgeColumnType: true,
-                    rules: [
-                        {
-                            range: 'A:A',
-                            type: 'list',
-                            source: [50, 120],
-                            showDropdown: true,
-                            errorMessage: '手动规则: 只能输入 50 或 120',
-                            errorStyle: 'warning',
-                            priority: 0
-                        }
-                    ]
-                }
-            },
-            'B：同列异类'
-        );
-    };
-
-    window.demoConflictC = function() {
-        conflictLog('场景C：仅自动规则', 'info');
-        conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
-        conflictLog('  rules: [] (无手动规则)', 'info');
-        conflictLog('  预期：桥接器正常注册自动规则', 'warn');
-        createConflictWorkbook(
-            [
-                {
-                    type: 'numeric', width: 120,
-                    validation: { type: 'number', operator: 'between', value: [0, 100], errorMessage: '自动规则: 数值 0-100', errorStyle: 'stop' }
-                },
-                { type: 'text', width: 120 }
-            ],
-            ['dataValidation', 'contextMenu'],
-            {
-                dataValidation: {
-                    conflictStrategy: getConflictStrategy(),
-                    bridgeColumnType: true,
-                    rules: []
-                }
-            },
-            'C：仅自动'
-        );
-    };
-
-    window.demoConflictE = function() {
-        conflictLog('场景E：关闭手动优先 (respectManualRules=false)', 'info');
-        conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
-        conflictLog('  rules: [{number between [0,50], priority:0}] (手动)', 'info');
-        conflictLog('  预期：桥接器不检查手动规则 → 自动规则也注册 → 同列同类双规则共存', 'warn');
-        createConflictWorkbook(
-            [
-                {
-                    type: 'numeric', width: 120,
-                    validation: { type: 'number', operator: 'between', value: [0, 100], errorMessage: '自动规则: 数值 0-100', errorStyle: 'stop' }
-                },
-                { type: 'text', width: 120 }
-            ],
-            ['dataValidation', 'contextMenu'],
-            {
-                dataValidation: {
-                    conflictStrategy: getConflictStrategy(),
-                    bridgeColumnType: true,
-                    bridgeOptions: {
-                        respectManualRules: false
                     },
-                    rules: [
-                        {
-                            range: 'A:A',
+                    {type: 'text', width: 120}
+                ],
+                ['dataValidation', "formula", 'contextMenu'],
+                {
+                    dataValidation: {
+                        conflictStrategy: getConflictStrategy(),
+                        bridgeColumnType: true,
+                        rules: [
+                            {
+                                range: 'A:A',
+                                type: 'number',
+                                operator: 'between',
+                                value: [0, 50],
+                                errorMessage: '手动规则: 数值必须在 0-50 之间',
+                                errorStyle: 'stop',
+                                priority: 0
+                            }
+                        ]
+                    }
+                },
+                'A：同列同类'
+            );
+        };
+
+        window.demoConflictB = function () {
+            conflictLog('场景B：同列异类共存', 'info');
+            conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
+            conflictLog('  rules: [{list source:[50,120], priority:0}] (手动)', 'info');
+            conflictLog('  预期：类型不同(list≠number) → 自动规则正常注册，两条规则共存', 'warn');
+            createConflictWorkbook(
+                [
+                    {
+                        type: 'numeric', width: 120,
+                        validation: {
                             type: 'number',
                             operator: 'between',
-                            value: [0, 50],
-                            errorMessage: '手动规则: 数值必须在 0-50 之间',
-                            errorStyle: 'stop',
-                            priority: 0
+                            value: [0, 100],
+                            errorMessage: '自动规则: 数值 0-100',
+                            errorStyle: 'stop'
                         }
-                    ]
+                    },
+                    {type: 'text', width: 120}
+                ],
+                ['dataValidation', 'formula', 'contextMenu', 'freeze'],
+                {
+                    dataValidation: {
+                        conflictStrategy: getConflictStrategy(),
+                        bridgeColumnType: true,
+                        rules: [
+                            {
+                                range: 'A:A',
+                                type: 'list',
+                                source: [50, 120],
+                                showDropdown: true,
+                                errorMessage: '手动规则: 只能输入 50 或 120',
+                                errorStyle: 'warning',
+                                priority: 0
+                            }
+                        ]
+                    }
+                },
+                'B：同列异类'
+            );
+        };
+
+        window.demoConflictC = function () {
+            conflictLog('场景C：仅自动规则', 'info');
+            conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
+            conflictLog('  rules: [] (无手动规则)', 'info');
+            conflictLog('  预期：桥接器正常注册自动规则', 'warn');
+            createConflictWorkbook(
+                [
+                    {
+                        type: 'numeric', width: 120,
+                        validation: {
+                            type: 'number',
+                            operator: 'between',
+                            value: [0, 100],
+                            errorMessage: '自动规则: 数值 0-100',
+                            errorStyle: 'stop'
+                        }
+                    },
+                    {type: 'text', width: 120}
+                ],
+                ['dataValidation', "formula", 'contextMenu'],
+                {
+                    dataValidation: {
+                        conflictStrategy: getConflictStrategy(),
+                        bridgeColumnType: true,
+                        rules: []
+                    }
+                },
+                'C：仅自动'
+            );
+        };
+
+        window.demoConflictE = function () {
+            conflictLog('场景E：关闭手动优先 (respectManualRules=false)', 'info');
+            conflictLog('  列A: validation={number between [0,100]} (自动)', 'info');
+            conflictLog('  rules: [{number between [0,50], priority:0}] (手动)', 'info');
+            conflictLog('  预期：桥接器不检查手动规则 → 自动规则也注册 → 同列同类双规则共存', 'warn');
+            createConflictWorkbook(
+                [
+                    {
+                        type: 'numeric', width: 120,
+                        validation: {
+                            type: 'number',
+                            operator: 'between',
+                            value: [0, 100],
+                            errorMessage: '自动规则: 数值 0-100',
+                            errorStyle: 'stop'
+                        }
+                    },
+                    {type: 'text', width: 120}
+                ],
+                ['dataValidation', "formula", 'contextMenu'],
+                {
+                    dataValidation: {
+                        conflictStrategy: getConflictStrategy(),
+                        bridgeColumnType: true,
+                        bridgeOptions: {
+                            respectManualRules: false
+                        },
+                        rules: [
+                            {
+                                range: 'A:A',
+                                type: 'number',
+                                operator: 'between',
+                                value: [0, 50],
+                                errorMessage: '手动规则: 数值必须在 0-50 之间',
+                                errorStyle: 'stop',
+                                priority: 0
+                            }
+                        ]
+                    }
+                },
+                'E：关闭手动优先'
+            );
+        };
+
+        window.switchConflictStrategy = function () {
+            var strategy = getConflictStrategy();
+            conflictLog('切换 conflictStrategy → ' + strategy, 'info');
+            document.getElementById('currentStrategy').textContent = strategy;
+            if (conflictDvPlugin && conflictDvPlugin.engine) {
+                try {
+                    conflictDvPlugin.engine.conflictStrategy = strategy;
+                    conflictLog('✅ ValidationEngine.conflictStrategy 已更新为 ' + strategy, 'success');
+                } catch (e) {
+                    conflictLog('❌ 更新失败: ' + e.message, 'error');
                 }
-            },
-            'E：关闭手动优先'
-        );
-    };
-
-    window.switchConflictStrategy = function() {
-        var strategy = getConflictStrategy();
-        conflictLog('切换 conflictStrategy → ' + strategy, 'info');
-        document.getElementById('currentStrategy').textContent = strategy;
-        if (conflictDvPlugin && conflictDvPlugin.engine) {
-            try {
-                conflictDvPlugin.engine.conflictStrategy = strategy;
-                conflictLog('✅ ValidationEngine.conflictStrategy 已更新为 ' + strategy, 'success');
-            } catch(e) {
-                conflictLog('❌ 更新失败: ' + e.message, 'error');
             }
-        }
-    };
+        };
 
-    window.testConflictValue = function() {
-        if (!conflictDvPlugin || !conflictDvPlugin.active) {
-            conflictLog('❌ 插件未激活，无法验证', 'error');
-            return;
-        }
-        var testValue = 999;
-        conflictLog('测试值 ' + testValue + ' 在 A2 单元格验证...', 'info');
-        conflictDvPlugin.validateCell(1, 0, testValue).then(function(result) {
-            if (result.valid) {
-                conflictLog('✅ 验证通过: ' + testValue + ' 合法', 'success');
-            } else {
-                conflictLog('❌ 验证失败: ' + result.message + ' (ruleId=' + (result.ruleId || 'N/A') + ')', 'error');
+        window.testConflictValue = function () {
+            if (!conflictDvPlugin || !conflictDvPlugin.active) {
+                conflictLog('❌ 插件未激活，无法验证', 'error');
+                return;
             }
-        }).catch(function(e) {
-            conflictLog('❌ 验证异常: ' + e.message, 'error');
-        });
+            var testValue = 999;
+            conflictLog('测试值 ' + testValue + ' 在 A2 单元格验证...', 'info');
+            conflictDvPlugin.validateCell(1, 0, testValue).then(function (result) {
+                if (result.valid) {
+                    conflictLog('✅ 验证通过: ' + testValue + ' 合法', 'success');
+                } else {
+                    conflictLog('❌ 验证失败: ' + result.message + ' (ruleId=' + (result.ruleId || 'N/A') + ')', 'error');
+                }
+            }).catch(function (e) {
+                conflictLog('❌ 验证异常: ' + e.message, 'error');
+            });
 
-        conflictLog('测试值 30 在 A2 单元格验证...', 'info');
-        conflictDvPlugin.validateCell(1, 0, 30).then(function(result) {
-            if (result.valid) {
-                conflictLog('✅ 验证通过: 30 合法', 'success');
-            } else {
-                conflictLog('❌ 验证失败: ' + result.message, 'error');
-            }
-        }).catch(function(e) {
-            conflictLog('❌ 验证异常: ' + e.message, 'error');
-        });
+            conflictLog('测试值 30 在 A2 单元格验证...', 'info');
+            conflictDvPlugin.validateCell(1, 0, 30).then(function (result) {
+                if (result.valid) {
+                    conflictLog('✅ 验证通过: 30 合法', 'success');
+                } else {
+                    conflictLog('❌ 验证失败: ' + result.message, 'error');
+                }
+            }).catch(function (e) {
+                conflictLog('❌ 验证异常: ' + e.message, 'error');
+            });
 
-        conflictLog('测试值 75 在 A2 单元格验证...', 'info');
-        conflictDvPlugin.validateCell(1, 0, 75).then(function(result) {
-            if (result.valid) {
-                conflictLog('✅ 验证通过: 75 合法', 'success');
-            } else {
-                conflictLog('❌ 验证失败: ' + result.message, 'error');
-            }
-        }).catch(function(e) {
-            conflictLog('❌ 验证异常: ' + e.message, 'error');
-        });
-    };
+            conflictLog('测试值 75 在 A2 单元格验证...', 'info');
+            conflictDvPlugin.validateCell(1, 0, 75).then(function (result) {
+                if (result.valid) {
+                    conflictLog('✅ 验证通过: 75 合法', 'success');
+                } else {
+                    conflictLog('❌ 验证失败: ' + result.message, 'error');
+                }
+            }).catch(function (e) {
+                conflictLog('❌ 验证异常: ' + e.message, 'error');
+            });
+        };
 
-    window.reinitWithBridge();
-})();
+        window.reinitWithBridge();
+    })();
 </script>
 </body>
 </html>
